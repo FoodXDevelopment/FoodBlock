@@ -242,7 +242,55 @@ FoodBlock adopts the hash-linked, append-only, signed architecture of distribute
 
 ---
 
-## 9. Sector Coverage
+## 9. Autonomous Agents
+
+AI agents are first-class participants in the FoodBlock protocol. An agent is an `actor.agent` — a software process that creates, queries, and responds to FoodBlocks on behalf of a human or organisation.
+
+### 9.1 Agent Identity
+
+An agent registers itself as an actor block:
+
+```json
+{
+  "type": "actor.agent",
+  "state": {
+    "name": "Bakery Assistant",
+    "model": "claude-sonnet",
+    "capabilities": ["inventory", "ordering", "pricing"]
+  },
+  "refs": { "operator": "human_or_business_actor_hash" }
+}
+```
+
+The `refs.operator` field is required. Every agent must reference the actor that controls it. An agent without an operator is invalid by convention.
+
+The agent's genesis block hash becomes its permanent identity. Like any actor, it generates an Ed25519 keypair and signs the blocks it creates.
+
+### 9.2 Agent Actions
+
+Blocks created by agents carry the agent's signature and are traceable through the graph. An agent that orders flour on behalf of a bakery produces:
+
+```json
+{
+  "type": "transfer.order",
+  "state": { "quantity": 50, "unit": "kg", "total": 90.00, "draft": true },
+  "refs": { "buyer": "bakery_hash", "seller": "mill_hash", "product": "flour_hash", "agent": "agent_hash" }
+}
+```
+
+The `refs.agent` field records which agent created the block. The `state.draft` field indicates the action awaits human approval. Once the operator confirms, a new block is created with `draft` removed and `refs: { updates: draft_hash }`.
+
+This pattern makes agent actions visible, attributable, and reversible. No agent action is hidden from the graph.
+
+### 9.3 Agent Discovery
+
+Agents expose their capabilities through MCP (Model Context Protocol) tool interfaces. Any MCP-compatible client — Claude Desktop, development environments, custom applications — can discover and interact with agents that speak FoodBlock.
+
+The protocol does not prescribe how agents communicate. It prescribes that agent actions are FoodBlocks, signed and traceable like any other block.
+
+---
+
+## 10. Sector Coverage
 
 The six base types express operations across all fourteen food industry sectors:
 
@@ -262,12 +310,13 @@ The six base types express operations across all fourteen food industry sectors:
 | Food Finance & Economics | `transfer.investment`, `transfer.trade`, `observe.market` |
 | Cultural Food | `observe.certification`, `substance.ingredient`, `place.region` |
 | Food Technology & Innovation | `actor.innovator`, `observe.experiment`, `transform.process` |
+| Autonomous Operations | `actor.agent`, `transfer.order` (draft), `observe.inventory` |
 
 No sector requires a type outside the six bases. Sector-specific needs are expressed through subtypes and state conventions, not protocol extensions.
 
 ---
 
-## 10. Canonical JSON Specification
+## 11. Canonical JSON Specification
 
 Deterministic hashing requires deterministic serialization. The canonical form of a FoodBlock is:
 
@@ -298,7 +347,7 @@ This byte string is the input to SHA-256.
 
 ---
 
-## 11. Developer Interface
+## 12. Developer Interface
 
 Any system that can produce and consume JSON can participate in FoodBlock. A minimal SDK exposes five operations:
 
@@ -322,7 +371,7 @@ PUT    /blocks/:hash                        → update (creates new block)
 
 ---
 
-## 12. Conclusion
+## 13. Conclusion
 
 FoodBlock compresses the complexity of food industry data into three fields, six base types, and ten rules. Any food operation — from a farm harvest to a Michelin review, from a cold chain reading to a commodity trade — is expressible as a FoodBlock.
 

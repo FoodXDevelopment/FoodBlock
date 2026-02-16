@@ -186,6 +186,59 @@ function generateSeed() {
   }, { seller: bakery.hash, inputs: [flour.hash, yeast.hash, water.hash, salt.hash] })
   blocks.push(sourdoughV2)
 
+  // === AGENT ===
+  // Bakery AI assistant — monitors inventory, places orders, manages surplus
+  const bakeryAgent = create('actor.agent', {
+    name: 'Joes Bakery Assistant',
+    model: 'claude-sonnet',
+    capabilities: ['inventory', 'ordering', 'surplus', 'pricing']
+  }, { operator: bakery.hash })
+  blocks.push(bakeryAgent)
+
+  // Agent detects low flour stock and creates a draft reorder
+  const draftFlourOrder = create('transfer.order', {
+    quantity: 50,
+    unit: 'kg',
+    total: 160.00,
+    date: '2026-02-16',
+    reason: 'auto: flour stock below 5kg threshold',
+    draft: true
+  }, { buyer: bakery.hash, seller: mill.hash, product: flour.hash, agent: bakeryAgent.hash })
+  blocks.push(draftFlourOrder)
+
+  // Baker approves the draft next morning — creates confirmed version
+  const confirmedFlourOrder = update(draftFlourOrder.hash, 'transfer.order', {
+    quantity: 50,
+    unit: 'kg',
+    total: 160.00,
+    date: '2026-02-16',
+    reason: 'auto: flour stock below 5kg threshold'
+  }, { buyer: bakery.hash, seller: mill.hash, product: flour.hash, approved_agent: bakeryAgent.hash })
+  blocks.push(confirmedFlourOrder)
+
+  // Agent creates inventory observation
+  const inventoryCheck = create('observe.inventory', {
+    date: '2026-02-16T06:00:00Z',
+    items: [
+      { product: 'Stoneground Wholemeal Flour', quantity_kg: 3.2, status: 'low' },
+      { product: 'Wild Yeast Starter', quantity_kg: 0.8, status: 'ok' },
+      { product: 'Sea Salt', quantity_kg: 2.1, status: 'ok' }
+    ],
+    alert: 'flour below reorder threshold (5kg)'
+  }, { place: shop.hash, agent: bakeryAgent.hash, operator: bakery.hash })
+  blocks.push(inventoryCheck)
+
+  // Agent posts end-of-day surplus automatically
+  const agentSurplus = create('substance.surplus', {
+    name: 'End of Day Mixed Bread',
+    original_price: 12.00,
+    surplus_price: 4.00,
+    quantity: 3,
+    available_until: '2026-02-16T18:00:00Z',
+    auto_posted: true
+  }, { seller: bakery.hash, collector: sustainer.hash, agent: bakeryAgent.hash })
+  blocks.push(agentSurplus)
+
   return blocks
 }
 

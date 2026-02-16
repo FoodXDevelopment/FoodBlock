@@ -1,4 +1,0 @@
-module FoodBlock {
-    header "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/FoodBlock-Swift.h"
-    requires objc
-}
