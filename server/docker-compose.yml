@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: foodblock
+      POSTGRES_USER: foodblock
+      POSTGRES_PASSWORD: ${FOODBLOCK_DB_PASSWORD:-localdev}
+    ports:
+      - "5433:5432"
+    volumes:
+      - ../sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foodblock"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    ports:
+      - "3111:3111"
+    environment:
+      - DATABASE_URL=postgresql://foodblock:${FOODBLOCK_DB_PASSWORD:-localdev}@db:5432/foodblock
+      - PORT=3111
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
