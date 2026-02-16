@@ -1,0 +1,4 @@
+module FoodBlockPackageTests {
+    header "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/FoodBlockPackageTests-Swift.h"
+    requires objc
+}

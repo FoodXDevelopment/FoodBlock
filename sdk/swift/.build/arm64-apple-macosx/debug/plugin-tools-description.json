@@ -1,0 +1,628 @@
+{
+  "builtTestProducts" : [
+    {
+      "binaryPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.xctest/Contents/MacOS/FoodBlockPackageTests",
+      "packagePath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift",
+      "productName" : "FoodBlockPackageTests"
+    }
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.FoodBlock-arm64-apple-macosx15.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/sources",
+      "importPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/Canonical.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/FoodBlock.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "FoodBlock",
+      "moduleOutputPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlock.swiftmodule",
+      "objects" : [
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/Canonical.swift.o",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/FoodBlock.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-enable-batch-mode",
+        "-index-store-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-module-cache-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/FoodBlock-Swift.h",
+        "-swift-version",
+        "5",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "swift"
+      ],
+      "outputFileMapPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/Canonical.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/FoodBlock.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlock.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/Canonical.swift",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/FoodBlock.swift"
+      ],
+      "tempsPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.FoodBlockPackageTests-arm64-apple-macosx15.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/sources",
+      "importPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlockTests.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "FoodBlockPackageTests",
+      "moduleOutputPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlockPackageTests.swiftmodule",
+      "objects" : [
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-enable-batch-mode",
+        "-index-store-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-module-cache-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-emit-objc-header",
+        "-emit-objc-header-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/FoodBlockPackageTests-Swift.h",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "swift"
+      ],
+      "outputFileMapPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlockPackageTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift"
+      ],
+      "tempsPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build",
+      "wholeModuleOptimization" : false
+    },
+    "C.FoodBlockTests-arm64-apple-macosx15.0-debug.module" : {
+      "executable" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "fileList" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/sources",
+      "importPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Tests/FoodBlockTests.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlock.swiftmodule"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/sources"
+        }
+      ],
+      "isLibrary" : true,
+      "moduleName" : "FoodBlockTests",
+      "moduleOutputPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlockTests.swiftmodule",
+      "objects" : [
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/FoodBlockTests.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-enable-batch-mode",
+        "-index-store-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-Xfrontend",
+        "-enable-cross-import-overlays",
+        "-j8",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-module-cache-path",
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-parse-as-library",
+        "-swift-version",
+        "5",
+        "-sdk",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-F",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-I",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-L",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+        "-Xcc",
+        "-F",
+        "-Xcc",
+        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "swift"
+      ],
+      "outputFileMapPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/FoodBlockTests.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules/FoodBlockTests.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Tests/FoodBlockTests.swift"
+      ],
+      "tempsPath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "FoodBlock" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "FoodBlock",
+      "-package-name",
+      "swift",
+      "-incremental",
+      "-c",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/Canonical.swift",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/FoodBlock.swift",
+      "-I",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-enable-batch-mode",
+      "-index-store-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-module-cache-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/FoodBlock-Swift.h",
+      "-swift-version",
+      "5",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "swift",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "FoodBlockPackageTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "FoodBlockPackageTests",
+      "-package-name",
+      "swift",
+      "-incremental",
+      "-c",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift",
+      "-I",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-enable-batch-mode",
+      "-index-store-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-module-cache-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-emit-objc-header",
+      "-emit-objc-header-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/FoodBlockPackageTests-Swift.h",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "swift",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ],
+    "FoodBlockTests" : [
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc",
+      "-module-name",
+      "FoodBlockTests",
+      "-package-name",
+      "swift",
+      "-incremental",
+      "-c",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Tests/FoodBlockTests.swift",
+      "-I",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-enable-batch-mode",
+      "-index-store-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-Xfrontend",
+      "-enable-cross-import-overlays",
+      "-j8",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-module-cache-path",
+      "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-parse-as-library",
+      "-swift-version",
+      "5",
+      "-sdk",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-F",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-I",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-L",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/usr/lib",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.5.sdk",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/Frameworks",
+      "-Xcc",
+      "-F",
+      "-Xcc",
+      "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/Library/PrivateFrameworks",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "swift",
+      "-driver-use-frontend-path",
+      "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "FoodBlock" : [
+
+    ],
+    "FoodBlockPackageTests" : [
+      "FoodBlockTests",
+      "FoodBlock"
+    ],
+    "FoodBlockTests" : [
+      "FoodBlock"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+    "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift" : {
+      "inputs" : [
+
+      ],
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift"
+        }
+      ]
+    }
+  },
+  "traitConfiguration" : {
+    "enableAllTraits" : false
+  },
+  "writeCommands" : {
+    "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/Canonical.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Sources/FoodBlock.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/sources"
+    },
+    "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/sources"
+    },
+    "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/Canonical.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlock.build/FoodBlock.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/FoodBlockTests.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.product/Objects.LinkFileList"
+    },
+    "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/Tests/FoodBlockTests.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockTests.build/sources"
+    },
+    "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+    }
+  }
+}

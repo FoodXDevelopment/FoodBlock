@@ -1,0 +1,25 @@
+{
+  "name": "foodblock",
+  "version": "0.1.0",
+  "description": "SDK for the FoodBlock protocol — a content-addressable primitive for universal food data",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test test/block.test.js"
+  },
+  "keywords": [
+    "food",
+    "protocol",
+    "traceability",
+    "provenance",
+    "supply-chain",
+    "content-addressable"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoodXDevelopment/foodblock"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "": {
+    "swift-dependencies": "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/master.swiftdeps"
+  },
+  "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.derived/runner.swift": {
+    "dependencies": "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner.d",
+    "object": "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner.swift.o",
+    "swiftmodule": "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner~partial.swiftmodule",
+    "swift-dependencies": "/Users/patrickl.reynolds/Desktop/foodblock/sdk/swift/.build/arm64-apple-macosx/debug/FoodBlockPackageTests.build/runner.swiftdeps"
+  }
+}

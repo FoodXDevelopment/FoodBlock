@@ -1,0 +1,152 @@
+[
+  {
+    "name": "empty genesis block",
+    "type": "actor.producer",
+    "state": {},
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"actor.producer\"}",
+    "expected_hash": "cc9729a4fdef14684cfed69d2969181696c229d551128dc69ec37ffc36058fc2"
+  },
+  {
+    "name": "simple product",
+    "type": "substance.product",
+    "state": {
+      "name": "Sourdough",
+      "price": 4.5
+    },
+    "refs": {
+      "seller": "abc123def456"
+    },
+    "expected_canonical": "{\"refs\":{\"seller\":\"abc123def456\"},\"state\":{\"name\":\"Sourdough\",\"price\":4.5},\"type\":\"substance.product\"}",
+    "expected_hash": "81ad9371a67f4e4bc25ce1fea089789b9e8ad9c0af1c7157b31348850428cb11"
+  },
+  {
+    "name": "multi-ref transform",
+    "type": "transform.process",
+    "state": {
+      "name": "Baking",
+      "temp": 220
+    },
+    "refs": {
+      "inputs": [
+        "flour_hash",
+        "water_hash",
+        "yeast_hash"
+      ],
+      "output": "bread_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\",\"yeast_hash\"],\"output\":\"bread_hash\"},\"state\":{\"name\":\"Baking\",\"temp\":220},\"type\":\"transform.process\"}",
+    "expected_hash": "f2270f8a499aafba604caa08fb6449996ffc239e04bbf28c15d2d358d525618c"
+  },
+  {
+    "name": "refs array order independence",
+    "type": "transform.process",
+    "state": {},
+    "refs": {
+      "inputs": [
+        "zzz",
+        "aaa",
+        "mmm"
+      ]
+    },
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"aaa\",\"mmm\",\"zzz\"]},\"state\":{},\"type\":\"transform.process\"}",
+    "expected_hash": "96e093f0b2f897590d93fa76a59889027e5f9dd46b2d3cd5d68381d6a677d520"
+  },
+  {
+    "name": "state array order preservation",
+    "type": "observe.post",
+    "state": {
+      "content_order": [
+        "block_c",
+        "block_a",
+        "block_b"
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"content_order\":[\"block_c\",\"block_a\",\"block_b\"]},\"type\":\"observe.post\"}",
+    "expected_hash": "a4b436ea216351a73a2d2cff031643ef1bad8afc011f96637c6fb9e226d89e4a"
+  },
+  {
+    "name": "key order independence",
+    "type": "test",
+    "state": {
+      "z": 26,
+      "a": 1,
+      "m": 13
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":1,\"m\":13,\"z\":26},\"type\":\"test\"}",
+    "expected_hash": "32e651fad98db90391aae263803581771607f01a41849d96375b8038908ddb85"
+  },
+  {
+    "name": "nested state",
+    "type": "substance.product",
+    "state": {
+      "name": "Eggs",
+      "weight": {
+        "value": 500,
+        "unit": "g"
+      },
+      "allergens": {
+        "gluten": false,
+        "dairy": false,
+        "eggs": true
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"allergens\":{\"dairy\":false,\"eggs\":true,\"gluten\":false},\"name\":\"Eggs\",\"weight\":{\"unit\":\"g\",\"value\":500}},\"type\":\"substance.product\"}",
+    "expected_hash": "cacbbb0608b5cd9cb1c82d5d5cf9f8646b246a5243bab68ba00a8b39d14afd77"
+  },
+  {
+    "name": "visibility in state",
+    "type": "observe.review",
+    "state": {
+      "rating": 5,
+      "text": "Excellent",
+      "visibility": "public"
+    },
+    "refs": {
+      "subject": "product_hash",
+      "author": "user_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"author\":\"user_hash\",\"subject\":\"product_hash\"},\"state\":{\"rating\":5,\"text\":\"Excellent\",\"visibility\":\"public\"},\"type\":\"observe.review\"}",
+    "expected_hash": "ba094e63d7bd820aa2bedf8af456fe09b4f6d6d1d47ceea88011c6a17450c25e"
+  },
+  {
+    "name": "unicode content",
+    "type": "substance.product",
+    "state": {
+      "name": {
+        "en": "Bread",
+        "ar": "خبز",
+        "fr": "Pain",
+        "ja": "パン"
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":{\"ar\":\"خبز\",\"en\":\"Bread\",\"fr\":\"Pain\",\"ja\":\"パン\"}},\"type\":\"substance.product\"}",
+    "expected_hash": "2b8e566561b9d3aa2168f4e4b5ec1ae76407744d31532a0848711959e1fd5f99"
+  },
+  {
+    "name": "IoT fridge scan",
+    "type": "observe.scan",
+    "state": {
+      "visibility": "direct",
+      "detected": [
+        {
+          "item": "Sourdough",
+          "gtin": "5000128000123",
+          "best_before": "2026-02-20",
+          "confidence": 0.94
+        }
+      ]
+    },
+    "refs": {
+      "author": "camera_hash",
+      "place": "fridge_hash",
+      "owner": "user_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"author\":\"camera_hash\",\"owner\":\"user_hash\",\"place\":\"fridge_hash\"},\"state\":{\"detected\":[{\"best_before\":\"2026-02-20\",\"confidence\":0.94,\"gtin\":\"5000128000123\",\"item\":\"Sourdough\"}],\"visibility\":\"direct\"},\"type\":\"observe.scan\"}",
+    "expected_hash": "e0234013f78a3c5959f661980dc8d1172903973cbdceff7d76507b632ab4e5c2"
+  }
+]
