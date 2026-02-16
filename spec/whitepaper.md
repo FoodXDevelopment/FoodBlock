@@ -371,7 +371,50 @@ PUT    /blocks/:hash                        → update (creates new block)
 
 ---
 
-## 13. Conclusion
+## 13. Protocol Versioning
+
+FoodBlock uses semantic versioning: `MAJOR.MINOR.PATCH`.
+
+**Version rules:**
+
+1. **MAJOR** — Breaking changes to canonical form or hash algorithm. Existing hashes may become invalid. Requires coordinated migration.
+2. **MINOR** — New base types, new optional fields in type schemas, new API endpoints. Backwards compatible. Existing hashes remain valid.
+3. **PATCH** — Bug fixes, documentation, SDK improvements. No protocol-level changes.
+
+**Version negotiation:**
+
+Clients include `FoodBlock-Version: 0.1` in request headers. Servers respond with the highest compatible version they support. If a server cannot serve a requested version, it returns `400` with supported versions.
+
+**Migration strategy:**
+
+Because block identity is `id = SHA-256(canonical(type, state, refs))`, the canonical function must never change within a major version. If a canonical bug is discovered:
+
+1. The fix ships in the next major version.
+2. Servers accept blocks hashed with both the old and new canonical form during a transition period.
+3. The old major version is supported for at least 12 months after the new version launches.
+
+**Current version: 0.1.0** — the protocol is in development. Breaking changes may occur before 1.0.
+
+---
+
+## 14. Industry Identifier Mapping
+
+FoodBlock does not replace existing industry standards — it bridges them. Blocks can carry standard identifiers in their state:
+
+| Identifier | Field | Block Types | Standard Body |
+|-----------|-------|-------------|---------------|
+| GTIN | `state.gtin` | substance.* | GS1 |
+| GLN | `state.gln` | actor.*, place.* | GS1 |
+| GPC | `state.gpc` | substance.product | GS1 |
+| FDC ID | `state.fdc_id` | substance.ingredient | USDA |
+| Lot/Batch | `state.lot` | substance.* | Manufacturer |
+| SSCC | `state.sscc` | transfer.shipment | GS1 |
+
+This enables queries like: "Find the FoodBlock provenance tree for GTIN 5060292302201" — returning the full supply chain history for a specific product barcode.
+
+---
+
+## 15. Conclusion
 
 FoodBlock compresses the complexity of food industry data into three fields, six base types, and ten rules. Any food operation — from a farm harvest to a Michelin review, from a cold chain reading to a commodity trade — is expressible as a FoodBlock.
 

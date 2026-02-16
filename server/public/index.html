@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FoodBlock Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --fx-green: #7ec60b;
+    --fx-green-dim: rgba(126, 198, 11, 0.15);
+    --fx-green-border: rgba(126, 198, 11, 0.25);
+    --fx-sand: #c4a265;
+    --fx-sand-dim: rgba(196, 162, 101, 0.08);
+    --fx-sand-border: rgba(196, 162, 101, 0.2);
+    --fx-bg: #0a0f1a;
+    --fx-surface: #111827;
+    --fx-surface-2: #1e293b;
+    --fx-border: rgba(255, 255, 255, 0.06);
+    --fx-border-hover: rgba(126, 198, 11, 0.3);
+    --fx-text: #e6edf3;
+    --fx-text-secondary: #9ca3af;
+    --fx-text-muted: #6b7280;
+    --fx-mono: ui-monospace, 'SF Mono', SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+    --fx-radius: 16px;
+    --fx-radius-sm: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--fx-bg);
+    color: var(--fx-text);
+    line-height: 1.6;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* Nav */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    backdrop-filter: saturate(120%) blur(16px);
+    background: rgba(10, 15, 26, 0.85);
+    border-bottom: 1px solid var(--fx-border);
+    padding: 16px 24px;
+  }
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    text-decoration: none;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .logo-food { color: var(--fx-green); }
+  .logo-block { color: var(--fx-text); font-weight: 400; }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-link {
+    color: var(--fx-text-secondary);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-link:hover { color: var(--fx-text); }
+  .nav-link.active { color: var(--fx-green); }
+  .badge {
+    padding: 4px 14px;
+    background: var(--fx-sand-dim);
+    border: 1px solid var(--fx-sand-border);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--fx-sand);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Layout */
+  .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Hero */
+  .hero {
+    padding: 56px 0 40px;
+    text-align: center;
+    position: relative;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--fx-border), transparent);
+  }
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: var(--fx-sand-dim);
+    border: 1px solid var(--fx-sand-border);
+    border-radius: 20px;
+    color: var(--fx-sand);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 20px;
+  }
+  .pulse-dot {
+    width: 6px; height: 6px;
+    background: var(--fx-sand);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.2); }
+  }
+  .hero h1 {
+    font-size: 44px;
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, var(--fx-text) 0%, var(--fx-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p {
+    font-size: 17px;
+    color: var(--fx-text-secondary);
+    font-weight: 300;
+    margin-bottom: 28px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.7;
+  }
+  .stats {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+  }
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--fx-green);
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--fx-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+    border-bottom: 1px solid var(--fx-border);
+  }
+  .tab {
+    padding: 14px 24px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--fx-text-muted);
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    background: none;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .tab:hover { color: var(--fx-text-secondary); }
+  .tab.active { color: var(--fx-green); border-bottom-color: var(--fx-green); }
+
+  /* Panels */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* Cards */
+  .card {
+    background: var(--fx-surface);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius);
+    padding: 28px;
+    margin-bottom: 16px;
+    transition: border-color 0.3s;
+  }
+  .card:hover { border-color: rgba(255, 255, 255, 0.1); }
+  .card h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    letter-spacing: -0.3px;
+  }
+
+  /* Block list */
+  .block-item {
+    background: var(--fx-surface);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius);
+    padding: 20px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .block-item:hover {
+    border-color: var(--fx-border-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  .block-type {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--fx-mono);
+    letter-spacing: 0.3px;
+  }
+  .type-actor { background: rgba(16, 185, 129, 0.12); color: #34d399; }
+  .type-place { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
+  .type-substance { background: rgba(126, 198, 11, 0.12); color: #7ec60b; }
+  .type-transform { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
+  .type-transfer { background: rgba(139, 92, 246, 0.12); color: #a78bfa; }
+  .type-observe { background: rgba(236, 72, 153, 0.12); color: #f472b6; }
+  .block-hash {
+    font-family: var(--fx-mono);
+    font-size: 11px;
+    color: var(--fx-text-muted);
+    margin-top: 6px;
+    letter-spacing: 0.3px;
+  }
+  .block-state {
+    font-family: var(--fx-mono);
+    font-size: 12px;
+    color: var(--fx-text-secondary);
+    margin-top: 10px;
+    background: var(--fx-surface-2);
+    padding: 12px 14px;
+    border-radius: var(--fx-radius-sm);
+    white-space: pre-wrap;
+    word-break: break-all;
+    line-height: 1.5;
+    border: 1px solid var(--fx-border);
+  }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .filter-bar select, .filter-bar input[type="text"] {
+    padding: 9px 14px;
+    background: var(--fx-surface);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius-sm);
+    color: var(--fx-text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .filter-bar select:focus, .filter-bar input:focus {
+    border-color: var(--fx-green);
+  }
+  .filter-bar label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--fx-text-secondary);
+    cursor: pointer;
+  }
+  .filter-bar input[type="checkbox"] {
+    accent-color: var(--fx-green);
+  }
+
+  /* Forms */
+  .form-group { margin-bottom: 20px; }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 6px;
+    color: var(--fx-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .form-group select,
+  .form-group input,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius-sm);
+    color: var(--fx-text);
+    font-size: 13px;
+    font-family: var(--fx-mono);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  .form-group select { font-family: inherit; }
+  .form-group textarea { min-height: 90px; resize: vertical; line-height: 1.5; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+    border-color: var(--fx-green);
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 11px 24px;
+    border-radius: var(--fx-radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    display: inline-block;
+    text-decoration: none;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--fx-green), #9ed629);
+    color: #0a140c;
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(126, 198, 11, 0.25);
+  }
+  .btn-secondary {
+    background: var(--fx-surface-2);
+    color: var(--fx-text);
+    border: 1px solid var(--fx-border);
+  }
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+  .btn-ghost {
+    background: none;
+    color: var(--fx-text-secondary);
+    border: 1px solid var(--fx-border);
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  .btn-ghost:hover { color: var(--fx-text); border-color: rgba(255, 255, 255, 0.15); }
+
+  /* Examples row */
+  .examples-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* Detail overlay */
+  .detail-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 80px;
+  }
+  .detail-overlay.open { display: flex; }
+  .detail-card {
+    background: var(--fx-surface);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius);
+    padding: 36px;
+    max-width: 680px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  }
+  .detail-close {
+    position: absolute;
+    top: 16px; right: 20px;
+    background: none; border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--fx-text-muted);
+    transition: color 0.2s;
+  }
+  .detail-close:hover { color: var(--fx-text); }
+  .detail-field { margin-bottom: 20px; }
+  .detail-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--fx-text-muted);
+    margin-bottom: 6px;
+  }
+  .detail-value {
+    font-family: var(--fx-mono);
+    font-size: 13px;
+    background: var(--fx-surface-2);
+    padding: 12px 16px;
+    border-radius: var(--fx-radius-sm);
+    word-break: break-all;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    border: 1px solid var(--fx-border);
+  }
+
+  /* API reference */
+  .endpoint {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--fx-border);
+  }
+  .endpoint:last-child { border-bottom: none; }
+  .method {
+    font-family: var(--fx-mono);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    min-width: 48px;
+    text-align: center;
+    letter-spacing: 0.3px;
+  }
+  .method-get { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
+  .method-post { background: rgba(126, 198, 11, 0.12); color: #7ec60b; }
+  .endpoint-path {
+    font-family: var(--fx-mono);
+    font-size: 13px;
+    color: var(--fx-text);
+  }
+  .endpoint-desc {
+    color: var(--fx-text-muted);
+    font-size: 13px;
+    margin-left: auto;
+    font-weight: 300;
+  }
+
+  /* Code block */
+  .code-block {
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius);
+    overflow: hidden;
+  }
+  .code-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--fx-border);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .code-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .code-dot-red { background: #ff5f56; }
+  .code-dot-yellow { background: #ffbd2e; }
+  .code-dot-green { background: #27c93f; }
+  .code-label {
+    margin-left: 10px;
+    font-size: 12px;
+    color: var(--fx-text-muted);
+    font-family: var(--fx-mono);
+  }
+  .code-body {
+    padding: 20px;
+    font-family: var(--fx-mono);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--fx-text-secondary);
+    white-space: pre-wrap;
+    word-break: break-all;
+    overflow-x: auto;
+    max-height: 300px;
+  }
+  .code-body .cm { color: var(--fx-text-muted); }
+  .code-body .kw { color: #c084fc; }
+  .code-body .str { color: #34d399; }
+  .code-body .fn { color: #60a5fa; }
+  .code-body .key { color: var(--fx-green); }
+
+  /* Result */
+  .result-box {
+    margin-top: 16px;
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius-sm);
+    padding: 16px;
+    font-family: var(--fx-mono);
+    font-size: 12px;
+    color: var(--fx-green);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 260px;
+    overflow-y: auto;
+    line-height: 1.5;
+  }
+  .result-box.error { color: #f87171; }
+
+  /* Chain */
+  .chain-item {
+    position: relative;
+    padding: 20px 20px 20px 36px;
+    margin-left: 12px;
+    border-left: 2px solid rgba(126, 198, 11, 0.3);
+  }
+  .chain-item:last-child { border-left-color: transparent; }
+  .chain-item::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 24px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--fx-green);
+    border: 2px solid var(--fx-bg);
+  }
+  .chain-item:first-child::before {
+    box-shadow: 0 0 0 4px rgba(126, 198, 11, 0.2);
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--fx-text-muted);
+    font-weight: 300;
+  }
+
+  /* Protocol section in API tab */
+  .protocol-box {
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius);
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .protocol-box pre {
+    display: inline-block;
+    text-align: left;
+    font-family: var(--fx-mono);
+    font-size: 16px;
+    line-height: 2.2;
+    color: var(--fx-text-secondary);
+  }
+
+  /* SDK links */
+  .sdk-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+  .sdk-card {
+    flex: 1;
+    min-width: 140px;
+    padding: 20px;
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius-sm);
+    text-decoration: none;
+    color: var(--fx-text);
+    transition: all 0.3s;
+    text-align: center;
+  }
+  .sdk-card:hover {
+    border-color: var(--fx-border-hover);
+    transform: translateY(-2px);
+  }
+  .sdk-lang { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .sdk-pkg { font-size: 11px; color: var(--fx-text-muted); font-family: var(--fx-mono); }
+
+  /* Try it input */
+  .try-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .try-input {
+    flex: 1;
+    padding: 11px 14px;
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius-sm);
+    color: var(--fx-text);
+    font-family: var(--fx-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .try-input:focus { border-color: var(--fx-green); }
+  .try-input::placeholder { color: var(--fx-text-muted); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .hero p { font-size: 15px; }
+    .stats { gap: 24px; }
+    .stat-value { font-size: 24px; }
+    .nav-links { display: none; }
+    .endpoint { flex-wrap: wrap; }
+    .endpoint-desc { margin-left: 0; width: 100%; margin-top: 4px; }
+    .sdk-grid { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-inner">
+    <a href="https://foodx.world/developers" class="logo">
+      <span class="logo-food">Food</span><span class="logo-block">Block</span>
+    </a>
+    <div class="nav-links">
+      <a href="#" class="nav-link active" data-tab="explore">Explorer</a>
+      <a href="#" class="nav-link" data-tab="create">Create</a>
+      <a href="#" class="nav-link" data-tab="chain">Chains</a>
+      <a href="#" class="nav-link" data-tab="api">API</a>
+      <span class="badge"><span class="pulse-dot"></span>&nbsp; Sandbox v0.1</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="hero">
+    <div class="eyebrow">
+      <div class="pulse-dot"></div>
+      Live Developer Sandbox
+    </div>
+    <h1>FoodBlock Sandbox</h1>
+    <p>Create blocks, explore chains, and build on the FoodBlock protocol. No auth required.</p>
+    <div class="stats">
+      <div>
+        <div class="stat-value" id="stat-blocks">-</div>
+        <div class="stat-label">Blocks</div>
+      </div>
+      <div>
+        <div class="stat-value">6</div>
+        <div class="stat-label">Base Types</div>
+      </div>
+      <div>
+        <div class="stat-value" id="stat-heads">-</div>
+        <div class="stat-label">Heads</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="explore">Explorer</button>
+    <button class="tab" data-tab="create">Create Block</button>
+    <button class="tab" data-tab="chain">Chain Viewer</button>
+    <button class="tab" data-tab="api">API Reference</button>
+  </div>
+
+  <!-- EXPLORE -->
+  <div class="panel active" id="panel-explore">
+    <div class="filter-bar">
+      <select id="type-filter">
+        <option value="">All types</option>
+        <option value="actor">actor</option>
+        <option value="place">place</option>
+        <option value="substance">substance</option>
+        <option value="transform">transform</option>
+        <option value="transfer">transfer</option>
+        <option value="observe">observe</option>
+      </select>
+      <label><input type="checkbox" id="heads-only"> Heads only</label>
+      <button class="btn btn-ghost" onclick="loadBlocks()">Refresh</button>
+    </div>
+    <div id="block-list"></div>
+  </div>
+
+  <!-- CREATE -->
+  <div class="panel" id="panel-create">
+    <div class="card">
+      <h3>Create a FoodBlock</h3>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="create-type">
+          <option value="substance.product">substance.product</option>
+          <option value="actor.venue">actor.venue</option>
+          <option value="actor.creator">actor.creator</option>
+          <option value="place.address">place.address</option>
+          <option value="transform.recipe">transform.recipe</option>
+          <option value="transfer.order">transfer.order</option>
+          <option value="observe.review">observe.review</option>
+          <option value="observe.snap">observe.snap</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>State (JSON)</label>
+        <textarea id="create-state">{"name": "Sourdough Loaf", "organic": true}</textarea>
+      </div>
+      <div class="form-group">
+        <label>Refs (JSON)</label>
+        <textarea id="create-refs" style="min-height:50px">{}</textarea>
+      </div>
+      <button class="btn btn-primary" onclick="createBlock()">Create Block</button>
+      <div id="create-result"></div>
+    </div>
+
+    <div class="card">
+      <h3>Quick Examples</h3>
+      <div class="examples-row">
+        <button class="btn btn-ghost" onclick="fillExample('product')">Product</button>
+        <button class="btn btn-ghost" onclick="fillExample('venue')">Venue</button>
+        <button class="btn btn-ghost" onclick="fillExample('recipe')">Recipe</button>
+        <button class="btn btn-ghost" onclick="fillExample('review')">Review</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAIN -->
+  <div class="panel" id="panel-chain">
+    <div class="card">
+      <h3>Trace Provenance Chain</h3>
+      <p style="color:var(--fx-text-muted);font-size:13px;margin-bottom:16px;font-weight:300">
+        Enter a block hash to walk its update chain back to the genesis block.
+      </p>
+      <div class="try-row">
+        <input class="try-input" id="chain-hash" placeholder="Enter a block hash (64 hex chars)...">
+        <button class="btn btn-primary" onclick="loadChain()">Trace</button>
+      </div>
+    </div>
+    <div id="chain-result"></div>
+  </div>
+
+  <!-- API -->
+  <div class="panel" id="panel-api">
+    <div class="protocol-box">
+      <pre><code><span style="color:var(--fx-text-muted)">FoodBlock</span> {
+  <span style="color:var(--fx-green)">type</span>    <span style="color:var(--fx-text-muted)">what it is</span>
+  <span style="color:#fbbf24">state</span>   <span style="color:var(--fx-text-muted)">its properties</span>
+  <span style="color:#a78bfa">refs</span>    <span style="color:var(--fx-text-muted)">what it references</span>
+}
+
+<span style="color:var(--fx-text-muted)">id = SHA-256(type + state + refs)</span></code></pre>
+    </div>
+
+    <div class="card">
+      <h3>Endpoints</h3>
+      <p style="color:var(--fx-text-muted);font-size:12px;margin-bottom:16px;font-weight:300">
+        Base URL: <code style="background:var(--fx-surface-2);padding:3px 8px;border-radius:6px;font-size:12px;color:var(--fx-text-secondary)">/foodblock</code>
+      </p>
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/foodblock/health</span>
+        <span class="endpoint-desc">Health check</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-post">POST</span>
+        <span class="endpoint-path">/foodblock/blocks</span>
+        <span class="endpoint-desc">Create a block</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/foodblock/blocks/:hash</span>
+        <span class="endpoint-desc">Get block by hash</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/foodblock/blocks?type=...&amp;heads=true</span>
+        <span class="endpoint-desc">Query blocks</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/foodblock/chain/:hash</span>
+        <span class="endpoint-desc">Provenance chain</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-get">GET</span>
+        <span class="endpoint-path">/foodblock/heads</span>
+        <span class="endpoint-desc">All head blocks</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Quick Start</h3>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot code-dot-red"></div>
+          <div class="code-dot code-dot-yellow"></div>
+          <div class="code-dot code-dot-green"></div>
+          <span class="code-label">terminal</span>
+        </div>
+        <div class="code-body"><span class="cm"># Create a product block</span>
+curl -X POST https://api.foodx.world/foodblock/blocks \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "type": "substance.product",
+    "state": {"name": "Sourdough Loaf", "organic": true},
+    "refs": {}
+  }'</span>
+
+<span class="cm"># Query all substance blocks</span>
+curl https://api.foodx.world/foodblock/blocks?type=substance
+
+<span class="cm"># Get a specific block</span>
+curl https://api.foodx.world/foodblock/blocks/<span class="key">{hash}</span>
+
+<span class="cm"># Trace provenance chain</span>
+curl https://api.foodx.world/foodblock/chain/<span class="key">{hash}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>SDKs</h3>
+      <div class="sdk-grid">
+        <a href="https://www.npmjs.com/package/@foodxdev/foodblock" target="_blank" class="sdk-card">
+          <div class="sdk-lang">JavaScript</div>
+          <div class="sdk-pkg">@foodxdev/foodblock</div>
+        </a>
+        <a href="https://pypi.org/project/foodblock/" target="_blank" class="sdk-card">
+          <div class="sdk-lang">Python</div>
+          <div class="sdk-pkg">pip install foodblock</div>
+        </a>
+        <a href="https://github.com/FoodXDevelopment/foodblock" target="_blank" class="sdk-card">
+          <div class="sdk-lang">Swift</div>
+          <div class="sdk-pkg">FoodBlock.swift</div>
+        </a>
+        <a href="https://github.com/FoodXDevelopment/foodblock" target="_blank" class="sdk-card">
+          <div class="sdk-lang">Go</div>
+          <div class="sdk-pkg">go get foodblock</div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detail overlay -->
+<div class="detail-overlay" id="detail-overlay" onclick="if(event.target===this)closeDetail()">
+  <div class="detail-card" id="detail-card">
+    <button class="detail-close" onclick="closeDetail()">&times;</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<script>
+const API = window.location.pathname.replace(/\/$/, '');
+
+// Tabs (both button tabs and nav links)
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
+  document.getElementById('panel-' + tabName).classList.add('active');
+  const navLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
+  if (navLink) navLink.classList.add('active');
+}
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+document.querySelectorAll('.nav-link[data-tab]').forEach(link => {
+  link.addEventListener('click', (e) => { e.preventDefault(); switchTab(link.dataset.tab); });
+});
+
+async function api(path, opts) {
+  const res = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    ...opts,
+  });
+  return res.json();
+}
+
+function typeClass(type) {
+  const base = type.split('.')[0];
+  return 'type-' + base;
+}
+
+async function loadStats() {
+  try {
+    const info = await api('/');
+    document.getElementById('stat-blocks').textContent = info.blocks || 0;
+    const heads = await api('/heads?limit=1');
+    document.getElementById('stat-heads').textContent = heads.count || 0;
+  } catch(e) { console.error(e); }
+}
+
+async function loadBlocks() {
+  const type = document.getElementById('type-filter').value;
+  const headsOnly = document.getElementById('heads-only').checked;
+  let path = '/blocks?limit=50';
+  if (type) path += '&type=' + type;
+  if (headsOnly) path += '&heads=true';
+
+  const data = await api(path);
+  const list = document.getElementById('block-list');
+
+  if (!data.blocks || data.blocks.length === 0) {
+    list.innerHTML = '<div class="empty-state">No blocks yet. Switch to Create Block to add one.</div>';
+    return;
+  }
+
+  list.innerHTML = data.blocks.map(b => `
+    <div class="block-item" onclick='showDetail(${JSON.stringify(b).replace(/'/g,"&#39;").replace(/</g,"&lt;")})'>
+      <span class="block-type ${typeClass(b.type)}">${esc(b.type)}</span>
+      <div class="block-hash">${b.hash}</div>
+      <div class="block-state">${esc(statePreview(b.state))}</div>
+    </div>
+  `).join('');
+}
+
+function statePreview(state) {
+  if (!state || typeof state !== 'object') return '{}';
+  const s = JSON.stringify(state, null, 2);
+  return s.length > 200 ? s.slice(0, 200) + '...' : s;
+}
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function showDetail(block) {
+  const c = document.getElementById('detail-content');
+  c.innerHTML = `
+    <div class="detail-field">
+      <div class="detail-label">Hash</div>
+      <div class="detail-value">${esc(block.hash)}</div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Type</div>
+      <div class="detail-value"><span class="block-type ${typeClass(block.type)}" style="font-size:13px">${esc(block.type)}</span></div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">State</div>
+      <div class="detail-value">${esc(JSON.stringify(block.state, null, 2))}</div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Refs</div>
+      <div class="detail-value">${esc(JSON.stringify(block.refs, null, 2))}</div>
+    </div>
+    ${block.created_at ? `<div class="detail-field">
+      <div class="detail-label">Created</div>
+      <div class="detail-value">${new Date(block.created_at).toLocaleString()}</div>
+    </div>` : ''}
+    ${block.refs && block.refs.updates ? `<div style="margin-top:16px"><button class="btn btn-secondary" onclick="document.getElementById('chain-hash').value='${block.hash}';switchTab('chain');loadChain();closeDetail()">View Chain</button></div>` : ''}
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+function closeDetail() {
+  document.getElementById('detail-overlay').classList.remove('open');
+}
+
+async function createBlock() {
+  const el = document.getElementById('create-result');
+  try {
+    const type = document.getElementById('create-type').value;
+    const state = JSON.parse(document.getElementById('create-state').value || '{}');
+    const refs = JSON.parse(document.getElementById('create-refs').value || '{}');
+    const data = await api('/blocks', {
+      method: 'POST',
+      body: JSON.stringify({ type, state, refs }),
+    });
+    el.innerHTML = `<div class="result-box">${esc(JSON.stringify(data, null, 2))}</div>`;
+    loadStats();
+    loadBlocks();
+  } catch(e) {
+    el.innerHTML = `<div class="result-box error">${esc(e.message)}</div>`;
+  }
+}
+
+function fillExample(type) {
+  const examples = {
+    product: { type: 'substance.product', state: { name: 'Sourdough Loaf', organic: true, weight: '500g' }, refs: {} },
+    venue: { type: 'actor.venue', state: { name: 'Bread & Butter Bakery', cuisine: 'Artisan Bakery' }, refs: {} },
+    recipe: { type: 'transform.recipe', state: { name: 'Classic Sourdough', steps: ['Mix flour and water', 'Add starter', 'Bulk ferment 8h', 'Shape and proof', 'Bake at 230C'] }, refs: {} },
+    review: { type: 'observe.review', state: { rating: 5, text: 'Best sourdough in London. Perfect crust.' }, refs: {} },
+  };
+  const ex = examples[type];
+  document.getElementById('create-type').value = ex.type;
+  document.getElementById('create-state').value = JSON.stringify(ex.state, null, 2);
+  document.getElementById('create-refs').value = JSON.stringify(ex.refs, null, 2);
+}
+
+async function loadChain() {
+  const hash = document.getElementById('chain-hash').value.trim();
+  const el = document.getElementById('chain-result');
+  if (!hash || hash.length !== 64) {
+    el.innerHTML = '<div class="card" style="color:var(--fx-text-muted);font-weight:300">Enter a valid 64-character hex hash.</div>';
+    return;
+  }
+  try {
+    const data = await api('/chain/' + hash);
+    if (!data.chain || data.chain.length === 0) {
+      el.innerHTML = '<div class="card" style="font-weight:300">No chain found for this hash.</div>';
+      return;
+    }
+    el.innerHTML = '<div class="card"><h3>Provenance Chain &middot; ' + data.length + ' blocks</h3>' +
+      data.chain.map((b, i) => `
+        <div class="chain-item">
+          <span class="block-type ${typeClass(b.type)}">${esc(b.type)}</span>
+          ${i === 0 ? '<span class="badge" style="margin-left:8px">HEAD</span>' : ''}
+          ${i === data.chain.length - 1 ? '<span class="badge" style="margin-left:8px;background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);color:#fbbf24">GENESIS</span>' : ''}
+          <div class="block-hash">${b.hash}</div>
+          <div class="block-state">${esc(statePreview(b.state))}</div>
+        </div>
+      `).join('') + '</div>';
+  } catch(e) {
+    el.innerHTML = `<div class="card"><div class="result-box error">${esc(e.message)}</div></div>`;
+  }
+}
+
+loadStats();
+loadBlocks();
+document.getElementById('type-filter').addEventListener('change', loadBlocks);
+document.getElementById('heads-only').addEventListener('change', loadBlocks);
+</script>
+
+</body>
+</html>

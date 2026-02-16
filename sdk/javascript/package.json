@@ -1,20 +1,32 @@
 {
-  "name": "foodblock",
+  "name": "@foodxdev/foodblock",
   "version": "0.1.0",
   "description": "SDK for the FoodBlock protocol — a content-addressable primitive for universal food data",
   "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src/",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --test test/block.test.js"
   },
   "keywords": [
     "food",
+    "foodblock",
     "protocol",
     "traceability",
     "provenance",
     "supply-chain",
-    "content-addressable"
+    "content-addressable",
+    "foodx"
   ],
   "license": "MIT",
+  "author": "FoodX <developers@foodx.com>",
+  "homepage": "https://www.foodx.world/developers",
   "repository": {
     "type": "git",
     "url": "https://github.com/FoodXDevelopment/foodblock"

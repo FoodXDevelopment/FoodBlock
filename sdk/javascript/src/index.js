@@ -5,7 +5,12 @@ const { generateKeypair, sign, verify } = require('./verify')
 const { canonical } = require('./canonical')
 const { createAgent, createDraft, approveDraft, loadAgent } = require('./agent')
 
+const PROTOCOL_VERSION = '0.1.0'
+
 module.exports = {
+  // Protocol
+  PROTOCOL_VERSION,
+
   // Core
   create,
   update,

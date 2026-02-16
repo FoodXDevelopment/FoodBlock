@@ -4,9 +4,9 @@
  * FoodBlock MCP Server
  *
  * Exposes the FoodBlock protocol to any MCP-compatible AI agent.
- * Tools: create, get, query, chain, tree, heads
+ * Connects to a live FoodBlock server (default: api.foodx.world/foodblock).
  *
- * Runs against an in-memory store seeded with a 32-block bakery supply chain.
+ * Set FOODBLOCK_URL to point at a different server.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -17,80 +17,37 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 // Load FoodBlock SDK (CommonJS)
-const { create, update, hash, chain, tree, canonical, createAgent, createDraft, approveDraft, loadAgent, generateKeypair, sign, verify } = require("../sdk/javascript/src/index");
-const { generateSeed } = require("../sandbox/seed");
+const { create, update, chain, tree, canonical, createAgent, approveDraft, generateKeypair, sign, verify } = require("@foodxdev/foodblock");
 
-// Agent registry — maps agent hash to { keypair, operatorHash }
+const API_URL = process.env.FOODBLOCK_URL || "https://api.foodx.world/foodblock";
+
+// Agent registry — maps agent hash to { keypair, operatorHash, sign }
 const agents = new Map();
 
-// ── In-memory store (mirrors sandbox/server.js) ────────────────────────
+// ── HTTP helpers ─────────────────────────────────────────────────────────
 
-const store = new Map();
-const byType = new Map();
-const byAuthor = new Map();
-const byRef = new Map();
-const heads = new Map(); // headHash -> chainId
-
-function insertBlock(block) {
-  store.set(block.hash, block);
-
-  // Type index
-  if (!byType.has(block.type)) byType.set(block.type, []);
-  byType.get(block.type).push(block.hash);
-
-  // Author index
-  const author = block.refs && block.refs.author;
-  if (author) {
-    if (!byAuthor.has(author)) byAuthor.set(author, []);
-    byAuthor.get(author).push(block.hash);
-  }
-
-  // Ref index (all ref values)
-  if (block.refs) {
-    for (const [role, ref] of Object.entries(block.refs)) {
-      const hashes = Array.isArray(ref) ? ref : [ref];
-      for (const h of hashes) {
-        if (!byRef.has(h)) byRef.set(h, []);
-        byRef.get(h).push(block.hash);
-      }
-    }
-  }
-
-  // Head resolution
-  const prevHash = block.refs && block.refs.updates;
-  if (prevHash) {
-    const prev = store.get(prevHash);
-    const chainId = prev
-      ? heads.has(prev.hash)
-        ? prev.hash
-        : findChainId(prevHash)
-      : prevHash;
-    heads.delete(prevHash);
-    heads.set(block.hash, chainId);
-  } else {
-    heads.set(block.hash, block.hash);
-  }
+async function api(path, opts = {}) {
+  const url = `${API_URL}${path}`;
+  const res = await fetch(url, {
+    headers: { "Content-Type": "application/json", ...opts.headers },
+    ...opts,
+  });
+  return res.json();
 }
 
-function findChainId(h) {
-  for (const [headHash, chainId] of heads.entries()) {
-    if (headHash === h) return chainId;
-  }
-  const block = store.get(h);
-  if (!block) return h;
-  const prev = block.refs && block.refs.updates;
-  if (!prev) return h;
-  return findChainId(prev);
+async function apiGet(path) {
+  return api(path);
 }
 
-// Seed the store with bakery supply chain
-const seedBlocks = generateSeed();
-for (const block of seedBlocks) {
-  insertBlock(block);
+async function apiPost(path, body) {
+  return api(path, { method: "POST", body: JSON.stringify(body) });
 }
 
 // Resolver for SDK chain/tree functions
-const resolve = async (h) => store.get(h) || null;
+const resolve = async (h) => {
+  const res = await apiGet(`/blocks/${h}`);
+  return res.error ? null : res;
+};
 
 // ── MCP Server ──────────────────────────────────────────────────────────
 
@@ -116,51 +73,29 @@ server.registerTool(
         .string()
         .describe(
           "Block type. Base types: actor, place, substance, transform, transfer, observe. " +
-          "Use dot notation for subtypes, e.g. actor.producer, substance.product, transfer.order, observe.review"
+          "Use dot notation for subtypes, e.g. actor.producer, substance.product, transfer.order"
         ),
       state: z
         .record(z.any())
         .optional()
         .default({})
         .describe(
-          "The block's properties as a JSON object. Example for a product: { name: 'Sourdough', price: 4.50, allergens: { gluten: true } }"
+          "The block's properties as a JSON object. Example: { name: 'Sourdough', price: 4.50 }"
         ),
       refs: z
         .record(z.any())
         .optional()
         .default({})
         .describe(
-          "References to other blocks by hash. Example: { seller: 'abc123...', inputs: ['def456...', 'ghi789...'] }"
+          "References to other blocks by hash. Example: { seller: 'abc123...' }"
         ),
     },
   },
   async ({ type, state, refs }) => {
-    const block = create(type, state || {}, refs || {});
-
-    if (store.has(block.hash)) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              { exists: true, block: store.get(block.hash) },
-              null,
-              2
-            ),
-          },
-        ],
-      };
-    }
-
-    insertBlock(block);
+    const result = await apiPost("/blocks", { type, state: state || {}, refs: refs || {} });
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(block, null, 2),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -173,8 +108,7 @@ server.registerTool(
     title: "Update FoodBlock",
     description:
       "Create a new version of an existing FoodBlock. FoodBlocks are append-only — " +
-      "this creates a new block that references the previous one via refs.updates. " +
-      "Use this for price changes, status updates, etc.",
+      "this creates a new block that references the previous one via refs.updates.",
     inputSchema: {
       previous_hash: z
         .string()
@@ -189,34 +123,15 @@ server.registerTool(
         .record(z.any())
         .optional()
         .default({})
-        .describe(
-          "Additional refs (updates ref is added automatically)"
-        ),
+        .describe("Additional refs (updates ref is added automatically)"),
     },
   },
   async ({ previous_hash, type, state, refs }) => {
-    const prev = store.get(previous_hash);
-    if (!prev) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error: Block ${previous_hash} not found. Cannot update a block that doesn't exist.`,
-          },
-        ],
-      };
-    }
-
-    const block = update(previous_hash, type, state || {}, refs || {});
-    insertBlock(block);
+    const mergedRefs = { ...(refs || {}), updates: previous_hash };
+    const result = await apiPost("/blocks", { type, state: state || {}, refs: mergedRefs });
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(block, null, 2),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -235,41 +150,10 @@ server.registerTool(
     },
   },
   async ({ hash: h }) => {
-    const block = store.get(h);
-    if (!block) {
-      return {
-        content: [
-          { type: "text", text: `Block not found: ${h}` },
-        ],
-      };
-    }
-
-    // Enrich with context
-    const isHead = heads.has(h);
-    const referencedBy = byRef.get(h) || [];
-    const refBlocks = referencedBy.map((rh) => {
-      const rb = store.get(rh);
-      return rb ? { hash: rb.hash, type: rb.type, summary: rb.state.name || rb.state.text || rb.type } : null;
-    }).filter(Boolean);
+    const result = await apiGet(`/blocks/${h}`);
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              block,
-              context: {
-                is_head: isHead,
-                referenced_by_count: referencedBy.length,
-                referenced_by: refBlocks.slice(0, 10),
-              },
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -281,84 +165,46 @@ server.registerTool(
   {
     title: "Query FoodBlocks",
     description:
-      "Search for FoodBlocks by type, ref, or state. Returns matching blocks. " +
-      "Examples: query all actors, find products by a specific seller, find reviews for a product.",
+      "Search for FoodBlocks by type, ref, or heads. Returns matching blocks.",
     inputSchema: {
       type: z
         .string()
         .optional()
-        .describe(
-          "Filter by type (exact match or prefix). Examples: 'actor', 'substance.product', 'observe', 'transfer.order'"
-        ),
+        .describe("Filter by type (exact or prefix). Examples: 'actor', 'substance.product'"),
       ref_role: z
         .string()
         .optional()
-        .describe(
-          "Filter by ref role name. Use with ref_value. Example: 'seller'"
-        ),
+        .describe("Filter by ref role name. Use with ref_value. Example: 'seller'"),
       ref_value: z
         .string()
         .optional()
-        .describe(
-          "Filter by ref value (a block hash). Use with ref_role. Example: the hash of a bakery actor"
-        ),
+        .describe("Filter by ref value (a block hash). Use with ref_role."),
       heads_only: z
         .boolean()
         .optional()
         .default(false)
-        .describe(
-          "If true, only return head blocks (latest version in each update chain)"
-        ),
+        .describe("If true, only return head blocks (latest version in each chain)"),
       limit: z
         .number()
         .optional()
         .default(20)
-        .describe("Maximum number of results to return (default 20)"),
+        .describe("Maximum results to return (default 20)"),
     },
   },
   async ({ type, ref_role, ref_value, heads_only, limit }) => {
-    let results = [...store.values()];
-
-    // Filter by type
-    if (type) {
-      results = results.filter(
-        (b) => b.type === type || b.type.startsWith(type + ".")
-      );
-    }
-
-    // Filter by ref
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
     if (ref_role && ref_value) {
-      results = results.filter((b) => {
-        const r = b.refs && b.refs[ref_role];
-        if (Array.isArray(r)) return r.includes(ref_value);
-        return r === ref_value;
-      });
+      params.set("ref", ref_role);
+      params.set("ref_value", ref_value);
     }
+    if (heads_only) params.set("heads", "true");
+    if (limit) params.set("limit", String(limit));
 
-    // Heads only
-    if (heads_only) {
-      const headSet = new Set(heads.keys());
-      results = results.filter((b) => headSet.has(b.hash));
-    }
-
-    const total = results.length;
-    results = results.slice(0, limit || 20);
+    const result = await apiGet(`/blocks?${params}`);
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              total,
-              returned: results.length,
-              blocks: results,
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -371,8 +217,7 @@ server.registerTool(
     title: "Trace Provenance Chain",
     description:
       "Follow the update chain of a FoodBlock backwards through its versions. " +
-      "Shows the full version history: current → previous → original. " +
-      "Use this to see how a product's price changed, or how an entity evolved over time.",
+      "Shows the full version history: current → previous → original.",
     inputSchema: {
       hash: z
         .string()
@@ -385,30 +230,10 @@ server.registerTool(
     },
   },
   async ({ hash: h, max_depth }) => {
-    const result = await chain(h, resolve, { maxDepth: max_depth || 50 });
-
-    if (result.length === 0) {
-      return {
-        content: [
-          { type: "text", text: `Block not found: ${h}` },
-        ],
-      };
-    }
+    const result = await apiGet(`/chain/${h}?depth=${max_depth || 50}`);
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              chain_length: result.length,
-              chain: result,
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -421,9 +246,7 @@ server.registerTool(
     title: "Trace Provenance Tree",
     description:
       "Build the full provenance tree for a FoodBlock by following ALL refs recursively. " +
-      "This is the powerful one — it shows the complete story: " +
-      "bread ← baking ← dough ← flour ← wheat ← farm ← certification. " +
-      "Use this to trace where a product came from, who was involved, and what certifications exist.",
+      "Shows the complete story: bread ← baking ← flour ← wheat ← farm.",
     inputSchema: {
       hash: z
         .string()
@@ -432,27 +255,21 @@ server.registerTool(
         .number()
         .optional()
         .default(10)
-        .describe("Maximum tree depth (default 10). Keep low for readability."),
+        .describe("Maximum tree depth (default 10)"),
     },
   },
   async ({ hash: h, max_depth }) => {
+    // Tree uses SDK with API-backed resolver
     const result = await tree(h, resolve, { maxDepth: max_depth || 10 });
 
     if (!result) {
       return {
-        content: [
-          { type: "text", text: `Block not found: ${h}` },
-        ],
+        content: [{ type: "text", text: `Block not found: ${h}` }],
       };
     }
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(result, null, 2),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -465,40 +282,22 @@ server.registerTool(
     title: "List Head Blocks",
     description:
       "List all head blocks (latest version of each entity/item). " +
-      "Heads represent the current state of everything in the system. " +
       "Optionally filter by type.",
     inputSchema: {
       type: z
         .string()
         .optional()
-        .describe("Optional type filter (e.g. 'substance.product' to see all current products)"),
+        .describe("Optional type filter (e.g. 'substance.product')"),
     },
   },
   async ({ type }) => {
-    let headBlocks = [...heads.keys()]
-      .map((h) => store.get(h))
-      .filter(Boolean);
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
 
-    if (type) {
-      headBlocks = headBlocks.filter(
-        (b) => b.type === type || b.type.startsWith(type + ".")
-      );
-    }
+    const result = await apiGet(`/heads?${params}`);
 
     return {
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(
-            {
-              count: headBlocks.length,
-              blocks: headBlocks,
-            },
-            null,
-            2
-          ),
-        },
-      ],
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   }
 );
@@ -510,14 +309,16 @@ server.registerTool(
   {
     title: "FoodBlock System Info",
     description:
-      "Get an overview of the FoodBlock system: total blocks, types breakdown, and protocol summary. " +
+      "Get an overview of the FoodBlock system: server info, block count, and protocol summary. " +
       "Call this first to understand what data is available.",
     inputSchema: {},
   },
   async () => {
-    const typeCounts = {};
-    for (const [t, hashes] of byType.entries()) {
-      typeCounts[t] = hashes.length;
+    let info = null;
+    try {
+      info = await apiGet("/");
+    } catch {
+      // API root may return non-JSON (e.g. HTML sandbox page)
     }
 
     return {
@@ -526,27 +327,23 @@ server.registerTool(
           type: "text",
           text: JSON.stringify(
             {
-              name: "FoodBlock Protocol",
-              version: "0.1.0",
-              description:
-                "A content-addressable primitive for universal food data. " +
-                "Three fields (type, state, refs), six base types (actor, place, substance, transform, transfer, observe). " +
-                "Currently loaded with a bakery supply chain dataset.",
-              total_blocks: store.size,
-              head_blocks: heads.size,
-              types: typeCounts,
-              base_types: {
-                entities: ["actor — person or organisation", "place — physical location", "substance — ingredient, product, or material"],
-                actions: ["transform — changing one thing into another (cooking, processing)", "transfer — moving between actors (sale, delivery)", "observe — making a statement (review, certification)"],
+              server: info || { note: "API info unavailable (root may serve HTML)" },
+              api_url: API_URL,
+              protocol: {
+                description:
+                  "A content-addressable primitive for universal food data. " +
+                  "Three fields (type, state, refs), six base types.",
+                base_types: {
+                  entities: ["actor — person or organisation", "place — physical location", "substance — ingredient, product, or material"],
+                  actions: ["transform — changing one thing into another", "transfer — moving between actors", "observe — making a statement"],
+                },
               },
               tips: [
-                "Use foodblock_query with type='actor' to see all actors in the system",
-                "Use foodblock_tree on a product hash to trace its full provenance",
-                "Use foodblock_chain on any block to see its version history",
-                "Use foodblock_create to add new blocks to the system",
-                "Use foodblock_list_agents to see AI agents in the system",
-                "Use foodblock_create_agent to register yourself as an agent and start acting autonomously",
-                "Use foodblock_agent_draft to create actions that need human approval",
+                "Use foodblock_query with type='actor' to see all actors",
+                "Use foodblock_tree on a product hash for full provenance",
+                "Use foodblock_chain on any block for version history",
+                "Use foodblock_create to add new blocks",
+                "Use foodblock_create_agent to register as an AI agent",
               ],
             },
             null,
@@ -565,49 +362,31 @@ server.registerTool(
   {
     title: "Create AI Agent",
     description:
-      "Register a new AI agent as an actor in the FoodBlock system. " +
-      "The agent gets its own identity (hash), Ed25519 keypair, and can sign blocks. " +
-      "Every agent must have an operator — the human or business it acts on behalf of. " +
-      "Find the operator's hash first using foodblock_query with type='actor'.",
+      "Register a new AI agent in the FoodBlock system. " +
+      "The agent gets its own identity, Ed25519 keypair, and can sign blocks. " +
+      "Every agent must have an operator — the human or business it acts for.",
     inputSchema: {
-      name: z.string().describe("Human-readable name for the agent, e.g. 'Bakery Assistant'"),
-      operator_hash: z
-        .string()
-        .describe("Hash of the actor (person/business) this agent works for. Required."),
-      model: z
-        .string()
-        .optional()
-        .describe("AI model powering the agent, e.g. 'claude-sonnet'"),
-      capabilities: z
-        .array(z.string())
-        .optional()
-        .describe("List of agent capabilities, e.g. ['inventory', 'ordering', 'surplus']"),
+      name: z.string().describe("Name for the agent, e.g. 'Bakery Assistant'"),
+      operator_hash: z.string().describe("Hash of the actor this agent works for"),
+      model: z.string().optional().describe("AI model, e.g. 'claude-sonnet'"),
+      capabilities: z.array(z.string()).optional().describe("Agent capabilities"),
     },
   },
   async ({ name, operator_hash, model, capabilities }) => {
-    // Verify operator exists
-    const operator = store.get(operator_hash);
-    if (!operator) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Error: Operator ${operator_hash} not found. The agent needs a valid operator (an existing actor block).`,
-          },
-        ],
-      };
-    }
-
     const opts = {};
     if (model) opts.model = model;
     if (capabilities) opts.capabilities = capabilities;
 
     const agent = createAgent(name, operator_hash, opts);
 
-    // Store the agent block
-    insertBlock(agent.block);
+    // Post the agent block to the server
+    const result = await apiPost("/blocks", {
+      type: agent.block.type,
+      state: agent.block.state,
+      refs: agent.block.refs,
+    });
 
-    // Register agent credentials for signing
+    // Register agent credentials locally for signing
     agents.set(agent.authorHash, {
       keypair: agent.keypair,
       operatorHash: operator_hash,
@@ -621,10 +400,9 @@ server.registerTool(
           text: JSON.stringify(
             {
               agent_hash: agent.authorHash,
-              block: agent.block,
-              operator: { hash: operator_hash, name: operator.state.name, type: operator.type },
+              block: result,
               public_key: agent.keypair.publicKey,
-              message: `Agent "${name}" created and registered. Use agent_hash ${agent.authorHash} to create drafts and sign blocks.`,
+              message: `Agent "${name}" created. Use agent_hash ${agent.authorHash} to create drafts.`,
             },
             null,
             2
@@ -642,25 +420,13 @@ server.registerTool(
   {
     title: "Create Agent Draft",
     description:
-      "Create a draft FoodBlock on behalf of an agent. Draft blocks have state.draft=true " +
-      "and refs.agent pointing to the agent. The human operator can approve or reject. " +
-      "Use this when an agent wants to take an action (place an order, list surplus, update price) " +
-      "that should be reviewed by a human first.",
+      "Create a draft FoodBlock on behalf of an agent. Draft blocks have state.draft=true. " +
+      "The human operator can approve or reject with foodblock_approve_draft.",
     inputSchema: {
-      agent_hash: z
-        .string()
-        .describe("Hash of the agent creating this draft. Must be a registered agent."),
-      type: z.string().describe("Block type, e.g. 'transfer.order', 'substance.surplus'"),
-      state: z
-        .record(z.any())
-        .optional()
-        .default({})
-        .describe("Block state. draft:true is added automatically."),
-      refs: z
-        .record(z.any())
-        .optional()
-        .default({})
-        .describe("Block refs. agent ref is added automatically."),
+      agent_hash: z.string().describe("Hash of the agent creating this draft"),
+      type: z.string().describe("Block type, e.g. 'transfer.order'"),
+      state: z.record(z.any()).optional().default({}).describe("Block state"),
+      refs: z.record(z.any()).optional().default({}).describe("Block refs"),
     },
   },
   async ({ agent_hash, type, state, refs }) => {
@@ -668,10 +434,7 @@ server.registerTool(
     if (!agentData) {
       return {
         content: [
-          {
-            type: "text",
-            text: `Error: Agent ${agent_hash} not registered. Create an agent first with foodblock_create_agent.`,
-          },
+          { type: "text", text: `Error: Agent ${agent_hash} not registered. Create one first with foodblock_create_agent.` },
         ],
       };
     }
@@ -679,11 +442,10 @@ server.registerTool(
     const draftState = { ...(state || {}), draft: true };
     const draftRefs = { ...(refs || {}), agent: agent_hash };
     const block = create(type, draftState, draftRefs);
-
-    // Sign the block
     const signed = agentData.sign(block);
 
-    insertBlock(block);
+    // Post to server
+    await apiPost("/blocks", { type: block.type, state: block.state, refs: block.refs });
 
     return {
       content: [
@@ -693,8 +455,7 @@ server.registerTool(
             {
               draft: block,
               signed_by: agent_hash,
-              signature: signed.signature.slice(0, 32) + "...",
-              message: `Draft created. Operator can approve with foodblock_approve_draft using hash ${block.hash}`,
+              message: `Draft created. Approve with foodblock_approve_draft using hash ${block.hash}`,
             },
             null,
             2
@@ -712,41 +473,33 @@ server.registerTool(
   {
     title: "Approve Agent Draft",
     description:
-      "Approve a draft block created by an agent. This creates a confirmed version " +
-      "with draft removed and refs.updates pointing back to the draft. " +
-      "The approved block records which agent originally created it.",
+      "Approve a draft block created by an agent. Creates a confirmed version with draft removed.",
     inputSchema: {
-      draft_hash: z
-        .string()
-        .describe("Hash of the draft block to approve"),
+      draft_hash: z.string().describe("Hash of the draft block to approve"),
     },
   },
   async ({ draft_hash }) => {
-    const draft = store.get(draft_hash);
-    if (!draft) {
+    const draft = await apiGet(`/blocks/${draft_hash}`);
+    if (draft.error) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `Error: Draft block ${draft_hash} not found.`,
-          },
-        ],
+        content: [{ type: "text", text: `Error: Draft ${draft_hash} not found.` }],
       };
     }
 
-    if (!draft.state.draft) {
+    if (!draft.state || !draft.state.draft) {
       return {
-        content: [
-          {
-            type: "text",
-            text: `Error: Block ${draft_hash} is not a draft (no state.draft field).`,
-          },
-        ],
+        content: [{ type: "text", text: `Error: Block ${draft_hash} is not a draft.` }],
       };
     }
 
     const approved = approveDraft(draft);
-    insertBlock(approved);
+
+    // Post approved block to server
+    const result = await apiPost("/blocks", {
+      type: approved.type,
+      state: approved.state,
+      refs: approved.refs,
+    });
 
     return {
       content: [
@@ -754,10 +507,9 @@ server.registerTool(
           type: "text",
           text: JSON.stringify(
             {
-              approved: approved,
+              approved: result,
               original_draft: draft_hash,
-              agent: draft.refs.agent,
-              message: `Draft approved. New confirmed block: ${approved.hash}`,
+              message: `Draft approved. Confirmed block: ${approved.hash}`,
             },
             null,
             2
@@ -774,41 +526,27 @@ server.registerTool(
   "foodblock_list_agents",
   {
     title: "List Agents",
-    description:
-      "List all AI agents in the FoodBlock system. Shows their identity, operator, and capabilities.",
+    description: "List all AI agents in the FoodBlock system.",
     inputSchema: {},
   },
   async () => {
-    // Find all actor.agent blocks
-    const agentBlocks = [...store.values()].filter((b) => b.type === "actor.agent");
+    const result = await apiGet("/blocks?type=actor.agent&limit=100");
+    const agentBlocks = result.blocks || [];
 
-    const agentList = agentBlocks.map((b) => {
-      const operator = b.refs.operator ? store.get(b.refs.operator) : null;
-      const isRegistered = agents.has(b.hash);
-      return {
-        hash: b.hash,
-        name: b.state.name,
-        model: b.state.model || "unknown",
-        capabilities: b.state.capabilities || [],
-        operator: operator
-          ? { hash: operator.hash, name: operator.state.name, type: operator.type }
-          : { hash: b.refs.operator, name: "unknown" },
-        can_sign: isRegistered,
-      };
-    });
+    const agentList = agentBlocks.map((b) => ({
+      hash: b.hash,
+      name: b.state.name,
+      model: b.state.model || "unknown",
+      capabilities: b.state.capabilities || [],
+      operator: b.refs.operator,
+      can_sign: agents.has(b.hash),
+    }));
 
     return {
       content: [
         {
           type: "text",
-          text: JSON.stringify(
-            {
-              count: agentList.length,
-              agents: agentList,
-            },
-            null,
-            2
-          ),
+          text: JSON.stringify({ count: agentList.length, agents: agentList }, null, 2),
         },
       ],
     };
@@ -820,8 +558,8 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("FoodBlock MCP Server running on stdio");
-  console.error(`Loaded ${store.size} blocks (bakery supply chain)`);
+  console.error(`FoodBlock MCP Server running on stdio`);
+  console.error(`API: ${API_URL}`);
 }
 
 main().catch((error) => {

@@ -10,6 +10,8 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 .eggs/
+dist/
+build/
 
 # Node
 node_modules/

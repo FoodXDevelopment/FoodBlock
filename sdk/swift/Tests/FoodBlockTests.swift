@@ -1,7 +1,46 @@
 import XCTest
+import Foundation
 @testable import FoodBlock
 
 final class FoodBlockTests: XCTestCase {
+
+    // MARK: - Cross-Language Vector Tests
+
+    func testCrossLanguageVectors() throws {
+        let testsDir = URL(fileURLWithPath: #file).deletingLastPathComponent()
+        let vectorsPath = testsDir
+            .deletingLastPathComponent() // Sources
+            .deletingLastPathComponent() // swift
+            .deletingLastPathComponent() // sdk
+            .appendingPathComponent("test")
+            .appendingPathComponent("vectors.json")
+
+        let data = try Data(contentsOf: vectorsPath)
+
+        struct Vector: Decodable {
+            let name: String
+            let type: String
+            let state: [String: AnyCodable]
+            let refs: [String: AnyCodable]
+            let expected_canonical: String
+            let expected_hash: String
+        }
+
+        let vectors = try JSONDecoder().decode([Vector].self, from: data)
+
+        for vector in vectors {
+            let stateDict = vector.state.mapValues { $0.value }
+            let refsDict = vector.refs.mapValues { $0.value }
+
+            let c = Canonical.canonical(type: vector.type, state: stateDict, refs: refsDict)
+            XCTAssertEqual(c, vector.expected_canonical, "Canonical mismatch for \"\(vector.name)\"")
+
+            let block = FoodBlock.create(type: vector.type, state: stateDict, refs: refsDict)
+            XCTAssertEqual(block.hash, vector.expected_hash, "Hash mismatch for \"\(vector.name)\"")
+        }
+    }
+
+    // MARK: - Unit Tests
 
     func testGenesisBlock() {
         let block = FoodBlock.create(type: "actor.producer", state: ["name": "Test Farm"])

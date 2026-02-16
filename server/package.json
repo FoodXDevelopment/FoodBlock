@@ -6,11 +6,15 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "test": "TEST=1 node --test test/server.test.js",
     "setup": "psql -f ../sql/schema.sql"
   },
   "dependencies": {
     "express": "^4.18.0",
     "pg": "^8.11.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "supertest": "^7.2.2"
+  }
 }

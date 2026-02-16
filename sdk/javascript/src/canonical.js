@@ -39,7 +39,8 @@ function canonicalStringify(value, opts) {
   }
 
   if (Array.isArray(value)) {
-    const items = opts.inRefs
+    const shouldSort = opts.inRefs && value.every(v => typeof v === 'string')
+    const items = shouldSort
       ? value.slice().sort().map(v => canonicalStringify(v, opts))
       : value.map(v => canonicalStringify(v, opts))
 
