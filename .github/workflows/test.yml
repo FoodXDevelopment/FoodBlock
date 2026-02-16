@@ -1,0 +1,80 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  js-sdk:
+    name: JS SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: node --test test/block.test.js
+        working-directory: sdk/javascript
+
+  python-sdk:
+    name: Python SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install cryptography pytest
+      - run: pytest tests/ -v
+        working-directory: sdk/python
+
+  mcp:
+    name: MCP Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: npm install
+        working-directory: mcp
+      - run: node --test test/mcp.test.js
+        working-directory: mcp
+
+  server:
+    name: Server
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: foodblock
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: foodblock_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - run: psql -f sql/schema.sql
+        env:
+          PGHOST: localhost
+          PGUSER: foodblock
+          PGPASSWORD: test
+          PGDATABASE: foodblock_test
+      - run: npm install
+        working-directory: server
+      - run: npm test
+        working-directory: server
+        env:
+          DATABASE_URL: postgresql://foodblock:test@localhost:5432/foodblock_test
+          TEST: '1'
