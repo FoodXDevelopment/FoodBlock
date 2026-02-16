@@ -1,5 +1,7 @@
 const { describe, it } = require('node:test')
 const assert = require('node:assert/strict')
+const { readFileSync } = require('node:fs')
+const { join } = require('node:path')
 const { create, update, hash, canonical, generateKeypair, sign, verify, chain, createAgent, createDraft, approveDraft, loadAgent } = require('../src/index')
 
 describe('canonical', () => {
@@ -45,6 +47,21 @@ describe('canonical', () => {
     assert.ok(!result.includes(' '))
     assert.ok(!result.includes('\n'))
   })
+})
+
+describe('cross-language vectors', () => {
+  const vectorsPath = join(__dirname, '..', '..', '..', 'test', 'vectors.json')
+  const vectors = JSON.parse(readFileSync(vectorsPath, 'utf8'))
+
+  for (const vector of vectors) {
+    it(`vector: ${vector.name}`, () => {
+      const c = canonical(vector.type, vector.state, vector.refs)
+      assert.equal(c, vector.expected_canonical, `canonical mismatch for "${vector.name}"`)
+
+      const block = create(vector.type, vector.state, vector.refs)
+      assert.equal(block.hash, vector.expected_hash, `hash mismatch for "${vector.name}"`)
+    })
+  }
 })
 
 describe('create', () => {
