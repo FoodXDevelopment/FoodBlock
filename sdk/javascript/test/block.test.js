@@ -1,6 +1,6 @@
 const { describe, it } = require('node:test')
 const assert = require('node:assert/strict')
-const { create, update, hash, canonical, generateKeypair, sign, verify, chain } = require('../src/index')
+const { create, update, hash, canonical, generateKeypair, sign, verify, chain, createAgent, createDraft, approveDraft, loadAgent } = require('../src/index')
 
 describe('canonical', () => {
   it('sorts keys lexicographically', () => {
@@ -306,5 +306,121 @@ describe('real-world scenarios', () => {
 
     assert.equal(product.refs.author, employee.hash)
     assert.equal(product.refs.org, company.hash)
+  })
+})
+
+describe('agent', () => {
+  it('creates an agent with keypair and identity', () => {
+    const bakery = create('actor.venue', { name: 'Joes Bakery' })
+    const agent = createAgent('Bakery Assistant', bakery.hash, {
+      model: 'claude-sonnet',
+      capabilities: ['inventory', 'ordering']
+    })
+
+    assert.equal(agent.block.type, 'actor.agent')
+    assert.equal(agent.block.state.name, 'Bakery Assistant')
+    assert.equal(agent.block.state.model, 'claude-sonnet')
+    assert.deepEqual(agent.block.state.capabilities, ['inventory', 'ordering'])
+    assert.equal(agent.block.refs.operator, bakery.hash)
+    assert.equal(agent.authorHash, agent.block.hash)
+    assert.equal(typeof agent.keypair.publicKey, 'string')
+    assert.equal(typeof agent.keypair.privateKey, 'string')
+    assert.equal(typeof agent.sign, 'function')
+  })
+
+  it('agent can sign blocks', () => {
+    const bakery = create('actor.venue', { name: 'Joes Bakery' })
+    const agent = createAgent('Bakery Assistant', bakery.hash)
+
+    const product = create('substance.product', { name: 'Sourdough', price: 5.0 }, { seller: bakery.hash })
+    const signed = agent.sign(product)
+
+    assert.equal(signed.author_hash, agent.authorHash)
+    assert.equal(signed.foodblock.hash, product.hash)
+    assert.equal(typeof signed.signature, 'string')
+
+    // Verify signature
+    const valid = verify(signed, agent.keypair.publicKey)
+    assert.ok(valid)
+  })
+
+  it('creates draft blocks with agent ref', () => {
+    const bakery = create('actor.venue', { name: 'Joes Bakery' })
+    const mill = create('actor.maker', { name: 'Stone Mill Co' })
+    const flour = create('substance.product', { name: 'Flour', price: 3.20 }, { seller: mill.hash })
+    const agent = createAgent('Bakery Assistant', bakery.hash)
+
+    const { block, signed } = createDraft(agent, 'transfer.order', {
+      quantity: 50,
+      unit: 'kg',
+      total: 160.00
+    }, {
+      buyer: bakery.hash,
+      seller: mill.hash,
+      product: flour.hash
+    })
+
+    // Draft has draft: true in state
+    assert.equal(block.state.draft, true)
+    // Draft has agent ref
+    assert.equal(block.refs.agent, agent.authorHash)
+    // Draft is signed by the agent
+    assert.equal(signed.author_hash, agent.authorHash)
+    // Signature is valid
+    assert.ok(verify(signed, agent.keypair.publicKey))
+  })
+
+  it('approves draft blocks', () => {
+    const bakery = create('actor.venue', { name: 'Joes Bakery' })
+    const agent = createAgent('Bakery Assistant', bakery.hash)
+
+    const { block: draft } = createDraft(agent, 'transfer.order', {
+      quantity: 50,
+      total: 160.00
+    }, {
+      buyer: bakery.hash,
+      seller: 'mill_hash'
+    })
+
+    const approved = approveDraft(draft)
+
+    // Approved block has no draft flag
+    assert.equal(approved.state.draft, undefined)
+    // Approved block references the draft via updates
+    assert.equal(approved.refs.updates, draft.hash)
+    // Approved block records which agent created it
+    assert.equal(approved.refs.approved_agent, agent.authorHash)
+    // Different hash from draft
+    assert.notEqual(approved.hash, draft.hash)
+  })
+
+  it('loads an existing agent from saved credentials', () => {
+    const bakery = create('actor.venue', { name: 'Joes Bakery' })
+    const original = createAgent('Bakery Assistant', bakery.hash)
+
+    // Save credentials (in real life, to disk)
+    const savedHash = original.authorHash
+    const savedKeypair = original.keypair
+
+    // Reload
+    const loaded = loadAgent(savedHash, savedKeypair)
+
+    assert.equal(loaded.authorHash, savedHash)
+    assert.equal(typeof loaded.sign, 'function')
+
+    // Loaded agent can sign and verify
+    const block = create('observe.inventory', { flour_kg: 12 }, { place: 'shop_hash' })
+    const signed = loaded.sign(block)
+    assert.ok(verify(signed, savedKeypair.publicKey))
+  })
+
+  it('requires operator hash', () => {
+    assert.throws(() => createAgent('Test', ''), /operatorHash is required/)
+    assert.throws(() => createAgent('Test', null), /operatorHash is required/)
+  })
+
+  it('requires name', () => {
+    assert.throws(() => createAgent('', 'some_hash'), /name is required/)
+    assert.throws(() => createAgent(null, 'some_hash'), /name is required/)
   })
 })
