@@ -175,6 +175,7 @@
     gap: 0;
     margin-bottom: 28px;
     border-bottom: 1px solid var(--fx-border);
+    overflow-x: auto;
   }
   .tab {
     padding: 14px 24px;
@@ -188,6 +189,7 @@
     background: none;
     transition: all 0.2s;
     font-family: inherit;
+    white-space: nowrap;
   }
   .tab:hover { color: var(--fx-text-secondary); }
   .tab.active { color: var(--fx-green); border-bottom-color: var(--fx-green); }
@@ -211,6 +213,13 @@
     font-weight: 600;
     margin-bottom: 16px;
     letter-spacing: -0.3px;
+  }
+  .card-desc {
+    color: var(--fx-text-muted);
+    font-size: 13px;
+    margin-bottom: 16px;
+    font-weight: 300;
+    line-height: 1.6;
   }
 
   /* Block list */
@@ -243,6 +252,7 @@
   .type-transform { background: rgba(245, 158, 11, 0.12); color: #fbbf24; }
   .type-transfer { background: rgba(139, 92, 246, 0.12); color: #a78bfa; }
   .type-observe { background: rgba(236, 72, 153, 0.12); color: #f472b6; }
+  .type-meta { background: rgba(255, 255, 255, 0.08); color: #94a3b8; }
   .block-hash {
     font-family: var(--fx-mono);
     font-size: 11px;
@@ -369,6 +379,14 @@
     font-size: 13px;
   }
   .btn-ghost:hover { color: var(--fx-text); border-color: rgba(255, 255, 255, 0.15); }
+  .btn-danger {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  .btn-danger:hover { background: rgba(239, 68, 68, 0.2); }
 
   /* Examples row */
   .examples-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -444,12 +462,13 @@
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 6px;
-    min-width: 48px;
+    min-width: 54px;
     text-align: center;
     letter-spacing: 0.3px;
   }
   .method-get { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
   .method-post { background: rgba(126, 198, 11, 0.12); color: #7ec60b; }
+  .method-delete { background: rgba(239, 68, 68, 0.12); color: #f87171; }
   .endpoint-path {
     font-family: var(--fx-mono);
     font-size: 13px;
@@ -461,6 +480,16 @@
     margin-left: auto;
     font-weight: 300;
   }
+  .endpoint-new {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--fx-green);
+    background: var(--fx-green-dim);
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
 
   /* Code block */
   .code-block {
@@ -468,6 +497,7 @@
     border: 1px solid var(--fx-border);
     border-radius: var(--fx-radius);
     overflow: hidden;
+    margin-bottom: 16px;
   }
   .code-header {
     padding: 10px 16px;
@@ -498,7 +528,7 @@
     white-space: pre-wrap;
     word-break: break-all;
     overflow-x: auto;
-    max-height: 300px;
+    max-height: 400px;
   }
   .code-body .cm { color: var(--fx-text-muted); }
   .code-body .kw { color: #c084fc; }
@@ -593,6 +623,42 @@
   }
   .sdk-lang { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
   .sdk-pkg { font-size: 11px; color: var(--fx-text-muted); font-family: var(--fx-mono); }
+  .sdk-features {
+    font-size: 10px;
+    color: var(--fx-text-muted);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  /* Feature grid */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .feature-card {
+    background: var(--fx-surface-2);
+    border: 1px solid var(--fx-border);
+    border-radius: var(--fx-radius-sm);
+    padding: 20px;
+  }
+  .feature-card h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--fx-text);
+  }
+  .feature-card p {
+    font-size: 12px;
+    color: var(--fx-text-muted);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+  .feature-icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+    display: block;
+  }
 
   /* Try it input */
   .try-row {
@@ -625,6 +691,7 @@
     .endpoint { flex-wrap: wrap; }
     .endpoint-desc { margin-left: 0; width: 100%; margin-top: 4px; }
     .sdk-grid { flex-direction: column; }
+    .feature-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -639,8 +706,9 @@
       <a href="#" class="nav-link active" data-tab="explore">Explorer</a>
       <a href="#" class="nav-link" data-tab="create">Create</a>
       <a href="#" class="nav-link" data-tab="chain">Chains</a>
+      <a href="#" class="nav-link" data-tab="signing">Signing</a>
       <a href="#" class="nav-link" data-tab="api">API</a>
-      <span class="badge"><span class="pulse-dot"></span>&nbsp; Sandbox v0.1</span>
+      <span class="badge"><span class="pulse-dot"></span>&nbsp; Protocol v0.3</span>
     </div>
   </div>
 </header>
@@ -649,18 +717,18 @@
   <div class="hero">
     <div class="eyebrow">
       <div class="pulse-dot"></div>
-      Live Developer Sandbox
+      Live Developer Sandbox &middot; Protocol 0.3
     </div>
     <h1>FoodBlock Sandbox</h1>
-    <p>Create blocks, explore chains, and build on the FoodBlock protocol. No auth required.</p>
+    <p>Create blocks, explore chains, sign with Ed25519, and build on the FoodBlock protocol. Now with agents, encryption, and offline sync.</p>
     <div class="stats">
       <div>
         <div class="stat-value" id="stat-blocks">-</div>
         <div class="stat-label">Blocks</div>
       </div>
       <div>
-        <div class="stat-value">6</div>
-        <div class="stat-label">Base Types</div>
+        <div class="stat-value" id="stat-types">-</div>
+        <div class="stat-label">Types</div>
       </div>
       <div>
         <div class="stat-value" id="stat-heads">-</div>
@@ -673,6 +741,7 @@
     <button class="tab active" data-tab="explore">Explorer</button>
     <button class="tab" data-tab="create">Create Block</button>
     <button class="tab" data-tab="chain">Chain Viewer</button>
+    <button class="tab" data-tab="signing">Signing &amp; Agents</button>
     <button class="tab" data-tab="api">API Reference</button>
   </div>
 
@@ -687,6 +756,7 @@
         <option value="transform">transform</option>
         <option value="transfer">transfer</option>
         <option value="observe">observe</option>
+        <option value="meta">meta</option>
       </select>
       <label><input type="checkbox" id="heads-only"> Heads only</label>
       <button class="btn btn-ghost" onclick="loadBlocks()">Refresh</button>
@@ -701,14 +771,40 @@
       <div class="form-group">
         <label>Type</label>
         <select id="create-type">
-          <option value="substance.product">substance.product</option>
-          <option value="actor.venue">actor.venue</option>
-          <option value="actor.creator">actor.creator</option>
-          <option value="place.address">place.address</option>
-          <option value="transform.recipe">transform.recipe</option>
-          <option value="transfer.order">transfer.order</option>
-          <option value="observe.review">observe.review</option>
-          <option value="observe.snap">observe.snap</option>
+          <optgroup label="Actor">
+            <option value="actor.producer">actor.producer</option>
+            <option value="actor.venue">actor.venue</option>
+            <option value="actor.maker">actor.maker</option>
+            <option value="actor.foodie">actor.foodie</option>
+            <option value="actor.professional">actor.professional</option>
+            <option value="actor.group">actor.group</option>
+            <option value="actor.device">actor.device</option>
+            <option value="actor.agent">actor.agent</option>
+          </optgroup>
+          <optgroup label="Place">
+            <option value="place.farm">place.farm</option>
+            <option value="place.address">place.address</option>
+            <option value="place.appliance">place.appliance</option>
+          </optgroup>
+          <optgroup label="Substance">
+            <option value="substance.product" selected>substance.product</option>
+            <option value="substance.ingredient">substance.ingredient</option>
+          </optgroup>
+          <optgroup label="Transform">
+            <option value="transform.process">transform.process</option>
+            <option value="transform.recipe">transform.recipe</option>
+            <option value="transform.harvest">transform.harvest</option>
+          </optgroup>
+          <optgroup label="Transfer">
+            <option value="transfer.order">transfer.order</option>
+          </optgroup>
+          <optgroup label="Observe">
+            <option value="observe.review">observe.review</option>
+            <option value="observe.scan">observe.scan</option>
+            <option value="observe.snap">observe.snap</option>
+            <option value="observe.tombstone">observe.tombstone</option>
+            <option value="observe.approval">observe.approval</option>
+          </optgroup>
         </select>
       </div>
       <div class="form-group">
@@ -730,6 +826,9 @@
         <button class="btn btn-ghost" onclick="fillExample('venue')">Venue</button>
         <button class="btn btn-ghost" onclick="fillExample('recipe')">Recipe</button>
         <button class="btn btn-ghost" onclick="fillExample('review')">Review</button>
+        <button class="btn btn-ghost" onclick="fillExample('agent')">AI Agent</button>
+        <button class="btn btn-ghost" onclick="fillExample('scan')">IoT Scan</button>
+        <button class="btn btn-ghost" onclick="fillExample('tombstone')">Tombstone</button>
       </div>
     </div>
   </div>
@@ -738,8 +837,8 @@
   <div class="panel" id="panel-chain">
     <div class="card">
       <h3>Trace Provenance Chain</h3>
-      <p style="color:var(--fx-text-muted);font-size:13px;margin-bottom:16px;font-weight:300">
-        Enter a block hash to walk its update chain back to the genesis block.
+      <p class="card-desc">
+        Enter a block hash to walk its update chain back to the genesis block. Chains are author-scoped in v0.3 &mdash; different authors create forks unless explicitly approved.
       </p>
       <div class="try-row">
         <input class="try-input" id="chain-hash" placeholder="Enter a block hash (64 hex chars)...">
@@ -747,6 +846,100 @@
       </div>
     </div>
     <div id="chain-result"></div>
+  </div>
+
+  <!-- SIGNING & AGENTS -->
+  <div class="panel" id="panel-signing">
+    <div class="card">
+      <h3>Authentication &amp; Signing (v0.3)</h3>
+      <p class="card-desc">
+        FoodBlock v0.3 adds Ed25519 signing for authentication. Blocks can be submitted as signed wrappers that prove authorship. Signatures use raw 32-byte keys &mdash; compatible across all 4 SDKs (JavaScript, Python, Go, Swift).
+      </p>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot code-dot-red"></div>
+          <div class="code-dot code-dot-yellow"></div>
+          <div class="code-dot code-dot-green"></div>
+          <span class="code-label">signed wrapper format</span>
+        </div>
+        <div class="code-body">{
+  <span class="key">"foodblock"</span>: {
+    <span class="str">"type"</span>: "substance.product",
+    <span class="str">"state"</span>: { "name": "Sourdough" },
+    <span class="str">"refs"</span>: {}
+  },
+  <span class="key">"author_hash"</span>: <span class="str">"&lt;actor block hash&gt;"</span>,
+  <span class="key">"signature"</span>: <span class="str">"&lt;Ed25519 hex signature&gt;"</span>,
+  <span class="key">"protocol_version"</span>: <span class="str">"0.3.0"</span>
+}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>AI Agent Identity System</h3>
+      <p class="card-desc">
+        Agents are first-class identities with their own Ed25519 keypairs. They create draft blocks that require human operator approval before becoming permanent. Agents have configurable capabilities and rate limits.
+      </p>
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot code-dot-red"></div>
+          <div class="code-dot code-dot-yellow"></div>
+          <div class="code-dot code-dot-green"></div>
+          <span class="code-label">javascript</span>
+        </div>
+        <div class="code-body"><span class="cm">// Create an AI agent</span>
+<span class="kw">const</span> agent = <span class="fn">createAgent</span>(<span class="str">'Bakery Assistant'</span>, bakery.hash, {
+  model: <span class="str">'claude-sonnet'</span>,
+  capabilities: [<span class="str">'substance.*'</span>, <span class="str">'transfer.*'</span>]
+})
+
+<span class="cm">// Agent creates a draft order</span>
+<span class="kw">const</span> { block, signed } = <span class="fn">createDraft</span>(agent, <span class="str">'transfer.order'</span>, {
+  quantity: 50, unit: <span class="str">'kg'</span>, total: 160
+}, { buyer: bakery.hash, seller: mill.hash })
+
+<span class="cm">// Operator approves the draft</span>
+<span class="kw">const</span> approved = <span class="fn">approveDraft</span>(block)</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>New in v0.3</h3>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Ed25519 Signing</h4>
+          <p>Raw 32-byte keys compatible across JS, Python, Go, and Swift. Sign blocks to prove authorship.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Agent Identities</h4>
+          <p>AI agents get their own keypairs, create drafts, and operate within configurable capability and rate limits.</p>
+        </div>
+        <div class="feature-card">
+          <h4>X25519 Encryption</h4>
+          <p>Envelope encryption for sensitive fields. Multi-recipient support using X25519 key agreement + AES-256-GCM.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Tombstones (GDPR)</h4>
+          <p>Soft-delete blocks with observe.tombstone. Target block state is replaced with {tombstoned: true}.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Author-Scoped Heads</h4>
+          <p>Update chains are author-scoped. Cross-author updates require explicit observe.approval blocks or fork.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Offline Sync</h4>
+          <p>Queue blocks locally and batch-sync them in dependency order when connectivity is restored.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Fork Detection</h4>
+          <p>Database-level unique constraint prevents two blocks from updating the same predecessor by the same author.</p>
+        </div>
+        <div class="feature-card">
+          <h4>mergeUpdate()</h4>
+          <p>Shallow-merge state changes into a previous block without replacing the entire state. Available in all 4 SDKs.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- API -->
@@ -758,43 +951,57 @@
   <span style="color:#a78bfa">refs</span>    <span style="color:var(--fx-text-muted)">what it references</span>
 }
 
-<span style="color:var(--fx-text-muted)">id = SHA-256(type + state + refs)</span></code></pre>
+<span style="color:var(--fx-text-muted)">id = SHA-256(type + state + refs)</span>
+<span style="color:var(--fx-text-muted)">protocol_version = 0.3.0</span></code></pre>
     </div>
 
     <div class="card">
       <h3>Endpoints</h3>
-      <p style="color:var(--fx-text-muted);font-size:12px;margin-bottom:16px;font-weight:300">
+      <p class="card-desc">
         Base URL: <code style="background:var(--fx-surface-2);padding:3px 8px;border-radius:6px;font-size:12px;color:var(--fx-text-secondary)">/foodblock</code>
+        &nbsp; Accepts both unsigned blocks and signed wrappers on POST.
       </p>
       <div class="endpoint">
         <span class="method method-get">GET</span>
-        <span class="endpoint-path">/foodblock/health</span>
+        <span class="endpoint-path">/health</span>
         <span class="endpoint-desc">Health check</span>
       </div>
       <div class="endpoint">
         <span class="method method-post">POST</span>
-        <span class="endpoint-path">/foodblock/blocks</span>
-        <span class="endpoint-desc">Create a block</span>
+        <span class="endpoint-path">/blocks</span>
+        <span class="endpoint-desc">Create a block (unsigned or signed wrapper)</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-post">POST</span>
+        <span class="endpoint-path">/blocks/batch</span>
+        <span class="endpoint-desc">Batch insert in dependency order</span>
+        <span class="endpoint-new">v0.3</span>
       </div>
       <div class="endpoint">
         <span class="method method-get">GET</span>
-        <span class="endpoint-path">/foodblock/blocks/:hash</span>
+        <span class="endpoint-path">/blocks/:hash</span>
         <span class="endpoint-desc">Get block by hash</span>
       </div>
       <div class="endpoint">
         <span class="method method-get">GET</span>
-        <span class="endpoint-path">/foodblock/blocks?type=...&amp;heads=true</span>
-        <span class="endpoint-desc">Query blocks</span>
+        <span class="endpoint-path">/blocks?type=...&amp;heads=true</span>
+        <span class="endpoint-desc">Query blocks with filters</span>
+      </div>
+      <div class="endpoint">
+        <span class="method method-delete">DEL</span>
+        <span class="endpoint-path">/blocks/:hash</span>
+        <span class="endpoint-desc">Tombstone a block (soft delete)</span>
+        <span class="endpoint-new">v0.3</span>
       </div>
       <div class="endpoint">
         <span class="method method-get">GET</span>
-        <span class="endpoint-path">/foodblock/chain/:hash</span>
-        <span class="endpoint-desc">Provenance chain</span>
+        <span class="endpoint-path">/chain/:hash</span>
+        <span class="endpoint-desc">Provenance chain traversal</span>
       </div>
       <div class="endpoint">
         <span class="method method-get">GET</span>
-        <span class="endpoint-path">/foodblock/heads</span>
-        <span class="endpoint-desc">All head blocks</span>
+        <span class="endpoint-path">/heads</span>
+        <span class="endpoint-desc">All head blocks (latest versions)</span>
       </div>
     </div>
 
@@ -808,43 +1015,103 @@
           <span class="code-label">terminal</span>
         </div>
         <div class="code-body"><span class="cm"># Create a product block</span>
-curl -X POST https://api.foodx.world/foodblock/blocks \
+curl -X POST /foodblock/blocks \
   -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{
-    "type": "substance.product",
-    "state": {"name": "Sourdough Loaf", "organic": true},
-    "refs": {}
-  }'</span>
+  -d <span class="str">'{"type":"substance.product","state":{"name":"Sourdough","price":4.5},"refs":{}}'</span>
 
-<span class="cm"># Query all substance blocks</span>
-curl https://api.foodx.world/foodblock/blocks?type=substance
+<span class="cm"># Create a signed block (Ed25519 authentication)</span>
+curl -X POST /foodblock/blocks \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"foodblock":{"type":"substance.product","state":{"name":"Bread"},"refs":{}},"author_hash":"&lt;actor_hash&gt;","signature":"&lt;ed25519_hex&gt;","protocol_version":"0.3.0"}'</span>
 
-<span class="cm"># Get a specific block</span>
-curl https://api.foodx.world/foodblock/blocks/<span class="key">{hash}</span>
+<span class="cm"># Batch insert (offline sync)</span>
+curl -X POST /foodblock/blocks/batch \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"blocks":[{"type":"actor.producer","state":{"name":"Farm"}},{"type":"substance.product","state":{"name":"Eggs"}}]}'</span>
+
+<span class="cm"># Tombstone a block (GDPR erasure)</span>
+curl -X DELETE /foodblock/blocks/<span class="key">{hash}</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"requested_by":"user_abc","reason":"gdpr_erasure"}'</span>
+
+<span class="cm"># Query heads by type</span>
+curl /foodblock/heads?type=substance
 
 <span class="cm"># Trace provenance chain</span>
-curl https://api.foodx.world/foodblock/chain/<span class="key">{hash}</span></div>
+curl /foodblock/chain/<span class="key">{hash}</span></div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot code-dot-red"></div>
+          <div class="code-dot code-dot-yellow"></div>
+          <div class="code-dot code-dot-green"></div>
+          <span class="code-label">javascript</span>
+        </div>
+        <div class="code-body"><span class="kw">const</span> fb = require(<span class="str">'@foodxdev/foodblock'</span>)
+
+<span class="cm">// Create and sign a block</span>
+<span class="kw">const</span> keys = fb.<span class="fn">generateKeypair</span>()
+<span class="kw">const</span> actor = fb.<span class="fn">create</span>(<span class="str">'actor.producer'</span>, { name: <span class="str">'Green Farm'</span> })
+<span class="kw">const</span> product = fb.<span class="fn">create</span>(<span class="str">'substance.product'</span>, {
+  name: <span class="str">'Organic Sourdough'</span>, price: 4.5
+}, { seller: actor.hash })
+<span class="kw">const</span> signed = fb.<span class="fn">sign</span>(product, actor.hash, keys.privateKey)
+
+<span class="cm">// Update with state merge</span>
+<span class="kw">const</span> v2 = fb.<span class="fn">mergeUpdate</span>(product, { price: 5.0 })
+
+<span class="cm">// Encrypt sensitive fields</span>
+<span class="kw">const</span> encKeys = fb.<span class="fn">generateEncryptionKeypair</span>()
+<span class="kw">const</span> envelope = fb.<span class="fn">encrypt</span>({ recipe: <span class="str">'secret'</span> }, [encKeys.publicKey])
+<span class="kw">const</span> decrypted = fb.<span class="fn">decrypt</span>(envelope, encKeys.privateKey, encKeys.publicKey)</div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <div class="code-dot code-dot-red"></div>
+          <div class="code-dot code-dot-yellow"></div>
+          <div class="code-dot code-dot-green"></div>
+          <span class="code-label">python</span>
+        </div>
+        <div class="code-body"><span class="kw">import</span> foodblock <span class="kw">as</span> fb
+
+<span class="cm"># Create and sign</span>
+keys = fb.<span class="fn">generate_keypair</span>()
+actor = fb.<span class="fn">create</span>(<span class="str">"actor.producer"</span>, {<span class="str">"name"</span>: <span class="str">"Green Farm"</span>})
+product = fb.<span class="fn">create</span>(<span class="str">"substance.product"</span>, {<span class="str">"name"</span>: <span class="str">"Sourdough"</span>})
+signed = fb.<span class="fn">sign</span>(product, actor[<span class="str">"hash"</span>], keys[<span class="str">"private_key"</span>])
+
+<span class="cm"># AI agent workflow</span>
+agent = fb.<span class="fn">create_agent</span>(<span class="str">"Bot"</span>, actor[<span class="str">"hash"</span>])
+draft = fb.<span class="fn">create_draft</span>(agent, <span class="str">"transfer.order"</span>, {<span class="str">"qty"</span>: 50})
+approved = fb.<span class="fn">approve_draft</span>(draft[<span class="str">"block"</span>])</div>
       </div>
     </div>
 
     <div class="card">
-      <h3>SDKs</h3>
+      <h3>SDKs &mdash; v0.3</h3>
+      <p class="card-desc">All 4 SDKs now support signing, encryption, agents, chain traversal, query builders, offline sync, and tombstones. Cross-language compatible (same hash, same signatures).</p>
       <div class="sdk-grid">
         <a href="https://www.npmjs.com/package/@foodxdev/foodblock" target="_blank" class="sdk-card">
           <div class="sdk-lang">JavaScript</div>
           <div class="sdk-pkg">@foodxdev/foodblock</div>
+          <div class="sdk-features">CJS + ESM | Node.js 18+</div>
         </a>
         <a href="https://pypi.org/project/foodblock/" target="_blank" class="sdk-card">
           <div class="sdk-lang">Python</div>
           <div class="sdk-pkg">pip install foodblock</div>
+          <div class="sdk-features">Python 3.10+ | cryptography</div>
         </a>
         <a href="https://github.com/FoodXDevelopment/foodblock" target="_blank" class="sdk-card">
           <div class="sdk-lang">Swift</div>
           <div class="sdk-pkg">FoodBlock.swift</div>
+          <div class="sdk-features">iOS 15+ | CryptoKit</div>
         </a>
         <a href="https://github.com/FoodXDevelopment/foodblock" target="_blank" class="sdk-card">
           <div class="sdk-lang">Go</div>
           <div class="sdk-pkg">go get foodblock</div>
+          <div class="sdk-features">Go 1.21+ | crypto/ed25519</div>
         </a>
       </div>
     </div>
@@ -867,8 +1134,10 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-  document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
-  document.getElementById('panel-' + tabName).classList.add('active');
+  const tabEl = document.querySelector(`.tab[data-tab="${tabName}"]`);
+  if (tabEl) tabEl.classList.add('active');
+  const panelEl = document.getElementById('panel-' + tabName);
+  if (panelEl) panelEl.classList.add('active');
   const navLink = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
   if (navLink) navLink.classList.add('active');
 }
@@ -896,7 +1165,11 @@ async function loadStats() {
   try {
     const info = await api('/');
     document.getElementById('stat-blocks').textContent = info.blocks || 0;
-    const heads = await api('/heads?limit=1');
+    // Count unique types
+    if (info.types) {
+      document.getElementById('stat-types').textContent = Object.keys(info.types).length;
+    }
+    const heads = await api('/heads?limit=1000');
     document.getElementById('stat-heads').textContent = heads.count || 0;
   } catch(e) { console.error(e); }
 }
@@ -919,6 +1192,8 @@ async function loadBlocks() {
   list.innerHTML = data.blocks.map(b => `
     <div class="block-item" onclick='showDetail(${JSON.stringify(b).replace(/'/g,"&#39;").replace(/</g,"&lt;")})'>
       <span class="block-type ${typeClass(b.type)}">${esc(b.type)}</span>
+      ${b.state && b.state.tombstoned ? '<span class="badge" style="margin-left:8px;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171">TOMBSTONED</span>' : ''}
+      ${b.type === 'actor.agent' ? '<span class="badge" style="margin-left:8px;background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.25);color:#60a5fa">AGENT</span>' : ''}
       <div class="block-hash">${b.hash}</div>
       <div class="block-state">${esc(statePreview(b.state))}</div>
     </div>
@@ -939,6 +1214,10 @@ function esc(s) {
 
 function showDetail(block) {
   const c = document.getElementById('detail-content');
+  const isTombstoned = block.state && block.state.tombstoned;
+  const isAgent = block.type === 'actor.agent';
+  const isTombstone = block.type === 'observe.tombstone';
+
   c.innerHTML = `
     <div class="detail-field">
       <div class="detail-label">Hash</div>
@@ -946,7 +1225,12 @@ function showDetail(block) {
     </div>
     <div class="detail-field">
       <div class="detail-label">Type</div>
-      <div class="detail-value"><span class="block-type ${typeClass(block.type)}" style="font-size:13px">${esc(block.type)}</span></div>
+      <div class="detail-value">
+        <span class="block-type ${typeClass(block.type)}" style="font-size:13px">${esc(block.type)}</span>
+        ${isTombstoned ? '<span class="badge" style="margin-left:8px;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171">TOMBSTONED</span>' : ''}
+        ${isAgent ? '<span class="badge" style="margin-left:8px;background:rgba(96,165,250,0.1);border-color:rgba(96,165,250,0.25);color:#60a5fa">AI AGENT</span>' : ''}
+        ${isTombstone ? '<span class="badge" style="margin-left:8px;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171">TOMBSTONE</span>' : ''}
+      </div>
     </div>
     <div class="detail-field">
       <div class="detail-label">State</div>
@@ -960,12 +1244,27 @@ function showDetail(block) {
       <div class="detail-label">Created</div>
       <div class="detail-value">${new Date(block.created_at).toLocaleString()}</div>
     </div>` : ''}
-    ${block.refs && block.refs.updates ? `<div style="margin-top:16px"><button class="btn btn-secondary" onclick="document.getElementById('chain-hash').value='${block.hash}';switchTab('chain');loadChain();closeDetail()">View Chain</button></div>` : ''}
+    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      ${block.refs && block.refs.updates ? `<button class="btn btn-secondary" onclick="document.getElementById('chain-hash').value='${block.hash}';switchTab('chain');loadChain();closeDetail()">View Chain</button>` : ''}
+      ${!isTombstoned ? `<button class="btn btn-danger" onclick="tombstoneBlock('${block.hash}')">Tombstone</button>` : ''}
+    </div>
   `;
   document.getElementById('detail-overlay').classList.add('open');
 }
 function closeDetail() {
   document.getElementById('detail-overlay').classList.remove('open');
+}
+
+async function tombstoneBlock(hash) {
+  if (!confirm('Tombstone this block? Its state will be replaced with {tombstoned: true}.')) return;
+  try {
+    await api('/blocks/' + hash, { method: 'DELETE', body: JSON.stringify({ requested_by: 'sandbox_ui', reason: 'user_request' }) });
+    closeDetail();
+    loadBlocks();
+    loadStats();
+  } catch(e) {
+    alert('Failed to tombstone: ' + e.message);
+  }
 }
 
 async function createBlock() {
@@ -988,10 +1287,13 @@ async function createBlock() {
 
 function fillExample(type) {
   const examples = {
-    product: { type: 'substance.product', state: { name: 'Sourdough Loaf', organic: true, weight: '500g' }, refs: {} },
+    product: { type: 'substance.product', state: { name: 'Sourdough Loaf', organic: true, weight: '500g', price: 4.5 }, refs: {} },
     venue: { type: 'actor.venue', state: { name: 'Bread & Butter Bakery', cuisine: 'Artisan Bakery' }, refs: {} },
     recipe: { type: 'transform.recipe', state: { name: 'Classic Sourdough', steps: ['Mix flour and water', 'Add starter', 'Bulk ferment 8h', 'Shape and proof', 'Bake at 230C'] }, refs: {} },
-    review: { type: 'observe.review', state: { rating: 5, text: 'Best sourdough in London. Perfect crust.' }, refs: {} },
+    review: { type: 'observe.review', state: { rating: 5, text: 'Best sourdough in London. Perfect crust.', visibility: 'public' }, refs: {} },
+    agent: { type: 'actor.agent', state: { name: 'Bakery Assistant', model: 'claude-sonnet', capabilities: ['substance.*', 'transfer.*'], rate_limit_per_hour: 100 }, refs: { operator: '<operator_hash>' } },
+    scan: { type: 'observe.scan', state: { visibility: 'direct', detected: [{ item: 'Eggs', gtin: '5000128000123', quantity: 6, best_before: '2026-03-01' }, { item: 'Milk', quantity: 1, best_before: '2026-02-22' }] }, refs: { author: '<device_hash>', place: '<fridge_hash>' } },
+    tombstone: { type: 'observe.tombstone', state: { reason: 'gdpr_erasure', requested_by: 'user_abc', instance_id: crypto.randomUUID() }, refs: { target: '<block_hash>', updates: '<block_hash>' } },
   };
   const ex = examples[type];
   document.getElementById('create-type').value = ex.type;
@@ -1018,6 +1320,7 @@ async function loadChain() {
           <span class="block-type ${typeClass(b.type)}">${esc(b.type)}</span>
           ${i === 0 ? '<span class="badge" style="margin-left:8px">HEAD</span>' : ''}
           ${i === data.chain.length - 1 ? '<span class="badge" style="margin-left:8px;background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);color:#fbbf24">GENESIS</span>' : ''}
+          ${b.type === 'observe.tombstone' ? '<span class="badge" style="margin-left:8px;background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.25);color:#f87171">TOMBSTONE</span>' : ''}
           <div class="block-hash">${b.hash}</div>
           <div class="block-state">${esc(statePreview(b.state))}</div>
         </div>
