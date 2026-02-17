@@ -32,6 +32,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install cryptography pytest
+      - run: pip install -e .
+        working-directory: sdk/python
       - run: pytest tests/ -v
         working-directory: sdk/python
 
@@ -43,7 +45,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - run: npm install
+      - run: npm install --install-links
         working-directory: mcp
       - run: node --test test/mcp.test.js
         working-directory: mcp
@@ -64,7 +66,7 @@ jobs:
 
   swift-sdk:
     name: Swift SDK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: swift-actions/setup-swift@v2
