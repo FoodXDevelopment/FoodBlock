@@ -268,7 +268,7 @@ class TestTombstone:
 # ============================================================
 class TestProtocolVersion:
     def test_version_format(self):
-        assert PROTOCOL_VERSION.startswith("0.3")
+        assert PROTOCOL_VERSION.startswith("0.4")
 
 
 # ============================================================

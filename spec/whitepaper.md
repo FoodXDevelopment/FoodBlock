@@ -1309,7 +1309,7 @@ The protocol version is recorded in the authentication wrapper, not in the block
   "foodblock": { "type": "...", "state": {...}, "refs": {...} },
   "author_hash": "...",
   "signature": "...",
-  "protocol_version": "0.3"
+  "protocol_version": "0.4"
 }
 ```
 
@@ -1321,7 +1321,7 @@ For legacy blocks that lack version metadata, implementations can detect the ver
 
 ```javascript
 function detectVersion(block) {
-  for (const version of ['0.3', '0.2', '0.1']) {
+  for (const version of ['0.4', '0.3', '0.2', '0.1']) {
     const h = hashWithVersion(block.type, block.state, block.refs, version)
     if (h === block.hash) return version
   }
@@ -1331,7 +1331,7 @@ function detectVersion(block) {
 
 ### 15.3 Version Negotiation
 
-Clients include `FoodBlock-Version: 0.3` in request headers. Servers respond with the highest compatible version they support. If a server cannot serve a requested version, it returns `400` with supported versions.
+Clients include `FoodBlock-Version: 0.4` in request headers. Servers respond with the highest compatible version they support. If a server cannot serve a requested version, it returns `400` with supported versions.
 
 ### 15.4 Migration Strategy
 
@@ -1341,7 +1341,7 @@ Because block identity is `id = SHA-256(canonical(type, state, refs))`, the cano
 2. Servers accept blocks hashed with both the old and new canonical form during a transition period.
 3. The old major version is supported for at least 12 months after the new version launches.
 
-**Current version: 0.3.0** — the protocol is in development. Breaking changes may occur before 1.0.
+**Current version: 0.4.0** — the protocol is in development. Breaking changes may occur before 1.0.
 
 ---
 

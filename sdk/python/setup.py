@@ -8,7 +8,7 @@ if readme_path.exists():
 
 setup(
     name="foodblock",
-    version="0.3.0",
+    version="0.4.0",
     description="SDK for the FoodBlock protocol — a content-addressable primitive for universal food data",
     long_description=long_description,
     long_description_content_type="text/markdown",

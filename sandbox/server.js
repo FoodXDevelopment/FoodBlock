@@ -152,7 +152,7 @@ const server = http.createServer(async (req, res) => {
     if (path === '/' && req.method === 'GET') {
       return json(res, {
         name: 'FoodBlock Sandbox',
-        version: '0.3.0',
+        version: '0.4.0',
         protocol_version: PROTOCOL_VERSION,
         blocks: store.size,
         types: Object.fromEntries([...byType.entries()].map(([k, v]) => [k, v.length])),
@@ -465,7 +465,7 @@ const PORT = process.env.PORT || 3111
 server.listen(PORT, () => {
   console.log(`
   ╔══════════════════════════════════════════╗
-  ║     FoodBlock Sandbox v0.3.0             ║
+  ║     FoodBlock Sandbox v0.4.0             ║
   ║     Protocol ${PROTOCOL_VERSION}                       ║
   ║     http://localhost:${PORT}                ║
   ╠══════════════════════════════════════════╣
@@ -476,7 +476,7 @@ server.listen(PORT, () => {
   ║  curl localhost:${PORT}/blocks?type=actor    ║
   ║  curl localhost:${PORT}/chain/<hash>         ║
   ║                                          ║
-  ║  New in v0.3:                            ║
+  ║  New in v0.4:                            ║
   ║  curl -X POST localhost:${PORT}/blocks/batch ║
   ║  curl -X DELETE localhost:${PORT}/blocks/<h> ║
   ╚══════════════════════════════════════════╝

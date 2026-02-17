@@ -21,7 +21,7 @@ const { merkleize, selectiveDisclose, verifyProof, sha256 } = require('./merkle'
 const { createSnapshot, verifySnapshot, summarize } = require('./snapshot')
 const { attest, dispute, traceAttestations, trustScore } = require('./attestation')
 
-const PROTOCOL_VERSION = '0.3.0'
+const PROTOCOL_VERSION = '0.4.0'
 
 module.exports = {
   // Protocol

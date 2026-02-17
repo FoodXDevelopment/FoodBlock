@@ -1,4 +1,4 @@
-PROTOCOL_VERSION = '0.3.0'
+PROTOCOL_VERSION = '0.4.0'
 
 from .block import create, update, merge_update, compute_hash
 from .chain import chain, tree, head

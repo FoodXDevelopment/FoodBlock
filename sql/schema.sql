@@ -1,4 +1,4 @@
--- FoodBlock Protocol Schema v0.3
+-- FoodBlock Protocol Schema v0.4
 -- Single table, append-only, content-addressable
 
 CREATE TABLE IF NOT EXISTS foodblocks (
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS foodblocks (
     -- Authentication wrapper (Rule 7)
     author_hash      VARCHAR(64),
     signature        TEXT,
-    protocol_version VARCHAR(10) DEFAULT '0.3',
+    protocol_version VARCHAR(10) DEFAULT '0.4',
 
     -- Derived columns (computed on write, not in hash)
     chain_id         VARCHAR(64),     -- genesis block hash for this update chain

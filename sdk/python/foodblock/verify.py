@@ -33,7 +33,7 @@ def sign(block: dict, author_hash: str, private_key_hex: str) -> dict:
         "foodblock": block,
         "author_hash": author_hash,
         "signature": signature.hex(),
-        "protocol_version": "0.3.0"
+        "protocol_version": "0.4.0"
     }
 
 

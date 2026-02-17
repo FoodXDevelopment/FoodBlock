@@ -87,7 +87,7 @@ function toolHandler(fn) {
 
 const server = new McpServer({
   name: "foodblock",
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 // ── Tool: foodblock_create ──────────────────────────────────────────────
@@ -766,7 +766,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`FoodBlock MCP Server v0.3.0 running on stdio`);
+  console.error(`FoodBlock MCP Server v0.4.0 running on stdio`);
   console.error(`API: ${API_URL}`);
 }
 

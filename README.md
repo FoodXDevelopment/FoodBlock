@@ -82,7 +82,7 @@ const updated = fb.update(bread.hash, 'substance.product', {
 // Sign and verify
 const keys = fb.generateKeypair()
 const signed = fb.sign(bread, farm.hash, keys.privateKey)
-// signed.protocol_version === '0.3.0'
+// signed.protocol_version === '0.4.0'
 const valid = fb.verify(signed, keys.publicKey) // true
 
 // Provenance chain
@@ -144,7 +144,7 @@ const myTemplate = fb.createTemplate('Bakery Review', 'Review a bakery product',
 
 // Discover another FoodBlock server
 const info = await fb.discover('https://farm.example.com')
-// { protocol: 'foodblock', version: '0.3.0', types: [...], count: 142 }
+// { protocol: 'foodblock', version: '0.4.0', types: [...], count: 142 }
 
 // Resolve blocks across multiple servers
 const resolve = fb.federatedResolver([
@@ -196,11 +196,14 @@ curl localhost:3111/.well-known/foodblock
 # List templates
 curl localhost:3111/blocks?type=observe.template
 
+# Forward traversal (what references this block?)
+curl localhost:3111/forward/<hash>
+
 # List vocabularies
 curl localhost:3111/blocks?type=observe.vocabulary
 ```
 
-The sandbox ships preloaded with 44 blocks modelling a complete bakery supply chain — from farm to consumer, including certifications, shipments, cold chain readings, and reviews.
+The sandbox ships preloaded with 47 blocks modelling a complete bakery supply chain — from farm to consumer, including certifications, shipments, cold chain readings, reviews, and operational vocabularies.
 
 ## API
 
@@ -332,7 +335,35 @@ Extract field values from natural language text using a vocabulary's aliases. Re
 
 ### `VOCABULARIES`
 
-Built-in vocabulary definitions: `bakery`, `restaurant`, `farm`, `retail`.
+Built-in vocabulary definitions: `bakery`, `restaurant`, `farm`, `retail`, `lot`, `units`, `workflow`.
+
+### `quantity(value, unit, type?) → { value, unit }`
+
+Create a quantity object. Validates unit against the `units` vocabulary if `type` is provided (e.g. `'weight'`, `'volume'`, `'temperature'`).
+
+### `transition(from, to) → boolean`
+
+Validate a workflow state transition against the `workflow` vocabulary's transition map (e.g. `draft→order` is valid, `draft→shipped` is not).
+
+### `nextStatuses(status) → string[]`
+
+Get valid next statuses for a given workflow status.
+
+### `localize(block, locale, fallback?) → block`
+
+Extract locale-specific text from multilingual state fields. Fields using `{ en: "...", fr: "..." }` nested objects are resolved to the requested locale.
+
+### `forward(hash, resolveForward) → { referencing, count }`
+
+Find all blocks that reference a given hash. Returns blocks grouped by ref role.
+
+### `recall(sourceHash, resolveForward, opts?) → { affected, depth, paths }`
+
+Trace contamination/recall paths downstream via BFS. Starting from a source block, follows all forward references recursively. Supports `types` and `roles` filters.
+
+### `downstream(ingredientHash, resolveForward) → block[]`
+
+Find all downstream substance blocks that use a given ingredient (convenience wrapper around `recall`).
 
 ### `merkleize(state) → { root, leaves, tree }`
 
@@ -428,16 +459,16 @@ Full schema with indexes, author-scoped head trigger, and tombstone trigger: [`s
 
 ```
 foodblock/
-├── spec/whitepaper.md           Protocol specification (v0.3)
+├── spec/whitepaper.md           Protocol specification (v0.4)
 ├── sdk/javascript/              JavaScript SDK (reference implementation)
 │   ├── src/                     block, chain, verify, encrypt, validate, offline, tombstone,
 │   │                            alias, notation, explain, uri, template, federation,
-│   │                            vocabulary, merge, merkle, snapshot, attestation
+│   │                            vocabulary, forward, merge, merkle, snapshot, attestation
 │   └── test/                    Test suite (67 tests)
 ├── sdk/python/                  Python SDK
 │   ├── foodblock/               block, chain, verify, validate, tombstone,
 │   │                            alias, notation, explain, uri, template, federation,
-│   │                            vocabulary, merge, merkle, snapshot, attestation
+│   │                            vocabulary, forward, merge, merkle, snapshot, attestation
 │   └── tests/                   Test suite (58 tests)
 ├── sdk/go/                      Go SDK
 │   └── foodblock.go             block, chain, sign/verify, tombstone
@@ -446,7 +477,7 @@ foodblock/
 ├── mcp/                         MCP server for AI agent integration (15 tools)
 ├── sandbox/                     Local sandbox server
 │   ├── server.js                Zero-dependency HTTP API + federation discovery
-│   └── seed.js                  44-block bakery chain + templates + vocabularies
+│   └── seed.js                  47-block bakery chain + templates + vocabularies
 ├── sql/schema.sql               Postgres schema + triggers
 ├── test/vectors.json            Cross-language test vectors (30 vectors)
 └── LICENSE                      MIT

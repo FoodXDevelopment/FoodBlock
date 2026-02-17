@@ -708,7 +708,7 @@
       <a href="#" class="nav-link" data-tab="chain">Chains</a>
       <a href="#" class="nav-link" data-tab="signing">Signing</a>
       <a href="#" class="nav-link" data-tab="api">API</a>
-      <span class="badge"><span class="pulse-dot"></span>&nbsp; Protocol v0.3</span>
+      <span class="badge"><span class="pulse-dot"></span>&nbsp; Protocol v0.4</span>
     </div>
   </div>
 </header>
@@ -717,7 +717,7 @@
   <div class="hero">
     <div class="eyebrow">
       <div class="pulse-dot"></div>
-      Live Developer Sandbox &middot; Protocol 0.3
+      Live Developer Sandbox &middot; Protocol 0.4
     </div>
     <h1>FoodBlock Sandbox</h1>
     <p>Create blocks, explore chains, sign with Ed25519, and build on the FoodBlock protocol. Now with agents, encryption, and offline sync.</p>
@@ -838,7 +838,7 @@
     <div class="card">
       <h3>Trace Provenance Chain</h3>
       <p class="card-desc">
-        Enter a block hash to walk its update chain back to the genesis block. Chains are author-scoped in v0.3 &mdash; different authors create forks unless explicitly approved.
+        Enter a block hash to walk its update chain back to the genesis block. Chains are author-scoped in v0.4 &mdash; different authors create forks unless explicitly approved.
       </p>
       <div class="try-row">
         <input class="try-input" id="chain-hash" placeholder="Enter a block hash (64 hex chars)...">
@@ -851,9 +851,9 @@
   <!-- SIGNING & AGENTS -->
   <div class="panel" id="panel-signing">
     <div class="card">
-      <h3>Authentication &amp; Signing (v0.3)</h3>
+      <h3>Authentication &amp; Signing (v0.4)</h3>
       <p class="card-desc">
-        FoodBlock v0.3 adds Ed25519 signing for authentication. Blocks can be submitted as signed wrappers that prove authorship. Signatures use raw 32-byte keys &mdash; compatible across all 4 SDKs (JavaScript, Python, Go, Swift).
+        FoodBlock v0.4 adds Ed25519 signing for authentication. Blocks can be submitted as signed wrappers that prove authorship. Signatures use raw 32-byte keys &mdash; compatible across all 4 SDKs (JavaScript, Python, Go, Swift).
       </p>
       <div class="code-block">
         <div class="code-header">
@@ -870,7 +870,7 @@
   },
   <span class="key">"author_hash"</span>: <span class="str">"&lt;actor block hash&gt;"</span>,
   <span class="key">"signature"</span>: <span class="str">"&lt;Ed25519 hex signature&gt;"</span>,
-  <span class="key">"protocol_version"</span>: <span class="str">"0.3.0"</span>
+  <span class="key">"protocol_version"</span>: <span class="str">"0.4.0"</span>
 }</div>
       </div>
     </div>
@@ -904,7 +904,7 @@
     </div>
 
     <div class="card">
-      <h3>New in v0.3</h3>
+      <h3>New in v0.4</h3>
       <div class="feature-grid">
         <div class="feature-card">
           <h4>Ed25519 Signing</h4>
@@ -952,7 +952,7 @@
 }
 
 <span style="color:var(--fx-text-muted)">id = SHA-256(type + state + refs)</span>
-<span style="color:var(--fx-text-muted)">protocol_version = 0.3.0</span></code></pre>
+<span style="color:var(--fx-text-muted)">protocol_version = 0.4.0</span></code></pre>
     </div>
 
     <div class="card">
@@ -975,7 +975,7 @@
         <span class="method method-post">POST</span>
         <span class="endpoint-path">/blocks/batch</span>
         <span class="endpoint-desc">Batch insert in dependency order</span>
-        <span class="endpoint-new">v0.3</span>
+        <span class="endpoint-new">v0.4</span>
       </div>
       <div class="endpoint">
         <span class="method method-get">GET</span>
@@ -991,7 +991,7 @@
         <span class="method method-delete">DEL</span>
         <span class="endpoint-path">/blocks/:hash</span>
         <span class="endpoint-desc">Tombstone a block (soft delete)</span>
-        <span class="endpoint-new">v0.3</span>
+        <span class="endpoint-new">v0.4</span>
       </div>
       <div class="endpoint">
         <span class="method method-get">GET</span>
@@ -1022,7 +1022,7 @@ curl -X POST /foodblock/blocks \
 <span class="cm"># Create a signed block (Ed25519 authentication)</span>
 curl -X POST /foodblock/blocks \
   -H <span class="str">"Content-Type: application/json"</span> \
-  -d <span class="str">'{"foodblock":{"type":"substance.product","state":{"name":"Bread"},"refs":{}},"author_hash":"&lt;actor_hash&gt;","signature":"&lt;ed25519_hex&gt;","protocol_version":"0.3.0"}'</span>
+  -d <span class="str">'{"foodblock":{"type":"substance.product","state":{"name":"Bread"},"refs":{}},"author_hash":"&lt;actor_hash&gt;","signature":"&lt;ed25519_hex&gt;","protocol_version":"0.4.0"}'</span>
 
 <span class="cm"># Batch insert (offline sync)</span>
 curl -X POST /foodblock/blocks/batch \
@@ -1090,7 +1090,7 @@ approved = fb.<span class="fn">approve_draft</span>(draft[<span class="str">"blo
     </div>
 
     <div class="card">
-      <h3>SDKs &mdash; v0.3</h3>
+      <h3>SDKs &mdash; v0.4</h3>
       <p class="card-desc">All 4 SDKs now support signing, encryption, agents, chain traversal, query builders, offline sync, and tombstones. Cross-language compatible (same hash, same signatures).</p>
       <div class="sdk-grid">
         <a href="https://www.npmjs.com/package/@foodxdev/foodblock" target="_blank" class="sdk-card">
