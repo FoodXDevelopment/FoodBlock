@@ -7,7 +7,8 @@ COPY sdk/javascript/ ./sdk/javascript/
 COPY sql/ ./sql/
 
 # Copy server
-COPY server/package.json server/index.js ./server/
+COPY server/package*.json ./server/
+COPY server/index.js ./server/
 COPY server/public/ ./server/public/
 
 # Install dependencies
