@@ -1,6 +1,6 @@
 {
   "name": "@foodxdev/foodblock-mcp",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "MCP server for the FoodBlock protocol — lets any AI agent read, write, and query FoodBlocks",
   "type": "module",
   "main": "server.js",
@@ -28,7 +28,7 @@
   "homepage": "https://foodx.world",
   "author": "FoodX",
   "dependencies": {
-    "@foodxdev/foodblock": "^0.1.0",
+    "@foodxdev/foodblock": "^0.3.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "zod": "^3.24.0"
   },

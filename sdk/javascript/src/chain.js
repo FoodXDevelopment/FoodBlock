@@ -89,12 +89,19 @@ async function tree(startHash, resolve, opts = {}) {
  *
  * @param {string} startHash - Any hash in the chain
  * @param {function} resolveForward - async (hash) => block[] that ref this hash via updates
- * @returns {object} - The head block
+ * @param {object} opts - { maxDepth: 1000 }
+ * @returns {string} - The hash of the head block
  */
-async function head(startHash, resolveForward) {
+async function head(startHash, resolveForward, opts = {}) {
+  const maxDepth = opts.maxDepth || 1000
+  const visited = new Set()
   let currentHash = startHash
+  let depth = 0
 
-  while (true) {
+  while (depth < maxDepth) {
+    if (visited.has(currentHash)) break
+    visited.add(currentHash)
+
     const children = await resolveForward(currentHash)
     const updater = children.find(c => {
       const updates = c.refs && c.refs.updates
@@ -104,6 +111,7 @@ async function head(startHash, resolveForward) {
 
     if (!updater) break
     currentHash = updater.hash
+    depth++
   }
 
   return currentHash

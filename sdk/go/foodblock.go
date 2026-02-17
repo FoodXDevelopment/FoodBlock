@@ -1,6 +1,7 @@
 package foodblock
 
 import (
+	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -13,12 +14,23 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+// ProtocolVersion is the current FoodBlock protocol version.
+const ProtocolVersion = "0.3.0"
+
 // Block represents a FoodBlock.
 type Block struct {
 	Hash  string                 `json:"hash"`
 	Type  string                 `json:"type"`
 	State map[string]interface{} `json:"state"`
 	Refs  map[string]interface{} `json:"refs"`
+}
+
+// SignedBlock is the authentication wrapper (Rule 7).
+type SignedBlock struct {
+	FoodBlock       Block  `json:"foodblock"`
+	AuthorHash      string `json:"author_hash"`
+	Signature       string `json:"signature"`
+	ProtocolVersion string `json:"protocol_version"`
 }
 
 // Create makes a new FoodBlock.
@@ -65,6 +77,121 @@ func Canonical(typ string, state, refs map[string]interface{}) string {
 		"refs":  refs,
 	}
 	return stringify(obj, false)
+}
+
+// GenerateKeypair generates a new Ed25519 keypair for signing.
+func GenerateKeypair() (publicKey, privateKey []byte) {
+	pub, priv, _ := ed25519.GenerateKey(nil)
+	return []byte(pub), []byte(priv)
+}
+
+// Sign signs a FoodBlock and returns the authentication wrapper.
+func Sign(block Block, authorHash string, privateKey []byte) SignedBlock {
+	content := Canonical(block.Type, block.State, block.Refs)
+	sig := ed25519.Sign(ed25519.PrivateKey(privateKey), []byte(content))
+	return SignedBlock{
+		FoodBlock:       block,
+		AuthorHash:      authorHash,
+		Signature:       hex.EncodeToString(sig),
+		ProtocolVersion: ProtocolVersion,
+	}
+}
+
+// Verify verifies a signed FoodBlock wrapper.
+func Verify(signed SignedBlock, publicKey []byte) bool {
+	content := Canonical(signed.FoodBlock.Type, signed.FoodBlock.State, signed.FoodBlock.Refs)
+	sig, err := hex.DecodeString(signed.Signature)
+	if err != nil {
+		return false
+	}
+	return ed25519.Verify(ed25519.PublicKey(publicKey), []byte(content), sig)
+}
+
+// Tombstone creates a tombstone block for content erasure (Section 5.4).
+func Tombstone(targetHash, requestedBy string) Block {
+	return Create("observe.tombstone", map[string]interface{}{
+		"reason":       "erasure_request",
+		"requested_by": requestedBy,
+	}, map[string]interface{}{
+		"target":  targetHash,
+		"updates": targetHash,
+	})
+}
+
+// Chain follows the update chain backwards from a starting hash.
+func Chain(startHash string, resolve func(string) *Block, maxDepth int) []Block {
+	if maxDepth <= 0 {
+		maxDepth = 100
+	}
+	visited := make(map[string]bool)
+	var result []Block
+	current := startHash
+
+	for i := 0; i < maxDepth && current != ""; i++ {
+		if visited[current] {
+			break
+		}
+		visited[current] = true
+		block := resolve(current)
+		if block == nil {
+			break
+		}
+		result = append(result, *block)
+		// Follow updates ref
+		if updates, ok := block.Refs["updates"]; ok {
+			if s, ok := updates.(string); ok {
+				current = s
+			} else {
+				current = ""
+			}
+		} else {
+			current = ""
+		}
+	}
+	return result
+}
+
+// MergeUpdate creates an update by merging changes into the previous block's state.
+// Shallow-merges stateChanges into previousBlock.State.
+func MergeUpdate(previousBlock Block, stateChanges, additionalRefs map[string]interface{}) Block {
+	mergedState := make(map[string]interface{})
+	for k, v := range previousBlock.State {
+		mergedState[k] = v
+	}
+	if stateChanges != nil {
+		for k, v := range stateChanges {
+			mergedState[k] = v
+		}
+	}
+	return Update(previousBlock.Hash, previousBlock.Type, mergedState, additionalRefs)
+}
+
+// Head finds the latest version in an update chain by walking forward.
+func Head(startHash string, resolveForward func(string) []Block, maxDepth int) string {
+	if maxDepth <= 0 {
+		maxDepth = 1000
+	}
+	visited := make(map[string]bool)
+	current := startHash
+	for i := 0; i < maxDepth; i++ {
+		if visited[current] {
+			break
+		}
+		visited[current] = true
+		children := resolveForward(current)
+		found := false
+		for _, child := range children {
+			if updates, ok := child.Refs["updates"].(string); ok && updates == current {
+				current = child.Hash
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+	}
+	return current
 }
 
 func stringify(value interface{}, inRefs bool) string {
@@ -146,7 +273,8 @@ func canonicalNumber(n float64) string {
 		return "0"
 	}
 	if n == math.Trunc(n) && math.Abs(n) < (1<<53) {
-		return strconv.FormatInt(int64(n), 10)
+		// Use Sprintf instead of FormatInt to avoid int64 overflow for large values
+		return fmt.Sprintf("%.0f", n)
 	}
 	return strconv.FormatFloat(n, 'f', -1, 64)
 }
@@ -195,10 +323,31 @@ func omitNulls(m map[string]interface{}) map[string]interface{} {
 		if v == nil {
 			continue
 		}
-		if nested, ok := v.(map[string]interface{}); ok {
-			result[k] = omitNulls(nested)
-		} else {
+		switch val := v.(type) {
+		case map[string]interface{}:
+			result[k] = omitNulls(val)
+		case []interface{}:
+			result[k] = omitNullsSlice(val)
+		default:
 			result[k] = v
+		}
+	}
+	return result
+}
+
+func omitNullsSlice(arr []interface{}) []interface{} {
+	var result []interface{}
+	for _, v := range arr {
+		if v == nil {
+			continue
+		}
+		switch val := v.(type) {
+		case map[string]interface{}:
+			result = append(result, omitNulls(val))
+		case []interface{}:
+			result = append(result, omitNullsSlice(val))
+		default:
+			result = append(result, v)
 		}
 	}
 	return result

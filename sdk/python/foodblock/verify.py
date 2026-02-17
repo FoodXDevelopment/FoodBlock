@@ -32,7 +32,8 @@ def sign(block: dict, author_hash: str, private_key_hex: str) -> dict:
     return {
         "foodblock": block,
         "author_hash": author_hash,
-        "signature": signature.hex()
+        "signature": signature.hex(),
+        "protocol_version": "0.3.0"
     }
 
 

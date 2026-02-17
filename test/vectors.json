@@ -148,5 +148,192 @@
     },
     "expected_canonical": "{\"refs\":{\"author\":\"camera_hash\",\"owner\":\"user_hash\",\"place\":\"fridge_hash\"},\"state\":{\"detected\":[{\"best_before\":\"2026-02-20\",\"confidence\":0.94,\"gtin\":\"5000128000123\",\"item\":\"Sourdough\"}],\"visibility\":\"direct\"},\"type\":\"observe.scan\"}",
     "expected_hash": "e0234013f78a3c5959f661980dc8d1172903973cbdceff7d76507b632ab4e5c2"
+  },
+  {
+    "name": "tombstone block",
+    "type": "observe.tombstone",
+    "state": {
+      "reason": "gdpr_erasure",
+      "requested_by": "user_abc"
+    },
+    "refs": {
+      "target": "block_hash_123",
+      "updates": "block_hash_123"
+    },
+    "expected_canonical": "{\"refs\":{\"target\":\"block_hash_123\",\"updates\":\"block_hash_123\"},\"state\":{\"reason\":\"gdpr_erasure\",\"requested_by\":\"user_abc\"},\"type\":\"observe.tombstone\"}",
+    "expected_hash": "df65f4dc543a561180d0b39c3a58dd41f4bf64012fa9f5aa81defe6e8c18392f"
+  },
+  {
+    "name": "schema reference in state",
+    "type": "substance.product",
+    "state": {
+      "$schema": "foodblock:substance.product@1.0",
+      "name": "Sourdough",
+      "price": 4.5
+    },
+    "refs": {
+      "seller": "bakery_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"seller\":\"bakery_hash\"},\"state\":{\"$schema\":\"foodblock:substance.product@1.0\",\"name\":\"Sourdough\",\"price\":4.5},\"type\":\"substance.product\"}",
+    "expected_hash": "42ccd2b220c939a1d3bf7ad335536914f889e12eccedbfde83a7b203601a9570"
+  },
+  {
+    "name": "instance_id for unique events",
+    "type": "transfer.order",
+    "state": {
+      "instance_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "quantity": 50,
+      "unit": "kg",
+      "total": 90
+    },
+    "refs": {
+      "buyer": "bakery_hash",
+      "seller": "mill_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"buyer\":\"bakery_hash\",\"seller\":\"mill_hash\"},\"state\":{\"instance_id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"quantity\":50,\"total\":90,\"unit\":\"kg\"},\"type\":\"transfer.order\"}",
+    "expected_hash": "50e1ce905a96f30cf3b1e9808f3ba038bda04a6f804ae3a5c51d95a9a5ad3f4b"
+  },
+  {
+    "name": "boolean values",
+    "type": "substance.product",
+    "state": {
+      "name": "Bread",
+      "organic": true,
+      "gluten_free": false
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"gluten_free\":false,\"name\":\"Bread\",\"organic\":true},\"type\":\"substance.product\"}",
+    "expected_hash": "f1c51ad7c155f2426b8a7a086ccd79fc85ba7ed054c43ec2faf6abd17c4e002d"
+  },
+  {
+    "name": "approval block",
+    "type": "observe.approval",
+    "state": {
+      "action": "transfer_update_rights",
+      "target_chain": "genesis_abc",
+      "granted_to": "new_author_xyz"
+    },
+    "refs": {
+      "author": "original_author_hash",
+      "grantee": "new_author_xyz"
+    },
+    "expected_canonical": "{\"refs\":{\"author\":\"original_author_hash\",\"grantee\":\"new_author_xyz\"},\"state\":{\"action\":\"transfer_update_rights\",\"granted_to\":\"new_author_xyz\",\"target_chain\":\"genesis_abc\"},\"type\":\"observe.approval\"}",
+    "expected_hash": "3615b8d4dd604a4f74a45b039d6ff91b28e4fa6b730dd86bc945274805c3618c"
+  },
+  {
+    "name": "negative zero normalization",
+    "type": "test",
+    "state": { "value": -0 },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
+    "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
+  },
+  {
+    "name": "very small decimal (RFC 8785)",
+    "type": "test",
+    "state": { "value": 0.000001 },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.000001},\"type\":\"test\"}",
+    "expected_hash": "fa0a7de1e5637a8dafde2691154c3c330f2e08f0e3788124c8a0696403cebd7b"
+  },
+  {
+    "name": "large integer",
+    "type": "test",
+    "state": { "count": 1000000000 },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"count\":1000000000},\"type\":\"test\"}",
+    "expected_hash": "5418cd53b4931e4f14394edc8edaf9eaa2d7c4c6daf35d77100fef60c14ab97d"
+  },
+  {
+    "name": "float that equals integer (RFC 8785)",
+    "type": "test",
+    "state": { "value": 100.0 },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100},\"type\":\"test\"}",
+    "expected_hash": "e5a8c71154ce0ff3835c188333a4fc8d9d48e1bb581cf0569db549f934a9fbf5"
+  },
+  {
+    "name": "deeply nested state",
+    "type": "test",
+    "state": { "a": { "b": { "c": { "d": 1 } } } },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":1}}}},\"type\":\"test\"}",
+    "expected_hash": "d964cdf78572f89b32210d648227b11a000458c6bdb87145c2e5db18aef3bd9c"
+  },
+  {
+    "name": "null values omitted",
+    "type": "test",
+    "state": { "name": "Keep", "removed": null },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Keep\"},\"type\":\"test\"}",
+    "expected_hash": "06a9ca35335254ff9b19568be5f4bd9881a9da40deaec7c0b306798691cb07ab"
+  },
+  {
+    "name": "vocabulary block",
+    "type": "observe.vocabulary",
+    "state": {
+      "domain": "bakery",
+      "for_types": ["substance.product"],
+      "fields": { "price": { "type": "number", "aliases": ["costs", "sells for"] } }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"domain\":\"bakery\",\"fields\":{\"price\":{\"aliases\":[\"costs\",\"sells for\"],\"type\":\"number\"}},\"for_types\":[\"substance.product\"]},\"type\":\"observe.vocabulary\"}",
+    "expected_hash": "8c8241561e4ecbf14283e143d82091e4611f6b73a6782625d74790484ae80be9"
+  },
+  {
+    "name": "attestation block",
+    "type": "observe.attestation",
+    "state": { "confidence": "verified", "method": "on-site inspection" },
+    "refs": { "confirms": "claim_hash", "attestor": "inspector_hash" },
+    "expected_canonical": "{\"refs\":{\"attestor\":\"inspector_hash\",\"confirms\":\"claim_hash\"},\"state\":{\"confidence\":\"verified\",\"method\":\"on-site inspection\"},\"type\":\"observe.attestation\"}",
+    "expected_hash": "a2520bc6b5b114cd400bf600820b1fe1d2210b093e2d01c891d4f2faaab71621"
+  },
+  {
+    "name": "merge block with refs array sorting",
+    "type": "observe.merge",
+    "state": { "strategy": "a_wins" },
+    "refs": { "merges": ["fork_b_hash", "fork_a_hash"] },
+    "expected_canonical": "{\"refs\":{\"merges\":[\"fork_a_hash\",\"fork_b_hash\"]},\"state\":{\"strategy\":\"a_wins\"},\"type\":\"observe.merge\"}",
+    "expected_hash": "96c137989ceaecffbd465924152c4748a4c98e80244288654eeac4d2843d5e96"
+  },
+  {
+    "name": "snapshot block",
+    "type": "observe.snapshot",
+    "state": { "block_count": 500, "merkle_root": "abc123" },
+    "refs": { "author": "server_hash" },
+    "expected_canonical": "{\"refs\":{\"author\":\"server_hash\"},\"state\":{\"block_count\":500,\"merkle_root\":\"abc123\"},\"type\":\"observe.snapshot\"}",
+    "expected_hash": "2d800feab20d2af8b79da65976d5995e1c3de7f390e374866218abb71eb9fda0"
+  },
+  {
+    "name": "dispute block",
+    "type": "observe.dispute",
+    "state": { "reason": "certificate expired" },
+    "refs": { "challenges": "claim_hash", "disputor": "challenger_hash" },
+    "expected_canonical": "{\"refs\":{\"challenges\":\"claim_hash\",\"disputor\":\"challenger_hash\"},\"state\":{\"reason\":\"certificate expired\"},\"type\":\"observe.dispute\"}",
+    "expected_hash": "9f68a476ac1e748966d0cf102c02b9b9f0dab88b8f1f4b66ef9f720992f51bc1"
+  },
+  {
+    "name": "mixed number types",
+    "type": "test",
+    "state": { "integer": 42, "float_val": 3.14, "zero": 0 },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"float_val\":3.14,\"integer\":42,\"zero\":0},\"type\":\"test\"}",
+    "expected_hash": "d6b1fe55985b70931fd4405a1367e922ff7a643e6e7509db581ddba04d983bbf"
+  },
+  {
+    "name": "empty string value",
+    "type": "test",
+    "state": { "name": "" },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
+    "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
+  },
+  {
+    "name": "special characters in string",
+    "type": "test",
+    "state": { "note": "Line 1\nLine 2\ttab" },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"Line 1\\nLine 2\\ttab\"},\"type\":\"test\"}",
+    "expected_hash": "1316ddda14979ab171b80bf2baf6ac26e191d59d5f40a248dcfff44f7b2487a4"
   }
 ]

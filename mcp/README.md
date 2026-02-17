@@ -69,7 +69,7 @@ Add to your `.claude/settings.json`:
 
 ## Tools
 
-The server exposes 12 tools:
+The server exposes 15 tools:
 
 | Tool | Description |
 |------|-------------|
@@ -81,6 +81,9 @@ The server exposes 12 tools:
 | `foodblock_chain` | Trace the version history of a block |
 | `foodblock_tree` | Build the full provenance tree |
 | `foodblock_heads` | List latest versions of all entities |
+| `foodblock_tombstone` | Mark a block for content erasure (GDPR) |
+| `foodblock_validate` | Validate a block against its schema |
+| `foodblock_batch` | Create multiple blocks in one request |
 | `foodblock_create_agent` | Register an AI agent identity |
 | `foodblock_agent_draft` | Create a draft block as an agent |
 | `foodblock_approve_draft` | Approve an agent's draft |

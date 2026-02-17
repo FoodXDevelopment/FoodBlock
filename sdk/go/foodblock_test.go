@@ -126,3 +126,59 @@ func TestCrossLanguageVectors(t *testing.T) {
 		})
 	}
 }
+
+func TestSignAndVerify(t *testing.T) {
+	pub, priv := GenerateKeypair()
+	block := Create("substance.product", map[string]interface{}{"name": "Test"}, nil)
+	actor := Create("actor.foodie", map[string]interface{}{"name": "User"}, nil)
+
+	signed := Sign(block, actor.Hash, priv)
+	if signed.ProtocolVersion != ProtocolVersion {
+		t.Errorf("expected version %s, got %s", ProtocolVersion, signed.ProtocolVersion)
+	}
+	if !Verify(signed, pub) {
+		t.Error("signature should be valid")
+	}
+}
+
+func TestRejectTampered(t *testing.T) {
+	pub, priv := GenerateKeypair()
+	block := Create("substance.product", map[string]interface{}{"name": "Test"}, nil)
+	actor := Create("actor.foodie", map[string]interface{}{"name": "User"}, nil)
+
+	signed := Sign(block, actor.Hash, priv)
+	signed.FoodBlock = Create("substance.product", map[string]interface{}{"name": "Tampered"}, nil)
+	if Verify(signed, pub) {
+		t.Error("tampered signature should be rejected")
+	}
+}
+
+func TestChain(t *testing.T) {
+	v1 := Create("substance.product", map[string]interface{}{"name": "Bread", "price": 4.0}, nil)
+	v2 := Update(v1.Hash, "substance.product", map[string]interface{}{"name": "Bread", "price": 4.5}, nil)
+	v3 := Update(v2.Hash, "substance.product", map[string]interface{}{"name": "Bread", "price": 5.0}, nil)
+
+	store := map[string]Block{v1.Hash: v1, v2.Hash: v2, v3.Hash: v3}
+	resolve := func(h string) *Block {
+		if b, ok := store[h]; ok {
+			return &b
+		}
+		return nil
+	}
+
+	result := Chain(v3.Hash, resolve, 100)
+	if len(result) != 3 {
+		t.Errorf("expected 3 blocks, got %d", len(result))
+	}
+}
+
+func TestTombstone(t *testing.T) {
+	block := Create("substance.product", map[string]interface{}{"name": "Test"}, nil)
+	ts := Tombstone(block.Hash, "user_hash")
+	if ts.Type != "observe.tombstone" {
+		t.Errorf("expected observe.tombstone, got %s", ts.Type)
+	}
+	if ts.Refs["target"] != block.Hash {
+		t.Error("tombstone should reference target")
+	}
+}

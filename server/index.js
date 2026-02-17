@@ -3,7 +3,7 @@ import pg from 'pg'
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { create, update, hash, chain, canonical } from '../sdk/javascript/src/index.js'
+import { create, update, hash, chain, canonical, verify as verifySignature } from '../sdk/javascript/src/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -125,9 +125,44 @@ app.get('/', async (req, res) => {
 })
 
 // POST /blocks — create a block
+// Accepts either:
+//   { type, state, refs }                           — unsigned (dev/bootstrapping)
+//   { foodblock: { type, state, refs }, author_hash, signature } — signed (production)
 app.post('/blocks', async (req, res) => {
   try {
-    const { type, state, refs } = req.body
+    let type, state, refs, authorHash, signature
+
+    if (req.body.foodblock) {
+      // Signed wrapper
+      const wrapper = req.body
+      ;({ type, state, refs } = wrapper.foodblock)
+      authorHash = wrapper.author_hash
+      signature = wrapper.signature
+
+      if (!authorHash || !signature) {
+        return res.status(400).json({ error: 'Signed wrapper requires author_hash and signature' })
+      }
+
+      // Look up author's public key from their actor block
+      const authorResult = await pool.query(
+        'SELECT state FROM foodblocks WHERE hash = $1',
+        [authorHash]
+      )
+      if (authorResult.rows.length > 0 && authorResult.rows[0].state.public_key) {
+        const pubKey = authorResult.rows[0].state.public_key
+        const valid = verifySignature(wrapper, pubKey)
+        if (!valid) {
+          return res.status(403).json({ error: 'Invalid signature' })
+        }
+      }
+      // If author not found or no public_key, allow (bootstrapping)
+    } else {
+      // Unsigned block
+      ;({ type, state, refs } = req.body)
+      authorHash = (refs && refs.author) || null
+      signature = null
+    }
+
     if (!type || typeof type !== 'string') {
       return res.status(400).json({ error: 'type is required and must be a string' })
     }
@@ -149,13 +184,63 @@ app.post('/blocks', async (req, res) => {
       return res.json({ exists: true, block })
     }
 
-    const authorHash = (refs && refs.author) || null
+    // Agent permission enforcement (Fix #11)
+    if (block.refs.agent) {
+      const agentResult = await pool.query(
+        'SELECT state FROM foodblocks WHERE hash = $1 AND type = $2',
+        [block.refs.agent, 'actor.agent']
+      )
+      if (agentResult.rows.length > 0) {
+        const agentState = agentResult.rows[0].state
+        // Check capabilities
+        if (agentState.capabilities && Array.isArray(agentState.capabilities)) {
+          const allowed = agentState.capabilities.some(cap =>
+            cap === '*' || block.type === cap ||
+            (cap.endsWith('.*') && block.type.startsWith(cap.slice(0, -1)))
+          )
+          if (!allowed) {
+            return res.status(403).json({ error: `Agent not authorized for type ${block.type}` })
+          }
+        }
+        // Check rate limit
+        if (agentState.rate_limit_per_hour) {
+          const { rows: countRows } = await pool.query(
+            `SELECT COUNT(*) as cnt FROM foodblocks
+             WHERE refs->>'agent' = $1 AND created_at > NOW() - INTERVAL '1 hour'`,
+            [block.refs.agent]
+          )
+          if (parseInt(countRows[0].cnt) >= agentState.rate_limit_per_hour) {
+            return res.status(429).json({ error: 'Agent rate limit exceeded' })
+          }
+        }
+        // Check max_amount
+        if (agentState.max_amount != null) {
+          const amount = (block.state.total || block.state.amount || block.state.value || 0)
+          if (amount > agentState.max_amount) {
+            return res.status(403).json({
+              error: `Amount ${amount} exceeds agent max_amount ${agentState.max_amount}`
+            })
+          }
+        }
+      }
+    }
 
-    await pool.query(
-      `INSERT INTO foodblocks (hash, type, state, refs, author_hash)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [block.hash, block.type, block.state, block.refs, authorHash]
-    )
+    try {
+      await pool.query(
+        `INSERT INTO foodblocks (hash, type, state, refs, author_hash, signature)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [block.hash, block.type, block.state, block.refs, authorHash, signature]
+      )
+    } catch (err) {
+      // Fix #7: Fork detection — unique constraint on refs->>'updates'
+      if (err.code === '23505') {
+        return res.status(409).json({
+          error: 'Conflict: another block already updates this predecessor',
+          hash: block.hash
+        })
+      }
+      throw err
+    }
 
     res.status(201).json(block)
   } catch (err) {

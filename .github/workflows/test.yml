@@ -56,6 +56,9 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: false
+      - run: go mod tidy
+        working-directory: sdk/go
       - run: go test -v ./...
         working-directory: sdk/go
 

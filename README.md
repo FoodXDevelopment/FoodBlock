@@ -2,7 +2,7 @@
 
 A content-addressable protocol for universal food data.
 
-Three fields. Six base types. Every food industry operation.
+One axiom. Three fields. Six base types. Every food industry operation.
 
 ```json
 {
@@ -82,11 +82,77 @@ const updated = fb.update(bread.hash, 'substance.product', {
 // Sign and verify
 const keys = fb.generateKeypair()
 const signed = fb.sign(bread, farm.hash, keys.privateKey)
+// signed.protocol_version === '0.3.0'
 const valid = fb.verify(signed, keys.publicKey) // true
 
 // Provenance chain
 const history = await fb.chain(updated.hash, resolve)
 // [{ price: 5.00 }, { price: 4.50 }] — newest to oldest
+
+// Validate against schema
+const errors = fb.validate(bread)  // [] if valid
+
+// Tombstone (GDPR erasure)
+const ts = fb.tombstone(bread.hash, user.hash, { reason: 'gdpr_erasure' })
+
+// Offline queue
+const queue = fb.offlineQueue()
+queue.create('transfer.order', { total: 12.00 }, { seller: farmHash })
+await queue.sync('https://api.example.com/foodblock')
+
+// --- Human Interface ---
+
+// Aliases: use @names instead of hashes
+const reg = fb.registry()
+const myFarm = reg.create('actor.producer', { name: 'Green Acres' }, {}, { alias: 'farm' })
+const myWheat = reg.create('substance.ingredient', { name: 'Wheat' }, { source: '@farm' })
+// '@farm' resolves to myFarm.hash automatically
+
+// FoodBlock Notation: one-line text format
+const blocks = fb.parseAll(`
+@farm = actor.producer { "name": "Green Acres Farm" }
+@wheat = substance.ingredient { "name": "Wheat" } -> source: @farm
+`)
+
+// Explain: human-readable narrative from graph
+const story = await fb.explain(bread.hash, resolve)
+// "Sourdough ($4.50). By Green Acres Bakery. Made from Organic Flour (Green Acres Farm)."
+
+// URIs: shareable block references
+fb.toURI(bread)                          // 'fb:a1b2c3...'
+fb.toURI(bread, { alias: 'sourdough' })  // 'fb:substance.product/sourdough'
+
+// --- Templates ---
+
+// Use built-in templates for common patterns
+const chain = fb.fromTemplate(fb.TEMPLATES['supply-chain'], {
+  farm: { state: { name: 'Green Acres Farm' } },
+  crop: { state: { name: 'Organic Wheat' } },
+  processing: { state: { name: 'Stone Milling' } },
+  product: { state: { name: 'Flour', price: 3.20 } }
+})
+// Returns 5 blocks in dependency order, with @alias refs auto-resolved
+
+// Create custom templates
+const myTemplate = fb.createTemplate('Bakery Review', 'Review a bakery product', [
+  { type: 'actor.venue', alias: 'bakery', required: ['name'] },
+  { type: 'substance.product', alias: 'item', refs: { seller: '@bakery' } },
+  { type: 'observe.review', alias: 'review', refs: { subject: '@item' }, required: ['rating'] }
+])
+
+// --- Federation ---
+
+// Discover another FoodBlock server
+const info = await fb.discover('https://farm.example.com')
+// { protocol: 'foodblock', version: '0.3.0', types: [...], count: 142 }
+
+// Resolve blocks across multiple servers
+const resolve = fb.federatedResolver([
+  'http://localhost:3111',
+  'https://farm.example.com',
+  'https://market.example.com'
+])
+const block = await resolve('a1b2c3...')  // tries each server in order
 ```
 
 ## Sandbox
@@ -115,9 +181,26 @@ curl localhost:3111/chain/<hash>
 curl -X POST localhost:3111/blocks \
   -H "Content-Type: application/json" \
   -d '{"type":"observe.review","state":{"rating":5,"text":"Amazing"},"refs":{"subject":"<product_hash>"}}'
+
+# Batch create (offline sync)
+curl -X POST localhost:3111/blocks/batch \
+  -H "Content-Type: application/json" \
+  -d '{"blocks":[...]}'
+
+# Tombstone (content erasure)
+curl -X DELETE localhost:3111/blocks/<hash>
+
+# Federation discovery
+curl localhost:3111/.well-known/foodblock
+
+# List templates
+curl localhost:3111/blocks?type=observe.template
+
+# List vocabularies
+curl localhost:3111/blocks?type=observe.vocabulary
 ```
 
-The sandbox ships preloaded with 32 blocks modelling a complete bakery supply chain — from farm to consumer, including certifications, shipments, cold chain readings, and reviews.
+The sandbox ships preloaded with 44 blocks modelling a complete bakery supply chain — from farm to consumer, including certifications, shipments, cold chain readings, and reviews.
 
 ## API
 
@@ -147,7 +230,7 @@ Find the latest version in an update chain.
 
 ### `sign(block, authorHash, privateKey) → wrapper`
 
-Sign a block with Ed25519. Returns `{ foodblock, author_hash, signature }`.
+Sign a block with Ed25519. Returns `{ foodblock, author_hash, signature, protocol_version }`.
 
 ### `verify(wrapper, publicKey) → boolean`
 
@@ -156,6 +239,26 @@ Verify a signed block wrapper.
 ### `generateKeypair() → { publicKey, privateKey }`
 
 Generate a new Ed25519 keypair for signing.
+
+### `encrypt(value, recipientPublicKeys) → envelope`
+
+Encrypt a value for multiple recipients using envelope encryption (Section 7.2).
+
+### `decrypt(envelope, privateKey, publicKey) → value`
+
+Decrypt an encryption envelope.
+
+### `validate(block, schema?) → string[]`
+
+Validate a block against its declared schema or a provided schema. Returns an array of error messages (empty = valid).
+
+### `tombstone(targetHash, requestedBy, opts?) → block`
+
+Create a tombstone block for content erasure (Section 5.4).
+
+### `offlineQueue() → Queue`
+
+Create an offline queue for local-first block creation with batch sync.
 
 ### `query(resolve) → Query`
 
@@ -171,66 +274,181 @@ const results = await fb.query(resolver)
   .exec()
 ```
 
-## Protocol Rules
+### `registry() → Registry`
 
-1. A FoodBlock is a JSON object with exactly three fields: `type`, `state`, `refs`.
-2. Identity is `SHA-256(canonical(type + state + refs))`.
-3. Blocks are append-only. No block is ever modified or deleted.
-4. Updates create a new block with `refs: { updates: previous_hash }`.
-5. Genesis blocks (empty refs) establish entity identity.
-6. Base type determines expected refs schema (conventions, not enforcement).
-7. Authentication: `{ foodblock, author_hash, signature }` using Ed25519.
-8. Encrypted state: keys prefixed with `_` contain encrypted values.
-9. Any system understanding the six base types can process any FoodBlock.
-10. The protocol is open. No registration, licensing, or permission required.
+Alias registry for human-readable references. Use `@name` in refs instead of hashes.
+
+### `parse(line) → { alias, type, state, refs }`
+
+Parse a single line of FoodBlock Notation (FBN).
+
+### `parseAll(text) → block[]`
+
+Parse multiple lines of FBN.
+
+### `format(block, opts?) → string`
+
+Format a block as FBN text.
+
+### `explain(hash, resolve) → string`
+
+Generate a human-readable narrative from a block's provenance graph.
+
+### `toURI(block, opts?) → string`
+
+Convert a block to a `fb:` URI. `toURI(block)` → `fb:<hash>`, `toURI(block, { alias: 'name' })` → `fb:<type>/<alias>`.
+
+### `fromURI(uri) → object`
+
+Parse a `fb:` URI into `{ hash }` or `{ type, alias }`.
+
+### `createTemplate(name, description, steps, opts?) → block`
+
+Create a template block (`observe.template`) that defines a reusable workflow pattern.
+
+### `fromTemplate(template, values) → block[]`
+
+Instantiate a template into real blocks. `values` maps step aliases to `{ state, refs }` overrides. `@alias` references between steps are resolved automatically.
+
+### `TEMPLATES`
+
+Built-in templates: `supply-chain`, `review`, `certification`.
+
+### `discover(serverUrl, opts?) → info`
+
+Fetch a server's `/.well-known/foodblock` discovery document.
+
+### `federatedResolver(servers, opts?) → resolve`
+
+Create a resolver that tries multiple servers in priority order. Returns `async (hash) => block | null` with optional caching.
+
+### `createVocabulary(domain, forTypes, fields, opts?) → block`
+
+Create a vocabulary block (`observe.vocabulary`) defining canonical field names, types, and natural language aliases for a domain.
+
+### `mapFields(text, vocabulary) → { matched, unmatched }`
+
+Extract field values from natural language text using a vocabulary's aliases. Returns matched fields and unmatched terms.
+
+### `VOCABULARIES`
+
+Built-in vocabulary definitions: `bakery`, `restaurant`, `farm`, `retail`.
+
+### `merkleize(state) → { root, leaves, tree }`
+
+Build a Merkle tree from a state object for selective disclosure.
+
+### `selectiveDisclose(state, fieldNames) → { disclosed, proof, root }`
+
+Reveal only specific fields with a Merkle proof that they belong to the block.
+
+### `verifyProof(disclosed, proof, root) → boolean`
+
+Verify a selective disclosure proof.
+
+### `merge(hashA, hashB, resolve, opts?) → block`
+
+Create a merge block resolving a fork between two update chain heads.
+
+### `attest(targetHash, attestorHash, opts?) → block`
+
+Create an attestation block confirming a claim. `opts.confidence`: `verified`, `probable`, `unverified`.
+
+### `dispute(targetHash, disputerHash, reason) → block`
+
+Create a dispute block challenging a claim.
+
+### `trustScore(hash, allBlocks) → number`
+
+Compute net trust score: attestations minus disputes.
+
+### `createSnapshot(blocks, opts?) → block`
+
+Summarize a set of blocks into a snapshot with a Merkle root for archival verification.
+
+## The Axiom
+
+**A FoodBlock's identity is its content:** `SHA-256(canonical(type + state + refs))`.
+
+Everything follows from this:
+- **Immutability** — change content, change identity
+- **Determinism** — same content, same hash, anywhere
+- **Deduplication** — identical products resolve to one block
+- **Tamper evidence** — any modification is detectable
+- **Offline validity** — no server needed to create blocks
+- **Provenance** — refs form a directed graph of history
+
+Seven operational rules govern the protocol's use:
+
+1. A FoodBlock has exactly three fields: `type`, `state`, `refs`.
+2. Authentication: `{ foodblock, author_hash, signature, protocol_version }` using Ed25519.
+3. Encrypted state: `_` prefixed keys contain envelope-encrypted values.
+4. Author-scoped updates: only the original author or approved actor may create successors.
+5. Tombstones erase content while preserving graph structure.
+6. Schema declarations are optional.
+7. The protocol is open. No permission required.
 
 ## Canonical JSON
 
-Deterministic hashing requires deterministic serialization:
+Deterministic hashing requires deterministic serialization. Aligns with [RFC 8785 (JSON Canonicalization Scheme)](https://tools.ietf.org/html/rfc8785) for number formatting and key ordering:
 
 - Keys sorted lexicographically at every nesting level
 - No whitespace between tokens
-- Numbers: no trailing zeros, no leading zeros
+- Numbers: no trailing zeros, no leading zeros. `-0` normalized to `0`.
 - Strings: Unicode NFC normalization
 - Arrays in `refs`: sorted lexicographically (set semantics)
 - Arrays in `state`: preserve declared order (sequence semantics)
 - Null values: omitted
+- Booleans: `true` or `false`
 
 ## Database Schema
 
 ```sql
 CREATE TABLE foodblocks (
-    hash        VARCHAR(64) PRIMARY KEY,
-    type        VARCHAR(100) NOT NULL,
-    state       JSONB NOT NULL DEFAULT '{}',
-    refs        JSONB NOT NULL DEFAULT '{}',
-    author_hash VARCHAR(64),
-    signature   TEXT,
-    chain_id    VARCHAR(64),
-    is_head     BOOLEAN DEFAULT TRUE,
-    created_at  TIMESTAMP DEFAULT NOW()
+    hash             VARCHAR(64) PRIMARY KEY,
+    type             VARCHAR(100) NOT NULL,
+    state            JSONB NOT NULL DEFAULT '{}',
+    refs             JSONB NOT NULL DEFAULT '{}',
+    author_hash      VARCHAR(64),
+    signature        TEXT,
+    protocol_version VARCHAR(10) DEFAULT '0.3',
+    chain_id         VARCHAR(64),
+    is_head          BOOLEAN DEFAULT TRUE,
+    created_at       TIMESTAMP DEFAULT NOW()
 );
 ```
 
-Full schema with indexes and triggers: [`sql/schema.sql`](sql/schema.sql)
+Full schema with indexes, author-scoped head trigger, and tombstone trigger: [`sql/schema.sql`](sql/schema.sql)
 
 ## Cross-Language Test Vectors
 
-[`test/vectors.json`](test/vectors.json) contains known inputs and expected hashes. Any SDK in any language must produce identical hashes for these inputs. If JavaScript and Python disagree, the protocol is broken.
+[`test/vectors.json`](test/vectors.json) contains 30 known inputs and expected hashes — including tombstone blocks, schema references, vocabulary blocks, attestation blocks, merge blocks, RFC 8785 number edge cases, and more. Any SDK in any language must produce identical hashes for these inputs. If JavaScript and Python disagree, the protocol is broken.
 
 ## Project Structure
 
 ```
 foodblock/
-├── spec/whitepaper.md           Protocol specification
-├── sdk/javascript/              JavaScript SDK
-│   ├── src/                     Source code
-│   └── test/                    Test suite (31 tests)
+├── spec/whitepaper.md           Protocol specification (v0.3)
+├── sdk/javascript/              JavaScript SDK (reference implementation)
+│   ├── src/                     block, chain, verify, encrypt, validate, offline, tombstone,
+│   │                            alias, notation, explain, uri, template, federation,
+│   │                            vocabulary, merge, merkle, snapshot, attestation
+│   └── test/                    Test suite (67 tests)
+├── sdk/python/                  Python SDK
+│   ├── foodblock/               block, chain, verify, validate, tombstone,
+│   │                            alias, notation, explain, uri, template, federation,
+│   │                            vocabulary, merge, merkle, snapshot, attestation
+│   └── tests/                   Test suite (58 tests)
+├── sdk/go/                      Go SDK
+│   └── foodblock.go             block, chain, sign/verify, tombstone
+├── sdk/swift/                   Swift SDK
+│   └── Sources/                 block, tombstone
+├── mcp/                         MCP server for AI agent integration (15 tools)
 ├── sandbox/                     Local sandbox server
-│   ├── server.js                Zero-dependency HTTP API
-│   └── seed.js                  Sample bakery supply chain
+│   ├── server.js                Zero-dependency HTTP API + federation discovery
+│   └── seed.js                  44-block bakery chain + templates + vocabularies
 ├── sql/schema.sql               Postgres schema + triggers
-├── test/vectors.json            Cross-language test vectors
+├── test/vectors.json            Cross-language test vectors (30 vectors)
 └── LICENSE                      MIT
 ```
 
@@ -264,3 +482,4 @@ MIT — use it however you want.
 - [Whitepaper](spec/whitepaper.md)
 - [Test Vectors](test/vectors.json)
 - [Schema](sql/schema.sql)
+- [MCP Server](mcp/README.md)

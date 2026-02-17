@@ -1,6 +1,8 @@
 import Foundation
 import CryptoKit
 
+public let PROTOCOL_VERSION = "0.3.0"
+
 /// A FoodBlock: the universal food data primitive.
 public struct FoodBlock: Codable, Equatable {
     public let hash: String
@@ -24,6 +26,30 @@ public struct FoodBlock: Codable, Equatable {
             state: cleanState.mapValues { AnyCodable($0) },
             refs: cleanRefs.mapValues { AnyCodable($0) }
         )
+    }
+
+    /// Create a tombstone block for content erasure (Section 5.4).
+    public static func tombstone(targetHash: String, requestedBy: String, reason: String = "erasure_request") -> FoodBlock {
+        return create(
+            type: "observe.tombstone",
+            state: [
+                "reason": reason,
+                "requested_by": requestedBy,
+                "instance_id": UUID().uuidString.lowercased()
+            ],
+            refs: [
+                "target": targetHash,
+                "updates": targetHash
+            ]
+        )
+    }
+
+    /// Create an update by merging changes into previous block's state.
+    public static func mergeUpdate(previousBlock: FoodBlock, stateChanges: [String: Any] = [:], additionalRefs: [String: Any] = [:]) -> FoodBlock {
+        var merged: [String: Any] = [:]
+        for (k, v) in previousBlock.state { merged[k] = v.value }
+        for (k, v) in stateChanges { merged[k] = v }
+        return update(previousHash: previousBlock.hash, type: previousBlock.type, state: merged, refs: additionalRefs)
     }
 
     /// Create an update block that supersedes a previous block.
@@ -56,12 +82,31 @@ public struct FoodBlock: Codable, Equatable {
             if value is NSNull { continue }
             if let nested = value as? [String: Any] {
                 result[key] = omitNulls(nested)
+            } else if let arr = value as? [Any] {
+                result[key] = omitNullsArray(arr)
             } else {
                 result[key] = value
             }
         }
         return result
     }
+
+    private static func omitNullsArray(_ arr: [Any]) -> [Any] {
+        return arr.compactMap { item -> Any? in
+            if item is NSNull { return nil }
+            if let nested = item as? [String: Any] { return omitNulls(nested) }
+            if let nested = item as? [Any] { return omitNullsArray(nested) }
+            return item
+        }
+    }
+}
+
+/// Authentication wrapper (Rule 7).
+public struct SignedBlock: Codable {
+    public let foodblock: FoodBlock
+    public let author_hash: String
+    public let signature: String
+    public let protocol_version: String
 }
 
 /// Type-erased Codable wrapper for heterogeneous dictionaries.

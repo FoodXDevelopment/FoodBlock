@@ -73,7 +73,7 @@ async def tree(start_hash: str, resolve: Callable, max_depth: int = 20) -> Optio
     return await build(start_hash, 0)
 
 
-async def head(start_hash: str, resolve_forward: Callable) -> str:
+async def head(start_hash: str, resolve_forward: Callable, max_depth: int = 1000) -> str:
     """
     Find the head (latest version) of an update chain.
 
@@ -83,8 +83,14 @@ async def head(start_hash: str, resolve_forward: Callable) -> str:
     Returns the hash of the head block.
     """
     current = start_hash
+    visited = set()
+    depth = 0
 
-    while True:
+    while depth < max_depth:
+        if current in visited:
+            break
+        visited.add(current)
+
         children = await resolve_forward(current)
         updater = None
         for child in children:
@@ -100,6 +106,7 @@ async def head(start_hash: str, resolve_forward: Callable) -> str:
 
         if not updater:
             break
-        current = updater.get("hash", updater.get("hash"))
+        current = updater.get("hash")
+        depth += 1
 
     return current

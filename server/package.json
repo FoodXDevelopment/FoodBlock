@@ -1,6 +1,6 @@
 {
   "name": "foodblock-server",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "FoodBlock reference server — deploy your own node",
   "type": "module",
   "main": "index.js",

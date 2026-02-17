@@ -98,4 +98,10 @@ final class FoodBlockTests: XCTestCase {
         let b = FoodBlock.create(type: "observe.post", state: ["text": "Hello", "visibility": "public"])
         XCTAssertNotEqual(a.hash, b.hash)
     }
+
+    func testTombstone() {
+        let block = FoodBlock.create(type: "substance.product", state: ["name": "Test"])
+        let ts = FoodBlock.tombstone(targetHash: block.hash, requestedBy: "user_hash")
+        XCTAssertEqual(ts.type, "observe.tombstone")
+    }
 }

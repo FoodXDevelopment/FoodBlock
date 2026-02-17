@@ -2,15 +2,19 @@ const { normalize } = require('string_decoder')
 
 /**
  * Produces deterministic JSON for hashing.
+ * Aligns with RFC 8785 (JSON Canonicalization Scheme) for number formatting
+ * and key ordering, extended with FoodBlock-specific rules.
  *
- * Rules:
- * 1. Keys sorted lexicographically at every nesting level
- * 2. No whitespace
- * 3. Numbers: no trailing zeros, no leading zeros, no positive sign
- * 4. Strings: Unicode NFC normalization
- * 5. Arrays in `refs` are sorted lexicographically (set semantics)
- * 6. Arrays in `state` preserve declared order (sequence semantics)
- * 7. Null values are omitted
+ * Rules (RFC 8785 + FoodBlock):
+ * 1. Keys sorted lexicographically at every nesting level (RFC 8785 §3.2.3)
+ * 2. No whitespace between tokens (RFC 8785 §3.2.1)
+ * 3. Numbers: IEEE 754 shortest representation, no positive sign (RFC 8785 §3.2.2.3)
+ *    -0 normalized to 0. NaN and Infinity are not valid.
+ * 4. Strings: Unicode NFC normalization (FoodBlock extension)
+ * 5. Arrays in `refs` are sorted lexicographically — set semantics (FoodBlock extension)
+ * 6. Arrays in `state` preserve declared order — sequence semantics (FoodBlock extension)
+ * 7. Null values are omitted (FoodBlock extension)
+ * 8. Boolean values: literal `true` or `false` (RFC 8785 §3.2.2)
  */
 
 function canonical(type, state, refs) {

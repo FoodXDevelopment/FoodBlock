@@ -25,15 +25,32 @@ function create(type, state = {}, refs = {}) {
 
 /**
  * Create an update block that supersedes a previous block.
- * Merges new state with the previous state.
+ * Note: state is a FULL REPLACEMENT, not a merge with previous state.
+ * Use mergeUpdate() if you want to merge changes into previous state.
  */
-function update(previousHash, type, stateChanges = {}, additionalRefs = {}) {
+function update(previousHash, type, state = {}, additionalRefs = {}) {
   if (!previousHash || typeof previousHash !== 'string') {
     throw new Error('FoodBlock: previousHash is required')
   }
 
   const refs = { ...additionalRefs, updates: previousHash }
-  return create(type, stateChanges, refs)
+  return create(type, state, refs)
+}
+
+/**
+ * Create an update by merging changes into the previous block's state.
+ * Shallow-merges stateChanges into previousBlock.state.
+ *
+ * @param {object} previousBlock - The block to update (must have .hash, .type, .state)
+ * @param {object} stateChanges - Fields to merge into previous state
+ * @param {object} additionalRefs - Extra refs (updates ref is added automatically)
+ */
+function mergeUpdate(previousBlock, stateChanges = {}, additionalRefs = {}) {
+  if (!previousBlock || !previousBlock.hash) {
+    throw new Error('FoodBlock: previousBlock with hash is required')
+  }
+  const mergedState = { ...previousBlock.state, ...stateChanges }
+  return update(previousBlock.hash, previousBlock.type, mergedState, additionalRefs)
 }
 
 /**
@@ -54,7 +71,7 @@ function omitNulls(obj) {
   const result = {}
   for (const [key, value] of Object.entries(obj)) {
     if (value == null) continue
-    if (typeof value === 'object' && !Array.isArray(value)) {
+    if (typeof value === 'object') {
       result[key] = omitNulls(value)
     } else {
       result[key] = value
@@ -63,4 +80,4 @@ function omitNulls(obj) {
   return result
 }
 
-module.exports = { create, update, hash }
+module.exports = { create, update, mergeUpdate, hash }

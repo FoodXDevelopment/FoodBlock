@@ -17,13 +17,33 @@ def create(type_: str, state: dict = None, refs: dict = None) -> dict:
 
 
 def update(previous_hash: str, type_: str, state: dict = None, refs: dict = None) -> dict:
-    """Create an update block that supersedes a previous block."""
+    """Create an update block that supersedes a previous block.
+
+    Note: state is a FULL REPLACEMENT, not a merge with previous state.
+    Use merge_update() if you want to merge changes into previous state.
+    """
     if not previous_hash or not isinstance(previous_hash, str):
         raise ValueError("FoodBlock: previous_hash is required")
 
     merged_refs = dict(refs or {})
     merged_refs["updates"] = previous_hash
     return create(type_, state, merged_refs)
+
+
+def merge_update(previous_block: dict, state_changes: dict = None, additional_refs: dict = None) -> dict:
+    """Create an update by merging changes into the previous block's state.
+
+    Shallow-merges state_changes into previous_block['state'].
+
+    Args:
+        previous_block: The block to update (must have 'hash', 'type', 'state')
+        state_changes: Fields to merge into previous state
+        additional_refs: Extra refs (updates ref is added automatically)
+    """
+    if not previous_block or not previous_block.get("hash"):
+        raise ValueError("FoodBlock: previous_block with hash is required")
+    merged_state = {**previous_block["state"], **(state_changes or {})}
+    return update(previous_block["hash"], previous_block["type"], merged_state, additional_refs)
 
 
 def compute_hash(type_: str, state: dict = None, refs: dict = None) -> str:

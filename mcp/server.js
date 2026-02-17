@@ -17,22 +17,38 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 // Load FoodBlock SDK (CommonJS)
-const { create, update, chain, tree, canonical, createAgent, approveDraft, generateKeypair, sign, verify } = require("@foodxdev/foodblock");
+const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, generateKeypair, sign, verify, tombstone, validate, offlineQueue } = require("@foodxdev/foodblock");
 
 const API_URL = process.env.FOODBLOCK_URL || "https://api.foodx.world/foodblock";
 
 // Agent registry — maps agent hash to { keypair, operatorHash, sign }
 const agents = new Map();
 
-// ── HTTP helpers ─────────────────────────────────────────────────────────
+// ── HTTP helpers (Fix #9: proper error handling) ─────────────────────────
 
 async function api(path, opts = {}) {
   const url = `${API_URL}${path}`;
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json", ...opts.headers },
-    ...opts,
-  });
-  return res.json();
+  let res;
+  try {
+    res = await fetch(url, {
+      headers: { "Content-Type": "application/json", ...opts.headers },
+      signal: AbortSignal.timeout(15000),
+      ...opts,
+    });
+  } catch (err) {
+    throw new Error(`FoodBlock API unreachable (${url}): ${err.message}`);
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`FoodBlock API error ${res.status} from ${path}: ${text}`);
+  }
+
+  try {
+    return await res.json();
+  } catch {
+    throw new Error(`FoodBlock API returned non-JSON response from ${path}`);
+  }
 }
 
 async function apiGet(path) {
@@ -45,15 +61,33 @@ async function apiPost(path, body) {
 
 // Resolver for SDK chain/tree functions
 const resolve = async (h) => {
-  const res = await apiGet(`/blocks/${h}`);
-  return res.error ? null : res;
+  try {
+    const res = await apiGet(`/blocks/${h}`);
+    return res.error ? null : res;
+  } catch {
+    return null;
+  }
 };
+
+// Tool handler wrapper — catches errors and returns them as MCP error content
+function toolHandler(fn) {
+  return async (args) => {
+    try {
+      return await fn(args);
+    } catch (err) {
+      return {
+        content: [{ type: "text", text: `Error: ${err.message}` }],
+        isError: true,
+      };
+    }
+  };
+}
 
 // ── MCP Server ──────────────────────────────────────────────────────────
 
 const server = new McpServer({
   name: "foodblock",
-  version: "0.1.0",
+  version: "0.3.0",
 });
 
 // ── Tool: foodblock_create ──────────────────────────────────────────────
@@ -91,13 +125,12 @@ server.registerTool(
         ),
     },
   },
-  async ({ type, state, refs }) => {
+  toolHandler(async ({ type, state, refs }) => {
     const result = await apiPost("/blocks", { type, state: state || {}, refs: refs || {} });
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_update ──────────────────────────────────────────────
@@ -108,7 +141,8 @@ server.registerTool(
     title: "Update FoodBlock",
     description:
       "Create a new version of an existing FoodBlock. FoodBlocks are append-only — " +
-      "this creates a new block that references the previous one via refs.updates.",
+      "this creates a new block that references the previous one via refs.updates. " +
+      "Note: state is a FULL REPLACEMENT, not a merge.",
     inputSchema: {
       previous_hash: z
         .string()
@@ -126,14 +160,13 @@ server.registerTool(
         .describe("Additional refs (updates ref is added automatically)"),
     },
   },
-  async ({ previous_hash, type, state, refs }) => {
+  toolHandler(async ({ previous_hash, type, state, refs }) => {
     const mergedRefs = { ...(refs || {}), updates: previous_hash };
     const result = await apiPost("/blocks", { type, state: state || {}, refs: mergedRefs });
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_get ─────────────────────────────────────────────────
@@ -149,13 +182,12 @@ server.registerTool(
         .describe("The 64-character hex hash of the block to retrieve"),
     },
   },
-  async ({ hash: h }) => {
+  toolHandler(async ({ hash: h }) => {
     const result = await apiGet(`/blocks/${h}`);
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_query ───────────────────────────────────────────────
@@ -191,7 +223,7 @@ server.registerTool(
         .describe("Maximum results to return (default 20)"),
     },
   },
-  async ({ type, ref_role, ref_value, heads_only, limit }) => {
+  toolHandler(async ({ type, ref_role, ref_value, heads_only, limit }) => {
     const params = new URLSearchParams();
     if (type) params.set("type", type);
     if (ref_role && ref_value) {
@@ -202,11 +234,10 @@ server.registerTool(
     if (limit) params.set("limit", String(limit));
 
     const result = await apiGet(`/blocks?${params}`);
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_chain ───────────────────────────────────────────────
@@ -229,13 +260,12 @@ server.registerTool(
         .describe("Maximum chain depth to traverse (default 50)"),
     },
   },
-  async ({ hash: h, max_depth }) => {
+  toolHandler(async ({ hash: h, max_depth }) => {
     const result = await apiGet(`/chain/${h}?depth=${max_depth || 50}`);
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_tree ────────────────────────────────────────────────
@@ -258,20 +288,17 @@ server.registerTool(
         .describe("Maximum tree depth (default 10)"),
     },
   },
-  async ({ hash: h, max_depth }) => {
-    // Tree uses SDK with API-backed resolver
+  toolHandler(async ({ hash: h, max_depth }) => {
     const result = await tree(h, resolve, { maxDepth: max_depth || 10 });
-
     if (!result) {
       return {
         content: [{ type: "text", text: `Block not found: ${h}` }],
       };
     }
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_heads ───────────────────────────────────────────────
@@ -290,16 +317,14 @@ server.registerTool(
         .describe("Optional type filter (e.g. 'substance.product')"),
     },
   },
-  async ({ type }) => {
+  toolHandler(async ({ type }) => {
     const params = new URLSearchParams();
     if (type) params.set("type", type);
-
     const result = await apiGet(`/heads?${params}`);
-
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_info ────────────────────────────────────────────────
@@ -313,7 +338,7 @@ server.registerTool(
       "Call this first to understand what data is available.",
     inputSchema: {},
   },
-  async () => {
+  toolHandler(async () => {
     let info = null;
     try {
       info = await apiGet("/");
@@ -344,6 +369,7 @@ server.registerTool(
                 "Use foodblock_chain on any block for version history",
                 "Use foodblock_create to add new blocks",
                 "Use foodblock_create_agent to register as an AI agent",
+                "Use foodblock_load_agent to restore a previously created agent",
               ],
             },
             null,
@@ -352,10 +378,10 @@ server.registerTool(
         },
       ],
     };
-  }
+  })
 );
 
-// ── Tool: foodblock_create_agent ─────────────────────────────────────
+// ── Tool: foodblock_create_agent (Fix #8: returns credentials) ──────────
 
 server.registerTool(
   "foodblock_create_agent",
@@ -364,7 +390,8 @@ server.registerTool(
     description:
       "Register a new AI agent in the FoodBlock system. " +
       "The agent gets its own identity, Ed25519 keypair, and can sign blocks. " +
-      "Every agent must have an operator — the human or business it acts for.",
+      "Every agent must have an operator — the human or business it acts for. " +
+      "IMPORTANT: Save the returned credentials — they cannot be recovered after server restart.",
     inputSchema: {
       name: z.string().describe("Name for the agent, e.g. 'Bakery Assistant'"),
       operator_hash: z.string().describe("Hash of the actor this agent works for"),
@@ -372,7 +399,7 @@ server.registerTool(
       capabilities: z.array(z.string()).optional().describe("Agent capabilities"),
     },
   },
-  async ({ name, operator_hash, model, capabilities }) => {
+  toolHandler(async ({ name, operator_hash, model, capabilities }) => {
     const opts = {};
     if (model) opts.model = model;
     if (capabilities) opts.capabilities = capabilities;
@@ -391,6 +418,7 @@ server.registerTool(
       keypair: agent.keypair,
       operatorHash: operator_hash,
       sign: agent.sign,
+      block: agent.block,
     });
 
     return {
@@ -401,8 +429,11 @@ server.registerTool(
             {
               agent_hash: agent.authorHash,
               block: result,
-              public_key: agent.keypair.publicKey,
-              message: `Agent "${name}" created. Use agent_hash ${agent.authorHash} to create drafts.`,
+              credentials: {
+                public_key: agent.keypair.publicKey,
+                private_key: agent.keypair.privateKey,
+              },
+              message: `Agent "${name}" created. SAVE THE CREDENTIALS — use foodblock_load_agent to restore after restart.`,
             },
             null,
             2
@@ -410,7 +441,50 @@ server.registerTool(
         },
       ],
     };
-  }
+  })
+);
+
+// ── Tool: foodblock_load_agent (Fix #8: agent persistence) ──────────────
+
+server.registerTool(
+  "foodblock_load_agent",
+  {
+    title: "Load Agent",
+    description:
+      "Load a previously created agent using saved credentials. " +
+      "Required after MCP server restart to restore signing ability.",
+    inputSchema: {
+      agent_hash: z.string().describe("The agent's block hash (from foodblock_create_agent)"),
+      private_key: z.string().describe("The agent's private key hex (from foodblock_create_agent credentials)"),
+      public_key: z.string().optional().describe("The agent's public key hex (optional, for verification)"),
+    },
+  },
+  toolHandler(async ({ agent_hash, private_key, public_key }) => {
+    const keypair = { privateKey: private_key, publicKey: public_key || "" };
+    const loaded = loadAgent(agent_hash, keypair);
+
+    agents.set(agent_hash, {
+      keypair,
+      sign: loaded.sign,
+    });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              agent_hash,
+              loaded: true,
+              message: `Agent ${agent_hash.slice(0, 16)}... loaded and ready to sign blocks.`,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  })
 );
 
 // ── Tool: foodblock_agent_draft ─────────────────────────────────────
@@ -429,12 +503,12 @@ server.registerTool(
       refs: z.record(z.any()).optional().default({}).describe("Block refs"),
     },
   },
-  async ({ agent_hash, type, state, refs }) => {
+  toolHandler(async ({ agent_hash, type, state, refs }) => {
     const agentData = agents.get(agent_hash);
     if (!agentData) {
       return {
         content: [
-          { type: "text", text: `Error: Agent ${agent_hash} not registered. Create one first with foodblock_create_agent.` },
+          { type: "text", text: `Error: Agent ${agent_hash} not registered. Use foodblock_create_agent or foodblock_load_agent first.` },
         ],
       };
     }
@@ -463,7 +537,7 @@ server.registerTool(
         },
       ],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_approve_draft ───────────────────────────────────
@@ -478,7 +552,7 @@ server.registerTool(
       draft_hash: z.string().describe("Hash of the draft block to approve"),
     },
   },
-  async ({ draft_hash }) => {
+  toolHandler(async ({ draft_hash }) => {
     const draft = await apiGet(`/blocks/${draft_hash}`);
     if (draft.error) {
       return {
@@ -517,7 +591,7 @@ server.registerTool(
         },
       ],
     };
-  }
+  })
 );
 
 // ── Tool: foodblock_list_agents ─────────────────────────────────────
@@ -529,7 +603,7 @@ server.registerTool(
     description: "List all AI agents in the FoodBlock system.",
     inputSchema: {},
   },
-  async () => {
+  toolHandler(async () => {
     const result = await apiGet("/blocks?type=actor.agent&limit=100");
     const agentBlocks = result.blocks || [];
 
@@ -550,7 +624,141 @@ server.registerTool(
         },
       ],
     };
-  }
+  })
+);
+
+// ── Tool: foodblock_tombstone ────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_tombstone",
+  {
+    title: "Tombstone FoodBlock",
+    description:
+      "Mark a FoodBlock for content erasure (GDPR compliance). Creates an observe.tombstone " +
+      "block that references the target. The target block's state is replaced with {tombstoned: true}. " +
+      "The hash, type, and refs are preserved for chain integrity.",
+    inputSchema: {
+      target_hash: z
+        .string()
+        .describe("Hash of the block to tombstone (64-character hex string)"),
+      requested_by: z
+        .string()
+        .describe("Hash of the actor requesting erasure"),
+      reason: z
+        .string()
+        .optional()
+        .default("erasure_request")
+        .describe("Reason for erasure (e.g. 'gdpr_erasure', 'user_request')"),
+    },
+  },
+  toolHandler(async ({ target_hash, requested_by, reason }) => {
+    // Use the DELETE endpoint if available, otherwise create tombstone manually
+    try {
+      const result = await api(`/blocks/${target_hash}`, {
+        method: "DELETE",
+        body: JSON.stringify({ requested_by, reason }),
+      });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    } catch {
+      // Fallback: create tombstone block and POST it
+      const ts = tombstone(target_hash, requested_by, { reason });
+      const result = await apiPost("/blocks", {
+        type: ts.type,
+        state: ts.state,
+        refs: ts.refs,
+      });
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              { tombstone: result, target: target_hash, message: "Tombstone created. Target state should be erased by the server." },
+              null,
+              2
+            ),
+          },
+        ],
+      };
+    }
+  })
+);
+
+// ── Tool: foodblock_validate ────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_validate",
+  {
+    title: "Validate FoodBlock",
+    description:
+      "Validate a FoodBlock against its declared schema or a provided schema. " +
+      "Returns an array of error messages (empty means valid). " +
+      "Checks required fields, types, expected refs, and instance_id requirements.",
+    inputSchema: {
+      type: z.string().describe("Block type to validate"),
+      state: z
+        .record(z.any())
+        .optional()
+        .default({})
+        .describe("Block state to validate"),
+      refs: z
+        .record(z.any())
+        .optional()
+        .default({})
+        .describe("Block refs to validate"),
+    },
+  },
+  toolHandler(async ({ type, state, refs }) => {
+    const block = { type, state: state || {}, refs: refs || {} };
+    const errors = validate(block);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              valid: errors.length === 0,
+              errors,
+              block_type: type,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  })
+);
+
+// ── Tool: foodblock_batch ───────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_batch",
+  {
+    title: "Batch Create FoodBlocks",
+    description:
+      "Create multiple FoodBlocks in a single request. Blocks are sorted in dependency order " +
+      "automatically. Useful for syncing offline-created blocks or bulk imports. " +
+      "Returns counts of inserted, skipped (duplicates), and failed blocks.",
+    inputSchema: {
+      blocks: z
+        .array(
+          z.object({
+            type: z.string(),
+            state: z.record(z.any()).optional().default({}),
+            refs: z.record(z.any()).optional().default({}),
+          })
+        )
+        .describe("Array of blocks to create, each with type, state, refs"),
+    },
+  },
+  toolHandler(async ({ blocks }) => {
+    const result = await apiPost("/blocks/batch", { blocks });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  })
 );
 
 // ── Start ───────────────────────────────────────────────────────────────
@@ -558,7 +766,7 @@ server.registerTool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`FoodBlock MCP Server running on stdio`);
+  console.error(`FoodBlock MCP Server v0.3.0 running on stdio`);
   console.error(`API: ${API_URL}`);
 }
 
