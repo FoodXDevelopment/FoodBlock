@@ -1,0 +1,32 @@
+{
+  "name": "foodblock-cli",
+  "version": "0.1.0",
+  "description": "CLI for the FoodBlock protocol — create, query, and trace food blocks from your terminal",
+  "type": "module",
+  "bin": {
+    "fb": "./bin/fb.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "dependencies": {
+    "@foodxdev/foodblock": "file:../sdk/javascript"
+  },
+  "keywords": [
+    "food",
+    "foodblock",
+    "cli",
+    "traceability",
+    "provenance",
+    "supply-chain"
+  ],
+  "license": "MIT",
+  "author": "FoodX <developers@foodx.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FoodXDevelopment/foodblock"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

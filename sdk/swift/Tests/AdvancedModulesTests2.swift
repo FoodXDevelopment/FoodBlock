@@ -539,7 +539,7 @@ final class AdvancedModulesTests2: XCTestCase {
 
     func testVocabulariesExist() {
         let vocabs = FoodBlockVocabulary.vocabularies
-        XCTAssertEqual(vocabs.count, 7)
+        XCTAssertEqual(vocabs.count, 14)
         XCTAssertNotNil(vocabs["bakery"])
         XCTAssertNotNil(vocabs["restaurant"])
         XCTAssertNotNil(vocabs["farm"])
@@ -547,6 +547,13 @@ final class AdvancedModulesTests2: XCTestCase {
         XCTAssertNotNil(vocabs["lot"])
         XCTAssertNotNil(vocabs["units"])
         XCTAssertNotNil(vocabs["workflow"])
+        XCTAssertNotNil(vocabs["distributor"])
+        XCTAssertNotNil(vocabs["processor"])
+        XCTAssertNotNil(vocabs["market"])
+        XCTAssertNotNil(vocabs["catering"])
+        XCTAssertNotNil(vocabs["fishery"])
+        XCTAssertNotNil(vocabs["dairy"])
+        XCTAssertNotNil(vocabs["butcher"])
     }
 
     func testMapFields() {
@@ -581,10 +588,16 @@ final class AdvancedModulesTests2: XCTestCase {
 
     func testTemplatesExist() {
         let templates = FoodBlockTemplate.templates
-        XCTAssertEqual(templates.count, 3)
+        XCTAssertEqual(templates.count, 9)
         XCTAssertNotNil(templates["supply-chain"])
         XCTAssertNotNil(templates["review"])
         XCTAssertNotNil(templates["certification"])
+        XCTAssertNotNil(templates["surplus-rescue"])
+        XCTAssertNotNil(templates["agent-reorder"])
+        XCTAssertNotNil(templates["restaurant-sourcing"])
+        XCTAssertNotNil(templates["food-safety-audit"])
+        XCTAssertNotNil(templates["market-day"])
+        XCTAssertNotNil(templates["cold-chain"])
     }
 
     func testFromTemplate() {
