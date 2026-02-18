@@ -1,0 +1,332 @@
+[
+  {
+    "functionDeclarations": [
+      {
+        "name": "foodblock_fb",
+        "description": "The single natural language entry point to FoodBlock. Describe food in plain English and get structured FoodBlocks back. No need to know types, fields, or hashes. Examples: 'Sourdough bread, $4.50, organic, contains gluten', 'Amazing pizza at Luigi's, 5 stars', 'Green Acres Farm, 200 acres, organic wheat in Oregon', 'Walk-in cooler temperature 4 celsius', 'Ordered 50kg flour from Stone Mill'.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "description": "Any food-related natural language text"
+            }
+          },
+          "required": ["text"]
+        }
+      },
+      {
+        "name": "foodblock_create",
+        "description": "Create a new FoodBlock. A FoodBlock is the universal data primitive for the food system. It has three fields: type (what it is), state (its properties), refs (what it references). Base types: actor (person/org), place (location), substance (ingredient/product), transform (cooking/processing), transfer (sale/delivery), observe (review/certification). Use dot notation for subtypes: actor.producer, substance.product, observe.review, etc.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Block type. Base types: actor, place, substance, transform, transfer, observe. Use dot notation for subtypes, e.g. actor.producer, substance.product, transfer.order"
+            },
+            "state": {
+              "type": "object",
+              "description": "The block's properties as a JSON object. Example: { name: 'Sourdough', price: 4.50 }"
+            },
+            "refs": {
+              "type": "object",
+              "description": "References to other blocks by hash. Example: { seller: 'abc123...' }"
+            }
+          },
+          "required": ["type"]
+        }
+      },
+      {
+        "name": "foodblock_update",
+        "description": "Create a new version of an existing FoodBlock. FoodBlocks are append-only — this creates a new block that references the previous one via refs.updates. Note: state is a FULL REPLACEMENT, not a merge.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "previous_hash": {
+              "type": "string",
+              "description": "The hash of the block to update (64-character hex string)"
+            },
+            "type": {
+              "type": "string",
+              "description": "The block type (must match the original)"
+            },
+            "state": {
+              "type": "object",
+              "description": "The new state (full replacement, not a merge)"
+            },
+            "refs": {
+              "type": "object",
+              "description": "Additional refs (updates ref is added automatically)"
+            }
+          },
+          "required": ["previous_hash", "type"]
+        }
+      },
+      {
+        "name": "foodblock_get",
+        "description": "Fetch a specific FoodBlock by its SHA-256 hash.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "hash": {
+              "type": "string",
+              "description": "The 64-character hex hash of the block to retrieve"
+            }
+          },
+          "required": ["hash"]
+        }
+      },
+      {
+        "name": "foodblock_query",
+        "description": "Search for FoodBlocks by type, ref, or heads. Returns matching blocks.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Filter by type (exact or prefix). Examples: 'actor', 'substance.product'"
+            },
+            "ref_role": {
+              "type": "string",
+              "description": "Filter by ref role name. Use with ref_value. Example: 'seller'"
+            },
+            "ref_value": {
+              "type": "string",
+              "description": "Filter by ref value (a block hash). Use with ref_role."
+            },
+            "heads_only": {
+              "type": "boolean",
+              "description": "If true, only return head blocks (latest version in each chain)"
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum results to return (default 20)"
+            }
+          }
+        }
+      },
+      {
+        "name": "foodblock_chain",
+        "description": "Follow the update chain of a FoodBlock backwards through its versions. Shows the full version history: current -> previous -> original.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "hash": {
+              "type": "string",
+              "description": "The hash of the block to trace backwards from"
+            },
+            "max_depth": {
+              "type": "integer",
+              "description": "Maximum chain depth to traverse (default 50)"
+            }
+          },
+          "required": ["hash"]
+        }
+      },
+      {
+        "name": "foodblock_tree",
+        "description": "Build the full provenance tree for a FoodBlock by following ALL refs recursively. Shows the complete story: bread <- baking <- flour <- wheat <- farm.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "hash": {
+              "type": "string",
+              "description": "The hash of the block to build the provenance tree from"
+            },
+            "max_depth": {
+              "type": "integer",
+              "description": "Maximum tree depth (default 10)"
+            }
+          },
+          "required": ["hash"]
+        }
+      },
+      {
+        "name": "foodblock_heads",
+        "description": "List all head blocks (latest version of each entity/item). Optionally filter by type.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Optional type filter (e.g. 'substance.product')"
+            }
+          }
+        }
+      },
+      {
+        "name": "foodblock_info",
+        "description": "Get an overview of the FoodBlock system: server info, block count, and protocol summary. Call this first to understand what data is available.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "foodblock_create_agent",
+        "description": "Register a new AI agent in the FoodBlock system. The agent gets its own identity, Ed25519 keypair, and can sign blocks. Every agent must have an operator — the human or business it acts for.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name for the agent, e.g. 'Bakery Assistant'"
+            },
+            "operator_hash": {
+              "type": "string",
+              "description": "Hash of the actor this agent works for"
+            },
+            "model": {
+              "type": "string",
+              "description": "AI model, e.g. 'claude-sonnet'"
+            },
+            "capabilities": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Agent capabilities"
+            }
+          },
+          "required": ["name", "operator_hash"]
+        }
+      },
+      {
+        "name": "foodblock_load_agent",
+        "description": "Load a previously created agent using saved credentials. Required after server restart to restore signing ability.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "agent_hash": {
+              "type": "string",
+              "description": "The agent's block hash"
+            },
+            "private_key": {
+              "type": "string",
+              "description": "The agent's private key hex"
+            },
+            "public_key": {
+              "type": "string",
+              "description": "The agent's public key hex (optional)"
+            }
+          },
+          "required": ["agent_hash", "private_key"]
+        }
+      },
+      {
+        "name": "foodblock_agent_draft",
+        "description": "Create a draft FoodBlock on behalf of an agent. Draft blocks have state.draft=true. The human operator can approve or reject with foodblock_approve_draft.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "agent_hash": {
+              "type": "string",
+              "description": "Hash of the agent creating this draft"
+            },
+            "type": {
+              "type": "string",
+              "description": "Block type, e.g. 'transfer.order'"
+            },
+            "state": {
+              "type": "object",
+              "description": "Block state"
+            },
+            "refs": {
+              "type": "object",
+              "description": "Block refs"
+            }
+          },
+          "required": ["agent_hash", "type"]
+        }
+      },
+      {
+        "name": "foodblock_approve_draft",
+        "description": "Approve a draft block created by an agent. Creates a confirmed version with draft removed.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "draft_hash": {
+              "type": "string",
+              "description": "Hash of the draft block to approve"
+            }
+          },
+          "required": ["draft_hash"]
+        }
+      },
+      {
+        "name": "foodblock_list_agents",
+        "description": "List all AI agents in the FoodBlock system.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "foodblock_tombstone",
+        "description": "Mark a FoodBlock for content erasure (GDPR compliance). Creates an observe.tombstone block that references the target. The target block's state is replaced with {tombstoned: true}. The hash, type, and refs are preserved for chain integrity.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "target_hash": {
+              "type": "string",
+              "description": "Hash of the block to tombstone (64-character hex string)"
+            },
+            "requested_by": {
+              "type": "string",
+              "description": "Hash of the actor requesting erasure"
+            },
+            "reason": {
+              "type": "string",
+              "description": "Reason for erasure (e.g. 'gdpr_erasure', 'user_request')"
+            }
+          },
+          "required": ["target_hash", "requested_by"]
+        }
+      },
+      {
+        "name": "foodblock_validate",
+        "description": "Validate a FoodBlock against its declared schema. Returns an array of error messages (empty means valid). Checks required fields, types, expected refs, and instance_id requirements.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Block type to validate"
+            },
+            "state": {
+              "type": "object",
+              "description": "Block state to validate"
+            },
+            "refs": {
+              "type": "object",
+              "description": "Block refs to validate"
+            }
+          },
+          "required": ["type"]
+        }
+      },
+      {
+        "name": "foodblock_batch",
+        "description": "Create multiple FoodBlocks in a single request. Blocks are sorted in dependency order automatically. Useful for syncing offline-created blocks or bulk imports. Returns counts of inserted, skipped (duplicates), and failed blocks.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "blocks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "type": { "type": "string" },
+                  "state": { "type": "object" },
+                  "refs": { "type": "object" }
+                },
+                "required": ["type"]
+              },
+              "description": "Array of blocks to create, each with type, state, refs"
+            }
+          },
+          "required": ["blocks"]
+        }
+      }
+    ]
+  }
+]

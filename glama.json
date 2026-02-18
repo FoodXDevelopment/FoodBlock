@@ -1,0 +1,20 @@
+{
+  "$schema": "https://glama.ai/mcp/schemas/server.json",
+  "maintainer": {
+    "name": "FoodX",
+    "email": "dev@foodx.world",
+    "url": "https://foodx.world"
+  },
+  "server": {
+    "name": "foodblock-mcp",
+    "description": "Food data tools for any AI agent. 17 MCP tools for the food industry — describe food in English, get structured data back. Works standalone with zero config.",
+    "repository": "https://github.com/FoodXDevelopment/foodblock",
+    "homepage": "https://foodx.world",
+    "npm": "foodblock-mcp",
+    "license": "MIT",
+    "runtime": "node",
+    "transport": ["stdio"],
+    "tools": 17,
+    "categories": ["food", "agriculture", "supply-chain", "data"]
+  }
+}

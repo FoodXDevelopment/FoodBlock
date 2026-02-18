@@ -3,7 +3,7 @@ import pg from 'pg'
 import { readFileSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { create, update, hash, chain, canonical, verify as verifySignature } from '../sdk/javascript/src/index.js'
+import { create, update, hash, chain, canonical, verify as verifySignature, fb } from '../sdk/javascript/src/index.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -343,6 +343,36 @@ app.get('/heads', async (req, res) => {
     res.json({ count: rows.length, blocks: rows })
   } catch {
     res.status(500).json({ error: 'Failed to fetch heads' })
+  }
+})
+
+// POST /fb — natural language entry point
+app.post('/fb', async (req, res) => {
+  try {
+    const { text } = req.body
+    if (!text || typeof text !== 'string') {
+      return res.status(400).json({ error: 'text is required' })
+    }
+
+    const result = fb(text)
+
+    // Insert all generated blocks into the database
+    for (const block of result.blocks) {
+      try {
+        await pool.query(
+          `INSERT INTO foodblocks (hash, type, state, refs, is_head)
+           VALUES ($1, $2, $3, $4, TRUE)
+           ON CONFLICT (hash) DO NOTHING`,
+          [block.hash, block.type, JSON.stringify(block.state), JSON.stringify(block.refs)]
+        )
+      } catch {
+        // Block may already exist — that's fine
+      }
+    }
+
+    res.status(201).json(result)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 

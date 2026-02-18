@@ -70,12 +70,79 @@ public enum Canonical {
         return ""
     }
 
+    /// Format number per ECMAScript Number::toString (RFC 8785 §3.2.2.3).
+    /// Matches JavaScript's String(n) behavior exactly.
     private static func canonicalNumber(_ n: Double) -> String {
         if n == 0.0 { return "0" }
         if n == n.rounded(.towardZero) && abs(n) < Double(1 << 53) {
             return "\(Int(n))"
         }
-        return "\(n)"
+
+        // Use repr-like shortest representation via %g, then reformat per ECMAScript rules.
+        // Swift's "\(n)" uses scientific notation for small numbers; we must avoid that.
+        let repr = "\(n)" // e.g. "1e-06" or "0.123"
+        let (sign, absRepr): (String, String) = n < 0
+            ? ("-", String(repr.dropFirst()))
+            : ("", repr)
+
+        // Parse digits and exponent from the repr
+        let digits: String
+        let exponent: Int
+
+        if let eIdx = absRepr.lowercased().range(of: "e") {
+            // Scientific notation from Swift: e.g. "1e-06", "1.5e+20"
+            let mantissa = String(absRepr[absRepr.startIndex..<eIdx.lowerBound])
+            let expPart = String(absRepr[eIdx.upperBound...])
+            let exp = Int(expPart) ?? 0
+            let cleaned = mantissa.replacingOccurrences(of: ".", with: "")
+            let dotPos = mantissa.contains(".")
+                ? mantissa.distance(from: mantissa.startIndex, to: mantissa.firstIndex(of: ".")!)
+                : mantissa.count
+            digits = cleaned
+            exponent = exp - (cleaned.count - dotPos)
+        } else if absRepr.contains(".") {
+            // Plain decimal: e.g. "0.123"
+            let cleaned = absRepr.replacingOccurrences(of: ".", with: "")
+            let dotPos = absRepr.distance(from: absRepr.startIndex, to: absRepr.firstIndex(of: ".")!)
+            digits = cleaned
+            exponent = -(cleaned.count - dotPos)
+        } else {
+            digits = absRepr
+            exponent = 0
+        }
+
+        // Strip leading zeros from digits
+        let stripped = String(digits.drop(while: { $0 == "0" }))
+        guard !stripped.isEmpty else { return "0" }
+
+        let numDigits = stripped.count
+        let nPos = numDigits + exponent  // position of decimal point from left of digit string
+
+        let result: String
+        if numDigits <= nPos && nPos <= 21 {
+            // Integer-like: pad with trailing zeros
+            result = stripped + String(repeating: "0", count: nPos - numDigits)
+        } else if 0 < nPos && nPos <= 21 {
+            // Decimal notation: split at nPos
+            let idx = stripped.index(stripped.startIndex, offsetBy: nPos)
+            result = String(stripped[stripped.startIndex..<idx]) + "." + String(stripped[idx...])
+        } else if -6 < nPos && nPos <= 0 {
+            // Small decimal: 0.000...digits
+            result = "0." + String(repeating: "0", count: -nPos) + stripped
+        } else {
+            // Scientific notation (matches JS format)
+            let mantissa: String
+            if numDigits == 1 {
+                mantissa = stripped
+            } else {
+                let idx = stripped.index(stripped.startIndex, offsetBy: 1)
+                mantissa = String(stripped[stripped.startIndex..<idx]) + "." + String(stripped[idx...])
+            }
+            let e = nPos - 1
+            result = mantissa + (e > 0 ? "e+\(e)" : "e\(e)")
+        }
+
+        return sign + result
     }
 
     private static func escapeJSON(_ str: String) -> String {

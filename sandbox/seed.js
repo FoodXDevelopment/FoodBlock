@@ -328,6 +328,375 @@ function generateSeed() {
   })
   blocks.push(reviewAttestation)
 
+  // ============================================================
+  // STORY 2: London Restaurant Network (~30 blocks)
+  // A Soho pizzeria with full ingredient provenance, sourcing,
+  // reviews, certifications, and an AI agent.
+  // ============================================================
+
+  // --- Actors ---
+  const luigi = create('actor.venue', { name: "Luigi's Pizzeria", cuisine: 'Italian', rating: 4.5 })
+  blocks.push(luigi)
+
+  const luigiPlace = create('place.venue', { name: '12 Dean Street, Soho, London', postcode: 'W1D 3RP' }, { venue: luigi.hash })
+  blocks.push(luigiPlace)
+
+  const tomatoFarm = create('actor.producer', { name: 'Campania Tomato Farm', region: 'Campania, Italy', organic: true })
+  blocks.push(tomatoFarm)
+
+  const mozzDairy = create('actor.producer', { name: 'Somerset Mozzarella Dairy', region: 'Somerset, UK' })
+  blocks.push(mozzDairy)
+
+  const tvMill = create('actor.producer', { name: 'Thames Valley Flour Mill', region: 'Oxfordshire, UK' })
+  blocks.push(tvMill)
+
+  // --- Ingredients ---
+  const sanMarzano = create('substance.ingredient', { name: 'San Marzano Tomatoes', variety: 'DOP' }, { source: tomatoFarm.hash })
+  blocks.push(sanMarzano)
+
+  const mozzarella = create('substance.ingredient', { name: 'Buffalo Mozzarella', milk_type: 'buffalo' }, { source: mozzDairy.hash })
+  blocks.push(mozzarella)
+
+  const tipo00 = create('substance.ingredient', { name: 'Tipo 00 Flour' }, { source: tvMill.hash })
+  blocks.push(tipo00)
+
+  // --- Products ---
+  const margherita = create('substance.product', {
+    name: 'Margherita Pizza',
+    price: { value: 12.50, unit: 'GBP' }
+  }, { seller: luigi.hash, inputs: [sanMarzano.hash, mozzarella.hash, tipo00.hash] })
+  blocks.push(margherita)
+
+  const diavola = create('substance.product', {
+    name: 'Diavola Pizza',
+    price: { value: 14.00, unit: 'GBP' }
+  }, { seller: luigi.hash, inputs: [sanMarzano.hash, mozzarella.hash, tipo00.hash] })
+  blocks.push(diavola)
+
+  const calzone = create('substance.product', {
+    name: 'Calzone',
+    price: { value: 13.00, unit: 'GBP' }
+  }, { seller: luigi.hash, inputs: [sanMarzano.hash, mozzarella.hash, tipo00.hash] })
+  blocks.push(calzone)
+
+  // --- Transforms (dough making and pizza baking) ---
+  const doughMaking = create('transform.process', {
+    name: 'Pizza Dough Preparation',
+    date: '2026-02-17',
+    method: 'hand-kneaded, 24hr cold ferment',
+    fermentation_hours: 24
+  }, { inputs: [tipo00.hash], actor: luigi.hash, place: luigiPlace.hash })
+  blocks.push(doughMaking)
+
+  const pizzaBaking = create('transform.process', {
+    name: 'Wood-Fired Pizza Baking',
+    date: '2026-02-18',
+    method: 'wood-fired oven',
+    bake_temp: 450,
+    bake_time_seconds: 90
+  }, { inputs: [sanMarzano.hash, mozzarella.hash, tipo00.hash], output: margherita.hash, actor: luigi.hash, place: luigiPlace.hash })
+  blocks.push(pizzaBaking)
+
+  // --- Sourcing ---
+  const tomatoOffer = create('transfer.offer', {
+    name: 'San Marzano Supply Offer',
+    quantity: 200,
+    unit: 'kg',
+    status: 'offered'
+  }, { seller: tomatoFarm.hash, buyer: luigi.hash })
+  blocks.push(tomatoOffer)
+
+  const tomatoOrder = create('transfer.order', {
+    name: 'Monthly Tomato Order',
+    quantity: 200,
+    unit: 'kg',
+    total: { value: 480, unit: 'GBP' },
+    status: 'confirmed'
+  }, { seller: tomatoFarm.hash, buyer: luigi.hash })
+  blocks.push(tomatoOrder)
+
+  const mozzOrder = create('transfer.order', {
+    name: 'Weekly Mozzarella Order',
+    quantity: 50,
+    unit: 'kg',
+    total: { value: 375, unit: 'GBP' },
+    status: 'confirmed'
+  }, { seller: mozzDairy.hash, buyer: luigi.hash })
+  blocks.push(mozzOrder)
+
+  const flourOrder2 = create('transfer.order', {
+    name: 'Bi-weekly Flour Order',
+    quantity: 100,
+    unit: 'kg',
+    total: { value: 120, unit: 'GBP' },
+    status: 'confirmed'
+  }, { seller: tvMill.hash, buyer: luigi.hash })
+  blocks.push(flourOrder2)
+
+  // --- Reviews ---
+  const sarahM = create('actor.consumer', { name: 'Sarah M' })
+  blocks.push(sarahM)
+
+  const jamesT = create('actor.consumer', { name: 'James T' })
+  blocks.push(jamesT)
+
+  const margheritaReview = create('observe.review', {
+    rating: 5,
+    text: 'Best margherita in Soho. The San Marzano tomatoes make all the difference.',
+    visibility: 'public'
+  }, { subject: margherita.hash, author: sarahM.hash })
+  blocks.push(margheritaReview)
+
+  const calzoneReview = create('observe.review', {
+    rating: 4,
+    text: 'Great calzone, generous fillings. Would come back.',
+    visibility: 'public'
+  }, { subject: calzone.hash, author: jamesT.hash })
+  blocks.push(calzoneReview)
+
+  const diavolaReview = create('observe.review', {
+    rating: 5,
+    text: 'The spicy nduja on the Diavola is phenomenal. Authentic Italian heat.',
+    visibility: 'public'
+  }, { subject: diavola.hash, author: jamesT.hash })
+  blocks.push(diavolaReview)
+
+  // --- Certifications ---
+  const hygieneRating = create('observe.certification', {
+    name: 'Food Hygiene Rating',
+    score: 5,
+    valid_until: '2027-03-15'
+  }, { subject: luigi.hash, authority: inspector.hash })
+  blocks.push(hygieneRating)
+
+  const euCertAuthority = create('actor.authority', { name: 'EU PDO Certification Body', jurisdiction: 'EU' })
+  blocks.push(euCertAuthority)
+
+  const dopCert = create('observe.certification', {
+    name: 'DOP San Marzano',
+    standard: 'EU PDO',
+    valid_until: '2026-12-31'
+  }, { subject: sanMarzano.hash, authority: euCertAuthority.hash })
+  blocks.push(dopCert)
+
+  // --- Inspection ---
+  const luigiInspection = create('observe.inspection', {
+    date: '2026-01-10',
+    score: 5,
+    rating_label: 'Very Good',
+    findings: 'Excellent food safety. Wood-fired oven properly maintained. Cold storage at correct temperatures.'
+  }, { subject: luigi.hash, place: luigiPlace.hash, authority: inspector.hash })
+  blocks.push(luigiInspection)
+
+  // --- Agent ---
+  const luigiAgent = create('actor.agent', {
+    name: "Luigi's Daily Specials Agent",
+    model: 'claude-sonnet',
+    capabilities: ['menu_planning', 'inventory_check', 'supplier_comms']
+  }, { operator: luigi.hash })
+  blocks.push(luigiAgent)
+
+  const luigiInventory = create('observe.inventory', {
+    date: '2026-02-18T07:00:00Z',
+    items: [
+      { product: 'San Marzano Tomatoes', quantity_kg: 15.5, status: 'ok' },
+      { product: 'Buffalo Mozzarella', quantity_kg: 8.2, status: 'ok' },
+      { product: 'Tipo 00 Flour', quantity_kg: 22.0, status: 'ok' }
+    ]
+  }, { place: luigiPlace.hash, agent: luigiAgent.hash, operator: luigi.hash })
+  blocks.push(luigiInventory)
+
+  // --- Attestations ---
+  const dopAttestation = attest(dopCert.hash, euCertAuthority.hash, {
+    confidence: 'verified',
+    method: 'laboratory analysis and farm inspection'
+  })
+  blocks.push(dopAttestation)
+
+  const margheritaReviewAttestation = attest(margheritaReview.hash, sarahM.hash, {
+    confidence: 'witnessed',
+    method: 'personal dining experience'
+  })
+  blocks.push(margheritaReviewAttestation)
+
+  // ============================================================
+  // STORY 3: Farmers Market (~25 blocks)
+  // Borough Market with multiple producers, surplus donations,
+  // temperature monitoring, and a consumer review journey.
+  // ============================================================
+
+  // --- Market & Producers ---
+  const boroughMarket = create('place.market', { name: 'Borough Market', market_day: 'Saturday', location: 'London SE1' })
+  blocks.push(boroughMarket)
+
+  const honeyFarm = create('actor.producer', { name: 'Cotswold Honey Farm', region: 'Cotswolds, UK', organic: true })
+  blocks.push(honeyFarm)
+
+  const cheeseCo = create('actor.producer', { name: 'Artisan Cheese Co', region: 'Sussex, UK' })
+  blocks.push(cheeseCo)
+
+  const wildBakery = create('actor.producer', { name: 'Wild Sourdough Bakery', region: 'Kent, UK' })
+  blocks.push(wildBakery)
+
+  // --- Products ---
+  const wildflowerHoney = create('substance.product', {
+    name: 'Wildflower Honey',
+    price: { value: 8.50, unit: 'GBP' },
+    weight: { value: 340, unit: 'g' }
+  }, { seller: honeyFarm.hash, market: boroughMarket.hash })
+  blocks.push(wildflowerHoney)
+
+  const agedCheddar = create('substance.product', {
+    name: 'Aged Cheddar',
+    price: { value: 6.00, unit: 'GBP' },
+    aging_days: 365
+  }, { seller: cheeseCo.hash, market: boroughMarket.hash })
+  blocks.push(agedCheddar)
+
+  const marketSourdough = create('substance.product', {
+    name: 'Sourdough Loaf',
+    price: { value: 5.50, unit: 'GBP' },
+    organic: true
+  }, { seller: wildBakery.hash, market: boroughMarket.hash })
+  blocks.push(marketSourdough)
+
+  // --- Additional products ---
+  const lavenderHoney = create('substance.product', {
+    name: 'Lavender Honey',
+    price: { value: 9.00, unit: 'GBP' },
+    weight: { value: 340, unit: 'g' }
+  }, { seller: honeyFarm.hash, market: boroughMarket.hash })
+  blocks.push(lavenderHoney)
+
+  const goatCheese = create('substance.product', {
+    name: 'Soft Goat Cheese',
+    price: { value: 7.50, unit: 'GBP' },
+    milk_type: 'goat'
+  }, { seller: cheeseCo.hash, market: boroughMarket.hash })
+  blocks.push(goatCheese)
+
+  // --- Certifications ---
+  const honeyOrganic = create('observe.certification', {
+    name: 'Soil Association Organic',
+    standard: 'Soil Association',
+    level: 'full',
+    valid_until: '2026-09-01',
+    certificate_id: 'SA-2025-3291'
+  }, { subject: honeyFarm.hash, authority: inspector.hash })
+  blocks.push(honeyOrganic)
+
+  const cheeseHygiene = create('observe.certification', {
+    name: 'Food Hygiene Rating',
+    score: 5,
+    valid_until: '2027-01-15'
+  }, { subject: cheeseCo.hash, authority: inspector.hash })
+  blocks.push(cheeseHygiene)
+
+  // --- Surplus & Donation ---
+  const eodSourdough = create('substance.surplus', {
+    name: 'End of Day Sourdough',
+    original_price: { value: 5.50, unit: 'GBP' },
+    surplus_price: { value: 2.00, unit: 'GBP' },
+    quantity: 3,
+    status: 'available',
+    available_until: '2026-02-18T16:00:00Z'
+  }, { seller: wildBakery.hash, source: marketSourdough.hash, market: boroughMarket.hash })
+  blocks.push(eodSourdough)
+
+  const foodBank = create('actor.venue', { name: 'Southwark Food Bank', sector: 'charity' })
+  blocks.push(foodBank)
+
+  const marketDonation = create('transfer.donation', {
+    name: 'End of Day Donation',
+    quantity: 3,
+    date: '2026-02-18',
+    status: 'collected',
+    reason: 'end_of_day_surplus'
+  }, { source: wildBakery.hash, recipient: foodBank.hash, item: eodSourdough.hash })
+  blocks.push(marketDonation)
+
+  // --- Temperature Readings ---
+  const cheeseTemp = create('observe.reading', {
+    reading_type: 'temperature',
+    temperature: { value: 4.2, unit: 'celsius' },
+    location: 'Cheese Cold Display',
+    timestamp: '2026-02-18T10:30:00Z',
+    device: 'TempTracker-M2'
+  }, { subject: agedCheddar.hash, place: boroughMarket.hash })
+  blocks.push(cheeseTemp)
+
+  const cheeseTempAfternoon = create('observe.reading', {
+    reading_type: 'temperature',
+    temperature: { value: 5.1, unit: 'celsius' },
+    location: 'Cheese Cold Display',
+    timestamp: '2026-02-18T14:00:00Z',
+    device: 'TempTracker-M2'
+  }, { subject: agedCheddar.hash, place: boroughMarket.hash })
+  blocks.push(cheeseTempAfternoon)
+
+  // --- Consumer Journey ---
+  const emmaW = create('actor.consumer', { name: 'Emma W' })
+  blocks.push(emmaW)
+
+  const honeyReview = create('observe.review', {
+    rating: 5,
+    text: 'The wildflower honey is incredible - you can taste the meadow.',
+    visibility: 'public'
+  }, { subject: wildflowerHoney.hash, author: emmaW.hash, place: boroughMarket.hash })
+  blocks.push(honeyReview)
+
+  const cheddarReview = create('observe.review', {
+    rating: 4,
+    text: 'Perfectly aged cheddar, great with the sourdough.',
+    visibility: 'public'
+  }, { subject: agedCheddar.hash, author: emmaW.hash, place: boroughMarket.hash })
+  blocks.push(cheddarReview)
+
+  const sourdoughReview = create('observe.review', {
+    rating: 5,
+    text: 'Best sourdough in London, worth the queue.',
+    visibility: 'public'
+  }, { subject: marketSourdough.hash, author: emmaW.hash, place: boroughMarket.hash })
+  blocks.push(sourdoughReview)
+
+  // --- Market Sales ---
+  const honeySale = create('transfer.order', {
+    quantity: 2,
+    total: { value: 17.00, unit: 'GBP' },
+    date: '2026-02-18',
+    payment_method: 'card'
+  }, { buyer: emmaW.hash, seller: honeyFarm.hash, product: wildflowerHoney.hash })
+  blocks.push(honeySale)
+
+  const cheddarSale = create('transfer.order', {
+    quantity: 1,
+    total: { value: 6.00, unit: 'GBP' },
+    date: '2026-02-18',
+    payment_method: 'card'
+  }, { buyer: emmaW.hash, seller: cheeseCo.hash, product: agedCheddar.hash })
+  blocks.push(cheddarSale)
+
+  const sourdoughSale = create('transfer.order', {
+    quantity: 1,
+    total: { value: 5.50, unit: 'GBP' },
+    date: '2026-02-18',
+    payment_method: 'cash'
+  }, { buyer: emmaW.hash, seller: wildBakery.hash, product: marketSourdough.hash })
+  blocks.push(sourdoughSale)
+
+  // --- Attestations ---
+  const honeyOrgAttestation = attest(honeyOrganic.hash, inspector.hash, {
+    confidence: 'verified',
+    method: 'annual inspection and honey analysis'
+  })
+  blocks.push(honeyOrgAttestation)
+
+  const honeyReviewAttestation = attest(honeyReview.hash, emmaW.hash, {
+    confidence: 'witnessed',
+    method: 'personal purchase and tasting'
+  })
+  blocks.push(honeyReviewAttestation)
+
   return blocks
 }
 

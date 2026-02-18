@@ -66,12 +66,15 @@ function mapFields(text, vocabulary) {
       if (fieldType === 'boolean' || fieldType === 'flag') {
         // Boolean fields: if alias appears in text, set to true
         if (words.includes(aliasLower)) {
+          // Support invert_aliases: aliases that set the boolean to false
+          const invertAliases = (fieldDef.invert_aliases || []).map(a => a.toLowerCase())
+          const boolValue = invertAliases.includes(aliasLower) ? false : true
           if (typeof matched[fieldName] === 'object') {
-            matched[fieldName][aliasLower] = true
+            matched[fieldName][aliasLower] = boolValue
           } else if (matched[fieldName] === undefined && fieldDef.compound) {
-            matched[fieldName] = { [aliasLower]: true }
+            matched[fieldName] = { [aliasLower]: boolValue }
           } else {
-            matched[fieldName] = true
+            matched[fieldName] = boolValue
           }
           // Mark tokens used
           for (let i = 0; i < tokens.length; i++) {
@@ -398,6 +401,266 @@ const VOCABULARIES = {
       paid: [],
       cancelled: [],
       returned: ['order']
+    }
+  },
+
+  distributor: {
+    domain: 'distributor',
+    for_types: ['actor.distributor', 'transfer.delivery'],
+    fields: {
+      vehicle_type: {
+        type: 'string',
+        aliases: ['van', 'truck', 'lorry', 'reefer', 'refrigerated'],
+        description: 'Type of delivery vehicle'
+      },
+      temperature_range: {
+        type: 'object',
+        aliases: ['chilled', 'frozen', 'ambient', 'cold chain'],
+        description: 'Required temperature range for transport'
+      },
+      delivery_zone: {
+        type: 'string',
+        aliases: ['zone', 'area', 'region', 'route', 'coverage'],
+        description: 'Delivery coverage zone or route'
+      },
+      fleet_size: {
+        type: 'number',
+        aliases: ['fleet', 'vehicles'],
+        description: 'Number of vehicles in the fleet'
+      },
+      cold_chain_certified: {
+        type: 'boolean',
+        aliases: ['cold chain certified', 'temperature controlled', 'cold chain'],
+        description: 'Whether the distributor is cold chain certified'
+      },
+      transit_time: {
+        type: 'object',
+        aliases: ['transit', 'delivery time', 'lead time'],
+        description: 'Expected transit or delivery time'
+      }
+    }
+  },
+
+  processor: {
+    domain: 'processor',
+    for_types: ['transform.process', 'actor.processor'],
+    fields: {
+      process_type: {
+        type: 'string',
+        aliases: ['milling', 'pressing', 'extraction', 'refining', 'pasteurizing', 'fermenting', 'smoking', 'curing'],
+        description: 'Type of processing operation'
+      },
+      extraction_rate: {
+        type: 'number',
+        aliases: ['extraction rate', 'yield', 'recovery'],
+        description: 'Extraction or yield rate'
+      },
+      batch_size: {
+        type: 'number',
+        aliases: ['batch', 'batch size', 'run size'],
+        description: 'Size of a processing batch'
+      },
+      equipment: {
+        type: 'string',
+        aliases: ['mill', 'press', 'vat', 'oven', 'kiln', 'smoker', 'pasteurizer'],
+        description: 'Processing equipment used'
+      },
+      quality_grade: {
+        type: 'string',
+        aliases: ['grade', 'quality', 'grade a', 'grade b', 'premium', 'standard'],
+        description: 'Quality grade of the output'
+      },
+      shelf_life: {
+        type: 'object',
+        aliases: ['shelf life', 'best before', 'use by', 'expiry'],
+        description: 'Expected shelf life of the product'
+      }
+    }
+  },
+
+  market: {
+    domain: 'market',
+    for_types: ['place.market', 'actor.vendor'],
+    fields: {
+      stall_number: {
+        type: 'string',
+        aliases: ['stall', 'pitch', 'stand', 'booth'],
+        description: 'Stall or pitch number'
+      },
+      market_day: {
+        type: 'string',
+        aliases: ['saturday', 'sunday', 'weekday', 'daily', 'weekly'],
+        description: 'Day or frequency the market operates'
+      },
+      seasonal: {
+        type: 'boolean',
+        aliases: ['seasonal', 'summer only', 'winter market'],
+        description: 'Whether the market is seasonal'
+      },
+      pitch_fee: {
+        type: 'number',
+        aliases: ['pitch fee', 'stall fee', 'rent'],
+        description: 'Fee for a market pitch or stall'
+      },
+      market_name: {
+        type: 'string',
+        aliases: ['market', 'farmers market', 'street market', 'food market'],
+        description: 'Name or type of the market'
+      }
+    }
+  },
+
+  catering: {
+    domain: 'catering',
+    for_types: ['transfer.catering', 'actor.caterer'],
+    fields: {
+      event_type: {
+        type: 'string',
+        aliases: ['wedding', 'corporate', 'party', 'banquet', 'conference', 'reception', 'private event'],
+        description: 'Type of event being catered'
+      },
+      covers: {
+        type: 'number',
+        aliases: ['covers', 'guests', 'people', 'servings', 'portions', 'pax'],
+        description: 'Number of covers or guests'
+      },
+      dietary_options: {
+        type: 'compound',
+        aliases: ['vegan', 'vegetarian', 'gluten-free', 'halal', 'kosher', 'nut-free', 'dairy-free'],
+        description: 'Available dietary options'
+      },
+      service_style: {
+        type: 'string',
+        aliases: ['buffet', 'plated', 'canape', 'family style', 'food truck'],
+        description: 'Style of catering service'
+      },
+      per_head_price: {
+        type: 'number',
+        aliases: ['per head', 'per person', 'per cover', 'pp'],
+        description: 'Price per person'
+      }
+    }
+  },
+
+  fishery: {
+    domain: 'fishery',
+    for_types: ['substance.seafood', 'actor.fishery'],
+    fields: {
+      catch_method: {
+        type: 'string',
+        aliases: ['line caught', 'net', 'trawl', 'pot', 'dredge', 'longline', 'hand dive', 'rod and line'],
+        description: 'Method used to catch fish'
+      },
+      vessel: {
+        type: 'string',
+        aliases: ['vessel', 'boat', 'trawler', 'seiner'],
+        description: 'Fishing vessel name or type'
+      },
+      landing_port: {
+        type: 'string',
+        aliases: ['landed', 'landing port', 'port', 'harbour'],
+        description: 'Port where the catch was landed'
+      },
+      species: {
+        type: 'string',
+        aliases: ['cod', 'salmon', 'haddock', 'mackerel', 'tuna', 'sea bass', 'crab', 'lobster', 'prawns', 'oyster', 'mussels'],
+        description: 'Fish or seafood species'
+      },
+      msc_certified: {
+        type: 'boolean',
+        aliases: ['msc', 'msc certified', 'marine stewardship', 'sustainable'],
+        description: 'Whether the fishery is MSC certified'
+      },
+      catch_date: {
+        type: 'string',
+        aliases: ['caught', 'landed', 'catch date'],
+        description: 'Date the catch was made'
+      },
+      fishing_zone: {
+        type: 'string',
+        aliases: ['zone', 'area', 'ices area', 'fao area', 'fishing ground'],
+        description: 'Fishing zone or area designation'
+      }
+    }
+  },
+
+  dairy: {
+    domain: 'dairy',
+    for_types: ['substance.dairy', 'actor.dairy'],
+    fields: {
+      milk_type: {
+        type: 'string',
+        aliases: ['cow', 'goat', 'sheep', 'buffalo', 'oat', 'almond', 'soy'],
+        description: 'Type of milk used'
+      },
+      pasteurized: {
+        type: 'boolean',
+        aliases: ['pasteurized', 'pasteurised', 'raw', 'unpasteurized'],
+        invert_aliases: ['raw', 'unpasteurized'],
+        description: 'Whether the product is pasteurized (raw/unpasteurized = false)'
+      },
+      fat_content: {
+        type: 'number',
+        aliases: ['fat', 'fat content', 'butterfat', 'cream'],
+        description: 'Fat content percentage'
+      },
+      culture: {
+        type: 'string',
+        aliases: ['culture', 'starter', 'rennet', 'aged', 'cave aged'],
+        description: 'Culture or aging method used'
+      },
+      aging_days: {
+        type: 'number',
+        aliases: ['aged', 'matured', 'days', 'months'],
+        description: 'Number of days the product has been aged'
+      },
+      animal_breed: {
+        type: 'string',
+        aliases: ['jersey', 'holstein', 'friesian', 'guernsey', 'brown swiss', 'saanen'],
+        description: 'Breed of the dairy animal'
+      }
+    }
+  },
+
+  butcher: {
+    domain: 'butcher',
+    for_types: ['substance.meat', 'actor.butcher'],
+    fields: {
+      cut: {
+        type: 'string',
+        aliases: ['sirloin', 'ribeye', 'fillet', 'rump', 'brisket', 'chuck', 'loin', 'shoulder', 'leg', 'rack', 'chop', 'mince'],
+        description: 'Cut of meat'
+      },
+      animal: {
+        type: 'string',
+        aliases: ['beef', 'pork', 'lamb', 'chicken', 'duck', 'venison', 'rabbit', 'turkey', 'goose'],
+        description: 'Type of animal'
+      },
+      breed: {
+        type: 'string',
+        aliases: ['angus', 'hereford', 'wagyu', 'berkshire', 'duroc', 'suffolk', 'texel'],
+        description: 'Breed of the animal'
+      },
+      hanging_days: {
+        type: 'number',
+        aliases: ['hung', 'dry aged', 'aged', 'hanging days', 'matured'],
+        description: 'Number of days the meat has been hung'
+      },
+      slaughter_method: {
+        type: 'string',
+        aliases: ['slaughter', 'abattoir'],
+        description: 'Method of slaughter'
+      },
+      halal: {
+        type: 'boolean',
+        aliases: ['halal', 'halal certified'],
+        description: 'Whether the meat is halal'
+      },
+      kosher: {
+        type: 'boolean',
+        aliases: ['kosher', 'kosher certified', 'glatt'],
+        description: 'Whether the meat is kosher'
+      }
     }
   }
 }

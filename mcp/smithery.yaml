@@ -1,0 +1,16 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      foodblockUrl:
+        type: string
+        description: "Optional FoodBlock server URL. Leave empty for standalone mode with 47 demo blocks."
+    required: []
+  commandFunction:
+    |-
+    (config) => ({
+      command: "npx",
+      args: ["-y", "foodblock-mcp"],
+      env: config.foodblockUrl ? { FOODBLOCK_URL: config.foodblockUrl } : {}
+    })

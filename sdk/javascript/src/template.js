@@ -125,6 +125,70 @@ const TEMPLATES = {
       { type: 'actor.producer', alias: 'producer', required: ['name'] },
       { type: 'observe.certification', alias: 'cert', refs: { authority: '@authority', subject: '@producer' }, required: ['name'] }
     ]
+  },
+  'surplus-rescue': {
+    name: 'Surplus Rescue',
+    description: 'Food business posts surplus, sustainer collects, donation recorded',
+    steps: [
+      { type: 'actor.venue', alias: 'donor', required: true, defaultState: { name: 'Food Business' } },
+      { type: 'substance.surplus', alias: 'surplus', refs: { seller: '@donor' }, required: true, defaultState: { name: 'Surplus Food', status: 'available' } },
+      { type: 'transfer.donation', alias: 'donation', refs: { source: '@donor', item: '@surplus' }, required: true, defaultState: { status: 'collected' } }
+    ]
+  },
+  'agent-reorder': {
+    name: 'Agent Reorder',
+    description: 'Inventory check → low stock → draft order → approve → order placed',
+    steps: [
+      { type: 'actor.venue', alias: 'business', required: true, defaultState: { name: 'Business' } },
+      { type: 'observe.reading', alias: 'inventory-check', refs: { subject: '@business' }, required: true, defaultState: { name: 'Inventory Check', reading_type: 'stock_level' } },
+      { type: 'actor.agent', alias: 'agent', refs: { operator: '@business' }, required: true, defaultState: { name: 'Reorder Agent', capabilities: ['ordering'] } },
+      { type: 'transfer.order', alias: 'draft-order', refs: { buyer: '@business', agent: '@agent' }, required: true, defaultState: { status: 'draft', draft: true } },
+      { type: 'transfer.order', alias: 'confirmed-order', refs: { buyer: '@business', updates: '@draft-order' }, required: true, defaultState: { status: 'confirmed' } }
+    ]
+  },
+  'restaurant-sourcing': {
+    name: 'Restaurant Sourcing',
+    description: 'Restaurant needs ingredient → discovery → supplier offer → accept → order → delivery',
+    steps: [
+      { type: 'actor.venue', alias: 'restaurant', required: true, defaultState: { name: 'Restaurant' } },
+      { type: 'substance.ingredient', alias: 'needed', refs: {}, required: true, defaultState: { name: 'Ingredient Needed' } },
+      { type: 'actor.producer', alias: 'supplier', required: true, defaultState: { name: 'Supplier' } },
+      { type: 'transfer.offer', alias: 'offer', refs: { seller: '@supplier', item: '@needed', buyer: '@restaurant' }, required: true, defaultState: { status: 'offered' } },
+      { type: 'transfer.order', alias: 'order', refs: { buyer: '@restaurant', seller: '@supplier', item: '@needed' }, required: true, defaultState: { status: 'confirmed' } },
+      { type: 'transfer.delivery', alias: 'delivery', refs: { order: '@order', seller: '@supplier', buyer: '@restaurant' }, required: true, defaultState: { status: 'delivered' } }
+    ]
+  },
+  'food-safety-audit': {
+    name: 'Food Safety Audit',
+    description: 'Inspector visits → readings taken → report → certification → attestation',
+    steps: [
+      { type: 'actor.venue', alias: 'premises', required: true, defaultState: { name: 'Food Premises' } },
+      { type: 'actor.producer', alias: 'inspector', required: true, defaultState: { name: 'Food Safety Inspector' } },
+      { type: 'observe.reading', alias: 'readings', refs: { subject: '@premises', author: '@inspector' }, required: true, defaultState: { name: 'Safety Readings' } },
+      { type: 'observe.certification', alias: 'certificate', refs: { subject: '@premises', authority: '@inspector' }, required: true, defaultState: { name: 'Food Safety Certificate' } },
+      { type: 'observe.attestation', alias: 'attestation', refs: { confirms: '@certificate', attestor: '@inspector' }, required: true, defaultState: { confidence: 'verified' } }
+    ]
+  },
+  'market-day': {
+    name: 'Market Day',
+    description: 'Producer brings stock → stall setup → sales → end-of-day surplus → donation',
+    steps: [
+      { type: 'actor.producer', alias: 'producer', required: true, defaultState: { name: 'Market Producer' } },
+      { type: 'place.market', alias: 'market', required: true, defaultState: { name: 'Farmers Market' } },
+      { type: 'substance.product', alias: 'stock', refs: { seller: '@producer' }, required: true, defaultState: { name: 'Market Stock' } },
+      { type: 'transfer.order', alias: 'sales', refs: { seller: '@producer', item: '@stock' }, required: false, defaultState: { status: 'completed' } },
+      { type: 'substance.surplus', alias: 'leftover', refs: { seller: '@producer', source: '@stock' }, required: false, defaultState: { name: 'End of Day Surplus', status: 'available' } }
+    ]
+  },
+  'cold-chain': {
+    name: 'Cold Chain',
+    description: 'Shipment departs → temperature readings → delivery → chain verified',
+    steps: [
+      { type: 'actor.distributor', alias: 'carrier', required: true, defaultState: { name: 'Cold Chain Carrier' } },
+      { type: 'transfer.delivery', alias: 'shipment', refs: { carrier: '@carrier' }, required: true, defaultState: { status: 'in_transit' } },
+      { type: 'observe.reading', alias: 'temp-log', refs: { subject: '@shipment' }, required: true, defaultState: { name: 'Temperature Log', reading_type: 'temperature' } },
+      { type: 'observe.attestation', alias: 'chain-verified', refs: { confirms: '@shipment', attestor: '@carrier' }, required: true, defaultState: { confidence: 'verified', method: 'continuous_monitoring' } }
+    ]
   }
 }
 

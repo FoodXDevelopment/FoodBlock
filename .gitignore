@@ -1,5 +1,8 @@
 # Swift
 sdk/swift/.build/
+sdk/swift/*.o
+sdk/swift/*.d
+sdk/swift/*.swiftdeps
 *.xcodeproj
 *.xcworkspace
 
@@ -21,6 +24,10 @@ node_modules/
 .vscode/
 *.swp
 *.swo
+
+# Tokens/secrets
+mcp/.mcpregistry_*
+mcp/.smithery/
 
 # OS
 .DS_Store

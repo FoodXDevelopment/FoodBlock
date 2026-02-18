@@ -1,5 +1,5 @@
 const http = require('http')
-const { create, update, hash, chain, canonical, tombstone, verify, PROTOCOL_VERSION } = require('../sdk/javascript/src/index')
+const { create, update, hash, chain, canonical, tombstone, verify, fb, PROTOCOL_VERSION } = require('../sdk/javascript/src/index')
 const { generateSeed } = require('./seed')
 
 // Body size limit (1MB)
@@ -165,6 +165,7 @@ const server = http.createServer(async (req, res) => {
           'DELETE /blocks/:hash        — tombstone a block (soft delete)',
           'GET    /chain/:hash         — provenance chain',
           'GET    /forward/:hash       — blocks referencing this hash',
+          'POST   /fb                  — natural language entry point',
           'GET    /heads               — all head blocks'
         ]
       })
@@ -365,6 +366,27 @@ const server = http.createServer(async (req, res) => {
       return json(res, { count: headBlocks.length, blocks: headBlocks })
     }
 
+    // POST /fb — natural language entry point
+    if (path === '/fb' && req.method === 'POST') {
+      const body = await readBody(req)
+      const { text } = JSON.parse(body)
+
+      if (!text || typeof text !== 'string') {
+        return error(res, 400, 'text is required')
+      }
+
+      const result = fb(text)
+
+      // Insert all generated blocks into the store
+      for (const block of result.blocks) {
+        if (!store.has(block.hash)) {
+          insertBlock(block)
+        }
+      }
+
+      return json(res, result, 201)
+    }
+
     // POST /blocks — create (supports both unsigned and signed wrappers)
     if (path === '/blocks' && req.method === 'POST') {
       const body = await readBody(req)
@@ -469,7 +491,7 @@ server.listen(PORT, () => {
   ║     Protocol ${PROTOCOL_VERSION}                       ║
   ║     http://localhost:${PORT}                ║
   ╠══════════════════════════════════════════╣
-  ║  ${store.size} blocks loaded (bakery chain)      ║
+  ║  ${store.size} blocks loaded (3 stories)        ║
   ║                                          ║
   ║  Try:                                    ║
   ║  curl localhost:${PORT}/blocks              ║

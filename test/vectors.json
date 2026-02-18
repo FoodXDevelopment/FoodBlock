@@ -223,7 +223,9 @@
   {
     "name": "negative zero normalization",
     "type": "test",
-    "state": { "value": -0 },
+    "state": {
+      "value": 0
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
     "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
@@ -231,7 +233,9 @@
   {
     "name": "very small decimal (RFC 8785)",
     "type": "test",
-    "state": { "value": 0.000001 },
+    "state": {
+      "value": 0.000001
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.000001},\"type\":\"test\"}",
     "expected_hash": "fa0a7de1e5637a8dafde2691154c3c330f2e08f0e3788124c8a0696403cebd7b"
@@ -239,7 +243,9 @@
   {
     "name": "large integer",
     "type": "test",
-    "state": { "count": 1000000000 },
+    "state": {
+      "count": 1000000000
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"count\":1000000000},\"type\":\"test\"}",
     "expected_hash": "5418cd53b4931e4f14394edc8edaf9eaa2d7c4c6daf35d77100fef60c14ab97d"
@@ -247,7 +253,9 @@
   {
     "name": "float that equals integer (RFC 8785)",
     "type": "test",
-    "state": { "value": 100.0 },
+    "state": {
+      "value": 100
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100},\"type\":\"test\"}",
     "expected_hash": "e5a8c71154ce0ff3835c188333a4fc8d9d48e1bb581cf0569db549f934a9fbf5"
@@ -255,7 +263,15 @@
   {
     "name": "deeply nested state",
     "type": "test",
-    "state": { "a": { "b": { "c": { "d": 1 } } } },
+    "state": {
+      "a": {
+        "b": {
+          "c": {
+            "d": 1
+          }
+        }
+      }
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":1}}}},\"type\":\"test\"}",
     "expected_hash": "d964cdf78572f89b32210d648227b11a000458c6bdb87145c2e5db18aef3bd9c"
@@ -263,7 +279,10 @@
   {
     "name": "null values omitted",
     "type": "test",
-    "state": { "name": "Keep", "removed": null },
+    "state": {
+      "name": "Keep",
+      "removed": null
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Keep\"},\"type\":\"test\"}",
     "expected_hash": "06a9ca35335254ff9b19568be5f4bd9881a9da40deaec7c0b306798691cb07ab"
@@ -273,8 +292,18 @@
     "type": "observe.vocabulary",
     "state": {
       "domain": "bakery",
-      "for_types": ["substance.product"],
-      "fields": { "price": { "type": "number", "aliases": ["costs", "sells for"] } }
+      "for_types": [
+        "substance.product"
+      ],
+      "fields": {
+        "price": {
+          "type": "number",
+          "aliases": [
+            "costs",
+            "sells for"
+          ]
+        }
+      }
     },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"domain\":\"bakery\",\"fields\":{\"price\":{\"aliases\":[\"costs\",\"sells for\"],\"type\":\"number\"}},\"for_types\":[\"substance.product\"]},\"type\":\"observe.vocabulary\"}",
@@ -283,39 +312,66 @@
   {
     "name": "attestation block",
     "type": "observe.attestation",
-    "state": { "confidence": "verified", "method": "on-site inspection" },
-    "refs": { "confirms": "claim_hash", "attestor": "inspector_hash" },
+    "state": {
+      "confidence": "verified",
+      "method": "on-site inspection"
+    },
+    "refs": {
+      "confirms": "claim_hash",
+      "attestor": "inspector_hash"
+    },
     "expected_canonical": "{\"refs\":{\"attestor\":\"inspector_hash\",\"confirms\":\"claim_hash\"},\"state\":{\"confidence\":\"verified\",\"method\":\"on-site inspection\"},\"type\":\"observe.attestation\"}",
     "expected_hash": "a2520bc6b5b114cd400bf600820b1fe1d2210b093e2d01c891d4f2faaab71621"
   },
   {
     "name": "merge block with refs array sorting",
     "type": "observe.merge",
-    "state": { "strategy": "a_wins" },
-    "refs": { "merges": ["fork_b_hash", "fork_a_hash"] },
+    "state": {
+      "strategy": "a_wins"
+    },
+    "refs": {
+      "merges": [
+        "fork_b_hash",
+        "fork_a_hash"
+      ]
+    },
     "expected_canonical": "{\"refs\":{\"merges\":[\"fork_a_hash\",\"fork_b_hash\"]},\"state\":{\"strategy\":\"a_wins\"},\"type\":\"observe.merge\"}",
     "expected_hash": "96c137989ceaecffbd465924152c4748a4c98e80244288654eeac4d2843d5e96"
   },
   {
     "name": "snapshot block",
     "type": "observe.snapshot",
-    "state": { "block_count": 500, "merkle_root": "abc123" },
-    "refs": { "author": "server_hash" },
+    "state": {
+      "block_count": 500,
+      "merkle_root": "abc123"
+    },
+    "refs": {
+      "author": "server_hash"
+    },
     "expected_canonical": "{\"refs\":{\"author\":\"server_hash\"},\"state\":{\"block_count\":500,\"merkle_root\":\"abc123\"},\"type\":\"observe.snapshot\"}",
     "expected_hash": "2d800feab20d2af8b79da65976d5995e1c3de7f390e374866218abb71eb9fda0"
   },
   {
     "name": "dispute block",
     "type": "observe.dispute",
-    "state": { "reason": "certificate expired" },
-    "refs": { "challenges": "claim_hash", "disputor": "challenger_hash" },
+    "state": {
+      "reason": "certificate expired"
+    },
+    "refs": {
+      "challenges": "claim_hash",
+      "disputor": "challenger_hash"
+    },
     "expected_canonical": "{\"refs\":{\"challenges\":\"claim_hash\",\"disputor\":\"challenger_hash\"},\"state\":{\"reason\":\"certificate expired\"},\"type\":\"observe.dispute\"}",
     "expected_hash": "9f68a476ac1e748966d0cf102c02b9b9f0dab88b8f1f4b66ef9f720992f51bc1"
   },
   {
     "name": "mixed number types",
     "type": "test",
-    "state": { "integer": 42, "float_val": 3.14, "zero": 0 },
+    "state": {
+      "integer": 42,
+      "float_val": 3.14,
+      "zero": 0
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"float_val\":3.14,\"integer\":42,\"zero\":0},\"type\":\"test\"}",
     "expected_hash": "d6b1fe55985b70931fd4405a1367e922ff7a643e6e7509db581ddba04d983bbf"
@@ -323,7 +379,9 @@
   {
     "name": "empty string value",
     "type": "test",
-    "state": { "name": "" },
+    "state": {
+      "name": ""
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
     "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
@@ -331,9 +389,1145 @@
   {
     "name": "special characters in string",
     "type": "test",
-    "state": { "note": "Line 1\nLine 2\ttab" },
+    "state": {
+      "note": "Line 1\nLine 2\ttab"
+    },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"Line 1\\nLine 2\\ttab\"},\"type\":\"test\"}",
     "expected_hash": "1316ddda14979ab171b80bf2baf6ac26e191d59d5f40a248dcfff44f7b2487a4"
+  },
+  {
+    "name": "unicode: café (precomposed)",
+    "type": "substance.product",
+    "state": {
+      "name": "café"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"café\"},\"type\":\"substance.product\"}",
+    "expected_hash": "8b08091c8330476cd3961bd0624abadbd6a1a30e1dd712c3615d62c03f798257"
+  },
+  {
+    "name": "unicode: résumé",
+    "type": "actor",
+    "state": {
+      "title": "résumé"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"title\":\"résumé\"},\"type\":\"actor\"}",
+    "expected_hash": "d0069c27971345636f90bdea9edd711165c337bff34ae6939b166c4e76daf1f6"
+  },
+  {
+    "name": "unicode: naïve",
+    "type": "test",
+    "state": {
+      "word": "naïve"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"word\":\"naïve\"},\"type\":\"test\"}",
+    "expected_hash": "4426d0848edf7f17bffe83473426f07cc47268692568d0f7db75d39119d07bda"
+  },
+  {
+    "name": "unicode: decomposed e+combining acute",
+    "type": "test",
+    "state": {
+      "name": "café"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"café\"},\"type\":\"test\"}",
+    "expected_hash": "a87b416b4098de9fcd4c4098622429199d9910c702226bf9c63cf001ad08bf1b"
+  },
+  {
+    "name": "unicode: precomposed é",
+    "type": "test",
+    "state": {
+      "letter": "é"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"letter\":\"é\"},\"type\":\"test\"}",
+    "expected_hash": "15782df426c9df607ca1abe5d955cbd9f02c642e201cc7189143fea3b7bb22b4"
+  },
+  {
+    "name": "unicode: decomposed e+acute (should match precomposed)",
+    "type": "test",
+    "state": {
+      "letter": "é"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"letter\":\"é\"},\"type\":\"test\"}",
+    "expected_hash": "15782df426c9df607ca1abe5d955cbd9f02c642e201cc7189143fea3b7bb22b4"
+  },
+  {
+    "name": "unicode: bread emoji",
+    "type": "substance.product",
+    "state": {
+      "name": "🍞 Sourdough"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"🍞 Sourdough\"},\"type\":\"substance.product\"}",
+    "expected_hash": "4a95b2ed6004006682aebad22a2f5a306df442ae9a36c45ce2edca5d72448ce0"
+  },
+  {
+    "name": "unicode: cheese emoji",
+    "type": "substance.product",
+    "state": {
+      "name": "🧀 Cheddar"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"🧀 Cheddar\"},\"type\":\"substance.product\"}",
+    "expected_hash": "510665fffdec51a23fc7764bcd2ee9f5c16bc2a4ce5ae70e37541443db5ed47e"
+  },
+  {
+    "name": "unicode: carrot emoji",
+    "type": "substance.product",
+    "state": {
+      "name": "🥕 Carrot"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"🥕 Carrot\"},\"type\":\"substance.product\"}",
+    "expected_hash": "17576873483d880e4b9004c9f5c6b319f9db36569cda93dfca0781f9523fe06c"
+  },
+  {
+    "name": "unicode: CJK sushi",
+    "type": "substance.product",
+    "state": {
+      "name": "寿司"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"寿司\"},\"type\":\"substance.product\"}",
+    "expected_hash": "9fa0e54ac9ef906ad3754918b65e098fa8606c4168a66559fec5fd2a7a865e3e"
+  },
+  {
+    "name": "unicode: CJK bread (面包)",
+    "type": "substance.product",
+    "state": {
+      "name": "面包"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"面包\"},\"type\":\"substance.product\"}",
+    "expected_hash": "aa10339b6e962f0e3158408c5fa22c0edbf5432f8e793ce514a55d8d59c287ed"
+  },
+  {
+    "name": "unicode: mixed ASCII + CJK + emoji",
+    "type": "substance.product",
+    "state": {
+      "name": "Bread 面包 🍞"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Bread 面包 🍞\"},\"type\":\"substance.product\"}",
+    "expected_hash": "4f5064c5bdf31f67b69f95bbad3bfad95065222b1d4894321370dd61318210d5"
+  },
+  {
+    "name": "unicode: Arabic bread (خبز)",
+    "type": "substance.product",
+    "state": {
+      "name": "خبز"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"خبز\"},\"type\":\"substance.product\"}",
+    "expected_hash": "d923c4a376ea48e52c912ea544cd3a52cca1a65dcc7ad3fb0c9b1d2b50ff1c46"
+  },
+  {
+    "name": "unicode: Korean rice (밥)",
+    "type": "substance.product",
+    "state": {
+      "name": "밥"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"밥\"},\"type\":\"substance.product\"}",
+    "expected_hash": "4c71916c05c50523f5478a2966f9cca06bdc967e27346436194cf7c6cbec2f36"
+  },
+  {
+    "name": "nested: 2-level",
+    "type": "test",
+    "state": {
+      "a": {
+        "b": "c"
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":\"c\"}},\"type\":\"test\"}",
+    "expected_hash": "d549cf7e04c384bd84e23311efd7240357695a281788ba7a08ecacfb7d9ce960"
+  },
+  {
+    "name": "nested: 3-level",
+    "type": "test",
+    "state": {
+      "a": {
+        "b": {
+          "c": "d"
+        }
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":\"d\"}}},\"type\":\"test\"}",
+    "expected_hash": "f5039c5f5773726a38e17d0d802733bc2397a723a7f4225c03fe1310afd7301f"
+  },
+  {
+    "name": "nested: 4-level with value",
+    "type": "test",
+    "state": {
+      "a": {
+        "b": {
+          "c": {
+            "d": 42
+          }
+        }
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":42}}}},\"type\":\"test\"}",
+    "expected_hash": "5bf434aa60de62ce4211b71e81626f9baa718d00adc2d3e501cb934dc9638024"
+  },
+  {
+    "name": "nested: arrays in objects",
+    "type": "test",
+    "state": {
+      "menu": {
+        "items": [
+          "pizza",
+          "pasta",
+          "salad"
+        ]
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"menu\":{\"items\":[\"pizza\",\"pasta\",\"salad\"]}},\"type\":\"test\"}",
+    "expected_hash": "d543d59014080c4abf92d78cd06fe23bfa3007f07fe45de7ee5b428ca8739883"
+  },
+  {
+    "name": "nested: objects in arrays",
+    "type": "test",
+    "state": {
+      "items": [
+        {
+          "name": "a",
+          "qty": 1
+        },
+        {
+          "name": "b",
+          "qty": 2
+        }
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"items\":[{\"name\":\"a\",\"qty\":1},{\"name\":\"b\",\"qty\":2}]},\"type\":\"test\"}",
+    "expected_hash": "afc9144aa85176b9f362b11796f407dcd84956cbde4e4a80b3e8f7f3b5d4f415"
+  },
+  {
+    "name": "nested: mixed nesting deep",
+    "type": "test",
+    "state": {
+      "config": {
+        "limits": {
+          "max": 100,
+          "min": 1
+        },
+        "tags": [
+          "organic",
+          "local"
+        ],
+        "nested": {
+          "deep": {
+            "value": true
+          }
+        }
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"config\":{\"limits\":{\"max\":100,\"min\":1},\"nested\":{\"deep\":{\"value\":true}},\"tags\":[\"organic\",\"local\"]}},\"type\":\"test\"}",
+    "expected_hash": "1044ae5ca37a4be08f11e82117b91ecceeed0ed4dfc8d752832be6313f508d39"
+  },
+  {
+    "name": "nested: key ordering at every level",
+    "type": "test",
+    "state": {
+      "z": {
+        "z2": "last",
+        "a2": "first"
+      },
+      "a": {
+        "z1": "last",
+        "a1": "first"
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"a1\":\"first\",\"z1\":\"last\"},\"z\":{\"a2\":\"first\",\"z2\":\"last\"}},\"type\":\"test\"}",
+    "expected_hash": "15b91ea960af98c2e510ec499f15ae1bd76ad62c435c0b307ff37d831c4591d4"
+  },
+  {
+    "name": "array: 10+ string elements",
+    "type": "test",
+    "state": {
+      "ingredients": [
+        "flour",
+        "water",
+        "salt",
+        "yeast",
+        "sugar",
+        "butter",
+        "eggs",
+        "milk",
+        "vanilla",
+        "cinnamon",
+        "nutmeg"
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"ingredients\":[\"flour\",\"water\",\"salt\",\"yeast\",\"sugar\",\"butter\",\"eggs\",\"milk\",\"vanilla\",\"cinnamon\",\"nutmeg\"]},\"type\":\"test\"}",
+    "expected_hash": "6201470c4ad17f75e2baa15066031b146a987e3d702200617790e4843b61a2e7"
+  },
+  {
+    "name": "array: mixed types",
+    "type": "test",
+    "state": {
+      "values": [
+        "hello",
+        42,
+        true,
+        false,
+        3.14,
+        "world",
+        0,
+        -1
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"values\":[\"hello\",42,true,false,3.14,\"world\",0,-1]},\"type\":\"test\"}",
+    "expected_hash": "11a3efde10c929ae1de3a522a54e23f4b38295b7cc122f71427b285d1f2d0ef7"
+  },
+  {
+    "name": "array: empty array",
+    "type": "test",
+    "state": {
+      "items": []
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"items\":[]},\"type\":\"test\"}",
+    "expected_hash": "cc74a3e0596f7f22f2b72216cd96496b0fe9d4b2336c1714bbf5d6be2a2e10c4"
+  },
+  {
+    "name": "array: nested arrays",
+    "type": "test",
+    "state": {
+      "matrix": [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          5,
+          6
+        ]
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"matrix\":[[1,2],[3,4],[5,6]]},\"type\":\"test\"}",
+    "expected_hash": "a2177132e12c45962e6b407a6f29792f2f5ed648e2dd7c4827ac574c86ac67e0"
+  },
+  {
+    "name": "array: single element",
+    "type": "test",
+    "state": {
+      "tags": [
+        "organic"
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"tags\":[\"organic\"]},\"type\":\"test\"}",
+    "expected_hash": "02a98ce904cc79c012c9387e4b0dd650215911cb4dd2706537debfda463a705d"
+  },
+  {
+    "name": "array: objects with varying keys",
+    "type": "test",
+    "state": {
+      "records": [
+        {
+          "id": 1,
+          "name": "first"
+        },
+        {
+          "id": 2,
+          "name": "second",
+          "extra": true
+        },
+        {
+          "id": 3
+        }
+      ]
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"records\":[{\"id\":1,\"name\":\"first\"},{\"extra\":true,\"id\":2,\"name\":\"second\"},{\"id\":3}]},\"type\":\"test\"}",
+    "expected_hash": "1d384578e01b4cfa975a7c4c12d7e12718f2a66d5368a47c1c581af10399b869"
+  },
+  {
+    "name": "refs: 5+ roles",
+    "type": "transfer.order",
+    "state": {
+      "quantity": 100
+    },
+    "refs": {
+      "buyer": "buyer_hash",
+      "seller": "seller_hash",
+      "product": "product_hash",
+      "warehouse": "warehouse_hash",
+      "inspector": "inspector_hash",
+      "carrier": "carrier_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"buyer\":\"buyer_hash\",\"carrier\":\"carrier_hash\",\"inspector\":\"inspector_hash\",\"product\":\"product_hash\",\"seller\":\"seller_hash\",\"warehouse\":\"warehouse_hash\"},\"state\":{\"quantity\":100},\"type\":\"transfer.order\"}",
+    "expected_hash": "8a572505646694e99a82ce4bdb2ea0664bec9971bd190b9b5e073cb0026eb3fb"
+  },
+  {
+    "name": "refs: array with multiple hashes sorted",
+    "type": "transform.process",
+    "state": {},
+    "refs": {
+      "inputs": [
+        "hash_z",
+        "hash_a",
+        "hash_m",
+        "hash_b"
+      ],
+      "output": "result_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"hash_a\",\"hash_b\",\"hash_m\",\"hash_z\"],\"output\":\"result_hash\"},\"state\":{},\"type\":\"transform.process\"}",
+    "expected_hash": "752cc81b03450016ec2cb461ab1681e98135096ab31be553dd39af92052e03fa"
+  },
+  {
+    "name": "refs: empty refs object",
+    "type": "test",
+    "state": {
+      "value": 1
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1},\"type\":\"test\"}",
+    "expected_hash": "c2f43a1e46114ed16c26ee08c6ae08552ab84e133990c7279c067a53444d749a"
+  },
+  {
+    "name": "refs: single ref",
+    "type": "observe.review",
+    "state": {
+      "rating": 4
+    },
+    "refs": {
+      "subject": "product_hash_abc"
+    },
+    "expected_canonical": "{\"refs\":{\"subject\":\"product_hash_abc\"},\"state\":{\"rating\":4},\"type\":\"observe.review\"}",
+    "expected_hash": "d811ca6a03ce74212ec382f334b6fc1d8c08980ccb77f1915b0c67eea07056a8"
+  },
+  {
+    "name": "refs: multiple array refs",
+    "type": "observe.merge",
+    "state": {},
+    "refs": {
+      "merges": [
+        "chain_b",
+        "chain_a",
+        "chain_c"
+      ],
+      "witnesses": [
+        "witness_2",
+        "witness_1"
+      ]
+    },
+    "expected_canonical": "{\"refs\":{\"merges\":[\"chain_a\",\"chain_b\",\"chain_c\"],\"witnesses\":[\"witness_1\",\"witness_2\"]},\"state\":{},\"type\":\"observe.merge\"}",
+    "expected_hash": "2ac77618922a0b6e288de668ca58ce03dc15bad374f0f422605eb4b0c8d07979"
+  },
+  {
+    "name": "refs: refs key ordering",
+    "type": "test",
+    "state": {},
+    "refs": {
+      "z_ref": "zzz",
+      "a_ref": "aaa",
+      "m_ref": "mmm"
+    },
+    "expected_canonical": "{\"refs\":{\"a_ref\":\"aaa\",\"m_ref\":\"mmm\",\"z_ref\":\"zzz\"},\"state\":{},\"type\":\"test\"}",
+    "expected_hash": "1b7bc3e57297d70ba0c340efe3cab32a406dbe2641150910f7143d9a838ea1e8"
+  },
+  {
+    "name": "minimal: empty state empty refs",
+    "type": "test",
+    "state": {},
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"test\"}",
+    "expected_hash": "151b9ba09bc59cf04dbe8730169e4f5533946c6c598678e733ebb3809d7459e1"
+  },
+  {
+    "name": "minimal: empty string value",
+    "type": "test",
+    "state": {
+      "name": ""
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
+    "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
+  },
+  {
+    "name": "minimal: zero value",
+    "type": "test",
+    "state": {
+      "count": 0
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"count\":0},\"type\":\"test\"}",
+    "expected_hash": "2cbeaddeca0823e02e390ca18f35e5a6630d325f8a8978a928f0a98b7350c9ff"
+  },
+  {
+    "name": "minimal: false value",
+    "type": "test",
+    "state": {
+      "active": false
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"active\":false},\"type\":\"test\"}",
+    "expected_hash": "162f1f6264db712ffa98ef152b04d11a6dd4c791f5cbbcbe50e8c0c5566efbf6"
+  },
+  {
+    "name": "minimal: single field",
+    "type": "test",
+    "state": {
+      "x": 1
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"x\":1},\"type\":\"test\"}",
+    "expected_hash": "be2583c3143be138e79f88b77d934c8f07d07eaea1a403c0e2ecfd9e28b960da"
+  },
+  {
+    "name": "minimal: type only (substance)",
+    "type": "substance",
+    "state": {},
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"substance\"}",
+    "expected_hash": "06b0a732788eecd189b393429723529da1e47d9485e05e0e6983b19f323b5509"
+  },
+  {
+    "name": "number: 1e15 (quadrillion)",
+    "type": "test",
+    "state": {
+      "value": 1000000000000000
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1000000000000000},\"type\":\"test\"}",
+    "expected_hash": "d82b837bf2002e2d5bc68854c3516e817978453247b8cec9ed255d27d68c2499"
+  },
+  {
+    "name": "number: 1e20",
+    "type": "test",
+    "state": {
+      "value": 100000000000000000000
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100000000000000000000},\"type\":\"test\"}",
+    "expected_hash": "4514f135ed4b5a7b20ddee22af3de618dc8e74e5a4a093fbc0d774cbf5e2f005"
+  },
+  {
+    "name": "number: 1e-7 (small)",
+    "type": "test",
+    "state": {
+      "value": 1e-7
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-7},\"type\":\"test\"}",
+    "expected_hash": "15d2d0de8fd5dce0d013de0dbe271d6aa5d4574049d655b572ff8d5d005ae164"
+  },
+  {
+    "name": "number: 1e-15 (very small)",
+    "type": "test",
+    "state": {
+      "value": 1e-15
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-15},\"type\":\"test\"}",
+    "expected_hash": "434442f3b45bb73df61feb005d0ca988fad19e4a4b0d7bc2889d3253d71445c8"
+  },
+  {
+    "name": "number: negative zero becomes 0",
+    "type": "test",
+    "state": {
+      "value": 0
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
+    "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
+  },
+  {
+    "name": "number: integer-like float 1.0",
+    "type": "test",
+    "state": {
+      "value": 1
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1},\"type\":\"test\"}",
+    "expected_hash": "c2f43a1e46114ed16c26ee08c6ae08552ab84e133990c7279c067a53444d749a"
+  },
+  {
+    "name": "number: integer-like float 42.0",
+    "type": "test",
+    "state": {
+      "value": 42
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":42},\"type\":\"test\"}",
+    "expected_hash": "8a96f347b533d254b04a708527948558b7936dfef36a7be6afdb846918dfb68a"
+  },
+  {
+    "name": "number: pi",
+    "type": "test",
+    "state": {
+      "value": 3.141592653589793
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":3.141592653589793},\"type\":\"test\"}",
+    "expected_hash": "eb64f334b087f88bfd0a5400894d56d0ea4e4d0e261fff3bc896b5b29e78945d"
+  },
+  {
+    "name": "number: e (Euler)",
+    "type": "test",
+    "state": {
+      "value": 2.718281828459045
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":2.718281828459045},\"type\":\"test\"}",
+    "expected_hash": "0ceb74fc6df92de5dd8ba6623f3ea285b237e1dd6be5d996fc39fe945fa44649"
+  },
+  {
+    "name": "number: negative integer",
+    "type": "test",
+    "state": {
+      "value": -42
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-42},\"type\":\"test\"}",
+    "expected_hash": "6d2f1212fca6e70740388ec876641c4c1ea0edc5e0b75b29c902477cdf599ba9"
+  },
+  {
+    "name": "number: negative float",
+    "type": "test",
+    "state": {
+      "value": -3.14
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-3.14},\"type\":\"test\"}",
+    "expected_hash": "51ab7d9f1cf26d44e16cfde5e3d2e62691a334a97a4f96933036fac1b922c691"
+  },
+  {
+    "name": "number: MAX_SAFE_INTEGER",
+    "type": "test",
+    "state": {
+      "value": 9007199254740991
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":9007199254740991},\"type\":\"test\"}",
+    "expected_hash": "df9cf2ce064a3b04b4fb277b919a5fcb1f2fd1ee84ee4c97ad134b0cf26d21fe"
+  },
+  {
+    "name": "number: MIN_SAFE_INTEGER",
+    "type": "test",
+    "state": {
+      "value": -9007199254740991
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-9007199254740991},\"type\":\"test\"}",
+    "expected_hash": "799ed23507c40c807eda5093d6cbc40687283085b60d40c0b11def36d261858d"
+  },
+  {
+    "name": "number: 0.1 (IEEE 754 representation)",
+    "type": "test",
+    "state": {
+      "value": 0.1
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.1},\"type\":\"test\"}",
+    "expected_hash": "82ef10d40a523f4e80423ec9eb711c19c7d8c5ff64d6af5ccbbb0ff18d22d6cd"
+  },
+  {
+    "name": "number: 0.2",
+    "type": "test",
+    "state": {
+      "value": 0.2
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.2},\"type\":\"test\"}",
+    "expected_hash": "ab7f4bb56e3dfb65dd58c1856cc5beb0da48ba44570e03a2b5de5065a9e4a104"
+  },
+  {
+    "name": "number: 0.1 + 0.2 (IEEE 754)",
+    "type": "test",
+    "state": {
+      "value": 0.30000000000000004
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.30000000000000004},\"type\":\"test\"}",
+    "expected_hash": "0b22f10f2ca08e9787866f404ff376165b709cd963d531bda1a6e8033dd4407f"
+  },
+  {
+    "name": "number: 1e-20 (very very small)",
+    "type": "test",
+    "state": {
+      "value": 1e-20
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-20},\"type\":\"test\"}",
+    "expected_hash": "ad1d6a06d2f824b15961a02578188aa1412fc93693440083eba21f78f2a8d83b"
+  },
+  {
+    "name": "number: 999999999999 (large integer)",
+    "type": "test",
+    "state": {
+      "value": 999999999999
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":999999999999},\"type\":\"test\"}",
+    "expected_hash": "3e7ef1ae76cb00e76639921b6b71ca3a3d705d8beb7a212d6a62fd05765deb95"
+  },
+  {
+    "name": "type: actor",
+    "type": "actor",
+    "state": {
+      "name": "Test Actor"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Test Actor\"},\"type\":\"actor\"}",
+    "expected_hash": "efc99cb1107e6898024701cde41d1a3ce03eec75951fa19ef678eb61091c08ab"
+  },
+  {
+    "name": "type: actor.producer",
+    "type": "actor.producer",
+    "state": {
+      "name": "Green Farm"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Green Farm\"},\"type\":\"actor.producer\"}",
+    "expected_hash": "14c1e706d37376b70e1d2de71227faf13402d1e716e5c4069661dd936af734ab"
+  },
+  {
+    "name": "type: actor.venue",
+    "type": "actor.venue",
+    "state": {
+      "name": "City Market"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"City Market\"},\"type\":\"actor.venue\"}",
+    "expected_hash": "e966df1f761deda57217bb4c7a376ca0ad245efa9e853bc3b80cbf5fb78a28e5"
+  },
+  {
+    "name": "type: place",
+    "type": "place",
+    "state": {
+      "name": "Main Street"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Main Street\"},\"type\":\"place\"}",
+    "expected_hash": "2a5b1fe2f20ee521a5c4831f0464f1d3615a3115a797e69d67e6bde45261f365"
+  },
+  {
+    "name": "type: place.farm",
+    "type": "place.farm",
+    "state": {
+      "name": "Green Acres",
+      "acres": 200
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"acres\":200,\"name\":\"Green Acres\"},\"type\":\"place.farm\"}",
+    "expected_hash": "3916d383565216f422d48ba426d747eb14b3f8de3f10d84364b6a1247e696f03"
+  },
+  {
+    "name": "type: place.warehouse",
+    "type": "place.warehouse",
+    "state": {
+      "name": "Cold Storage",
+      "temp_c": 4
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Cold Storage\",\"temp_c\":4},\"type\":\"place.warehouse\"}",
+    "expected_hash": "2df9caa5c437fe6e7570c0be9954dfee7d4b7b9de31dd6858458e9702621b809"
+  },
+  {
+    "name": "type: substance",
+    "type": "substance",
+    "state": {
+      "name": "Wheat"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Wheat\"},\"type\":\"substance\"}",
+    "expected_hash": "7c83b73955e6cb53b6e3af63d735be3ceefa74b0888864aee92c4b48ef6b2ea5"
+  },
+  {
+    "name": "type: substance.product",
+    "type": "substance.product",
+    "state": {
+      "name": "Flour",
+      "price": 2.5
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Flour\",\"price\":2.5},\"type\":\"substance.product\"}",
+    "expected_hash": "9e15d358c86575b252c5ca4a6e68ddf42ca901e576c5ae5dd02a07304263a3e0"
+  },
+  {
+    "name": "type: substance.ingredient",
+    "type": "substance.ingredient",
+    "state": {
+      "name": "Salt",
+      "organic": false
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Salt\",\"organic\":false},\"type\":\"substance.ingredient\"}",
+    "expected_hash": "7d5ab5fe4bb010b9feb174e8d489476aa3619272f1882f57e889b92860734232"
+  },
+  {
+    "name": "type: transform",
+    "type": "transform",
+    "state": {
+      "name": "Milling"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Milling\"},\"type\":\"transform\"}",
+    "expected_hash": "68b307c7dc40867cb9586eb9d23030fed13222ccbeee1727c6ddf564c3ffd926"
+  },
+  {
+    "name": "type: transform.process",
+    "type": "transform.process",
+    "state": {
+      "name": "Baking",
+      "duration_min": 45
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"duration_min\":45,\"name\":\"Baking\"},\"type\":\"transform.process\"}",
+    "expected_hash": "6413ca22d867a8053ae03055958325588b5215f60a82357caf8b00667ebc902e"
+  },
+  {
+    "name": "type: transfer",
+    "type": "transfer",
+    "state": {
+      "quantity": 10
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"quantity\":10},\"type\":\"transfer\"}",
+    "expected_hash": "1477a7f68f86c9f8c07c8e260fa287036a60aa76e2bc4cb97c4d74c06074ac23"
+  },
+  {
+    "name": "type: transfer.order",
+    "type": "transfer.order",
+    "state": {
+      "quantity": 50,
+      "unit": "kg"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"quantity\":50,\"unit\":\"kg\"},\"type\":\"transfer.order\"}",
+    "expected_hash": "a4d574fecea9dfcc9f9826034910f69d91c87e694de1e6472ba829e944eb6166"
+  },
+  {
+    "name": "type: observe",
+    "type": "observe",
+    "state": {
+      "note": "General observation"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"General observation\"},\"type\":\"observe\"}",
+    "expected_hash": "b02139b61d12e3b449b818e456588e9a7ebc64c73cf5232e917d0e226766e0df"
+  },
+  {
+    "name": "type: observe.review",
+    "type": "observe.review",
+    "state": {
+      "rating": 5,
+      "text": "Great!"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"rating\":5,\"text\":\"Great!\"},\"type\":\"observe.review\"}",
+    "expected_hash": "41d08dbcb276d11958a6a26b0b843daae48bd1061cb000ce422a44eb5f534788"
+  },
+  {
+    "name": "type: observe.certification",
+    "type": "observe.certification",
+    "state": {
+      "cert": "USDA Organic",
+      "valid_until": "2027-01-01"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"cert\":\"USDA Organic\",\"valid_until\":\"2027-01-01\"},\"type\":\"observe.certification\"}",
+    "expected_hash": "bf9a426820ed1ebc60784ea0b6e7bfb8d9fe0fa1aff6c4670ef305d7df3aefa6"
+  },
+  {
+    "name": "type: observe.reading",
+    "type": "observe.reading",
+    "state": {
+      "sensor": "temp",
+      "value": 4.2,
+      "unit": "celsius"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"sensor\":\"temp\",\"unit\":\"celsius\",\"value\":4.2},\"type\":\"observe.reading\"}",
+    "expected_hash": "10209ba85c7521a660c23bebe3eaa45831fd2604bfc0ef4b75ec85beb5d632fd"
+  },
+  {
+    "name": "string: embedded quotes",
+    "type": "test",
+    "state": {
+      "note": "He said \"hello\""
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"He said \\\"hello\\\"\"},\"type\":\"test\"}",
+    "expected_hash": "3011906e7cea1b678a960eb10c38adddef05601b8e66c0731855e518f69a3374"
+  },
+  {
+    "name": "string: backslashes",
+    "type": "test",
+    "state": {
+      "path": "C:\\Users\\food"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"path\":\"C:\\\\Users\\\\food\"},\"type\":\"test\"}",
+    "expected_hash": "06351f838be7c31ad0b08818c2c8044e312d2fef0cb4324aa14d413a6d6e0217"
+  },
+  {
+    "name": "string: newlines and tabs",
+    "type": "test",
+    "state": {
+      "text": "line1\nline2\ttab"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"text\":\"line1\\nline2\\ttab\"},\"type\":\"test\"}",
+    "expected_hash": "47ac049c6ee6eb71e7cd12cc4ed7da2ff6409e6b3ac90f0e0eb5b6c107ba6ccb"
+  },
+  {
+    "name": "string: empty string",
+    "type": "test",
+    "state": {
+      "value": ""
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"\"},\"type\":\"test\"}",
+    "expected_hash": "40aba3879ebfc80e8081c7e2a85b93f7ef1f57a0254059f5e254f5d270f16ecc"
+  },
+  {
+    "name": "string: very long string",
+    "type": "test",
+    "state": {
+      "data": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"data\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"type\":\"test\"}",
+    "expected_hash": "18f5654b875e4eea77c56f0896ae6993b65563ee12e3b7bdaa3a0d12d85b9f06"
+  },
+  {
+    "name": "string: looks like integer",
+    "type": "test",
+    "state": {
+      "value": "123"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"123\"},\"type\":\"test\"}",
+    "expected_hash": "4c8f8780baca9857b19276ebeaf75e3c4b3a6cfd97644be17ee9932712edbbd5"
+  },
+  {
+    "name": "string: looks like float",
+    "type": "test",
+    "state": {
+      "value": "4.5"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"4.5\"},\"type\":\"test\"}",
+    "expected_hash": "a99fab0fd8483082198e3bd10cdf77900769472840114349de652844c86ab150"
+  },
+  {
+    "name": "string: looks like boolean",
+    "type": "test",
+    "state": {
+      "value": "true"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"true\"},\"type\":\"test\"}",
+    "expected_hash": "2ebd90a50a3089904d121bbc86914ce53117f53d3b5378cda8670d3a21659cc8"
+  },
+  {
+    "name": "null: multiple null values omitted",
+    "type": "test",
+    "state": {
+      "a": "keep",
+      "b": null,
+      "c": null,
+      "d": "also_keep"
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":\"keep\",\"d\":\"also_keep\"},\"type\":\"test\"}",
+    "expected_hash": "ccc3d24f0eabbcaead105cf3c07c66911455d8d08ace46722970d854731ebb79"
+  },
+  {
+    "name": "null: nested null omitted",
+    "type": "test",
+    "state": {
+      "outer": {
+        "inner": null,
+        "keep": 1
+      }
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"outer\":{\"keep\":1}},\"type\":\"test\"}",
+    "expected_hash": "7c6d2adcca5fafca3591f36ece01f38be786c5eedb7fb2ec16a38875bdf7e377"
+  },
+  {
+    "name": "sorting: many keys alphabetical",
+    "type": "test",
+    "state": {
+      "zebra": 1,
+      "apple": 2,
+      "mango": 3,
+      "banana": 4,
+      "cherry": 5,
+      "date": 6,
+      "elderberry": 7,
+      "fig": 8,
+      "grape": 9,
+      "honeydew": 10
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"apple\":2,\"banana\":4,\"cherry\":5,\"date\":6,\"elderberry\":7,\"fig\":8,\"grape\":9,\"honeydew\":10,\"mango\":3,\"zebra\":1},\"type\":\"test\"}",
+    "expected_hash": "58788fa5fbd2b2e496736ab6ac5496001e5a3339bce3891db8718aac3e3a2bf7"
+  },
+  {
+    "name": "unicode: key with accent",
+    "type": "test",
+    "state": {
+      "café": true
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"café\":true},\"type\":\"test\"}",
+    "expected_hash": "fbacf42bd9be7c28bdd9e66cc0b5445ceeb95375cf8c82d048f4b29e6de694bf"
+  },
+  {
+    "name": "complex: nested with refs",
+    "type": "transform.process",
+    "state": {
+      "steps": [
+        {
+          "action": "mix",
+          "duration": 10
+        },
+        {
+          "action": "bake",
+          "duration": 30
+        }
+      ]
+    },
+    "refs": {
+      "inputs": [
+        "flour_hash",
+        "water_hash"
+      ],
+      "output": "dough_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\"],\"output\":\"dough_hash\"},\"state\":{\"steps\":[{\"action\":\"mix\",\"duration\":10},{\"action\":\"bake\",\"duration\":30}]},\"type\":\"transform.process\"}",
+    "expected_hash": "6a0376217506a94b16e4fcb975b69cad0ab045e0dae73f565c9df30818b1f0e4"
+  },
+  {
+    "name": "boolean: true only",
+    "type": "test",
+    "state": {
+      "flag": true
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"flag\":true},\"type\":\"test\"}",
+    "expected_hash": "71fca9c5aad0f42a5a78cbcce7bdccb6203db18d59fac822f30af081793be8c8"
+  },
+  {
+    "name": "boolean: false only",
+    "type": "test",
+    "state": {
+      "flag": false
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"flag\":false},\"type\":\"test\"}",
+    "expected_hash": "491e854e02b990e52db407d6f1840536d2bbfc3dce6a72f21777e70aeec2fc0c"
+  },
+  {
+    "name": "boolean: multiple booleans",
+    "type": "test",
+    "state": {
+      "a": true,
+      "b": false,
+      "c": true,
+      "d": false
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":true,\"b\":false,\"c\":true,\"d\":false},\"type\":\"test\"}",
+    "expected_hash": "4d1ed390dd3fce1388ab3d0430fccf8e504e5d23a355c68abf966d0da8ed904c"
+  },
+  {
+    "name": "number: 0.0 should be 0",
+    "type": "test",
+    "state": {
+      "value": 0
+    },
+    "refs": {},
+    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
+    "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
+  },
+  {
+    "name": "refs: updates chain",
+    "type": "substance.product",
+    "state": {
+      "name": "Updated Product",
+      "price": 5
+    },
+    "refs": {
+      "updates": "previous_block_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"updates\":\"previous_block_hash\"},\"state\":{\"name\":\"Updated Product\",\"price\":5},\"type\":\"substance.product\"}",
+    "expected_hash": "9e57b74abca9168428c4b7234adbb55c10ec8fab7049dd89430270042efd4fd1"
+  },
+  {
+    "name": "refs: single string ref",
+    "type": "test",
+    "state": {},
+    "refs": {
+      "parent": "parent_hash_123"
+    },
+    "expected_canonical": "{\"refs\":{\"parent\":\"parent_hash_123\"},\"state\":{},\"type\":\"test\"}",
+    "expected_hash": "43ffaa521dbd794712aade83d9ba73a6d98431e1d00a4188344f861bd8cebf4e"
+  },
+  {
+    "name": "realistic: full supply chain transfer",
+    "type": "transfer.order",
+    "state": {
+      "instance_id": "order-2026-001",
+      "product": "Organic Sourdough Bread",
+      "quantity": 200,
+      "unit": "loaves",
+      "price_per_unit": 4.5,
+      "total": 900,
+      "currency": "USD",
+      "delivery_date": "2026-02-20",
+      "notes": "Deliver before 8am"
+    },
+    "refs": {
+      "buyer": "restaurant_hash",
+      "seller": "bakery_hash",
+      "product": "sourdough_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"buyer\":\"restaurant_hash\",\"product\":\"sourdough_hash\",\"seller\":\"bakery_hash\"},\"state\":{\"currency\":\"USD\",\"delivery_date\":\"2026-02-20\",\"instance_id\":\"order-2026-001\",\"notes\":\"Deliver before 8am\",\"price_per_unit\":4.5,\"product\":\"Organic Sourdough Bread\",\"quantity\":200,\"total\":900,\"unit\":\"loaves\"},\"type\":\"transfer.order\"}",
+    "expected_hash": "7587bf78cbf87b837f0d06ba22aca34752158ccbf64345f47c390654540634e4"
+  },
+  {
+    "name": "realistic: temperature sensor reading",
+    "type": "observe.reading",
+    "state": {
+      "sensor_id": "temp-sensor-042",
+      "value": -18.5,
+      "unit": "celsius",
+      "location": "freezer-A",
+      "timestamp": "2026-02-18T10:30:00Z",
+      "within_range": true
+    },
+    "refs": {
+      "place": "warehouse_hash",
+      "device": "sensor_hash"
+    },
+    "expected_canonical": "{\"refs\":{\"device\":\"sensor_hash\",\"place\":\"warehouse_hash\"},\"state\":{\"location\":\"freezer-A\",\"sensor_id\":\"temp-sensor-042\",\"timestamp\":\"2026-02-18T10:30:00Z\",\"unit\":\"celsius\",\"value\":-18.5,\"within_range\":true},\"type\":\"observe.reading\"}",
+    "expected_hash": "9f531e1de67d312367e4529268769d6f1a578efc52821a39be2c7d0fad990c67"
   }
 ]

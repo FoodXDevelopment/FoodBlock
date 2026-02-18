@@ -52,7 +52,32 @@ Subtypes via dot notation: `actor.producer`, `substance.product`, `observe.revie
 npm install foodblock
 ```
 
-## Quick Start
+## Quick Start — `fb()`
+
+The fastest way to use FoodBlock. Describe food in plain English, get structured blocks back.
+
+```javascript
+const { fb } = require('foodblock')
+
+fb("Sourdough bread, $4.50, organic, contains gluten")
+// => { type: 'substance.product', state: { name: 'Sourdough bread', price: { value: 4.5, unit: 'USD' }, organic: true, allergens: { gluten: true } }, blocks: [...] }
+
+fb("Amazing pizza at Luigi's, 5 stars")
+// => { type: 'observe.review', state: { name: "Luigi's", rating: 5, text: "..." }, blocks: [...] }
+
+fb("Green Acres Farm, 200 acres, organic wheat in Oregon")
+// => { type: 'actor.producer', state: { name: 'Green Acres Farm', acreage: 200, crop: 'organic wheat', region: 'Oregon' }, blocks: [...] }
+
+fb("Walk-in cooler temperature 4 celsius")
+// => { type: 'observe.reading', state: { temperature: { value: 4, unit: 'celsius' } }, blocks: [...] }
+
+fb("Ordered 50kg flour from Stone Mill")
+// => { type: 'transfer.order', state: { weight: { value: 50, unit: 'kg' } }, blocks: [...] }
+```
+
+No types to memorize. No schemas to configure. No API calls — `fb()` is pure pattern matching, runs locally, costs nothing.
+
+## Programmatic API
 
 ```javascript
 const fb = require('foodblock')
@@ -196,8 +221,18 @@ curl localhost:3111/.well-known/foodblock
 # List templates
 curl localhost:3111/blocks?type=observe.template
 
+# Natural language entry point
+curl -X POST localhost:3111/fb \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Sourdough bread, $4.50, organic, contains gluten"}'
+
 # Forward traversal (what references this block?)
 curl localhost:3111/forward/<hash>
+
+# Natural language → blocks
+curl -X POST localhost:3111/fb \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Sourdough bread, $4.50, organic, contains gluten"}'
 
 # List vocabularies
 curl localhost:3111/blocks?type=observe.vocabulary
@@ -206,6 +241,10 @@ curl localhost:3111/blocks?type=observe.vocabulary
 The sandbox ships preloaded with 47 blocks modelling a complete bakery supply chain — from farm to consumer, including certifications, shipments, cold chain readings, reviews, and operational vocabularies.
 
 ## API
+
+### `fb(text) → { blocks, primary, type, state, text }`
+
+The natural language entry point. Pass any food-related text, get FoodBlocks back. Detects intent (product, review, farm, order, certification, reading, process, venue, ingredient), extracts quantities (price, weight, volume, temperature, rating), flags (organic, gluten-free, kosher, etc.), and relationships ("from X", "at Y", "by Z"). No LLM — pure regex pattern matching against built-in vocabularies.
 
 ### `create(type, state, refs) → block`
 
@@ -464,12 +503,12 @@ foodblock/
 │   ├── src/                     block, chain, verify, encrypt, validate, offline, tombstone,
 │   │                            alias, notation, explain, uri, template, federation,
 │   │                            vocabulary, forward, merge, merkle, snapshot, attestation
-│   └── test/                    Test suite (67 tests)
+│   └── test/                    Test suite (104 tests)
 ├── sdk/python/                  Python SDK
 │   ├── foodblock/               block, chain, verify, validate, tombstone,
 │   │                            alias, notation, explain, uri, template, federation,
 │   │                            vocabulary, forward, merge, merkle, snapshot, attestation
-│   └── tests/                   Test suite (58 tests)
+│   └── tests/                   Test suite (80 tests)
 ├── sdk/go/                      Go SDK
 │   └── foodblock.go             block, chain, sign/verify, tombstone
 ├── sdk/swift/                   Swift SDK
@@ -510,7 +549,8 @@ MIT — use it however you want.
 
 ## Links
 
-- [Whitepaper](spec/whitepaper.md)
+- [Whitepaper](spec/whitepaper.md) ([PDF](spec/whitepaper.pdf))
+- [Technical Specification](spec/technical-whitepaper.md) ([PDF](spec/technical-whitepaper.pdf))
 - [Test Vectors](test/vectors.json)
 - [Schema](sql/schema.sql)
 - [MCP Server](mcp/README.md)

@@ -13,13 +13,14 @@ const { parse, parseAll, format } = require('./notation')
 const { explain } = require('./explain')
 const { toURI, fromURI } = require('./uri')
 const { createTemplate, fromTemplate, TEMPLATES } = require('./template')
-const { discover, federatedResolver, wellKnown } = require('./federation')
+const { discover, federatedResolver, wellKnown, handshake, push, pull, sync } = require('./federation')
 const { createVocabulary, mapFields, quantity, transition, nextStatuses, localize, VOCABULARIES } = require('./vocabulary')
 const { forward, recall, downstream } = require('./forward')
 const { detectConflict, merge, autoMerge } = require('./merge')
 const { merkleize, selectiveDisclose, verifyProof, sha256 } = require('./merkle')
 const { createSnapshot, verifySnapshot, summarize } = require('./snapshot')
 const { attest, dispute, traceAttestations, trustScore } = require('./attestation')
+const { fb } = require('./fb')
 
 const PROTOCOL_VERSION = '0.4.0'
 
@@ -84,6 +85,10 @@ module.exports = {
   discover,
   federatedResolver,
   wellKnown,
+  handshake,
+  push,
+  pull,
+  sync,
 
   // Vocabulary (Section 20)
   createVocabulary,
@@ -120,6 +125,9 @@ module.exports = {
   dispute,
   traceAttestations,
   trustScore,
+
+  // Natural Language Entry Point
+  fb,
 
   // Internal (exposed for interop testing)
   canonical

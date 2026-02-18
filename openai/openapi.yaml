@@ -1,0 +1,336 @@
+openapi: 3.1.0
+info:
+  title: FoodBlock API
+  version: 0.4.0
+  description: >-
+    Content-addressable protocol for universal food data.
+    Three fields (type, state, refs), six base types, SHA-256 identity.
+    Use this API to create, query, and trace food data across the supply chain.
+servers:
+  - url: https://api.foodx.world/foodblock
+    description: Production
+  - url: http://localhost:3111
+    description: Local sandbox
+paths:
+  /fb:
+    post:
+      operationId: fbParse
+      summary: Natural language to FoodBlocks
+      description: >-
+        Describe food in plain English and get structured FoodBlocks back.
+        Examples: "Sourdough bread, $4.50, organic, contains gluten",
+        "Green Acres Farm, 200 acres, organic wheat"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  description: Any food-related natural language text
+      responses:
+        "201":
+          description: Parsed FoodBlocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  text:
+                    type: string
+                  blocks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FoodBlock"
+  /blocks:
+    get:
+      operationId: queryBlocks
+      summary: Query FoodBlocks
+      description: Search for FoodBlocks by type, ref, or heads
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Filter by type (exact or prefix match)
+        - name: ref
+          in: query
+          schema:
+            type: string
+          description: Ref role name to filter by
+        - name: ref_value
+          in: query
+          schema:
+            type: string
+          description: Ref value (block hash) to filter by
+        - name: heads
+          in: query
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Only return head blocks (latest versions)
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+          description: Maximum results
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Matching blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  blocks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FoodBlock"
+    post:
+      operationId: createBlock
+      summary: Create a FoodBlock
+      description: >-
+        Create a new content-addressable FoodBlock. The hash is computed from
+        SHA-256(canonical(type + state + refs)).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type:
+                  type: string
+                  description: >-
+                    Block type. Base types: actor, place, substance, transform,
+                    transfer, observe. Use dot notation for subtypes.
+                state:
+                  type: object
+                  description: Block properties
+                  additionalProperties: true
+                refs:
+                  type: object
+                  description: References to other blocks by hash
+                  additionalProperties: true
+      responses:
+        "201":
+          description: Block created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodBlock"
+  /blocks/{hash}:
+    get:
+      operationId: getBlock
+      summary: Get block by hash
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[a-f0-9]{64}$"
+      responses:
+        "200":
+          description: The block
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodBlock"
+        "404":
+          description: Block not found
+    delete:
+      operationId: tombstoneBlock
+      summary: Tombstone a block (GDPR erasure)
+      description: >-
+        Creates an observe.tombstone block. Target state is replaced with
+        {tombstoned: true}. Hash, type, and refs are preserved.
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requested_by:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        "200":
+          description: Tombstone block created
+  /chain/{hash}:
+    get:
+      operationId: getChain
+      summary: Trace version history
+      description: Follow refs.updates backwards to show the full version chain
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Version chain
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  length:
+                    type: integer
+                  chain:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FoodBlock"
+  /heads:
+    get:
+      operationId: getHeads
+      summary: List head blocks
+      description: Head blocks are the latest version of each entity
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+          description: Optional type filter
+      responses:
+        "200":
+          description: Head blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  blocks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FoodBlock"
+  /blocks/batch:
+    post:
+      operationId: batchCreate
+      summary: Batch create blocks
+      description: >-
+        Create multiple blocks in dependency order. Useful for offline sync.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blocks]
+              properties:
+                blocks:
+                  type: array
+                  items:
+                    type: object
+                    required: [type]
+                    properties:
+                      type:
+                        type: string
+                      state:
+                        type: object
+                        additionalProperties: true
+                      refs:
+                        type: object
+                        additionalProperties: true
+      responses:
+        "200":
+          description: Batch results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inserted:
+                    type: array
+                    items:
+                      type: string
+                  skipped:
+                    type: array
+                    items:
+                      type: string
+                  failed:
+                    type: array
+                    items:
+                      type: object
+  /forward/{hash}:
+    get:
+      operationId: getForward
+      summary: Find blocks referencing this hash
+      description: Forward traversal — find all blocks that reference a given block
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Referencing blocks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                  referencing:
+                    type: array
+                    items:
+                      type: object
+components:
+  schemas:
+    FoodBlock:
+      type: object
+      required: [hash, type, state, refs]
+      properties:
+        hash:
+          type: string
+          description: SHA-256 content hash (64 hex characters)
+        type:
+          type: string
+          description: "Block type: actor, place, substance, transform, transfer, or observe (with dot-notation subtypes)"
+        state:
+          type: object
+          description: Block properties (any valid JSON)
+          additionalProperties: true
+        refs:
+          type: object
+          description: Named references to other blocks by hash
+          additionalProperties: true

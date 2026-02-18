@@ -22,6 +22,7 @@ from .merge import detect_conflict, merge, auto_merge
 from .merkle import merkleize, selective_disclose, verify_proof
 from .snapshot import create_snapshot, verify_snapshot, summarize
 from .attestation import attest, dispute, trace_attestations, trust_score
+from .fb import fb
 
 __all__ = [
     'create', 'update', 'merge_update', 'compute_hash',
@@ -46,5 +47,6 @@ __all__ = [
     'merkleize', 'selective_disclose', 'verify_proof',
     'create_snapshot', 'verify_snapshot', 'summarize',
     'attest', 'dispute', 'trace_attestations', 'trust_score',
+    'fb',
     'PROTOCOL_VERSION',
 ]

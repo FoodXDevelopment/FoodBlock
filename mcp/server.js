@@ -4,70 +4,29 @@
  * FoodBlock MCP Server
  *
  * Exposes the FoodBlock protocol to any MCP-compatible AI agent.
- * Connects to a live FoodBlock server (default: api.foodx.world/foodblock).
  *
- * Set FOODBLOCK_URL to point at a different server.
+ * Modes:
+ *   Standalone — no env vars needed, runs with embedded in-memory store + 47 seed blocks
+ *   Connected  — set FOODBLOCK_URL to connect to a live FoodBlock server
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { createRequire } from "node:module";
+import { createStore } from "./store.js";
 
-const require = createRequire(import.meta.url);
+// Fallback for bundled environments (e.g. Smithery) where import.meta.url is undefined
+const require = createRequire(import.meta.url || `file://${process.cwd()}/`);
 
 // Load FoodBlock SDK (CommonJS)
-const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, generateKeypair, sign, verify, tombstone, validate, offlineQueue } = require("@foodxdev/foodblock");
+const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, generateKeypair, sign, verify, tombstone, validate, offlineQueue, explain } = require("@foodxdev/foodblock");
 
-const API_URL = process.env.FOODBLOCK_URL || "https://api.foodx.world/foodblock";
+const API_URL = process.env.FOODBLOCK_URL || null;
+const db = createStore(API_URL);
 
 // Agent registry — maps agent hash to { keypair, operatorHash, sign }
 const agents = new Map();
-
-// ── HTTP helpers (Fix #9: proper error handling) ─────────────────────────
-
-async function api(path, opts = {}) {
-  const url = `${API_URL}${path}`;
-  let res;
-  try {
-    res = await fetch(url, {
-      headers: { "Content-Type": "application/json", ...opts.headers },
-      signal: AbortSignal.timeout(15000),
-      ...opts,
-    });
-  } catch (err) {
-    throw new Error(`FoodBlock API unreachable (${url}): ${err.message}`);
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`FoodBlock API error ${res.status} from ${path}: ${text}`);
-  }
-
-  try {
-    return await res.json();
-  } catch {
-    throw new Error(`FoodBlock API returned non-JSON response from ${path}`);
-  }
-}
-
-async function apiGet(path) {
-  return api(path);
-}
-
-async function apiPost(path, body) {
-  return api(path, { method: "POST", body: JSON.stringify(body) });
-}
-
-// Resolver for SDK chain/tree functions
-const resolve = async (h) => {
-  try {
-    const res = await apiGet(`/blocks/${h}`);
-    return res.error ? null : res;
-  } catch {
-    return null;
-  }
-};
 
 // Tool handler wrapper — catches errors and returns them as MCP error content
 function toolHandler(fn) {
@@ -87,7 +46,7 @@ function toolHandler(fn) {
 
 const server = new McpServer({
   name: "foodblock",
-  version: "0.4.0",
+  version: "0.5.0",
 });
 
 // ── Tool: foodblock_create ──────────────────────────────────────────────
@@ -126,7 +85,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ type, state, refs }) => {
-    const result = await apiPost("/blocks", { type, state: state || {}, refs: refs || {} });
+    const result = await db.createBlock(type, state, refs);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -162,7 +121,7 @@ server.registerTool(
   },
   toolHandler(async ({ previous_hash, type, state, refs }) => {
     const mergedRefs = { ...(refs || {}), updates: previous_hash };
-    const result = await apiPost("/blocks", { type, state: state || {}, refs: mergedRefs });
+    const result = await db.createBlock(type, state, mergedRefs);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -183,7 +142,8 @@ server.registerTool(
     },
   },
   toolHandler(async ({ hash: h }) => {
-    const result = await apiGet(`/blocks/${h}`);
+    const result = await db.getBlock(h);
+    if (!result) throw new Error(`Block not found: ${h}`);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -224,16 +184,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ type, ref_role, ref_value, heads_only, limit }) => {
-    const params = new URLSearchParams();
-    if (type) params.set("type", type);
-    if (ref_role && ref_value) {
-      params.set("ref", ref_role);
-      params.set("ref_value", ref_value);
-    }
-    if (heads_only) params.set("heads", "true");
-    if (limit) params.set("limit", String(limit));
-
-    const result = await apiGet(`/blocks?${params}`);
+    const result = await db.queryBlocks({ type, ref_role, ref_value, heads_only, limit });
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -261,7 +212,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ hash: h, max_depth }) => {
-    const result = await apiGet(`/chain/${h}?depth=${max_depth || 50}`);
+    const result = await db.getChain(h, max_depth || 50);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -289,7 +240,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ hash: h, max_depth }) => {
-    const result = await tree(h, resolve, { maxDepth: max_depth || 10 });
+    const result = await tree(h, db.resolve, { maxDepth: max_depth || 10 });
     if (!result) {
       return {
         content: [{ type: "text", text: `Block not found: ${h}` }],
@@ -318,9 +269,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ type }) => {
-    const params = new URLSearchParams();
-    if (type) params.set("type", type);
-    const result = await apiGet(`/heads?${params}`);
+    const result = await db.getHeads(type);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
@@ -339,12 +288,7 @@ server.registerTool(
     inputSchema: {},
   },
   toolHandler(async () => {
-    let info = null;
-    try {
-      info = await apiGet("/");
-    } catch {
-      // API root may return non-JSON (e.g. HTML sandbox page)
-    }
+    const info = await db.getInfo();
 
     return {
       content: [
@@ -352,8 +296,8 @@ server.registerTool(
           type: "text",
           text: JSON.stringify(
             {
-              server: info || { note: "API info unavailable (root may serve HTML)" },
-              api_url: API_URL,
+              server: info || {},
+              mode: API_URL ? `connected → ${API_URL}` : "standalone",
               protocol: {
                 description:
                   "A content-addressable primitive for universal food data. " +
@@ -406,12 +350,8 @@ server.registerTool(
 
     const agent = createAgent(name, operator_hash, opts);
 
-    // Post the agent block to the server
-    const result = await apiPost("/blocks", {
-      type: agent.block.type,
-      state: agent.block.state,
-      refs: agent.block.refs,
-    });
+    // Store the agent block
+    const result = await db.createBlock(agent.block.type, agent.block.state, agent.block.refs);
 
     // Register agent credentials locally for signing
     agents.set(agent.authorHash, {
@@ -518,8 +458,8 @@ server.registerTool(
     const block = create(type, draftState, draftRefs);
     const signed = agentData.sign(block);
 
-    // Post to server
-    await apiPost("/blocks", { type: block.type, state: block.state, refs: block.refs });
+    // Store the draft block
+    await db.createBlock(block.type, block.state, block.refs);
 
     return {
       content: [
@@ -553,8 +493,8 @@ server.registerTool(
     },
   },
   toolHandler(async ({ draft_hash }) => {
-    const draft = await apiGet(`/blocks/${draft_hash}`);
-    if (draft.error) {
+    const draft = await db.getBlock(draft_hash);
+    if (!draft) {
       return {
         content: [{ type: "text", text: `Error: Draft ${draft_hash} not found.` }],
       };
@@ -568,12 +508,8 @@ server.registerTool(
 
     const approved = approveDraft(draft);
 
-    // Post approved block to server
-    const result = await apiPost("/blocks", {
-      type: approved.type,
-      state: approved.state,
-      refs: approved.refs,
-    });
+    // Store the approved block
+    const result = await db.createBlock(approved.type, approved.state, approved.refs);
 
     return {
       content: [
@@ -604,7 +540,7 @@ server.registerTool(
     inputSchema: {},
   },
   toolHandler(async () => {
-    const result = await apiGet("/blocks?type=actor.agent&limit=100");
+    const result = await db.queryBlocks({ type: "actor.agent", limit: 100 });
     const agentBlocks = result.blocks || [];
 
     const agentList = agentBlocks.map((b) => ({
@@ -652,36 +588,19 @@ server.registerTool(
     },
   },
   toolHandler(async ({ target_hash, requested_by, reason }) => {
-    // Use the DELETE endpoint if available, otherwise create tombstone manually
-    try {
-      const result = await api(`/blocks/${target_hash}`, {
-        method: "DELETE",
-        body: JSON.stringify({ requested_by, reason }),
-      });
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      };
-    } catch {
-      // Fallback: create tombstone block and POST it
-      const ts = tombstone(target_hash, requested_by, { reason });
-      const result = await apiPost("/blocks", {
-        type: ts.type,
-        state: ts.state,
-        refs: ts.refs,
-      });
-      return {
-        content: [
-          {
-            type: "text",
-            text: JSON.stringify(
-              { tombstone: result, target: target_hash, message: "Tombstone created. Target state should be erased by the server." },
-              null,
-              2
-            ),
-          },
-        ],
-      };
-    }
+    const result = await db.deleteBlock(target_hash, requested_by, reason);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            { tombstone: result, target: target_hash, message: "Tombstone created. Target state erased." },
+            null,
+            2
+          ),
+        },
+      ],
+    };
   })
 );
 
@@ -754,23 +673,309 @@ server.registerTool(
     },
   },
   toolHandler(async ({ blocks }) => {
-    const result = await apiPost("/blocks/batch", { blocks });
+    const result = await db.batchCreate(blocks);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   })
 );
 
+// ── Tool: foodblock_fb ──────────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_fb",
+  {
+    title: "Natural Language FoodBlock",
+    description:
+      "The single natural language entry point to FoodBlock. Describe food in plain English " +
+      "and get structured FoodBlocks back. No need to know types, fields, or hashes. " +
+      "Examples: 'Sourdough bread, $4.50, organic, contains gluten', " +
+      "'Amazing pizza at Luigi\\'s, 5 stars', 'Green Acres Farm, 200 acres, organic wheat in Oregon', " +
+      "'Walk-in cooler temperature 4 celsius', 'Ordered 50kg flour from Stone Mill'.",
+    inputSchema: {
+      text: z
+        .string()
+        .describe("Any food-related natural language text"),
+    },
+  },
+  toolHandler(async ({ text }) => {
+    const result = await db.fbParse(text);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  })
+);
+
+// ── Tool: foodblock_discover ──────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_discover",
+  {
+    title: "Discover Agents",
+    description:
+      "Find AI agents by capability, type, or name. Returns matching agents " +
+      "with their capabilities, operator, and signing status. " +
+      "Examples: capability='transfer.order' finds agents that can handle orders, " +
+      "capability='substance.*' finds agents dealing with ingredients/products.",
+    inputSchema: {
+      capability: z
+        .string()
+        .optional()
+        .describe("Filter by capability (exact or wildcard). Example: 'transfer.order', 'substance.*'"),
+      name: z
+        .string()
+        .optional()
+        .describe("Filter by agent name (case-insensitive substring match)"),
+      operator_hash: z
+        .string()
+        .optional()
+        .describe("Filter by operator hash (find all agents for a specific business)"),
+      limit: z
+        .number()
+        .optional()
+        .default(20)
+        .describe("Maximum results (default 20)"),
+    },
+  },
+  toolHandler(async ({ capability, name, operator_hash, limit }) => {
+    const result = await db.queryBlocks({ type: "actor.agent", limit: limit || 100 });
+    let agentBlocks = result.blocks || [];
+
+    // Filter by capability
+    if (capability) {
+      agentBlocks = agentBlocks.filter((b) => {
+        const caps = b.state.capabilities || [];
+        return caps.some((c) => {
+          if (c === '*') return true;
+          if (c === capability) return true;
+          if (c.endsWith('.*') && capability.startsWith(c.slice(0, -1))) return true;
+          if (capability.endsWith('.*') && c.startsWith(capability.slice(0, -1))) return true;
+          return false;
+        });
+      });
+    }
+
+    // Filter by name
+    if (name) {
+      const lower = name.toLowerCase();
+      agentBlocks = agentBlocks.filter((b) =>
+        b.state.name && b.state.name.toLowerCase().includes(lower)
+      );
+    }
+
+    // Filter by operator
+    if (operator_hash) {
+      agentBlocks = agentBlocks.filter((b) =>
+        b.refs && b.refs.operator === operator_hash
+      );
+    }
+
+    const agentList = agentBlocks.slice(0, limit || 20).map((b) => ({
+      hash: b.hash,
+      name: b.state.name,
+      model: b.state.model || "unknown",
+      capabilities: b.state.capabilities || [],
+      operator: b.refs?.operator,
+      can_sign: agents.has(b.hash),
+    }));
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ count: agentList.length, agents: agentList }, null, 2),
+        },
+      ],
+    };
+  })
+);
+
+// ── Tool: foodblock_negotiate ────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_negotiate",
+  {
+    title: "Negotiate Order",
+    description:
+      "Complete agent-to-agent negotiation in one call: intent → offer → accept → order. " +
+      "Creates the full chain of blocks: observe.intent, observe.offer, and transfer.order. " +
+      "Both buyer and seller agents must exist in the system.",
+    inputSchema: {
+      buyer_hash: z
+        .string()
+        .describe("Hash of the buying agent or actor"),
+      seller_hash: z
+        .string()
+        .describe("Hash of the selling agent or actor"),
+      product_name: z
+        .string()
+        .describe("Name of the product being ordered"),
+      quantity: z
+        .number()
+        .optional()
+        .default(1)
+        .describe("Quantity to order (default 1)"),
+      price: z
+        .number()
+        .describe("Price per unit"),
+      currency: z
+        .string()
+        .optional()
+        .default("gbp")
+        .describe("Currency code (default 'gbp')"),
+      product_hash: z
+        .string()
+        .optional()
+        .describe("Optional hash of the substance.product block"),
+    },
+  },
+  toolHandler(async ({ buyer_hash, seller_hash, product_name, quantity, price, currency, product_hash }) => {
+    const total = (quantity || 1) * price;
+
+    // Step 1: Create observe.intent
+    const intentBlock = await db.createBlock("observe.intent", {
+      product_name,
+      quantity: quantity || 1,
+      max_price: price,
+      currency: currency || "gbp",
+      status: "seeking"
+    }, {
+      buyer: buyer_hash,
+      supplier: seller_hash,
+      ...(product_hash ? { product: product_hash } : {})
+    });
+
+    // Step 2: Create observe.offer
+    const offerBlock = await db.createBlock("observe.offer", {
+      product_name,
+      quantity: quantity || 1,
+      price,
+      currency: currency || "gbp",
+      status: "offered"
+    }, {
+      intent: intentBlock.hash,
+      buyer: buyer_hash,
+      seller: seller_hash,
+      ...(product_hash ? { product: product_hash } : {})
+    });
+
+    // Step 3: Create transfer.order (accept the offer)
+    const orderBlock = await db.createBlock("transfer.order", {
+      amount: total,
+      currency: currency || "gbp",
+      items: [{
+        name: product_name,
+        quantity: quantity || 1,
+        price
+      }],
+      status: "order"
+    }, {
+      buyer: buyer_hash,
+      seller: seller_hash,
+      offer: offerBlock.hash,
+      intent: intentBlock.hash,
+      ...(product_hash ? { product: product_hash } : {})
+    });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              negotiation: "complete",
+              intent: { hash: intentBlock.hash, type: "observe.intent" },
+              offer: { hash: offerBlock.hash, type: "observe.offer" },
+              order: { hash: orderBlock.hash, type: "transfer.order", amount: total, currency: currency || "gbp" },
+              message: `Negotiation complete: ${product_name} x${quantity || 1} @ ${price} ${currency || "gbp"} = ${total} ${currency || "gbp"}`,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  })
+);
+
+// ── Tool: foodblock_trace ────────────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_trace",
+  {
+    title: "Trace Provenance (Narrative)",
+    description:
+      "Generate a human-readable provenance narrative for a FoodBlock. " +
+      "Walks the full graph and tells the story: who made it, where it came from, " +
+      "what certifications it has, and how it got here. " +
+      "Returns plain English, not JSON — ideal for explaining provenance to end users.",
+    inputSchema: {
+      hash: z
+        .string()
+        .describe("Hash of the block to trace"),
+      max_depth: z
+        .number()
+        .optional()
+        .default(10)
+        .describe("Maximum depth to trace (default 10)"),
+    },
+  },
+  toolHandler(async ({ hash: h, max_depth }) => {
+    const narrative = await explain(h, db.resolve, { maxDepth: max_depth || 10 });
+
+    // Also get the tree for structured data
+    const treeData = await tree(h, db.resolve, { maxDepth: max_depth || 10 });
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              narrative,
+              block_hash: h,
+              tree_depth: treeData ? countTreeDepth(treeData) : 0,
+              tree: treeData || null,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  })
+);
+
+function countTreeDepth(node, depth = 0) {
+  if (!node || !node.children || !node.children.length) return depth;
+  return Math.max(...node.children.map((c) => countTreeDepth(c, depth + 1)));
+}
+
+// ── Smithery compatibility ────────────────────────────────────────────────
+
+export function createSandboxServer() {
+  return server;
+}
+
 // ── Start ───────────────────────────────────────────────────────────────
 
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`FoodBlock MCP Server v0.4.0 running on stdio`);
-  console.error(`API: ${API_URL}`);
+  const mode = API_URL ? `connected → ${API_URL}` : "standalone (embedded store)";
+  console.error(`FoodBlock MCP Server v0.5.0 running on stdio`);
+  console.error(`Mode: ${mode}`);
 }
 
-main().catch((error) => {
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+// Only start stdio transport when run directly (not imported by Smithery scanner)
+const isDirectRun = process.argv[1] && (
+  process.argv[1].endsWith('server.js') ||
+  process.argv[1].includes('foodblock-mcp')
+);
+
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error("Fatal error:", error);
+    process.exit(1);
+  });
+}
