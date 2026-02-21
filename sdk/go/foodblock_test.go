@@ -62,8 +62,9 @@ func TestKeyOrderIndependence(t *testing.T) {
 }
 
 func TestRefsArraySorting(t *testing.T) {
-	a := Create("transform.process", nil, map[string]interface{}{"inputs": []interface{}{"abc", "def"}})
-	b := Create("transform.process", nil, map[string]interface{}{"inputs": []interface{}{"def", "abc"}})
+	id := "fixed-id-for-test"
+	a := Create("transform.process", map[string]interface{}{"instance_id": id}, map[string]interface{}{"inputs": []interface{}{"abc", "def"}})
+	b := Create("transform.process", map[string]interface{}{"instance_id": id}, map[string]interface{}{"inputs": []interface{}{"def", "abc"}})
 	if a.Hash != b.Hash {
 		t.Errorf("refs array order should not affect hash: %s != %s", a.Hash, b.Hash)
 	}
@@ -180,5 +181,42 @@ func TestTombstone(t *testing.T) {
 	}
 	if ts.Refs["target"] != block.Hash {
 		t.Error("tombstone should reference target")
+	}
+}
+
+func TestInstanceIdAutoInjectedForEventTypes(t *testing.T) {
+	eventTypes := []string{"transfer.order", "transform.process", "observe.review"}
+	for _, typ := range eventTypes {
+		block := Create(typ, map[string]interface{}{"name": "test"}, nil)
+		if _, ok := block.State["instance_id"]; !ok {
+			t.Errorf("type %s should auto-inject instance_id", typ)
+		}
+	}
+}
+
+func TestInstanceIdNotInjectedForDefinitionalTypes(t *testing.T) {
+	definitional := []string{"observe.vocabulary", "observe.template", "observe.schema", "observe.trust_policy", "observe.protocol"}
+	for _, typ := range definitional {
+		block := Create(typ, map[string]interface{}{"name": "test"}, nil)
+		if _, ok := block.State["instance_id"]; ok {
+			t.Errorf("type %s should NOT auto-inject instance_id", typ)
+		}
+	}
+}
+
+func TestInstanceIdNotInjectedForNonEventTypes(t *testing.T) {
+	nonEvent := []string{"actor.producer", "place.farm", "substance.product"}
+	for _, typ := range nonEvent {
+		block := Create(typ, map[string]interface{}{"name": "test"}, nil)
+		if _, ok := block.State["instance_id"]; ok {
+			t.Errorf("type %s should NOT auto-inject instance_id", typ)
+		}
+	}
+}
+
+func TestInstanceIdPreservedIfProvided(t *testing.T) {
+	block := Create("transfer.order", map[string]interface{}{"instance_id": "my-custom-id", "quantity": 10.0}, nil)
+	if block.State["instance_id"] != "my-custom-id" {
+		t.Errorf("provided instance_id should be preserved, got %v", block.State["instance_id"])
 	}
 }

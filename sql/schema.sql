@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS foodblocks (
     -- Derived columns (computed on write, not in hash)
     chain_id         VARCHAR(64),     -- genesis block hash for this update chain
     is_head          BOOLEAN DEFAULT TRUE,
+    visibility       VARCHAR(32) DEFAULT 'public',
     created_at       TIMESTAMP DEFAULT NOW()
 );
 
@@ -35,6 +36,9 @@ CREATE INDEX idx_fb_created ON foodblocks(created_at DESC);
 
 -- Type + head (e.g. latest products)
 CREATE INDEX idx_fb_type_head ON foodblocks(type, is_head) WHERE is_head = TRUE;
+
+-- Visibility filtering (Section 7)
+CREATE INDEX idx_fb_visibility ON foodblocks(visibility) WHERE is_head = TRUE;
 
 -- Fork detection: prevent two blocks from updating the same predecessor
 -- by the same author (Fix #7). Different authors can fork (handled by trigger).
@@ -92,6 +96,19 @@ BEGIN
 
     NEW.is_head := TRUE;
 
+    -- Set visibility from state hint or type-based default (Section 7)
+    IF NEW.state->>'visibility' IS NOT NULL THEN
+        NEW.visibility := NEW.state->>'visibility';
+    ELSIF NEW.type LIKE 'transfer.payment%' OR NEW.type LIKE 'transfer.subscription%' THEN
+        NEW.visibility := 'direct';
+    ELSIF NEW.type LIKE 'observe.reading%' THEN
+        NEW.visibility := 'network';
+    ELSIF NEW.type LIKE 'actor.agent%' THEN
+        NEW.visibility := 'internal';
+    ELSE
+        NEW.visibility := 'public';
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -122,3 +139,32 @@ CREATE TRIGGER trg_fb_tombstone
     FOR EACH ROW
     WHEN (NEW.type = 'observe.tombstone')
     EXECUTE FUNCTION fb_on_tombstone();
+
+
+-- Notify on new block (for SSE stream)
+CREATE OR REPLACE FUNCTION notify_new_block() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM pg_notify('new_block', json_build_object(
+        'hash',        NEW.hash,
+        'type',        NEW.type,
+        'author_hash', NEW.author_hash
+    )::text);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_notify_new_block
+    AFTER INSERT ON foodblocks
+    FOR EACH ROW
+    EXECUTE FUNCTION notify_new_block();
+
+
+-- Federation peers
+CREATE TABLE IF NOT EXISTS federation_peers (
+    peer_url    TEXT PRIMARY KEY,
+    peer_name   TEXT DEFAULT 'Unknown Peer',
+    public_key  TEXT NOT NULL,
+    last_sync   TIMESTAMPTZ,
+    status      VARCHAR(32) DEFAULT 'active',
+    created_at  TIMESTAMPTZ DEFAULT NOW()
+);

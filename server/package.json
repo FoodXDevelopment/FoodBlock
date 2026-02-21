@@ -1,6 +1,6 @@
 {
   "name": "foodblock-server",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "FoodBlock reference server — deploy your own node",
   "type": "module",
   "main": "index.js",
@@ -15,6 +15,8 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "embedded-postgres": "^18.2.0-beta.16",
+    "pg-mem": "^3.0.13",
     "supertest": "^7.2.2"
   }
 }

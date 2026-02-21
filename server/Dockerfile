@@ -9,6 +9,10 @@ COPY sql/ ./sql/
 # Copy server
 COPY server/package*.json ./server/
 COPY server/index.js ./server/
+COPY server/db.js ./server/
+COPY server/logger.js ./server/
+COPY server/pagination.js ./server/
+COPY server/routes/ ./server/routes/
 COPY server/public/ ./server/public/
 
 # Install dependencies

@@ -25,7 +25,8 @@
     "type": "transform.process",
     "state": {
       "name": "Baking",
-      "temp": 220
+      "temp": 220,
+      "instance_id": "5b2a94d2-9c9e-981c-3f7a-3113a631bae40000"
     },
     "refs": {
       "inputs": [
@@ -35,13 +36,15 @@
       ],
       "output": "bread_hash"
     },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\",\"yeast_hash\"],\"output\":\"bread_hash\"},\"state\":{\"name\":\"Baking\",\"temp\":220},\"type\":\"transform.process\"}",
-    "expected_hash": "f2270f8a499aafba604caa08fb6449996ffc239e04bbf28c15d2d358d525618c"
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\",\"yeast_hash\"],\"output\":\"bread_hash\"},\"state\":{\"instance_id\":\"5b2a94d2-9c9e-981c-3f7a-3113a631bae40000\",\"name\":\"Baking\",\"temp\":220},\"type\":\"transform.process\"}",
+    "expected_hash": "e391506aa2de714c79b1402cbd9596fddaa91acbc855246138de69503c8d8aec"
   },
   {
     "name": "refs array order independence",
     "type": "transform.process",
-    "state": {},
+    "state": {
+      "instance_id": "58745400-1d15-2f8f-e69b-3e63194da53c0000"
+    },
     "refs": {
       "inputs": [
         "zzz",
@@ -49,8 +52,8 @@
         "mmm"
       ]
     },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"aaa\",\"mmm\",\"zzz\"]},\"state\":{},\"type\":\"transform.process\"}",
-    "expected_hash": "96e093f0b2f897590d93fa76a59889027e5f9dd46b2d3cd5d68381d6a677d520"
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"aaa\",\"mmm\",\"zzz\"]},\"state\":{\"instance_id\":\"58745400-1d15-2f8f-e69b-3e63194da53c0000\"},\"type\":\"transform.process\"}",
+    "expected_hash": "075958acfb3f2ee2e27e37b68a8516ea6c8800093b08776e7aa6a8432228a5cf"
   },
   {
     "name": "state array order preservation",
@@ -60,11 +63,12 @@
         "block_c",
         "block_a",
         "block_b"
-      ]
+      ],
+      "instance_id": "2f542759-6391-7889-6e5d-7233415426de0000"
     },
     "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"content_order\":[\"block_c\",\"block_a\",\"block_b\"]},\"type\":\"observe.post\"}",
-    "expected_hash": "a4b436ea216351a73a2d2cff031643ef1bad8afc011f96637c6fb9e226d89e4a"
+    "expected_canonical": "{\"refs\":{},\"state\":{\"content_order\":[\"block_c\",\"block_a\",\"block_b\"],\"instance_id\":\"2f542759-6391-7889-6e5d-7233415426de0000\"},\"type\":\"observe.post\"}",
+    "expected_hash": "c8037e1d94525cbd89094639bf9853900c9d3561b598d26ea273ae0847167b5e"
   },
   {
     "name": "key order independence",
@@ -103,14 +107,15 @@
     "state": {
       "rating": 5,
       "text": "Excellent",
-      "visibility": "public"
+      "visibility": "public",
+      "instance_id": "82aef924-7d70-9055-71d6-b1add10137f60000"
     },
     "refs": {
       "subject": "product_hash",
       "author": "user_hash"
     },
-    "expected_canonical": "{\"refs\":{\"author\":\"user_hash\",\"subject\":\"product_hash\"},\"state\":{\"rating\":5,\"text\":\"Excellent\",\"visibility\":\"public\"},\"type\":\"observe.review\"}",
-    "expected_hash": "ba094e63d7bd820aa2bedf8af456fe09b4f6d6d1d47ceea88011c6a17450c25e"
+    "expected_canonical": "{\"refs\":{\"author\":\"user_hash\",\"subject\":\"product_hash\"},\"state\":{\"instance_id\":\"82aef924-7d70-9055-71d6-b1add10137f60000\",\"rating\":5,\"text\":\"Excellent\",\"visibility\":\"public\"},\"type\":\"observe.review\"}",
+    "expected_hash": "a86b3e27a280462e57fdc88952c9f7d1c0e656089f1e7d7eff7e01fa1904b590"
   },
   {
     "name": "unicode content",
@@ -139,29 +144,31 @@
           "best_before": "2026-02-20",
           "confidence": 0.94
         }
-      ]
+      ],
+      "instance_id": "c678b5df-2d36-2466-a888-d5e7e5f9f4fe0000"
     },
     "refs": {
       "author": "camera_hash",
       "place": "fridge_hash",
       "owner": "user_hash"
     },
-    "expected_canonical": "{\"refs\":{\"author\":\"camera_hash\",\"owner\":\"user_hash\",\"place\":\"fridge_hash\"},\"state\":{\"detected\":[{\"best_before\":\"2026-02-20\",\"confidence\":0.94,\"gtin\":\"5000128000123\",\"item\":\"Sourdough\"}],\"visibility\":\"direct\"},\"type\":\"observe.scan\"}",
-    "expected_hash": "e0234013f78a3c5959f661980dc8d1172903973cbdceff7d76507b632ab4e5c2"
+    "expected_canonical": "{\"refs\":{\"author\":\"camera_hash\",\"owner\":\"user_hash\",\"place\":\"fridge_hash\"},\"state\":{\"detected\":[{\"best_before\":\"2026-02-20\",\"confidence\":0.94,\"gtin\":\"5000128000123\",\"item\":\"Sourdough\"}],\"instance_id\":\"c678b5df-2d36-2466-a888-d5e7e5f9f4fe0000\",\"visibility\":\"direct\"},\"type\":\"observe.scan\"}",
+    "expected_hash": "6bb491000d333929cca02458cca8ef9de67d76e47fe8462036bb48c3cb4b48ee"
   },
   {
     "name": "tombstone block",
     "type": "observe.tombstone",
     "state": {
       "reason": "gdpr_erasure",
-      "requested_by": "user_abc"
+      "requested_by": "user_abc",
+      "instance_id": "9a9c12eb-fbb8-01cd-118d-bbcf9f7b97110000"
     },
     "refs": {
       "target": "block_hash_123",
       "updates": "block_hash_123"
     },
-    "expected_canonical": "{\"refs\":{\"target\":\"block_hash_123\",\"updates\":\"block_hash_123\"},\"state\":{\"reason\":\"gdpr_erasure\",\"requested_by\":\"user_abc\"},\"type\":\"observe.tombstone\"}",
-    "expected_hash": "df65f4dc543a561180d0b39c3a58dd41f4bf64012fa9f5aa81defe6e8c18392f"
+    "expected_canonical": "{\"refs\":{\"target\":\"block_hash_123\",\"updates\":\"block_hash_123\"},\"state\":{\"instance_id\":\"9a9c12eb-fbb8-01cd-118d-bbcf9f7b97110000\",\"reason\":\"gdpr_erasure\",\"requested_by\":\"user_abc\"},\"type\":\"observe.tombstone\"}",
+    "expected_hash": "a352e82759f7d4973e6a7b7c79c087c02a368b1c1853038a39352ed3ae7df7ca"
   },
   {
     "name": "schema reference in state",
@@ -211,14 +218,15 @@
     "state": {
       "action": "transfer_update_rights",
       "target_chain": "genesis_abc",
-      "granted_to": "new_author_xyz"
+      "granted_to": "new_author_xyz",
+      "instance_id": "c0941131-81c1-1991-687f-b549ca14dc300000"
     },
     "refs": {
       "author": "original_author_hash",
       "grantee": "new_author_xyz"
     },
-    "expected_canonical": "{\"refs\":{\"author\":\"original_author_hash\",\"grantee\":\"new_author_xyz\"},\"state\":{\"action\":\"transfer_update_rights\",\"granted_to\":\"new_author_xyz\",\"target_chain\":\"genesis_abc\"},\"type\":\"observe.approval\"}",
-    "expected_hash": "3615b8d4dd604a4f74a45b039d6ff91b28e4fa6b730dd86bc945274805c3618c"
+    "expected_canonical": "{\"refs\":{\"author\":\"original_author_hash\",\"grantee\":\"new_author_xyz\"},\"state\":{\"action\":\"transfer_update_rights\",\"granted_to\":\"new_author_xyz\",\"instance_id\":\"c0941131-81c1-1991-687f-b549ca14dc300000\",\"target_chain\":\"genesis_abc\"},\"type\":\"observe.approval\"}",
+    "expected_hash": "b5b47dcd578f7df6f8d1516219ecab628fc77952773d31788fcc5d5e21fbe7c4"
   },
   {
     "name": "negative zero normalization",
@@ -314,20 +322,22 @@
     "type": "observe.attestation",
     "state": {
       "confidence": "verified",
-      "method": "on-site inspection"
+      "method": "on-site inspection",
+      "instance_id": "d204d924-9f9f-bf68-b83a-d748cf39bfe20000"
     },
     "refs": {
       "confirms": "claim_hash",
       "attestor": "inspector_hash"
     },
-    "expected_canonical": "{\"refs\":{\"attestor\":\"inspector_hash\",\"confirms\":\"claim_hash\"},\"state\":{\"confidence\":\"verified\",\"method\":\"on-site inspection\"},\"type\":\"observe.attestation\"}",
-    "expected_hash": "a2520bc6b5b114cd400bf600820b1fe1d2210b093e2d01c891d4f2faaab71621"
+    "expected_canonical": "{\"refs\":{\"attestor\":\"inspector_hash\",\"confirms\":\"claim_hash\"},\"state\":{\"confidence\":\"verified\",\"instance_id\":\"d204d924-9f9f-bf68-b83a-d748cf39bfe20000\",\"method\":\"on-site inspection\"},\"type\":\"observe.attestation\"}",
+    "expected_hash": "938d5fc725d9ecc6c63cbff044d47f12d6a6b6cfc19e92a2877b2169ff54a663"
   },
   {
     "name": "merge block with refs array sorting",
     "type": "observe.merge",
     "state": {
-      "strategy": "a_wins"
+      "strategy": "a_wins",
+      "instance_id": "e4eedd4b-06a7-b593-ba74-23cc6fe80cd00000"
     },
     "refs": {
       "merges": [
@@ -335,34 +345,36 @@
         "fork_a_hash"
       ]
     },
-    "expected_canonical": "{\"refs\":{\"merges\":[\"fork_a_hash\",\"fork_b_hash\"]},\"state\":{\"strategy\":\"a_wins\"},\"type\":\"observe.merge\"}",
-    "expected_hash": "96c137989ceaecffbd465924152c4748a4c98e80244288654eeac4d2843d5e96"
+    "expected_canonical": "{\"refs\":{\"merges\":[\"fork_a_hash\",\"fork_b_hash\"]},\"state\":{\"instance_id\":\"e4eedd4b-06a7-b593-ba74-23cc6fe80cd00000\",\"strategy\":\"a_wins\"},\"type\":\"observe.merge\"}",
+    "expected_hash": "0832298d25da61880f49345d9d74042c6ea71c69d850e03688efa8d96bd958b8"
   },
   {
     "name": "snapshot block",
     "type": "observe.snapshot",
     "state": {
       "block_count": 500,
-      "merkle_root": "abc123"
+      "merkle_root": "abc123",
+      "instance_id": "5032832a-8a58-9a72-e6b5-022cd13d99480000"
     },
     "refs": {
       "author": "server_hash"
     },
-    "expected_canonical": "{\"refs\":{\"author\":\"server_hash\"},\"state\":{\"block_count\":500,\"merkle_root\":\"abc123\"},\"type\":\"observe.snapshot\"}",
-    "expected_hash": "2d800feab20d2af8b79da65976d5995e1c3de7f390e374866218abb71eb9fda0"
+    "expected_canonical": "{\"refs\":{\"author\":\"server_hash\"},\"state\":{\"block_count\":500,\"instance_id\":\"5032832a-8a58-9a72-e6b5-022cd13d99480000\",\"merkle_root\":\"abc123\"},\"type\":\"observe.snapshot\"}",
+    "expected_hash": "f3765047cd8b0cc622565142909049930f63753d773348268e5d9cea7d2b8cd6"
   },
   {
     "name": "dispute block",
     "type": "observe.dispute",
     "state": {
-      "reason": "certificate expired"
+      "reason": "certificate expired",
+      "instance_id": "debd78ce-f6fd-3dcc-6ed5-fece97e9bbeb0000"
     },
     "refs": {
       "challenges": "claim_hash",
       "disputor": "challenger_hash"
     },
-    "expected_canonical": "{\"refs\":{\"challenges\":\"claim_hash\",\"disputor\":\"challenger_hash\"},\"state\":{\"reason\":\"certificate expired\"},\"type\":\"observe.dispute\"}",
-    "expected_hash": "9f68a476ac1e748966d0cf102c02b9b9f0dab88b8f1f4b66ef9f720992f51bc1"
+    "expected_canonical": "{\"refs\":{\"challenges\":\"claim_hash\",\"disputor\":\"challenger_hash\"},\"state\":{\"instance_id\":\"debd78ce-f6fd-3dcc-6ed5-fece97e9bbeb0000\",\"reason\":\"certificate expired\"},\"type\":\"observe.dispute\"}",
+    "expected_hash": "d3cbdd4659c323045733f76e09c210e833220b8b5dddd1082921fa91c51fed22"
   },
   {
     "name": "mixed number types",
@@ -767,7 +779,8 @@
     "name": "refs: 5+ roles",
     "type": "transfer.order",
     "state": {
-      "quantity": 100
+      "quantity": 100,
+      "instance_id": "1c196c21-4cfe-4537-3814-1d6e5d184fb60000"
     },
     "refs": {
       "buyer": "buyer_hash",
@@ -777,13 +790,15 @@
       "inspector": "inspector_hash",
       "carrier": "carrier_hash"
     },
-    "expected_canonical": "{\"refs\":{\"buyer\":\"buyer_hash\",\"carrier\":\"carrier_hash\",\"inspector\":\"inspector_hash\",\"product\":\"product_hash\",\"seller\":\"seller_hash\",\"warehouse\":\"warehouse_hash\"},\"state\":{\"quantity\":100},\"type\":\"transfer.order\"}",
-    "expected_hash": "8a572505646694e99a82ce4bdb2ea0664bec9971bd190b9b5e073cb0026eb3fb"
+    "expected_canonical": "{\"refs\":{\"buyer\":\"buyer_hash\",\"carrier\":\"carrier_hash\",\"inspector\":\"inspector_hash\",\"product\":\"product_hash\",\"seller\":\"seller_hash\",\"warehouse\":\"warehouse_hash\"},\"state\":{\"instance_id\":\"1c196c21-4cfe-4537-3814-1d6e5d184fb60000\",\"quantity\":100},\"type\":\"transfer.order\"}",
+    "expected_hash": "2b3197188d7878553c41159c57ca28abfd255d19a276bb990614a1ad569e58d8"
   },
   {
     "name": "refs: array with multiple hashes sorted",
     "type": "transform.process",
-    "state": {},
+    "state": {
+      "instance_id": "750bb54a-f2bf-ad86-5afc-b1883befa3a20000"
+    },
     "refs": {
       "inputs": [
         "hash_z",
@@ -793,8 +808,8 @@
       ],
       "output": "result_hash"
     },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"hash_a\",\"hash_b\",\"hash_m\",\"hash_z\"],\"output\":\"result_hash\"},\"state\":{},\"type\":\"transform.process\"}",
-    "expected_hash": "752cc81b03450016ec2cb461ab1681e98135096ab31be553dd39af92052e03fa"
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"hash_a\",\"hash_b\",\"hash_m\",\"hash_z\"],\"output\":\"result_hash\"},\"state\":{\"instance_id\":\"750bb54a-f2bf-ad86-5afc-b1883befa3a20000\"},\"type\":\"transform.process\"}",
+    "expected_hash": "04a317507d11b57887e63e378c61e8579a1080f1ddbba62e3fe06725635d3d23"
   },
   {
     "name": "refs: empty refs object",
@@ -810,18 +825,21 @@
     "name": "refs: single ref",
     "type": "observe.review",
     "state": {
-      "rating": 4
+      "rating": 4,
+      "instance_id": "57cfc26a-294b-dd93-d5d2-8b2659536ffa0000"
     },
     "refs": {
       "subject": "product_hash_abc"
     },
-    "expected_canonical": "{\"refs\":{\"subject\":\"product_hash_abc\"},\"state\":{\"rating\":4},\"type\":\"observe.review\"}",
-    "expected_hash": "d811ca6a03ce74212ec382f334b6fc1d8c08980ccb77f1915b0c67eea07056a8"
+    "expected_canonical": "{\"refs\":{\"subject\":\"product_hash_abc\"},\"state\":{\"instance_id\":\"57cfc26a-294b-dd93-d5d2-8b2659536ffa0000\",\"rating\":4},\"type\":\"observe.review\"}",
+    "expected_hash": "ff4f43f0be161eeea16a5c0e738670b4d00535a154882fc99ca200d63bda4fd1"
   },
   {
     "name": "refs: multiple array refs",
     "type": "observe.merge",
-    "state": {},
+    "state": {
+      "instance_id": "f5c5116c-32ab-059d-ebfb-1e5f04eb871d0000"
+    },
     "refs": {
       "merges": [
         "chain_b",
@@ -833,8 +851,8 @@
         "witness_1"
       ]
     },
-    "expected_canonical": "{\"refs\":{\"merges\":[\"chain_a\",\"chain_b\",\"chain_c\"],\"witnesses\":[\"witness_1\",\"witness_2\"]},\"state\":{},\"type\":\"observe.merge\"}",
-    "expected_hash": "2ac77618922a0b6e288de668ca58ce03dc15bad374f0f422605eb4b0c8d07979"
+    "expected_canonical": "{\"refs\":{\"merges\":[\"chain_a\",\"chain_b\",\"chain_c\"],\"witnesses\":[\"witness_1\",\"witness_2\"]},\"state\":{\"instance_id\":\"f5c5116c-32ab-059d-ebfb-1e5f04eb871d0000\"},\"type\":\"observe.merge\"}",
+    "expected_hash": "32ec2e4951189670e487ee8cab7999fb6d45c3c769422116fadd9e3c797f6e0d"
   },
   {
     "name": "refs: refs key ordering",
@@ -1193,11 +1211,12 @@
     "type": "transform.process",
     "state": {
       "name": "Baking",
-      "duration_min": 45
+      "duration_min": 45,
+      "instance_id": "2b2f8595-d554-87dc-f32e-43ab753a77c70000"
     },
     "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"duration_min\":45,\"name\":\"Baking\"},\"type\":\"transform.process\"}",
-    "expected_hash": "6413ca22d867a8053ae03055958325588b5215f60a82357caf8b00667ebc902e"
+    "expected_canonical": "{\"refs\":{},\"state\":{\"duration_min\":45,\"instance_id\":\"2b2f8595-d554-87dc-f32e-43ab753a77c70000\",\"name\":\"Baking\"},\"type\":\"transform.process\"}",
+    "expected_hash": "d6cb4d395f53d0a494ac61fc240e33e9b0341ecd10c466c3ced24a68328be77c"
   },
   {
     "name": "type: transfer",
@@ -1214,11 +1233,12 @@
     "type": "transfer.order",
     "state": {
       "quantity": 50,
-      "unit": "kg"
+      "unit": "kg",
+      "instance_id": "eaa39d77-520b-8d16-01c2-373ce1bde9290000"
     },
     "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"quantity\":50,\"unit\":\"kg\"},\"type\":\"transfer.order\"}",
-    "expected_hash": "a4d574fecea9dfcc9f9826034910f69d91c87e694de1e6472ba829e944eb6166"
+    "expected_canonical": "{\"refs\":{},\"state\":{\"instance_id\":\"eaa39d77-520b-8d16-01c2-373ce1bde9290000\",\"quantity\":50,\"unit\":\"kg\"},\"type\":\"transfer.order\"}",
+    "expected_hash": "2edeae81bc7e0bef8d7208f2ea0a96b186b41cbbc053ce0cb8d6aa33a48f4d1a"
   },
   {
     "name": "type: observe",
@@ -1235,22 +1255,24 @@
     "type": "observe.review",
     "state": {
       "rating": 5,
-      "text": "Great!"
+      "text": "Great!",
+      "instance_id": "f3eeb947-23b7-8f77-fecb-3963d8081c770000"
     },
     "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"rating\":5,\"text\":\"Great!\"},\"type\":\"observe.review\"}",
-    "expected_hash": "41d08dbcb276d11958a6a26b0b843daae48bd1061cb000ce422a44eb5f534788"
+    "expected_canonical": "{\"refs\":{},\"state\":{\"instance_id\":\"f3eeb947-23b7-8f77-fecb-3963d8081c770000\",\"rating\":5,\"text\":\"Great!\"},\"type\":\"observe.review\"}",
+    "expected_hash": "e076cbd7a255a3af3fb7d06c7335f5a2b0eff24b6dfe0c39c959e62f644c3ad9"
   },
   {
     "name": "type: observe.certification",
     "type": "observe.certification",
     "state": {
       "cert": "USDA Organic",
-      "valid_until": "2027-01-01"
+      "valid_until": "2027-01-01",
+      "instance_id": "ed1aed1a-5293-5302-de3c-412714d76cbf0000"
     },
     "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"cert\":\"USDA Organic\",\"valid_until\":\"2027-01-01\"},\"type\":\"observe.certification\"}",
-    "expected_hash": "bf9a426820ed1ebc60784ea0b6e7bfb8d9fe0fa1aff6c4670ef305d7df3aefa6"
+    "expected_canonical": "{\"refs\":{},\"state\":{\"cert\":\"USDA Organic\",\"instance_id\":\"ed1aed1a-5293-5302-de3c-412714d76cbf0000\",\"valid_until\":\"2027-01-01\"},\"type\":\"observe.certification\"}",
+    "expected_hash": "9a3cd92e4cdbc32302257d1d59662d64d30ece0e53c6e227eff1f13b19c40a2b"
   },
   {
     "name": "type: observe.reading",
@@ -1258,11 +1280,12 @@
     "state": {
       "sensor": "temp",
       "value": 4.2,
-      "unit": "celsius"
+      "unit": "celsius",
+      "instance_id": "1745ea40-daab-a597-5e52-cf65a29f24a20000"
     },
     "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"sensor\":\"temp\",\"unit\":\"celsius\",\"value\":4.2},\"type\":\"observe.reading\"}",
-    "expected_hash": "10209ba85c7521a660c23bebe3eaa45831fd2604bfc0ef4b75ec85beb5d632fd"
+    "expected_canonical": "{\"refs\":{},\"state\":{\"instance_id\":\"1745ea40-daab-a597-5e52-cf65a29f24a20000\",\"sensor\":\"temp\",\"unit\":\"celsius\",\"value\":4.2},\"type\":\"observe.reading\"}",
+    "expected_hash": "15eb4ae0575bb24a8545067c8c3ab8b9336f1d49bde77cecf98a899b5756cb08"
   },
   {
     "name": "string: embedded quotes",
@@ -1412,7 +1435,8 @@
           "action": "bake",
           "duration": 30
         }
-      ]
+      ],
+      "instance_id": "6bce1aaa-8fbd-27d2-8142-6d8f7fc863870000"
     },
     "refs": {
       "inputs": [
@@ -1421,8 +1445,8 @@
       ],
       "output": "dough_hash"
     },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\"],\"output\":\"dough_hash\"},\"state\":{\"steps\":[{\"action\":\"mix\",\"duration\":10},{\"action\":\"bake\",\"duration\":30}]},\"type\":\"transform.process\"}",
-    "expected_hash": "6a0376217506a94b16e4fcb975b69cad0ab045e0dae73f565c9df30818b1f0e4"
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\"],\"output\":\"dough_hash\"},\"state\":{\"instance_id\":\"6bce1aaa-8fbd-27d2-8142-6d8f7fc863870000\",\"steps\":[{\"action\":\"mix\",\"duration\":10},{\"action\":\"bake\",\"duration\":30}]},\"type\":\"transform.process\"}",
+    "expected_hash": "e0009b7d637e4e4b040930d1c93e38c77b841d5caa78a67454419c6a2fb04c79"
   },
   {
     "name": "boolean: true only",
@@ -1521,13 +1545,14 @@
       "unit": "celsius",
       "location": "freezer-A",
       "timestamp": "2026-02-18T10:30:00Z",
-      "within_range": true
+      "within_range": true,
+      "instance_id": "84d7fddc-3d53-bec6-f119-fe2efa49f0f10000"
     },
     "refs": {
       "place": "warehouse_hash",
       "device": "sensor_hash"
     },
-    "expected_canonical": "{\"refs\":{\"device\":\"sensor_hash\",\"place\":\"warehouse_hash\"},\"state\":{\"location\":\"freezer-A\",\"sensor_id\":\"temp-sensor-042\",\"timestamp\":\"2026-02-18T10:30:00Z\",\"unit\":\"celsius\",\"value\":-18.5,\"within_range\":true},\"type\":\"observe.reading\"}",
-    "expected_hash": "9f531e1de67d312367e4529268769d6f1a578efc52821a39be2c7d0fad990c67"
+    "expected_canonical": "{\"refs\":{\"device\":\"sensor_hash\",\"place\":\"warehouse_hash\"},\"state\":{\"instance_id\":\"84d7fddc-3d53-bec6-f119-fe2efa49f0f10000\",\"location\":\"freezer-A\",\"sensor_id\":\"temp-sensor-042\",\"timestamp\":\"2026-02-18T10:30:00Z\",\"unit\":\"celsius\",\"value\":-18.5,\"within_range\":true},\"type\":\"observe.reading\"}",
+    "expected_hash": "d32272e448b9e9726e541859fcbfa3974b61a172192efb6ac65e8a32dc5c68b1"
   }
 ]

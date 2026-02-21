@@ -124,9 +124,12 @@ func Validate(block Block, schema *Schema) []string {
 		}
 	}
 
-	// Check required refs
+	// Check required refs (supports string or non-empty array values)
 	for _, ref := range schemaDef.ExpectedRefs {
-		if _, ok := block.Refs[ref]; !ok {
+		val, ok := block.Refs[ref]
+		if !ok || val == nil {
+			errs = append(errs, fmt.Sprintf("Missing expected ref: refs.%s", ref))
+		} else if arr, isArr := val.([]interface{}); isArr && len(arr) == 0 {
 			errs = append(errs, fmt.Sprintf("Missing expected ref: refs.%s", ref))
 		}
 	}

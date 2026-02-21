@@ -72,7 +72,8 @@ def validate(block: dict, schema: dict = None, registry: dict = None) -> list:
             if expected and not isinstance(block["state"][field], expected):
                 errors.append(f"Field state.{field} should be {defn['type']}, got {type(block['state'][field]).__name__}")
     for ref in schema_def.get("expected_refs", []):
-        if ref not in block.get("refs", {}):
+        val = block.get("refs", {}).get(ref)
+        if not val or (isinstance(val, list) and len(val) == 0):
             errors.append(f"Missing expected ref: refs.{ref}")
     if schema_def.get("requires_instance_id") and "instance_id" not in block.get("state", {}):
         errors.append("Missing required field: state.instance_id")

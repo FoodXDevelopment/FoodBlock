@@ -249,7 +249,7 @@ async function localChain(hash) {
 function localInfo() {
   return {
     name: 'foodblock-cli',
-    version: '0.1.0',
+    version: '0.5.1',
     mode: 'standalone',
     protocol_version: sdk.PROTOCOL_VERSION,
     block_count: store.size,

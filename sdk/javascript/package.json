@@ -1,6 +1,6 @@
 {
   "name": "@foodxdev/foodblock",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "SDK for the FoodBlock protocol — a content-addressable primitive for universal food data",
   "main": "src/index.js",
   "exports": {
@@ -12,7 +12,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node --test test/block.test.js"
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "food",

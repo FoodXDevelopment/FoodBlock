@@ -17,10 +17,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
-      - run: node --test test/block.test.js
-        working-directory: sdk/javascript
-      - run: node --test test/fixes.test.js
+          node-version: 20
+      - run: node --test test/*.test.js
         working-directory: sdk/javascript
 
   python-sdk:
@@ -36,19 +34,6 @@ jobs:
         working-directory: sdk/python
       - run: pytest tests/ -v
         working-directory: sdk/python
-
-  mcp:
-    name: MCP Server
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - run: npm install --install-links
-        working-directory: mcp
-      - run: node --test test/mcp.test.js
-        working-directory: mcp
 
   go-sdk:
     name: Go SDK
@@ -75,6 +60,19 @@ jobs:
       - run: swift test -v
         working-directory: sdk/swift
 
+  mcp:
+    name: MCP Server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --install-links
+        working-directory: mcp
+      - run: node --test test/mcp.test.js
+        working-directory: mcp
+
   server:
     name: Server
     runs-on: ubuntu-latest
@@ -96,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
       - run: psql -f sql/schema.sql
         env:
           PGHOST: localhost
@@ -111,9 +109,37 @@ jobs:
           DATABASE_URL: postgresql://foodblock:test@localhost:5432/foodblock_test
           TEST: '1'
 
+  cross-language-vectors:
+    name: Cross-Language Vectors
+    needs: [js-sdk, python-sdk]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -e sdk/python
+      - name: Verify JS vectors
+        run: node --test test/block.test.js
+        working-directory: sdk/javascript
+      - name: Verify Python vectors
+        run: python -c "
+          import json, foodblock;
+          vectors = json.load(open('test/vectors.json'));
+          passed = 0;
+          for v in vectors:
+            block = foodblock.create(v['type'], v['state'], v['refs']);
+            assert block['hash'] == v['expected_hash'], f\"FAIL {v['name']}: {block['hash']} != {v['expected_hash']}\";
+            passed += 1;
+          print(f'{passed}/{len(vectors)} cross-language vectors passed')
+          "
+
   deploy:
     name: Deploy to ECS
-    needs: [js-sdk, python-sdk, server]
+    needs: [js-sdk, python-sdk, server, cross-language-vectors]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     environment: production

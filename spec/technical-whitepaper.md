@@ -1,10 +1,10 @@
 # FoodBlock Technical Whitepaper: A Content-Addressable Protocol for Universal Food Data
 
-**Version 0.5, February 2026**
+**Version 0.7, February 2026**
 
 ## Abstract
 
-The global food industry spans 14 sectors, from primary production to retail, regulation to innovation, yet lacks a shared data primitive. Each sector, company, and system models food data differently, creating fragmentation that prevents interoperability, traceability, and trust. We propose FoodBlock: a minimal, content-addressable data structure built on one axiom (*identity is content*), three fields (`type`, `state`, `refs`), and six base types that can represent any food industry operation. FoodBlocks are append-only, cryptographically signed, and form provenance chains through hash-linked references. The protocol includes optional schema validation, envelope encryption for visibility control, graph-based trust computation, conflict resolution for concurrent updates, tombstone semantics for regulatory erasure, an offline-first operation model, an adaptive agent architecture with progressive capability escalation, and an agent-to-agent commerce layer. A human interface layer, aliases, text notation, URIs, and narrative rendering, makes the protocol accessible to non-technical users. The protocol requires no blockchain, no specialized infrastructure, only JSON, hashing, and a database.
+The global food industry operates across fourteen sectors yet without a shared data standard. Existing standards address narrow domains: barcodes identify products, regulations mandate reporting formats, labelling rules govern packaging. None provides a universal primitive. This paper introduces FoodBlock: a minimal, content-addressable data structure consisting of three fields (type, state, refs) and six base types capable of representing any food industry operation. The protocol's core axiom, that a block's identity is derived deterministically from its content, makes every record tamper-evident by design. The key technical insight is that reasoning AI systems now make universal protocol adoption viable for the first time. A protocol can be both rigorous enough for a multinational supply chain and accessible to a market stall trader who describes a transaction in plain English. The protocol draws on three converging developments: decentralised data models that eliminated the need for central authorities, AI systems capable of reasoning about structured data and acting on behalf of their operators, and social network architectures that demonstrated how trust and reputation emerge from graphs of interactions between participants. Because the protocol is three fields of valid JSON, reasoning AI systems can read, write, and converse through it natively. An agent does not need a custom integration for every system it encounters. It needs only the protocol. This means agents can act on behalf of food businesses, negotiating with other agents, querying businesses directly, verifying certifications with regulatory authorities, and managing inventory, with human approval when necessary. Crucially, these agents do not merely automate existing tasks. They create interactions that would never have occurred: a bakery agent negotiating prices with a supplier agent, a regulatory agent contacting a business to verify an expiring certificate, supplier comparisons that would take days to conduct manually. As humans and AI agents participate, the network becomes denser and more verified, producing network effects that increase value for every participant. Over time, agents accumulate interaction history that informs future decisions on behalf of their operators. Developers extend this ecosystem by building connected tools: smart fridges that monitor stock levels, POS systems that record every sale, cold-chain sensors that track temperature from warehouse to shelf, all producing the same universal data structure. The protocol is open, federated, and released under the MIT licence. This paper presents the protocol's design rationale, the agent economy it enables, the developer ecosystem it supports, and its implications for traceability, trust, and economic growth across the entire food system. This technical whitepaper provides the complete implementation specification: canonical JSON rules, storage schemas, cryptographic primitives, agent architecture, commerce protocols, federation mechanics, and every other detail required to build a conformant implementation.
 
 ## 1. The Problem
 
@@ -428,7 +428,21 @@ No separate reputation system exists. Trust is the graph.
 
 ## 7. Visibility
 
-Visibility is declared inside `state`, making it part of the block's hash:
+Production implementations SHOULD store visibility as a **separate database column**, not inside `state`. This keeps visibility out of the content hash, providing three advantages: O(1) filtering via index scan, the ability to change visibility without re-hashing or creating a new block, and freedom for visibility defaults to evolve without invalidating existing blocks.
+
+The `insertBlock()` function sets the visibility column automatically using type-based defaults:
+
+| Type prefix | Default visibility |
+|-------------|-------------------|
+| `observe.post` | `public` |
+| `observe.review` | `public` |
+| `transfer.payment` | `direct` |
+| `transfer.subscription` | `direct` |
+| `observe.reading` | `network` |
+| `actor.agent` | `internal` |
+| All other types | `public` |
+
+`state.visibility` MAY be set as a portable hint. When present, the implementation maps it to the column (e.g., `"private"` maps to `"direct"`). The column value always wins at query time.
 
 ```json
 {
@@ -438,15 +452,15 @@ Visibility is declared inside `state`, making it part of the block's hash:
 }
 ```
 
+In this example, the `state.visibility` hint of `"network"` is read by `insertBlock()` and written to the visibility column. The hint remains in state for portability (e.g., when blocks are exported or federated), but the column is the authoritative source for access control.
+
 | Level | Audience | Key Distribution |
 |-------|----------|-----------------|
 | **public** | Everyone | No encryption required |
-| **sector** | Actors in the same industry sector | Shared sector key, rotated periodically |
 | **network** | Connected actors (direct relationships) | Encrypt to public keys of all directly connected actors |
 | **direct** | Specific actors referenced in the block | Encrypt to public keys of actors in this block's refs |
+| **followers** | Actors who follow this actor | Encrypt to public keys of followers |
 | **internal** | Members of an actor.group | Encrypt to public keys of group members |
-
-Because visibility is in state, changing it creates a new block with `refs: { updates: previous_hash }`. This is correct, making something public that was private is a meaningful change, and the audit trail is preserved. The previous block remains in the chain but is superseded.
 
 Visibility is granular. Within a single post, individual content blocks can carry different visibility levels, enabling scenarios where a producer shares product information publicly while keeping pricing visible only to their network.
 
@@ -456,7 +470,7 @@ Visibility is enforced at the query layer. When a block's visibility is not `pub
 
 ### 7.2 Envelope Encryption
 
-Encrypted state fields use the `_` key prefix (Rule 8). The encryption scheme is X25519-XSalsa20-Poly1305 (NaCl box), using envelope encryption to support multiple recipients.
+Encrypted state fields use the `_` key prefix (Rule 8). The encryption scheme is X25519 key agreement + AES-256-GCM symmetric encryption, using envelope encryption to support multiple recipients.
 
 **Actor key management:** Each actor generates an X25519 keypair alongside their Ed25519 signing keypair. The encryption public key is published in the actor's genesis block:
 
@@ -477,7 +491,7 @@ Encrypted state fields use the `_` key prefix (Rule 8). The encryption scheme is
 ```json
 {
   "_supplier_cost": {
-    "alg": "x25519-xsalsa20-poly1305",
+    "alg": "x25519-aes-256-gcm",
     "recipients": [
       { "key_hash": "abc123...", "encrypted_key": "..." },
       { "key_hash": "def456...", "encrypted_key": "..." }
@@ -498,7 +512,7 @@ Encrypted state fields use the `_` key prefix (Rule 8). The encryption scheme is
 **Encryption flow:**
 
 1. Generate a random symmetric key (content key).
-2. Encrypt the field value with the content key using XSalsa20-Poly1305.
+2. Encrypt the field value with the content key using AES-256-GCM.
 3. For each recipient, encrypt the content key using X25519 (Diffie-Hellman with the recipient's public key).
 4. Store the nonce, ciphertext, and per-recipient encrypted keys in the envelope.
 
@@ -634,6 +648,10 @@ Schema versioning uses semver:
 - **Minor**: Additive changes (new optional fields, new optional refs). Blocks using the old schema are still valid against the new one.
 - **Patch**: Documentation and description changes. No structural changes.
 
+### 8.5 Schema Auto-Publishing
+
+A conformant server SHOULD publish `observe.schema` blocks for every registered type at startup, and an `observe.schema_registry` block indexing them all. Because blocks are content-addressed, identical schemas deduplicate automatically — publishing is idempotent. This makes the protocol self-describing: an agent connecting to a server for the first time can query `type=observe.schema` and discover every type the server supports, the fields each type expects, and the refs each type requires, without documentation or human explanation. The schemas are the documentation, and they are blocks.
+
 ## 9. Implementation
 
 FoodBlock requires no specialized infrastructure.
@@ -653,6 +671,9 @@ CREATE TABLE foodblocks (
     protocol_version VARCHAR(10) DEFAULT '0.3',
     chain_id        VARCHAR(64),
     is_head         BOOLEAN DEFAULT TRUE,
+    visibility      VARCHAR(32) DEFAULT 'public',
+    geo             geography(Point, 4326),
+    search_vector   tsvector,
     created_at      TIMESTAMP DEFAULT NOW()
 );
 
@@ -662,6 +683,9 @@ CREATE INDEX idx_fb_author ON foodblocks(author_hash);
 CREATE INDEX idx_fb_chain ON foodblocks(chain_id, is_head);
 CREATE INDEX idx_fb_created ON foodblocks(created_at DESC);
 CREATE INDEX idx_fb_type_head ON foodblocks(type, is_head) WHERE is_head = TRUE;
+CREATE INDEX idx_fb_visibility ON foodblocks(visibility) WHERE is_head = TRUE;
+CREATE INDEX idx_fb_geo ON foodblocks USING GIST(geo);
+CREATE INDEX idx_fb_search ON foodblocks USING GIN(search_vector);
 ```
 
 ### 9.2 Head Resolution
@@ -781,9 +805,67 @@ New blocks trigger downstream processing: feed updates, notifications, analytics
 
 The reference implementation uses an `AFTER INSERT` trigger on the `foodblocks` table that calls `pg_notify('new_block', payload)`. A dedicated listener connection dispatches events to registered handlers based on block type pattern matching. Agent subscriptions (Section 10.6) are one consumer of this event stream; trust score recomputation (Section 6.3) and feed projections are others.
 
+Implementations SHOULD fire `pg_notify` from a database trigger (`AFTER INSERT`), not from application code. Doing both results in duplicate event processing. If the `insertBlock()` function also calls `pg_notify`, every block creation fires two notifications and every downstream handler runs twice. Choose one source of truth for events: the trigger.
+
 ### 9.6 Why Not Blockchain
 
 FoodBlock adopts the hash-linked, append-only, signed architecture of distributed ledgers without the consensus mechanism. The critical distinction: **food data is not scarce**. There is no double-spend problem. Two restaurants can independently claim to serve the best carbonara, both blocks are valid. What food data needs is not consensus but authenticity (signatures), traceability (provenance chains), and interoperability (a universal primitive). All three are achieved with JSON, SHA-256, and a database.
+
+### 9.7 Adapter-Agnostic Block State
+
+Block state MUST NOT contain vendor-specific field names. External service integrations use generic field names so blocks survive any future provider switch:
+
+| Block field | NOT this | Purpose |
+|-------------|----------|---------|
+| `adapter` | ~~`method`~~, ~~`source`~~ | Provider name: `'stripe'`, `'apple'`, `'square'` |
+| `adapter_ref` | ~~`payment_intent_id`~~, ~~`stripe_subscription_id`~~ | Provider's unique ID for the entity |
+| `adapter_event` | ~~`stripe_event_id`~~ | Webhook event ID for idempotency |
+
+This applies to `transfer.payment`, `transfer.subscription`, and any block that bridges an external system. The Stripe-specific IDs belong in SQL cache tables (operational queries) — never in block state.
+
+Similarly, block state MUST NOT contain SQL auto-increment IDs (`seller_id: 47`, `item_id: 123`). These are ephemeral database plumbing. Instead, use refs with block hashes: `refs.product = '3a8f...'`, `refs.seller = '9b2c...'`.
+
+### 9.8 Three-Layer Architecture
+
+Production implementations bridge the immutable block graph to the mutable operational requirements of applications through three layers:
+
+```
+Block (permanent, adapter-agnostic)  →  SQL cache (disposable)  →  API response (client adapter)
+adapter: 'stripe'                       payments.stripe_pi_id       payment_intent_id (for client)
+adapter_ref: 'pi_xxx'                   payments.amount             amount (formatted)
+```
+
+**Layer 1: Blocks.** The permanent record. Adapter-agnostic field names. No SQL IDs. No vendor-specific names. Survive any infrastructure change.
+
+**Layer 2: SQL cache.** Disposable operational tables that denormalise block data for efficient queries: materialized views for feeds, profiles, engagement counts, and trust scores; cache tables for orders, conversations, and payments. These tables can be rebuilt from blocks at any time. They exist for query performance, not for permanence. Vendor-specific IDs (Stripe payment intent IDs, Shopify order IDs) live here and only here.
+
+**Layer 3: API response.** Whatever the client needs. SQL IDs for routing, formatted prices, computed fields, pagination cursors. This layer adapts the data for a specific frontend; it carries no architectural significance.
+
+The discipline is strict: block state never contains data from Layer 2 or Layer 3. SQL cache tables never serve as the source of truth. Every write creates a block first, then updates the cache. If the cache is lost, blocks rebuild it. If blocks are lost, the system is broken.
+
+### 9.9 Identity Claims
+
+External identity systems (authentication providers, payment processors, subscription platforms) assign identifiers to users that do not originate from the block graph. These identifiers are necessary for operational integration but must not pollute block state with vendor-specific data.
+
+`identity.claim` blocks solve this by recording each external binding as a signed, append-only block:
+
+```json
+{
+  "type": "identity.claim",
+  "state": {
+    "claim_type": "stripe_customer_id",
+    "provider": "stripe",
+    "value": "cus_abc123"
+  },
+  "refs": { "subject": "actor_hash_of_user" }
+}
+```
+
+Each claim links an actor to an external identifier. The claim is a verifiable record: it was created at a specific time, by a specific author, and cannot be altered after the fact. When claims change (a user upgrades their subscription, links a new payment method), a new `identity.claim` block is created, preserving the full history of every external binding.
+
+This pattern makes the authentication database rebuildable from blocks alone. The `users` table becomes a cache of the latest identity claims for each actor, not the source of truth. If the users table is lost, querying `type=identity.claim` filtered by `refs.subject` reconstructs every user's external bindings.
+
+Claims follow the same adapter-agnostic convention as other blocks: the `provider` field names the external system (`'stripe'`, `'apple'`, `'cognito'`), and the `value` field holds the provider's identifier. No vendor-specific field names appear in the claim's state.
 
 ## 10. Autonomous Agents
 
@@ -1093,13 +1175,13 @@ Agent memory is stored as FoodBlocks, not in ephemeral caches.
   "type": "observe.preference",
   "state": {
     "_reorder_pattern": {
-      "alg": "x25519-xsalsa20-poly1305",
+      "alg": "x25519-aes-256-gcm",
       "recipients": [{ "key_hash": "agent_key...", "encrypted_key": "..." }],
       "nonce": "...",
       "ciphertext": "..."
     },
     "_learned_diet": {
-      "alg": "x25519-xsalsa20-poly1305",
+      "alg": "x25519-aes-256-gcm",
       "recipients": [
         { "key_hash": "agent_key...", "encrypted_key": "..." },
         { "key_hash": "operator_key...", "encrypted_key": "..." }
@@ -1264,12 +1346,15 @@ Agent-to-agent negotiations follow a block-chain convention. The multi-dimension
 | 2. Offer | `observe.offer` | Seller agent | `intent`, `actor` |
 | 3. Counter | `observe.offer` | Buyer agent | `intent`, `updates: prev_offer` |
 | 4. Accept | `transfer.order` (draft) | Buyer agent | `offer`, `buyer`, `seller`, `agent` |
-| 5. Confirm | `transfer.order` | Operator | `updates: draft_hash`, `approved_agent` |
-| 6. Ship | `transfer.shipment` | Seller agent | `order`, `from`, `to` |
-| 7. Monitor | `observe.reading` | IoT agent | `shipment`, `sensor` |
-| 8. Receive | `observe.receipt` | Buyer agent | `shipment`, `order` |
+| 5. Pay | `transfer.payment` | Payment adapter | `order`, `processor` |
+| 6. Confirm | `transfer.order` | Operator | `updates: draft_hash`, `payment`, `approved_agent` |
+| 7. Ship | `transfer.shipment` | Seller agent | `order`, `from`, `to` |
+| 8. Monitor | `observe.reading` | IoT agent | `shipment`, `sensor` |
+| 9. Receive | `observe.receipt` | Buyer agent | `shipment`, `order` |
 
 Each step references the previous via refs, forming a negotiation chain. The state of any negotiation is derivable by querying the chain, no separate workflow engine is required. The latest block type in the chain indicates the current state.
+
+**Payment blocks are transfers, not observations.** Use `transfer.payment`, not `observe.payment`. Payments move value between actors, which is the definition of a transfer. Payment block state uses adapter-agnostic field names (see Section 9.7): `adapter` (not `method` or vendor names like `stripe`), `adapter_ref` (not `payment_ref` or `payment_intent_id`), and `adapter_event` for webhook idempotency.
 
 ### 11.6 Adapter Agents for External Systems
 
@@ -2351,7 +2436,60 @@ Designing for natural language as the primary interface means:
 5. **Agents adapt to the operator, not the other way around**: through environment discovery, preference learning, and progressive capability escalation (see Section 10.5), agents meet the operator where they are.
 6. **The protocol succeeds when non-technical users forget it exists.** They just talk to their AI assistant about food. The blocks happen underneath.
 
-## 31. Conclusion
+## 31. The Graph as a Reasoning Substrate
+
+The previous sections describe how AI agents write blocks (Section 10) and translate natural language into protocol operations (Section 30). This section addresses a complementary property: the FoodBlock graph is not merely machine-readable, it is machine-reasonable. Its structure maps directly to how reasoning systems traverse evidence and draw conclusions.
+
+### 31.1 Why This Graph Is Easy to Traverse
+
+Three properties make the FoodBlock graph unusually accessible to AI reasoning:
+
+**Named edges.** Refs are not opaque pointers. They are labelled relationships: `refs.seller`, `refs.origin`, `refs.input`, `refs.updates`. A reasoning system reading a `transfer.order` block does not need to infer what `refs.seller` means. The relationship is explicit in the key name. This eliminates an entire class of ambiguity that graph databases and RDF triple stores typically push onto the consumer.
+
+**Typed nodes.** Every block declares its type. A reasoning system encountering `substance.product` → `transform.process` → `transfer.order` knows the semantic category of each node before examining its state. The type hierarchy provides a navigation frame: entities (actor, place, substance) are waypoints; events (transform, transfer, observe) are the edges between them.
+
+**Minimal surface area.** Three fields. No nested metadata envelopes, no protocol headers, no versioned schema wrappers. A reasoning system parses type, reads state, follows refs. The cognitive overhead per node is near zero, which matters when traversing chains of dozens or hundreds of blocks to answer a single question.
+
+### 31.2 Evidence-Based Reasoning
+
+The graph enables a style of reasoning that goes beyond lookup. When an AI agent is asked "is this bread organic?", the answer is not a field on the bread block. The agent traverses the provenance chain:
+
+```
+bread (substance.product)
+  ← baking (transform.process)
+    ← flour (substance.ingredient)
+      ← milling (transform.process)
+        ← wheat (substance.ingredient)
+          ← farm (place.farm)
+            ← organic_cert (observe.certification)
+              ← soil_association (actor.authority)
+```
+
+The answer is derived from the graph structure: an `observe.certification` block signed by a recognised `actor.authority`, connected to the bread through an unbroken chain of refs. This is evidence-based reasoning, the same pattern a human auditor would follow, but executed in milliseconds over the hash-linked graph.
+
+The quality of the answer improves with graph density. If the flour was sourced from multiple farms, the agent can assess what proportion carry valid certifications. If a certification has expired (`state.valid_until < now`), the agent flags the gap rather than asserting the claim. The graph provides not just answers but confidence levels derived from the evidence trail.
+
+### 31.3 Traversal Directions
+
+Backward traversal follows refs from a block to its dependencies. This answers provenance questions: where did this product come from? What inputs went into this transform? Who certified this farm?
+
+Forward traversal follows refs in the reverse direction, from a block to every block that references it. This answers impact questions: which products used this contaminated flour? Which orders are affected by this supplier's expired certificate? The SDK provides `forward(hash)` for this operation, backed by a GIN index on the refs column (Section 9.1).
+
+Both directions are essential for reasoning. A food safety incident begins with backward traversal (identify the source) and continues with forward traversal (identify every affected product and customer). An AI agent conducting this analysis traverses the same graph a human investigator would, but exhaustively rather than by sampling.
+
+### 31.4 The Graph as Working Memory
+
+When an agent reasons over the graph, its intermediate conclusions can themselves become blocks. An agent that identifies a broken cold chain creates an `observe.alert` block referencing the offending temperature readings. An agent that compares supplier prices creates an `observe.comparison` block summarising its findings. An agent that detects an expiring certification creates an `observe.reminder` block for its operator.
+
+Each of these blocks is signed by the agent, references the evidence it examined, and becomes part of the graph for other agents and humans to inspect. The graph is not just the input to reasoning. It is also the output. Over time, the accumulated observations from multiple agents create a layer of machine-generated analysis on top of the human-generated data, each block traceable to the evidence that produced it.
+
+### 31.5 Practical Constraints
+
+The graph is not free to traverse. Forward traversal requires indexing (the GIN index on refs, Section 9.1). Deep provenance chains spanning multiple federated servers require cross-server queries, each adding network latency. A graph with millions of blocks requires query-time bounds: maximum traversal depth, timeout limits, and materialized views for common patterns like trust computation (Section 6.5).
+
+These are engineering constraints, not protocol limitations. The graph structure remains the same whether it contains a hundred blocks or a hundred million. The protocol provides the shape; the implementation provides the performance.
+
+## 32. Conclusion
 
 FoodBlock compresses the complexity of food industry data into one axiom, three fields, and six types. The axiom, *identity is content*, determines everything: immutability, determinism, deduplication, tamper evidence, offline validity, and provenance by reference. Seven operational rules govern the protocol's use. Everything else is a consequence.
 

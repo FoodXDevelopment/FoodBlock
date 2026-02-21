@@ -67,8 +67,10 @@ final class FoodBlockTests: XCTestCase {
     }
 
     func testRefsArraySorting() {
-        let a = FoodBlock.create(type: "transform.process", state: [:], refs: ["inputs": ["abc", "def"]])
-        let b = FoodBlock.create(type: "transform.process", state: [:], refs: ["inputs": ["def", "abc"]])
+        // Use explicit instance_id so auto-injection doesn't add random UUIDs
+        let iid = "test-instance-id"
+        let a = FoodBlock.create(type: "transform.process", state: ["instance_id": iid], refs: ["inputs": ["abc", "def"]])
+        let b = FoodBlock.create(type: "transform.process", state: ["instance_id": iid], refs: ["inputs": ["def", "abc"]])
         XCTAssertEqual(a.hash, b.hash)
     }
 

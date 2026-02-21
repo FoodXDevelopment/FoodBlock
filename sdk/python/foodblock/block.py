@@ -1,7 +1,13 @@
 """Core FoodBlock creation and hashing."""
 
 import hashlib
+import uuid
 from .canonical import canonical
+
+# Event types that get auto-injected instance_id (Section 2.1)
+_EVENT_PREFIXES = ('transfer.', 'transform.', 'observe.')
+# Definitional observe.* subtypes excluded from auto-injection
+_DEFINITIONAL = frozenset(['observe.vocabulary', 'observe.template', 'observe.schema', 'observe.trust_policy', 'observe.protocol'])
 
 
 def create(type_: str, state: dict = None, refs: dict = None) -> dict:
@@ -9,8 +15,23 @@ def create(type_: str, state: dict = None, refs: dict = None) -> dict:
     if not type_ or not isinstance(type_, str):
         raise ValueError("FoodBlock: type is required and must be a string")
 
-    state = _omit_nulls(state or {})
+    raw_state = state or {}
+
+    # Auto-inject instance_id for event types (Section 2.1)
+    is_event = any(type_.startswith(p) for p in _EVENT_PREFIXES) and type_ not in _DEFINITIONAL
+    if is_event and 'instance_id' not in raw_state:
+        raw_state = {'instance_id': str(uuid.uuid4()), **raw_state}
+
+    state = _omit_nulls(raw_state)
     refs = _omit_nulls(refs or {})
+
+    # Validate ref values are strings or lists of strings
+    for key, value in refs.items():
+        if isinstance(value, str):
+            continue
+        if isinstance(value, list) and all(isinstance(v, str) for v in value):
+            continue
+        raise ValueError(f"FoodBlock: refs.{key} must be a string or list of strings")
 
     h = compute_hash(type_, state, refs)
     return {"hash": h, "type": type_, "state": state, "refs": refs}

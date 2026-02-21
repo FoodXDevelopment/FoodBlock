@@ -130,10 +130,11 @@ function validate(block, schema, registry) {
     }
   }
 
-  // Check required refs
+  // Check required refs (supports string or non-empty array values)
   if (schemaDef.expected_refs) {
     for (const ref of schemaDef.expected_refs) {
-      if (!block.refs || block.refs[ref] === undefined) {
+      const val = block.refs && block.refs[ref]
+      if (!val || (Array.isArray(val) && val.length === 0)) {
         errors.push(`Missing expected ref: refs.${ref}`)
       }
     }

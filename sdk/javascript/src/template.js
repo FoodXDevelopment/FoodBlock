@@ -48,7 +48,7 @@ function fromTemplate(template, values = {}) {
 
     // Build state from step defaults + overrides
     const blockState = { ...(step.default_state || {}) }
-    if (step.required) {
+    if (Array.isArray(step.required)) {
       for (const field of step.required) {
         if (!overrides.state || !(field in overrides.state)) {
           // Skip if required field not provided (partial instantiation)

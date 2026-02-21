@@ -14,6 +14,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { createRequire } from "node:module";
+import { randomBytes, createCipheriv, createDecipheriv, scryptSync } from "node:crypto";
 import { createStore } from "./store.js";
 
 // Fallback for bundled environments (e.g. Smithery) where import.meta.url is undefined
@@ -24,6 +25,60 @@ const { create, update, chain, tree, canonical, createAgent, loadAgent, approveD
 
 const API_URL = process.env.FOODBLOCK_URL || null;
 const db = createStore(API_URL);
+
+// ── Agent key encryption (AES-256-GCM envelope) ────────────────────────
+// Set AGENT_MASTER_KEY env var to encrypt private keys at rest.
+// Without it, keys are returned in plaintext (dev/standalone mode).
+
+const ENCRYPTED_PREFIX = 'enc:v1:';
+const IV_LEN = 12;
+const TAG_LEN = 16;
+const DEK_LEN = 32;
+
+let _masterKey;
+function getMasterKey() {
+  if (_masterKey === undefined) {
+    const raw = process.env.AGENT_MASTER_KEY;
+    _masterKey = raw ? scryptSync(raw, 'foodblock-agent-key-v1', 32) : null;
+  }
+  return _masterKey;
+}
+
+function encryptKey(plaintext) {
+  const mk = getMasterKey();
+  if (!mk) return plaintext;
+  const buf = Buffer.from(plaintext, 'utf8');
+  const dek = randomBytes(DEK_LEN);
+  const dataIv = randomBytes(IV_LEN);
+  const dc = createCipheriv('aes-256-gcm', dek, dataIv);
+  const encData = Buffer.concat([dc.update(buf), dc.final()]);
+  const dataTag = dc.getAuthTag();
+  const dekIv = randomBytes(IV_LEN);
+  const kc = createCipheriv('aes-256-gcm', mk, dekIv);
+  const encDek = Buffer.concat([kc.update(dek), kc.final()]);
+  const dekTag = kc.getAuthTag();
+  return ENCRYPTED_PREFIX + Buffer.concat([dekIv, encDek, dekTag, dataIv, encData, dataTag]).toString('base64');
+}
+
+function decryptKey(stored) {
+  if (!stored.startsWith(ENCRYPTED_PREFIX)) return stored;
+  const mk = getMasterKey();
+  if (!mk) throw new Error('AGENT_MASTER_KEY required to decrypt agent keys');
+  const packed = Buffer.from(stored.slice(ENCRYPTED_PREFIX.length), 'base64');
+  let o = 0;
+  const dekIv = packed.subarray(o, o += IV_LEN);
+  const encDek = packed.subarray(o, o += DEK_LEN);
+  const dekTag = packed.subarray(o, o += TAG_LEN);
+  const dataIv = packed.subarray(o, o += IV_LEN);
+  const dataTag = packed.subarray(packed.length - TAG_LEN);
+  const encData = packed.subarray(o, packed.length - TAG_LEN);
+  const kd = createDecipheriv('aes-256-gcm', mk, dekIv);
+  kd.setAuthTag(dekTag);
+  const dek = Buffer.concat([kd.update(encDek), kd.final()]);
+  const dd = createDecipheriv('aes-256-gcm', dek, dataIv);
+  dd.setAuthTag(dataTag);
+  return Buffer.concat([dd.update(encData), dd.final()]).toString('utf8');
+}
 
 // Agent registry — maps agent hash to { keypair, operatorHash, sign }
 const agents = new Map();
@@ -361,6 +416,7 @@ server.registerTool(
       block: agent.block,
     });
 
+    const encrypted = getMasterKey() !== null;
     return {
       content: [
         {
@@ -371,9 +427,12 @@ server.registerTool(
               block: result,
               credentials: {
                 public_key: agent.keypair.publicKey,
-                private_key: agent.keypair.privateKey,
+                private_key: encryptKey(agent.keypair.privateKey),
+                encrypted,
               },
-              message: `Agent "${name}" created. SAVE THE CREDENTIALS — use foodblock_load_agent to restore after restart.`,
+              message: encrypted
+                ? `Agent "${name}" created. Private key is encrypted with AGENT_MASTER_KEY. SAVE THE CREDENTIALS.`
+                : `Agent "${name}" created. Set AGENT_MASTER_KEY to encrypt credentials. SAVE THE CREDENTIALS.`,
             },
             null,
             2
@@ -400,7 +459,8 @@ server.registerTool(
     },
   },
   toolHandler(async ({ agent_hash, private_key, public_key }) => {
-    const keypair = { privateKey: private_key, publicKey: public_key || "" };
+    const decryptedKey = decryptKey(private_key);
+    const keypair = { privateKey: decryptedKey, publicKey: public_key || "" };
     const loaded = loadAgent(agent_hash, keypair);
 
     agents.set(agent_hash, {

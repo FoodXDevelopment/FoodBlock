@@ -21,8 +21,12 @@ const { merkleize, selectiveDisclose, verifyProof, sha256 } = require('./merkle'
 const { createSnapshot, verifySnapshot, summarize } = require('./snapshot')
 const { attest, dispute, traceAttestations, trustScore } = require('./attestation')
 const { fb } = require('./fb')
+const { computeTrust, connectionDensity, createTrustPolicy, DEFAULT_WEIGHTS } = require('./trust')
+const { seedVocabularies, seedTemplates, seedAll } = require('./seed')
+const { createIdentity, encryptKeystore, decryptKeystore, rotateKeys, createRecoveryBlock } = require('./identity')
+const { authorize, capture, refund, openTab, addToTab, closeTab } = require('./payment')
 
-const PROTOCOL_VERSION = '0.4.0'
+const PROTOCOL_VERSION = '0.5.0'
 
 module.exports = {
   // Protocol
@@ -125,6 +129,32 @@ module.exports = {
   dispute,
   traceAttestations,
   trustScore,
+
+  // Trust Computation (Section 6.3)
+  computeTrust,
+  connectionDensity,
+  createTrustPolicy,
+  DEFAULT_WEIGHTS,
+
+  // Seed Data (vocabularies + templates as blocks)
+  seedVocabularies,
+  seedTemplates,
+  seedAll,
+
+  // Consumer Identity (Implementation Paper §2)
+  createIdentity,
+  encryptKeystore,
+  decryptKeystore,
+  rotateKeys,
+  createRecoveryBlock,
+
+  // Payment Settlement (Implementation Paper §1)
+  authorize,
+  capture,
+  refund,
+  openTab,
+  addToTab,
+  closeTab,
 
   // Natural Language Entry Point
   fb,

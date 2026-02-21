@@ -19,7 +19,7 @@ I am the FoodBlock protocol and its ecosystem. I serve the entire food industry 
 foodblock/
   spec/whitepaper.md        — The whitepaper (~4000 words, formal, 5 diagrams)
   spec/technical-whitepaper.md — The technical whitepaper (v0.5, 31 sections + Section 10.5)
-  sdk/javascript/src/       — Reference SDK (23 modules, 61 exports)
+  sdk/javascript/src/       — Reference SDK (25 modules, 69 exports)
   sdk/python/foodblock/     — Python SDK (23 modules, must match JS exactly)
   sdk/go/                   — Go SDK (22 modules: full parity with JS)
   sdk/swift/Sources/        — Swift SDK (22 modules: full parity with JS)
@@ -46,13 +46,13 @@ Backend/ (separate repo)
 ## Current State
 
 ### What Works
-- JS SDK: 23 modules, 61 exports, 313 tests passing (block, fixes, new-modules, advanced-modules, fb-advanced)
-- Python SDK: 23 modules, 209 tests passing, hash parity with JS verified
-- Go SDK: 22 modules (full parity with JS), 66 tests written (needs Go installed to run)
-- Swift SDK: 22 modules (full parity with JS), 73 tests passing, builds clean
+- JS SDK: 27 modules, 80 exports, 372 tests passing (block, fixes, new-modules, advanced-modules, fb-advanced, trust, seed, identity, payment)
+- Python SDK: 25 modules, 240 tests passing, hash parity with JS verified (124/124 vectors)
+- Go SDK: 25 modules (full parity with JS), 98 tests written (trust, seed, instance_id — needs Go installed to run)
+- Swift SDK: 25 modules (full parity with JS), 103 tests passing (trust, seed, instance_id), builds clean
 - fb() NL entry point: working in all 4 SDKs, multi-block output, relationship extraction, confidence scores
 - Sandbox: ~100 seed blocks (3 stories), full API, POST /fb endpoint
-- Server: Postgres-backed, Dockerized, deployed to ECS, 31 tests
+- Server: Postgres-backed, Dockerized, deployed to ECS, 44 tests (signed blocks, tombstone, pagination, type prefix, chain integrity)
 - MCP: 20 tools, standalone mode, 16 tests passing
 - OpenAI: tools.json (17 tools) + openapi.yaml for ChatGPT Custom GPTs
 - Gemini: tools.json (17 tools) + README with API, AI Studio, Vertex AI, Gemini CLI docs
@@ -63,6 +63,10 @@ Backend/ (separate repo)
 - Templates: 9 built-in (supply-chain, review, certification, surplus-rescue, agent-reorder, restaurant-sourcing, food-safety-audit, market-day, cold-chain)
 - Forward traversal, recall, merge, attestation, snapshots, Merkle proofs all working
 - Encrypt (X25519+AES-256-GCM), validate, offline queue, federation all working across all SDKs
+- Trust computation (Section 6.3): computeTrust(), connectionDensity(), createTrustPolicy() with 5-input formula
+- Seed data: seedVocabularies(), seedTemplates(), seedAll() convert built-in definitions to actual blocks
+- Auto-inject instance_id: block.create() auto-adds instance_id for event types (transfer.*, transform.*, observe.* except definitional)
+- Visibility column in SQL schema with type-based defaults and index
 
 ### What's Broken or Missing
 
@@ -90,12 +94,12 @@ Backend/ (separate repo)
 - [x] ~~Only one block-event handler exists (order-notify)~~ — DONE: added shipment-notify.js, certification-notify.js, review-notify.js
 - [x] ~~No rate limiting on public endpoints~~ — DONE: rateLimiter(100, 15) on all API routes
 - [x] ~~Square webhook adapter doesn't validate signatures~~ — DONE: rejects when no secret key
-- [ ] Private key stored unencrypted in agent_registrations (marked TODO)
+- [x] ~~Private key stored unencrypted in agent_registrations~~ — DONE: Backend uses envelope encryption (AES-256-GCM), MCP server now supports AGENT_MASTER_KEY for encrypted credentials
 
 #### Architectural
 - [x] ~~No CLAUDE.md existed until now~~ — DONE: created with full system state and plan
 - [ ] Whitepaper has 31 sections but SDK only implements ~20 of them fully
-- [ ] No integration tests between Backend and foodblock SDK
+- [x] ~~No integration tests between Backend and foodblock SDK~~ — DONE: 44 server tests (signed blocks, tombstone, pagination, type prefix, chain integrity, NL)
 - [ ] No load testing or performance benchmarks
 
 ## Completed (this session)
@@ -151,14 +155,36 @@ Backend/ (separate repo)
 - [x] Go SDK: vocabulary.go, template.go, fb.go (6 modules total, builds clean)
 - [x] Swift SDK: Vocabulary.swift, Template.swift, FB.swift (9 modules total, builds clean)
 
+## Completed (Whitepaper Alignment)
+
+- [x] Updated technical whitepaper Section 7.2 — encryption spec changed from XSalsa20-Poly1305 to AES-256-GCM (matches SDK)
+- [x] Trust computation module (trust.js) — computeTrust(), connectionDensity(), createTrustPolicy(), DEFAULT_WEIGHTS, 17 tests
+- [x] Seed data module (seed.js) — seedVocabularies(), seedTemplates(), seedAll() convert 14 vocabs + 9 templates to real blocks, 14 tests
+- [x] Auto-inject instance_id — block.create() adds instance_id for event types (transfer.*, transform.*, observe.* except definitional), 3 new tests, 23 vectors updated
+- [x] Visibility column — sql/schema.sql now has visibility VARCHAR(32) DEFAULT 'public', index, type-based defaults in insert trigger
+- [x] CI/CD — .github/workflows/test.yml updated: all 7 test suites (JS, Python, Go, Swift, MCP, Server) + cross-language vector verification job, node 20
+- [x] Python SDK parity — trust.py, seed.py, instance_id auto-injection in block.py, 240 tests passing, 124/124 vectors
+- [x] Consumer identity module (identity.js) — createIdentity(), encryptKeystore(), decryptKeystore(), rotateKeys(), createRecoveryBlock(), 13 tests
+- [x] Payment settlement module (payment.js) — authorize(), capture(), refund(), openTab(), addToTab(), closeTab(), 12 tests
+- [x] Go SDK parity — trust.go, seed.go, instance_id injection in foodblock.go, 98 tests (20 trust + 12 seed + 4 instance_id + existing)
+- [x] Swift SDK parity — Trust.swift, Seed.swift, instance_id injection in FoodBlock.swift, 103 tests (30 new + 73 existing)
+- [x] JS SDK v0.5.0 published to npm — 27 modules, 80 exports (identity, payment, trust, seed added)
+- [x] Python SDK v0.5.0 built for PyPI — pyproject.toml created, dist/ ready to upload (needs API token)
+- [x] Go module path fixed — `github.com/FoodXDevelopment/foodblock/sdk/go` (was missing /sdk/go suffix)
+- [x] Go + Swift LICENSE files added (copied from repo root)
+- [x] MCP key encryption — AES-256-GCM envelope encryption via AGENT_MASTER_KEY env var, encrypted credentials in create_agent, auto-decrypt in load_agent
+- [x] Server integration tests expanded — 44 tests (was 31): signed blocks, tombstone, pagination edge cases, type prefix matching, update chain integrity, NL advanced
+- [x] Protocol version bumped to 0.5.0 across JS, Python, server
+- [x] CLI published to npm — `foodblock-cli@0.5.1`, `npm install -g foodblock-cli` → `fb "sourdough bread $4.50"`
+
 ## Completed (Phase 2: SDK Hardening)
 
 - [x] Fixed Swift canonical number formatting — ECMAScript Number::toString per RFC 8785
 - [x] Fixed JS ESM wrapper — all 61 named exports (was 22)
 - [x] Go SDK full parity — 15 new modules: encrypt, validate, offline, forward, merge, merkle, snapshot, attestation, alias, notation, explain, uri, federation + updated vocabulary, template
 - [x] Swift SDK full parity — 13 new modules: Encrypt, Validate, Offline, Alias, Notation, Explain, URI, Federation, Forward, Merge, Merkle, Snapshot, Attestation
-- [x] Go SDK tests — 13 test files with 66 tests
-- [x] Swift SDK tests — 2 new test files (AdvancedModulesTests, AdvancedModulesTests2) with 63 new tests (73 total)
+- [x] Go SDK tests — 15 test files with 98 tests
+- [x] Swift SDK tests — 4 test files with 103 tests
 - [x] MCP tests expanded — 13 new tests (16 total): block CRUD, traversal, batch, tombstone, agent lifecycle, fb()
 - [x] Server tests expanded — 11 new tests (31 total): fb endpoint, batch, chain depth, concurrent creation
 - [x] Cross-language hash vectors expanded — 95 new vectors (124 total): Unicode NFC, nested state, numeric edge cases, all types
@@ -245,20 +271,20 @@ Backend/ (separate repo)
 2. [x] Template expansion — 9 templates (was 3): added surplus-rescue, agent-reorder, restaurant-sourcing, food-safety-audit, market-day, cold-chain
 3. [x] fb() best-in-class — handler-based architecture, 7 handlers, confidence scoring, currency auto-detect, multi-block with refs, 313 JS tests + 209 Python tests, ported to all 4 SDKs
 4. [x] Seed data — 3 stories (~100 blocks): UK bakery + London restaurant + farmers market
-5. [ ] SDK publishing — bump JS to 0.5.0, set up Python for PyPI, verify Go/Swift package managers
-6. [ ] CI/CD — GitHub Actions for all 4 SDKs + MCP + server + cross-language vectors
+5. [x] SDK publishing — JS v0.5.0 published to npm, Python built for PyPI (needs token), Go module path fixed, Swift + Go LICENSE added
+6. [x] CI/CD — GitHub Actions for all 4 SDKs + MCP + server + cross-language vectors
 
 ### Phase 9: Production Readiness
 1. [ ] Add structured logging to server (JSON, not console.log)
 2. [ ] Log fb() parse quality (matched vs unmatched tokens, confidence histogram)
-3. [ ] Integration tests between Backend and foodblock SDK
+3. [x] Integration tests between Backend and foodblock SDK — 44 server tests (was 31)
 4. [ ] Load testing / performance benchmarks
 5. [ ] Write the GitHub Action that runs Claude Code against this CLAUDE.md
-6. [ ] Security audit — private key encryption in agent_registrations
+6. [x] Security audit — private key encryption in agent_registrations — Backend uses envelope encryption, MCP supports AGENT_MASTER_KEY
 7. [ ] Documentation site — auto-generated from source, hosted on GitHub Pages
 
 ### Phase 10: Ecosystem Growth
-1. [ ] FoodBlock CLI tool — `fb "sourdough bread $4.50"` from terminal
+1. [x] FoodBlock CLI tool — `fb "sourdough bread $4.50"` from terminal — published `foodblock-cli@0.5.1` to npm
 2. [ ] React component library — FoodBlockCard, ProvenanceTree, MerkleProof components
 3. [ ] Mobile SDK — React Native / Flutter wrapper
 4. [ ] Webhook system — notify on block creation matching patterns

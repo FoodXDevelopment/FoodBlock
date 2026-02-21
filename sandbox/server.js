@@ -424,8 +424,8 @@ const server = http.createServer(async (req, res) => {
 
       const block = create(type, state || {}, refs || {})
 
-      // Verify hash integrity — recomputed hash must match
-      const expectedHash = hash(type, state || {}, refs || {})
+      // Verify hash integrity — use block's actual state (may have injected instance_id)
+      const expectedHash = hash(type, block.state, block.refs)
       if (block.hash !== expectedHash) {
         return error(res, 400, 'Hash integrity check failed')
       }

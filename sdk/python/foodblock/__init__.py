@@ -1,4 +1,4 @@
-PROTOCOL_VERSION = '0.4.0'
+PROTOCOL_VERSION = '0.5.0'
 
 from .block import create, update, merge_update, compute_hash
 from .chain import chain, tree, head
@@ -22,6 +22,8 @@ from .merge import detect_conflict, merge, auto_merge
 from .merkle import merkleize, selective_disclose, verify_proof
 from .snapshot import create_snapshot, verify_snapshot, summarize
 from .attestation import attest, dispute, trace_attestations, trust_score
+from .trust import compute_trust, connection_density, create_trust_policy, DEFAULT_WEIGHTS
+from .seed import seed_vocabularies, seed_templates, seed_all
 from .fb import fb
 
 __all__ = [
@@ -47,6 +49,8 @@ __all__ = [
     'merkleize', 'selective_disclose', 'verify_proof',
     'create_snapshot', 'verify_snapshot', 'summarize',
     'attest', 'dispute', 'trace_attestations', 'trust_score',
+    'compute_trust', 'connection_density', 'create_trust_policy', 'DEFAULT_WEIGHTS',
+    'seed_vocabularies', 'seed_templates', 'seed_all',
     'fb',
     'PROTOCOL_VERSION',
 ]

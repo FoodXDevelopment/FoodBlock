@@ -1,16 +1,17 @@
 {
   "name": "foodblock-cli",
-  "version": "0.1.0",
+  "version": "0.5.1",
   "description": "CLI for the FoodBlock protocol — create, query, and trace food blocks from your terminal",
   "type": "module",
   "bin": {
-    "fb": "./bin/fb.js"
+    "fb": "./bin/fb.js",
+    "foodblock-cli": "./bin/fb.js"
   },
   "files": [
     "bin/"
   ],
   "dependencies": {
-    "@foodxdev/foodblock": "file:../sdk/javascript"
+    "@foodxdev/foodblock": "^0.5.0"
   },
   "keywords": [
     "food",

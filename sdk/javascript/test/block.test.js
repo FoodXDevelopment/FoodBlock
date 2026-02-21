@@ -93,8 +93,9 @@ describe('create', () => {
   })
 
   it('produces same hash regardless of refs array order', () => {
-    const a = create('transform.process', {}, { inputs: ['abc', 'def'] })
-    const b = create('transform.process', {}, { inputs: ['def', 'abc'] })
+    const id = 'fixed-id-for-test'
+    const a = create('transform.process', { instance_id: id }, { inputs: ['abc', 'def'] })
+    const b = create('transform.process', { instance_id: id }, { inputs: ['def', 'abc'] })
     assert.equal(a.hash, b.hash)
   })
 
@@ -102,6 +103,29 @@ describe('create', () => {
     const a = create('observe.post', { content_order: ['abc', 'def'] }, {})
     const b = create('observe.post', { content_order: ['def', 'abc'] }, {})
     assert.notEqual(a.hash, b.hash)
+  })
+
+  it('auto-injects instance_id for event types', () => {
+    const transfer = create('transfer.order', { quantity: 5 }, {})
+    assert.ok(transfer.state.instance_id, 'transfer.order should have instance_id')
+    const transform = create('transform.process', { name: 'Baking' }, {})
+    assert.ok(transform.state.instance_id, 'transform.process should have instance_id')
+    const observe = create('observe.review', { rating: 5 }, {})
+    assert.ok(observe.state.instance_id, 'observe.review should have instance_id')
+  })
+
+  it('preserves explicit instance_id for event types', () => {
+    const block = create('transfer.order', { instance_id: 'my-id', quantity: 5 }, {})
+    assert.equal(block.state.instance_id, 'my-id')
+  })
+
+  it('does not inject instance_id for entity/catalog types', () => {
+    const actor = create('actor.producer', { name: 'Farm' }, {})
+    assert.equal(actor.state.instance_id, undefined)
+    const place = create('place.market', { name: 'Market' }, {})
+    assert.equal(place.state.instance_id, undefined)
+    const substance = create('substance.product', { name: 'Bread' }, {})
+    assert.equal(substance.state.instance_id, undefined)
   })
 
   it('strips null values from state', () => {

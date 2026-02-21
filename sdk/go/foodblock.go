@@ -2,6 +2,7 @@ package foodblock
 
 import (
 	"crypto/ed25519"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -42,8 +43,22 @@ func Create(typ string, state, refs map[string]interface{}) Block {
 		refs = map[string]interface{}{}
 	}
 
-	cleanState := omitNulls(state)
+	// Auto-inject instance_id for event types (Section 2.1)
+	// Definitional observe.* subtypes are excluded — they're registry blocks, not events
+	injected := state
+	if isEventType(typ) {
+		if _, hasID := state["instance_id"]; !hasID {
+			injected = make(map[string]interface{})
+			injected["instance_id"] = generateUUID()
+			for k, v := range state {
+				injected[k] = v
+			}
+		}
+	}
+
+	cleanState := omitNulls(injected)
 	cleanRefs := omitNulls(refs)
+	validateRefs(cleanRefs)
 	h := Hash(typ, cleanState, cleanRefs)
 
 	return Block{Hash: h, Type: typ, State: cleanState, Refs: cleanRefs}
@@ -317,6 +332,23 @@ func isStringSlice(v []interface{}) bool {
 	return true
 }
 
+func validateRefs(refs map[string]interface{}) {
+	for k, v := range refs {
+		switch val := v.(type) {
+		case string:
+			continue
+		case []interface{}:
+			for _, item := range val {
+				if _, ok := item.(string); !ok {
+					panic(fmt.Sprintf("FoodBlock: refs.%s array contains non-string value", k))
+				}
+			}
+		default:
+			panic(fmt.Sprintf("FoodBlock: refs.%s must be a string or array of strings", k))
+		}
+	}
+}
+
 func omitNulls(m map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 	for k, v := range m {
@@ -333,6 +365,37 @@ func omitNulls(m map[string]interface{}) map[string]interface{} {
 		}
 	}
 	return result
+}
+
+var definitionalTypes = map[string]bool{
+	"observe.vocabulary":    true,
+	"observe.template":      true,
+	"observe.schema":        true,
+	"observe.trust_policy":  true,
+	"observe.protocol":      true,
+}
+
+var eventPrefixes = []string{"transfer.", "transform.", "observe."}
+
+func isEventType(typ string) bool {
+	if definitionalTypes[typ] {
+		return false
+	}
+	for _, prefix := range eventPrefixes {
+		if strings.HasPrefix(typ, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func generateUUID() string {
+	var buf [16]byte
+	_, _ = rand.Read(buf[:])
+	buf[6] = (buf[6] & 0x0f) | 0x40 // version 4
+	buf[8] = (buf[8] & 0x3f) | 0x80 // variant 2
+	h := hex.EncodeToString(buf[:])
+	return h[0:8] + "-" + h[8:12] + "-" + h[12:16] + "-" + h[16:20] + "-" + h[20:32]
 }
 
 func omitNullsSlice(arr []interface{}) []interface{} {

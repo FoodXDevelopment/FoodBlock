@@ -62,8 +62,9 @@ class TestCreate:
         assert a["hash"] == b["hash"]
 
     def test_refs_array_order_independence(self):
-        a = create("transform.process", {}, {"inputs": ["abc", "def"]})
-        b = create("transform.process", {}, {"inputs": ["def", "abc"]})
+        fixed_id = "fixed-id-for-test"
+        a = create("transform.process", {"instance_id": fixed_id}, {"inputs": ["abc", "def"]})
+        b = create("transform.process", {"instance_id": fixed_id}, {"inputs": ["def", "abc"]})
         assert a["hash"] == b["hash"]
 
     def test_state_array_order_matters(self):

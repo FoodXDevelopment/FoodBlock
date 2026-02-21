@@ -16,8 +16,25 @@ function create(type, state = {}, refs = {}) {
     throw new Error('FoodBlock: refs must be an object')
   }
 
-  const cleanState = omitNulls(state)
+  // Auto-inject instance_id for event types (Section 2.1)
+  // Definitional observe.* subtypes are excluded — they're registry blocks, not events
+  const DEFINITIONAL = ['observe.vocabulary', 'observe.template', 'observe.schema', 'observe.trust_policy', 'observe.protocol']
+  const EVENT_PREFIXES = ['transfer.', 'transform.', 'observe.']
+  const isEvent = EVENT_PREFIXES.some(p => type.startsWith(p)) && !DEFINITIONAL.includes(type)
+  const injected = (isEvent && !state.instance_id)
+    ? { instance_id: crypto.randomUUID(), ...state }
+    : state
+
+  const cleanState = omitNulls(injected)
   const cleanRefs = omitNulls(refs)
+
+  // Validate ref values are strings or arrays of strings
+  for (const [key, value] of Object.entries(cleanRefs)) {
+    if (typeof value === 'string') continue
+    if (Array.isArray(value) && value.every(v => typeof v === 'string')) continue
+    throw new Error(`FoodBlock: refs.${key} must be a string or array of strings`)
+  }
+
   const h = hash(type, cleanState, cleanRefs)
 
   return { hash: h, type, state: cleanState, refs: cleanRefs }

@@ -27,6 +27,11 @@ services:
     environment:
       - DATABASE_URL=postgresql://foodblock:${FOODBLOCK_DB_PASSWORD:-localdev}@db:5432/foodblock
       - PORT=3111
+      - FEDERATION_PUBLIC_KEY=${FEDERATION_PUBLIC_KEY:-}
+      - FEDERATION_PRIVATE_KEY=${FEDERATION_PRIVATE_KEY:-}
+      - FOODBLOCK_SERVER_NAME=${FOODBLOCK_SERVER_NAME:-FoodBlock Reference Server}
+      - FOODBLOCK_SERVER_URL=${FOODBLOCK_SERVER_URL:-}
+      - FOODBLOCK_PEERS=${FOODBLOCK_PEERS:-}
     depends_on:
       db:
         condition: service_healthy

@@ -10,14 +10,44 @@ public struct FoodBlock: Codable, Equatable {
     public let state: [String: AnyCodable]
     public let refs: [String: AnyCodable]
 
+    /// Definitional observe.* subtypes — registry blocks, not events.
+    private static let definitionalTypes: Set<String> = [
+        "observe.vocabulary", "observe.template", "observe.schema",
+        "observe.trust_policy", "observe.protocol"
+    ]
+
+    /// Prefixes that indicate event types requiring instance_id.
+    private static let eventPrefixes = ["transfer.", "transform.", "observe."]
+
     /// Create a new FoodBlock.
     public static func create(
         type: String,
         state: [String: Any] = [:],
         refs: [String: Any] = [:]
     ) -> FoodBlock {
-        let cleanState = omitNulls(state)
+        // Auto-inject instance_id for event types (Section 2.1)
+        let isEvent = eventPrefixes.contains(where: { type.hasPrefix($0) })
+            && !definitionalTypes.contains(type)
+        var injected = state
+        if isEvent && injected["instance_id"] == nil {
+            injected["instance_id"] = UUID().uuidString.lowercased()
+        }
+
+        let cleanState = omitNulls(injected)
         let cleanRefs = omitNulls(refs)
+
+        // Validate ref values are strings or arrays of strings
+        for (key, value) in cleanRefs {
+            if value is String { continue }
+            if let arr = value as? [Any] {
+                guard arr.allSatisfy({ $0 is String }) else {
+                    preconditionFailure("FoodBlock: refs.\(key) array contains non-string value")
+                }
+                continue
+            }
+            preconditionFailure("FoodBlock: refs.\(key) must be a String or [String]")
+        }
+
         let h = computeHash(type: type, state: cleanState, refs: cleanRefs)
 
         return FoodBlock(
