@@ -126,14 +126,15 @@ jobs:
         run: node --test test/block.test.js
         working-directory: sdk/javascript
       - name: Verify Python vectors
-        run: python -c "
-          import json, foodblock;
-          vectors = json.load(open('test/vectors.json'));
-          passed = 0;
+        run: |
+          python -c "
+          import json, foodblock
+          vectors = json.load(open('test/vectors.json'))
+          passed = 0
           for v in vectors:
-            block = foodblock.create(v['type'], v['state'], v['refs']);
-            assert block['hash'] == v['expected_hash'], f\"FAIL {v['name']}: {block['hash']} != {v['expected_hash']}\";
-            passed += 1;
+              block = foodblock.create(v['type'], v['state'], v['refs'])
+              assert block['hash'] == v['expected_hash'], f'FAIL {v[\"name\"]}: {block[\"hash\"]} != {v[\"expected_hash\"]}'
+              passed += 1
           print(f'{passed}/{len(vectors)} cross-language vectors passed')
           "
 
