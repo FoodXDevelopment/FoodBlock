@@ -1,6 +1,6 @@
 # FoodBlock Technical Whitepaper: A Content-Addressable Protocol for Universal Food Data
 
-**Version 0.7, February 2026**
+**Version 0.9, February 2026**
 
 ## Abstract
 
@@ -68,7 +68,9 @@ For blocks that represent unique events (an order, a review, a sensor reading), 
 }
 ```
 
-The convention: entity blocks (`actor.*`, `place.*`) and event blocks (`transfer.*`, `transform.*`, `observe.*`) should include an `instance_id` (UUID v4) to guarantee uniqueness. Catalog blocks (`substance.product` listings) may omit it to enable content-based deduplication. Schema definitions (Section 8) declare whether `instance_id` is required for a given type.
+**SDK auto-injection:** Conformant SDKs automatically inject a UUID v4 `instance_id` when `create()` is called for event types: `transfer.*`, `transform.*`, and `observe.*` (except definitional subtypes `observe.vocabulary`, `observe.template`, `observe.schema`, `observe.trust_policy`, `observe.protocol`). Entity blocks (`actor.*`, `place.*`) and catalog blocks (`substance.product`) do not receive auto-injected `instance_id`, enabling content-based deduplication. If the caller provides an `instance_id` in state, the SDK preserves it rather than generating a new one.
+
+This auto-injection is a protocol-level behavior: the injected `instance_id` is included in the canonical form before hashing, so the block's identity incorporates it. Schema definitions (Section 8) declare whether `instance_id` is required for a given type.
 
 ## 3. Base Types
 
@@ -186,6 +188,25 @@ A wholesaler who sources eggs from multiple farms can express composition:
 ```
 
 The chain is as deep as collective knowledge goes. No actor is compelled to know the full chain. Depth accumulates naturally as more participants adopt the protocol.
+
+**Gap detection and scoring:**
+
+When a supply chain participant does not use FoodBlock, a gap appears in the provenance chain. Gaps are not invisible — they are loudly visible as missing links, and their position is detectable from the blocks on either side.
+
+A gap confidence score is computed from available evidence:
+
+| Signal | Effect on confidence |
+|--------|---------------------|
+| Quantities match on both sides of gap | +high |
+| Timestamps are sequential | +high |
+| Same actor hash referenced by both sides | +high |
+| Known actor with verified history | +medium |
+| Quantity mismatch across gap | −critical (flag immediately) |
+| Timestamp anomaly | −high |
+
+Example: if a farm's dispatch block records 500kg and a distributor's receipt block records 800kg, 300kg appeared from nowhere in the gap. Confidence collapses and the anomaly is flagged automatically. The gap becomes an audit target rather than just a missing link — detectable without seeing inside it, like inferring a black hole from the behavior of matter around it.
+
+Commercial pressure fills gaps over time. A missing link is visible to every downstream party. Retailers can make supply chain transparency a procurement requirement, cascading the demand down through processors to farms. The protocol makes gaps visible; the market makes them costly.
 
 ### 5.3 Chain Conflicts and Resolution
 
@@ -311,6 +332,67 @@ await queue.sync('https://api.example.com/foodblock')
 ```
 
 Each device appends its own adjustments. The server merges by unioning adjustment arrays, deduplicated by device and timestamp. Current inventory is a read projection: `initial_stock + sum(all deltas)`. This is conflict-free by construction.
+
+### 5.6 Continuous Data Streams
+
+Physical sensors generate data continuously — temperature readings every second, GPS positions every 30 seconds, production line counts every minute. Creating one block per reading is impractical: a single cold storage unit would generate 86,400 blocks per day.
+
+Three patterns manage continuous data efficiently:
+
+**Threshold events.** The sensor runs continuously but a block is emitted only when a measurement crosses a meaningful threshold.
+
+```json
+{
+  "type": "observe.alert",
+  "state": {
+    "alert_type": "temp_exceeded",
+    "value": 5.2,
+    "threshold": 4.0,
+    "unit": "celsius"
+  },
+  "refs": { "sensor": "sensor_hash", "batch": "batch_hash" }
+}
+```
+
+A cold storage unit that maintains temperature correctly produces zero blocks. A unit with a malfunction produces exactly the blocks needed to document it. Two blocks per incident instead of 86,400 per day.
+
+**Periodic summaries.** One block per period aggregates the raw readings.
+
+```json
+{
+  "type": "observe.reading",
+  "state": {
+    "period": "2026-02-24T14:00:00Z",
+    "avg": 3.1,
+    "min": 2.8,
+    "max": 3.4,
+    "readings": 3600,
+    "unit": "celsius"
+  },
+  "refs": { "sensor": "sensor_hash", "place": "warehouse_hash" }
+}
+```
+
+24 blocks per day instead of 86,400. Sufficient for compliance reporting and trend analysis.
+
+**Merkle rollups.** For compliance contexts requiring proof that the full data existed and was not tampered with, a daily block commits the cryptographic hash of the complete raw dataset.
+
+```json
+{
+  "type": "observe.checkpoint",
+  "state": {
+    "merkle_root": "abc123...",
+    "period": "2026-02-24",
+    "reading_count": 86400,
+    "raw_data": "s3://cold-chain-logs/2026-02-24.parquet"
+  },
+  "refs": { "sensor": "sensor_hash" }
+}
+```
+
+The raw stream lives in a time-series database (InfluxDB, TimescaleDB) optimised for high-frequency writes. The FoodBlock references it and commits its integrity. Any party can verify that the raw data matches the committed Merkle root without re-processing it.
+
+The three patterns are not mutually exclusive. A cold chain shipment might use all three: threshold events for immediate alerts, hourly summaries for the shipment record, and a Merkle rollup at delivery for the audit trail.
 
 ## 6. Trust
 
@@ -454,15 +536,16 @@ The `insertBlock()` function sets the visibility column automatically using type
 
 In this example, the `state.visibility` hint of `"network"` is read by `insertBlock()` and written to the visibility column. The hint remains in state for portability (e.g., when blocks are exported or federated), but the column is the authoritative source for access control.
 
-| Level | Audience | Key Distribution |
-|-------|----------|-----------------|
-| **public** | Everyone | No encryption required |
-| **network** | Connected actors (direct relationships) | Encrypt to public keys of all directly connected actors |
-| **direct** | Specific actors referenced in the block | Encrypt to public keys of actors in this block's refs |
-| **followers** | Actors who follow this actor | Encrypt to public keys of followers |
-| **internal** | Members of an actor.group | Encrypt to public keys of group members |
+| Level | Audience | Cryptography |
+|-------|----------|-------------|
+| **public** | Anyone, no account needed | None |
+| **network** | Any verified FoodBlock account | None |
+| **sector** | Actors of the same type | None |
+| **chain** | Parties in the provenance chain for this specific product | None |
+| **direct** | Named actors in this block's refs | Yes — envelope encryption |
+| **private** | Actors holding an active access grant | Yes — envelope encryption + Master Key |
 
-Visibility is granular. Within a single post, individual content blocks can carry different visibility levels, enabling scenarios where a producer shares product information publicly while keeping pricing visible only to their network.
+Visibility is the first door — fast, authentication-based, requiring only a database index check. Cryptography is the second door — content is unreadable without the decryption key even if the block is accessed. Only `direct` and `private` blocks use cryptography. All other levels are enforced through authentication and authorisation alone. This separation ensures that cryptographic overhead is incurred only where it is genuinely needed.
 
 ### 7.1 Visibility Enforcement
 
@@ -530,9 +613,103 @@ Encrypted state fields use the `_` key prefix (Rule 8). The encryption scheme is
 | `sector` | All actors whose `type` shares the same base type prefix |
 | `network` | All actors directly referenced in any block authored by this actor |
 | `direct` | Only actors explicitly referenced in this block's refs |
-| `internal` | Members of the `actor.group` referenced in this block's refs |
+| `private` | Actors holding an active `observe.access_grant` for this chain |
 
 The encrypted envelope is part of `state`, and therefore part of the block's hash. This means the set of recipients is committed at creation time. Adding a recipient requires creating a new block with an updated envelope.
+
+**Two-key envelope encryption for private blocks:**
+
+Private blocks use a two-key hierarchy to enable instant revocation at scale:
+
+```
+Content Key → encrypts the actual field value (AES-256-GCM)
+Master Key  → encrypts the Content Key (X25519 key agreement)
+```
+
+The Content Key never changes. The Master Key is specific to each viewer's access grant. When access is revoked, the owner rotates the Master Key for that chain. The viewer's old Master Key can no longer decrypt the Content Key, making all versions of the chain — past and future — unreadable instantly, without re-encrypting any block content.
+
+This means revocation at any scale (millions of blocks in a chain) requires only one key rotation operation, not a re-encryption pass over the entire chain.
+
+### 7.3 View-Based Access Control
+
+Visibility and cryptography enforce access at the infrastructure layer. View-based access records the access decisions themselves as FoodBlocks, creating an auditable, append-only access history.
+
+**Access grant:**
+
+```json
+{
+  "type": "observe.access_grant",
+  "state": {
+    "granted_at": "2026-02-24T00:00:00Z",
+    "chain_scope": "all_versions"
+  },
+  "refs": {
+    "block": "chain_genesis_hash",
+    "viewer": "supplier_hash",
+    "owner": "cocacola_hash"
+  }
+}
+```
+
+**Access revocation:**
+
+```json
+{
+  "type": "observe.access_revoke",
+  "state": {
+    "revoked_at": "2026-02-24T00:00:00Z"
+  },
+  "refs": {
+    "grant": "grant_block_hash"
+  }
+}
+```
+
+**Properties:**
+
+- The owner creates grant and revoke blocks unilaterally — no consensus or committee required.
+- `chain_scope: "all_versions"` means the viewer loses access to every version of the chain, including versions they previously could read.
+- Grant and revoke blocks are themselves append-only. The full access history — who had access, when it was granted, when it was revoked — is permanent and auditable.
+- A materialized view over access grant/revoke blocks provides fast runtime access checks.
+- The block itself is never modified. Only the access layer changes.
+
+The separation is fundamental: **blocks store truth permanently; views control who can see it.** Immutability is what makes FoodBlock trustworthy. Mutable views are what make it commercially viable. They do not conflict because they operate on different layers.
+
+### 7.4 Developer Transparency Registry
+
+Every application built on FoodBlock publishes an `observe.app_manifest` block declaring its data practices:
+
+```json
+{
+  "type": "observe.app_manifest",
+  "state": {
+    "app_name": "Fridge Tracker",
+    "default_visibility": "anonymous_public",
+    "user_can_override": true,
+    "third_party_sharing": false,
+    "blocks_owned_by": "user"
+  },
+  "refs": { "developer": "developer_actor_hash" }
+}
+```
+
+A transparency score is computed by comparing the manifest's declarations against the actual blocks the app creates on the network:
+
+| Practice | Score |
+|----------|-------|
+| User owns their blocks | +high |
+| User can override visibility defaults | +high |
+| Anonymous by default | +medium |
+| No third-party sharing | +medium |
+| Open source | +medium |
+| Independent audit | +high |
+| Developer owns blocks | −critical |
+| Visibility cannot be changed | −high |
+| Data shared without consent | −critical |
+
+The score cannot be faked. A developer who declares `blocks_owned_by: 'user'` but signs blocks with the developer's own key is immediately detectable — block signatures are public. Claimed practices are verifiable against actual block behavior by anyone.
+
+Scores are published and publicly searchable. Users can verify any app's data practices before trusting it. Developers compete on transparency rather than obscuring it. The protocol makes good practices measurable.
 
 ## 8. Schema Conventions
 
@@ -1152,6 +1329,66 @@ When agents cannot reach an automated agreement, they escalate specific decision
 
 The full negotiation history is preserved as FoodBlocks, creating an auditable record of how commercial decisions were reached, by whom, and on what basis.
 
+#### 10.5.6 Perception Agents: Voice and Vision
+
+Perception agents extend the agent model to physical environments. Two subtypes address the most common real-world monitoring needs across all fourteen food industry sectors.
+
+**actor.agent.voice** — listens for spoken transactions and emits structured blocks:
+
+```
+Mic → VAD (voice activity detection) → Whisper (transcription) → small LLM (intent extraction) → transfer.order block
+```
+
+The agent is idle when nobody speaks. VAD activates the transcription pipeline only when speech is detected, keeping inference costs near zero during quiet periods. The LLM extracts structured intent — items, quantities, modifications, prices — from the transcribed text.
+
+**actor.agent.vision** — monitors physical spaces and emits inventory and event blocks:
+
+```
+Camera → VLM (vision-language model) → threshold event detection → observe.inventory_event block
+```
+
+Vision-language models (Florence-2, Moondream2) understand images through natural language queries without domain-specific training. The agent queries the model: *"What is being moved and in which direction?"* rather than running a YOLO classifier trained on a fixed object vocabulary.
+
+**Context-first adaptation:**
+
+Both perception agents load the operator's block graph at startup as their reasoning context:
+
+```json
+{
+  "type": "observe.environment",
+  "state": {
+    "operator_type": "actor.producer",
+    "products": ["substance.product hashes..."],
+    "venue": "place.venue hash",
+    "order_history_count": 847
+  },
+  "refs": { "agent": "agent_hash", "operator": "operator_hash" }
+}
+```
+
+The same agent model serves every sector. A dairy farm agent knows that "collect" means milk collection because the block graph identifies the operator as `actor.producer` with dairy products. A coffee shop agent knows "collect" means a customer order because the block graph shows a café with a menu. No sector-specific training is required. Context from the block graph provides the adaptation.
+
+**Local inference:**
+
+Both perception agents are designed for local inference to avoid per-transaction API costs:
+
+| Component | Model | Cost |
+|-----------|-------|------|
+| Voice activity detection | Silero VAD | $0, CPU |
+| Speech transcription | faster-whisper tiny | $0, CPU |
+| Intent extraction | Llama 3.2 3B (Ollama) | $0, local |
+| Vision understanding | Moondream2 / Florence-2 | $0, CPU |
+
+Cloud APIs are used only when local confidence is insufficient — typically less than 1% of events. The perception pipeline calls cloud APIs as a fallback, not as the primary path.
+
+**Emitted block types:**
+
+| Agent type | Block emitted | Trigger |
+|------------|--------------|---------|
+| `actor.agent.voice` | `transfer.order` | Spoken order detected |
+| `actor.agent.vision` | `observe.inventory_event` | Stock movement detected |
+| Both | `observe.alert` | Anomaly or threshold breach |
+
 ### 10.6 Agent Event Subscriptions
 
 Agents subscribe to block types they care about. When a matching block is written to the system, the agent is notified and can react.
@@ -1486,52 +1723,155 @@ Cross-language test vectors (`test/vectors.json`) cover these cases. Any SDK in 
 
 ## 14. Developer Interface
 
-Any system that can produce and consume JSON can participate in FoodBlock. A minimal SDK exposes these operations:
+Any system that can produce and consume JSON can participate in FoodBlock. Reference SDKs are available in JavaScript, Python, Go, and Swift. All four produce identical hashes for identical inputs, verified by 124 cross-language test vectors.
+
+A conformant SDK exposes these operations:
 
 ```
-// Core
+// Core (Section 2)
 create(type, state, refs)              -> { hash, type, state, refs }
-update(previous_hash, type, state, refs) -> { hash, type, state, refs }
+update(previousHash, type, state, refs) -> { hash, type, state, refs }
+mergeUpdate(previousBlock, stateChanges, additionalRefs) -> { hash, type, state, refs }
 hash(type, state, refs)                -> string
+canonical(type, state, refs)           -> string (deterministic JSON)
 
-// Provenance
+// Provenance (Section 5)
 chain(hash, resolve)                   -> [ block, ...ancestors ]
 tree(hash, resolve)                    -> { block, ancestors }
 head(hash, resolveForward)             -> string
 
-// Signing
+// Forward Traversal (Section 31)
+forward(hash, resolveForward)          -> { referencing, count }
+recall(sourceHash, resolveForward, opts?) -> { affected, depth, paths }
+downstream(ingredientHash, resolveForward, opts?) -> block[]
+
+// Signing (Section 6)
 sign(block, authorHash, privateKey)    -> { foodblock, author_hash, signature, protocol_version }
 verify(wrapper, publicKey)             -> boolean
-generateKeypair()                      -> { publicKey, privateKey, encryptPublicKey, encryptPrivateKey }
+generateKeypair()                      -> { publicKey, privateKey }  (Ed25519, hex)
 
-// Encryption & Validation
-encrypt(value, recipientPublicKeys)    -> envelope
-decrypt(envelope, privateKey)          -> value
+// Encryption (Section 7.2)
+encrypt(value, recipientPublicKeys[])  -> envelope
+decrypt(envelope, privateKeyHex, publicKeyHex) -> value
+generateEncryptionKeypair()            -> { publicKey, privateKey }  (X25519, hex)
+
+// Validation & Offline (Section 8)
 validate(block, schema?)               -> [ errors ]
 offlineQueue()                         -> Queue
 query(resolve)                         -> QueryBuilder
 
-// Human Interface (Section 16)
+// Tombstone (Section 26)
+tombstone(targetHash, requestedBy, opts?) -> block
+
+// Agent (Section 10)
+createAgent(name, operatorHash, opts?) -> block
+createDraft(agentHash, type, state, refs) -> block
+approveDraft(draftBlock)               -> block
+loadAgent(agentHash, privateKey)       -> agent
+
+// Human Interface (Section 17)
 registry()                             -> Registry (alias resolution: @name -> hash)
 parse(fbn)                             -> { alias, type, state, refs }
+parseAll(fbn)                          -> [ { alias, type, state, refs }, ... ]
 format(block, opts)                    -> string (FoodBlock Notation)
 explain(hash, resolve)                 -> string (human-readable narrative)
 toURI(block, opts)                     -> string (fb:<hash> or fb:<type>/<alias>)
 fromURI(uri)                           -> { hash } or { type, alias }
+
+// Templates (Section 19)
+createTemplate(name, description, steps, opts?) -> block
+fromTemplate(template, values)         -> block[]
+TEMPLATES                              -> { 'supply-chain', 'review', ... } (9 built-in)
+
+// Federation (Section 21)
+discover(serverUrl, opts?)             -> object (well-known metadata)
+federatedResolver(urls[])              -> resolve(hash) -> block
+wellKnown(info)                        -> object (/.well-known/foodblock response)
+handshake(remoteUrl, identity, signFn, opts?) -> object
+push(remoteUrl, blocks, identity?, signFn?) -> { inserted, skipped, failed }
+pull(remoteUrl, query?, opts?)         -> { blocks, count, cursor, has_more }
+sync(remoteUrl, localStore, opts?)     -> { pulled, pushed }
+
+// Vocabulary (Section 24)
+createVocabulary(domain, forTypes, fields, opts?) -> block
+mapFields(state, vocabulary)           -> state (normalized field names)
+quantity(value, unit, vocabulary?)     -> { value, unit, canonical_unit }
+transition(block, newStatus, vocabulary?) -> block
+nextStatuses(block, vocabulary?)       -> string[]
+localize(block, locale, vocabulary?)   -> block
+VOCABULARIES                           -> { bakery, restaurant, ... } (14 built-in)
+
+// Merge (Section 25)
+detectConflict(hashA, hashB, resolve)  -> { isConflict, commonAncestor, chainA, chainB }
+merge(hashA, hashB, resolve, opts?)    -> block
+autoMerge(hashA, hashB, resolve, vocabulary?) -> block
+
+// Selective Disclosure (Section 27)
+merkleize(state)                       -> { root, leaves, tree }
+selectiveDisclose(state, fieldNames)   -> { disclosed, proof, root }
+verifyProof(disclosed, proof, root)    -> boolean
+
+// Snapshots (Section 28)
+createSnapshot(blocks, opts?)          -> block
+verifySnapshot(snapshot, blocks)       -> { valid, missing }
+summarize(blocks)                      -> { total, by_type }
+
+// Attestation (Section 29)
+attest(targetHash, attestorHash, opts?) -> block
+dispute(targetHash, disputerHash, reason, opts?) -> block
+traceAttestations(hash, allBlocks)     -> { attestations, disputes, score }
+trustScore(hash, allBlocks)            -> number
+
+// Trust Computation (Section 6.3)
+computeTrust(actorHash, blocks, policy?) -> { score, inputs, meets_minimum }
+connectionDensity(actorA, actorB, blocks) -> number
+createTrustPolicy(name, weights, opts?) -> block
+DEFAULT_WEIGHTS                        -> { authority_certs, peer_reviews, chain_depth, ... }
+
+// Natural Language (Section 30)
+fb(text)                               -> { blocks, primary, type, state, refs, text, confidence }
+
+// Consumer Identity
+createIdentity(name, password, opts?)  -> { actorBlock, signedActor, keystore, publicKeys, privateKeys }
+encryptKeystore(keys, password, deviceId) -> object (PBKDF2 + AES-256-GCM)
+decryptKeystore(keystore, password)    -> { sign_private, encrypt_private }
+rotateKeys(actorHash, oldPrivateKey, oldPublicKey, reason?) -> { rotationBlock, newKeys }
+createRecoveryBlock(actorHash, deviceId, method?) -> block
+
+// Payment Settlement
+authorize(orderHash, buyerHash, opts)  -> block (transfer.payment, status: authorized)
+capture(authHash, opts?)               -> block (transfer.payment, status: captured)
+refund(captureHash, opts)              -> block (transfer.payment, status: refunded)
+openTab(buyerHash, venueHash, opts)    -> block (transfer.tab, status: open)
+addToTab(tabBlock, item)               -> block (transfer.tab, updated items)
+closeTab(tabBlock, opts?)              -> block (transfer.tab, status: closed)
+
+// Seed Data
+seedVocabularies()                     -> block[] (14 vocabulary blocks)
+seedTemplates()                        -> block[] (9 template blocks)
+seedAll()                              -> block[] (all vocabulary + template blocks)
 ```
+
+Signing and encryption use separate key types. `generateKeypair()` produces Ed25519 keys for signing. `generateEncryptionKeypair()` produces X25519 keys for encryption. Both return raw 32-byte hex strings, cross-language compatible.
+
+The `decrypt()` function requires three arguments: the envelope, the recipient's private key, and the recipient's public key. The public key is needed to match the correct `key_hash` entry in multi-recipient envelopes.
 
 The HTTP API mirrors these operations:
 
 ```
 POST   /blocks                              -> create
 POST   /blocks/batch                        -> batch create (offline sync)
+POST   /fb                                  -> natural language entry point
 GET    /blocks/:hash                        -> read
-GET    /blocks?type=...&ref.seller=...      -> query
+GET    /blocks?type=...&ref=...&ref_value=.. -> query
 GET    /chain/:hash                         -> provenance chain
 GET    /tree/:hash                          -> provenance tree
 GET    /heads                               -> all head blocks
-PUT    /blocks/:hash                        -> update (creates new block)
+GET    /forward/:hash                       -> blocks referencing this hash
+GET    /verify/:hash                        -> verify block signature
 DELETE /blocks/:hash                        -> tombstone (creates tombstone block)
+GET    /stream                              -> Server-Sent Events (real-time)
+GET    /.well-known/foodblock               -> federation discovery
 ```
 
 ## 15. Protocol Versioning
@@ -1790,13 +2130,19 @@ The `@alias` references in the template are resolved to real hashes as blocks ar
 
 ### 19.3 Built-in Templates
 
-SDKs ship with templates for common patterns:
+SDKs ship with nine templates for common patterns:
 
 | Template | Steps | Use Case |
 |----------|-------|----------|
 | `supply-chain` | producer → ingredient → processing → product → order | Farm-to-table traceability |
 | `review` | venue → product → review | Consumer feedback |
 | `certification` | authority → producer → certification | Regulatory compliance |
+| `surplus-rescue` | venue → surplus → donation | Food waste reduction |
+| `agent-reorder` | venue → inventory check → agent → draft order → confirmed order | Automated restocking |
+| `restaurant-sourcing` | restaurant → ingredient → supplier → offer → order → delivery | Ingredient procurement |
+| `food-safety-audit` | premises → inspector → readings → certificate → attestation | Regulatory inspection |
+| `market-day` | producer → market → stock → sales → leftover surplus | Farmers market operations |
+| `cold-chain` | carrier → shipment → temperature log → chain verified | Cold chain compliance |
 
 ### 19.4 Community Templates
 
@@ -1887,7 +2233,10 @@ GET /.well-known/foodblock
     "blocks": "/blocks",
     "batch": "/blocks/batch",
     "chain": "/chain",
-    "heads": "/heads"
+    "heads": "/heads",
+    "push": "/.well-known/foodblock/push",
+    "pull": "/.well-known/foodblock/pull",
+    "handshake": "/.well-known/foodblock/handshake"
   }
 }
 ```
@@ -1915,12 +2264,56 @@ const block = await resolve('a1b2c3...')
 
 Cross-server refs work automatically. If a bakery's product block refs a farm's ingredient by hash, any resolver that can reach the farm's server can complete the provenance chain.
 
-### 21.4 Network Properties
+### 21.4 Peer Handshake
+
+Servers establish trust through a signed handshake:
+
+```javascript
+await handshake('https://supplier.example.com', {
+  peer_url: 'https://bakery.example.com',
+  peer_name: 'Green Acres Bakery',
+  public_key: myPublicKey
+}, signFn)
+```
+
+The handshake sends the identity payload (including a timestamp) signed with the requesting server's Ed25519 key. The remote server can verify the signature and register the peer. This prevents spoofing: a server cannot claim to be a peer it doesn't control.
+
+### 21.5 Push, Pull, and Sync
+
+Federation uses three block transfer operations:
+
+**Push** sends blocks from local to remote. Optionally signed to prove origin:
+
+```javascript
+await push('https://supplier.example.com', blocks, identity, signFn)
+// Returns { inserted, skipped, failed }
+```
+
+**Pull** retrieves blocks from a remote server, with cursor-based pagination:
+
+```javascript
+const result = await pull('https://supplier.example.com', {
+  since: '2026-01-01T00:00:00Z',
+  types: ['substance.product'],
+  limit: 100
+})
+// Returns { blocks, count, cursor, has_more }
+```
+
+**Sync** performs bidirectional transfer: pull from remote, then push local blocks:
+
+```javascript
+await sync('https://supplier.example.com', localStore, { since: lastSync })
+// Returns { pulled: { count, cursor }, pushed: { inserted, skipped, failed } }
+```
+
+### 21.6 Network Properties
 
 - **No central authority**: any server can join the network by publishing `/.well-known/foodblock`
 - **Content-addressable deduplication**: the same block on multiple servers is the same block
 - **Graceful degradation**: if a peer is unreachable, locally cached blocks still resolve
 - **Incremental adoption**: a single server works standalone; federation adds reach
+- **Signed replication**: push/pull can be authenticated via Ed25519 signatures
 
 The network topology mirrors the food supply chain. Producers peer with processors. Processors peer with distributors. Distributors peer with retailers. The data follows the food.
 
@@ -2093,6 +2486,29 @@ Vocabulary fields can declare how conflicts should be resolved when two actors u
 | `conflict` | Requires human resolution | `name` |
 
 These strategies are used by the merge operation (Section 25) to automatically resolve fork conflicts.
+
+### 24.5 Built-in Vocabularies
+
+SDKs ship with fourteen domain vocabularies:
+
+| Domain | Applies To | Key Fields |
+|--------|-----------|------------|
+| `bakery` | substance.product, substance.ingredient, transform.process | name, price, weight, allergens, sourdough, vegan |
+| `restaurant` | actor.venue, substance.product, observe.review | name, cuisine, rating, covers, takeaway, delivery |
+| `farm` | actor.producer, substance.ingredient, observe.certification | name, acreage, organic, method, harvest_date |
+| `retail` | actor.venue, substance.product, transfer.order | name, price, barcode, shelf_life, category |
+| `lot` | substance.product, substance.ingredient, transform.process | lot_number, batch_id, production_date, expiry_date |
+| `units` | substance.product, substance.ingredient, transfer.order, observe.reading | quantity, unit, canonical_unit (standardization) |
+| `workflow` | transfer.order, transfer.shipment, transfer.booking | status, transitions, valid_transitions (state machine) |
+| `distributor` | actor.distributor, transfer.delivery | fleet_size, cold_chain, coverage_area, lead_time |
+| `processor` | transform.process, actor.processor | method, yield_rate, haccp, batch_size |
+| `market` | place.market, actor.vendor | market_type, stall_count, frequency, seasonal |
+| `catering` | transfer.catering, actor.caterer | covers, dietary, setup_time, service_style |
+| `fishery` | substance.seafood, actor.fishery | catch_method, vessel, msc_certified, species |
+| `dairy` | substance.dairy, actor.dairy | fat_content, pasteurized, organic, animal_type |
+| `butcher` | substance.meat, actor.butcher | cut, hanging_days, breed, free_range, halal, kosher |
+
+Each vocabulary defines canonical field names, types, and natural language aliases. The `mapFields()` function uses these aliases to bridge natural language input to structured protocol fields (see Section 30).
 
 ## 25. Merge Blocks
 
@@ -2436,6 +2852,45 @@ Designing for natural language as the primary interface means:
 5. **Agents adapt to the operator, not the other way around**: through environment discovery, preference learning, and progressive capability escalation (see Section 10.5), agents meet the operator where they are.
 6. **The protocol succeeds when non-technical users forget it exists.** They just talk to their AI assistant about food. The blocks happen underneath.
 
+### 30.6 The `fb()` SDK Function
+
+The translation stack described above is implemented as a single SDK function:
+
+```javascript
+fb("Sourdough bread, $4.50, organic, contains gluten")
+// Returns:
+// {
+//   blocks: [ { hash, type: 'substance.product', state: { name: 'Sourdough bread', price: 4.50, ... }, refs: {} } ],
+//   primary: <the main block>,
+//   type: 'substance.product',
+//   state: { name: 'Sourdough bread', price: 4.50, organic: true, allergens: { gluten: true }, currency: 'USD' },
+//   refs: {},
+//   text: 'Sourdough bread, $4.50, organic, contains gluten',
+//   confidence: 0.8
+// }
+```
+
+`fb(text)` performs intent detection, value extraction, and block creation in a single call. It returns `{ blocks, primary, type, state, refs, text, confidence }`. The `blocks` array may contain multiple blocks when relationships are detected: `fb("Joe's Bakery sells sourdough for £4.50")` produces both an `actor.venue` block and a `substance.product` block with `refs.seller` wired automatically.
+
+Supported intent types:
+
+| Intent | Block Type | Example Input |
+|--------|-----------|---------------|
+| Product | `substance.product` | "Sourdough bread, $4.50, organic" |
+| Venue | `actor.venue` | "Joe's Bakery on Main Street" |
+| Producer | `actor.producer` | "Green Acres Farm, 200 acres, Oregon" |
+| Review | `observe.review` | "Amazing pizza at Luigi's, 5 stars" |
+| Order | `transfer.order` | "Ordered 50kg flour from Stone Mill" |
+| Surplus | `substance.surplus` | "3 loaves left over, selling for £1.50" |
+| Certification | `observe.certification` | "Green Acres is Soil Association organic certified" |
+| Sensor reading | `observe.reading` | "Walk-in cooler temperature 4 celsius" |
+| Transform | `transform.process` | "We stone-mill the wheat into flour" |
+| Agent | `actor.agent` | "Set up an agent that handles ordering" |
+
+The `confidence` field (0.0–1.0) indicates how strongly the input matched the detected intent. Three or more signal matches produce confidence 1.0. A single weak match produces 0.6. No matches default to `substance.product` with confidence 0.4.
+
+The `fb()` function is available in all four SDKs (JavaScript, Python, Go, Swift) and is exposed via the HTTP API as `POST /fb` and as an MCP tool.
+
 ## 31. The Graph as a Reasoning Substrate
 
 The previous sections describe how AI agents write blocks (Section 10) and translate natural language into protocol operations (Section 30). This section addresses a complementary property: the FoodBlock graph is not merely machine-readable, it is machine-reasonable. Its structure maps directly to how reasoning systems traverse evidence and draw conclusions.
@@ -2489,13 +2944,199 @@ The graph is not free to traverse. Forward traversal requires indexing (the GIN 
 
 These are engineering constraints, not protocol limitations. The graph structure remains the same whether it contains a hundred blocks or a hundred million. The protocol provides the shape; the implementation provides the performance.
 
-## 32. Conclusion
+## 32. Consumer Identity
+
+Consumer-facing applications need key management: key generation, encrypted storage, rotation, and recovery. The identity module provides this as a protocol-native flow where every operation produces FoodBlocks.
+
+### 32.1 Identity Creation
+
+`createIdentity(name, password)` generates both Ed25519 (signing) and X25519 (encryption) keypairs, creates an `actor` block with the public keys, self-signs it, and encrypts the private keys into a keystore:
+
+```javascript
+const identity = createIdentity('Alice', 'hunter2')
+// identity.actorBlock   — the actor FoodBlock (hash is the user's identity)
+// identity.signedActor  — signed wrapper proving the actor signed their own block
+// identity.keystore     — encrypted private keys (safe to store client-side)
+// identity.publicKeys   — { sign, encrypt } (hex strings)
+// identity.privateKeys  — { sign, encrypt } (hex strings, do not persist unencrypted)
+```
+
+### 32.2 Keystore Encryption
+
+Private keys are encrypted using PBKDF2 (600,000 iterations, SHA-256) to derive an AES-256-GCM key from the user's password:
+
+```json
+{
+  "encrypted_keys": "<base64 ciphertext + auth tag>",
+  "key_derivation": { "algorithm": "PBKDF2", "iterations": 600000, "salt": "<hex>" },
+  "nonce": "<base64>",
+  "device_id": "uuid"
+}
+```
+
+The keystore can be stored client-side (browser localStorage, mobile keychain) or server-side. The server never sees the password or the derived key.
+
+### 32.3 Key Rotation
+
+`rotateKeys(actorHash, oldPrivateKey, oldPublicKey)` creates an `observe.key_rotation` block signed by the old key, proving the rotation was authorized. A new `actor` block is created via `update()` with the new public keys. The rotation block references the actor, creating an auditable key history in the graph.
+
+### 32.4 Key Recovery
+
+`createRecoveryBlock(actorHash, deviceId)` produces an `observe.key_recovery` block for audit purposes. Recovery itself is handled by the application layer (password backup, recovery phrase, or trusted device).
+
+## 33. Payment Settlement
+
+Commerce requires a chain of payment states: authorization, capture, and optional refund. The payment module maps this flow to FoodBlocks using `transfer.payment` and `transfer.tab` types.
+
+### 33.1 Payment Authorization Flow
+
+```
+order (transfer.order)
+  → authorize (transfer.payment, status: authorized)
+    → capture (transfer.payment, status: captured, refs.updates: auth_hash)
+      → refund (transfer.payment, status: refunded, refs.updates: capture_hash)
+```
+
+Each step is a block referencing the previous via `refs.updates`, creating a provenance chain of payment states. The `adapter` field identifies the payment processor (Stripe, Square, etc.) and `adapter_ref` links to the processor's transaction ID.
+
+```javascript
+const auth = authorize(orderHash, buyerHash, { amount: 45.00, currency: 'GBP', adapter: 'stripe' })
+const cap = capture(auth.hash, { adapter_ref: 'pi_abc123' })
+const ref = refund(cap.hash, { amount: 10.00, reason: 'partial_refund' })
+```
+
+### 33.2 Tab Flow
+
+Walk-in commerce (cafes, bars, market stalls) uses tabs: a pre-authorized running total that accumulates items until closed.
+
+```javascript
+const tab = openTab(buyerHash, venueHash, { max_amount: 50.00 })
+const tab2 = addToTab(tab, { name: 'Flat White', price: 3.50 })
+const tab3 = addToTab(tab2, { name: 'Croissant', price: 2.80 })
+const closed = closeTab(tab3, { tip: 1.00 })
+// closed.state.total = 7.30 (subtotal) + 1.00 (tip) = 8.30
+```
+
+Each `addToTab` creates a new block via `update()`, building a chain of tab states. The closed tab's provenance chain shows every item added, when, and the final settlement amount.
+
+## 34. Cross-Language SDK Parity
+
+The protocol's core axiom, that identity is deterministic, requires that every SDK in every language produces identical hashes for identical inputs. Four reference SDKs enforce this:
+
+| SDK | Language | Modules | Tests | Status |
+|-----|----------|---------|-------|--------|
+| `@foodxdev/foodblock` | JavaScript | 28 | 372 | Published (npm) |
+| `foodblock` | Python | 25 | 240 | Published (PyPI) |
+| `github.com/.../foodblock/sdk/go` | Go | 25 | 98 | Module ready |
+| `FoodBlock` | Swift | 25 | 103 | Package ready |
+
+### 34.1 Cross-Language Test Vectors
+
+The file `test/vectors.json` contains 124 test cases covering:
+
+- Unicode normalization (NFC: precomposed vs decomposed characters)
+- Nested state objects (deep key sorting)
+- Numeric edge cases (-0 → 0, very large/small numbers, IEEE 754 precision)
+- All six base types and common subtypes
+- Ref array sorting (lexicographic)
+- Empty state and empty refs
+- Special characters in keys and values
+
+Every SDK's CI pipeline verifies that `hash(type, state, refs)` produces the same 64-character hex string for all 124 vectors. If any SDK disagrees on any vector, the protocol is broken.
+
+### 34.2 Canonical JSON (RFC 8785)
+
+Cross-language determinism is achieved through strict canonical JSON serialization:
+
+1. Keys sorted lexicographically at every nesting level
+2. No whitespace between tokens
+3. Numbers formatted per ECMAScript `Number::toString` (no trailing zeros, no unnecessary exponents)
+4. Unicode strings in NFC normalization form
+5. Null values omitted from state and refs
+6. Ref arrays sorted lexicographically before serialization
+
+The canonical form is `{"refs":{...},"state":{...},"type":"..."}` — always in this key order.
+
+## 35. CLI Tool
+
+The `foodblock-cli` package provides terminal access to the protocol:
+
+```bash
+npm install -g foodblock-cli
+
+# Natural language (creates blocks from plain English)
+fb "Sourdough bread, £4.50, organic, contains gluten"
+
+# Explicit block creation
+fb create substance.product --name "Sourdough" --price 4.50
+
+# Query and traversal
+fb get <hash>
+fb query --type actor.producer --heads
+fb chain <hash>
+fb tree <hash>
+fb info
+```
+
+The CLI operates in two modes:
+
+- **Standalone** (default): zero-config, ephemeral in-memory store. Useful for experimentation, scripting, and offline block creation.
+- **Connected** (`--server URL` or `FOODBLOCK_URL` env var): sends blocks to a FoodBlock server. Used for production workflows.
+
+Stdin is supported for piping: `echo "50kg flour from Stone Mill" | fb`
+
+## 36. MCP Server
+
+The FoodBlock MCP (Model Context Protocol) server enables AI agents to interact with the protocol through 20 registered tools:
+
+```bash
+npx foodblock-mcp
+```
+
+### 36.1 Tool Categories
+
+| Category | Tools | Purpose |
+|----------|-------|---------|
+| Block CRUD | create, update, get, query, batch | Core block operations |
+| Traversal | chain, tree, heads | Provenance navigation |
+| Agent | create_agent, load_agent, agent_draft, approve_draft, list_agents | Agent lifecycle |
+| Trust | tombstone, validate | Data integrity |
+| Natural Language | fb | Plain English entry point |
+| System | info | Server status |
+
+### 36.2 Modes
+
+- **Standalone** (default): ~100 seed blocks loaded at startup (three stories: UK bakery, London restaurant, farmers market). No external dependencies. Works immediately with `npx`.
+- **Connected** (`FOODBLOCK_URL` env var): proxies all operations to a FoodBlock server.
+
+### 36.3 Agent Key Encryption
+
+When `AGENT_MASTER_KEY` is set, agent credentials are encrypted at rest using AES-256-GCM envelope encryption. `create_agent` returns encrypted credentials. `load_agent` decrypts them transparently. Without the master key, credentials are returned in plaintext (suitable for development).
+
+### 36.4 Platform Integration
+
+The MCP server integrates with Claude Desktop, Claude Code, Cursor, Windsurf, and any MCP-compatible client. Configuration:
+
+```json
+{
+  "mcpServers": {
+    "foodblock": {
+      "command": "npx",
+      "args": ["foodblock-mcp"]
+    }
+  }
+}
+```
+
+## 37. Conclusion
 
 FoodBlock compresses the complexity of food industry data into one axiom, three fields, and six types. The axiom, *identity is content*, determines everything: immutability, determinism, deduplication, tamper evidence, offline validity, and provenance by reference. Seven operational rules govern the protocol's use. Everything else is a consequence.
 
 Any food operation, from a farm harvest to a Michelin review, from a cold chain reading to a commodity trade, is expressible as a FoodBlock. Provenance emerges from hash-linked references. Trust emerges from attestation chains and graph analysis. Interoperability emerges from shared vocabularies. Privacy is enforced through selective disclosure and cryptographic erasure. Scalability is managed through snapshots and retention. Adaptive agents discover their environment, earn trust progressively, learn operator preferences, and negotiate autonomously, enabling supply chains that run themselves while keeping humans in control.
 
 The human interface layer, aliases, text notation, URIs, vocabularies, and narrative rendering, makes the protocol accessible to anyone who can speak a sentence or scan a QR code. Natural language is not an afterthought but the primary design target: vocabularies bridge human words to protocol fields, templates compress complex workflows into single commands, and explain renders graphs as stories.
+
+Four reference SDKs (JavaScript, Python, Go, Swift) enforce cross-language determinism through 124 shared test vectors. A CLI tool, an MCP server with 20 tools, and integrations for Claude, ChatGPT, and Gemini make the protocol accessible to both developers and AI agents. Consumer identity, payment settlement, and agent key management are protocol-native, every operation produces FoodBlocks.
 
 The protocol's long-term architecture addresses every identified challenge: RFC 8785 guarantees cross-language canonical determinism, merge blocks resolve fork conflicts, cryptographic erasure satisfies regulatory requirements, Merkle-ized state enables selective disclosure, snapshots manage growth, and attestation chains provide multi-party trust. Each mechanism is itself a FoodBlock, content-addressed, versionable, composable.
 
