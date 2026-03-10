@@ -94,7 +94,8 @@ describe('MCP Server', () => {
       assert.ok(toolNames.includes('foodblock_discover'), 'has foodblock_discover')
       assert.ok(toolNames.includes('foodblock_negotiate'), 'has foodblock_negotiate')
       assert.ok(toolNames.includes('foodblock_trace'), 'has foodblock_trace')
-      assert.equal(toolNames.length, 20, 'exactly 20 tools')
+      assert.ok(toolNames.includes('foodblock_understand'), 'has foodblock_understand')
+      assert.equal(toolNames.length, 21, 'exactly 21 tools')
     } finally {
       proc.kill()
     }
@@ -765,6 +766,292 @@ describe('MCP Server', () => {
         productBlock.state.product_name?.toLowerCase().includes('sourdough'),
         'product name includes sourdough'
       )
+    } finally {
+      proc.kill()
+    }
+  })
+
+  // ── Short hash resolution ───────────────────────────────────────────
+
+  it('short hash — get a block by 8-char prefix', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'actor.producer',
+          state: { name: 'Short Hash Farm' },
+          refs: {},
+        },
+      }, 2)
+      const createResult = await readJsonRpc(proc, 10000)
+      const created = JSON.parse(createResult.result.content[0].text)
+      const shortHash = created.hash.slice(0, 8)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_get',
+        arguments: { hash: shortHash },
+      }, 3)
+      const getResult = await readJsonRpc(proc, 10000)
+      const fetched = JSON.parse(getResult.result.content[0].text)
+
+      assert.equal(fetched.hash, created.hash, 'full hash returned from short prefix')
+      assert.equal(fetched.state.name, 'Short Hash Farm', 'correct block returned')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  it('short hash — update a block using short prefix', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'substance.product',
+          state: { name: 'Short Update Test', price: 3.00 },
+          refs: {},
+        },
+      }, 2)
+      const createResult = await readJsonRpc(proc, 10000)
+      const created = JSON.parse(createResult.result.content[0].text)
+      const shortHash = created.hash.slice(0, 12)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_update',
+        arguments: {
+          previous_hash: shortHash,
+          type: 'substance.product',
+          state: { name: 'Short Update Test', price: 5.00 },
+        },
+      }, 3)
+      const updateResult = await readJsonRpc(proc, 10000)
+      const updated = JSON.parse(updateResult.result.content[0].text)
+
+      assert.equal(updated.refs.updates, created.hash, 'refs.updates contains full hash')
+      assert.equal(updated.state.price, 5.00, 'price updated')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  // ── FBN response format ─────────────────────────────────────────────
+
+  it('FBN — query response includes fbn and aliases', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'substance.product',
+          state: { name: 'FBN Test Bread', price: 4.50 },
+          refs: {},
+        },
+      }, 2)
+      await readJsonRpc(proc, 10000)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_query',
+        arguments: { type: 'substance.product', heads_only: true },
+      }, 3)
+      const queryResult = await readJsonRpc(proc, 10000)
+      const parsed = JSON.parse(queryResult.result.content[0].text)
+
+      assert.ok(parsed.fbn, 'response includes fbn field')
+      assert.ok(typeof parsed.fbn === 'string', 'fbn is a string')
+      assert.ok(parsed.fbn.includes('@'), 'fbn contains @ aliases')
+      assert.ok(parsed.aliases, 'response includes aliases')
+      assert.ok(typeof parsed.aliases === 'object', 'aliases is an object')
+
+      const firstAlias = Object.values(parsed.aliases)[0]
+      assert.equal(firstAlias.length, 8, 'alias is 8 chars (short hash)')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  it('FBN — heads response includes fbn', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_heads',
+        arguments: { type: 'substance' },
+      }, 2)
+      const headsResult = await readJsonRpc(proc, 10000)
+      const parsed = JSON.parse(headsResult.result.content[0].text)
+
+      assert.ok(parsed.fbn !== undefined, 'heads response has fbn field')
+      assert.ok(parsed.aliases !== undefined, 'heads response has aliases field')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  // ── Resolved refs ───────────────────────────────────────────────────
+
+  it('resolved refs — get returns resolved_refs with type and name', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'actor.producer',
+          state: { name: 'Ref Test Bakery' },
+          refs: {},
+        },
+      }, 2)
+      const bakeryResult = await readJsonRpc(proc, 10000)
+      const bakery = JSON.parse(bakeryResult.result.content[0].text)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'substance.product',
+          state: { name: 'Ref Test Loaf' },
+          refs: { seller: bakery.hash },
+        },
+      }, 3)
+      const productResult = await readJsonRpc(proc, 10000)
+      const product = JSON.parse(productResult.result.content[0].text)
+
+      assert.ok(product.resolved_refs, 'create response has resolved_refs')
+      assert.ok(product.resolved_refs.seller, 'resolved_refs has seller')
+      assert.equal(product.resolved_refs.seller.type, 'actor.producer', 'seller type resolved')
+      assert.equal(product.resolved_refs.seller.name, 'Ref Test Bakery', 'seller name resolved')
+      assert.equal(product.resolved_refs.seller.hash, bakery.hash.slice(0, 8), 'seller hash is short')
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_get',
+        arguments: { hash: product.hash },
+      }, 4)
+      const getResult = await readJsonRpc(proc, 10000)
+      const fetched = JSON.parse(getResult.result.content[0].text)
+
+      assert.ok(fetched.resolved_refs, 'get response has resolved_refs')
+      assert.equal(fetched.resolved_refs.seller.name, 'Ref Test Bakery', 'resolved via get')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  // ── foodblock_understand ────────────────────────────────────────────
+
+  it('foodblock_understand — returns narrative, fbn, aliases, versions', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'actor.producer',
+          state: { name: 'Understand Farm' },
+          refs: {},
+        },
+      }, 2)
+      const farmResult = await readJsonRpc(proc, 10000)
+      const farm = JSON.parse(farmResult.result.content[0].text)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'substance.product',
+          state: { name: 'Understand Bread', price: 5.00 },
+          refs: { seller: farm.hash },
+        },
+      }, 3)
+      const breadResult = await readJsonRpc(proc, 10000)
+      const bread = JSON.parse(breadResult.result.content[0].text)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_understand',
+        arguments: { hash: bread.hash },
+      }, 4)
+      const understandResult = await readJsonRpc(proc, 10000)
+      const data = JSON.parse(understandResult.result.content[0].text)
+
+      assert.ok(data.narrative, 'has narrative')
+      assert.ok(typeof data.narrative === 'string', 'narrative is a string')
+      assert.ok(data.fbn, 'has fbn')
+      assert.ok(data.fbn.includes('@'), 'fbn has aliases')
+      assert.ok(data.aliases, 'has aliases')
+      assert.ok(data.block, 'has block summary')
+      assert.equal(data.block.type, 'substance.product', 'block type correct')
+      assert.equal(data.block.hash.length, 8, 'block hash is short (8 chars)')
+      assert.ok(data.resolved_refs, 'has resolved_refs')
+      assert.ok(data.resolved_refs.seller, 'has resolved seller ref')
+      assert.equal(data.versions, 1, 'versions is 1 (no updates)')
+      assert.ok(data.provenance_depth >= 0, 'has provenance_depth')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  it('foodblock_understand — works with short hash', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_create',
+        arguments: {
+          type: 'actor.producer',
+          state: { name: 'Short Understand Test' },
+          refs: {},
+        },
+      }, 2)
+      const createResult = await readJsonRpc(proc, 10000)
+      const created = JSON.parse(createResult.result.content[0].text)
+      const shortHash = created.hash.slice(0, 8)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_understand',
+        arguments: { hash: shortHash },
+      }, 3)
+      const understandResult = await readJsonRpc(proc, 10000)
+      const data = JSON.parse(understandResult.result.content[0].text)
+
+      assert.ok(data.narrative, 'understand works with short hash')
+      assert.ok(data.block, 'block returned')
+      assert.equal(data.block.state.name, 'Short Understand Test', 'correct block resolved')
+    } finally {
+      proc.kill()
+    }
+  })
+
+  it('foodblock_fb — response includes fbn and aliases', async () => {
+    const proc = startServer()
+
+    try {
+      await initServer(proc)
+
+      sendJsonRpc(proc, 'tools/call', {
+        name: 'foodblock_fb',
+        arguments: { text: 'Croissant $3.00 butter flaky' },
+      }, 2)
+      const result = await readJsonRpc(proc, 10000)
+      const parsed = JSON.parse(result.result.content[0].text)
+
+      assert.ok(parsed.blocks, 'has blocks')
+      assert.ok(parsed.fbn !== undefined, 'fb response has fbn')
+      assert.ok(parsed.aliases !== undefined, 'fb response has aliases')
     } finally {
       proc.kill()
     }

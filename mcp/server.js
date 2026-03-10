@@ -21,10 +21,56 @@ import { createStore } from "./store.js";
 const require = createRequire(import.meta.url || `file://${process.cwd()}/`);
 
 // Load FoodBlock SDK (CommonJS)
-const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, generateKeypair, sign, verify, tombstone, validate, offlineQueue, explain } = require("@foodxdev/foodblock");
+const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, generateKeypair, sign, verify, tombstone, validate, offlineQueue, explain, format } = require("@foodxdev/foodblock");
 
 const API_URL = process.env.FOODBLOCK_URL || null;
 const db = createStore(API_URL);
+
+// ── Short hash resolution ────────────────────────────────────────────────
+// Accept 8+ char hash prefixes anywhere a full hash is expected.
+
+async function resolveHash(input) {
+  if (!input || typeof input !== 'string') return input;
+  if (input.length === 64) return input;
+  return db.resolveShortHash(input);
+}
+
+// ── FBN response format ──────────────────────────────────────────────────
+// Convert blocks to FoodBlock Notation with auto-generated short aliases.
+
+function blocksToFbn(blocks) {
+  if (!blocks || blocks.length === 0) return { fbn: '', aliases: {} };
+  const aliasMap = {};
+  for (const b of blocks) {
+    if (b && b.hash) aliasMap[b.hash] = b.hash.slice(0, 8);
+  }
+  const lines = blocks
+    .filter(b => b && b.hash)
+    .map(b => format(b, { aliasMap, alias: aliasMap[b.hash] }));
+  return { fbn: lines.join('\n'), aliases: aliasMap };
+}
+
+// ── Resolved refs ────────────────────────────────────────────────────────
+// Inline type + name for each ref so agents don't need follow-up fetches.
+
+async function resolveRefs(block) {
+  if (!block || !block.refs) return {};
+  const resolved = {};
+  for (const [role, ref] of Object.entries(block.refs)) {
+    if (role === 'updates') continue;
+    const hashes = Array.isArray(ref) ? ref : [ref];
+    const resolvedArr = await Promise.all(hashes.map(async (h) => {
+      const b = await db.getBlock(h);
+      if (!b) return { hash: h.slice(0, 8), missing: true };
+      const entry = { hash: h.slice(0, 8), type: b.type };
+      const name = b.state?.name || b.state?.product_name;
+      if (name) entry.name = name;
+      return entry;
+    }));
+    resolved[role] = Array.isArray(ref) ? resolvedArr : resolvedArr[0];
+  }
+  return resolved;
+}
 
 // ── Agent key encryption (AES-256-GCM envelope) ────────────────────────
 // Set AGENT_MASTER_KEY env var to encrypt private keys at rest.
@@ -141,8 +187,10 @@ server.registerTool(
   },
   toolHandler(async ({ type, state, refs }) => {
     const result = await db.createBlock(type, state, refs);
+    const block = result.exists ? result.block : result;
+    const resolved_refs = await resolveRefs(block);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...block, resolved_refs }) }],
     };
   })
 );
@@ -160,7 +208,7 @@ server.registerTool(
     inputSchema: {
       previous_hash: z
         .string()
-        .describe("The hash of the block to update (64-character hex string)"),
+        .describe("Block hash to update (full 64-char or short prefix)"),
       type: z.string().describe("The block type (must match the original)"),
       state: z
         .record(z.any())
@@ -175,10 +223,13 @@ server.registerTool(
     },
   },
   toolHandler(async ({ previous_hash, type, state, refs }) => {
+    previous_hash = await resolveHash(previous_hash);
     const mergedRefs = { ...(refs || {}), updates: previous_hash };
     const result = await db.createBlock(type, state, mergedRefs);
+    const block = result.exists ? result.block : result;
+    const resolved_refs = await resolveRefs(block);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...block, resolved_refs }) }],
     };
   })
 );
@@ -193,14 +244,16 @@ server.registerTool(
     inputSchema: {
       hash: z
         .string()
-        .describe("The 64-character hex hash of the block to retrieve"),
+        .describe("Block hash (full 64-char or short prefix, e.g. 'a1b2c3d4')"),
     },
   },
   toolHandler(async ({ hash: h }) => {
+    h = await resolveHash(h);
     const result = await db.getBlock(h);
     if (!result) throw new Error(`Block not found: ${h}`);
+    const resolved_refs = await resolveRefs(result);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...result, resolved_refs }) }],
     };
   })
 );
@@ -225,7 +278,7 @@ server.registerTool(
       ref_value: z
         .string()
         .optional()
-        .describe("Filter by ref value (a block hash). Use with ref_role."),
+        .describe("Filter by ref value (block hash, full or short prefix). Use with ref_role."),
       heads_only: z
         .boolean()
         .optional()
@@ -239,9 +292,11 @@ server.registerTool(
     },
   },
   toolHandler(async ({ type, ref_role, ref_value, heads_only, limit }) => {
+    if (ref_value) ref_value = await resolveHash(ref_value);
     const result = await db.queryBlocks({ type, ref_role, ref_value, heads_only, limit });
+    const { fbn, aliases } = blocksToFbn(result.blocks || []);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...result, fbn, aliases }) }],
     };
   })
 );
@@ -258,7 +313,7 @@ server.registerTool(
     inputSchema: {
       hash: z
         .string()
-        .describe("The hash of the block to trace backwards from"),
+        .describe("Block hash to trace (full or short prefix)"),
       max_depth: z
         .number()
         .optional()
@@ -267,9 +322,11 @@ server.registerTool(
     },
   },
   toolHandler(async ({ hash: h, max_depth }) => {
+    h = await resolveHash(h);
     const result = await db.getChain(h, max_depth || 50);
+    const { fbn, aliases } = blocksToFbn(result.chain || []);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...result, fbn, aliases }) }],
     };
   })
 );
@@ -286,7 +343,7 @@ server.registerTool(
     inputSchema: {
       hash: z
         .string()
-        .describe("The hash of the block to build the provenance tree from"),
+        .describe("Block hash (full or short prefix)"),
       max_depth: z
         .number()
         .optional()
@@ -295,6 +352,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ hash: h, max_depth }) => {
+    h = await resolveHash(h);
     const result = await tree(h, db.resolve, { maxDepth: max_depth || 10 });
     if (!result) {
       return {
@@ -325,8 +383,9 @@ server.registerTool(
   },
   toolHandler(async ({ type }) => {
     const result = await db.getHeads(type);
+    const { fbn, aliases } = blocksToFbn(result.blocks || []);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...result, fbn, aliases }) }],
     };
   })
 );
@@ -453,12 +512,13 @@ server.registerTool(
       "Load a previously created agent using saved credentials. " +
       "Required after MCP server restart to restore signing ability.",
     inputSchema: {
-      agent_hash: z.string().describe("The agent's block hash (from foodblock_create_agent)"),
+      agent_hash: z.string().describe("Agent block hash (full or short prefix)"),
       private_key: z.string().describe("The agent's private key hex (from foodblock_create_agent credentials)"),
       public_key: z.string().optional().describe("The agent's public key hex (optional, for verification)"),
     },
   },
   toolHandler(async ({ agent_hash, private_key, public_key }) => {
+    agent_hash = await resolveHash(agent_hash);
     const decryptedKey = decryptKey(private_key);
     const keypair = { privateKey: decryptedKey, publicKey: public_key || "" };
     const loaded = loadAgent(agent_hash, keypair);
@@ -497,13 +557,14 @@ server.registerTool(
       "Create a draft FoodBlock on behalf of an agent. Draft blocks have state.draft=true. " +
       "The human operator can approve or reject with foodblock_approve_draft.",
     inputSchema: {
-      agent_hash: z.string().describe("Hash of the agent creating this draft"),
+      agent_hash: z.string().describe("Agent hash (full or short prefix)"),
       type: z.string().describe("Block type, e.g. 'transfer.order'"),
       state: z.record(z.any()).optional().default({}).describe("Block state"),
       refs: z.record(z.any()).optional().default({}).describe("Block refs"),
     },
   },
   toolHandler(async ({ agent_hash, type, state, refs }) => {
+    agent_hash = await resolveHash(agent_hash);
     const agentData = agents.get(agent_hash);
     if (!agentData) {
       return {
@@ -549,10 +610,11 @@ server.registerTool(
     description:
       "Approve a draft block created by an agent. Creates a confirmed version with draft removed.",
     inputSchema: {
-      draft_hash: z.string().describe("Hash of the draft block to approve"),
+      draft_hash: z.string().describe("Draft block hash (full or short prefix)"),
     },
   },
   toolHandler(async ({ draft_hash }) => {
+    draft_hash = await resolveHash(draft_hash);
     const draft = await db.getBlock(draft_hash);
     if (!draft) {
       return {
@@ -636,10 +698,10 @@ server.registerTool(
     inputSchema: {
       target_hash: z
         .string()
-        .describe("Hash of the block to tombstone (64-character hex string)"),
+        .describe("Block hash to tombstone (full or short prefix)"),
       requested_by: z
         .string()
-        .describe("Hash of the actor requesting erasure"),
+        .describe("Actor hash requesting erasure (full or short prefix)"),
       reason: z
         .string()
         .optional()
@@ -648,6 +710,8 @@ server.registerTool(
     },
   },
   toolHandler(async ({ target_hash, requested_by, reason }) => {
+    target_hash = await resolveHash(target_hash);
+    requested_by = await resolveHash(requested_by);
     const result = await db.deleteBlock(target_hash, requested_by, reason);
     return {
       content: [
@@ -760,8 +824,9 @@ server.registerTool(
   },
   toolHandler(async ({ text }) => {
     const result = await db.fbParse(text);
+    const { fbn, aliases } = blocksToFbn(result.blocks || []);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify({ ...result, fbn, aliases }) }],
     };
   })
 );
@@ -789,7 +854,7 @@ server.registerTool(
       operator_hash: z
         .string()
         .optional()
-        .describe("Filter by operator hash (find all agents for a specific business)"),
+        .describe("Filter by operator hash (full or short prefix)"),
       limit: z
         .number()
         .optional()
@@ -798,6 +863,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ capability, name, operator_hash, limit }) => {
+    if (operator_hash) operator_hash = await resolveHash(operator_hash);
     const result = await db.queryBlocks({ type: "actor.agent", limit: limit || 100 });
     let agentBlocks = result.blocks || [];
 
@@ -863,10 +929,10 @@ server.registerTool(
     inputSchema: {
       buyer_hash: z
         .string()
-        .describe("Hash of the buying agent or actor"),
+        .describe("Buyer hash (full or short prefix)"),
       seller_hash: z
         .string()
-        .describe("Hash of the selling agent or actor"),
+        .describe("Seller hash (full or short prefix)"),
       product_name: z
         .string()
         .describe("Name of the product being ordered"),
@@ -886,10 +952,13 @@ server.registerTool(
       product_hash: z
         .string()
         .optional()
-        .describe("Optional hash of the substance.product block"),
+        .describe("Optional product block hash (full or short prefix)"),
     },
   },
   toolHandler(async ({ buyer_hash, seller_hash, product_name, quantity, price, currency, product_hash }) => {
+    buyer_hash = await resolveHash(buyer_hash);
+    seller_hash = await resolveHash(seller_hash);
+    if (product_hash) product_hash = await resolveHash(product_hash);
     const total = (quantity || 1) * price;
 
     // Step 1: Create observe.intent
@@ -972,7 +1041,7 @@ server.registerTool(
     inputSchema: {
       hash: z
         .string()
-        .describe("Hash of the block to trace"),
+        .describe("Block hash to trace (full or short prefix)"),
       max_depth: z
         .number()
         .optional()
@@ -981,6 +1050,7 @@ server.registerTool(
     },
   },
   toolHandler(async ({ hash: h, max_depth }) => {
+    h = await resolveHash(h);
     const narrative = await explain(h, db.resolve, { maxDepth: max_depth || 10 });
 
     // Also get the tree for structured data
@@ -1007,9 +1077,84 @@ server.registerTool(
 );
 
 function countTreeDepth(node, depth = 0) {
-  if (!node || !node.children || !node.children.length) return depth;
-  return Math.max(...node.children.map((c) => countTreeDepth(c, depth + 1)));
+  if (!node || !node.ancestors) return depth;
+  const vals = Object.values(node.ancestors);
+  if (vals.length === 0) return depth;
+  return Math.max(...vals.map((v) => {
+    const nodes = Array.isArray(v) ? v : [v];
+    return Math.max(...nodes.map((n) => countTreeDepth(n, depth + 1)));
+  }));
 }
+
+// ── Tool: foodblock_understand ──────────────────────────────────────────
+
+server.registerTool(
+  "foodblock_understand",
+  {
+    title: "Understand FoodBlock",
+    description:
+      "The single tool for AI agents to fully understand a FoodBlock. " +
+      "Returns narrative (plain English), FBN notation (compact), resolved refs, " +
+      "version count, and provenance depth — all in one call. " +
+      "Replaces separate get + chain + tree + trace calls.",
+    inputSchema: {
+      hash: z.string().describe("Block hash (full or short prefix)"),
+      depth: z
+        .number()
+        .optional()
+        .default(3)
+        .describe("Provenance depth (default 3)"),
+    },
+  },
+  toolHandler(async ({ hash: h, depth }) => {
+    const fullHash = await resolveHash(h);
+    const block = await db.getBlock(fullHash);
+    if (!block) throw new Error(`Block not found: ${h}`);
+
+    const [narrative, treeData, chainData, refs] = await Promise.all([
+      explain(fullHash, db.resolve, { maxDepth: depth || 3 }),
+      tree(fullHash, db.resolve, { maxDepth: depth || 3 }),
+      db.getChain(fullHash, 10),
+      resolveRefs(block),
+    ]);
+
+    const allBlocks = [block];
+    function collectBlocks(node) {
+      if (!node || !node.ancestors) return;
+      for (const val of Object.values(node.ancestors)) {
+        const nodes = Array.isArray(val) ? val : [val];
+        for (const n of nodes) {
+          if (n && n.block) {
+            allBlocks.push(n.block);
+            collectBlocks(n);
+          }
+        }
+      }
+    }
+    collectBlocks(treeData);
+
+    const { fbn, aliases } = blocksToFbn(allBlocks);
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          narrative,
+          fbn,
+          aliases,
+          block: {
+            hash: fullHash.slice(0, 8),
+            type: block.type,
+            state: block.state,
+          },
+          resolved_refs: refs,
+          versions: chainData.length,
+          provenance_depth: treeData ? countTreeDepth(treeData) : 0,
+        }),
+      }],
+    };
+  })
+);
 
 // ── Smithery compatibility ────────────────────────────────────────────────
 

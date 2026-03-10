@@ -98,7 +98,7 @@ Backend/ (separate repo)
 
 #### Architectural
 - [x] ~~No CLAUDE.md existed until now~~ — DONE: created with full system state and plan
-- [ ] Whitepaper has 31 sections but SDK only implements ~20 of them fully
+- [x] ~~Whitepaper has 31 sections but SDK only implements ~20 of them fully~~ — DONE: whitepaper v0.8 expanded to 37 sections, Section 14 fully rewritten with all 81 SDK exports, 5 new sections added (Identity, Payment, Cross-Language, CLI, MCP)
 - [x] ~~No integration tests between Backend and foodblock SDK~~ — DONE: 44 server tests (signed blocks, tombstone, pagination, type prefix, chain integrity, NL)
 - [ ] No load testing or performance benchmarks
 
@@ -289,6 +289,96 @@ Backend/ (separate repo)
 3. [ ] Mobile SDK — React Native / Flutter wrapper
 4. [ ] Webhook system — notify on block creation matching patterns
 5. [ ] Plugin marketplace — custom vocabularies, templates, validators as FoodBlocks
+
+## Testing
+
+### Which Tests to Run When
+
+| What you changed | Run this | Time |
+|-----------------|----------|------|
+| JS SDK code | `cd sdk/javascript && npm test` | 5s |
+| Python SDK code | `cd sdk/python && pytest tests/ -v` | 10s |
+| Go SDK code | `cd sdk/go && go test -v ./...` | 10s |
+| Swift SDK code | `cd sdk/swift && swift test -v` | 30s |
+| MCP server | `cd mcp && npm test` | 10s |
+| Reference server | `cd server && TEST=1 npm test` | 15s |
+| canonical.js or hashing | JS tests + Python tests (both must agree) | 15s |
+| Any block creation logic | JS tests + cross-language vectors | 10s |
+| Multiple SDKs | Run only the SDKs you changed, then vectors | varies |
+
+**Do NOT run all 4 SDKs on every change.** Only run the SDK you modified + cross-language vectors if you touched hashing/canonical.
+
+### Quick Commands
+
+```bash
+# JS SDK (primary — run this most often)
+cd /Users/patricklreynolds/repos/foodblock/sdk/javascript && npm test
+
+# Python SDK
+cd /Users/patricklreynolds/repos/foodblock/sdk/python && pip install -e . && pytest tests/ -v
+
+# Go SDK (needs Go 1.21+)
+cd /Users/patricklreynolds/repos/foodblock/sdk/go && go test -v ./...
+
+# Swift SDK (needs Xcode / Swift 5.9+)
+cd /Users/patricklreynolds/repos/foodblock/sdk/swift && swift test -v
+
+# MCP server (standalone, no DB needed)
+cd /Users/patricklreynolds/repos/foodblock/mcp && npm install --install-links && npm test
+
+# Reference server (needs Postgres — see below)
+cd /Users/patricklreynolds/repos/foodblock/server && TEST=1 npm test
+
+# Cross-language hash vectors (run after ANY canonical/hashing change)
+cd /Users/patricklreynolds/repos/foodblock/sdk/javascript && node --test test/block.test.js
+```
+
+### Server Tests Require Postgres
+The reference server tests (`server/test/server.test.js`) need a running PostgreSQL with the schema loaded:
+```bash
+# Set up test DB (one-time)
+createdb foodblock_test
+psql -d foodblock_test -f sql/schema.sql
+
+# Run server tests
+cd server && DATABASE_URL="postgresql://localhost:5432/foodblock_test" TEST=1 npm test
+```
+
+Tests clean up between runs (`DELETE FROM foodblocks` in `beforeEach`). The `after()` hook force-exits because the rate limiter's `setInterval` keeps the event loop alive — this is expected.
+
+### MCP Tests — No Setup Needed
+MCP tests spawn the server as a child process and communicate via JSON-RPC over stdin/stdout. No database, no env vars. Default timeout is 5000ms per tool call; complex operations use 10000ms.
+
+### Cross-Language Hash Vectors Are Sacred
+`test/vectors.json` contains 124 test cases. Every SDK must produce identical hashes for identical inputs. If you change canonical.js, canonical.py, or any hashing logic:
+1. Run JS tests
+2. Run Python tests
+3. Verify both produce the same hashes for all 124 vectors
+4. If they disagree, the protocol is broken — fix before doing anything else
+
+Rules the canonical form enforces:
+- Keys sorted alphabetically at every nesting level
+- Refs arrays sorted lexicographically (set semantics)
+- State arrays preserve insertion order (sequence semantics)
+- Null values omitted
+- Numbers formatted per RFC 8785 (no trailing zeros, -0 → 0)
+- Unicode NFC normalization
+- No whitespace
+
+### instance_id Auto-Injection
+`block.create()` auto-adds a UUID `instance_id` to event types (transfer.*, transform.*, observe.* except definitional like observe.vocabulary, observe.template, observe.schema). This happens BEFORE hashing. If you manually construct a block without instance_id, the hash will differ from what `create()` produces.
+
+### Common Test Failures
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| `ModuleNotFoundError: No module named 'foodblock'` | Python SDK not installed | `cd sdk/python && pip install -e .` |
+| Hash mismatch between JS and Python | Canonical form divergence | Check canonical.js vs canonical.py — likely a number formatting or sort order bug |
+| Server tests hang forever | Rate limiter keeps event loop alive | Expected — tests force-exit via `setTimeout(() => process.exit(0), 100)` |
+| MCP test timeout | Slow process spawn | Increase timeout in test; check if `node mcp/server.js` starts cleanly |
+| `relation foodblocks does not exist` | Schema not loaded | `psql -d foodblock_test -f sql/schema.sql` |
+| Go import errors | Module path wrong | Must be `github.com/FoodXDevelopment/foodblock/sdk/go` — keep full repo structure |
+| Swift Foundation errors on Linux | Missing platform APIs | Tests avoid platform-specific APIs; check Swift version matches 5.9+ |
 
 ## How to Continue
 

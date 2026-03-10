@@ -297,7 +297,7 @@ final class AdvancedModulesTests: XCTestCase {
             count: 42
         )
         XCTAssertEqual(doc.protocol, "foodblock")
-        XCTAssertEqual(doc.version, "0.4.0")
+        XCTAssertEqual(doc.version, "0.5.0")
         XCTAssertEqual(doc.name, "Test Server")
         XCTAssertEqual(doc.count, 42)
         XCTAssertEqual(doc.types, ["substance.product"])
@@ -309,7 +309,7 @@ final class AdvancedModulesTests: XCTestCase {
     func testWellKnownDefaults() {
         let doc = FoodBlockFederation.wellKnown()
         XCTAssertEqual(doc.protocol, "foodblock")
-        XCTAssertEqual(doc.version, "0.4.0")
+        XCTAssertEqual(doc.version, "0.5.0")
         XCTAssertEqual(doc.name, "FoodBlock Server")
         XCTAssertEqual(doc.count, 0)
         XCTAssertTrue(doc.types.isEmpty)

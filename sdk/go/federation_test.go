@@ -4,7 +4,7 @@ import "testing"
 
 func TestWellKnown(t *testing.T) {
 	doc := WellKnown(WellKnownInfo{
-		Version: "0.4.0",
+		Version: "0.5.0",
 		Name:    "My Bakery Server",
 		Types:   []string{"substance.product", "actor.producer"},
 		Count:   42,
@@ -13,8 +13,8 @@ func TestWellKnown(t *testing.T) {
 	if doc.Protocol != "foodblock" {
 		t.Errorf("Protocol = %q, want %q", doc.Protocol, "foodblock")
 	}
-	if doc.Version != "0.4.0" {
-		t.Errorf("Version = %q, want %q", doc.Version, "0.4.0")
+	if doc.Version != "0.5.0" {
+		t.Errorf("Version = %q, want %q", doc.Version, "0.5.0")
 	}
 	if doc.Name != "My Bakery Server" {
 		t.Errorf("Name = %q, want %q", doc.Name, "My Bakery Server")
@@ -39,8 +39,8 @@ func TestWellKnownDefaults(t *testing.T) {
 	if doc.Protocol != "foodblock" {
 		t.Errorf("Protocol = %q, want %q", doc.Protocol, "foodblock")
 	}
-	if doc.Version != "0.4.0" {
-		t.Errorf("Version = %q, want %q (default)", doc.Version, "0.4.0")
+	if doc.Version != "0.5.0" {
+		t.Errorf("Version = %q, want %q (default)", doc.Version, "0.5.0")
 	}
 	if doc.Name != "FoodBlock Server" {
 		t.Errorf("Name = %q, want %q (default)", doc.Name, "FoodBlock Server")

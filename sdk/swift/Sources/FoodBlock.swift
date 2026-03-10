@@ -1,7 +1,7 @@
 import Foundation
 import CryptoKit
 
-public let PROTOCOL_VERSION = "0.4.0"
+public let PROTOCOL_VERSION = "0.5.0"
 
 /// A FoodBlock: the universal food data primitive.
 public struct FoodBlock: Codable, Equatable {

@@ -89,7 +89,7 @@ def well_known(info):
     """Generate the well-known discovery document for a server."""
     return {
         'protocol': 'foodblock',
-        'version': info.get('version', '0.4.0'),
+        'version': info.get('version', '0.5.0'),
         'name': info.get('name', 'FoodBlock Server'),
         'types': info.get('types', []),
         'count': info.get('count', 0),

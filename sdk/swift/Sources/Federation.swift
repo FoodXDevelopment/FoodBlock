@@ -52,7 +52,7 @@ public enum FoodBlockFederation {
 
         public init(
             protocol: String = "foodblock",
-            version: String = "0.4.0",
+            version: String = "0.5.0",
             name: String = "FoodBlock Server",
             types: [String] = [],
             count: Int = 0,
@@ -79,7 +79,7 @@ public enum FoodBlockFederation {
     ///
     /// - Parameters:
     ///   - name: Server name. Defaults to "FoodBlock Server".
-    ///   - version: Protocol version. Defaults to "0.4.0".
+    ///   - version: Protocol version. Defaults to "0.5.0".
     ///   - types: Block types this server supports.
     ///   - count: Total number of blocks stored.
     ///   - schemas: Schema hashes this server recognizes.
@@ -88,7 +88,7 @@ public enum FoodBlockFederation {
     /// - Returns: A `WellKnownDoc` ready for JSON serialization.
     public static func wellKnown(
         name: String = "FoodBlock Server",
-        version: String = "0.4.0",
+        version: String = "0.5.0",
         types: [String] = [],
         count: Int = 0,
         schemas: [String] = [],

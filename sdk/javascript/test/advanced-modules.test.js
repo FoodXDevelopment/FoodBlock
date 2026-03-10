@@ -318,13 +318,13 @@ describe('federation', () => {
   it('wellKnown generates correct discovery document shape', () => {
     const doc = wellKnown({
       name: 'Test Server',
-      version: '0.4.0',
+      version: '0.5.0',
       count: 42,
       types: ['substance.product', 'actor.producer'],
       peers: ['https://peer1.example.com']
     })
     assert.equal(doc.protocol, 'foodblock')
-    assert.equal(doc.version, '0.4.0')
+    assert.equal(doc.version, '0.5.0')
     assert.equal(doc.name, 'Test Server')
     assert.equal(doc.count, 42)
     assert.deepEqual(doc.types, ['substance.product', 'actor.producer'])

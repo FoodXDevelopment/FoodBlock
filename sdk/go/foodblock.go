@@ -16,7 +16,7 @@ import (
 )
 
 // ProtocolVersion is the current FoodBlock protocol version.
-const ProtocolVersion = "0.4.0"
+const ProtocolVersion = "0.5.0"
 
 // Block represents a FoodBlock.
 type Block struct {

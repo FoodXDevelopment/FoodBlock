@@ -33,7 +33,7 @@ type WellKnownInfo struct {
 func WellKnown(info WellKnownInfo) WellKnownDoc {
 	version := info.Version
 	if version == "" {
-		version = "0.4.0"
+		version = "0.5.0"
 	}
 	name := info.Name
 	if name == "" {

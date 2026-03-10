@@ -1,0 +1,20 @@
+{
+  "name": "foodblock-fridge-camera",
+  "version": "1.0.0",
+  "description": "Monitor your fridge with a camera, describe contents with vision AI, record inventory as FoodBlocks",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "capture-test": "node src/capture.js",
+    "dashboard": "node src/dashboard.js"
+  },
+  "dependencies": {
+    "@foodxdev/foodblock": "^0.5.0",
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

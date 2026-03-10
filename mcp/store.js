@@ -114,6 +114,17 @@ function createEmbeddedStore() {
   return {
     resolve,
 
+    async resolveShortHash(prefix) {
+      if (prefix.length === 64) return prefix;
+      const matches = [];
+      for (const h of store.keys()) {
+        if (h.startsWith(prefix)) matches.push(h);
+      }
+      if (matches.length === 1) return matches[0];
+      if (matches.length === 0) throw new Error(`No block found with prefix: ${prefix}`);
+      throw new Error(`Ambiguous prefix ${prefix}: ${matches.length} matches. Use more characters.`);
+    },
+
     async getBlock(h) {
       return store.get(h) || null;
     },
@@ -280,6 +291,15 @@ function createHttpStore(apiUrl) {
 
   return {
     resolve,
+
+    async resolveShortHash(prefix) {
+      if (prefix.length === 64) return prefix;
+      try {
+        const res = await apiGet(`/blocks/${prefix}`);
+        if (res && res.hash) return res.hash;
+      } catch {}
+      throw new Error(`Short hash resolution requires standalone mode or server support for prefix: ${prefix}`);
+    },
 
     async getBlock(h) {
       try {

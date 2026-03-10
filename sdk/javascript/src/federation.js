@@ -78,7 +78,7 @@ function federatedResolver(servers, opts = {}) {
 function wellKnown(info) {
   return {
     protocol: 'foodblock',
-    version: info.version || '0.4.0',
+    version: info.version || '0.5.0',
     name: info.name || 'FoodBlock Server',
     public_key: info.public_key || null,
     types: info.types || [],

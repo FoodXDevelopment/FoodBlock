@@ -294,12 +294,12 @@ class TestFederation:
     def test_well_known_generates_document(self):
         doc = well_known({
             "name": "Test Server",
-            "version": "0.4.0",
+            "version": "0.5.0",
             "count": 42,
             "types": ["substance.product", "actor.producer"],
         })
         assert doc["protocol"] == "foodblock"
-        assert doc["version"] == "0.4.0"
+        assert doc["version"] == "0.5.0"
         assert doc["name"] == "Test Server"
         assert doc["count"] == 42
         assert "substance.product" in doc["types"]
