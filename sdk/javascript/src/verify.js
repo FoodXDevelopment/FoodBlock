@@ -1,7 +1,7 @@
 const crypto = require('crypto')
 const { canonical } = require('./canonical')
 
-const PROTOCOL_VERSION = '0.5.0'
+const PROTOCOL_VERSION = '0.6.0'
 
 // DER prefixes for Ed25519 key encoding
 // PKCS8 prefix for Ed25519 private key (wraps 32-byte seed)
