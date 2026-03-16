@@ -1,6 +1,6 @@
 {
   "name": "foodblock-mcp",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "MCP server for the FoodBlock protocol — food data tools for any AI agent. Works standalone or connected.",
   "type": "module",
   "main": "server.js",

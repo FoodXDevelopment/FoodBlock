@@ -68,7 +68,7 @@ describe('MCP Server', () => {
     try {
       const initResult = await initServer(proc)
       assert.equal(initResult.result.serverInfo.name, 'foodblock')
-      assert.equal(initResult.result.serverInfo.version, '0.5.0')
+      assert.equal(initResult.result.serverInfo.version, '0.5.3')
 
       sendJsonRpc(proc, 'tools/list', {}, 2)
       const toolsResult = await readJsonRpc(proc)
@@ -95,7 +95,7 @@ describe('MCP Server', () => {
       assert.ok(toolNames.includes('foodblock_negotiate'), 'has foodblock_negotiate')
       assert.ok(toolNames.includes('foodblock_trace'), 'has foodblock_trace')
       assert.ok(toolNames.includes('foodblock_understand'), 'has foodblock_understand')
-      assert.equal(toolNames.length, 21, 'exactly 21 tools')
+      assert.equal(toolNames.length, 26, 'exactly 26 tools')
     } finally {
       proc.kill()
     }

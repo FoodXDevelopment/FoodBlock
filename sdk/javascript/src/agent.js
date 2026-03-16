@@ -107,4 +107,84 @@ function loadAgent(authorHash, keypair) {
   }
 }
 
-module.exports = { createAgent, createDraft, approveDraft, loadAgent }
+/**
+ * Create a transfer.authorization block granting an agent bounded write authority.
+ *
+ * Must be signed by the operator (not the agent). An agent cannot self-authorize.
+ *
+ * @param {string} agentHash - Hash of the actor.agent block being authorized
+ * @param {string[]} scope - Permitted block types, supports wildcards (e.g. ["transfer.*", "observe.post"])
+ * @param {object} opts - Optional limits: { maxPerTransaction, maxPerPeriod, period, approvalMode, expires, currency }
+ * @returns {object} - Unsigned authorization block (operator must sign before storing)
+ */
+function createAuthorization(agentHash, scope, opts = {}) {
+  if (!agentHash || typeof agentHash !== 'string') {
+    throw new Error('FoodBlock Agent: agentHash is required')
+  }
+  if (!Array.isArray(scope) || scope.length === 0) {
+    throw new Error('FoodBlock Agent: scope must be a non-empty array of block types')
+  }
+
+  const approvalMode = opts.approvalMode || 'draft'
+  if (!['auto', 'draft', 'ask'].includes(approvalMode)) {
+    throw new Error('FoodBlock Agent: approvalMode must be "auto", "draft", or "ask"')
+  }
+
+  const state = {
+    scope,
+    approval_mode: approvalMode,
+    ...(opts.maxPerTransaction != null ? { max_per_transaction: opts.maxPerTransaction } : {}),
+    ...(opts.maxPerPeriod != null ? { max_per_period: opts.maxPerPeriod } : {}),
+    ...(opts.period ? { period: opts.period } : {}),
+    ...(opts.expires ? { expires: opts.expires } : {}),
+    ...(opts.currency ? { currency: opts.currency } : {})
+  }
+
+  return create('transfer.authorization', state, { agent: agentHash })
+}
+
+/**
+ * Check whether an agent is authorized to create a block of the given type and value.
+ *
+ * @param {object} authBlock - A transfer.authorization block
+ * @param {string} type - The block type the agent wants to create
+ * @param {number} [value] - Optional transaction value for limit checking
+ * @returns {{ authorized: boolean, mode: string, reason?: string }}
+ */
+function checkAuthorization(authBlock, type, value) {
+  if (!authBlock || authBlock.type !== 'transfer.authorization') {
+    return { authorized: false, reason: 'UNAUTHORIZED' }
+  }
+
+  const { scope, approval_mode, max_per_transaction, expires } = authBlock.state || {}
+
+  // A tombstoned block has state:{} — scope will be absent. Treat as revoked.
+  if (!Array.isArray(scope) || scope.length === 0) {
+    return { authorized: false, reason: 'UNAUTHORIZED' }
+  }
+
+  if (expires && new Date(expires) < new Date()) {
+    return { authorized: false, reason: 'AUTHORIZATION_EXPIRED' }
+  }
+
+  const permitted = scope.some(pattern => {
+    if (pattern === '*') return true
+    if (pattern.endsWith('.*')) {
+      const prefix = pattern.slice(0, -2)
+      return type === prefix || type.startsWith(prefix + '.')
+    }
+    return pattern === type
+  })
+
+  if (!permitted) {
+    return { authorized: false, reason: 'SCOPE_MISMATCH' }
+  }
+
+  if (max_per_transaction != null && value != null && value > max_per_transaction) {
+    return { authorized: false, reason: 'EXCEEDED_LIMIT' }
+  }
+
+  return { authorized: true, mode: approval_mode || 'draft' }
+}
+
+module.exports = { createAgent, createDraft, approveDraft, loadAgent, createAuthorization, checkAuthorization }

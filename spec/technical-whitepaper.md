@@ -1235,22 +1235,24 @@ graph LR
 | **Auto-approve under threshold** | Confirm actions below a monetary limit without human review | Operator sets `auto_approve_under` |
 | **Full autonomy for routine** | Execute routine operations independently, escalate exceptions | Operator grants specific `capabilities` |
 
-Each capability grant is recorded as a permission block with the operator's signature:
+Each capability grant is recorded as a `transfer.authorization` block with the operator's signature (see the FoodBlock Agent Specification, `spec/agent-spec.md`):
 
 ```json
 {
-  "type": "observe.permission",
+  "type": "transfer.authorization",
   "state": {
-    "action": "grant_capability",
-    "capability": "transfer.order",
-    "auto_approve_under": 50.00,
-    "reason": "Agent has successfully tracked inventory for 2 weeks"
+    "scope": ["transfer.order"],
+    "approval_mode": "auto",
+    "max_per_transaction": 50.00,
+    "currency": "GBP"
   },
-  "refs": { "agent": "agent_hash", "operator": "bakery_hash" }
+  "refs": { "agent": "agent_hash" }
 }
 ```
 
-Capabilities are revocable at any time. An operator who notices an agent making poor decisions can revoke a capability, and the revocation block supersedes the grant. The agent immediately falls back to the previous trust level.
+Authorization is revocable at any time by tombstoning the `transfer.authorization` block. The agent immediately loses write authority and falls back to read-only until a new authorization is granted.
+
+> **Note:** Earlier drafts of this spec used `observe.permission` for capability grants. That type is superseded by `transfer.authorization`. See `spec/agent-spec.md` Appendix A.
 
 Agents can propose their own escalation. After two weeks of accurate inventory tracking, an agent might suggest: *"I've tracked your inventory for 14 days with 98% accuracy. Would you like me to auto-reorder flour when stock drops below 5kg?"* The operator approves or declines. The proposal and response are both FoodBlocks.
 

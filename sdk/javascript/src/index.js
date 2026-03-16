@@ -3,7 +3,7 @@ const { chain, tree, head } = require('./chain')
 const { query } = require('./query')
 const { generateKeypair, sign, verify } = require('./verify')
 const { canonical } = require('./canonical')
-const { createAgent, createDraft, approveDraft, loadAgent } = require('./agent')
+const { createAgent, createDraft, approveDraft, loadAgent, createAuthorization, checkAuthorization } = require('./agent')
 const { encrypt, decrypt, generateEncryptionKeypair } = require('./encrypt')
 const { validate } = require('./validate')
 const { offlineQueue } = require('./offline')
@@ -70,6 +70,8 @@ module.exports = {
   createDraft,
   approveDraft,
   loadAgent,
+  createAuthorization,
+  checkAuthorization,
 
   // Human Interface (Section 15)
   registry,

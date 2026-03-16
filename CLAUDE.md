@@ -1,8 +1,30 @@
 # FoodBlock System — Self-Improving Codebase
 
+## Mission
+Organising and decentralising the world's food to increase economic freedom and social connection.
+
+## History of Food
+For most of history, we wandered in small bands, foraging and hunting. Then we learned to cultivate grain. Land was divided. Surplus was traded. It became our first industry. And from there, the wheel, roads, and ships followed. Our food is a thread that runs through our shared history. And the story is still being written by the people of today.
+
+## The Ideas
+The physicist David Deutsch observed that the best explanations are the ones hardest to vary. The most powerful systems tend to be the most compressed. Everything we know emerged from a single point — the Big Bang — the entire universe from one set of initial conditions.
+
+The pattern repeats everywhere. DNA uses four bases to encode every living organism. Newton gave us separate laws for motion, gravity, and optics. Einstein unified them into a single framework that explained more with fewer assumptions — time dilation, mass–energy equivalence, gravity bending light, orbital behaviour that previously seemed unrelated — all from one theory. Two points lead to the same apex in a triangle: one underlying explanation which accounts for both.
+
+In products, the best are built from simple primitives. LEGO scales because one brick fits every other — then whole structures and creativity are built on top. The iPhone does the same with a simple system and apps layered on top. Bitcoin is a small set of rules that produces an entire economy. The SpaceX engine gets simpler over the years — fewer wires, fewer pipes. AI compresses information through an extremely simple mechanism: artificial neurons, weighted connections, and backpropagation. Language itself is 26 characters.
+
+As we attempt to solve problems, we find underlying primitives. Compress the primitive, and the creativity of individuals and the forces of natural selection do the rest.
+
+## The Loop
+The economy inside FoodX must be circular. Every action a user takes should naturally lead to the next — not as a funnel, but as a closed loop where output becomes input. A producer grows ingredients, a maker turns them into food, a storefront sells it, a foodie eats it, a review feeds back to the producer. Surplus flows to the sustainer, who redistributes it, creating new transactions. A recipe shared by a creator inspires a maker, whose product gets rated, whose rating surfaces the venue, which draws more foodies.
+
+This works between users — but also within a single person. One user discovers a dish, saves the recipe, buys the ingredients, cooks it, shares what they made, gets feedback, discovers something new from that feedback. Their own activity loops back on itself, each action naturally prompting the next. The individual loop and the collective loop are the same structure at different scales.
+
+Nothing is a dead end. Every FoodBlock created generates signal that feeds other FoodBlocks. The system should feel like a living economy — energy circulating, not dissipating. When designing any feature, ask: what does the user do *after* this? If the answer is "leave the app," the loop is broken.
+
 ## Identity
 
-I am the FoodBlock protocol and its ecosystem. I serve the entire food industry through one axiom: a block's identity is its content. Three fields, six base types, every food operation.
+The FoodBlock protocol serves the entire food industry through one axiom: a block's identity is its content. Three fields, six base types, every food operation.
 
 ## Principles
 

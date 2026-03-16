@@ -21,10 +21,27 @@ import { createStore } from "./store.js";
 const require = createRequire(import.meta.url || `file://${process.cwd()}/`);
 
 // Load FoodBlock SDK (CommonJS)
-const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, generateKeypair, sign, verify, tombstone, validate, offlineQueue, explain, format } = require("@foodxdev/foodblock");
+const { create, update, chain, tree, canonical, createAgent, loadAgent, approveDraft, createAuthorization, checkAuthorization, generateKeypair, sign, verify, tombstone, validate, offlineQueue, explain, format } = require("@foodxdev/foodblock");
 
 const API_URL = process.env.FOODBLOCK_URL || null;
 const db = createStore(API_URL);
+
+// ── TID (Transaction ID) ─────────────────────────────────────────────────
+// 13-char sortable base32 identifier. Top 53 bits = ms timestamp << 10,
+// bottom 10 bits = random clock ID. Matches the Backend's tid() export.
+
+const TID_CHARSET = '234567abcdefghijklmnopqrstuvwxyz';
+function tid() {
+  const ms = BigInt(Date.now());
+  const clockId = BigInt(Math.floor(Math.random() * 1024));
+  let n = (ms << 10n) | clockId;
+  let result = '';
+  for (let i = 0; i < 13; i++) {
+    result = TID_CHARSET[Number(n & 31n)] + result;
+    n >>= 5n;
+  }
+  return result;
+}
 
 // ── Short hash resolution ────────────────────────────────────────────────
 // Accept 8+ char hash prefixes anywhere a full hash is expected.
@@ -147,7 +164,7 @@ function toolHandler(fn) {
 
 const server = new McpServer({
   name: "foodblock",
-  version: "0.5.0",
+  version: "0.5.3",
 });
 
 // ── Tool: foodblock_create ──────────────────────────────────────────────
@@ -183,9 +200,32 @@ server.registerTool(
         .describe(
           "References to other blocks by hash. Example: { seller: 'abc123...' }"
         ),
+      agent_hash: z
+        .string()
+        .optional()
+        .describe(
+          "If provided, enforces authorization: checks that a valid transfer.authorization block " +
+          "exists for this agent permitting the given block type. Rejects with UNAUTHORIZED if not."
+        ),
+      value: z
+        .number()
+        .optional()
+        .describe("Transaction value for authorization limit checking (used with agent_hash)."),
     },
   },
-  toolHandler(async ({ type, state, refs }) => {
+  toolHandler(async ({ type, state, refs, agent_hash, value }) => {
+    if (agent_hash) {
+      agent_hash = await resolveHash(agent_hash);
+      const authResult = await db.queryBlocks({ type: "transfer.authorization", ref_role: "agent", ref_value: agent_hash, heads_only: true, limit: 1 });
+      const active = (authResult.blocks || []).find(b => Array.isArray(b.state?.scope) && b.state.scope.length > 0);
+      if (!active) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: "UNAUTHORIZED", message: "No active transfer.authorization found for this agent." }) }] };
+      }
+      const check = checkAuthorization(active, type, value);
+      if (!check.authorized) {
+        return { content: [{ type: "text", text: JSON.stringify({ error: check.reason, message: `Agent not authorized to create ${type}.` }) }] };
+      }
+    }
     const result = await db.createBlock(type, state, refs);
     const block = result.exists ? result.block : result;
     const resolved_refs = await resolveRefs(block);
@@ -685,6 +725,110 @@ server.registerTool(
   })
 );
 
+// ── Tool: foodblock_create_authorization ────────────────────────────────
+
+server.registerTool(
+  "foodblock_create_authorization",
+  {
+    title: "Create Agent Authorization",
+    description:
+      "Grant an agent bounded write authority by creating a transfer.authorization block. " +
+      "Signed by the operator (not the agent). The agent cannot self-authorize. " +
+      "Scope supports wildcards: 'transfer.*' permits all transfer subtypes. " +
+      "approval_mode controls whether the agent acts directly ('auto'), creates drafts ('draft'), or asks first ('ask').",
+    inputSchema: {
+      agent_hash: z.string().describe("Hash of the actor.agent block being authorized"),
+      scope: z.array(z.string()).describe("Permitted block types, e.g. ['transfer.order', 'observe.post', 'substance.*']"),
+      approval_mode: z.enum(["auto", "draft", "ask"]).default("draft").describe("How the agent acts: auto=direct, draft=needs approval, ask=proposes first"),
+      max_per_transaction: z.number().optional().describe("Maximum value per single transaction"),
+      max_per_period: z.number().optional().describe("Maximum total value within the period window"),
+      period: z.string().optional().describe("Time window for max_per_period, e.g. '7d', '24h', '30d'"),
+      expires: z.string().optional().describe("ISO 8601 expiry datetime for this authorization"),
+      currency: z.string().optional().describe("ISO 4217 currency code for monetary limits, e.g. 'GBP'"),
+    },
+  },
+  toolHandler(async ({ agent_hash, scope, approval_mode, max_per_transaction, max_per_period, period, expires, currency }) => {
+    agent_hash = await resolveHash(agent_hash);
+
+    const authBlock = createAuthorization(agent_hash, scope, {
+      approvalMode: approval_mode,
+      maxPerTransaction: max_per_transaction,
+      maxPerPeriod: max_per_period,
+      period,
+      expires,
+      currency,
+    });
+
+    const result = await db.createBlock(authBlock.type, authBlock.state, authBlock.refs);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              authorization: result,
+              message: `Agent ${agent_hash} authorized with scope [${scope.join(", ")}] in ${approval_mode} mode.`,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  })
+);
+
+// ── Tool: foodblock_check_authorization ─────────────────────────────────
+
+server.registerTool(
+  "foodblock_check_authorization",
+  {
+    title: "Check Agent Authorization",
+    description:
+      "Check whether an agent is currently authorized to create a block of a given type and value. " +
+      "Returns authorized status, approval mode, and reason if denied.",
+    inputSchema: {
+      agent_hash: z.string().describe("Hash of the actor.agent block to check"),
+      block_type: z.string().describe("Block type the agent wants to create, e.g. 'transfer.order'"),
+      value: z.number().optional().describe("Transaction value to check against max_per_transaction limit"),
+    },
+  },
+  toolHandler(async ({ agent_hash, block_type, value }) => {
+    agent_hash = await resolveHash(agent_hash);
+
+    // Query only the current head authorization for this agent — avoids scanning all auth blocks
+    const result = await db.queryBlocks({ type: "transfer.authorization", ref_role: "agent", ref_value: agent_hash, heads_only: true, limit: 1 });
+    const active = (result.blocks || []).find(b => Array.isArray(b.state?.scope) && b.state.scope.length > 0);
+
+    if (!active) {
+      return {
+        content: [{ type: "text", text: JSON.stringify({ authorized: false, reason: "UNAUTHORIZED", message: "No active transfer.authorization found for this agent." }, null, 2) }],
+      };
+    }
+
+    const check = checkAuthorization(active, block_type, value);
+
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            {
+              ...check,
+              authorization_hash: active.hash,
+              scope: active.state?.scope,
+              approval_mode: active.state?.approval_mode,
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  })
+);
+
 // ── Tool: foodblock_tombstone ────────────────────────────────────────────
 
 server.registerTool(
@@ -953,57 +1097,72 @@ server.registerTool(
         .string()
         .optional()
         .describe("Optional product block hash (full or short prefix)"),
+      mandate_hash: z
+        .string()
+        .optional()
+        .describe("Optional observe.mandate hash authorising this negotiation. When provided, the transfer.order refs.mandate points to it — making the order non-repudiable."),
     },
   },
-  toolHandler(async ({ buyer_hash, seller_hash, product_name, quantity, price, currency, product_hash }) => {
+  toolHandler(async ({ buyer_hash, seller_hash, product_name, quantity, price, currency, product_hash, mandate_hash }) => {
     buyer_hash = await resolveHash(buyer_hash);
     seller_hash = await resolveHash(seller_hash);
-    if (product_hash) product_hash = await resolveHash(product_hash);
+    if (product_hash)  product_hash  = await resolveHash(product_hash);
+    if (mandate_hash)  mandate_hash  = await resolveHash(mandate_hash);
     const total = (quantity || 1) * price;
+    const cur = currency || "gbp";
+    const qty = quantity || 1;
 
-    // Step 1: Create observe.intent
+    // Mint a single TID to thread all three blocks as one negotiation session.
+    // refs.transaction on every block lets any party replay the full conversation
+    // by querying for this TID without needing the individual block hashes.
+    const transactionId = tid();
+    const productRef = product_hash ? { product: product_hash } : {};
+
+    // Step 1: observe.intent — buyer signals demand
     const intentBlock = await db.createBlock("observe.intent", {
       product_name,
-      quantity: quantity || 1,
+      quantity: qty,
       max_price: price,
-      currency: currency || "gbp",
-      status: "seeking"
+      currency: cur,
+      status: "seeking",
     }, {
       buyer: buyer_hash,
       supplier: seller_hash,
-      ...(product_hash ? { product: product_hash } : {})
+      transaction: transactionId,
+      ...productRef,
     });
 
-    // Step 2: Create observe.offer
+    // Step 2: observe.offer — seller responds with price + terms
     const offerBlock = await db.createBlock("observe.offer", {
       product_name,
-      quantity: quantity || 1,
+      quantity: qty,
       price,
-      currency: currency || "gbp",
-      status: "offered"
+      currency: cur,
+      status: "offered",
     }, {
       intent: intentBlock.hash,
       buyer: buyer_hash,
       seller: seller_hash,
-      ...(product_hash ? { product: product_hash } : {})
+      transaction: transactionId,
+      ...productRef,
     });
 
-    // Step 3: Create transfer.order (accept the offer)
+    // Step 3: transfer.order — buyer accepts the offer.
+    // refs.mandate links to the human-signed authorisation (if provided),
+    // making this order non-repudiable — traceable back to an explicit human decision.
     const orderBlock = await db.createBlock("transfer.order", {
       amount: total,
-      currency: currency || "gbp",
-      items: [{
-        name: product_name,
-        quantity: quantity || 1,
-        price
-      }],
-      status: "order"
+      currency: cur,
+      items: [{ name: product_name, quantity: qty, price }],
+      status: "order",
     }, {
       buyer: buyer_hash,
       seller: seller_hash,
       offer: offerBlock.hash,
       intent: intentBlock.hash,
-      ...(product_hash ? { product: product_hash } : {})
+      transaction: transactionId,
+      ...(mandate_hash ? { mandate: mandate_hash } : {}),
+      ...productRef,
     });
 
     return {
@@ -1013,10 +1172,11 @@ server.registerTool(
           text: JSON.stringify(
             {
               negotiation: "complete",
+              transaction_id: transactionId,
               intent: { hash: intentBlock.hash, type: "observe.intent" },
               offer: { hash: offerBlock.hash, type: "observe.offer" },
-              order: { hash: orderBlock.hash, type: "transfer.order", amount: total, currency: currency || "gbp" },
-              message: `Negotiation complete: ${product_name} x${quantity || 1} @ ${price} ${currency || "gbp"} = ${total} ${currency || "gbp"}`,
+              order: { hash: orderBlock.hash, type: "transfer.order", amount: total, currency: cur },
+              message: `Negotiation complete: ${product_name} x${qty} @ ${price} ${cur} = ${total} ${cur}. Transaction: ${transactionId}`,
             },
             null,
             2
@@ -1156,6 +1316,250 @@ server.registerTool(
   })
 );
 
+// ── Tool: foodblock_mandate ─────────────────────────────────────────────
+// Human-signed authorisation for an agent to act.
+// This is the AP2 Cart Mandate: the human explicitly approves a specific spend
+// before their agent touches payment. Every downstream order/payment traces back
+// to this block — making it non-repudiable and auditable.
+
+server.registerTool(
+  "foodblock_mandate",
+  {
+    title: "Create Mandate",
+    description:
+      "Create an observe.mandate block — the human-signed authorisation for an agent to act. " +
+      "Inspired by AP2's Cart Mandate: the operator explicitly approves specific goods, " +
+      "a maximum spend, and an expiry before their agent can commit to payment. " +
+      "Every transfer.order or transfer.payment created under this mandate references it via refs.mandate. " +
+      "The mandate is private (visibility: direct) — only the operator and agent see it. " +
+      "IMPORTANT: This block must be created by the human operator, never by the agent itself.",
+    inputSchema: {
+      goods: z
+        .array(z.object({
+          name: z.string(),
+          quantity: z.number().optional(),
+          max_price: z.number().optional(),
+        }))
+        .describe("What the agent is authorised to buy. Example: [{ name: 'Sourdough', quantity: 2, max_price: 5.00 }]"),
+      max_amount: z
+        .number()
+        .describe("Maximum total spend in the given currency"),
+      currency: z
+        .string()
+        .default("gbp")
+        .describe("Currency code (default 'gbp')"),
+      expires_at: z
+        .string()
+        .describe("ISO 8601 expiry — mandate is void after this. Example: '2026-03-12T12:00:00Z'"),
+      conditions: z
+        .string()
+        .optional()
+        .describe("Optional human-readable conditions. Example: 'Only buy from verified organic sellers'"),
+      agent_hash: z
+        .string()
+        .describe("Agent hash being authorised (full or short prefix)"),
+      seller_hash: z
+        .string()
+        .optional()
+        .describe("Optional: restrict mandate to a specific seller (full or short prefix)"),
+    },
+  },
+  toolHandler(async ({ goods, max_amount, currency, expires_at, conditions, agent_hash, seller_hash }) => {
+    agent_hash = await resolveHash(agent_hash);
+    if (seller_hash) seller_hash = await resolveHash(seller_hash);
+
+    const state = { goods, max_amount, currency, expires_at };
+    if (conditions) state.conditions = conditions;
+
+    const refs = { agent: agent_hash };
+    if (seller_hash) refs.seller = seller_hash;
+
+    const result = await db.createBlock("observe.mandate", state, refs);
+    const block = result.exists ? result.block : result;
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          mandate: block,
+          message: `Mandate created. Agent ${agent_hash.slice(0, 8)} is authorised to spend up to ${max_amount} ${currency} until ${expires_at}. Pass refs.mandate: "${block.hash}" in any transfer.order or transfer.payment.`,
+        }, null, 2),
+      }],
+    };
+  })
+);
+
+// ── Tool: foodblock_close ───────────────────────────────────────────────
+// Explicit negotiation termination — tbDEX-inspired Close.
+// Marks a transaction thread as resolved so agents don't re-act on stale intents.
+
+server.registerTool(
+  "foodblock_close",
+  {
+    title: "Close Negotiation",
+    description:
+      "Create an observe.close block to explicitly terminate a negotiation thread. " +
+      "Without this, intents and offers live forever in the graph with no clear resolution. " +
+      "Inspired by tbDEX's Close message: any party in a transaction thread can call this " +
+      "to signal the negotiation is done. " +
+      "Reasons: 'fulfilled' (order completed), 'expired' (offer lapsed), " +
+      "'rejected' (seller declined), 'cancelled' (buyer withdrew).",
+    inputSchema: {
+      transaction_id: z
+        .string()
+        .describe("The TID of the negotiation to close (from refs.transaction on intent/offer/order)"),
+      reason: z
+        .enum(["fulfilled", "expired", "rejected", "cancelled"])
+        .describe("Why the negotiation is closing"),
+      message: z
+        .string()
+        .optional()
+        .describe("Optional human-readable note. Example: 'Out of stock until next Tuesday'"),
+      order_hash: z
+        .string()
+        .optional()
+        .describe("Hash of the transfer.order if reason is 'fulfilled' (full or short prefix)"),
+      intent_hash: z
+        .string()
+        .optional()
+        .describe("Hash of the observe.intent being closed (full or short prefix)"),
+      offer_hash: z
+        .string()
+        .optional()
+        .describe("Hash of the observe.offer being closed (full or short prefix)"),
+    },
+  },
+  toolHandler(async ({ transaction_id, reason, message, order_hash, intent_hash, offer_hash }) => {
+    if (order_hash)  order_hash  = await resolveHash(order_hash);
+    if (intent_hash) intent_hash = await resolveHash(intent_hash);
+    if (offer_hash)  offer_hash  = await resolveHash(offer_hash);
+
+    const state = { reason };
+    if (message) state.message = message;
+
+    const refs = { transaction: transaction_id };
+    if (order_hash)  refs.order  = order_hash;
+    if (intent_hash) refs.intent = intent_hash;
+    if (offer_hash)  refs.offer  = offer_hash;
+
+    const result = await db.createBlock("observe.close", state, refs);
+    const block = result.exists ? result.block : result;
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          close: block,
+          transaction_id,
+          reason,
+          message: `Negotiation ${transaction_id} closed as '${reason}'. Any agent polling refs.transaction="${transaction_id}" will stop acting.`,
+        }, null, 2),
+      }],
+    };
+  })
+);
+
+// ── Tool: foodblock_recent ──────────────────────────────────────────────
+// Practical polling for agents: fetch blocks created since a timestamp or
+// within the last N minutes. Covers the gap while agents can't hold open
+// a persistent SSE connection via MCP stdio transport.
+
+server.registerTool(
+  "foodblock_recent",
+  {
+    title: "Recent FoodBlocks",
+    description:
+      "Fetch blocks created since a given timestamp (ISO 8601) or within the last N minutes. " +
+      "Use this to poll for new activity without opening a persistent connection. " +
+      "Combine with type/agent filters to watch for specific events. " +
+      "Example: poll every 60s with since=<last_check_time> to act on new orders.",
+    inputSchema: {
+      since: z
+        .string()
+        .optional()
+        .describe("ISO 8601 timestamp — return blocks created after this. Example: '2026-03-11T12:00:00Z'"),
+      minutes: z
+        .number()
+        .optional()
+        .default(5)
+        .describe("Lookback window in minutes if 'since' is not provided (default 5)"),
+      type: z
+        .string()
+        .optional()
+        .describe("Filter by block type or prefix. Example: 'transfer.order', 'observe.*'"),
+      agent: z
+        .string()
+        .optional()
+        .describe("Filter by refs.agent — returns blocks that mention this agent hash"),
+      ref: z
+        .string()
+        .optional()
+        .describe("Filter — return blocks where any ref value matches this hash"),
+      limit: z
+        .number()
+        .optional()
+        .default(50)
+        .describe("Maximum blocks to return (default 50)"),
+    },
+  },
+  toolHandler(async ({ since, minutes, type, agent, ref, limit }) => {
+    if (!API_URL) {
+      return {
+        content: [{ type: "text", text: "Error: foodblock_recent requires connected mode (set FOODBLOCK_URL)" }],
+        isError: true,
+      };
+    }
+
+    const params = new URLSearchParams();
+    if (since) {
+      params.set("since", since);
+    } else {
+      const ms = (minutes || 5) * 60 * 1000;
+      params.set("since", new Date(Date.now() - ms).toISOString());
+    }
+    if (type)  params.set("type", type);
+    if (agent) params.set("agent", agent);
+    if (ref)   params.set("ref", ref);
+    if (limit) params.set("limit", String(limit));
+
+    const token = process.env.FOODBLOCK_TOKEN;
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    let res;
+    try {
+      res = await fetch(`${API_URL}/?${params}`, {
+        headers,
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (err) {
+      throw new Error(`FoodBlock API unreachable: ${err.message}`);
+    }
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      throw new Error(`FoodBlock API error ${res.status}: ${text}`);
+    }
+
+    const result = await res.json();
+    const blocks = result.blocks || result.results || [];
+    const { fbn, aliases } = blocksToFbn(blocks);
+
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          count: blocks.length,
+          since: params.get("since"),
+          blocks,
+          fbn,
+          aliases,
+          next_since: new Date().toISOString(),
+        }),
+      }],
+    };
+  })
+);
+
 // ── Smithery compatibility ────────────────────────────────────────────────
 
 export function createSandboxServer() {
@@ -1168,7 +1572,7 @@ async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   const mode = API_URL ? `connected → ${API_URL}` : "standalone (embedded store)";
-  console.error(`FoodBlock MCP Server v0.5.0 running on stdio`);
+  console.error(`FoodBlock MCP Server v0.5.3 running on stdio`);
   console.error(`Mode: ${mode}`);
 }
 

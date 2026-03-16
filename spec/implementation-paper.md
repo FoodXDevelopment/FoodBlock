@@ -423,6 +423,134 @@ GET /blocks?type=transfer.order&refs.buyer=<my_hash>&created_after=<last_seen_ti
 
 The block graph is the source of truth. The real-time layer is a performance optimization, not a reliability mechanism.
 
+### 3.7 User-to-User Chat (Direct and Group Messaging)
+
+The protocol includes two messaging layers. Section 3.3 and the agent specification cover `observe.message` — point-to-point actor-to-actor messages primarily used for operator↔agent instructions. This section covers the user-facing chat layer, which uses a different block model to support group conversations.
+
+#### 3.7.1 Block Model
+
+User chat uses two block types:
+
+**`observe.conversation`** — the conversation hub. Created once, defines the participant set, never changes (it is definitional: no `instance_id`, same participants → same hash, content-addressed dedup).
+
+```json
+{
+  "type": "observe.conversation",
+  "state": {
+    "is_group": true,
+    "name": "Saturday Market Team"
+  },
+  "refs": {
+    "participants": ["<hash_A>", "<hash_B>", "<hash_C>"]
+  }
+}
+```
+
+Rules:
+- `refs.participants` must contain at least 2 hashes.
+- `state.is_group` is auto-set to `true` by the server when participants > 2.
+- Same participant set always produces the same block hash (no `instance_id` injected). Creating a duplicate conversation returns the existing hash with `exists: true`.
+- Visibility: `direct` — only participants can see it.
+
+**`transfer.message`** — a single message. Points to its conversation.
+
+```json
+{
+  "type": "transfer.message",
+  "state": {
+    "content": "Ready to set up at 8am.",
+    "type": "text"
+  },
+  "refs": {
+    "conversation": "<conversation_hash>"
+  }
+}
+```
+
+Rules:
+- `state.content` must be a non-empty string (≤ 5000 chars).
+- `refs.conversation` must reference an existing `observe.conversation` in which the sender is a participant. Sending to a conversation you are not in returns 403.
+- Editing a message uses `refs.updates` pointing to the previous message block (chain-update semantics). Only the original author can edit.
+- Visibility: `direct` — only conversation participants can see messages.
+
+**`observe.read`** — read receipt per participant.
+
+```json
+{
+  "type": "observe.read",
+  "state": { "last_read_at": "2026-03-15T14:00:00Z" },
+  "refs": { "conversation": "<conversation_hash>" }
+}
+```
+
+Rules:
+- Only conversation participants may create read receipts.
+- Updating a read receipt uses `refs.updates` (chain-update).
+
+#### 3.7.2 Contrast with `observe.message`
+
+| | `transfer.message` (user chat) | `observe.message` (agent comms) |
+|---|---|---|
+| Audience | Named participants in `observe.conversation` | Single recipient in `refs.recipient` |
+| Group support | Yes — via `observe.conversation` hub | No — point-to-point only |
+| Threading | Hub model: all messages point to conversation | Chain model: `refs.thread` points to root message |
+| Editing | Yes — chain-update via `refs.updates` | No — instructions are immutable |
+| Delivery | Socket.IO `/chat` namespace + REST history | Block stream subscription + REST query |
+
+The two models are complementary. Agent messaging prefers the thread model (instruction → action → result is a chain). User chat prefers the hub model (a conversation is a stable reference that all messages hang off of).
+
+#### 3.7.3 REST Endpoints
+
+The block graph must be queryable for message history. Clients that miss Socket.IO events (offline, reconnect) must be able to catch up via REST.
+
+```
+GET /api/v1/foodblock/conversations
+Authorization: Bearer <token>
+```
+Returns all conversations the authenticated actor is a participant in, ordered by last message time. Supports `page`, `page_size` query params.
+
+```
+GET /api/v1/foodblock/conversations/:hash/messages
+Authorization: Bearer <token>
+```
+Returns paginated `transfer.message` blocks for a conversation. Requester must be a participant (403 otherwise). Supports `page`, `page_size`, `before` (ISO timestamp for cursor-based pagination).
+
+```
+GET /api/v1/foodblock/conversations/:hash/read
+Authorization: Bearer <token>
+```
+Returns `observe.read` blocks for a conversation (one per participant, showing each person's last-read timestamp).
+
+#### 3.7.4 Real-Time Delivery
+
+New messages are pushed via the Socket.IO `/chat` namespace:
+
+```
+// Client connects with auth token
+io('/chat', { auth: { token: '<bearer_token>' } })
+
+// Join a conversation room
+socket.emit('join_conversation', '<conversation_hash>')
+
+// Receive new messages
+socket.on('message:new', ({ hash, content, authorHash, timestamp }) => { ... })
+
+// Typing indicators
+socket.emit('typing:start', { conversation: '<hash>' })
+socket.on('user:typing', ({ userHash }) => { ... })
+```
+
+The block graph is authoritative. The Socket.IO layer is a notification optimization. On reconnect, always query `GET /conversations/:hash/messages?before=<last_seen_at>` to catch up.
+
+#### 3.7.5 Encryption (Roadmap)
+
+Messages are currently stored plaintext. The protocol specifies X25519 + AES-256-GCM envelope encryption (Section 6) where:
+- Each actor's `public_key_encrypt` (X25519) is published in their actor block.
+- The message content key is encrypted once per participant and stored in a `recipients` envelope.
+- Encrypted fields use the `_` prefix (e.g. `_content`).
+
+This is planned for a future iteration. Until then, `transfer.message` blocks are server-readable. Access control (participant check) is the only protection layer.
+
 ## 4. Physical Media Resolution
 
 ### 4.1 The Problem

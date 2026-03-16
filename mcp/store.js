@@ -6,6 +6,7 @@
  */
 
 import { createRequire } from "node:module";
+import { randomUUID } from "node:crypto";
 // Fallback for bundled environments (e.g. Smithery) where import.meta.url is undefined
 const require = createRequire(import.meta.url || `file://${process.cwd()}/`);
 
@@ -241,7 +242,7 @@ function createEmbeddedStore() {
     async getInfo() {
       return {
         name: 'FoodBlock MCP (standalone)',
-        version: '0.5.0',
+        version: '0.5.3',
         protocol_version: PROTOCOL_VERSION,
         blocks: store.size,
         mode: 'standalone',
@@ -252,19 +253,48 @@ function createEmbeddedStore() {
 }
 
 // ── HTTP Store ─────────────────────────────────────────────────
+// Paths match the Backend's foodblock router (mounted at its root, no /blocks prefix):
+//   POST /          — create block
+//   GET  /:hash     — get block
+//   GET  /          — query blocks
+//   GET  /chain/:h  — update chain
+//   GET  /tree/:h   — provenance tree
+//   GET  /heads     — head blocks
+//
+// Auth: set FOODBLOCK_TOKEN env var → Authorization: Bearer header on all requests.
+// Idempotency: every create sends X-Idempotency-Key (UUID v4) for safe retries.
+// 410: expired-ref responses throw ExpiredReferenceError, not a generic error.
+
+class ExpiredReferenceError extends Error {
+  constructor(expired) {
+    super(`Referenced block has expired: ${expired.join(', ')}`);
+    this.name = 'ExpiredReferenceError';
+    this.expired = expired;
+  }
+}
 
 function createHttpStore(apiUrl) {
+  const token = process.env.FOODBLOCK_TOKEN || null;
+
+  const authHeader = token ? { Authorization: `Bearer ${token}` } : {};
+
   async function api(path, opts = {}) {
     const url = `${apiUrl}${path}`;
     let res;
     try {
       res = await fetch(url, {
-        headers: { "Content-Type": "application/json", ...opts.headers },
+        headers: { "Content-Type": "application/json", ...authHeader, ...opts.headers },
         signal: AbortSignal.timeout(15000),
         ...opts,
       });
     } catch (err) {
       throw new Error(`FoodBlock API unreachable (${url}): ${err.message}`);
+    }
+
+    // 410 = a referenced block has expired — surface as a typed error
+    if (res.status === 410) {
+      const body = await res.json().catch(() => ({}));
+      throw new ExpiredReferenceError(body.expired || []);
     }
 
     if (!res.ok) {
@@ -280,11 +310,13 @@ function createHttpStore(apiUrl) {
   }
 
   async function apiGet(path) { return api(path); }
-  async function apiPost(path, body) { return api(path, { method: "POST", body: JSON.stringify(body) }); }
+  async function apiPost(path, body, extraHeaders = {}) {
+    return api(path, { method: "POST", body: JSON.stringify(body), headers: extraHeaders });
+  }
 
   const resolve = async (h) => {
     try {
-      const res = await apiGet(`/blocks/${h}`);
+      const res = await apiGet(`/${h}`);
       return res.error ? null : res;
     } catch { return null; }
   };
@@ -295,7 +327,7 @@ function createHttpStore(apiUrl) {
     async resolveShortHash(prefix) {
       if (prefix.length === 64) return prefix;
       try {
-        const res = await apiGet(`/blocks/${prefix}`);
+        const res = await apiGet(`/${prefix}`);
         if (res && res.hash) return res.hash;
       } catch {}
       throw new Error(`Short hash resolution requires standalone mode or server support for prefix: ${prefix}`);
@@ -303,13 +335,16 @@ function createHttpStore(apiUrl) {
 
     async getBlock(h) {
       try {
-        const res = await apiGet(`/blocks/${h}`);
+        const res = await apiGet(`/${h}`);
         return res.error ? null : res;
       } catch { return null; }
     },
 
     async createBlock(type, state, refs) {
-      return apiPost("/blocks", { type, state: state || {}, refs: refs || {} });
+      const idempotencyKey = randomUUID();
+      return apiPost("/", { type, state: state || {}, refs: refs || {} }, {
+        "X-Idempotency-Key": idempotencyKey,
+      });
     },
 
     async queryBlocks({ type, ref_role, ref_value, heads_only, limit }) {
@@ -318,7 +353,7 @@ function createHttpStore(apiUrl) {
       if (ref_role && ref_value) { params.set("ref", ref_role); params.set("ref_value", ref_value); }
       if (heads_only) params.set("heads", "true");
       if (limit) params.set("limit", String(limit));
-      return apiGet(`/blocks?${params}`);
+      return apiGet(`/?${params}`);
     },
 
     async getChain(h, depth) {
@@ -331,19 +366,48 @@ function createHttpStore(apiUrl) {
       return apiGet(`/heads?${params}`);
     },
 
-    async batchCreate(blocks) {
-      return apiPost("/blocks/batch", { blocks });
+    // No batch endpoint on the Backend — create sequentially, honouring dependency order.
+    async batchCreate(inputBlocks) {
+      const inserted = [];
+      const skipped = [];
+      const failed = [];
+      const resolved = new Map(); // type+state+refs hash → server block hash
+
+      for (const raw of inputBlocks) {
+        if (!raw.type) { failed.push({ block: raw, error: 'type is required' }); continue; }
+        try {
+          const result = await this.createBlock(raw.type, raw.state, raw.refs);
+          const h = result.idempotent ? result.block?.hash : result.hash;
+          if (result.idempotent) skipped.push(h);
+          else inserted.push(h);
+        } catch (err) {
+          failed.push({ block: raw, error: err.message });
+        }
+      }
+
+      return { inserted, skipped, failed };
     },
 
+    // Tombstone = POST a observe.tombstone block, not a DELETE request.
     async deleteBlock(targetHash, requestedBy, reason) {
-      return api(`/blocks/${targetHash}`, {
-        method: "DELETE",
-        body: JSON.stringify({ requested_by: requestedBy, reason }),
+      const tombstoneBlock = tombstone(targetHash, requestedBy || 'mcp', { reason: reason || 'erasure_request' });
+      return apiPost("/", { type: tombstoneBlock.type, state: tombstoneBlock.state, refs: tombstoneBlock.refs }, {
+        "X-Idempotency-Key": randomUUID(),
       });
     },
 
+    // Backend has no /fb endpoint — parse locally with the SDK, then POST each block.
     async fbParse(text) {
-      return apiPost("/fb", { text });
+      const result = fb(text);
+      for (const block of result.blocks || []) {
+        try {
+          await this.createBlock(block.type, block.state, block.refs);
+        } catch (err) {
+          // Non-fatal — log and continue
+          console.error(`fbParse: failed to POST block ${block.type}: ${err.message}`);
+        }
+      }
+      return result;
     },
 
     async getInfo() {
