@@ -77,6 +77,10 @@ fb("Ordered 50kg flour from Stone Mill")
 
 No types to memorize. No schemas to configure. No API calls — `fb()` is pure pattern matching, runs locally, costs nothing.
 
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/foodxdevelopment-foodblock-mcp).
+
 ## Programmatic API
 
 ```javascript
