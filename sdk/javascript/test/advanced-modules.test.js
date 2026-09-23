@@ -30,9 +30,9 @@ const {
 // vocabulary
 // ---------------------------------------------------------------------------
 describe('vocabulary', () => {
-  it('VOCABULARIES should have 14 entries', () => {
+  it('VOCABULARIES should have 15 entries', () => {
     const keys = Object.keys(VOCABULARIES)
-    assert.equal(keys.length, 14)
+    assert.equal(keys.length, 15)
     assert.ok(keys.includes('bakery'))
     assert.ok(keys.includes('restaurant'))
     assert.ok(keys.includes('farm'))
