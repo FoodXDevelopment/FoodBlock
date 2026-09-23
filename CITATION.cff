@@ -4,8 +4,7 @@ title: FoodBlock
 type: software
 authors:
   - name: FoodX
-    email: developers@foodx.com
-abstract: "An open MIT-licensed, content-addressed protocol for the food economy. FoodBlock provides a universal data primitive with three fields (type, state, refs) and six base types covering all food industry operations from farming to consumption."
+abstract: "Open MIT-licensed, content-addressed protocol for food-economy data. Each block has three fields (type, state, and refs) and uses six base types."
 license: MIT
 repository-code: https://github.com/FoodXDevelopment/FoodBlock
 url: https://foodx.network/protocol
