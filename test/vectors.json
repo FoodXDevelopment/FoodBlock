@@ -946,7 +946,7 @@
     "name": "number: 1e-7 (small)",
     "type": "test",
     "state": {
-      "value": 1e-7
+      "value": 1E-7
     },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-7},\"type\":\"test\"}",
@@ -956,7 +956,7 @@
     "name": "number: 1e-15 (very small)",
     "type": "test",
     "state": {
-      "value": 1e-15
+      "value": 1E-15
     },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-15},\"type\":\"test\"}",
@@ -1086,7 +1086,7 @@
     "name": "number: 1e-20 (very very small)",
     "type": "test",
     "state": {
-      "value": 1e-20
+      "value": 1E-20
     },
     "refs": {},
     "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-20},\"type\":\"test\"}",
@@ -1554,5 +1554,211 @@
     },
     "expected_canonical": "{\"refs\":{\"device\":\"sensor_hash\",\"place\":\"warehouse_hash\"},\"state\":{\"instance_id\":\"84d7fddc-3d53-bec6-f119-fe2efa49f0f10000\",\"location\":\"freezer-A\",\"sensor_id\":\"temp-sensor-042\",\"timestamp\":\"2026-02-18T10:30:00Z\",\"unit\":\"celsius\",\"value\":-18.5,\"within_range\":true},\"type\":\"observe.reading\"}",
     "expected_hash": "d32272e448b9e9726e541859fcbfa3974b61a172192efb6ac65e8a32dc5c68b1"
+  },
+  {
+    "name": "EPCIS harvest CTE",
+    "type": "transform.harvest",
+    "state": {
+      "instance_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+      "event_time": "2026-09-18T16:00:00Z",
+      "event_time_zone_offset": "-07:00",
+      "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
+      "action": "ADD",
+      "epcis_type": "ObjectEvent",
+      "cte": "harvesting",
+      "commodity": "spinach",
+      "variety": "baby leaf",
+      "quantity": {
+        "value": 1200,
+        "unit": "kg"
+      },
+      "reference_document": {
+        "type": "field_tag",
+        "number": "FT-4412"
+      }
+    },
+    "refs": {
+      "farm": "sha256:place_farm_placeholder_0001",
+      "field": "sha256:place_field_north3_placeholder_0001",
+      "harvester": "sha256:actor_producer_placeholder_0001",
+      "subsequent_recipient": "sha256:place_packhouse_placeholder_0001",
+      "outputs": [
+        "sha256:substance_spinach_bulk_placeholder_0001"
+      ],
+      "read_point": "sha256:place_field_north3_placeholder_0001"
+    },
+    "expected_canonical": "{\"refs\":{\"farm\":\"sha256:place_farm_placeholder_0001\",\"field\":\"sha256:place_field_north3_placeholder_0001\",\"harvester\":\"sha256:actor_producer_placeholder_0001\",\"outputs\":[\"sha256:substance_spinach_bulk_placeholder_0001\"],\"read_point\":\"sha256:place_field_north3_placeholder_0001\",\"subsequent_recipient\":\"sha256:place_packhouse_placeholder_0001\"},\"state\":{\"action\":\"ADD\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:commissioning\",\"commodity\":\"spinach\",\"cte\":\"harvesting\",\"epcis_type\":\"ObjectEvent\",\"event_time\":\"2026-09-18T16:00:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"quantity\":{\"unit\":\"kg\",\"value\":1200},\"reference_document\":{\"number\":\"FT-4412\",\"type\":\"field_tag\"},\"variety\":\"baby leaf\"},\"type\":\"transform.harvest\"}",
+    "expected_hash": "5afa6ac1c5f09a7d0871db0d06d8b6f0a27a4c05a5af64ce957f1c81164bc27f"
+  },
+  {
+    "name": "EPCIS cooling CTE",
+    "type": "transform.cool",
+    "state": {
+      "instance_id": "8d0f7780-8536-41ef-a55c-f18fd2a01bf8",
+      "event_time": "2026-09-18T18:30:00Z",
+      "event_time_zone_offset": "-07:00",
+      "biz_step": "urn:epcglobal:cbv:bizstep:other",
+      "disposition": "urn:epcglobal:cbv:disp:in_progress",
+      "action": "OBSERVE",
+      "epcis_type": "ObjectEvent",
+      "cte": "cooling",
+      "quantity": {
+        "value": 1200,
+        "unit": "kg"
+      },
+      "sensor": {
+        "type": "temperature",
+        "value": 2,
+        "unit": "celsius",
+        "device_id": "cooler-probe-3"
+      },
+      "reference_document": {
+        "type": "cool_log",
+        "number": "CL-918"
+      }
+    },
+    "refs": {
+      "objects": [
+        "sha256:substance_spinach_bulk_placeholder_0001"
+      ],
+      "farm": "sha256:place_farm_placeholder_0001",
+      "read_point": "sha256:place_cooler_placeholder_0001",
+      "biz_location": "sha256:place_cooler_placeholder_0001",
+      "subsequent_recipient": "sha256:place_packhouse_placeholder_0001",
+      "updates": "sha256:transform_harvest_placeholder_0001"
+    },
+    "expected_canonical": "{\"refs\":{\"biz_location\":\"sha256:place_cooler_placeholder_0001\",\"farm\":\"sha256:place_farm_placeholder_0001\",\"objects\":[\"sha256:substance_spinach_bulk_placeholder_0001\"],\"read_point\":\"sha256:place_cooler_placeholder_0001\",\"subsequent_recipient\":\"sha256:place_packhouse_placeholder_0001\",\"updates\":\"sha256:transform_harvest_placeholder_0001\"},\"state\":{\"action\":\"OBSERVE\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:other\",\"cte\":\"cooling\",\"disposition\":\"urn:epcglobal:cbv:disp:in_progress\",\"epcis_type\":\"ObjectEvent\",\"event_time\":\"2026-09-18T18:30:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"8d0f7780-8536-41ef-a55c-f18fd2a01bf8\",\"quantity\":{\"unit\":\"kg\",\"value\":1200},\"reference_document\":{\"number\":\"CL-918\",\"type\":\"cool_log\"},\"sensor\":{\"device_id\":\"cooler-probe-3\",\"type\":\"temperature\",\"unit\":\"celsius\",\"value\":2}},\"type\":\"transform.cool\"}",
+    "expected_hash": "44f49e1d8dff281efa9fa1c5da064bc500e6dcdaea86087d0f84bee2880b3fc1"
+  },
+  {
+    "name": "EPCIS initial packing + TLC",
+    "type": "transform.pack",
+    "state": {
+      "instance_id": "9b2c3d4e-1111-2222-3333-444455556666",
+      "event_time": "2026-09-18T22:10:00Z",
+      "event_time_zone_offset": "-07:00",
+      "biz_step": "urn:epcglobal:cbv:bizstep:packing",
+      "action": "ADD",
+      "epcis_type": "TransformationEvent",
+      "cte": "initial_packing",
+      "tlc": "TLC-GA-20260918-01",
+      "product_description": "Baby spinach 200g clamshell",
+      "quantity_in": {
+        "value": 1200,
+        "unit": "kg"
+      },
+      "quantity_out": {
+        "value": 4800,
+        "unit": "each"
+      },
+      "reference_document": {
+        "type": "pack_log",
+        "number": "PL-918"
+      }
+    },
+    "refs": {
+      "inputs": [
+        "sha256:substance_spinach_bulk_placeholder_0001"
+      ],
+      "outputs": [
+        "sha256:substance_lot_TLC_GA_20260918_01_placeholder"
+      ],
+      "tlc_source": "sha256:place_packhouse_placeholder_0001",
+      "farm": "sha256:place_farm_placeholder_0001",
+      "field": "sha256:place_field_north3_placeholder_0001",
+      "harvester": "sha256:actor_producer_placeholder_0001",
+      "read_point": "sha256:place_packhouse_placeholder_0001"
+    },
+    "expected_canonical": "{\"refs\":{\"farm\":\"sha256:place_farm_placeholder_0001\",\"field\":\"sha256:place_field_north3_placeholder_0001\",\"harvester\":\"sha256:actor_producer_placeholder_0001\",\"inputs\":[\"sha256:substance_spinach_bulk_placeholder_0001\"],\"outputs\":[\"sha256:substance_lot_TLC_GA_20260918_01_placeholder\"],\"read_point\":\"sha256:place_packhouse_placeholder_0001\",\"tlc_source\":\"sha256:place_packhouse_placeholder_0001\"},\"state\":{\"action\":\"ADD\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:packing\",\"cte\":\"initial_packing\",\"epcis_type\":\"TransformationEvent\",\"event_time\":\"2026-09-18T22:10:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"9b2c3d4e-1111-2222-3333-444455556666\",\"product_description\":\"Baby spinach 200g clamshell\",\"quantity_in\":{\"unit\":\"kg\",\"value\":1200},\"quantity_out\":{\"unit\":\"each\",\"value\":4800},\"reference_document\":{\"number\":\"PL-918\",\"type\":\"pack_log\"},\"tlc\":\"TLC-GA-20260918-01\"},\"type\":\"transform.pack\"}",
+    "expected_hash": "eff151e99c07390f91b3917aeda96a680f2bef1110b1ae617f190e81aa0028d3"
+  },
+  {
+    "name": "EPCIS shipping CTE",
+    "type": "transfer.shipment",
+    "state": {
+      "instance_id": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
+      "event_time": "2026-09-19T08:00:00Z",
+      "event_time_zone_offset": "-07:00",
+      "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
+      "disposition": "urn:epcglobal:cbv:disp:in_transit",
+      "action": "OBSERVE",
+      "epcis_type": "ObjectEvent",
+      "cte": "shipping",
+      "tlc": "TLC-GA-20260918-01",
+      "product_description": "Baby spinach 200g clamshell",
+      "quantity": {
+        "value": 40,
+        "unit": "case"
+      },
+      "sscc": "006141419999999999",
+      "reference_document": {
+        "type": "BOL",
+        "number": "BOL-88921"
+      },
+      "biz_transactions": [
+        {
+          "type": "urn:epcglobal:cbv:btt:bol",
+          "id": "BOL-88921"
+        }
+      ]
+    },
+    "refs": {
+      "objects": [
+        "sha256:substance_lot_TLC_GA_20260918_01_placeholder"
+      ],
+      "from": "sha256:place_packhouse_placeholder_0001",
+      "to": "sha256:place_dc_placeholder_0001",
+      "tlc_source": "sha256:place_packhouse_placeholder_0001",
+      "shipper": "sha256:actor_producer_placeholder_0001",
+      "read_point": "sha256:place_packhouse_placeholder_0001"
+    },
+    "expected_canonical": "{\"refs\":{\"from\":\"sha256:place_packhouse_placeholder_0001\",\"objects\":[\"sha256:substance_lot_TLC_GA_20260918_01_placeholder\"],\"read_point\":\"sha256:place_packhouse_placeholder_0001\",\"shipper\":\"sha256:actor_producer_placeholder_0001\",\"tlc_source\":\"sha256:place_packhouse_placeholder_0001\",\"to\":\"sha256:place_dc_placeholder_0001\"},\"state\":{\"action\":\"OBSERVE\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:shipping\",\"biz_transactions\":[{\"id\":\"BOL-88921\",\"type\":\"urn:epcglobal:cbv:btt:bol\"}],\"cte\":\"shipping\",\"disposition\":\"urn:epcglobal:cbv:disp:in_transit\",\"epcis_type\":\"ObjectEvent\",\"event_time\":\"2026-09-19T08:00:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee\",\"product_description\":\"Baby spinach 200g clamshell\",\"quantity\":{\"unit\":\"case\",\"value\":40},\"reference_document\":{\"number\":\"BOL-88921\",\"type\":\"BOL\"},\"sscc\":\"006141419999999999\",\"tlc\":\"TLC-GA-20260918-01\"},\"type\":\"transfer.shipment\"}",
+    "expected_hash": "7bf08ebd3001f25c76a7a8274d112660e740d0d092bc359b4633dff273e487f7"
+  },
+  {
+    "name": "EPCIS transformation CTE",
+    "type": "transform.process",
+    "state": {
+      "instance_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+      "event_time": "2026-09-21T10:00:00Z",
+      "event_time_zone_offset": "+01:00",
+      "biz_step": "urn:epcglobal:cbv:bizstep:creating_class_instance",
+      "action": "ADD",
+      "epcis_type": "TransformationEvent",
+      "cte": "transformation",
+      "process": "stone_milling",
+      "input_lots": [
+        {
+          "tlc": "WHEAT-LOT-55",
+          "quantity": {
+            "value": 500,
+            "unit": "kg"
+          }
+        }
+      ],
+      "tlc": "FLOUR-LOT-90",
+      "product_description": "Stoneground bread flour 25kg",
+      "quantity": {
+        "value": 480,
+        "unit": "kg"
+      },
+      "reference_document": {
+        "type": "work_order",
+        "number": "WO-3321"
+      }
+    },
+    "refs": {
+      "inputs": [
+        "sha256:substance_lot_wheat_55_placeholder"
+      ],
+      "outputs": [
+        "sha256:substance_lot_flour_90_placeholder"
+      ],
+      "tlc_source": "sha256:place_mill_placeholder_0001",
+      "operator": "sha256:actor_maker_placeholder_0001",
+      "read_point": "sha256:place_mill_placeholder_0001"
+    },
+    "expected_canonical": "{\"refs\":{\"inputs\":[\"sha256:substance_lot_wheat_55_placeholder\"],\"operator\":\"sha256:actor_maker_placeholder_0001\",\"outputs\":[\"sha256:substance_lot_flour_90_placeholder\"],\"read_point\":\"sha256:place_mill_placeholder_0001\",\"tlc_source\":\"sha256:place_mill_placeholder_0001\"},\"state\":{\"action\":\"ADD\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:creating_class_instance\",\"cte\":\"transformation\",\"epcis_type\":\"TransformationEvent\",\"event_time\":\"2026-09-21T10:00:00Z\",\"event_time_zone_offset\":\"+01:00\",\"input_lots\":[{\"quantity\":{\"unit\":\"kg\",\"value\":500},\"tlc\":\"WHEAT-LOT-55\"}],\"instance_id\":\"cccccccc-cccc-cccc-cccc-cccccccccccc\",\"process\":\"stone_milling\",\"product_description\":\"Stoneground bread flour 25kg\",\"quantity\":{\"unit\":\"kg\",\"value\":480},\"reference_document\":{\"number\":\"WO-3321\",\"type\":\"work_order\"},\"tlc\":\"FLOUR-LOT-90\"},\"type\":\"transform.process\"}",
+    "expected_hash": "806ad8e7504e5e386f2b52ff224c879324b490f87952c1d4b2183bea33087bb1"
   }
 ]

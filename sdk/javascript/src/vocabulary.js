@@ -662,6 +662,134 @@ const VOCABULARIES = {
         description: 'Whether the meat is kosher'
       }
     }
+  },
+
+  epcis: {
+    domain: 'epcis',
+    for_types: ['transform.*', 'transfer.*', 'observe.*', 'substance.lot'],
+    fields: {
+      biz_step: {
+        type: 'string',
+        aliases: [
+          'accepting',
+          'arriving',
+          'assembling',
+          'collecting',
+          'commissioning',
+          'consigning',
+          'creating_class_instance',
+          'cycle_counting',
+          'decommissioning',
+          'departing',
+          'destroying',
+          'disassembling',
+          'dispensing',
+          'encoding',
+          'entering_exiting',
+          'holding',
+          'inspecting',
+          'installing',
+          'killing',
+          'loading',
+          'other',
+          'packing',
+          'picking',
+          'receiving',
+          'removing',
+          'repackaging',
+          'repairing',
+          'replacing',
+          'reserving',
+          'retail_selling',
+          'sampling',
+          'sensor_reporting',
+          'shelving',
+          'shipping',
+          'staging_outbound',
+          'stock_taking',
+          'stocking',
+          'storing',
+          'transforming',
+          'transporting',
+          'unloading',
+          'unpacking',
+          'void_shipping'
+        ],
+        description: 'GS1 CBV 2.0 business step (short alias mapped to full URI)'
+      },
+      disposition: {
+        type: 'string',
+        aliases: [
+          'active',
+          'available',
+          'completeness_inferred',
+          'completeness_verified',
+          'conformant',
+          'container_closed',
+          'container_open',
+          'damaged',
+          'destroyed',
+          'dispensed',
+          'disposed',
+          'encoded',
+          'expired',
+          'in_progress',
+          'in_transit',
+          'inactive',
+          'mismatch_class',
+          'mismatch_instance',
+          'mismatch_quantity',
+          'needs_replacement',
+          'no_pedigree_match',
+          'non_conformant',
+          'non_sellable_other',
+          'partially_dispensed',
+          'recall',
+          'reserved',
+          'retail_sold',
+          'returned',
+          'sellable_accessible',
+          'sellable_not_accessible',
+          'stolen',
+          'unknown'
+        ],
+        description: 'GS1 CBV 2.0 disposition (short alias mapped to full URI)'
+      },
+      cte: {
+        type: 'string',
+        aliases: [
+          'harvesting',
+          'cooling',
+          'initial_packing',
+          'first_land_based_receiving',
+          'shipping',
+          'receiving',
+          'transformation'
+        ],
+        description: 'FDA FSMA 204 Critical Tracking Event type'
+      },
+      action: {
+        type: 'string',
+        aliases: ['ADD', 'OBSERVE', 'DELETE'],
+        description: 'EPCIS event action'
+      },
+      epcis_type: {
+        type: 'string',
+        aliases: [
+          'ObjectEvent',
+          'AggregationEvent',
+          'TransactionEvent',
+          'TransformationEvent',
+          'AssociationEvent'
+        ],
+        description: 'EPCIS 2.0 event type'
+      },
+      tlc: {
+        type: 'string',
+        aliases: ['tlc', 'traceability lot code', 'lot code', 'batch code'],
+        description: 'FSMA Traceability Lot Code'
+      }
+    }
   }
 }
 

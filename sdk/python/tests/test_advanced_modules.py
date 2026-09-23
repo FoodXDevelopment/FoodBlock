@@ -32,11 +32,12 @@ def _make_store(*blocks):
 # ---------------------------------------------------------------------------
 
 class TestVocabulary:
-    def test_vocabularies_has_fourteen_entries(self):
-        assert len(VOCABULARIES) == 14
+    def test_vocabularies_has_fifteen_entries(self):
+        assert len(VOCABULARIES) == 15
         expected_keys = {
             "bakery", "restaurant", "farm", "retail", "lot", "units", "workflow",
             "distributor", "processor", "market", "catering", "fishery", "dairy", "butcher",
+            "epcis",
         }
         assert set(VOCABULARIES.keys()) == expected_keys
 

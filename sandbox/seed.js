@@ -1,4 +1,5 @@
 const { create, update, createTemplate, createVocabulary, attest } = require('../sdk/javascript/src/index')
+const crypto = require('crypto')
 
 /**
  * Generate sample FoodBlock data: a complete bakery supply chain.
@@ -696,6 +697,169 @@ function generateSeed() {
     method: 'personal purchase and tasting'
   })
   blocks.push(honeyReviewAttestation)
+
+  // === EPCIS / FSMA 204 CTE CHAIN (Optional Demo) ===
+  // A small demonstration of EPCIS 2.0 + FSMA 204 profile conformance
+  // Following the profile at spec/profiles/foodblock-profile-epcis.md
+
+  // Place entities for CTE traceability
+  const harvestField = create('place.field', {
+    name: 'North Field Spinach Plot',
+    gln: '0614141987001',
+    geo: { lat: 36.6777, lon: -121.6555 },
+    address: {
+      line1: '123 Farm Road',
+      city: 'Salinas',
+      region: 'CA',
+      postal: '93901',
+      country: 'US'
+    }
+  }, { owner: farm.hash })
+  blocks.push(harvestField)
+
+  const packhouse = create('place.site', {
+    name: 'Green Acres Packhouse',
+    gln: '0614141987002',
+    phone: '+1-831-555-0100',
+    geo: { lat: 36.6780, lon: -121.6550 },
+    address: {
+      line1: '125 Farm Road',
+      city: 'Salinas',
+      region: 'CA',
+      postal: '93901',
+      country: 'US'
+    }
+  }, { operator: farm.hash })
+  blocks.push(packhouse)
+
+  // CTE 1: Harvesting (no new TLC)
+  const harvestCTE = create('transform.harvest', {
+    instance_id: crypto.randomUUID(),
+    event_time: '2026-09-23T08:00:00Z',
+    event_time_zone_offset: '-07:00',
+    biz_step: 'urn:epcglobal:cbv:bizstep:commissioning',
+    action: 'ADD',
+    epcis_type: 'ObjectEvent',
+    cte: 'harvesting',
+    commodity: 'spinach',
+    variety: 'baby leaf',
+    quantity: { value: 500, unit: 'kg' },
+    reference_document: { type: 'field_tag', number: 'FT-923-01' }
+  }, {
+    farm: farm.hash,
+    field: harvestField.hash,
+    harvester: farm.hash,
+    subsequent_recipient: packhouse.hash,
+    read_point: harvestField.hash
+  })
+  blocks.push(harvestCTE)
+
+  // Bulk spinach substance (output of harvest)
+  const bulkSpinach = create('substance.ingredient', {
+    name: 'Fresh baby spinach (bulk)',
+    quantity: { value: 500, unit: 'kg' }
+  }, {
+    source: harvestField.hash,
+    producer: farm.hash,
+    harvested_at: harvestCTE.hash
+  })
+  blocks.push(bulkSpinach)
+
+  // CTE 2: Cooling (no new TLC)
+  const coolingCTE = create('transform.cool', {
+    instance_id: crypto.randomUUID(),
+    event_time: '2026-09-23T10:30:00Z',
+    event_time_zone_offset: '-07:00',
+    biz_step: 'urn:epcglobal:cbv:bizstep:other',
+    disposition: 'urn:epcglobal:cbv:disp:in_progress',
+    action: 'OBSERVE',
+    epcis_type: 'ObjectEvent',
+    cte: 'cooling',
+    quantity: { value: 500, unit: 'kg' },
+    sensor: {
+      type: 'temperature',
+      value: 2.5,
+      unit: 'celsius',
+      device_id: 'cooler-probe-1'
+    },
+    reference_document: { type: 'cool_log', number: 'CL-923' }
+  }, {
+    objects: [bulkSpinach.hash],
+    farm: farm.hash,
+    read_point: packhouse.hash,
+    biz_location: packhouse.hash,
+    subsequent_recipient: packhouse.hash,
+    updates: harvestCTE.hash
+  })
+  blocks.push(coolingCTE)
+
+  // CTE 3: Initial packing + TLC assignment
+  const tlcCode = 'TLC-GA-20260923-001'
+  const packingCTE = create('transform.pack', {
+    instance_id: crypto.randomUUID(),
+    event_time: '2026-09-23T14:00:00Z',
+    event_time_zone_offset: '-07:00',
+    biz_step: 'urn:epcglobal:cbv:bizstep:packing',
+    action: 'ADD',
+    epcis_type: 'TransformationEvent',
+    cte: 'initial_packing',
+    tlc: tlcCode,
+    product_description: 'Baby spinach 200g clamshell',
+    quantity_in: { value: 500, unit: 'kg' },
+    quantity_out: { value: 2000, unit: 'each' },
+    reference_document: { type: 'pack_log', number: 'PL-923' }
+  }, {
+    inputs: [bulkSpinach.hash],
+    tlc_source: packhouse.hash,
+    farm: farm.hash,
+    field: harvestField.hash,
+    harvester: farm.hash,
+    read_point: packhouse.hash
+  })
+  blocks.push(packingCTE)
+
+  // Lot block (TLC source of truth)
+  const spinachLot = create('substance.lot', {
+    name: 'Baby spinach 200g',
+    tlc: tlcCode,
+    gtin: '00614141123458',
+    quantity: { value: 2000, unit: 'each' }
+  }, {
+    product_class: sourdough.hash, // referencing existing product for simplicity
+    packed_at: packingCTE.hash,
+    tlc_source: packhouse.hash
+  })
+  blocks.push(spinachLot)
+
+  // Link packing CTE to lot
+  packingCTE.refs.outputs = [spinachLot.hash]
+
+  // CTE 4: Shipping (keep TLC)
+  const shippingCTE = create('transfer.shipment', {
+    instance_id: crypto.randomUUID(),
+    event_time: '2026-09-23T16:00:00Z',
+    event_time_zone_offset: '-07:00',
+    biz_step: 'urn:epcglobal:cbv:bizstep:shipping',
+    disposition: 'urn:epcglobal:cbv:disp:in_transit',
+    action: 'OBSERVE',
+    epcis_type: 'ObjectEvent',
+    cte: 'shipping',
+    tlc: tlcCode,
+    product_description: 'Baby spinach 200g clamshell',
+    quantity: { value: 200, unit: 'case' },
+    reference_document: { type: 'BOL', number: 'BOL-923' },
+    biz_transactions: [
+      { type: 'urn:epcglobal:cbv:btt:bol', id: 'BOL-923' }
+    ]
+  }, {
+    objects: [spinachLot.hash],
+    from: packhouse.hash,
+    to: warehouse.hash,
+    tlc_source: packhouse.hash,
+    shipper: farm.hash,
+    read_point: packhouse.hash
+  })
+  blocks.push(shippingCTE)
 
   return blocks
 }
