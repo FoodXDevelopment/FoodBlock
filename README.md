@@ -1,8 +1,10 @@
 # FoodBlock
 
-A content-addressable protocol for universal food data.
+An MIT-licensed, content-addressed protocol for the food economy.
 
-One axiom. Three fields. Six base types. Every food industry operation.
+FoodBlock is the data primitive: `type`, `state`, `refs` plus six base types (actor, place, substance, transform, transfer, observe). It powers **FoodX**, an autonomous food network that people, robots, and machines use to know, act, exchange, and own.
+
+**One axiom.** Three fields. Six base types. Every food industry operation.
 
 ```json
 {
@@ -16,9 +18,24 @@ One axiom. Three fields. Six base types. Every food industry operation.
 
 ## Why
 
-The food industry spans 14 sectors — farming, processing, distribution, retail, hospitality, regulation, sustainability, and more. Every sector models food data differently. There is no shared primitive.
+The food industry spans 14 sectors – farming, processing, distribution, retail, hospitality, regulation, sustainability, and more. Every sector models food data differently. There is no shared primitive.
 
 FoodBlock is that primitive. One data structure that can represent a farm harvest, a restaurant menu item, a food safety certification, a cold chain reading, a grocery order, or a consumer review. Same three fields. Same hashing. Same protocol.
+
+## For AI Agents
+
+FoodBlock is designed for human–machine collaboration. Full protocol documentation and AI integration resources:
+
+- **Protocol overview**: https://foodx.network/protocol
+- **LLM quick reference**: https://foodx.network/llms.txt
+- **Complete documentation**: https://foodx.network/llms-full.txt
+- **Whitepaper (text)**: https://foodx.network/foodblock.md
+- **Technical spec (text)**: https://foodx.network/foodblock-technical-spec.md
+- **MCP server**: [`mcp/`](mcp/) – 17 tools for Claude, Cursor, Windsurf, Gemini CLI, and any MCP-compatible agent
+- **OpenAI integration**: [`openai/tools.json`](openai/tools.json) + [`openai/openapi.yaml`](openai/openapi.yaml) – function calling and ChatGPT Custom GPTs
+- **Gemini integration**: [`gemini/tools.json`](gemini/tools.json) – function declarations for Gemini API, AI Studio, Vertex AI
+- **API base**: https://api.foodx.world
+- **About FoodX**: https://foodx.network
 
 ## The Primitive
 
@@ -549,8 +566,17 @@ MIT — use it however you want.
 
 ## Links
 
+### Protocol Resources
 - [Whitepaper](spec/whitepaper.md) ([PDF](spec/whitepaper.pdf))
 - [Technical Specification](spec/technical-whitepaper.md) ([PDF](spec/technical-whitepaper.pdf))
 - [Test Vectors](test/vectors.json)
-- [Schema](sql/schema.sql)
+- [Database Schema](sql/schema.sql)
 - [MCP Server](mcp/README.md)
+
+### FoodX Network
+- [FoodX Home](https://foodx.network)
+- [Protocol Page](https://foodx.network/protocol)
+- [LLM Quick Reference](https://foodx.network/llms.txt)
+- [Complete Documentation](https://foodx.network/llms-full.txt)
+- [API Documentation](https://api.foodx.world)
+- [GitHub Organization](https://github.com/FoodXDevelopment)
