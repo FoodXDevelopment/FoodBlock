@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use FoodBlock in your research or project, please cite it using this metadata."
+title: FoodBlock
+type: software
+authors:
+  - name: FoodX
+    email: developers@foodx.com
+abstract: "An open MIT-licensed, content-addressed protocol for the food economy. FoodBlock provides a universal data primitive with three fields (type, state, refs) and six base types covering all food industry operations from farming to consumption."
+license: MIT
+repository-code: https://github.com/FoodXDevelopment/FoodBlock
+url: https://foodx.network/protocol
+version: 0.5.0
