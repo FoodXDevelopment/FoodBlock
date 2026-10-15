@@ -97,4 +97,23 @@ const operatorsOf = (agent, blocks, options) => [...new Set([...indexOf(blocks).
   .filter((block) => block.type === 'grant' && block.state?.kind === 'operator' && block.refs?.to === agent && block.state?.status === undefined && isLive(block, blocks, options))
   .map((block) => block.refs.author))].sort()
 
-module.exports = { parseDuration, addDuration, compareDurations, scopeRefusals, scopeWithin, whyNotLive, isLive, ancestors, whyNotUnder, operatorsOf }
+// ---- The limit is the principal's fence (§7) ----
+/**
+ * The `observe` of kind limit for a grant: what to hand `write` (its type, state, refs and audience). `agent` is the
+ * grant's receiver; the audience is the agent alone, so no counterparty ever reads the limit, and the grant check never
+ * looks at it. Write it as `write(f.type, f.state, f.refs, { audience: f.audience, author, key, held })`.
+ */
+const limitFence = (grantHash, agent, { limit, per } = {}) => ({ type: 'observe', state: { kind: 'limit', limit, ...(per ? { per } : {}) }, refs: { for: grantHash }, audience: [agent] })
+
+/**
+ * Whether spending `money` stays inside a limit. `limit` is the limit observe (or its state or the money); `spent` is
+ * what the principal's node has already counted in the period (whole minor units; the node sums over `per`, since the
+ * limit is read on the principal's node alone). Money in another currency is never within.
+ */
+function withinLimit(limit, money, spent = 0) {
+  const cap = limit?.state?.limit || limit?.limit || limit
+  if (!cap || !Number.isInteger(cap.minor) || !money || !Number.isInteger(money.minor) || cap.currency !== money.currency) return false
+  return spent + money.minor <= cap.minor
+}
+
+module.exports = { limitFence, withinLimit, parseDuration, addDuration, compareDurations, scopeRefusals, scopeWithin, whyNotLive, isLive, ancestors, whyNotUnder, operatorsOf }

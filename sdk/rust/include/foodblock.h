@@ -78,6 +78,12 @@ int fb_seal(const char *value_json, const char *keys_json, char **out);
 /* Open an envelope with a recipient's X25519 private key (hex): the JSON value inside. */
 int fb_open(const char *envelope_json, const char *x25519_private, char **out);
 
+/* The one JSON door, the same call Kotlin uses (src/door.rs). op is an operation name ("hash", "write", "promise_stage",
+ * ...), args_json a JSON array of its arguments. *out is always the answer: {"ok": value} or {"error": kind, "message",
+ * "code", "reasons", "refusals"}, kind one of argument, json, refused, crypto, profile, internal. Returns FB_OK whenever
+ * an answer was made. Every language binding (Python, Swift, Go) is a thin layer over this one function. */
+int fb_call(const char *op, const char *args_json, char **out);
+
 #ifdef __cplusplus
 }
 #endif

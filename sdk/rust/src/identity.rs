@@ -53,6 +53,9 @@ pub struct GenesisOptions<'a> {
     pub recovery_key: &'a str,
     /// How far back the recovery key may reach (a duration).
     pub reach: &'a str,
+    /// The id of the custodian who holds the key for the person (empty when they hold it themselves): written as
+    /// `state.custodian`, so every reader sees the key is held by someone else (§2 Held keys).
+    pub custodian: &'a str,
 }
 
 /// A new person, agent, machine or circle that signs: their genesis, signed.
@@ -66,6 +69,9 @@ pub fn genesis(keys: &crate::sign::Keypair, options: &GenesisOptions) -> Result<
     });
     if !options.encryption_key.is_empty() {
         state["public_key_encrypt"] = json!(options.encryption_key);
+    }
+    if !options.custodian.is_empty() {
+        state["custodian"] = json!(options.custodian);
     }
     signed(create("actor", &state, &json!({}))?, &keys.private_key)
 }
@@ -100,20 +106,79 @@ pub fn key_grant(
     recovery_key: Option<&str>,
     after: &[&str],
 ) -> Result<Value> {
+    let extras = KeyGrantExtras {
+        replaces: replaces.map(|r| r.0),
+        last_good: replaces.map(|r| r.1),
+        after,
+        ..KeyGrantExtras::default()
+    };
+    key_grant_with(id, new_key, signer_private, place, at, recovery_key, &extras)
+}
+
+/// What a key grant may also carry: the key it `replaces` and that key's `last_good` block (a rotation), blocks seen
+/// (`after`), a new `encrypt` key, and `recovery` (key, reach) that adds recovery to an older genesis.
+#[derive(Default)]
+pub struct KeyGrantExtras<'a> {
+    pub replaces: Option<&'a str>,
+    pub last_good: Option<&'a str>,
+    pub after: &'a [&'a str],
+    pub encrypt: Option<&'a str>,
+    pub recovery: Option<(&'a str, &'a str)>,
+    /// The custodian who holds the key (written as `state.custodian`).
+    pub custodian: Option<&'a str>,
+}
+
+/// Take your keys (§2 Held keys): a key grant to a key on the person's own device that rotates the custodian's key
+/// out. It is `key_grant_with` with `replaces` and `last_good` set and no `custodian`, so the keys are the person's
+/// own and their record stays one chain.
+pub fn take_keys(
+    id: &str,
+    own_key: &str,
+    signer_private: &str,
+    place: &Link,
+    at: &str,
+    held_key: &str,
+    last_good: &str,
+) -> Result<Value> {
+    let extras = KeyGrantExtras { replaces: Some(held_key), last_good: Some(last_good), ..KeyGrantExtras::default() };
+    key_grant_with(id, Some(own_key), signer_private, place, at, None, &extras)
+}
+
+/// `key_grant` with every optional part. `recovery_key` is the recovery key's public key when it signs (a
+/// recovery-key rotation).
+pub fn key_grant_with(
+    id: &str,
+    new_key: Option<&str>,
+    signer_private: &str,
+    place: &Link,
+    at: &str,
+    recovery_key: Option<&str>,
+    x: &KeyGrantExtras,
+) -> Result<Value> {
     let mut state = json!({ "seq": place.seq, "at": at, "audience": "public", "kind": "key" });
     let m = state.as_object_mut().unwrap();
-    if let Some(k) = new_key {
+    if let Some(k) = new_key.filter(|k| !k.is_empty()) {
         m.insert("public_key_sign".into(), json!(k));
     }
-    if let Some((old, last_good)) = replaces {
-        m.insert("replaces".into(), json!(old));
-        m.insert("last_good".into(), json!(last_good));
+    if let Some(e) = x.encrypt.filter(|e| !e.is_empty()) {
+        m.insert("public_key_encrypt".into(), json!(e));
     }
-    if let Some(r) = recovery_key {
+    if let Some(c) = x.custodian.filter(|c| !c.is_empty()) {
+        m.insert("custodian".into(), json!(c));
+    }
+    if let Some(old) = x.replaces.filter(|r| !r.is_empty()) {
+        m.insert("replaces".into(), json!(old));
+        m.insert("last_good".into(), x.last_good.map(|g| json!(g)).unwrap_or(Value::Null));
+    }
+    if let Some(r) = recovery_key.filter(|r| !r.is_empty()) {
         m.insert("recovery_key".into(), json!(r));
     }
+    if let Some((key, reach)) = x.recovery {
+        m.insert("recovery_key_hash".into(), json!(recovery_key_hash(key)));
+        m.insert("recovery_reach".into(), json!(reach));
+    }
     let mut refs = json!({ "author": id, "subject": id, "prev": place.prev });
-    let seen = crate::js::sorted_set(after.iter());
+    let seen = crate::js::sorted_set(x.after.iter());
     if !seen.is_empty() {
         refs["after"] = json!(seen);
     }

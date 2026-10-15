@@ -376,11 +376,10 @@ final class VectorsTests: XCTestCase {
         }
     }
 
-    // ---- The package's spec copies are spec/ exactly ----
-    func testSpecCopies() throws {
-        for name in ["protocol", "aliases"] {
-            let copy = try Data(contentsOf: FoodBlock.specURL(name)!)
-            XCTAssertEqual(copy, try Data(contentsOf: repoFile("spec", "\(name).json")), "Sources/spec/\(name).json differs from spec/: run node test/sync-spec.cjs")
+    // ---- The core carries spec/ exactly ----
+    func testCoreCarriesTheSpec() throws {
+        for (name, mine) in [("protocol", FoodBlock.spec), ("aliases", FoodBlock.aliases)] {
+            XCTAssertTrue(sameJSON(mine, loadJSON("spec", "\(name).json")), "the core's built-in \(name).json differs from spec/")
         }
     }
 }

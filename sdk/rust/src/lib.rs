@@ -50,6 +50,8 @@ pub mod write;
 
 #[cfg(feature = "envelope")]
 pub mod envelope;
+#[cfg(any(feature = "ffi", feature = "jni"))]
+pub mod door;
 #[cfg(feature = "ffi")]
 pub mod ffi;
 #[cfg(feature = "jni")]

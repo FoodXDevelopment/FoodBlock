@@ -334,11 +334,26 @@ pub fn answer_signed_by(answer: &Value, node_keys: &[String]) -> bool {
 }
 
 // ---- Push ----
-/// A push: `{ messages, for }`, `for` optional (`{ hash: id }`).
+/// Who a sealed copy is for: `for` maps its hash to a list of ids. An older single id (a string) reads as a list
+/// of one.
+pub fn recipients_of(for_whom: &Value, hash: &str) -> Vec<String> {
+    match for_whom.get(hash) {
+        Some(Value::Array(a)) => a.iter().filter_map(|i| i.as_str().map(String::from)).collect(),
+        Some(Value::String(s)) if !s.is_empty() => vec![s.clone()],
+        _ => vec![],
+    }
+}
+
+/// A push: `{ messages, for }`, `for` optional (`{ hash: [id] }`, a list of ids per sealed copy; a single id is read
+/// as a list of one).
 pub fn push_request(messages: &[Value], for_whom: Option<&Value>) -> Value {
     let mut r = json!({ "messages": messages });
     if let Some(f) = for_whom {
-        r["for"] = f.clone();
+        let listed: serde_json::Map<String, Value> = f
+            .as_object()
+            .map(|o| o.keys().map(|h| (h.clone(), json!(recipients_of(f, h)))).collect())
+            .unwrap_or_default();
+        r["for"] = Value::Object(listed);
     }
     pick(&r, &crate::spec().list("messages.push"))
 }

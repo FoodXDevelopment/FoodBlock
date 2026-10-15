@@ -4,21 +4,31 @@ FoodBlock 1.6 for Python. The protocol is [`spec/protocol.md`](../../spec/protoc
 JavaScript reference does, with the same names in snake_case, and passes every section of
 [`spec/vectors.json`](../../spec/vectors.json).
 
-It reads every list (types, verbs, ref keys, terms, grammar, limits) from `protocol.json` and every older shape from
-`aliases.json`. The package carries an exact copy of both in `foodblock/spec/`, made from the repository's `spec/`
-by `node test/sync-spec.cjs`; the tests fail if a copy differs.
+It is a thin layer over the one Rust core ([`../rust`](../rust)). Every rule (canonical form, hashing, Ed25519, the
+write check, chains, identities, envelopes, folds, messages between nodes, and protocol.json / aliases.json
+themselves) lives there once; this package calls it through the core's single JSON door (`fb_call`, over `ctypes`).
+No Python dependency, nothing to compile at import time, and the same bytes on every SDK.
+
+**Why ctypes.** The core already has a C ABI. `ctypes` is in the standard library, needs no Python headers or
+compiler on the user's side and no per-Python-version wheel; PyO3 would add a second binding crate and a maturin build
+for no gain, since every call is "JSON in, JSON out".
+
+## Build
 
 ```bash
-pip install foodblock        # needs cryptography
+(cd ../rust && cargo rustc --release --features ffi --crate-type cdylib)   # target/release/libfoodblock.{dylib,so}
+python3 -m unittest discover -s tests                                      # finds the library in ../rust/target/release
+pip install .                                                              # setup.py builds the core and ships it in the package
 ```
+
+The library is found from `FOODBLOCK_LIB`, else beside the package, else `../rust/target/release`.
 
 ## Profile
 
-All three profiles (micro, edge, node; `protocol.json` `profiles`) are covered as library code: a sensor, a farm
-computer or a person's node can each use it. What it holds: the canonical form, SHA-256, Ed25519, the write check, its
-own key chain; grants and stops; pull and push messages, discovery and local announcements, the promise fold;
-envelopes, commitments, signed pull and answers, and every fold. Serving pull and push over a network is the app's job
-(see `server/` for one).
+The core is built with the node profile (micro, edge and node; `protocol.json` `profiles`): the canonical form,
+SHA-256, Ed25519, the write check, key chains, grants, the folds, pull and push messages, discovery, envelopes and
+commitments. A smaller device uses the Rust crate directly (`--no-default-features --features micro`); a call this
+build does not have raises `FoodBlockError` with `kind == "profile"`.
 
 ## Example
 

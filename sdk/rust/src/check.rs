@@ -703,7 +703,30 @@ impl<'a> Checker<'a> {
         } else {
             w.extend(self.duration_shape(state.get("recovery_reach"), "state.recovery_reach"));
         }
+        w.extend(self.hash_shape(state.get("custodian"), "state.custodian"));
         w
+    }
+
+    // An admission's deposit is money held by a named holder: { money, holder } (§10). The shape only.
+    fn deposit_shape(&self, value: Option<&Value>) -> W {
+        let Some(v) = value else { return vec![] };
+        let allowed = self.list("shapes.deposit");
+        if is_obj(Some(v)) && keys_within(v, &allowed) && v.get("money").is_some() && v.get("holder").is_some() {
+            let mut w = self.money_shape(v.get("money"), "state.deposit.money");
+            w.extend(self.hash_shape(v.get("holder"), "state.deposit.holder"));
+            w
+        } else {
+            s("shape", format!("state.deposit is {{ {} }}: the money held and who holds it", allowed.join(", ")))
+        }
+    }
+    // A block a custodian signed on the person's word names the channel it came by (§2 Held keys).
+    fn channel_shape(&self, value: Option<&Value>) -> W {
+        let channels = self.list("channels");
+        match value {
+            None => vec![],
+            Some(v) if v.as_str().is_some_and(|c| channels.iter().any(|x| x == c)) => vec![],
+            Some(_) => s("shape", format!("state.channel is one of {}", channels.join(", "))),
+        }
     }
 
     fn status_shape(&self, state: &Value, refs: &Value) -> W {
@@ -891,6 +914,9 @@ impl<'a> Checker<'a> {
                 }) {
                     w.push(f("shape", "state.dkim is { domain, pass }"));
                 }
+                w.extend(self.money_shape(g("limit"), "state.limit"));
+                w.extend(self.duration_shape(g("per"), "state.per"));
+                w.extend(self.deposit_shape(g("deposit")));
             }
             "promise" => {
                 let answer = truthy(r("answers")) && g("status").is_some();
@@ -996,6 +1022,7 @@ impl<'a> Checker<'a> {
             w.push(f("grammar", "state.replaces is the key it replaces"));
         }
         w.extend(self.hash_shape(g("last_good"), "state.last_good"));
+        w.extend(self.hash_shape(g("custodian"), "state.custodian"));
         if !g("recovery_key").is_none_or(|x| self.is("sign_key", Some(x))) {
             w.push(f(
                 "grammar",
@@ -1255,6 +1282,7 @@ impl<'a> Checker<'a> {
                 "state.sequencer is the signing key that orders the record",
             ));
         }
+        w.extend(self.channel_shape(g("channel")));
         w.extend(self.hash_list_shape(g("manifest"), "state.manifest"));
         w.extend(self.hash_list_shape(g("counted"), "state.counted"));
         if !g("line").is_none_or(Value::is_string) {

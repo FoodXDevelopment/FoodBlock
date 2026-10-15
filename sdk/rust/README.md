@@ -86,6 +86,15 @@ The surface: `fb_version`, `fb_canonical`, `fb_hash`, `fb_keypair`, `fb_genesis`
 `fb_check`, `fb_read_as`, `fb_next_link`, `fb_write`, `fb_seal`, `fb_open`, `fb_free`. Link with `-lfoodblock`
 (macOS adds `-framework Security -framework CoreFoundation`; Linux adds `-lpthread -ldl -lm`).
 
+### The one JSON door
+
+`fb_call(op, args_json, &out)` is every operation in one function, the same call Kotlin makes through JNI
+(`src/door.rs` is the one op table; `src/jni.rs` and `fb_call` are two doors onto it). `op` is a name (`"hash"`,
+`"write"`, `"promise_stage"`, ...), `args_json` a JSON array, and `*out` is `{"ok": value}` or `{"error": kind,
+"message", "code", "reasons", "refusals"}`. Python (`ctypes`), Swift (a SwiftPM system library) and Go (`cgo`) are thin
+layers over this one function, so every rule lives here once. Build the shared library for Python with
+`cargo rustc --release --features ffi --crate-type cdylib`.
+
 ## C++
 
 `include/foodblock.hpp` is header-only, C++17: `std::string` in and out, RAII frees every buffer, and a failed

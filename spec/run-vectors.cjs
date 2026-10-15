@@ -86,6 +86,13 @@ for (const v of V.identities) {
     const state = fb.identityState(v.id, held, options)
     report(state.history === v.history && same(state.keys, v.keys) && (!v.frozen || same(state.frozen, v.frozen)) && Object.entries(v.signed_by_author).every(([hash, ok]) => state.signed_by_author[hash] === ok), `identity: ${v.name}: the identity fold (signed_by_author, keys, frozen, history)`)
   }
+  // The limit is the principal's fence: sealed to the agent alone, never read by the grant check, read by the principal's node.
+  if (v.fence) {
+    const f = v.fence, limit = held.find((b) => b.hash === f.block), grant = held.find((b) => b.hash === f.grant)
+    report(limit.refs.for === f.grant && limit.state.kind === 'limit' && same(limit.state.limit, f.limit) && fb.findsSelf(limit, f.agent, f.salt) && !fb.findsSelf(limit, f.principal, f.salt) && limit.state.audience.length === 1, `identity: ${v.name}: sealed to the agent alone`)
+    report(grant.state.scope.limit === undefined && Object.keys(v.under).every((hash) => same(fb.grant.whyNotUnder(held.find((b) => b.hash === hash), held), fb.grant.whyNotUnder(held.find((b) => b.hash === hash), held.filter((b) => b !== limit)))), `identity: ${v.name}: the grant check never reads the limit`)
+    report(f.within.every((c) => fb.grant.withinLimit(limit, c.money, c.spent) === c.within), `identity: ${v.name}: the principal's node checks the limit (withinLimit)`)
+  }
   for (const [hash, ok] of Object.entries(v.under || {})) report(!fb.grant.whyNotUnder(held.find((b) => b.hash === hash), held).length === ok, `identity: ${v.name}: a block under the grant speaks for its grantor`)
 }
 
@@ -150,6 +157,12 @@ report(fb.sync.answerSignedBy(M.push_answer.message, nodeKey), 'message: a push 
   report(same(Object.keys(P), fb.PROTOCOL.messages.push_answer) && P.refused.every((r) => same(Object.keys(r), fb.PROTOCOL.messages.refusal) && known.has(r.code))
     && P.equivocations.every((pair) => same(pair, [...pair].sort())), 'message: a push answer carries every key, refusals as { hash, code, detail }, equivocations as sorted pairs')
   report(same(fb.sync.pushAnswer(P, { node: P.node, privateKey: V.keys[M.node_signer].private_key }), P), 'message: the push answer rebuilds byte for byte')
+}
+{
+  // A push names, for each sealed copy, the list of ids it is for; an older single id reads as a list of one.
+  const P = M.push, ids = P.recipients
+  report(same(fb.sync.pushRequest(P.request.messages, P.request.for), P.request) && same(P.request.for[P.hash], ids) && ids.length === 2, 'message: a push names the list of ids each sealed copy is for')
+  report(same(fb.sync.pushRequest(P.request.messages, P.older_for).for, P.older_reads_as) && same(fb.sync.recipientsOf(P.older_for, P.hash), P.older_reads_as[P.hash]) && !fb.sync.recipientsOf({}, P.hash).length, 'message: an older single id reads as a list of one')
 }
 report(!fb.sync.answerSignedBy({ ...M.push_answer.message, taken: [] }, nodeKey), 'message: a changed answer no longer verifies')
 report(!fb.sync.wellKnownErrors(M.discovery).length && same(M.announcement, fb.sync.announcement(M.discovery)), 'message: discovery and its local announcement')

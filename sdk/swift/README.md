@@ -1,43 +1,53 @@
 # FoodBlock (Swift)
 
-FoodBlock 1.6 for Swift (iOS 16+, macOS 13+, CryptoKit). The protocol is [`spec/protocol.md`](../../spec/protocol.md);
-the JavaScript SDK is the reference, and this package does what it does, module for module.
+FoodBlock 1.6 for Swift (iOS 16+, macOS 13+). The protocol is [`spec/protocol.md`](../../spec/protocol.md). This
+package is a thin layer over the one Rust core ([`../rust`](../rust)): every rule (canonical form, hashing, Ed25519,
+the write check, chains, identities, envelopes, folds, messages between nodes, and protocol.json / aliases.json
+themselves) lives there once, and Swift calls it through the core's single JSON door (`fb_call`, in the C ABI
+`include/foodblock.h`). Signatures are now byte-exact with every other SDK (they were randomised under CryptoKit).
 
 A block is `{ type, state, refs }`, signed by its author. Its id is the SHA-256 of its canonical form. Here a block is
 a plain JSON dictionary (`JSON`, `[String: Any]`): `{ hash, type, state, refs, signature }`.
 
-## Where the rules come from
+## Build
 
-Every closed list (types, verbs, ref keys, answers, terms, scope, shapes, grammar, limits, envelope algs, messages,
-profiles) is read from `protocol.json`, and every older shape from `aliases.json`. The package carries exact copies
-of both in `Sources/spec`, because a package installed elsewhere cannot reach the repository's `spec/`. Run
-`node test/sync-spec.cjs` after changing `spec/`; the tests fail if a copy differs by one byte.
+The Swift target links the Rust static library, so build that first (needs a Rust toolchain):
+
+```bash
+(cd ../rust && cargo rustc --release --features ffi --crate-type staticlib)    # target/release/libfoodblock.a
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+```
+
+`Sources/CFoodBlock` is a SwiftPM system-library target: a module map over `include/foodblock.h` (a symlink).
+`Package.swift` links `../rust/target/release/libfoodblock.a` directly (so a dynamic copy beside it is never picked
+up) plus `Security` and `CoreFoundation`. After rebuilding the core, touch a Swift file or delete `.build` so SwiftPM
+relinks. For an app, build the same static library for each target triple (`aarch64-apple-ios`, `aarch64-apple-ios-sim`,
+`aarch64-apple-darwin`), wrap them in an XCFramework, and point the target at that.
 
 ## Profile
 
-All three profiles' SDK parts (protocol.json `profiles`): **micro** (canonical form, SHA-256, Ed25519, the write
-check, its own chain, the vectors), **edge** (the grant check, pull and push messages, the promise fold, the local
-announcement) and **node** (envelopes, commitments, signed answers, discovery, and every fold). So a phone, a robot
-kitchen or a fridge with an Apple chip can be a full peer. Serving pull and push over a network is the app's job;
-this package makes and checks the messages. There is no keystore: keeping keys on a device is the product's job.
+The core is built with the node profile (micro, edge and node; protocol.json `profiles`), so a phone, a robot kitchen
+or a fridge with an Apple chip is a full peer. A call a smaller build lacks throws with kind `profile`. Serving pull and
+push over a network is the app's job; this package makes and checks the messages. There is no keystore: keeping keys on
+a device is the product's job.
 
 ## API
 
 | | |
 |---|---|
-| `FoodBlock.spec`, `aliases`, `version`, `types`, `verbs`, `refKeys`, `fields`, `profiles`, `test(grammar, value)` | The protocol, as data |
+| `FoodBlock.spec`, `aliases`, `version`, `types`, `verbs`, `refKeys`, `fields`, `profiles`, `refusalCodes`, `message`, `test(grammar, value)` | The protocol, as data (read from the core) |
 | `canonical`, `canonicalJSON`, `create`, `hash` | The canonical form and a block's id |
 | `generateKeypair`, `keypairFromSeed`, `sign`, `verify`, `signMessage`, `verifyMessage` | Ed25519 (SPKI / PKCS#8 hex). `sign` signs |
-| `generateEncryptionKeypair`, `encryptionKeyOf`, `seal`, `open`, `alg`, `algRaw` | X25519, HKDF-SHA256, AES-256-GCM. `seal` encrypts; `open` tries every entry and reads both algs |
+| `generateEncryptionKeypair`, `encryptionKeyOf`, `seal`, `open`, `alg`, `algRaw` | X25519, HKDF-SHA256, AES-256-GCM. `seal` encrypts; `open` reads both algs |
 | `newSalt`, `saltedHash`, `commit`, `findsSelf`, `revealFor` | The commitment: audiences, personal fields, ballots |
 | `compose`, `write`, `check`, `amount`, `money`, `confidence`, `terms` | Writing. `write` is compose, check, sign, chain; it throws `.refused` with every reason |
 | `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy` | The wire |
 | `readAs`, `isA` | Reading every earlier shape as 1.6 |
-| `nextLink`, `checkChain`, `causalOrder`, `pastOf`, `sees`, `headsAmong` | Chains and causal order |
-| `Identity.genesis`, `keyGrant`, `identityOf`, `keyTimeline`, `keysOf`, `signedByAuthor`, `signerOf`, `chainsOf`, `nextLinkFor`, `recoveryKeyHash`, `historyCounts` | Who someone is |
-| `Grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration` | Authority |
-| `Fold.promiseStage`, `circleState`, `holdersOf`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `receiverOf`, `whereNow`, `successorState`, `circleKey`, `countedIn`, `sequencerOf` | The folds |
-| `Sync.pullRequest`, `signPull`, `pullErrors`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
+| `nextLink`, `checkChain`, `causalOrder`, `sees` | Chains and causal order |
+| `Identity.genesis`, `keyGrant`, `keyTimeline`, `keysOf`, `signedByAuthor`, `identityState`, `counts`, `nextLinkFor`, `recoveryKeyHash`, `historyCounts`, `forked` | Who someone is |
+| `Grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `scopeRefusals` | Authority |
+| `Fold.promiseStage`, `circleState`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `successorState`, `circleKey`, `countedIn` | The folds |
+| `Sync.pullRequest`, `signPull`, `pullErrors`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
 
 ```swift
 import FoodBlock
@@ -56,9 +66,9 @@ DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
 ```
 
 `Tests/VectorsTests.swift` runs every section of `spec/vectors.json`, `spec/canonical-vectors.json` and
-`test/vectors.json` the way `spec/run-vectors.cjs` does (the same 307 vector checks), and fails if the file gains a
-section it does not run. CryptoKit's Ed25519 signatures are randomized, so signature vectors are verified, not
-reproduced byte for byte. `Tests/NodeTests.swift` covers writing, refusing, sealed copies, pull and push.
+`test/vectors.json` the way `spec/run-vectors.cjs` does, and fails if the file gains a section it does not run. It also
+checks that the core's built-in spec equals the repository's `spec/`. `Tests/NodeTests.swift` covers writing, refusing,
+sealed copies, pull and push.
 
 ## Licence
 

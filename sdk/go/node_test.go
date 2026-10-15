@@ -2,6 +2,7 @@ package foodblock
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 )
@@ -161,5 +162,18 @@ func TestKeyGrantAndGrammar(t *testing.T) {
 	}
 	if AddDuration("2026-01-31T00:00:00.000Z", "P1M", 1) != "2026-03-03T00:00:00.000Z" {
 		t.Error("months count by the UTC calendar, as JavaScript's Date")
+	}
+}
+
+func TestCustodyTheLimitFence(t *testing.T) {
+	fence := LimitFence(strings.Repeat("a", 64), strings.Repeat("b", 64), map[string]any{"minor": 5000, "currency": "GBP"}, "P7D")
+	state := fence["state"]
+	if !WithinLimit(state, map[string]any{"minor": 3000, "currency": "GBP"}, 2000) || WithinLimit(state, map[string]any{"minor": 3001, "currency": "GBP"}, 2000) {
+		t.Error("spent and asked together stay within the limit, or not")
+	}
+	keys, _ := GenerateKeypair()
+	g, err := Genesis(keys, GenesisOptions{RecoveryKey: keys.PublicKeySign, At: "2026-10-15T09:00:00.000Z", Custodian: strings.Repeat("c", 64)})
+	if err != nil || g.State["custodian"] != strings.Repeat("c", 64) {
+		t.Errorf("a custodial genesis names its custodian: %v", err)
 	}
 }

@@ -25,12 +25,13 @@ const recoveryKeyHash = (publicKeyHex) => crypto.createHash('sha256').update(pub
  * A new person, agent, machine or signing circle: their genesis, signed. `keys` is { public_key_sign, private_key };
  * a 1.6 genesis names the recovery key (only its hash is written) and its reach, and the encryption key (X25519
  * public) if the identity will receive sealed blocks: a micro that only signs leaves it out and adds one later by a
- * key grant.
+ * key grant. `custodian` (an id) says the key is held for the person by someone they chose (§2 Held keys): readers see
+ * it and weigh the key so.
  */
-function genesis(keys, { kind = 'person', at = new Date().toISOString(), encryptionKey, recoveryKey, reach = 'P30D' } = {}) {
+function genesis(keys, { kind = 'person', at = new Date().toISOString(), encryptionKey, recoveryKey, reach = 'P30D', custodian } = {}) {
   if (!recoveryKey) throw new Error('identity: a 1.6 genesis names its recovery key')
   return signed(create('actor', { kind, at, audience: 'public', public_key_sign: keys.public_key_sign, ...(encryptionKey ? { public_key_encrypt: encryptionKey } : {}),
-    recovery_key_hash: recoveryKeyHash(recoveryKey), recovery_reach: reach }, {}), keys.private_key)
+    ...(custodian ? { custodian } : {}), recovery_key_hash: recoveryKeyHash(recoveryKey), recovery_reach: reach }, {}), keys.private_key)
 }
 
 const isGenesis = (block) => block?.type === 'actor' && typeof block.state?.public_key_sign === 'string' && !block.refs?.author && block.state?.seq === undefined
@@ -44,14 +45,22 @@ const genesisOpens = (block) => isGenesis(block) && opens(block, block.state.pub
  * holds and its place in that key's chain), or { private_key, recoveryKey } for the recovery key, whose chain starts
  * at the genesis. A rotation also names the key it `replaces` and that key's `lastGood` block.
  */
-function keyGrant(id, newPublicKey, signer, { replaces, lastGood, at = new Date().toISOString(), after = [], encrypt, recovery } = {}) {
+function keyGrant(id, newPublicKey, signer, { replaces, lastGood, at = new Date().toISOString(), after = [], encrypt, recovery, custodian } = {}) {
   const place = nextLink(signer.last, signer.broughtIn || id)
   const state = { seq: place.seq, at, audience: 'public', kind: 'key', ...(newPublicKey ? { public_key_sign: newPublicKey } : {}), ...(encrypt ? { public_key_encrypt: encrypt } : {}),
-    ...(replaces ? { replaces, last_good: lastGood } : {}), ...(signer.recoveryKey ? { recovery_key: signer.recoveryKey } : {}),
+    ...(custodian ? { custodian } : {}), ...(replaces ? { replaces, last_good: lastGood } : {}), ...(signer.recoveryKey ? { recovery_key: signer.recoveryKey } : {}),
     ...(recovery ? { recovery_key_hash: recoveryKeyHash(recovery.key), recovery_reach: recovery.reach } : {}) }
   const seen = [...new Set(after)].sort()
   return signed(create('grant', state, { author: id, subject: id, prev: place.prev, ...(seen.length ? { after: seen } : {}) }), signer.private_key)
 }
+
+/**
+ * Take your keys (§2 Held keys): a key grant to a key on the person's own device that rotates the custodian's key out.
+ * `signer` is the held key's place in its chain ({ private_key, last, broughtIn }, or the recovery key), `heldKey` the
+ * custodian-held public key and `lastGood` the hash of its last block the person stands behind. No `custodian` is
+ * written, so the keys are the person's own from then on and their record stays one chain.
+ */
+const takeKeys = (id, ownPublicKey, signer, { heldKey, lastGood, ...options } = {}) => keyGrant(id, ownPublicKey, signer, { ...options, replaces: heldKey, lastGood })
 
 // ---- History (§2) ----
 /**
@@ -290,4 +299,4 @@ function nextLinkFor(id, publicKey, blocks) {
   return nextLink(chain.head, chain.by)
 }
 
-module.exports = { genesis, isGenesis, is16Genesis, genesisOpens, recoveryKeyHash, keyGrant, identityOf, identityState, keyTimeline, keysOf, signedByAuthor, signerOf, chainsOf, nextLinkFor, historyCounts, counts, forked }
+module.exports = { genesis, takeKeys, isGenesis, is16Genesis, genesisOpens, recoveryKeyHash, keyGrant, identityOf, identityState, keyTimeline, keysOf, signedByAuthor, signerOf, chainsOf, nextLinkFor, historyCounts, counts, forked }

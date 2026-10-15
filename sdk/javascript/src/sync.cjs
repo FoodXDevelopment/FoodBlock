@@ -99,7 +99,10 @@ function answerPull(log, request = {}, { node, privateKey, asker = request.asker
 const answerSignedBy = (answer, nodeKeys) => list(nodeKeys).some((key) => verifyMessage(answer, key))
 
 // ---- Push ----
-const pushRequest = (messages, forWhom) => pick({ messages, for: forWhom }, M.push)
+/** Who a sealed copy is for: `for` maps its hash to a list of ids. An older single id (a string) reads as a one-item list. */
+const recipientsOf = (forWhom, hash) => { const one = forWhom?.[hash]; return Array.isArray(one) ? one : typeof one === 'string' && one ? [one] : [] }
+/** A push: `for` maps each sealed copy's hash to a list of ids; a string is read as a list of one. */
+const pushRequest = (messages, forWhom) => pick({ messages, for: forWhom && Object.fromEntries(Object.entries(forWhom).map(([hash, one]) => [hash, recipientsOf(forWhom, hash)])) }, M.push)
 
 /**
  * What a node takes of a push: { taken, waiting: [{ hash, needs }], refused: [{ hash, code, detail }], equivocations }.
@@ -180,4 +183,4 @@ function wellKnownErrors(doc) {
 }
 
 
-module.exports = { pullRequest, signPull, pullErrors, pullRefusals, pushRefusals, messageRefusals, matches, headsOf, answerPull, answerSignedBy, pushRequest, accept, waitedTooLong, pushAnswer, wellKnown, announcement, wellKnownErrors }
+module.exports = { pullRequest, signPull, pullErrors, pullRefusals, pushRefusals, messageRefusals, matches, headsOf, answerPull, answerSignedBy, pushRequest, recipientsOf, accept, waitedTooLong, pushAnswer, wellKnown, announcement, wellKnownErrors }

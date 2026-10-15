@@ -24,10 +24,13 @@ jobs:
         working-directory: sdk/javascript
 
   python-sdk:
-    name: Python SDK
+    name: Python SDK (over the Rust core)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo rustc --release --features ffi --crate-type cdylib
+        working-directory: sdk/rust
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -37,10 +40,13 @@ jobs:
         working-directory: sdk/python
 
   go-sdk:
-    name: Go SDK
+    name: Go SDK (over the Rust core)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo rustc --release --features ffi --crate-type staticlib
+        working-directory: sdk/rust
       - uses: actions/setup-go@v5
         with:
           go-version-file: sdk/go/go.mod
@@ -51,11 +57,14 @@ jobs:
         working-directory: sdk/go
 
   swift-sdk:
-    name: Swift SDK
-    # The package uses CryptoKit, which only Apple platforms have.
+    name: Swift SDK (over the Rust core)
+    # A thin layer over the Rust core (sdk/rust), linked as a static library.
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo rustc --release --features ffi --crate-type staticlib
+        working-directory: sdk/rust
       - run: swift test
         working-directory: sdk/swift
 

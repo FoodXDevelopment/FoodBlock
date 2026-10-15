@@ -403,12 +403,10 @@ class Older(unittest.TestCase):
 
 
 class Package(unittest.TestCase):
-    def test_spec_copies_are_exact(self):
-        """The package carries protocol.json and aliases.json byte for byte as spec/ (test/sync-spec.cjs makes them)."""
-        here = os.path.join(os.path.dirname(fb.__file__), "spec")
-        for name in ("protocol.json", "aliases.json"):
-            with open(os.path.join(here, name), "rb") as a, open(os.path.join(ROOT, "spec", name), "rb") as b:
-                self.assertEqual(a.read(), b.read(), f"{name} differs: run node test/sync-spec.cjs")
+    def test_core_carries_the_spec(self):
+        """The Rust core carries protocol.json and aliases.json; they equal the repository's spec/ files."""
+        for name, mine in (("protocol.json", fb.PROTOCOL), ("aliases.json", fb.ALIASES)):
+            self.assertEqual(mine, load("spec", name), f"{name}: the core's built-in copy differs from spec/")
 
     def test_version(self):
         with open(os.path.join(os.path.dirname(__file__), "..", "pyproject.toml"), encoding="utf-8") as f:

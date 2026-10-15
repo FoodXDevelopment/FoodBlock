@@ -19,6 +19,8 @@ const isSealed = (message) => Boolean(message?.header)
 // A sealed block as the node knows it: its public header, so chains, folds over headers, and filters on author and
 // hash still work. Its body is only in the copies.
 const headerBlock = ({ header }) => ({ hash: header.hash, state: { seq: header.seq, audience: ['sealed'] }, refs: { author: header.author, prev: header.prev } })
+// A waiting row keeps its recipients as a JSON list; an older row holds one bare id, read as a list of one.
+const waitingRecipients = (text) => (!text ? [] : text.startsWith('[') ? JSON.parse(text) : [text])
 const blockOf = (message) => (isSealed(message) ? headerBlock(message) : fb.unwrap(message))
 
 /** The store: one append-only table of blocks, numbered on arrival; sealed copies; blocks waiting; seen nonces. */
@@ -52,8 +54,8 @@ export function store(pool) {
     },
     async holds() { return (await pool.query('SELECT hash FROM blocks WHERE author = hash ORDER BY hash')).rows.map((row) => row.hash) },
     async waiting() { return (await pool.query('SELECT hash, message, recipient, since FROM waiting')).rows },
-    async wait(block, message, recipient, needs) {
-      try { await pool.query('INSERT INTO waiting (hash, message, recipient, author, needs) VALUES ($1, $2, $3, $4, $5)', [block.hash, message, recipient || null, authorOf(block), needs]) } catch (error) { if (error.code !== '23505') throw error }
+    async wait(block, message, recipients, needs) {
+      try { await pool.query('INSERT INTO waiting (hash, message, recipient, author, needs) VALUES ($1, $2, $3, $4, $5)', [block.hash, message, recipients?.length ? JSON.stringify(recipients) : null, authorOf(block), needs]) } catch (error) { if (error.code !== '23505') throw error }
     },
     async unwait(hashes) { if (hashes.length) await pool.query(`DELETE FROM waiting WHERE hash IN (${placeholders(hashes)})`, hashes) },
     async seen(nonce) { return (await pool.query('SELECT nonce FROM nonces WHERE nonce = $1', [nonce])).rows.length > 0 },
@@ -130,14 +132,14 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
     for (const message of messages) {
       try {
         if (isSealed(message) && !(HASH.test(message.header.hash || '') && HASH.test(message.header.author || ''))) throw new Error('a sealed block is { version, header, header_signature, envelope }')
-        incoming.push({ message, block: blockOf(message), recipient: forWhom?.[message.header?.hash] })
+        incoming.push({ message, block: blockOf(message), recipients: fb.sync.recipientsOf(forWhom, message.header?.hash) })
       } catch (error) { refused.push({ hash: null, code: 'shape', detail: error.message }) }
     }
     // Waiting blocks are tried again with every push, until they expire.
     const now = new Date().toISOString(), expired = []
     for (const row of await db.waiting()) {
       if (fb.sync.waitedTooLong(new Date(row.since).toISOString(), now, ttl)) { expired.push(row.hash); continue }
-      if (!incoming.some((one) => one.block.hash === row.hash)) incoming.push({ message: row.message, block: blockOf(row.message), recipient: row.recipient, waited: true })
+      if (!incoming.some((one) => one.block.hash === row.hash)) incoming.push({ message: row.message, block: blockOf(row.message), recipients: waitingRecipients(row.recipient), waited: true })
     }
     await db.unwait(expired)
     const blocks = incoming.map((one) => one.block)
@@ -152,18 +154,18 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
     const taken = [], admittedNow = new Map()
     const entryOf = (hash) => incoming.find((one) => one.block.hash === hash)
     for (const block of [...result.taken, ...sealed.taken]) {
-      const { message, recipient } = entryOf(block.hash)
+      const { message, recipients } = entryOf(block.hash)
       if (!(await rule.admits(db, block, admittedNow))) { refused.push({ hash: block.hash, code: 'not_admitted', detail: "not admitted by this node's rule" }); continue }
       admittedNow.set(authorOf(block), (admittedNow.get(authorOf(block)) || 0) + 1)
-      await keep(block, message, recipient)
+      await keep(block, message, recipients)
       taken.push(block)
     }
     // Two blocks from one key with one seq: both are kept and served with the chain, so anyone can publish the proof.
-    for (const pair of [...result.equivocations, ...sealed.equivocations]) for (const hash of pair) { const one = entryOf(hash); if (one) await keep(one.block, one.message, one.recipient) }
+    for (const pair of [...result.equivocations, ...sealed.equivocations]) for (const hash of pair) { const one = entryOf(hash); if (one) await keep(one.block, one.message, one.recipients) }
     const waiting = []
     for (const wait of [...result.waiting, ...sealed.waiting]) {
       const one = entryOf(wait.hash)
-      await db.wait(one.block, one.message, one.recipient, wait.needs[0])
+      await db.wait(one.block, one.message, one.recipients, wait.needs[0])
       waiting.push(wait.hash)
     }
     const allRefused = [...refused, ...result.refused, ...sealed.refused]
@@ -171,11 +173,11 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
     return fb.sync.pushAnswer({ taken, waiting, refused: allRefused, equivocations: [...result.equivocations, ...sealed.equivocations] }, { node: holder, privateKey: key.private_key })
   }
 
-  async function keep(block, message, recipient) {
+  async function keep(block, message, recipients = []) {
     if (!isSealed(message)) return db.put(block, fb.wrap(block, message.version || fb.VERSION))
     const { envelope, ...header } = message
     await db.put(block, header)
-    if (envelope && recipient) await db.copy(block.hash, recipient, message)
+    if (envelope) for (const recipient of recipients) await db.copy(block.hash, recipient, message)
   }
 
   const app = express()

@@ -823,15 +823,14 @@ function codesVectors(vectors) {
   // key grant to a key on her own device rotates the held key out, and her record stays one chain, hers.
   {
     const s = story(), coop = s.person('ngozi_coop'), key = keyOf('ama'), recovery = keyOf('ama_recovery')
-    const g = fb.create('actor', { kind: 'person', at: at(), audience: 'public', public_key_sign: key.public_key_sign, recovery_key_hash: recoveryKeyHash(recovery.public_key_sign), recovery_reach: 'P30D', custodian: coop.id }, {})
-    g.signature = fb.sign(g, key.private_key)
+    const g = genesis(key, { at: at(), recoveryKey: recovery.public_key_sign, custodian: coop.id })
     assert.deepEqual(fb.refusals(g.type, g.state, g.refs), [], 'a custodial genesis passes the write check')
     s.keep('ama: a genesis whose key the co-op holds (state.custodian)', g, 'ama')
     const ama = { name: 'ama', id: g.hash, key }
     const raw = sha('sms from +234 800 000 0000: 2 trays of eggs for Saturday')
     const said = s.say(ama, 'the co-op signs on her word, by SMS: the channel and the raw message named', 'observe', { kind: 'note', text: '2 trays of eggs for Saturday', channel: 'sms' }, { derives_from: raw })
     const phone = keyOf('ama_phone')
-    const moved = s.keep('ama takes her key: a key grant to her own phone rotates the held key out', keyGrant(ama.id, phone.public_key_sign, { private_key: key.private_key, last: said }, { replaces: key.public_key_sign, lastGood: said.hash, at: at() }), 'ama')
+    const moved = s.keep('ama takes her key: a key grant to her own phone rotates the held key out', fb.identity.takeKeys(ama.id, phone.public_key_sign, { private_key: key.private_key, last: said }, { heldKey: key.public_key_sign, lastGood: said.hash, at: at() }), 'ama')
     const own = s.say(ama, 'ama speaks from her own phone', 'observe', { kind: 'note', text: 'eggs collected' }, {}, { key: 'ama_phone' })
     const state = fb.identityState(ama.id, s.held)
     assert.deepEqual([state.signed_by_author[said.hash], state.signed_by_author[moved.hash], state.signed_by_author[own.hash], state.keys], [true, true, true, [key.public_key_sign, phone.public_key_sign].sort()])
@@ -843,6 +842,96 @@ function codesVectors(vectors) {
     const codes = codesOf(fb.refusals(block.type, block.state, block.refs))
     assert.deepEqual(codes, ['unknown_type'])
     vectors.refusals.cases.push({ name: 'a dotted type is read, never written', by: 'check', block, codes })
+  }
+}
+
+// ---- The custody pass: a custodian-held key grant, the limit fence, an admission deposit, a push for two ----
+// Written last, after every other section, so every earlier block keeps its time and its hash.
+function custodyVectors(vectors) {
+  const fixedFor = (label, count) => ({ ephemeral: sha(`${label} ephemeral`), contentKey: sha(`${label} content key`), nonce: sha(`${label} nonce`).slice(0, 24), keyNonces: Array.from({ length: count }, (_, i) => sha(`${label} key nonce ${i}`).slice(0, 24)) })
+  const standing = (id, s) => fb.identityState(id, s.held)
+  // A: a key grant that names the custodian: a co-op holds a SIM phone's key for her. She takes her keys with her
+  // recovery key: the held key is rotated out, what the co-op signed before stands, and her record stays one chain.
+  {
+    const s = story(), coop = s.person('mimi_coop'), mimi = s.person('mimi'), held = keyOf('mimi_sim'), own = keyOf('mimi_own')
+    const grant = s.keep('mimi lets the co-op hold a key for her SIM phone: a key grant that names the custodian', keyGrant(mimi.id, held.public_key_sign, { private_key: mimi.key.private_key, last: null, broughtIn: mimi.id }, { custodian: coop.id, at: at() }), 'mimi')
+    assert.equal(grant.state.custodian, coop.id)
+    assert.deepEqual(fb.refusals(grant.type, grant.state, grant.refs), [], 'a custodial key grant passes the write check')
+    const said = s.say(mimi, 'the co-op signs on her word, by voice: the channel and the raw message named', 'observe', { kind: 'note', text: 'a dozen eggs for Friday', channel: 'voice' }, { derives_from: sha('voice message from +234 800 000 0001') }, { key: 'mimi_sim', link: { seq: 1, prev: grant.hash } })
+    const taken = s.keep('mimi takes her keys: her recovery key rotates the held key out for her own device key', fb.identity.takeKeys(mimi.id, own.public_key_sign, { private_key: mimi.recovery.private_key, recoveryKey: mimi.recovery.public_key_sign, last: null }, { heldKey: held.public_key_sign, lastGood: said.hash, at: at() }), 'mimi_recovery')
+    assert.equal(taken.state.custodian, undefined)
+    const mine = s.say(mimi, 'mimi speaks from her own device', 'observe', { kind: 'note', text: 'eggs collected' }, {}, { key: 'mimi_own', link: { seq: 1, prev: taken.hash } })
+    const state = standing(mimi.id, s)
+    assert.deepEqual([state.signed_by_author[said.hash], state.signed_by_author[mine.hash]], [true, true])
+    assert.ok(state.keys.includes(own.public_key_sign))
+    vectors.identities.push({ name: 'held keys: a key grant names the custodian; the person takes her keys with her recovery key, and what the custodian signed stands', id: mimi.id, blocks: blocksOf(s), signed_by_author: state.signed_by_author, keys: state.keys, frozen: state.frozen, history: state.history })
+  }
+  // B: the limit is the principal's fence. The grant shows the agent's acts and when it ends, never the limit. The limit
+  // is an observe of kind limit `for` the grant, sealed to the agent alone; the grant check never reads it.
+  {
+    const s = story(), opal = s.person('opal'), bot = s.person('opal_agent', { kind: 'agent' })
+    s.say(opal, 'opal answers for her agent', 'grant', { kind: 'operator' }, { to: bot.id })
+    const grant = s.say(opal, 'what the agent may do: the visible scope, with no limit in it', 'grant', { kind: 'shop', scope: { acts: ['observe.note'], until: '2026-12-31T00:00:00.000Z' } }, { to: bot.id })
+    const act = s.say(bot, 'the agent writes under the grant', 'observe', { kind: 'note', text: 'ordered flour' }, { under: grant.hash })
+    assert.deepEqual(fb.grant.whyNotUnder(act, s.held), [])
+    const fence = fb.grant.limitFence(grant.hash, bot.id, { limit: fb.money(5000, 'GBP'), per: 'P7D' })
+    const salts = { [bot.id]: sha('opal fence salt').slice(0, 32) }
+    const limit = s.say(opal, 'the limit, for the grant: 50.00 a week, sealed to the agent alone', fence.type, { ...fence.state, nonce: sha('opal fence nonce').slice(0, 32) }, fence.refs, { audience: fence.audience, salts })
+    assert.deepEqual(fb.grant.whyNotUnder(act, s.held), [], 'the grant check never reads the limit')
+    assert.deepEqual(fb.grant.whyNotUnder(act, s.held.filter((block) => block !== limit)), [])
+    assert.ok(fb.findsSelf(limit, bot.id, salts[bot.id]) && !fb.findsSelf(limit, opal.id, salts[bot.id]))
+    const message = fb.sealCopy(limit, { keys: [bot.key.public_key_encrypt], reveals: [fb.revealFor(salts, bot.id)], privateKey: opal.key.private_key, fixed: fixedFor('opal fence', 1) })
+    assert.equal(fb.openCopy(message, bot.key.x25519_private).hash, limit.hash)
+    const within = [[2000, 3000, 'GBP', true], [2000, 3001, 'GBP', false], [0, 1, 'EUR', false]].map(([spent, minor, currency, ok]) => {
+      assert.equal(fb.grant.withinLimit(limit, fb.money(minor, currency), spent), ok)
+      return { spent, money: fb.money(minor, currency), within: ok }
+    })
+    const state = standing(bot.id, s), ours = standing(opal.id, s)
+    vectors.sealed.cases.push({ name: 'the limit observe for a grant is sealed to the agent alone', recipient: 'opal_agent', signer: 'opal', message, opens_to: { hash: limit.hash, signature: limit.signature, reveals: [fb.revealFor(salts, bot.id)] } })
+    vectors.identities.push({ name: 'the limit is the principal\'s fence: an observe of kind limit for the grant, sealed to the agent; the grant check never reads it', id: bot.id, blocks: blocksOf(s), signed_by_author: { ...state.signed_by_author, ...ours.signed_by_author }, keys: state.keys, operators: [opal.id], under: { [act.hash]: true },
+      fence: { block: limit.hash, grant: grant.hash, agent: bot.id, principal: opal.id, salt: salts[bot.id], limit: fence.state.limit, per: fence.state.per, within } })
+  }
+  // C: the owner's admission rule with a deposit: { money, holder }. Only the shape is checked; no money is handled.
+  {
+    const s = story(), pia = s.person('pia'), friend = s.person('pia_friend'), holder = s.person('pia_holder')
+    const rule = s.say(pia, 'the admission rule: a friend always, three blocks a day from anyone else, and a 1.00 deposit held by pia_holder', 'observe', { kind: 'admission', parties: [friend.id], per_stranger: 3, deposit: { money: fb.money(100, 'GBP'), holder: holder.id } })
+    const state = standing(pia.id, s)
+    assert.deepEqual(state.signed_by_author[rule.hash], true)
+    vectors.identities.push({ name: 'an admission rule may carry a deposit { money, holder }', id: pia.id, blocks: blocksOf(s), signed_by_author: state.signed_by_author, keys: state.keys, frozen: state.frozen, history: state.history })
+  }
+  // D: a push whose `for` maps a sealed copy's hash to a list of ids. An older single id reads as a list of one.
+  {
+    const s = story(), quin = s.person('quin'), rae = s.person('rae'), sol = s.person('sol')
+    const salts = { [rae.id]: sha('rae push salt').slice(0, 32), [sol.id]: sha('sol push salt').slice(0, 32) }
+    const note = s.say(quin, 'a note sealed to rae and sol', 'observe', { kind: 'note', text: 'oven at 6', nonce: sha('quin push nonce').slice(0, 32) }, {}, { audience: [rae.id, sol.id], salts })
+    const message = fb.sealCopy(note, { keys: [rae.key.public_key_encrypt, sol.key.public_key_encrypt], reveals: [fb.revealFor(salts, rae.id), fb.revealFor(salts, sol.id)], privateKey: quin.key.private_key, fixed: fixedFor('quin push', 2) })
+    const ids = [rae.id, sol.id].sort()
+    const request = fb.sync.pushRequest([message], { [note.hash]: ids })
+    assert.deepEqual(request.for[note.hash], ids)
+    assert.deepEqual(fb.sync.pushRequest([message], { [note.hash]: rae.id }).for[note.hash], [rae.id])
+    vectors.sealed.blocks.push(...blocksOf(s))
+    for (const who of [rae, sol]) vectors.sealed.cases.push({ name: `a copy sealed to two recipients opens for ${who.name}`, recipient: who.name, signer: 'quin', message, opens_to: { hash: note.hash, signature: note.signature, reveals: [fb.revealFor(salts, rae.id), fb.revealFor(salts, sol.id)] } })
+    vectors.messages.push = { name: 'a push names, for each sealed copy, the list of ids it is for; an older single id reads as a list of one', request, hash: note.hash, recipients: ids, older_for: { [note.hash]: rae.id }, older_reads_as: { [note.hash]: [rae.id] } }
+  }
+  // E: shapes every node must refuse.
+  {
+    const author = vectors.refusals.blocks.find((b) => b.name === 'mae: genesis').hash
+    const base = { seq: 1, at: '2026-10-15T12:00:00.000Z', audience: 'public' }
+    const refs = { author, prev: author }
+    for (const [name, state, want] of [
+      ['an admission deposit names who holds the money', { ...base, kind: 'admission', deposit: { money: fb.money(100, 'GBP') } }, ['shape']],
+      ['an admission deposit\'s holder is an id', { ...base, kind: 'admission', deposit: { money: fb.money(100, 'GBP'), holder: 'the bank' } }, ['grammar']],
+      ['a limit is money, never a bare number', { ...base, kind: 'limit', limit: 5000 }, ['shape']],
+      ['a limit\'s period is a duration', { ...base, kind: 'limit', limit: fb.money(5000, 'GBP'), per: 'weekly' }, ['time']],
+      ['a channel is one of the closed list', { ...base, kind: 'note', channel: 'carrier pigeon' }, ['shape']]]) {
+      const codes = codesOf(fb.refusals('observe', state, refs))
+      assert.deepEqual(codes, want, name)
+      vectors.refusals.cases.push({ name, by: 'check', block: { type: 'observe', state, refs }, codes })
+    }
+    const genesisState = { kind: 'person', at: '2026-10-15T12:00:00.000Z', audience: 'public', public_key_sign: keyOf('mae').public_key_sign, recovery_key_hash: recoveryKeyHash(keyOf('mae_recovery').public_key_sign), recovery_reach: 'P30D', custodian: 'the co-op' }
+    const codes = codesOf(fb.refusals('actor', genesisState, {}))
+    assert.deepEqual(codes, ['grammar'])
+    vectors.refusals.cases.push({ name: 'a custodian is an id', by: 'check', block: { type: 'actor', state: genesisState, refs: {} }, codes })
   }
 }
 
@@ -870,5 +959,6 @@ const vectors = {
 // The 1.6 final pass, written last so every earlier block keeps its time and its hash.
 finalVectors(vectors)
 codesVectors(vectors)
+custodyVectors(vectors)
 fs.writeFileSync(FILE, JSON.stringify(vectors, null, 1) + '\n')
 console.log(`wrote ${FILE}`)

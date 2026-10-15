@@ -92,6 +92,14 @@ function quantityShape(value, price, name) {
 const stopShape = (stop) => STOPS.slice(0, 2).includes(stop) || (isObject(stop) && keysWithin(stop, ['occurrences']) && Array.isArray(stop.occurrences) && stop.occurrences.every(isTime)) ? []
   : [w('bad_status', `state.stop is ${STOPS.slice(0, 2).join(' or ')}, or { occurrences: [start times] }`)]
 
+// An admission's deposit is money held by a named holder: { money, holder } (§10). The shape only; no money is handled here.
+const depositShape = (value) => value === undefined ? []
+  : isObject(value) && keysWithin(value, SHAPES.deposit) && value.money !== undefined && value.holder !== undefined
+    ? [...moneyShape(value.money, 'state.deposit.money'), ...hashShape(value.holder, 'state.deposit.holder')]
+    : [w('shape', `state.deposit is { ${SHAPES.deposit.join(', ')} }: the money held and who holds it`)]
+// A block a custodian signed on the person's word names the channel it came by (§2 Held keys).
+const channelShape = (value) => value === undefined || PROTOCOL.channels.includes(value) ? [] : [w('shape', `state.channel is one of ${PROTOCOL.channels.join(', ')}`)]
+
 // Numbers in signed content are integers within protocol.json's bounds; never floats (§13 Numbers). Keys are written
 // in NFC; a key that is not is refused (canonical.md Rule 4).
 function numbers(value, path) {
@@ -174,7 +182,8 @@ const genesisErrors = (state, refs) => [
   ...(state.public_key_sign === undefined ? [w('bad_genesis', 'state.public_key_sign names its signing key')] : SIGN_KEY.test(state.public_key_sign) ? [] : [w('grammar', 'state.public_key_sign is an Ed25519 key, SPKI DER hex')]),
   ...(state.public_key_encrypt === undefined || ENCRYPT_KEY.test(state.public_key_encrypt) ? [] : [w('grammar', 'state.public_key_encrypt is an X25519 key, 32 bytes hex')]),
   ...(state.recovery_key_hash === undefined ? [w('bad_genesis', 'state.recovery_key_hash names the recovery key')] : HASH.test(state.recovery_key_hash) ? [] : [w('grammar', 'state.recovery_key_hash is the hash of the recovery key')]),
-  ...(state.recovery_reach === undefined ? [w('bad_genesis', 'state.recovery_reach says how far back the recovery key may reach')] : durationShape(state.recovery_reach, 'state.recovery_reach'))
+  ...(state.recovery_reach === undefined ? [w('bad_genesis', 'state.recovery_reach says how far back the recovery key may reach')] : durationShape(state.recovery_reach, 'state.recovery_reach')),
+  ...hashShape(state.custodian, 'state.custodian')
 ]
 const isGenesisShape = (type, state, refs) => type === 'actor' && !refs.author && state.seq === undefined
 
@@ -212,7 +221,8 @@ const RULES = {
         ...(part?.money === undefined ? [w('shape', `state.split[${i}].money says how much`)] : []), ...(part?.line === undefined || typeof part.line === 'string' ? [] : [w('shape', `state.split[${i}].line is a line id`)])]))],
   observe: (state, refs) => [
     ...((refs.confirms || refs.same_as) && state.confidence === undefined ? [w('shape', 'a confirm or a same_as carries a confidence')] : []),
-    ...(state.dkim === undefined || (isObject(state.dkim) && typeof state.dkim.domain === 'string' && typeof state.dkim.pass === 'boolean') ? [] : [w('shape', 'state.dkim is { domain, pass }')])],
+    ...(state.dkim === undefined || (isObject(state.dkim) && typeof state.dkim.domain === 'string' && typeof state.dkim.pass === 'boolean') ? [] : [w('shape', 'state.dkim is { domain, pass }')]),
+    ...moneyShape(state.limit, 'state.limit'), ...durationShape(state.per, 'state.per'), ...depositShape(state.deposit)],
   promise: (state, refs) => {
     const answer = refs.answers && state.status !== undefined, stopping = refs.updates && state.status !== undefined
     const asked = speaksFor(refs, refs.to) && !speaksFor(refs, refs.from)
@@ -244,7 +254,7 @@ const keyGrantShape = (state, refs) => [
   ...(state.public_key_encrypt === undefined || ENCRYPT_KEY.test(state.public_key_encrypt) ? [] : [w('grammar', 'state.public_key_encrypt is an X25519 key, 32 bytes hex')]),
   ...((state.replaces === undefined) === (state.last_good === undefined) ? [] : [w('shape', 'a rotation names both the key it replaces and that key\'s last good block')]),
   ...(state.replaces === undefined || SIGN_KEY.test(state.replaces) ? [] : [w('grammar', 'state.replaces is the key it replaces')]), ...hashShape(state.last_good, 'state.last_good'),
-  ...(state.recovery_key === undefined || SIGN_KEY.test(state.recovery_key) ? [] : [w('grammar', 'state.recovery_key is the recovery key that signed it')]),
+  ...(state.recovery_key === undefined || SIGN_KEY.test(state.recovery_key) ? [] : [w('grammar', 'state.recovery_key is the recovery key that signed it')]), ...hashShape(state.custodian, 'state.custodian'),
   ...((state.recovery_key_hash === undefined) === (state.recovery_reach === undefined) ? [] : [w('shape', 'adding recovery names both recovery_key_hash and recovery_reach')]),
   ...hashShape(state.recovery_key_hash, 'state.recovery_key_hash'), ...durationShape(state.recovery_reach, 'state.recovery_reach'),
   ...wholeShape(state.epoch, 'state.epoch', 1), ...(state.epoch !== undefined && !refs.as ? [w('shape', 'a rekey (state.epoch) is signed as the circle (refs.as)')] : []),
@@ -295,7 +305,7 @@ function findings(type, state, refs, { schemas, held } = {}) {
   wrong.push(...timesIn(state, 'state'), ...audienceShape(state), ...whereShape(state.where), ...shapesIn(state, 'state'),
     ...(state.confidence === undefined || (typeof state.confidence === 'string' && CONFIDENCE.test(state.confidence)) ? [] : [w('grammar', 'state.confidence is a decimal string from 0 to 1')]),
     ...(state.sequencer === undefined || SIGN_KEY.test(state.sequencer) ? [] : [w('grammar', 'state.sequencer is the signing key that orders the record')]),
-    ...hashListShape(state.manifest, 'state.manifest'), ...hashListShape(state.counted, 'state.counted'), ...(state.line === undefined || typeof state.line === 'string' ? [] : [w('shape', 'state.line is a line id')]))
+    ...channelShape(state.channel), ...hashListShape(state.manifest, 'state.manifest'), ...hashListShape(state.counted, 'state.counted'), ...(state.line === undefined || typeof state.line === 'string' ? [] : [w('shape', 'state.line is a line id')]))
   if (refs.after !== undefined && hashes(refs.after).length > LIMITS.after_heads) wrong.push(w('after_limit', `refs.after names at most ${LIMITS.after_heads} heads`))
   if (held && refs.after !== undefined && isTime(state.at)) {
     for (const hash of hashes(refs.after)) { const seen = lookup(held, hash); if (isTime(seen?.state?.at) && seen.state.at > state.at) wrong.push(w('at_before_after', `state.at is earlier than ${hash}, which it names as seen`)) }

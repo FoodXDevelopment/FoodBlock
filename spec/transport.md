@@ -1,6 +1,6 @@
 # Transport: email is the envelope, FoodBlock is the letter
 
-A convention beside the protocol, not part of it, the way calendar invites ride on email. Written for FoodBlock 1.6.
+A convention beside the protocol, not part of it, the way calendar invites ride on email.
 
 ## Sending
 - The email body is plain English, made from the block, for any human reader.
@@ -25,8 +25,7 @@ A convention beside the protocol, not part of it, the way calendar invites ride 
 DKIM proves which domain sent a message, not which person said it, and not what they meant. The block's signature
 proves the author. So email carries the letter; it is never the record.
 
-## The same for every other envelope
-WhatsApp, SMS, USSD, a voice call, a QR code on a stall, a link: the body for humans, the block for machines. A person
-with held keys (protocol.md, Held keys) acts by any of them: their custodian signs on their word, naming the channel
-and the raw message's hash. Replies in words from anyone else are read as
-observations with a confidence.
+## Every other envelope
+WhatsApp, SMS, USSD, a voice call, a QR code, a link: the body for humans, the block for machines. A person with held
+keys (protocol.md, Held keys) acts by any of them: their custodian signs on their word, naming the channel and the
+raw message's hash. Words from anyone else are read as in Receiving.

@@ -7,7 +7,8 @@ const path = require('path')
 
 const ROOT = path.join(__dirname, '..')
 const FILES = ['protocol.json', 'aliases.json']
-const TARGETS = ['sdk/javascript/spec', 'sdk/python/foodblock/spec', 'sdk/go/spec', 'sdk/swift/Sources/spec', 'sdk/rust/spec']
+// Python, Go and Swift no longer carry a copy: they read the spec through the Rust core (sdk/rust/spec).
+const TARGETS = ['sdk/javascript/spec', 'sdk/rust/spec']
 // A target is kept only once its folder exists (the JS SDK opts in by making sdk/javascript/spec).
 const check = process.argv.includes('--check')
 

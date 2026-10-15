@@ -1,534 +1,167 @@
 # FoodBlock Profile: EPCIS 2.0 + FSMA 204
 
-> Written for the six-type world before FoodBlock 1.6. Its blocks read in 1.6 through `spec/aliases.json` (`place` and `substance` read as `thing`; a lot is an instance with its marks). Aligning this profile to 1.6's own words is owed (TODOS.md).
-
 | | |
 |---|---|
 | **Profile id** | `foodblock-profile-epcis` |
-| **Version** | 0.1 |
-| **Status** | Draft |
-| **Date** | 2026-09-23 |
+| **Version** | 0.2 |
+| **Status** | Draft, written in FoodBlock 1.6's own words |
+| **Date** | 2026-10-15 |
 | **License** | MIT (same as FoodBlock protocol) |
 
-**One-liner:** Map GS1 EPCIS 2.0 visibility events and FDA FSMA Food Traceability Rule (21 CFR Part 1 Subpart S) Critical Tracking Events onto FoodBlock's three-field primitive — without putting GS1/FSMA vocabulary into core.
-
----
+**One line:** carry GS1 EPCIS 2.0 events and the FDA Food Traceability Rule (FSMA 204, 21 CFR Part 1 Subpart S) Critical Tracking Events as ordinary FoodBlocks, with no GS1 or FSMA word in core.
 
 ## 1. Status
 
-This document is a **profile**, not a core protocol change.
-
-- **Normative for:** implementers who claim conformance to `foodblock-profile-epcis`.
-- **Informative for:** all other FoodBlock users (hospitality menus, reviews, surplus, etc.).
-- **Not legal advice.** Covered persons under FSMA 204 remain responsible for records; FoodBlock carries structured KDEs.
-
-### Locked decisions (do not reopen in v0.1)
-
-1. **Subtype-first.** Common CTEs and ops use dedicated FoodBlock subtypes (`transform.harvest`, `transfer.shipment`, …). Optional `observe.epcis` is a **lossless escape hatch** only.
-2. **Profile, not core.** EPCIS 2.0 + FSMA 204 vocabulary and schemas live under this profile. Core stays universal (six bases, SHA-256 identity, type/state/refs).
-3. **`substance.lot` is TLC source of truth.** Lot/batch identity (including Traceability Lot Code) lives on the lot block. CTE events **MAY** copy `tlc` into event `state` for export convenience.
-
----
-
-## 2. Non-goals
-
-- Replacing EPCIS repositories or implementing the full EPCIS Query Interface.
-- Putting GS1 Digital Link, CBV, or FSMA KDEs into FoodBlock **core** schemas.
-- FoodX (or any app) UI / product roadmap.
-- Legal compliance certification or competitor comparisons.
-- Inventing CBV URIs that are not in ratified CBV 2.0 (flagged where industry guidance differs).
-
----
-
-## 3. Design principles
-
-1. **No seventh base type.** EPCIS maps onto existing bases: `transform`, `transfer`, `observe` + entities `actor`, `place`, `substance`.
-2. **Dimensions in `state`; graph in `refs`.** EPCIS what / when / where / why / how → recommended state keys; linkages → named refs.
-3. **Content identity unchanged.** FoodBlock hash = `SHA-256(canonical(type + state + refs))`. EPCIS `eventID` (if present) is stored as `state.epcis_event_id`; it is not the protocol id.
-4. **Master data as entity blocks.** Parties, sites, and lots are first-class `actor.*` / `place.*` / `substance.*` blocks. Events reference them; do not bury reusable master data only inside ephemeral event state.
-5. **FSMA is a KDE overlay.** CTE identity is `state.cte` (profile enum). FoodBlock subtype chooses the action shape; KDEs fill state/refs.
-6. **CBV URIs preferred in profile state.** Prefer full CBV URNs (`urn:epcglobal:cbv:bizstep:…`). Short aliases MAY exist in a profile vocabulary map; export SHOULD expand to URIs.
-
----
-
-## 4. What is core vs profile
-
-| Concern | Core FoodBlock | This profile (`foodblock-profile-epcis`) |
-|---------|----------------|------------------------------------------|
-| Primitive | `type` / `state` / `refs`; SHA-256 | Unchanged |
-| Six bases | `actor`, `place`, `substance`, `transform`, `transfer`, `observe` | Unchanged |
-| Subtypes | Open; sector-agnostic names OK | Standardizes CTE/EPCIS subtypes listed below |
-| `substance.lot` | Allowed as a substance subtype | **Required convention** for TLC/lot identity when claiming profile conformance |
-| CBV bizStep / disposition URIs | Not required | Recommended in `state.biz_step` / `state.disposition` |
-| `state.cte` | Not defined | Profile enum for FSMA CTE name |
-| `observe.epcis` | Not required | Optional lossless envelope |
-| Schemas / vectors / adapter | Optional | Profile deliverables (see §11) |
-| Capability advert | Generic discover | MAY declare `epcis_2_0`, `fsma_204`, CBV version |
-
-Servers that do not implement this profile MUST still accept ordinary FoodBlocks. Profile subtypes outside a server's registry SHOULD validate as unknown-but-well-formed (same as any other subtype), unless the server claims profile conformance.
-
----
-
-## 5. Type / subtype table
-
-### 5.1 EPCIS 2.0 constructs → FoodBlock
-
-| EPCIS 2.0 construct | FoodBlock mapping (profile) | Notes |
-|---------------------|----------------------------|-------|
-| ObjectEvent | **Prefer** bizStep → subtype (`transfer.shipment`, `transfer.receive`, `transform.pack`, …). Else `observe.epcis` | Set `state.epcis_type: "ObjectEvent"` when round-trip matters |
-| AggregationEvent | `transform.aggregate` (ADD/DELETE) or `observe.aggregation` (OBSERVE) | `refs.parent`, `refs.children[]` |
-| TransactionEvent | Often `transfer.order` / `transfer.shipment` + biz transactions | Prefer refs or structured `state.biz_transactions[]` |
-| TransformationEvent | `transform.process` (or `transform.pack` / `transform.harvest` when CTE-specific) | `refs.inputs[]`, `refs.outputs[]` |
-| AssociationEvent | `observe.association` | Persistent place↔object / equipment links |
-| SensorElement (how) | Prefer separate `observe.reading` / `observe.alert`; else nested `state.sensor` | High-frequency paths: separate blocks |
-| PersistentDisposition | `state.persistent_disposition` | CBV disposition URI |
-| bizStep | `state.biz_step` | CBV URI (see §5.3 caveats) |
-| disposition | `state.disposition` | CBV URI |
-| readPoint / bizLocation | `refs.read_point`, `refs.biz_location` → `place.*` | Mirror GLN on `place.state` as needed |
-| epcList / quantityList | Instances → `refs.objects[]` / inputs/outputs; class+qty → `state.quantities[]` | |
-| action | `state.action` | `ADD` \| `OBSERVE` \| `DELETE` |
-| errorDeclaration | Prefer `observe.error_declaration` + `refs.target` | Audit clarity |
-| ILMD | On output `substance.lot` / packing event | Lot birth |
-| eventID | `state.epcis_event_id` | UUID URI or Event Hash ID |
-
-### 5.2 FSMA 204 CTEs → FoodBlock
-
-FDA Critical Tracking Events (21 CFR §1.1310 definition; KDEs in §§1.1325–1.1350):
-
-| CTE | FoodBlock subtype | TLC rule | Recommended `state.biz_step` (CBV 2.0) | Flag |
-|-----|-------------------|----------|----------------------------------------|------|
-| Harvesting | `transform.harvest` | No new TLC | `urn:epcglobal:cbv:bizstep:commissioning` | **[flag]** CBV 2.0 has **no** `harvesting` bizStep; CBV describes harvesting as a sector activity under **commissioning**. Do not invent `…:bizstep:harvesting`. Identify the CTE with `state.cte: "harvesting"`. |
-| Cooling (before initial packing) | `transform.cool` | No new TLC | `urn:epcglobal:cbv:bizstep:other` | **[flag]** Per GS1 US *EPCIS Recommendations for FSMA 204* (Release 2.0, May 2025): no dedicated CBV cooling bizStep; guidance uses **`other`**. Identify CTE with `state.cte: "cooling"`. Optional sensor data in `state.sensor` or linked `observe.reading`. |
-| Initial packing (RAC, not fishing-vessel food) | `transform.pack` | **Assign TLC** | `urn:epcglobal:cbv:bizstep:packing` | Often also a TransformationEvent shape (`epcis_type`). |
-| First land-based receiving (fishing vessel) | `transfer.receive` | **Assign TLC** | `urn:epcglobal:cbv:bizstep:receiving` (or `accepting` where possession acknowledgment is the modeled step) | Distinguish with `state.cte: "first_land_based_receiving"`. |
-| Shipping | `transfer.shipment` | Keep TLC | `urn:epcglobal:cbv:bizstep:shipping` | Disposition often `…:disp:in_transit`. |
-| Receiving | `transfer.receive` | Keep TLC; assign if received from exempt source (RFE/restaurant exceptions apply in rule) | `urn:epcglobal:cbv:bizstep:receiving` | `state.cte: "receiving"`. |
-| Transformation | `transform.process` | **New TLC** on output | Context-dependent: often `commissioning` or `creating_class_instance` | CTE identity is `state.cte: "transformation"` + TransformationEvent; do not rely on a non-existent `transforming` CBV bizStep. |
-
-**Traceability plan** (not an EPCIS event): `observe.traceability_plan` referenced from the covered `actor` (procedures, FTL identification method, TLC assignment method, contact, farm-map ref).
-
-### 5.3 Profile subtype registry (standardized names)
-
-| Subtype | Role |
-|---------|------|
-| `transform.harvest` | Harvesting CTE |
-| `transform.cool` | Cooling before initial packing |
-| `transform.pack` | Initial packing / packing ops |
-| `transform.process` | Transformation CTE / general process |
-| `transform.aggregate` | AggregationEvent ADD/DELETE |
-| `transfer.shipment` | Shipping CTE |
-| `transfer.receive` | Receiving / first land-based receive |
-| `transfer.order` | PO / order TransactionEvent-ish |
-| `observe.reading` | Sensor / measurement |
-| `observe.alert` | Threshold breach / alert |
-| `observe.association` | AssociationEvent |
-| `observe.aggregation` | Aggregation OBSERVE |
-| `observe.epcis` | **Lossless escape hatch** — opaque/normalized EPCIS envelope |
-| `observe.error_declaration` | EPCIS errorDeclaration |
-| `observe.coa` | Certificate of analysis (optional companion) |
-| `observe.claim` | Claim / proof-point (optional companion) |
-| `observe.traceability_plan` | FSMA traceability plan |
-| `substance.lot` | Lot/batch — **TLC source of truth** |
-| `substance.product` | Product class / catalog |
-| `place.site` / `place.field` / `place.vehicle` | Location shapes as needed |
-
----
-
-## 6. Recommended state keys and refs
-
-### 6.1 Event dimension keys (recommended)
-
-```json
-{
-  "event_time": "2026-09-20T14:30:00Z",
-  "event_time_zone_offset": "+01:00",
-  "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
-  "disposition": "urn:epcglobal:cbv:disp:in_transit",
-  "persistent_disposition": null,
-  "action": "OBSERVE",
-  "epcis_type": "ObjectEvent",
-  "epcis_event_id": "urn:uuid:00000000-0000-4000-8000-000000000001",
-  "cte": "shipping",
-  "instance_id": "00000000-0000-4000-8000-000000000099",
-  "tlc": "TLC-GA-20260918-01",
-  "product_description": "Baby spinach 200g clamshell",
-  "quantity": { "value": 40, "unit": "case" },
-  "quantities": [],
-  "reference_document": { "type": "BOL", "number": "BOL-88921" },
-  "biz_transactions": [
-    { "type": "urn:epcglobal:cbv:btt:bol", "id": "BOL-88921" }
-  ],
-  "sensor": {
-    "type": "temperature",
-    "value": 3.2,
-    "unit": "celsius",
-    "device_id": "probe-77"
-  },
-  "adapter": "epcis",
-  "adapter_ref": "capture:doc-…"
-}
-```
-
-| Key | Meaning |
-|-----|---------|
-| `event_time` | EPCIS eventTime (ISO-8601) |
-| `event_time_zone_offset` | EPCIS eventTimeZoneOffset |
-| `biz_step` | CBV Business Step URI |
-| `disposition` | CBV Disposition URI |
-| `action` | ADD / OBSERVE / DELETE |
-| `epcis_type` | ObjectEvent \| AggregationEvent \| TransactionEvent \| TransformationEvent \| AssociationEvent |
-| `epcis_event_id` | EPCIS eventID if present |
-| `cte` | Profile FSMA CTE slug (see §5.2) |
-| `tlc` | **Copy** of lot TLC for export rows; source of truth remains `substance.lot` |
-| `product_description` | FSMA product description KDE |
-| `quantity` / `quantities` | Single qty or class-level list |
-| `reference_document` | FSMA reference document type + number |
-| `biz_transactions` | Optional structured EPCIS bizTransactionList |
-| `sensor` | Nested how-dimension (prefer separate observe blocks when dense) |
-
-### 6.2 FSMA location description on `place.*`
-
-Per 21 CFR §1.1310 location description elements — store on the place block:
-
-```json
-{
-  "type": "place.site",
-  "state": {
-    "name": "Green Acres Packhouse",
-    "phone": "+1-555-0100",
-    "address": {
-      "line1": "1 Farm Rd",
-      "city": "Salinas",
-      "region": "CA",
-      "postal": "93901",
-      "country": "US"
-    },
-    "geo": { "lat": 36.6777, "lon": -121.6555 },
-    "gln": "0614141123452"
-  },
-  "refs": {
-    "operator": "sha256:actor_producer_placeholder_0001"
-  }
-}
-```
-
-### 6.3 Refs patterns
-
-| Role | Meaning | Typical target |
-|------|---------|----------------|
-| `objects` | Subject instances (ObjectEvent) | `substance.*` |
-| `inputs` / `outputs` | Transformation graph | `substance.*` |
-| `parent` / `children` | Aggregation / association | substance or place |
-| `read_point` | Where observed | `place.*` |
-| `biz_location` | Where business locates object after event | `place.*` |
-| `from` / `to` | Ship-from / ship-to sites | `place.*` |
-| `shipper` / `receiver` | Transfer parties | `actor.*` |
-| `tlc_source` | Where TLC was assigned | `place.*` |
-| `farm` / `field` | Harvest KDEs | `place.*` |
-| `harvester` / `operator` | Actors | `actor.*` |
-| `subsequent_recipient` | Harvest/cool forward party/site | `place.*` or `actor.*` |
-| `subject` | Observation about X | any |
-| `evidence` | Proof-point backing | `observe.coa`, docs |
-| `shipment` | Link sensor/alert to shipment | `transfer.shipment` |
-| `updates` | Successor block | previous hash |
-
----
-
-## 7. TLC / lot rules
-
-1. **Source of truth:** `substance.lot.state.tlc` (and related lot identifiers: GTIN+lot, batch code, etc.).
-2. **Assignment events** (create or first attach TLC on the lot block):
-   - Initial packing of a RAC (not fishing-vessel food)
-   - First land-based receiving of fishing-vessel food
-   - Transformation (new TLC on **output** lot)
-   - Receiving from an exempt source when no TLC exists (rule exceptions for RFE/restaurant apply)
-3. **Non-assignment CTEs** (harvest, cool, ship, ordinary receive): **MUST NOT** invent a new TLC; **MAY** copy existing `tlc` into event `state` for sortable export.
-4. **`refs.tlc_source`** on assignment (and on later CTEs that carry TLC) → `place.*` where the code was assigned.
-5. **Events never replace the lot block.** Updating lot master data creates a new `substance.lot` via normal FoodBlock update/`refs.updates` rules; CTE events point at the current lot hash.
-
-**Lot block sketch:**
-
-```json
-{
-  "type": "substance.lot",
-  "state": {
-    "name": "Baby spinach 200g",
-    "tlc": "TLC-GA-20260918-01",
-    "gtin": "00614141123458",
-    "quantity": { "value": 4800, "unit": "each" }
-  },
-  "refs": {
-    "product_class": "sha256:substance_product_spinach200g_0001",
-    "packed_at": "sha256:transform_pack_placeholder_0001",
-    "tlc_source": "sha256:place_packhouse_placeholder_0001"
-  }
-}
-```
-
----
-
-## 8. Worked examples (5)
-
-Placeholder hashes use the form `sha256:<role>_placeholder_<nnnn>` so they are obvious and stable in prose. Production SDKs replace them with real SHA-256 digests of canonical JSON.
-
-### Example 1 — Harvesting CTE → `transform.harvest`
-
-```json
-{
-  "type": "transform.harvest",
-  "state": {
-    "instance_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-    "event_time": "2026-09-18T16:00:00Z",
-    "event_time_zone_offset": "-07:00",
-    "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
-    "action": "ADD",
-    "epcis_type": "ObjectEvent",
-    "cte": "harvesting",
-    "commodity": "spinach",
-    "variety": "baby leaf",
-    "quantity": { "value": 1200, "unit": "kg" },
-    "reference_document": { "type": "field_tag", "number": "FT-4412" }
-  },
-  "refs": {
-    "farm": "sha256:place_farm_placeholder_0001",
-    "field": "sha256:place_field_north3_placeholder_0001",
-    "harvester": "sha256:actor_producer_placeholder_0001",
-    "subsequent_recipient": "sha256:place_packhouse_placeholder_0001",
-    "outputs": ["sha256:substance_spinach_bulk_placeholder_0001"],
-    "read_point": "sha256:place_field_north3_placeholder_0001"
-  }
-}
-```
-
-### Example 2 — Cooling CTE → `transform.cool`
-
-```json
-{
-  "type": "transform.cool",
-  "state": {
-    "instance_id": "8d0f7780-8536-41ef-a55c-f18fd2a01bf8",
-    "event_time": "2026-09-18T18:30:00Z",
-    "event_time_zone_offset": "-07:00",
-    "biz_step": "urn:epcglobal:cbv:bizstep:other",
-    "disposition": "urn:epcglobal:cbv:disp:in_progress",
-    "action": "OBSERVE",
-    "epcis_type": "ObjectEvent",
-    "cte": "cooling",
-    "quantity": { "value": 1200, "unit": "kg" },
-    "sensor": {
-      "type": "temperature",
-      "value": 2.0,
-      "unit": "celsius",
-      "device_id": "cooler-probe-3"
-    },
-    "reference_document": { "type": "cool_log", "number": "CL-918" }
-  },
-  "refs": {
-    "objects": ["sha256:substance_spinach_bulk_placeholder_0001"],
-    "farm": "sha256:place_farm_placeholder_0001",
-    "read_point": "sha256:place_cooler_placeholder_0001",
-    "biz_location": "sha256:place_cooler_placeholder_0001",
-    "subsequent_recipient": "sha256:place_packhouse_placeholder_0001",
-    "updates": "sha256:transform_harvest_placeholder_0001"
-  }
-}
-```
-
-### Example 3 — Initial packing + TLC assignment → `transform.pack` + `substance.lot`
-
-```json
-{
-  "type": "transform.pack",
-  "state": {
-    "instance_id": "9b2c3d4e-1111-2222-3333-444455556666",
-    "event_time": "2026-09-18T22:10:00Z",
-    "event_time_zone_offset": "-07:00",
-    "biz_step": "urn:epcglobal:cbv:bizstep:packing",
-    "action": "ADD",
-    "epcis_type": "TransformationEvent",
-    "cte": "initial_packing",
-    "tlc": "TLC-GA-20260918-01",
-    "product_description": "Baby spinach 200g clamshell",
-    "quantity_in": { "value": 1200, "unit": "kg" },
-    "quantity_out": { "value": 4800, "unit": "each" },
-    "reference_document": { "type": "pack_log", "number": "PL-918" }
-  },
-  "refs": {
-    "inputs": ["sha256:substance_spinach_bulk_placeholder_0001"],
-    "outputs": ["sha256:substance_lot_TLC_GA_20260918_01_placeholder"],
-    "tlc_source": "sha256:place_packhouse_placeholder_0001",
-    "farm": "sha256:place_farm_placeholder_0001",
-    "field": "sha256:place_field_north3_placeholder_0001",
-    "harvester": "sha256:actor_producer_placeholder_0001",
-    "read_point": "sha256:place_packhouse_placeholder_0001"
-  }
-}
-```
-
-Linked lot (source of truth for TLC):
-
-```json
-{
-  "type": "substance.lot",
-  "state": {
-    "name": "Baby spinach 200g",
-    "tlc": "TLC-GA-20260918-01",
-    "gtin": "00614141123458",
-    "quantity": { "value": 4800, "unit": "each" }
-  },
-  "refs": {
-    "product_class": "sha256:substance_product_spinach200g_0001",
-    "packed_at": "sha256:transform_pack_placeholder_0001",
-    "tlc_source": "sha256:place_packhouse_placeholder_0001"
-  }
-}
-```
-
-### Example 4 — Shipping CTE → `transfer.shipment`
-
-```json
-{
-  "type": "transfer.shipment",
-  "state": {
-    "instance_id": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
-    "event_time": "2026-09-19T08:00:00Z",
-    "event_time_zone_offset": "-07:00",
-    "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
-    "disposition": "urn:epcglobal:cbv:disp:in_transit",
-    "action": "OBSERVE",
-    "epcis_type": "ObjectEvent",
-    "cte": "shipping",
-    "tlc": "TLC-GA-20260918-01",
-    "product_description": "Baby spinach 200g clamshell",
-    "quantity": { "value": 40, "unit": "case" },
-    "sscc": "006141419999999999",
-    "reference_document": { "type": "BOL", "number": "BOL-88921" },
-    "biz_transactions": [
-      { "type": "urn:epcglobal:cbv:btt:bol", "id": "BOL-88921" }
-    ]
-  },
-  "refs": {
-    "objects": ["sha256:substance_lot_TLC_GA_20260918_01_placeholder"],
-    "from": "sha256:place_packhouse_placeholder_0001",
-    "to": "sha256:place_dc_placeholder_0001",
-    "tlc_source": "sha256:place_packhouse_placeholder_0001",
-    "shipper": "sha256:actor_producer_placeholder_0001",
-    "read_point": "sha256:place_packhouse_placeholder_0001"
-  }
-}
-```
-
-### Example 5 — Transformation CTE → `transform.process` (new TLC)
-
-```json
-{
-  "type": "transform.process",
-  "state": {
-    "instance_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
-    "event_time": "2026-09-21T10:00:00Z",
-    "event_time_zone_offset": "+01:00",
-    "biz_step": "urn:epcglobal:cbv:bizstep:creating_class_instance",
-    "action": "ADD",
-    "epcis_type": "TransformationEvent",
-    "cte": "transformation",
-    "process": "stone_milling",
-    "input_lots": [
-      { "tlc": "WHEAT-LOT-55", "quantity": { "value": 500, "unit": "kg" } }
-    ],
-    "tlc": "FLOUR-LOT-90",
-    "product_description": "Stoneground bread flour 25kg",
-    "quantity": { "value": 480, "unit": "kg" },
-    "reference_document": { "type": "work_order", "number": "WO-3321" }
-  },
-  "refs": {
-    "inputs": ["sha256:substance_lot_wheat_55_placeholder"],
-    "outputs": ["sha256:substance_lot_flour_90_placeholder"],
-    "tlc_source": "sha256:place_mill_placeholder_0001",
-    "operator": "sha256:actor_maker_placeholder_0001",
-    "read_point": "sha256:place_mill_placeholder_0001"
-  }
-}
-```
-
-**Receiving CTE** (table-complete; not expanded as a sixth full example): same shape as Example 4 with `type: "transfer.receive"`, `cte: "receiving"`, `biz_step: "urn:epcglobal:cbv:bizstep:receiving"`, and `refs.from` / `refs.to` swapped in the receive direction.
-
-**Sensor escape (optional pattern):** prefer `observe.alert` / `observe.reading` with `biz_step: "urn:epcglobal:cbv:bizstep:sensor_reporting"` (CBV 2.0) and `refs.shipment` / `refs.subject` — not a FSMA CTE.
-
-**Lossless hatch:** unknown or exotic EPCIS documents MAY land as:
-
-```json
-{
-  "type": "observe.epcis",
-  "state": {
-    "epcis_type": "ObjectEvent",
-    "biz_step": "urn:epcglobal:cbv:bizstep:inspecting",
-    "event_time": "2026-09-19T12:00:00Z",
-    "normalized": { },
-    "raw_ref": "visibility:restricted-or-external-store-id"
-  },
-  "refs": {
-    "objects": ["sha256:substance_lot_TLC_GA_20260918_01_placeholder"]
-  }
-}
-```
-
-Prefer subtypes when a row in §5.2 applies.
-
----
-
-## 9. Conformance checklist (short)
-
-An implementation **claims** `foodblock-profile-epcis` when it meets all of:
-
-- [ ] **Core intact** — only three fields; six bases; SHA-256 content identity unchanged.
-- [ ] **Subtype-first** — harvest / cool / pack / ship / receive / process use §5.3 subtypes; `observe.epcis` only as escape hatch.
-- [ ] **`state.cte`** set on FSMA CTE events to the slugs in §5.2.
-- [ ] **CBV URIs** in `biz_step` / `disposition` when claiming CBV-compatible export; no invented `urn:epcglobal:cbv:…` payloads.
-- [ ] **TLC rule** — `substance.lot` holds authoritative `tlc`; assignment only at pack / first land-based receive / transform (and exempt-source receive per rule); other CTEs may copy TLC into event state.
-- [ ] **`refs.tlc_source`** present on TLC-assignment events.
-- [ ] **Places carry location description** KDEs when used as FSMA locations.
-- [ ] **Round-trip optional** — if `epcis_type` / `epcis_event_id` present, export reconstructs those fields.
-- [ ] **Vectors** — at least the five examples in §8 hash-stable across SDKs (canonical JSON).
-
----
-
-## 10. Remaining open items (tiny)
-
-Only items **not** settled by the three locks:
-
-1. **Harvest bizStep on the wire** — Profile recommends CBV `commissioning` + `state.cte: "harvesting"`. If a future CBV addendum or industry extension publishes a dedicated harvest bizStep, adopt it via vocabulary alias without changing the FoodBlock subtype.
-2. **Cooling bizStep** — Profile follows GS1 US FSMA guidance (`other`) until CBV adds a cooling value. `state.cte: "cooling"` remains the FoodBlock discriminator.
-3. **Transformation default bizStep** — `creating_class_instance` vs `commissioning` is process-dependent; examples pick one. Adapters SHOULD preserve the source event's bizStep when importing.
-4. **GS1 Digital Link as first-class alternate id** — out of scope for v0.1; keep `state.gtin` / GLN fields; helpers may be added later without core changes.
-5. **Class-only quantity events** — whether to always mint a synthetic `substance.lot` / `substance.product` vs state-only `quantities[]` when no instance EPCs exist. Recommendation: mint `substance.product` (class) + optional lot when TLC exists; document in adapter.
-
----
-
-## 11. Implementation order (FoodBlock protocol only)
-
-1. **Publish this profile** under `spec/profiles/foodblock-profile-epcis.md` ✅
-2. **JSON Schemas** for profile subtypes + recommended state keys (`cte` enum, TLC fields, place location description). Register in the **profile** schema pack, not core-required.
-3. **Vocabulary aliases** — short names ↔ CBV URIs (`shipping` → `urn:epcglobal:cbv:bizstep:shipping`); include flagged harvest/cool mappings.
-4. **Canonical vectors** — add §8 examples to `test/vectors.json` (or `test/vectors/profile-epcis.json`) so every SDK agrees on hashes.
-5. **Capture adapter (protocol-facing)** — EPCIS 2.0 JSON/JSON-LD → FoodBlocks (subtype-first; fallback `observe.epcis`); optional export to EPCIS JSON and FSMA sortable rows from a subgraph.
-6. **Capability advertisement** — `.well-known/foodblock` (or existing discover) MAY list `profiles: ["foodblock-profile-epcis@0.1"]` with CBV/EPCIS versions.
-7. **Sandbox fixtures** — golden EPCIS docs → FoodBlocks → export notes (conformance pack).
-
-Still deferred: full EPCIS Query dialect; EU FIC / DPP packs; app UI.
-
----
-
-## 12. Sources
+This is a **profile**, not a change to the protocol. Core stays as protocol.md says; a node that has never heard of this profile still accepts every block in it.
+
+- **Normative for** implementers who claim `foodblock-profile-epcis`. **Informative for** everyone else.
+- **Not legal advice.** Covered persons under FSMA 204 stay responsible for their records; FoodBlock carries the key data elements (KDEs).
+- **Not in scope:** an EPCIS repository or its Query Interface; GS1 Digital Link; EU labelling or product-passport packs; any app.
+
+### Decisions
+
+1. **The kind is the CTE.** A step's `state.kind` names the Critical Tracking Event (`harvest`, `cool`, `pack`, `first_land_receive`, `ship`, `receive`, `process`). There is no separate CTE field.
+2. **The lot is an instance; the TLC is a mark.** A lot is a `thing` instance of its product kind. Its Traceability Lot Code (TLC) is one of its marks, so a recall matches it exactly (protocol.md, Things).
+3. **Parties and sites are actors and things.** They are written once and linked, never buried in an event.
+4. **An escape hatch, not a path.** An EPCIS event no row below covers lands as an `observe` of kind `epcis`.
+
+## 2. Core and profile
+
+| Concern | Core | This profile |
+|---|---|---|
+| Block, types, verbs, canonical form, hashes | As protocol.md | Unchanged |
+| Kinds (`state.kind`) | Open labels | Fixes the labels in §4 |
+| Marks `[{ scheme, value }]` | Any scheme | Fixes the schemes in §3 |
+| Fields beyond the base | Declared by a schema | Declares the KDE fields in §5 in profile schemas (things of kind schema, `target` as in §4) |
+| Business step, disposition | Not defined | CBV URIs in `biz_step`, `disposition` |
+| Round trip to EPCIS | Not defined | Optional `epcis_id`, `epcis_type`, `action` |
+
+An EPCIS event id is not a FoodBlock id: the id of a block is its hash.
+
+## 3. Things, actors and marks
+
+- **Covered person.** A business is a circle (an `actor` of kind circle). Every CTE block is signed `as` it (`refs.as`), by a member who holds a signing role.
+- **Site.** Farm, field, cooler, packhouse, distribution centre, vehicle: each is a `thing` of kind place, with `state.where`, a `name`, and its FSMA location description (§5). Its GLN is a mark `{ scheme: "gln", value }`. A site inside another (a field on a farm, a vehicle at a dock) uses `refs.place`.
+- **Product kind.** A `thing` kind (spinach, flour) with its GTIN as a mark `{ scheme: "gtin", value }`.
+- **Lot.** A `thing` instance: `refs.kind` the product kind, `state.lot` its batch name, `state.amount` or `state.pack` its size, `state.use_by`. Its marks:
+  - `{ scheme: "tlc", value }`: the Traceability Lot Code;
+  - `{ scheme: "tlc_source", value }`: the GLN, or FDA registration number, of the place that assigned it;
+  - `{ scheme: "gtin", value }`, `{ scheme: "sscc", value }`, `{ scheme: "sgtin", value }`: any other identifiers the lot carries.
+- **Containment.** An EPCIS parent and children (case on pallet, pallet in truck) are `refs.place`: what is inside moves with its container (protocol.md, Things).
+- **Traceability plan.** An `observe` of kind `traceability_plan` by the covered person: `state.text` names the plan document by its hash.
+
+## 4. Events
+
+### 4.1 FSMA 204 Critical Tracking Events
+
+| CTE | Block | Kind | TLC | Recommended `biz_step` (CBV 2.0) |
+|---|---|---|---|---|
+| Harvesting | `transform`, no inputs; its output is the harvested instance, `refs.place` the field or farm; the author is the first owner | `harvest` | none assigned | `urn:epcglobal:cbv:bizstep:commissioning` (flag 1) |
+| Cooling before initial packing | `transform` that keeps: `refs.subject` the instance, nothing consumed | `cool` | kept | `urn:epcglobal:cbv:bizstep:other` (flag 2) |
+| Initial packing (not fishing-vessel food) | `transform`: inputs in `derives_from`; outputs are the packed lots, each naming it | `pack` | **assigned** on the output | `urn:epcglobal:cbv:bizstep:packing` |
+| First land-based receiving (fishing vessel) | `transform` by the receiver: input the landed instance, output the lot | `first_land_receive` | **assigned** on the output | `urn:epcglobal:cbv:bizstep:receiving` |
+| Shipping | `transfer`: `refs.what` the lot, `refs.to_place` ship-to, `refs.to_holder` the carrier, `refs.place` ship-from | `ship` | kept | `urn:epcglobal:cbv:bizstep:shipping` |
+| Receiving | the receiver's `answers` of the shipping transfer, `accepted`, with `state.at`, `state.when` and `refs.place` the receiving site | `receive` | kept | `urn:epcglobal:cbv:bizstep:receiving` |
+| Transformation | `transform` with `derives_from` inputs and new lot outputs | `process` | **new TLC** on each output | `commissioning` or `creating_class_instance` (flag 3) |
+
+Flags (CBV and GS1 US guidance, as of the *EPCIS Recommendations for FSMA 204*, Release 2.0, May 2025):
+1. CBV 2.0 has no `harvesting` business step. Use `commissioning`; do not invent `…:bizstep:harvesting`.
+2. CBV 2.0 has no cooling step; the guidance uses `other`.
+3. The step depends on the process. An adapter preserves the source event's `biz_step` when importing.
+
+A receiving from an exempt source (restaurant and retail food establishment exceptions in the rule) that has no TLC is a `transform` of kind `receive` by the receiver that assigns one, like first land-based receiving.
+
+### 4.2 EPCIS 2.0 constructs
+
+| EPCIS 2.0 | 1.6 |
+|---|---|
+| ObjectEvent | The block its `biz_step` names (§4.1). Anything else: an `observe` about the lot, `refs.subject` the instance |
+| AggregationEvent ADD / DELETE | A `transfer` with `refs.to_place` the container (ADD), or out of it (DELETE) |
+| TransactionEvent | The `transfer` it records; its business transactions in `biz_transactions` |
+| TransformationEvent | `transform`, inputs in `derives_from` |
+| AssociationEvent | An `observe` that links two things by `refs.subject` and `refs.place` |
+| SensorElement | An `observe` reading: `amount`, `accuracy`, `coverage`, the sensor named in `refs.from`, the shipment or lot in `refs.subject`. Dense streams are linked by their Merkle root (protocol.md, Truth) |
+| ErrorDeclaration | The author's `updates` of the wrong event; for another author's event, a `defeats` of it, then a corrected block |
+| eventTime, eventTimeZoneOffset | `state.when`, `state.tz` |
+| recordTime | `state.at` (when it was said) |
+| bizStep, disposition, persistentDisposition | `state.biz_step`, `state.disposition`, `state.persistent_disposition` |
+| readPoint, bizLocation | `refs.place`, and `where_now` (a fold) for where the lot is after |
+| epcList, quantityList | Instances by `refs.what`; a quantity as `state.amount` of an instance (a part keeps its marks) |
+| eventID | `state.epcis_id`, only to round trip |
+| ILMD | The lot's data (`lot`, `use_by`, marks) on the output instance |
+
+An `observe` of kind `epcis` holds any other event: `state.epcis_type`, `state.biz_step`, `state.when`, and `state.raw`, the hash of the raw document. Prefer a row above whenever one applies.
+
+## 5. Key data elements
+
+KDEs are `state` fields the profile's schemas declare. Dates and times are the 1.6 time form; numbers are decimal strings; quantities are `{ value, unit }` with a UCUM unit.
+
+| Field | Meaning |
+|---|---|
+| `biz_step`, `disposition`, `persistent_disposition` | CBV URIs (full URNs; short names only in a vocabulary map, expanded on export) |
+| `tz` | EPCIS eventTimeZoneOffset (`+01:00`) |
+| `action` | `ADD`, `OBSERVE` or `DELETE`, for round trip |
+| `epcis_type`, `epcis_id` | For round trip, optional |
+| `product_description` | FSMA product description |
+| `reference_document` | `{ type, number }`: bill of lading, work order, field tag |
+| `biz_transactions` | `[{ type, id }]` with CBV transaction-type URIs |
+| `commodity`, `variety`, `field_name` | Harvest KDEs |
+
+The date a CTE took place is `state.when`. The location is `refs.place`. The quantity and unit are `state.amount`, on the instance or the transfer. The TLC and its source are the lot's marks, so a ship or receive block carries them by naming the lot. A reader gets them from the fold, or an exporter copies them into the FDA's sortable spreadsheet.
+
+**FSMA location description** (21 CFR §1.1310) is data on the site thing: `name`, `phone`, `address` (`line1`, `city`, `region`, `postal`, `country`), `where`, and the GLN mark.
+
+## 6. TLC rules
+
+1. The TLC is a mark on the lot instance, written when the lot is made.
+2. A TLC is assigned only in `pack`, `first_land_receive`, `process`, and `receive` from an exempt source that has none. Other CTEs keep the TLC by naming the lot, and never write a new one.
+3. The `tlc_source` mark names the place that assigned the code.
+4. A lot's data cannot change: a correction is an `updates` of the lot by its author. CTE blocks name the lot by hash.
+
+## 7. Tracing and recall
+
+- **Forward.** Start from the instances whose marks match the TLC exactly. Follow `derives_from` to what was made from them (each output carries its own new TLC), `refs.what` to where they were shipped, and `refs.place` to what they were packed in.
+- **Backward.** From a received lot, follow the `answers` to the shipping transfer, then `derives_from` to its inputs.
+- **Whose records.** Each covered person holds their own CTE blocks. Sealed blocks show only their public headers, so a recall asks each holder, who answers for the blocks they hold (protocol.md, Open questions).
+- **The spreadsheet.** The FDA's 24-hour sortable record is an export from these folds, never a block.
+
+## 8. Conformance
+
+An implementation claims `foodblock-profile-epcis` when:
+- core is intact, and every block passes the write check;
+- the lot is an instance with its TLC as a mark, and a CTE uses the kind in §4.1;
+- the TLC rules in §6 hold;
+- `biz_step` and `disposition` are CBV URIs when it claims CBV-compatible export, with no invented `urn:epcglobal:cbv:` values;
+- a site used as a FSMA location carries its location description.
+
+## 9. Vectors
+
+The five EPCIS vectors in `test/vectors.json` (section `legacy-read`: harvest, cooling, initial packing with TLC, shipping, transformation) were written before 1.6. They are legacy-read only: they still hash the same, and `aliases.json` reads their types as 1.6 types. They are not 1.6 examples.
+
+This profile should gain these 1.6 vectors (not yet written):
+1. Harvest: a `transform` of kind `harvest` with no inputs.
+2. Cool: a keep of kind `cool`.
+3. Initial pack: a `transform` of kind `pack` with the lot's `tlc` and `tlc_source` marks.
+4. Ship and receive: a `transfer` of kind `ship` and the receiver's `accepted` answer, with the fold's `where_now` and `ownership`.
+5. Transformation: a `transform` of kind `process`, new TLC on the output.
+6. An exempt-source receive that assigns a TLC.
+7. Recall trace by mark: forward and backward, over the blocks above.
+8. Aggregation: a `transfer` into a container, and the contained thing's `where_now`.
+
+## 10. Open items
+
+1. **Harvest and cooling steps.** If CBV adds dedicated business steps, adopt them as vocabulary; the kind does not change.
+2. **Transformation step.** `commissioning` against `creating_class_instance` is process-dependent.
+3. **GS1 Digital Link.** Out of scope; a mark scheme could carry it later.
+4. **Part of a lot in a transform.** Naming the amount of an input a transform uses is open in protocol.md.
+5. **Vocabulary map and schemas.** The profile's schemas, the short-name to CBV-URI map, a capture adapter and fixtures are still to be written.
+
+## 11. Sources
 
 | Source | Use |
-|--------|-----|
-| FoodBlock README / technical whitepaper (FoodXDevelopment/FoodBlock) | Core primitive, six bases |
-| [EPCIS 2.0](https://ref.gs1.org/standards/epcis/2.0.0/) | Event types & dimensions |
-| [CBV 2.0](https://ref.gs1.org/standards/cbv/2.0.0/) | bizStep / disposition / btt URIs (Jun 2022) |
-| [FDA FSMA Food Traceability Rule — CTE/KDE overview (2024-05-20)](https://www.fda.gov/files/food/published/FSMA%20Rule%20for%20Food%20Traceability%20-%202024-0520-CTEs-KDEs.pdf) | CTE/KDE lists |
-| [21 CFR Part 1 Subpart S (eCFR)](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-1/subpart-S) | Normative definitions & record rules |
-| GS1 US *EPCIS Recommendations for FSMA 204 Critical Tracking Events* (Release 2.0, May 2025) | Cooling → `other`; produce CTE wiring guidance |
-
----
-
-*End of `foodblock-profile-epcis` v0.1*
+|---|---|
+| [EPCIS 2.0](https://ref.gs1.org/standards/epcis/2.0.0/) | Event types and dimensions |
+| [CBV 2.0](https://ref.gs1.org/standards/cbv/2.0.0/) | Business steps, dispositions, transaction types |
+| [FDA FSMA Food Traceability Rule, CTEs and KDEs (2024-05-20)](https://www.fda.gov/files/food/published/FSMA%20Rule%20for%20Food%20Traceability%20-%202024-0520-CTEs-KDEs.pdf) | CTE and KDE lists |
+| [21 CFR Part 1 Subpart S](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-A/part-1/subpart-S) | Definitions and record rules |
+| GS1 US *EPCIS Recommendations for FSMA 204 Critical Tracking Events* (Release 2.0, May 2025) | Cooling is `other`; produce CTE wiring |

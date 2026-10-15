@@ -1,17 +1,24 @@
 # foodblock (Go)
 
-FoodBlock 1.6 for Go. The protocol is [`spec/protocol.md`](../../spec/protocol.md). This package is a port of the
-JavaScript reference SDK, module for module, and it reproduces every section of
-[`spec/vectors.json`](../../spec/vectors.json).
+FoodBlock 1.6 for Go. The protocol is [`spec/protocol.md`](../../spec/protocol.md). This package is a thin cgo layer
+over the one Rust core ([`../rust`](../rust)): every rule (canonical form, hashing, Ed25519, the write check, chains,
+identities, envelopes, folds, messages between nodes, and protocol.json / aliases.json themselves) lives there once,
+and Go calls it through the core's single JSON door (`fb_call`, in the C ABI `include/foodblock.h`). The Go types
+(`Block`, `Stage`, `Chain`, ...) are only the shapes the answers decode into.
+
+## Build
+
+cgo links the Rust static library, so build that first (needs a Rust toolchain and a C compiler):
 
 ```bash
-go get github.com/FoodXDevelopment/foodblock/sdk/go
+(cd ../rust && cargo rustc --release --features ffi --crate-type staticlib)    # target/release/libfoodblock.a
+go test ./...
 ```
 
-It reads every list it needs (types, verbs, ref keys, terms, grammar, limits, envelope algs, message shapes,
-profiles) from `spec/protocol.json`, and reads every older shape through `spec/aliases.json`. The package carries
-exact copies of both files in `spec/` (embedded with `go:embed`), because a module downloaded on its own cannot reach
-the repository's `spec/` folder. `node test/sync-spec.cjs` makes the copies, and the tests fail if a copy differs.
+`core.go` names the header and the library by `${SRCDIR}/../rust/...`, so the module is used from this repository
+(or a vendored copy that keeps the `rust/` folder beside it). Elsewhere, set `CGO_CFLAGS=-I<dir with foodblock.h>` and
+`CGO_LDFLAGS=<path to libfoodblock.a>` and remove the `#cgo` lines. There is no Go dependency beyond the standard
+library.
 
 ## Profile
 
@@ -30,16 +37,16 @@ A small device (a fridge sensor, a scale) can use only the micro part: `Write` (
 | The protocol as data | `Version`, `Protocol`, `Aliases`, `Types`, `Verbs`, `RefKeys`, `Fields`, `Profiles` |
 | A block | `Block`, `Create`, `Hash`, `Canonical`, `CanonicalJSON` |
 | Keys and signatures (Ed25519) | `GenerateKeypair`, `KeypairFromSeed`, `Sign` (signs; checks nothing), `Verify`, `SignMessage`, `VerifyMessage` |
-| Encryption (X25519, HKDF-SHA256, AES-256-GCM) | `GenerateEncryptionKeypair`, `EncryptionKeyOf`, `Seal` (encrypts), `Open`, `Alg`, `AlgRaw` |
+| Encryption (X25519, HKDF-SHA256, AES-256-GCM) | `GenerateEncryptionKeypair`, `EncryptionKeyOf`, `Seal` (encrypts; `Fixed` randomness is accepted and ignored), `Open`, `Alg`, `AlgRaw` |
 | The commitment | `NewSalt`, `SaltedHash`, `Commit`, `FindsSelf`, `RevealFor` |
 | Writing | `Compose`, `Write` (compose, check, sign, chain), `Check` (the write check), `Amount`, `Money`, `Confidence`, `Terms`, `Public` |
 | The wire | `Wrap`, `Unwrap`, `Header`, `SealCopy`, `OpenCopy`, `HeaderSignedBy` |
 | Reading older shapes | `ReadAs`, `IsA` |
-| Chains and causal order | `NextLink`, `CheckChain`, `CausesOf`, `PastOf`, `Sees`, `HeadsAmong`, `CausalOrder` |
-| Who someone is | `Genesis`, `IsGenesis`, `Is16Genesis`, `GenesisOpens`, `RecoveryKeyHash`, `KeyGrant`, `IdentityOf`, `KeyTimeline`, `KeysOf`, `SignedByAuthor`, `SignerOf`, `ChainsOf`, `NextLinkFor`, `HistoryCounts` |
-| Authority | `ParseDuration`, `AddDuration`, `CompareDurations`, `ScopeWithin`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `OperatorsOf` |
-| Folds | `PromiseStage`, `CircleStateOf`, `HoldersOf`, `MayActAs`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `ReceiverOf`, `WhereNow`, `SuccessorState`, `CircleKeyOf`, `CountedIn`, `SequencerOf` |
-| Between nodes | `PullRequest`, `SignPull`, `PullErrors`, `Matches`, `HeadsOf`, `AnswerPull`, `AnswerSignedBy`, `PushRequest`, `Accept`, `WaitedTooLong`, `PushAnswer`, `WellKnown`, `Announcement`, `WellKnownErrors` |
+| Chains and causal order | `NextLink`, `CheckChain`, `Sees`, `CausalOrder` |
+| Who someone is | `Genesis`, `IsGenesis`, `Is16Genesis`, `GenesisOpens`, `RecoveryKeyHash`, `KeyGrant`, `KeyTimeline`, `KeysOf`, `SignedByAuthor`, `IdentityStateOf`, `NextLinkFor`, `HistoryCounts`, `Forked` |
+| Authority | `AddDuration`, `CompareDurations`, `ScopeWithin`, `ScopeRefusals`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `OperatorsOf` |
+| Folds | `PromiseStage`, `CircleStateOf`, `HoldersOf`, `MayActAs`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `WhereNow`, `SuccessorState`, `CircleKeyOf`, `CountedIn` |
+| Between nodes | `PullRequest`, `SignPull`, `PullErrors`, `PullRefusals`, `PushRefusals`, `Matches`, `HeadsOf`, `AnswerPull`, `AnswerSignedBy`, `PushRequest`, `Accept`, `WaitedTooLong`, `PushAnswer`, `WellKnown`, `Announcement`, `WellKnownErrors` |
 
 The JavaScript SDK's `keystore` (a device key locked with a recovery code) is product custody, not protocol, so it
 is not here.
@@ -63,7 +70,7 @@ message := foodblock.Wrap(eggs, "") // { version, block, signature }, as it trav
 go test ./...
 ```
 
-`vectors_test.go` runs every section of `spec/vectors.json` the way `spec/run-vectors.cjs` does (canonical form,
+`vectors_test.go` checks the core carries the repository's `spec/` exactly, and runs every section of `spec/vectors.json` the way `spec/run-vectors.cjs` does (canonical form,
 hashes, chains, audiences, every story's signatures and write check, envelopes, sealed copies, headers, identities,
 deals, circles, every fold, refusals, alias reads, messages), the adversarial `spec/canonical-vectors.json`, and every
 older vector in `test/vectors.json`. A section it does not know fails by name. `node_test.go` checks writing,

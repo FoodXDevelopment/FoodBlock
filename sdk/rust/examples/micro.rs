@@ -15,6 +15,7 @@ fn main() -> Result<(), foodblock::Error> {
             encryption_key: "0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",
             recovery_key: &recovery.public_key_sign,
             reach: "P30D",
+            custodian: "",
         },
     )?;
     let id = me["hash"].as_str().unwrap().to_string();

@@ -143,7 +143,9 @@
    "dkim",
    "parties",
    "per_stranger",
-   "deposit"
+   "deposit",
+   "limit",
+   "per"
   ],
   "transform": [
    "shares"
@@ -293,7 +295,11 @@
    ],
    "datum": "WGS84",
    "values": "decimal strings; radius is an amount in m"
-  }
+  },
+  "deposit": [
+   "money",
+   "holder"
+  ]
  },
  "time_fields": [
   "at",
@@ -707,5 +713,6 @@
    "x25519_private"
   ],
   "note": "How vectors and SDKs pass keys: hex. Private keys never appear in blocks."
- }
+ },
+ "notes_push_for": "for maps a sealed copy's hash to a list of ids"
 }

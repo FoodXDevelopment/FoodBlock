@@ -266,3 +266,26 @@ pub fn operators_of(agent: &str, blocks: &[Value], now: Option<&str>) -> Vec<Str
         .collect();
     crate::js::sorted_set(authors)
 }
+
+// ---- The limit is the principal's fence (§7) ----
+/// The `observe` of kind limit for a grant, as `{ type, state, refs, audience }` to hand to `write`: `agent`, the
+/// grant's receiver, is its whole audience, so no counterparty ever reads the limit and the grant check never looks
+/// at it.
+pub fn limit_fence(grant_hash: &str, agent: &str, limit: &Value, per: Option<&str>) -> Value {
+    let mut state = json!({ "kind": "limit", "limit": limit });
+    if let Some(p) = per.filter(|p| !p.is_empty()) {
+        state["per"] = json!(p);
+    }
+    json!({ "type": "observe", "state": state, "refs": { "for": grant_hash }, "audience": [agent] })
+}
+
+/// Whether spending `money` stays inside a limit. `limit` is the limit observe, its state, or the money itself;
+/// `spent` is what the principal's node has already counted in the period (whole minor units). Money in another
+/// currency is never within.
+pub fn within_limit(limit: &Value, money: &Value, spent: i64) -> bool {
+    let cap = limit.pointer("/state/limit").or_else(|| limit.get("limit")).unwrap_or(limit);
+    let (Some(cap_minor), Some(minor)) = (cap.get("minor").and_then(Value::as_i64), money.get("minor").and_then(Value::as_i64)) else {
+        return false;
+    };
+    cap.get("currency").is_some() && cap.get("currency") == money.get("currency") && spent + minor <= cap_minor
+}

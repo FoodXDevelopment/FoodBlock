@@ -185,6 +185,7 @@ pub unsafe extern "C" fn fb_genesis(
                     .unwrap_or(""),
                 recovery_key: o.get("recovery_key").and_then(Value::as_str).unwrap_or(""),
                 reach: o.get("reach").and_then(Value::as_str).unwrap_or("P30D"),
+                custodian: o.get("custodian").and_then(Value::as_str).unwrap_or(""),
             },
         )?;
         Ok(g.to_string())
@@ -394,5 +395,17 @@ pub unsafe extern "C" fn fb_open(
             text(x25519_private, "x25519_private")?,
         )?
         .to_string())
+    })
+}
+
+/// The one JSON door (src/door.rs), the same call Kotlin uses: `op` is an operation name, `args_json` a JSON array of
+/// its arguments. `*out` is always the answer, `{ "ok": value }` or `{ "error": kind, "message", "code", "reasons",
+/// "refusals" }`, and the status is `FB_OK` whenever an answer was made (the error is in the answer, not the status).
+#[no_mangle]
+pub unsafe extern "C" fn fb_call(op: *const c_char, args_json: *const c_char, out: *mut *mut c_char) -> c_int {
+    run(out, || {
+        let op = text(op, "op")?;
+        let args = text(args_json, "args")?;
+        Ok(crate::door::answer(op.as_bytes(), args.as_bytes()).to_string())
     })
 }

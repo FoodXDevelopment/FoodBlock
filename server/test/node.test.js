@@ -170,7 +170,7 @@ describe('pull', () => {
     const ann = person(), bo = person()
     const secret = ann.say('observe', { kind: 'note', text: 'for Bo' }, {}, { audience: [bo.id] })
     const copy = fb.sealCopy(secret, { keys: [bo.encryption.public_key_encrypt], reveals: [fb.revealFor(secret.salts, bo.id)], privateKey: ann.keys.private_key })
-    const pushed = (await request(app).post('/push').send({ messages: [...wrap(ann.me, bo.me), copy], for: { [secret.hash]: bo.id } })).body
+    const pushed = (await request(app).post('/push').send({ messages: [...wrap(ann.me, bo.me), copy], for: { [secret.hash]: [bo.id] } })).body
     assert.deepEqual(pushed.taken.sort(), [ann.id, bo.id, secret.hash].sort())
     const open = (await pull({ filter: { hash: secret.hash } })).body.blocks[0].message
     assert.deepEqual(Object.keys(open).sort(), ['header', 'header_signature', 'version'])

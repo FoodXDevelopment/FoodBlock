@@ -1,41 +1,14 @@
-"""The one source (spec/protocol.md, "One source for lists"): every closed list and grammar is read from
-protocol.json, and every older shape from aliases.json, exactly as written there. The package carries an exact copy
-of both (foodblock/spec/, made by test/sync-spec.cjs from the repository's spec/). No list is copied into code."""
+"""The protocol's lists and grammars: protocol.json and aliases.json, carried by the Rust core and read through it."""
 
-import json
-import os
-import re
+from ._core import call
 
-_HERE = os.path.join(os.path.dirname(__file__), "spec")
-
-
-def _load(name):
-    with open(os.path.join(_HERE, name), encoding="utf-8") as f:
-        return json.load(f)
-
-
-PROTOCOL = _load("protocol.json")
-ALIASES = _load("aliases.json")
-
-# Every grammar is anchored (^...$); fullmatch keeps `$` from matching before a final newline, as JavaScript's does not.
-GRAMMAR = {name: re.compile(pattern) for name, pattern in PROTOCOL["grammar"].items()}
-TYPES = list(PROTOCOL["types"].keys())
-REF_KEYS = PROTOCOL["refs"]["who_and_where"] + PROTOCOL["refs"]["what_and_which"] + PROTOCOL["refs"]["verbs"]
+_SPEC = call("spec")
+PROTOCOL = _SPEC["protocol"]
+ALIASES = _SPEC["aliases"]
 VERSION = PROTOCOL["version"]
+TYPES = list(PROTOCOL["types"].keys())
 VERBS = PROTOCOL["verbs"]
-ANSWERS = PROTOCOL["answers"]
-STOPS = list(PROTOCOL["stop"].keys())
-GRANT_KINDS = PROTOCOL["grant_kinds"]
-ROLES = PROTOCOL["roles"]
-GENESIS = PROTOCOL["genesis"]
-GENESIS_OPTIONAL = PROTOCOL["genesis_optional"]
-TERMS = PROTOCOL["terms"]
-SCOPE = PROTOCOL["scope"]
-LIMITS = PROTOCOL["limits"]
-INTEGERS = PROTOCOL["integers"]
+REF_KEYS = PROTOCOL["refs"]["who_and_where"] + PROTOCOL["refs"]["what_and_which"] + PROTOCOL["refs"]["verbs"]
 PROFILES = PROTOCOL["profiles"]
-
-
-def matches(name, value):
-    """Whether a value matches one of protocol.json's grammars (a non-string never does)."""
-    return isinstance(value, str) and GRAMMAR[name].fullmatch(value) is not None
+FIELDS = {type_: PROTOCOL["fields"][type_] for type_ in TYPES}
+CODES = PROTOCOL["refusals"]["codes"]

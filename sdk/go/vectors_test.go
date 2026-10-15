@@ -1,7 +1,6 @@
 package foodblock
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -650,13 +649,13 @@ func TestUTF16Order(t *testing.T) {
 	}
 }
 
-// The package carries exact copies of spec/protocol.json and spec/aliases.json (test/sync-spec.cjs makes them).
-func TestSpecCopies(t *testing.T) {
-	for _, name := range []string{"protocol.json", "aliases.json"} {
-		mine, _ := specFiles.ReadFile("spec/" + name)
-		theirs, err := os.ReadFile(filepath.Join(root, "spec", name))
-		if err != nil || !bytes.Equal(mine, theirs) {
-			t.Errorf("sdk/go/spec/%s differs from spec/%s: run node test/sync-spec.cjs", name, name)
+// The Rust core carries spec/protocol.json and spec/aliases.json; they equal the repository's spec/ files.
+func TestCoreCarriesTheSpec(t *testing.T) {
+	for name, mine := range map[string]map[string]any{"protocol.json": Protocol, "aliases.json": Aliases} {
+		data, err := os.ReadFile(filepath.Join(root, "spec", name))
+		theirs, _ := decodeJSON(data)
+		if err != nil || !equalJSON(mine, theirs) {
+			t.Errorf("the core's built-in %s differs from spec/%s", name, name)
 		}
 	}
 }

@@ -23,13 +23,14 @@ object Identity {
      */
     fun genesis(
         keys: Keypair, kind: String, recoveryKey: String, encryptionKey: String = "",
-        at: String? = null, reach: String = "P30D",
+        at: String? = null, reach: String = "P30D", custodian: String? = null,
     ): JsonObject = Native.invoke("genesis", keys.toJson(), buildJsonObject {
         put("kind", kind)
         put("recovery_key", recoveryKey)
         put("encryption_key", encryptionKey)
         at?.let { put("at", it) }
         put("reach", reach)
+        custodian?.let { put("custodian", it) }
     }).obj()
 
     /** The keys that speak for an id now. */
@@ -51,6 +52,14 @@ object Identity {
 }
 
 object Grant {
+    /** The observe of kind limit for a grant, to hand to `write`: its audience is the agent alone. */
+    fun limitFence(grantHash: String, agent: String, limit: JsonObject, per: String? = null): JsonObject =
+        Native.invoke("limit_fence", JsonPrimitive(grantHash), JsonPrimitive(agent), limit, text(per)).obj()
+
+    /** Whether spending `money` stays inside a limit; `spent` is what the principal's node has counted in the period (minor units). */
+    fun withinLimit(limit: JsonObject, money: JsonObject, spent: Long = 0): Boolean =
+        Native.invoke("within_limit", limit, money, JsonPrimitive(spent)).bool()
+
     /** The people an agent acts for, by the live grants among `blocks`. */
     fun operatorsOf(agent: String, blocks: List<JsonObject>, now: String? = null): List<String> =
         Native.invoke("operators_of", JsonPrimitive(agent), JsonArray(blocks), text(now)).strings()

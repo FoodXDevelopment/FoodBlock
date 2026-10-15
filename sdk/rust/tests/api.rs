@@ -20,6 +20,7 @@ fn sensor() -> (foodblock::Keypair, Value) {
             encryption_key: encrypt,
             recovery_key: &recovery.public_key_sign,
             reach: "P30D",
+            custodian: "",
         },
     )
     .unwrap();

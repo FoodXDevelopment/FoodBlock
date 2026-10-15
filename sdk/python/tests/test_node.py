@@ -112,6 +112,18 @@ class BetweenNodes(unittest.TestCase):
         self.assertEqual(fb.sync.well_known_errors(doc), [])
         self.assertEqual(sorted(fb.sync.announcement(doc)), ["endpoints", "node", "protocol", "version"])
 
+    def test_custody_the_limit_and_push_for_a_list(self):
+        keys, recovery, coop = fb.generate_keypair(), fb.generate_keypair(), "c" * 64
+        g = fb.identity.genesis(keys, recovery_key=recovery["public_key_sign"], at=AT, custodian=coop)
+        self.assertEqual(g["state"]["custodian"], coop)
+        self.assertEqual(fb.refusals("actor", g["state"], {}) if hasattr(fb, "refusals") else [], [])
+        fence = fb.grant.limit_fence("a" * 64, "b" * 64, fb.money(5000, "GBP"), "P7D")
+        self.assertEqual(fence["audience"], ["b" * 64])
+        self.assertTrue(fb.grant.within_limit(fence["state"], fb.money(3000, "GBP"), 2000))
+        self.assertFalse(fb.grant.within_limit(fence["state"], fb.money(3001, "GBP"), 2000))
+        self.assertEqual(fb.sync.push_request([], {"d" * 64: "e" * 64})["for"], {"d" * 64: ["e" * 64]})
+        self.assertEqual(fb.sync.recipients_of({"d" * 64: ["e" * 64, "f" * 64]}, "d" * 64), ["e" * 64, "f" * 64])
+
 
 if __name__ == "__main__":
     unittest.main()
