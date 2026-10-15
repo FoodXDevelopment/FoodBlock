@@ -82,6 +82,16 @@ and a record, kept by its members' nodes, never a node of its own.
 
 Each SDK's README says which profile it covers.
 
+## For AI agents
+
+FoodBlock is built for people, agents and machines to use together. An agent can read and write it directly:
+
+- **MCP server**: [`mcp/`](mcp/), for Claude, Cursor, Windsurf, Gemini CLI and any MCP-compatible agent
+- **The spec in one file**: [`spec/protocol.md`](spec/protocol.md), with every list machine-readable in
+  [`spec/protocol.json`](spec/protocol.json)
+- **LLM quick reference**: https://foodx.network/llms.txt
+- **About FoodX**: https://foodx.network
+
 ## Quick start
 
 ```js
@@ -142,3 +152,5 @@ Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 ## Licence
 
 MIT
+
+To cite FoodBlock, see [`CITATION.cff`](CITATION.cff).

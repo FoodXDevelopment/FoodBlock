@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use FoodBlock in your research or project, please cite it using this metadata."
+title: FoodBlock
+type: software
+authors:
+  - name: FoodX
+abstract: "Open MIT-licensed, content-addressed protocol for food-economy data. Each block is a signed step in one of three moods (is, must, may), with three fields (type, state, refs), seven types and seven verbs."
+license: MIT
+repository-code: https://github.com/FoodXDevelopment/FoodBlock
+url: https://foodx.network/protocol
+version: 1.6.0

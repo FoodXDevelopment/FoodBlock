@@ -16,3 +16,5 @@ Open work, with enough context to pick up.
 - **A node that holds many blocks.** A pull reads every block since `since` before filtering, which is fine for one
   person's node; an index needs the filter and `heads` in SQL.
 - **Publishing 1.6.** See `DISTRIBUTION.md`.
+
+- Align spec/profiles/foodblock-profile-epcis.md (EPCIS 2.0 + FSMA 204) to FoodBlock 1.6 words: lots as thing instances with marks, CTEs as transforms and transfers, master data as actors and things; add its vectors.
