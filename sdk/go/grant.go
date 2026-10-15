@@ -1,6 +1,6 @@
 package foodblock
 
-// Authority (protocol.md §7): thin calls into the Rust core.
+// Authority (modules/authority.md): thin calls into the Rust core.
 
 // LiveOptions: Now is the reader's clock ("" ignores scope.until).
 type LiveOptions struct{ Now string }
@@ -31,6 +31,20 @@ func LimitFence(grantHash, agent string, limit map[string]any, per string) map[s
 // what the principal's node has counted in the period, in minor units.
 func WithinLimit(limit, money any, spent int) bool {
 	return must[bool]("within_limit", limit, money, spent)
+}
+
+// WhyNotLiveUndo is why an act that cannot be undone (its schema says `undo: never`) is not live: empty when it has a
+// specific accepted ask or a grant that names it with a limit.
+func WhyNotLiveUndo(b Block, blocks []Block) []string {
+	return plural(must[[]string]("why_not_live_undo", b, plural(blocks)))
+}
+
+// ActName is the act a block is, named `type.kind`.
+func ActName(b Block) string { return must[string]("act_name", b) }
+
+// ParseDuration reads an ISO 8601 duration (nil when it is not one).
+func ParseDuration(text string) map[string]any {
+	return must[map[string]any]("parse_duration", nilIfEmpty(text))
 }
 
 // WhyNotLive is why a grant is not live; empty when it is.

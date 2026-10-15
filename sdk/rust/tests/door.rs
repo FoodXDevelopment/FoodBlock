@@ -18,36 +18,42 @@ fn the_door_answers_ok_and_errors_as_data() {
     assert_eq!(call("version", "[]")["ok"], "1.6");
     let hash = call("hash", r#"["thing",{"kind":"eggs"},{}]"#);
     assert_eq!(hash["ok"].as_str().unwrap().len(), 64);
+    assert!(call("hash", r#"["thing",{"kind":"eggs"},{}, "sm"]"#)["ok"].as_str().unwrap().starts_with("sm3:"));
     assert_eq!(call("no_such_op", "[]")["error"], "profile");
     assert_eq!(call("hash", "{}")["error"], "argument");
     assert_eq!(call("hash", "not json")["error"], "json");
+    assert_eq!(call("keypair", r#"[null, "ml-dsa"]"#)["code"], "unknown_suite");
 }
 
 #[test]
-fn custody_the_limit_fence_and_push_for_a_list() {
-    let seed = "11".repeat(32);
-    let keys = call("keypair", &format!(r#"["{seed}"]"#))["ok"].clone();
+fn a_genesis_needs_a_key_and_a_recovery_pair_or_nothing() {
+    let keys = call("keypair", &format!(r#"["{}"]"#, "11".repeat(32)))["ok"].clone();
     let recovery = call("keypair", &format!(r#"["{}"]"#, "22".repeat(32)))["ok"]["public_key_sign"].clone();
+    let at = "2026-10-15T09:00:00.000Z";
+    let bare = call("genesis", &serde_json::json!([keys, { "at": at }]).to_string())["ok"].clone();
+    assert!(bare["state"].get("recovery_key_hash").is_none());
+    assert_eq!(call("valid", &serde_json::json!([bare, []]).to_string())["ok"], serde_json::json!([]));
     let custodian = "c".repeat(64);
-    let options = serde_json::json!({ "recovery_key": recovery, "at": "2026-10-15T09:00:00.000Z", "custodian": custodian });
-    let g = call("genesis", &serde_json::json!([keys, options]).to_string())["ok"].clone();
+    let g = call("genesis", &serde_json::json!([keys, { "recovery_key": recovery, "reach": "P30D", "at": at, "custodian": custodian }]).to_string())["ok"].clone();
     assert_eq!(g["state"]["custodian"], custodian);
-    let mut bad = g["state"].clone();
-    bad["custodian"] = "co-op".into();
-    let wrong = call("refusals", &serde_json::json!(["actor", bad, {}]).to_string());
-    assert_eq!(wrong["ok"][0]["code"], "grammar");
     assert_eq!(call("refusals", &serde_json::json!(["actor", g["state"], {}]).to_string())["ok"], serde_json::json!([]));
-    // The limit: sealed to the agent alone; within_limit adds what is spent.
+    let mut half = g["state"].clone();
+    half.as_object_mut().unwrap().remove("recovery_reach");
+    assert_eq!(call("refusals", &serde_json::json!(["actor", half, {}]).to_string())["ok"][0]["code"], "bad_genesis");
+    // A recovery key without its reach is refused before it is signed.
+    let e = call("genesis", &serde_json::json!([keys, { "recovery_key": recovery, "at": at }]).to_string());
+    assert_eq!(e["error"], "crypto");
+}
+
+#[test]
+fn the_limit_fence_and_push_for_a_list() {
     let fence = call("limit_fence", &serde_json::json!(["a".repeat(64), "b".repeat(64), { "minor": 5000, "currency": "GBP" }, "P7D"]).to_string())["ok"].clone();
     assert_eq!(fence["audience"], serde_json::json!(["b".repeat(64)]));
     let within = |spent: i64, minor: i64, cur: &str| call("within_limit", &serde_json::json!([fence["state"], { "minor": minor, "currency": cur }, spent]).to_string())["ok"].clone();
     assert_eq!(within(2000, 3000, "GBP"), true);
     assert_eq!(within(2000, 3001, "GBP"), false);
     assert_eq!(within(0, 1, "EUR"), false);
-    // Push `for`: a list; an older single id is a list of one.
     let one = "d".repeat(64);
     let request = call("push_request", &serde_json::json!([[], { one.clone(): ["e".repeat(64), "f".repeat(64)] }]).to_string())["ok"].clone();
     assert_eq!(request["for"][&one].as_array().unwrap().len(), 2);
-    let old = call("push_request", &serde_json::json!([[], { one.clone(): "e".repeat(64) }]).to_string())["ok"].clone();
-    assert_eq!(old["for"][&one], serde_json::json!(["e".repeat(64)]));
 }

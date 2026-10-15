@@ -83,9 +83,6 @@ inline std::string refusals(const std::string& block, const std::string& options
   return detail::call([&](char** o) { return fb_refusals(block.c_str(), detail::opt(options), o); });
 }
 inline bool well_formed(const std::string& block, const std::string& options = "") { return check(block, options) == "[]"; }
-inline std::string read_as(const std::string& block) {
-  return detail::call([&](char** o) { return fb_read_as(block.c_str(), o); });
-}
 // { seq, prev } after `last` (a block, or "" for none, then `brought_in` names the block that brought the key in).
 inline std::string next_link(const std::string& last, const std::string& brought_in = "") {
   return detail::call([&](char** o) { return fb_next_link(detail::opt(last), detail::opt(brought_in), o); });

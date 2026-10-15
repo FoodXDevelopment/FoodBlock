@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 
-// FoodBlock 1.6 §1 (a key's own chain) and the causal past (every block reachable through refs).
+// FoodBlock 1.6 (core.md, The chain): a key's own chain. A skip may jump seq forward; two blocks naming one prev are an equivocation.
 const block = (hash, seq, prev, extra = {}) => ({ hash, type: 'observe', state: { seq, ...extra }, refs: { prev } })
 const g = 'g'.repeat(64)
 
@@ -12,11 +12,16 @@ test('nextLink: a key starts after the block that brought it in, then counts on'
   assert.throws(() => fb.nextLink(null), /brought the key in/)
 })
 
-test('checkChain: gaps show what is missing; two blocks with one seq are an equivocation; a wrong prev breaks it', () => {
+test('checkChain: gaps, skips, equivocations (two blocks naming one prev) and broken links', () => {
   const a = block('a', 1, g), b = block('b', 2, 'a'), d = block('d', 4, 'c')
-  assert.deepEqual(fb.checkChain([a, b], g), { head: b, length: 2, gaps: [], equivocations: [], broken: [], ok: true })
+  assert.deepEqual(fb.checkChain([a, b], g), { head: 'b', length: 2, gaps: [], skips: [], equivocations: [], broken: [], ok: true })
   assert.deepEqual(fb.checkChain([a, b, d], g).gaps, [3])
+  const skip = block('s', 9, 'b', { skip: true })
+  const skipped = fb.checkChain([a, b, skip], g)
+  assert.deepEqual([skipped.gaps, skipped.skips, skipped.ok], [[], ['s'], true], 'a gap before a skip is explained')
   assert.deepEqual(fb.checkChain([a, b, block('x', 2, 'a')], g).equivocations, [['b', 'x']])
+  assert.deepEqual(fb.checkChain([a, block('y', 7, 'a')], g).equivocations, [], 'a different prev is no equivocation, whatever the seq')
+  assert.deepEqual(fb.checkChain([a, b, block('z', 3, 'a')], g).equivocations, [['b', 'z']], 'one prev is, whatever the seq')
   assert.deepEqual(fb.checkChain([a, block('y', 2, g)], g).broken, ['y'])
 })
 

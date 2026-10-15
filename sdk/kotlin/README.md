@@ -53,11 +53,13 @@ val message = FoodBlock.wrap(reading)                       // { version, block,
 `refusals` with their codes); it never repairs. Keep the last block you wrote: it is the `held` the next write needs,
 so your chain stays one line.
 
-Names follow the JavaScript reference SDK: `canonical`, `hash`, `sign` (signs), `verify`, `check`, `refusals` (the check with its codes), `readAs`, `isA`,
+Names follow the JavaScript reference SDK: `canonical`, `hash`, `sign` (signs), `verify`, `check`, `refusals` (the check with its codes), `valid`, `strictText`, `receiptCode`, `suiteOfKey`, `commit`, `findsSelf`, `forkPairs`,
 `nextLink`, `checkChain`, `causalOrder`, `write`, `wrap`, `unwrap`, `header`, `seal` (encrypts), `open`, `sealCopy`,
-`openCopy`; `Identity.genesis / keysOf / keyTimeline / signedByAuthor`; `Grant.operatorsOf / whyNotUnder /
-whyNotLive`; `Fold.promiseStage / circleState / mayActAs / membersThen / whereNow / ownership / successorState /
-countedIn / circleKey`; `Sync.accept / pullErrors / pushErrors / answerSignedBy / wellKnownErrors / announcement`.
+`openCopy`; `Identity.genesis / recoveryKeyHash / keysOf / keyTimeline / signedByAuthor / identityState / recoveryReach`; `Grant.operatorsOf / whyNotUnder /
+whyNotLive / whyNotLiveUndo / actName`; `Fold.promiseStage / promiseView / consent / liveGrant / withdrawalSeen / due / ordererOf / circleState / mayActAs / membersThen / whereNow / ownership / successorView /
+countedIn / circleKey`; `Sync.accept / signPull / signPush / newChallenge / pullRefusals / pushRefusals / pullErrors / pushErrors / admissionRefusals / residencyRefusals / pushAnswer / pushRequest / answerSignedBy / wellKnownErrors / announcement`; `Strangers.*` (the reading and deposit rules); `Legacy.convert / oldHash` (the one-time converter for pre-1.6 data, not part of the protocol); `FoodBlock.call(op, ...)` is the door itself.
+
+There is no alias table and no reading of an older shape: year zero. A key names its `suite` (std, p256, sm): `Keypair.suite`, and `suite` arguments on `hash`, `create`, `sign`, `seal`, `WriteOptions` and the key grants. A signed pull or push carries exactly one of `counter` or `challenge` and no time; a node judges it with `Freshness(node, keys, highest, issued)`.
 
 Blocks are `kotlinx.serialization` `JsonObject`s, the same `{ hash, type, state, refs, signature }` as everywhere.
 Numbers keep their exact text across the boundary.
@@ -75,13 +77,13 @@ Good habits on a phone:
 An Android-based device (a till, a scale with a screen, a kitchen display) uses it the same way. It is a peer: it has
 its own identity, signs what it measures or does, and keeps its own chain.
 
-## Profiles
+## Peers
 
-The protocol names sizes of peer (`profiles` in protocol.json). `FoodBlock.PROFILES` says what this build has.
+The protocol names sizes of peer (`peers` in protocol.json). `FoodBlock.PEERS` says what this build has.
 
-| Profile | What it adds | Who |
+| Peer | What it adds | Who |
 |---|---|---|
-| micro | canonical form, SHA-256, Ed25519, the write check, its own chain, the grant check, reading old shapes | a sensor or device that only signs |
+| micro | canonical form, SHA-256, Ed25519, the write check, its own chain, the grant check | a sensor or device that only signs |
 | edge | the folds and Pull, Push, discovery | the computer at a farm, kitchen, shop or vehicle |
 | node (default) | envelopes and sealed copies | a person's phone or always-on node |
 
@@ -101,9 +103,11 @@ ANDROID_HOME=~/Library/Android/sdk ./gradlew :android:assembleRelease   # the AA
 
 The AAR lands in `android/build/outputs/aar/android-release.aar`. Without an Android SDK, `:android` is skipped.
 
-`VectorsTest` runs every section of `spec/vectors.json`, `spec/canonical-vectors.json` and `test/vectors.json`
-through this Kotlin API, the same way `sdk/rust/tests/vectors.rs` does: canonical strings and hashes, the write
-check, chains, audience commitments, every signature reproduced byte for byte from its seed, bad signatures,
-headers, envelopes and sealed copies, identities, every fold, refusals (by their protocol.json codes), every alias
-read, and the messages between nodes. A section the build's profile leaves out prints that it was left out.
-`ApiTest` writes a sensor's chain end to end, a refusal, and a sealed value.
+`VectorsTest` runs every section of `spec/vectors.json` (and `spec/canonical-vectors.json`) through this Kotlin API,
+the same way `spec/run-vectors.cjs` does: canonical strings and hashes, the ledger (each block `valid` against those
+before it), the keys rebuilt from their seeds in their suites, the write check, chains, audience commitments,
+signatures, bad signatures, headers, envelopes and sealed copies, identities, every fold, refusals (by their
+protocol.json codes), the messages between nodes, the compact form, and the generic `door` section (one case per rule of
+the core: `expect` is a subset match, `exact` deep equality, `codes` the refusal codes, `error` a failure). A section the
+build's peer leaves out prints that it was left out. The Kotlin library reads the spec through the core (op `spec`); it
+keeps no copy of `protocol.json`. `ApiTest` writes a sensor's chain end to end, a refusal, a sealed value, and every suite.

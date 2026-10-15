@@ -12,16 +12,21 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 
-/** A signing key: Ed25519, as hex. `publicKeySign` is SPKI DER (88 hex), `privateKey` PKCS#8 DER (96 hex). */
-data class Keypair(val publicKeySign: String, val privateKey: String) {
+/**
+ * A signing key, as hex. `suite` names its suite (core.md, Suites: std, p256, sm) and is null for std (Ed25519:
+ * `publicKeySign` is SPKI DER, `privateKey` PKCS#8 DER).
+ */
+data class Keypair(val publicKeySign: String, val privateKey: String, val suite: String? = null) {
     fun toJson(): JsonObject = buildJsonObject {
         put("public_key_sign", publicKeySign)
         put("private_key", privateKey)
+        suite?.let { put("suite", it) }
     }
 
     internal companion object {
         fun of(j: JsonElement) = Keypair(
             j.jsonObject["public_key_sign"]!!.string(), j.jsonObject["private_key"]!!.string(),
+            (j.jsonObject["suite"] as? JsonPrimitive)?.takeIf { it.isString }?.content,
         )
     }
 }
@@ -34,12 +39,16 @@ data class Link(val seq: Long, val prev: String) {
     }
 }
 
-/** One key's chain, checked: ok when it has no gaps, no equivocation (two blocks at one seq) and no broken prev. */
+/**
+ * One key's chain, checked: ok when it has no gaps, no equivocation and no broken prev. `skips` are seq numbers a block
+ * jumped over on purpose; `equivocations` are pairs of hashes that name one prev.
+ */
 data class Chain(
     val ok: Boolean,
     val length: Long,
     val head: JsonObject?,
     val gaps: List<Long>,
+    val skips: List<Long>,
     val equivocations: List<List<String>>,
     val broken: List<String>,
 )
@@ -60,6 +69,8 @@ data class WriteOptions(
     val schemas: List<JsonObject>? = null,
     val salts: JsonObject? = null,
     val nonce: String? = null,
+    val suite: String? = null,
+    val skip: Boolean = false,
 ) {
     internal fun toJson(): JsonObject = buildJsonObject {
         put("author", author)
@@ -72,6 +83,8 @@ data class WriteOptions(
         schemas?.let { put("schemas", JsonArray(it)) }
         salts?.let { put("salts", it) }
         nonce?.let { put("nonce", it) }
+        (suite ?: key.suite)?.let { put("suite", it) }
+        if (skip) put("skip", true)
     }
 }
 
@@ -82,15 +95,18 @@ private fun JsonObject.typeName(): String = (this["type"] as? JsonPrimitive)?.co
 /**
  * FoodBlock 1.6. A block is `{ type, state, refs }` signed by its author's key; its id is the SHA-256 of its
  * canonical form. Blocks are JSON objects (`{ hash, type, state, refs, signature }`), the same shape on every SDK
- * and on the wire. Names follow the JavaScript reference: `sign` signs, `seal` encrypts, `open` opens, `readAs`
- * reads any earlier shape as 1.6.
+ * and on the wire. Names follow the JavaScript reference: `sign` signs, `seal` encrypts, `open` opens. There is no
+ * alias table and no reading of an older shape (year zero); old data enters once, through [Legacy].
  */
 object FoodBlock {
     /** The protocol version this library writes ("1.6"). */
     val VERSION: String by lazy { Native.invoke("version").string() }
 
-    /** The profiles of protocol.json this build supports, smallest first: micro, micro_acting, edge, node. */
-    val PROFILES: List<String> by lazy { Native.invoke("profiles").strings() }
+    /** The peers of protocol.json this build supports, smallest first: micro, edge, node. */
+    val PEERS: List<String> by lazy { Native.invoke("peers").strings() }
+
+    /** Run one op of the core's JSON door directly (what every function here is). Throws [FoodBlockException] on an error. */
+    fun call(op: String, vararg args: JsonElement): JsonElement = Native.invoke(op, *args)
 
     // ---- A block: its canonical form and its id ----
 
@@ -102,35 +118,43 @@ object FoodBlock {
     /** Canonical JSON of any value (sorted keys, NFC, numbers as JavaScript writes them). */
     fun canonicalJson(value: JsonElement): String = Native.invoke("canonical_json", value).string()
 
-    fun hash(type: String, state: JsonElement, refs: JsonElement): String =
-        Native.invoke("hash", JsonPrimitive(type), state, refs).string()
+    /** The id of a block: the hash of its canonical form in the hash of the suite of the key that signed it. */
+    fun hash(type: String, state: JsonElement, refs: JsonElement, suite: String = "std"): String =
+        Native.invoke("hash", JsonPrimitive(type), state, refs, JsonPrimitive(suite)).string()
 
-    fun hash(block: JsonObject): String = hash(block.typeName(), block.part("state"), block.part("refs"))
+    /** The id of a block as it is held (its own `suite`, std when it names none). */
+    fun hash(block: JsonObject): String =
+        hash(block.typeName(), block.part("state"), block.part("refs"), (block["suite"] as? JsonPrimitive)?.content ?: "std")
 
     /** SHA-256 of UTF-8 text, hex. */
     fun hashHex(text: String): String = Native.invoke("hash_hex", JsonPrimitive(text)).string()
 
-    /** `{ hash, type, state, refs }`, unsigned. */
-    fun create(type: String, state: JsonElement, refs: JsonElement): JsonObject =
-        Native.invoke("create", JsonPrimitive(type), state, refs).obj()
+    /** `{ hash, type, state, refs }` (and `suite` when it is not std), unsigned. Strict: a null or a float is refused. */
+    fun create(type: String, state: JsonElement, refs: JsonElement, suite: String = "std"): JsonObject =
+        Native.invoke("create", JsonPrimitive(type), state, refs, JsonPrimitive(suite)).obj()
 
-    // ---- Signing (Ed25519) ----
+    // ---- Signing (by suite: std Ed25519, p256, sm) ----
 
-    fun generateKeypair(): Keypair = Keypair.of(Native.invoke("keypair", JsonNull))
+    fun generateKeypair(suite: String = "std"): Keypair = Keypair.of(Native.invoke("keypair", JsonNull, JsonPrimitive(suite)))
 
-    /** The key a 32-byte seed (64 hex) gives: the same key on every SDK. */
-    fun keypairFromSeed(seedHex: String): Keypair = Keypair.of(Native.invoke("keypair", JsonPrimitive(seedHex)))
+    /** The key a 32-byte seed (64 hex) gives in a suite: the same key on every SDK. */
+    fun keypairFromSeed(seedHex: String, suite: String = "std"): Keypair =
+        Keypair.of(Native.invoke("keypair", JsonPrimitive(seedHex), JsonPrimitive(suite)))
 
-    /** The author's signature over a block's canonical form, 128 hex. */
-    fun sign(block: JsonObject, privateKey: String): String =
-        Native.invoke("sign", block, JsonPrimitive(privateKey)).string()
+    /** The author's signature over a block's canonical form, hex; `suite` is the suite of the signing key. */
+    fun sign(block: JsonObject, privateKey: String, suite: String = "std"): String =
+        Native.invoke("sign", block, JsonPrimitive(privateKey), JsonPrimitive(suite)).string()
+
+    /** The suite a signing key (SPKI hex) belongs to, or null. */
+    fun suiteOfKey(publicKey: String): String? =
+        (Native.invoke("suite_of_key", JsonPrimitive(publicKey)) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
     fun verify(block: JsonObject, signature: String, publicKey: String): Boolean =
         Native.invoke("verify", block, JsonPrimitive(signature), JsonPrimitive(publicKey)).bool()
 
     /** A message part signed: the part with its `signature`. */
-    fun signMessage(part: JsonObject, privateKey: String): JsonObject =
-        Native.invoke("sign_message", part, JsonPrimitive(privateKey)).obj()
+    fun signMessage(part: JsonObject, privateKey: String, suite: String = "std"): JsonObject =
+        Native.invoke("sign_message", part, JsonPrimitive(privateKey), JsonPrimitive(suite)).obj()
 
     fun verifyMessage(part: JsonObject, publicKey: String): Boolean =
         Native.invoke("verify_message", part, JsonPrimitive(publicKey)).bool()
@@ -138,8 +162,16 @@ object FoodBlock {
     // ---- The commitment ----
 
     fun newSalt(): String = Native.invoke("new_salt").string()
-    fun saltedHash(salt: String, value: String): String =
-        Native.invoke("salted_hash", JsonPrimitive(salt), JsonPrimitive(value)).string()
+    fun saltedHash(salt: String, value: String, suite: String = "std"): String =
+        Native.invoke("salted_hash", JsonPrimitive(salt), JsonPrimitive(value), JsonPrimitive(suite)).string()
+
+    /** An audience for these recipients: `{ audience: sorted commitments, salts: { recipient: salt } }`. */
+    fun commit(recipients: List<String>, salts: JsonObject = JsonObject(emptyMap()), suite: String = "std"): JsonObject =
+        Native.invoke("commit", texts(recipients), salts, JsonPrimitive(suite)).obj()
+
+    /** Whether a recipient holding this salt finds itself in a block's audience. */
+    fun findsSelf(block: JsonObject, recipient: String, salt: String? = null): Boolean =
+        Native.invoke("finds_self", block, JsonPrimitive(recipient), JsonPrimitive(salt ?: "")).bool()
 
     // ---- The write check and its words ----
 
@@ -186,13 +218,22 @@ object FoodBlock {
     fun confidence(value: String): String = Native.invoke("confidence", JsonPrimitive(value)).string()
     fun terms(given: JsonObject): JsonObject = Native.invoke("terms", given).obj()
 
-    // ---- Reading every earlier shape as 1.6 ----
+    /**
+     * valid(block, context): every refusal of a signed block against the blocks held (empty when valid). `arrivals`
+     * is the reader's log of when each block arrived, where the rules need it.
+     */
+    fun valid(
+        block: JsonObject, held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null,
+        arrivals: Map<String, String>? = null,
+    ): List<Refusal> = Native.invoke("valid", block, JsonArray(held), schemas?.let(::JsonArray) ?: JsonNull, arrivals(arrivals))
+        .jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
 
-    /** A block of any earlier shape, read as 1.6 (aliases.json). Never changes what was signed. */
-    fun readAs(block: JsonObject): JsonObject = Native.invoke("read_as", block).obj()
+    /** Strict writing from JSON text: a repeated key, then every refusal of the block it holds. */
+    fun strictText(text: String): List<Refusal> = Native.invoke("strict_text", JsonPrimitive(text))
+        .jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
 
-    fun isA(block: JsonObject, type: String, kind: String? = null): Boolean =
-        Native.invoke("is_a", block, JsonPrimitive(type), text(kind)).bool()
+    /** The short receipt code of a block id: `XXXX-XXXX` (Crockford Base32 of its first 5 bytes). */
+    fun receiptCode(id: String): String = Native.invoke("receipt_code", JsonPrimitive(id)).string()
 
     // ---- Chains and causal order ----
 
@@ -209,6 +250,7 @@ object FoodBlock {
             length = c["length"]!!.jsonPrimitive.long,
             head = c["head"] as? JsonObject,
             gaps = c["gaps"]!!.jsonArray.map { it.jsonPrimitive.long },
+            skips = c["skips"]!!.jsonArray.map { it.jsonPrimitive.long },
             equivocations = c["equivocations"]!!.jsonArray.map { it.strings() },
             broken = c["broken"]!!.strings(),
         )
@@ -217,6 +259,10 @@ object FoodBlock {
     /** Blocks in causal order: causes before what they cause. */
     fun causalOrder(blocks: List<JsonObject>): List<JsonObject> =
         Native.invoke("causal_order", JsonArray(blocks)).jsonArray.map { it.obj() }
+
+    /** The pairs of blocks one key signed naming one prev. */
+    fun forkPairs(blocks: List<JsonObject>): List<List<String>> =
+        Native.invoke("fork_pairs", JsonArray(blocks)).jsonArray.map { it.strings() }
 
     fun sees(later: JsonObject, earlier: JsonObject, blocks: List<JsonObject>): Boolean =
         Native.invoke("sees", later, earlier, JsonArray(blocks)).bool()
@@ -230,32 +276,36 @@ object FoodBlock {
     fun write(type: String, state: JsonElement, refs: JsonElement, options: WriteOptions): JsonObject =
         Native.invoke("write", JsonPrimitive(type), state, refs, options.toJson()).obj()
 
-    /** `{ version, block, signature }`: what goes on the wire. */
+    /** `{ version, block, signature }` (and `suite` when it is not std): what goes on the wire. */
     fun wrap(signed: JsonObject): JsonObject = Native.invoke("wrap", signed).obj()
     fun unwrap(message: JsonObject): JsonObject = Native.invoke("unwrap", message).obj()
     fun header(block: JsonObject): JsonObject = Native.invoke("header", block).obj()
     fun headerSignedBy(message: JsonObject, publicKey: String): Boolean =
         Native.invoke("header_signed_by", message, JsonPrimitive(publicKey)).bool()
 
-    // ---- Envelopes (node profile): X25519, HKDF-SHA256, AES-256-GCM ----
+    // ---- Envelopes (node peer): by suite (std: X25519, HKDF-SHA256, AES-256-GCM; p256; sm) ----
 
-    /** Encrypt a value to recipients' X25519 public keys (hex): the envelope. */
-    fun seal(value: JsonElement, recipientKeys: List<String>): JsonObject =
-        Native.invoke("seal", value, texts(recipientKeys)).obj()
+    /** Encrypt a value to recipients' encryption keys (hex) in a suite: the envelope. `fixed` only reproduces a vector. */
+    fun seal(value: JsonElement, recipientKeys: List<String>, suite: String = "std", fixed: JsonObject? = null): JsonObject =
+        Native.invoke("seal", value, texts(recipientKeys), JsonPrimitive(suite), fixed ?: JsonNull).obj()
 
-    /** Open an envelope with a recipient's X25519 private key (hex): the value inside. */
+    /** Open an envelope with a recipient's private encryption key (hex): the value inside. */
     fun open(envelope: JsonObject, x25519Private: String): JsonElement =
         Native.invoke("open", envelope, JsonPrimitive(x25519Private))
 
     /** A signed block sealed to recipients, with a header signed by the block's key, and what it `reveals`. */
-    fun sealCopy(signed: JsonObject, recipientKeys: List<String>, reveals: JsonArray, privateKey: String): JsonObject =
-        Native.invoke("seal_copy", signed, texts(recipientKeys), reveals, JsonPrimitive(privateKey)).obj()
+    fun sealCopy(
+        signed: JsonObject, recipientKeys: List<String>, reveals: JsonArray, privateKey: String,
+        suite: String = "std", fixed: JsonObject? = null,
+    ): JsonObject = Native.invoke(
+        "seal_copy", signed, texts(recipientKeys), reveals, JsonPrimitive(privateKey), fixed ?: JsonNull, JsonPrimitive(suite),
+    ).obj()
 
     fun openCopy(message: JsonObject, x25519Private: String): JsonObject =
         Native.invoke("open_copy", message, JsonPrimitive(x25519Private)).obj()
 
-    /** `{ public_key_encrypt, x25519_private }`, raw X25519 hex. */
-    fun generateEncryptionKeypair(): JsonObject = Native.invoke("encryption_keypair").obj()
-    fun encryptionKeyOf(x25519Private: String): String =
-        Native.invoke("encryption_key_of", JsonPrimitive(x25519Private)).string()
+    /** `{ public_key_encrypt, x25519_private }` (the raw private scalar, hex) in a suite. */
+    fun generateEncryptionKeypair(suite: String = "std"): JsonObject = Native.invoke("encryption_keypair", JsonPrimitive(suite)).obj()
+    fun encryptionKeyOf(x25519Private: String, suite: String = "std"): String =
+        Native.invoke("encryption_key_of", JsonPrimitive(x25519Private), JsonPrimitive(suite)).string()
 }

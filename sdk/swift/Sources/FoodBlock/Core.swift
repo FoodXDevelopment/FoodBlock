@@ -8,7 +8,8 @@ enum Core {
     /// Ask the core; throws `FoodBlockError` when it says no. `nil` arguments are JSON null.
     @discardableResult
     static func ask(_ op: String, _ args: Any?...) throws -> Any? { try call(op, args) }
-    static func call(_ op: String, _ args: [Any?]) throws -> Any? {
+    /// The core's whole answer to one op: `{ ok }` or `{ error, message, code?, refusals? }`.
+    static func raw(_ op: String, _ args: [Any?]) throws -> JSON {
         let payload = try JSONSerialization.data(withJSONObject: args.map { $0 ?? NSNull() }, options: [.withoutEscapingSlashes])
         var out: UnsafeMutablePointer<CChar>? = nil
         let status = op.withCString { o in String(decoding: payload, as: UTF8.self).withCString { a in fb_call(o, a, &out) } }
@@ -18,6 +19,10 @@ enum Core {
         guard let answer = try JSONSerialization.jsonObject(with: Data(text.utf8), options: [.fragmentsAllowed]) as? JSON else {
             throw FoodBlockError.invalid("foodblock: the core gave no answer")
         }
+        return answer
+    }
+    static func call(_ op: String, _ args: [Any?]) throws -> Any? {
+        let answer = try raw(op, args)
         if let ok = answer["ok"] { return ok is NSNull ? nil : ok }
         let message = answer["message"] as? String ?? "foodblock: error"
         if answer["error"] as? String == "refused", let list = answer["refusals"] as? [JSON], !list.isEmpty {

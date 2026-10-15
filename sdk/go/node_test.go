@@ -22,7 +22,7 @@ func newPerson(t *testing.T) *person {
 	keys, _ := GenerateKeypair()
 	enc, _ := GenerateEncryptionKeypair()
 	recovery, _ := GenerateKeypair()
-	g, err := Genesis(keys, GenesisOptions{EncryptionKey: enc.PublicKeyEncrypt, RecoveryKey: recovery.PublicKeySign, At: "2026-10-15T09:00:00.000Z"})
+	g, err := Genesis(keys, GenesisOptions{EncryptionKey: enc.PublicKeyEncrypt, RecoveryKey: recovery.PublicKeySign, Reach: "P30D", At: "2026-10-15T09:00:00.000Z"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,8 +64,13 @@ func TestWriteChainsChecksAndSigns(t *testing.T) {
 	if !errors.As(err, &refused) || len(refused.Refusals) == 0 || refused.Refusals[0].Code != "float" {
 		t.Errorf("a float is refused: %v", err)
 	}
-	if !IsA(Block{Type: "place.venue", State: map[string]any{}, Refs: map[string]any{}}, "thing", "venue") {
-		t.Error("a place reads as a thing")
+	// Year zero: a genesis needs only kind, at, audience and the key.
+	plain, err := Genesis(ann.keys, GenesisOptions{At: "2026-10-15T09:00:00.000Z"})
+	if err != nil || plain.State["audience"] != "public" {
+		t.Errorf("a plain genesis: %v", err)
+	}
+	if _, err := Genesis(ann.keys, GenesisOptions{RecoveryKey: ann.keys.PublicKeySign, At: "2026-10-15T09:00:00.000Z"}); err == nil {
+		t.Error("the recovery key comes with its reach")
 	}
 }
 
@@ -89,10 +94,25 @@ func TestSealedCopyRoundTrip(t *testing.T) {
 	if _, err := OpenCopy(message, ann.enc.X25519Private); err == nil {
 		t.Error("nobody else opens it")
 	}
-	// The older alg is still read.
-	env, _ := Seal(map[string]any{"a": 1}, []string{bob.enc.PublicKeyEncrypt}, AlgRaw, nil)
-	if v, err := Open(env, bob.enc.X25519Private); err != nil || !eq(v, map[string]any{"a": 1}) {
-		t.Error("the raw alg opens")
+}
+
+func TestEverySuiteSignsSealsAndHashes(t *testing.T) {
+	for _, suite := range Suites {
+		keys, err := GenerateKeypair(suite)
+		enc, err2 := GenerateEncryptionKeypair(suite)
+		if err != nil || err2 != nil || SuiteOfKey(keys.PublicKeySign) != suite {
+			t.Fatalf("%s: keys: %v %v", suite, err, err2)
+		}
+		b, err := Create("thing", map[string]any{"kind": "eggs"}, nil, suite)
+		h, _ := Hash("thing", map[string]any{"kind": "eggs"}, nil, suite)
+		sig, err2 := Sign(b, keys.PrivateKey, suite)
+		if err != nil || err2 != nil || b.Hash != h || !Verify(b, sig, keys.PublicKeySign) {
+			t.Errorf("%s: create, hash, sign, verify", suite)
+		}
+		env, err := Seal(map[string]any{"a": 1}, []string{enc.PublicKeyEncrypt}, suite, nil)
+		if v, err2 := Open(env, enc.X25519Private); err != nil || err2 != nil || !eq(v, map[string]any{"a": 1}) {
+			t.Errorf("%s: seal and open", suite)
+		}
 	}
 }
 
@@ -121,9 +141,20 @@ func TestPullAndPush(t *testing.T) {
 		t.Error("the push answer is signed by the node")
 	}
 
-	request, _ := SignPull(map[string]any{"filter": map[string]any{"author": ann.genesis.Hash}, "heads": true}, SignPullOptions{Asker: ann.genesis.Hash, Node: node.genesis.Hash, PrivateKey: ann.keys.PrivateKey})
-	if wrong := PullErrors(request, PullCheck{Node: node.genesis.Hash, Keys: []string{ann.keys.PublicKeySign}}); len(wrong) > 0 {
+	request, _ := SignPull(map[string]any{"filter": map[string]any{"author": ann.genesis.Hash}, "heads": true}, SignOptions{Signer: ann.genesis.Hash, Node: node.genesis.Hash, PrivateKey: ann.keys.PrivateKey, Counter: 5})
+	four, five := int64(4), int64(5)
+	check := PullCheck{Node: node.genesis.Hash, Keys: []string{ann.keys.PublicKeySign}, Highest: &four}
+	if wrong := PullErrors(request, check); len(wrong) > 0 || request["at"] != nil {
 		t.Error(wrong)
+	}
+	check.Highest = &five
+	if len(PullErrors(request, check)) == 0 {
+		t.Error("a counter that is not above the highest seen is a replay")
+	}
+	challenge := NewChallenge()
+	asked, _ := SignPull(nil, SignOptions{Signer: ann.genesis.Hash, Node: node.genesis.Hash, PrivateKey: ann.keys.PrivateKey, Challenge: challenge})
+	if len(PullErrors(asked, PullCheck{Node: node.genesis.Hash, Keys: check.Keys, Issued: []string{challenge}})) > 0 || len(PullErrors(asked, PullCheck{Node: node.genesis.Hash, Keys: check.Keys})) == 0 {
+		t.Error("a challenge the node issued is taken, any other is a replay")
 	}
 	log := []Arrival{{N: 1, Block: ann.genesis}, {N: 2, Block: one}, {N: 3, Block: two}}
 	pulled, _ := AnswerPull(log, request, AnswerOptions{Node: node.genesis.Hash, PrivateKey: node.keys.PrivateKey})
@@ -172,7 +203,7 @@ func TestCustodyTheLimitFence(t *testing.T) {
 		t.Error("spent and asked together stay within the limit, or not")
 	}
 	keys, _ := GenerateKeypair()
-	g, err := Genesis(keys, GenesisOptions{RecoveryKey: keys.PublicKeySign, At: "2026-10-15T09:00:00.000Z", Custodian: strings.Repeat("c", 64)})
+	g, err := Genesis(keys, GenesisOptions{RecoveryKey: keys.PublicKeySign, Reach: "P30D", At: "2026-10-15T09:00:00.000Z", Custodian: strings.Repeat("c", 64)})
 	if err != nil || g.State["custodian"] != strings.Repeat("c", 64) {
 		t.Errorf("a custodial genesis names its custodian: %v", err)
 	}

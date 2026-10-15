@@ -2,33 +2,39 @@
 
 FoodBlock 1.6 for machines: robots, vehicles, fridges, scales, sensors, and the computers that run them.
 
-A **block** is a small signed message: `{ type, state, refs }`, signed by its author's key. Its id is the SHA-256
-hash of its canonical form, so any two peers agree on it byte for byte. This crate lets a device make its own
+A **block** is a small signed message: `{ type, state, refs }`, signed by its author's key. Its id is the hash of its
+canonical form (RFC 8785), in the hash of the signing key's suite, so any two peers agree on it byte for byte. This crate lets a device make its own
 identity, sign what it measures or does, keep its own chain of blocks, check every block before it sends it, and
 (on bigger devices) open sealed blocks and work out where a deal stands.
 
-The rules come from the repository's `spec/` folder: `spec/protocol.md` (normative), `spec/protocol.json` (every
-list and grammar) and `spec/aliases.json` (how older blocks read). The crate builds both JSON files in, and you can
-hand it your own copies at runtime (`Spec::from_json`). No list is copied into code.
+The rules come from the repository's `spec/` folder: `spec/core.md` and `spec/modules/` (normative) and
+`spec/protocol.json` (every list and grammar). The crate builds the JSON in, and you can hand it your own copy at
+runtime (`Spec::from_json`). No list is copied into code. There is no earlier version in the protocol: the feature
+`legacy` adds the one-time converter (`legacy::convert`), which reads `spec/legacy/aliases-0.x.json`.
 
 MIT licence.
 
-## The three profiles
+## The three peers
 
-The protocol names three sizes of peer (`profiles` in protocol.json). Pick one with a Cargo feature.
+The protocol names three sizes of peer (`peers` in protocol.json). Pick one with a Cargo feature.
 
 | Profile | Feature | What it adds | Who |
 |---|---|---|---|
-| micro | `micro` | canonical form, SHA-256, Ed25519, the write check, its own chain, the grant check, reading old shapes | a sensor, a scale, an oven, a robot's body |
+| micro | `micro` | canonical form, SHA-256, Ed25519, `valid`, its own chain, the grant check | a sensor, a scale, an oven, a robot's body |
 | edge | `edge` | the folds (a deal's stage, circles, who owns a thing, where it is) and Pull, Push, discovery | the computer at a farm, kitchen, shop or vehicle |
 | node | `node` (default) | envelopes (X25519, HKDF-SHA256, AES-256-GCM) and sealed copies | a person's or machine's always-on node |
+
+More features: `suites` (the suites `p256` and `sm` beside `std`: ECDSA and ECDH on P-256; SM2, SM3 and SM4), the
+optional profiles `successor`, `ballots`, `rekeys`, `deposits`, `door` (the JSON door, in the default build), `legacy`
+(the converter), and the doors `ffi`, `jni` and `wasm`. A suite not built in is refused with `unknown_suite`.
 
 The micro core is `no_std` + `alloc`: build it with `--no-default-features --features micro`. Without the `std`
 feature it has no clock and no randomness of its own, so you pass `at`, salts and nonces in (every option that needs
 them takes them). With `std`, it uses the system clock and OS randomness.
 
 Dependencies, all well known: `serde_json`, `indexmap`, `sha2`, `ed25519-dalek`, `unicode-normalization`,
-`once_cell`, and only on `std` `getrandom`, only on `envelope` `x25519-dalek`, `aes-gcm`, `hkdf`. The grammar in
+`once_cell`, and only on `std` `getrandom`, only on `envelope` `x25519-dalek`, `aes-gcm`, `hkdf`, and only on `suites`
+the RustCrypto crates `p256`, `ecdsa`, `elliptic-curve`, `sm2`, `sm3`, `sm4`, `hmac`. The grammar in
 protocol.json runs on a small built-in regex engine, so there is no regex dependency.
 
 ## Rust
@@ -40,7 +46,7 @@ use serde_json::json;
 
 let keys = foodblock::generate_keypair()?;              // made once, on the device
 let me = genesis(&keys, &GenesisOptions { kind: "sensor", at: foodblock::time::now(),
-    encryption_key: &my_x25519_public, recovery_key: &offline_recovery_public, reach: "P30D" })?;
+    encryption_key: &my_x25519_public, recovery_key: &offline_recovery_public, reach: "P30D", ..Default::default() })?;
 let id = me["hash"].as_str().unwrap().to_string();
 
 // The one write path: compose, check, sign, chain. A reading is a decimal string, never a float.
@@ -53,9 +59,11 @@ let message = foodblock::wrap(&reading);                // { version, block, sig
 
 `write` refuses a block that breaks a rule and returns every refusal (`err.refusals`: `{ code, detail }`, codes from
 protocol.json `refusals.codes`; `err.reasons` the details alone); it never repairs. Other names
-follow the JavaScript reference SDK: `canonical`, `hash`, `sign`, `verify`, `refusals`, `check`, `read_as`, `is_a`,
+follow the JavaScript reference SDK: `canonical`, `hash`, `sign`, `verify`, `refusals`, `check`, `valid::valid`,
 `next_link`, `check_chain`, `seal`, `open`, `seal_copy`, `open_copy`, `identity::*`, `grant::*`, `fold::*`
-(`promise_stage`, `circle_state`, `members_then`, `where_now`, `ownership`, `successor_state`, `circle_key`), and
+(`promise_stage`, `circle_state`, `members_then`, `where_now`, `ownership`, `successor_state`, `circle_key`), `views::*`
+(`promise_view`, `live_grant`, `due`, `recovery_reach`, `withdrawal_seen`), `strangers::*` (`consent`, `receipt_code`,
+`admission_refusals`), and
 `sync::*` (signed pull and push, `accept`, signed answers, `.well-known` discovery, the local announcement and the
 mDNS service `_foodblock._tcp`).
 
@@ -90,7 +98,7 @@ fb_free(out);
 ```
 
 The surface: `fb_version`, `fb_canonical`, `fb_hash`, `fb_keypair`, `fb_genesis`, `fb_sign`, `fb_verify`,
-`fb_check`, `fb_read_as`, `fb_next_link`, `fb_write`, `fb_seal`, `fb_open`, `fb_free`. Link with `-lfoodblock`
+`fb_check`, `fb_next_link`, `fb_write`, `fb_seal`, `fb_open`, `fb_free`. Link with `-lfoodblock`
 (macOS adds `-framework Security -framework CoreFoundation`; Linux adds `-lpthread -ldl -lm`).
 
 ### The one JSON door
@@ -153,13 +161,13 @@ cargo test --no-default-features --features std,micro         # micro: says whic
 cargo test --features ffi                                     # with the C ABI compiled in
 ```
 
-`tests/vectors.rs` runs every section of `spec/vectors.json`, `spec/canonical-vectors.json` and `test/vectors.json`
-the way `spec/run-vectors.cjs` runs the reference SDK: canonical strings and hashes, the write check, chains,
-audience commitments, every signature reproduced byte for byte from its seed, bad signatures, headers, envelopes
-and sealed copies, identities (rotations, recovery reach, frozen and void keys, operators), every fold (promises,
-circles, audience, things, successors, ballots, rekeys), refusals (their codes, exactly), every alias read,
-and the messages between nodes. A section a profile leaves out prints that it was left out. `tests/api.rs` writes
-a sensor's chain end to end.
+`tests/vectors.rs` runs every section of `spec/vectors.json` and `spec/canonical-vectors.json` through the JSON door
+the way `spec/run-vectors.cjs` runs the reference SDK: canonical strings and hashes, `valid`, chains, audience
+commitments, signatures, headers, envelopes and sealed copies, identities (rotations, recovery reach, frozen and void
+keys, operators), every fold and view, refusals (their codes, exactly), the messages between nodes, the compact form
+and the `door` section (suites, strict writing, skips, forks, consent, roles, relative time, tasks). `tests/legacy.rs`
+tests the converter against the old 0.x examples in `tests/fixtures/`. `tests/api.rs` checks the suites, the
+envelopes and the canonical example.
 
 ## The compact form, algorithms and money
 
@@ -169,8 +177,9 @@ and the short-key table when asked. The id is always the hash of the canonical J
 refuse floats, tags, null, indefinite lengths and duplicate keys. Door ops: `cbor_encode`, `cbor_decode`,
 `cbor_encode_push`, `cbor_decode_push`, `cbor_encode_header`, `cbor_decode_header`.
 
-A key names its algorithms (`alg_sign`, `alg_encrypt`, `alg_recovery`; defaults ed25519 and x25519, from
-protocol.json `algs`); an unknown one is refused (`unknown_alg`). Money is `{ minor, currency }` with an ISO 4217 code
+A key names its suite (`state.suite`; default `std`, from protocol.json `suites`); an unknown one is refused
+(`unknown_suite`). `p256` and `sm` are built (feature `suites`); the SM4 key is the first 16 bytes of the 32-byte key the
+spec derives. Money is `{ minor, currency }` with an ISO 4217 code
 or an issuer's `{ issuer, unit, decimals }`, and the folds count only the price's own currency. A micro with no clock
 sets `ComposeOptions::clockless` and leaves out `at` on an observe, transform or transfer; any other type needs it
-(`at_missing`). Older field names (`last_good`, `last_counted`, `asker`, `pusher`) are read through aliases.json.
+(`at_missing`). No older field name is read: year zero.

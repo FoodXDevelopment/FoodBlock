@@ -1,1031 +1,868 @@
 'use strict';
-// FoodBlock 1.6, clean-room round 3. Built from spec/core.md and the modules it indexes (spec/protocol.md), protocol.json,
-// aliases.json, canonical.md and transport.md only. Plain Node, built-in crypto.
+// FoodBlock 1.6 conformance oracle, written from the spec TEXT only (core.md, canonical.md, protocol.md, transport.md,
+// protocol.json, modules/*.md, profiles/*.md, legacy/converter.md). Plain Node, built-in crypto, no dependency.
+// Where the text is silent a reading is marked GUESS. Where a primitive is not in Node (SM2, SM4-GCM) it is built by hand.
 const crypto = require('crypto');
 const SPEC = require('path').join(__dirname, '..') + '/';
 const P = require(SPEC + 'protocol.json');
-const A = require(SPEC + 'aliases.json');
 
-// ---------------------------------------------------------------- canonical form (canonical.md)
-function ser(v, inRefs) {
-  if (v === null || v === undefined) return undefined;
-  if (typeof v === 'number') {
-    if (!Number.isFinite(v)) throw new Error('Infinity and NaN are not allowed');
-    return Object.is(v, -0) ? '0' : String(v);
-  }
+// ================================================================ canonical form (canonical.md)
+// RFC 8785 (JCS). Writing never sorts sets or drops anything: strict writing is a CHECK (below), not a repair.
+function jcs(v) {
+  if (v === null) return 'null';
   if (typeof v === 'boolean') return v ? 'true' : 'false';
-  if (typeof v === 'string') return JSON.stringify(v.normalize('NFC'));
-  if (Array.isArray(v)) {
-    let items = v.filter(x => x !== null && x !== undefined);
-    if (inRefs && items.every(x => typeof x === 'string')) items = items.map(s => s.normalize('NFC')).sort();
-    return '[' + items.map(x => ser(x, inRefs)).filter(x => x !== undefined).join(',') + ']';
-  }
-  if (typeof v === 'object') {
-    const parts = [];
-    for (const k of Object.keys(v).sort()) {
-      const s = ser(v[k], inRefs || k === 'refs');
-      if (s !== undefined) parts.push(JSON.stringify(k) + ':' + s);
-    }
-    return '{' + parts.join(',') + '}';
-  }
-  throw new Error('not JSON: ' + typeof v);
+  if (typeof v === 'number') return Object.is(v, -0) ? '0' : String(v);
+  if (typeof v === 'string') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(jcs).join(',') + ']';
+  if (typeof v === 'object') return '{' + Object.keys(v).sort().filter(k => v[k] !== undefined).map(k => JSON.stringify(k) + ':' + jcs(v[k])).join(',') + '}';
+  throw new Error('not JSON');
 }
-const canonical = (type, state, refs) => ser({ type, state: state || {}, refs: refs || {} }, false);
+const canonical = (type, state, refs) => jcs({ type, state, refs });
 const canonOf = b => canonical(b.type, b.state, b.refs);
-const sha256 = s => crypto.createHash('sha256').update(typeof s === 'string' ? Buffer.from(s, 'utf8') : s).digest('hex');
-const hashOf = b => sha256(canonOf(b));
-const canonMsg = m => { const o = { ...m }; delete o.signature; return ser(o, false); };
 
-// ---------------------------------------------------------------- keys and signatures
-const pub = hex => crypto.createPublicKey({ key: Buffer.from(hex, 'hex'), format: 'der', type: 'spki' });
-const priv = hex => crypto.createPrivateKey({ key: Buffer.from(hex, 'hex'), format: 'der', type: 'pkcs8' });
-const signStr = (s, privHex) => crypto.sign(null, Buffer.from(s, 'utf8'), priv(privHex)).toString('hex');
-function verifyStr(s, pubHex, sigHex) {
-  try { return /^[0-9a-f]{128}$/.test(sigHex) && crypto.verify(null, Buffer.from(s, 'utf8'), pub(pubHex), Buffer.from(sigHex, 'hex')); }
-  catch { return false; }
+// ================================================================ hashes and suites (core.md section 2)
+const cryptoError = (msg, code) => { const e = new Error(msg); e.kind = 'crypto'; if (code) e.code = code; return e; };
+const suiteOf = name => { const s = name === undefined || name === null ? 'std' : name; if (!['std', 'p256', 'sm'].includes(s)) throw cryptoError('unknown suite ' + s, 'unknown_suite'); return s; };
+const hashName = suite => ({ std: 'sha256', p256: 'sha256', sm: 'sm3' })[suiteOf(suite)];
+function hashBytes(suite, bytes) {
+  const n = hashName(suite);
+  const h = crypto.createHash(n).update(bytes).digest('hex');
+  return n === 'sha256' ? h : n + ':' + h;
 }
-const signBlock = (b, privHex) => signStr(canonOf(b), privHex);
-const verifyBlock = (b, pubHex, sig) => verifyStr(canonOf(b), pubHex, sig);
-function newSigningKey() {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
-  return { public_key_sign: publicKey.export({ format: 'der', type: 'spki' }).toString('hex'),
-    private_key: privateKey.export({ format: 'der', type: 'pkcs8' }).toString('hex') };
+const hashStr = (suite, s) => hashBytes(suite, Buffer.from(s, 'utf8'));
+const hashOfBlock = (b, suite) => hashStr(suite, canonOf(b));
+const sha256 = s => crypto.createHash('sha256').update(s).digest('hex');
+
+// A commitment (privacy.md): the suite hash of the salt's hex followed by the value, as UTF-8; a non-string is written as canonical JSON.
+const saltedHash = (salt, value, suite) => hashStr(suite || 'std', salt + (typeof value === 'string' ? value : jcs(value)));
+// recovery_key_hash (encoding.md): the identity's suite hash of the recovery key's SPKI hex as UTF-8.
+const recoveryKeyHash = (spkiHex, suite) => hashStr(suite || 'std', spkiHex);
+// Receipt code (short-form.md): first 5 bytes of the id, Crockford Base32, XXXX-XXXX. A prefixed id uses the hash bytes.
+function receiptCode(id) {
+  const hex = id.replace(/^[a-z0-9-]+:/, '');
+  let n = BigInt('0x' + hex.slice(0, 10));
+  const A = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  let s = '';
+  for (let i = 0; i < 8; i++) { s = A[Number(n & 31n)] + s; n >>= 5n; }
+  return s.slice(0, 4) + '-' + s.slice(4);
 }
 
-// ---------------------------------------------------------------- commitments (Privacy)
-const commitment = (saltHex, value) => sha256(saltHex + value);
-const randHex = n => crypto.randomBytes(n).toString('hex');
-
-// ---------------------------------------------------------------- envelopes (Encoding: Envelope)
-const b64u = b => Buffer.from(b).toString('base64url');
-const xPriv = (dHex, xHex) => crypto.createPrivateKey({ key: { kty: 'OKP', crv: 'X25519', d: b64u(Buffer.from(dHex, 'hex')), x: b64u(Buffer.from(xHex, 'hex')) }, format: 'jwk' });
-const xPub = xHex => crypto.createPublicKey({ key: { kty: 'OKP', crv: 'X25519', x: b64u(Buffer.from(xHex, 'hex')) }, format: 'jwk' });
-function kek(alg, secret, ephHex, recipHex) {
-  if (alg === 'x25519-hkdf-sha256-aes-256-gcm')
-    return Buffer.from(crypto.hkdfSync('sha256', secret, Buffer.concat([Buffer.from(ephHex, 'hex'), Buffer.from(recipHex, 'hex')]), Buffer.from(P.envelope.hkdf_info, 'utf8'), 32));
-  if (alg === 'x25519-aes-256-gcm') return secret;
-  throw new Error('unknown alg ' + alg);
+// ================================================================ SM2 / SM4-GCM built by hand (GM/T 0003, 0004, 0002)
+const B = BigInt;
+const SM2 = {
+  p: B('0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF'),
+  a: B('0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFC'),
+  b: B('0x28E9FA9E9D9F5E344D5A9E4BCF6509A7F39789F515AB8F92DDBCBD414D940E93'),
+  n: B('0xFFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFF7203DF6B21C6052B53BBF40939D54123'),
+  gx: B('0x32C4AE2C1F1981195F9904466A39C9948FE30BBFF2660BE1715A4589334C74C7'),
+  gy: B('0xBC3736A2F4F6779C59BDCEE36B692153D0A9877CC62A474002DF32E52139F0A0'),
+};
+const mod = (x, m) => ((x % m) + m) % m;
+function inv(x, m) { let [a, b, u, v] = [mod(x, m), m, 1n, 0n]; while (b) { const q = a / b;[a, b] = [b, a - q * b];[u, v] = [v, u - q * v]; } return mod(u, m); }
+const ecAdd = (P1, P2) => {
+  const { p, a } = SM2;
+  if (!P1) return P2; if (!P2) return P1;
+  if (P1[0] === P2[0] && mod(P1[1] + P2[1], p) === 0n) return null;
+  const l = P1[0] === P2[0] ? mod((3n * P1[0] * P1[0] + a) * inv(2n * P1[1], p), p) : mod((P2[1] - P1[1]) * inv(P2[0] - P1[0], p), p);
+  const x = mod(l * l - P1[0] - P2[0], p);
+  return [x, mod(l * (P1[0] - x) - P1[1], p)];
+};
+function ecMul(k, Pt) { let R = null, Q = Pt; while (k > 0n) { if (k & 1n) R = ecAdd(R, Q); Q = ecAdd(Q, Q); k >>= 1n; } return R; }
+const G = [SM2.gx, SM2.gy];
+const be = (x, n = 32) => x.toString(16).padStart(n * 2, '0');
+const fromHex = h => B('0x' + (h || '0'));
+function sm2Z(pubPoint, id = '1234567812345678') {
+  const idb = Buffer.from(id, 'utf8'), entl = Buffer.alloc(2); entl.writeUInt16BE(idb.length * 8);
+  const parts = [entl, idb, ...[SM2.a, SM2.b, SM2.gx, SM2.gy, pubPoint[0], pubPoint[1]].map(x => Buffer.from(be(x), 'hex'))];
+  return crypto.createHash('sm3').update(Buffer.concat(parts)).digest();
 }
-function gcmOpen(key, iv, ct, tag) { const d = crypto.createDecipheriv('aes-256-gcm', key, iv); d.setAuthTag(tag); return Buffer.concat([d.update(ct), d.final()]); }
-function gcmSeal(key, iv, pt) { const c = crypto.createCipheriv('aes-256-gcm', key, iv); const ct = Buffer.concat([c.update(pt), c.final()]); return { ct, tag: c.getAuthTag() }; }
-function seal(plaintextObj, recipientEncKeysHex, alg = P.envelope.write) {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('x25519');
-  const ephHex = Buffer.from(publicKey.export({ format: 'jwk' }).x, 'base64url').toString('hex');
-  const ck = crypto.randomBytes(32), iv = crypto.randomBytes(12);
-  const { ct, tag } = gcmSeal(ck, iv, Buffer.from(JSON.stringify(plaintextObj), 'utf8'));
-  const recipients = recipientEncKeysHex.map(r => {
-    const secret = crypto.diffieHellman({ privateKey, publicKey: xPub(r) });
-    const k = kek(alg, secret, ephHex, r), n = crypto.randomBytes(12);
-    const s = gcmSeal(k, n, ck);
-    return { encrypted_key: Buffer.concat([s.ct, s.tag, n]).toString('base64') };
+const sm2E = (pubPoint, msg) => fromHex(crypto.createHash('sm3').update(Buffer.concat([sm2Z(pubPoint), msg])).digest('hex'));
+function sm2PubFromPriv(dHex) { const P_ = ecMul(fromHex(dHex), G); return '04' + be(P_[0]) + be(P_[1]); }
+function sm2Sign(msg, dHex) {
+  const d = fromHex(dHex), Pt = ecMul(d, G), e = sm2E(Pt, msg);
+  for (;;) {
+    const k = mod(fromHex(crypto.randomBytes(32).toString('hex')), SM2.n - 1n) + 1n;
+    const [x1] = ecMul(k, G), r = mod(e + x1, SM2.n);
+    if (r === 0n || r + k === SM2.n) continue;
+    const s = mod(inv(1n + d, SM2.n) * (k - r * d), SM2.n);
+    if (s === 0n) continue;
+    return be(r) + be(s);
+  }
+}
+function sm2Verify(msg, pubHex65, sigHex) {
+  try {
+    if (!/^[0-9a-f]{128}$/.test(sigHex) || !/^04[0-9a-f]{128}$/.test(pubHex65)) return false;
+    const r = fromHex(sigHex.slice(0, 64)), s = fromHex(sigHex.slice(64));
+    const Pt = [fromHex(pubHex65.slice(2, 66)), fromHex(pubHex65.slice(66))];
+    if (r < 1n || r >= SM2.n || s < 1n || s >= SM2.n) return false;
+    if (mod(Pt[1] * Pt[1] - (Pt[0] ** 3n + SM2.a * Pt[0] + SM2.b), SM2.p) !== 0n) return false;
+    const e = sm2E(Pt, msg), t = mod(r + s, SM2.n);
+    if (t === 0n) return false;
+    const X = ecAdd(ecMul(s, G), ecMul(t, Pt));
+    return !!X && mod(e + X[0], SM2.n) === r;
+  } catch { return false; }
+}
+// SM4-GCM: the SM4 block cipher from Node (ECB, one block at a time); CTR and GHASH are written here (NIST SP 800-38D).
+const sm4ecb = (key, block) => { const c = crypto.createCipheriv('sm4-ecb', key, null); c.setAutoPadding(false); return Buffer.concat([c.update(block), c.final()]); };
+const R128 = B('0xe1') << 120n;
+function gmul(x, y) { let z = 0n, v = y; for (let i = 127; i >= 0; i--) { if ((x >> B(i)) & 1n) z ^= v; v = (v & 1n) ? (v >> 1n) ^ R128 : v >> 1n; } return z; }
+function ghash(H, aad, ct) {
+  const pad = b => b.length % 16 ? Buffer.concat([b, Buffer.alloc(16 - b.length % 16)]) : b;
+  const len = Buffer.alloc(16); len.writeBigUInt64BE(B(aad.length * 8), 0); len.writeBigUInt64BE(B(ct.length * 8), 8);
+  const data = Buffer.concat([pad(aad), pad(ct), len]);
+  let y = 0n;
+  for (let i = 0; i < data.length; i += 16) y = gmul(y ^ fromHex(data.subarray(i, i + 16).toString('hex')), H);
+  return y;
+}
+function sm4gcm(key, iv, input, decrypt, tagIn) {
+  const H = fromHex(sm4ecb(key, Buffer.alloc(16)).toString('hex'));
+  const j0 = Buffer.concat([iv, Buffer.from([0, 0, 0, 1])]);
+  const out = Buffer.alloc(input.length);
+  let ctr = Buffer.from(j0);
+  for (let i = 0; i < input.length; i += 16) {
+    ctr = Buffer.from(ctr); ctr.writeUInt32BE((ctr.readUInt32BE(12) + 1) >>> 0, 12);
+    const ks = sm4ecb(key, ctr);
+    for (let j = 0; j < 16 && i + j < input.length; j++) out[i + j] = input[i + j] ^ ks[j];
+  }
+  const ct = decrypt ? input : out;
+  const tag = Buffer.from(be(ghash(H, Buffer.alloc(0), ct) ^ fromHex(sm4ecb(key, j0).toString('hex')), 16), 'hex');
+  if (decrypt && !crypto.timingSafeEqual(tag, tagIn)) throw cryptoError('authentication failed');
+  return { out, tag };
+}
+
+// ================================================================ keys, signatures (core.md section 2)
+const SPKI_PREFIX = { std: P.suites.std.sign_key.spki_prefix, p256: P.suites.p256.sign_key.spki_prefix, sm: P.suites.sm.sign_key.spki_prefix };
+const keyGrammar = s => new RegExp(P.suites[s].sign_key.grammar);
+const encGrammar = s => new RegExp(P.suites[s].encrypt_key.grammar);
+const sigGrammar = s => new RegExp(P.suites[s].signature.grammar);
+// The suite a signing key (SPKI hex) belongs to, by its grammar. null when none.
+function suiteOfKey(spki) { for (const s of ['std', 'p256', 'sm']) if (typeof spki === 'string' && keyGrammar(s).test(spki)) return s; return null; }
+const rawPoint = spki => spki.slice(SPKI_PREFIX.p256.length);
+function keypair(seedHex, suite) {
+  const s = suiteOf(suite);
+  if (s === 'std') {
+    const pk = crypto.createPrivateKey({ key: Buffer.concat([Buffer.from('302e020100300506032b657004220420', 'hex'), Buffer.from(seedHex, 'hex')]), format: 'der', type: 'pkcs8' });
+    const pub = crypto.createPublicKey(pk).export({ format: 'der', type: 'spki' }).toString('hex');
+    return { public_key_sign: pub, private_key: pk.export({ format: 'der', type: 'pkcs8' }).toString('hex'), suite: 'std' };
+  }
+  if (s === 'p256') { const e = crypto.createECDH('prime256v1'); e.setPrivateKey(Buffer.from(seedHex, 'hex')); return { public_key_sign: SPKI_PREFIX.p256 + e.getPublicKey('hex'), private_key: seedHex, suite: 'p256' }; }
+  return { public_key_sign: SPKI_PREFIX.sm + sm2PubFromPriv(seedHex), private_key: seedHex, suite: 'sm' };
+}
+function p256Private(dHex) {
+  const e = crypto.createECDH('prime256v1'); e.setPrivateKey(Buffer.from(dHex, 'hex'));
+  const pt = e.getPublicKey();
+  return crypto.createPrivateKey({ key: { kty: 'EC', crv: 'P-256', d: Buffer.from(dHex, 'hex').toString('base64url'), x: pt.subarray(1, 33).toString('base64url'), y: pt.subarray(33).toString('base64url') }, format: 'jwk' });
+}
+function signBytes(bytes, privHex, suite) {
+  const s = suiteOf(suite);
+  if (s === 'std') return crypto.sign(null, bytes, crypto.createPrivateKey({ key: Buffer.from(privHex, 'hex'), format: 'der', type: 'pkcs8' })).toString('hex');
+  if (s === 'p256') return crypto.sign('sha256', bytes, { key: p256Private(privHex), dsaEncoding: 'ieee-p1363' }).toString('hex');
+  return sm2Sign(bytes, privHex);
+}
+function verifyBytes(bytes, sigHex, pubSpkiHex, suite) {
+  try {
+    const s = suite ? suiteOf(suite) : suiteOfKey(pubSpkiHex);
+    if (!s || !keyGrammar(s).test(pubSpkiHex) || !sigGrammar(s).test(sigHex)) return false;
+    const sig = Buffer.from(sigHex, 'hex');
+    if (s === 'std') return crypto.verify(null, bytes, crypto.createPublicKey({ key: Buffer.from(pubSpkiHex, 'hex'), format: 'der', type: 'spki' }), sig);
+    if (s === 'p256') return crypto.verify('sha256', bytes, { key: crypto.createPublicKey({ key: Buffer.from(pubSpkiHex, 'hex'), format: 'der', type: 'spki' }), dsaEncoding: 'ieee-p1363' }, sig);
+    return sm2Verify(bytes, rawPoint(pubSpkiHex), sigHex);
+  } catch { return false; }
+}
+const signBlock = (b, privHex, suite) => signBytes(Buffer.from(canonOf(b), 'utf8'), privHex, suite);
+// The key's own suite decides the algorithm (its SPKI prefix names it).
+const verifyBlock = (b, sigHex, pubHex) => verifyBytes(Buffer.from(canonOf(b), 'utf8'), sigHex, pubHex);
+
+// ================================================================ envelopes (privacy.md)
+const ENVELOPE = { std: 'x25519-hkdf-sha256-aes-256-gcm', p256: 'p256-hkdf-sha256-aes-256-gcm', sm: 'sm2-hkdf-sm3-sm4-gcm' };
+const suiteOfAlg = alg => Object.keys(ENVELOPE).find(s => ENVELOPE[s] === alg);
+const xPrivKey = dHex => crypto.createPrivateKey({ key: Buffer.concat([Buffer.from('302e020100300506032b656e04220420', 'hex'), Buffer.from(dHex, 'hex')]), format: 'der', type: 'pkcs8' });
+const xPubKey = xHex => crypto.createPublicKey({ key: Buffer.concat([Buffer.from('302a300506032b656e032100', 'hex'), Buffer.from(xHex, 'hex')]), format: 'der', type: 'spki' });
+const ecdh = s => crypto.createECDH(s === 'p256' ? 'prime256v1' : 'SM2');
+// The encryption public key for a private one, in a suite.
+function encPublicOf(dHex, suite) {
+  const s = suiteOf(suite);
+  if (s === 'std') return crypto.createPublicKey(xPrivKey(dHex)).export({ format: 'der', type: 'spki' }).subarray(12).toString('hex');
+  const e = ecdh(s); e.setPrivateKey(Buffer.from(dHex, 'hex')); return e.getPublicKey('hex');
+}
+function agree(suite, privHex, pubHex) {
+  const s = suiteOf(suite);
+  if (s === 'std') return crypto.diffieHellman({ privateKey: xPrivKey(privHex), publicKey: xPubKey(pubHex) });
+  const e = ecdh(s); e.setPrivateKey(Buffer.from(privHex, 'hex'));
+  return e.computeSecret(Buffer.from(pubHex, 'hex'));
+}
+const kdfHash = s => (s === 'sm' ? 'sm3' : 'sha256');
+// GUESS: SM4 takes a 16-byte key; the text says only "a 32-byte key" for every suite, so SM4 uses the first 16 bytes.
+const cipherKey = (s, k) => (s === 'sm' ? k.subarray(0, 16) : k);
+function gcmSeal(s, key, iv, pt) {
+  if (s === 'sm') { const { out, tag } = sm4gcm(cipherKey(s, key), iv, pt, false); return { ct: out, tag }; }
+  const c = crypto.createCipheriv('aes-256-gcm', key, iv); const ct = Buffer.concat([c.update(pt), c.final()]); return { ct, tag: c.getAuthTag() };
+}
+function gcmOpen(s, key, iv, ct, tag) {
+  if (s === 'sm') return sm4gcm(cipherKey(s, key), iv, ct, true, tag).out;
+  const d = crypto.createDecipheriv('aes-256-gcm', key, iv); d.setAuthTag(tag); return Buffer.concat([d.update(ct), d.final()]);
+}
+function envKey(s, secret, ephHex, recipHex) {
+  return Buffer.from(crypto.hkdfSync(kdfHash(s), secret, Buffer.concat([Buffer.from(ephHex, 'hex'), Buffer.from(recipHex, 'hex')]), Buffer.from(P.envelope.hkdf_info, 'utf8'), 32));
+}
+// seal(plaintext, [recipient encryption keys], suite, fixed?); fixed = { ephemeral (private hex), contentKey, nonce, keyNonces[] } for tests.
+function seal(plaintext, recipients, suite, fixed) {
+  const s = suiteOf(suite), f = fixed || {};
+  let eph = f.ephemeral;
+  if (!eph) { if (s === 'std') eph = crypto.randomBytes(32).toString('hex'); else { const e = ecdh(s); e.generateKeys(); eph = e.getPrivateKey('hex').padStart(64, '0'); } }
+  const ephPub = encPublicOf(eph, s);
+  const ck = f.contentKey ? Buffer.from(f.contentKey, 'hex') : crypto.randomBytes(32), iv = f.nonce ? Buffer.from(f.nonce, 'hex') : crypto.randomBytes(12);
+  const body = gcmSeal(s, ck, iv, Buffer.from(JSON.stringify(plaintext), 'utf8'));
+  const recips = recipients.map((r, i) => {
+    const k = envKey(s, agree(s, eph, r), ephPub, r), n = f.keyNonces ? Buffer.from(f.keyNonces[i], 'hex') : crypto.randomBytes(12);
+    const sk = gcmSeal(s, k, n, ck);
+    return { encrypted_key: Buffer.concat([sk.ct, sk.tag, n]).toString('base64') };
   });
-  return { alg, ephemeral_key: ephHex, nonce: iv.toString('base64'), ciphertext: Buffer.concat([ct, tag]).toString('base64'), recipients };
+  return { alg: ENVELOPE[s], ephemeral_key: ephPub, nonce: iv.toString('base64'), ciphertext: Buffer.concat([body.ct, body.tag]).toString('base64'), recipients: recips };
 }
-function openEnvelope(env, xPrivHex, xPubHex) {
-  if (!P.envelope.read.includes(env.alg)) throw new Error('alg not read: ' + env.alg);
-  const secret = crypto.diffieHellman({ privateKey: xPriv(xPrivHex, xPubHex), publicKey: xPub(env.ephemeral_key) });
-  const k = kek(env.alg, secret, env.ephemeral_key, xPubHex);
+// open(envelope, private key hex) -> plaintext object. A reader opens only the envelopes its suites name.
+function open(env, privHex) {
+  const s = suiteOfAlg(env && env.alg);
+  if (!s) throw cryptoError('unknown envelope ' + (env && env.alg), 'unknown_suite');
+  const myPub = encPublicOf(privHex, s);
+  const k = envKey(s, agree(s, privHex, env.ephemeral_key), env.ephemeral_key, myPub);
   const c = Buffer.from(env.ciphertext, 'base64'), iv = Buffer.from(env.nonce, 'base64');
-  for (const r of env.recipients || []) { // key_hash, if any, is ignored (aliases.json envelope.ignored)
+  for (const r of env.recipients || []) {
     const b = Buffer.from(r.encrypted_key, 'base64');
     if (b.length !== 60) continue;
-    let ck; try { ck = gcmOpen(k, b.subarray(48, 60), b.subarray(0, 32), b.subarray(32, 48)); } catch { continue; }
-    return JSON.parse(gcmOpen(ck, iv, c.subarray(0, c.length - 16), c.subarray(c.length - 16)).toString('utf8'));
+    let ck; try { ck = gcmOpen(s, k, b.subarray(48, 60), b.subarray(0, 32), b.subarray(32, 48)); } catch { continue; }
+    try { return JSON.parse(gcmOpen(s, ck, iv, c.subarray(0, c.length - 16), c.subarray(c.length - 16)).toString('utf8')); } catch { throw cryptoError('the envelope does not open'); }
   }
-  return null;
+  throw cryptoError('not a recipient');
 }
 
-// ---------------------------------------------------------------- aliases (generous reading)
-const clone = o => JSON.parse(JSON.stringify(o));
-const deepEq = (a, b) => ser(a, false) === ser(b, false);
-function getP(o, path) { let x = o; for (const p of path.split('.')) { if (x == null || typeof x !== 'object') return undefined; x = x[p]; } return x; }
-function hasP(o, path) { return getP(o, path) !== undefined; }
-function setP(o, path, v) { const ps = path.split('.'); let x = o; for (const p of ps.slice(0, -1)) { if (x[p] == null || typeof x[p] !== 'object') x[p] = {}; x = x[p]; } x[ps[ps.length - 1]] = v; }
-function delP(o, path) { const ps = path.split('.'); let x = o; for (const p of ps.slice(0, -1)) { if (x == null || typeof x !== 'object') return; x = x[p]; } if (x && typeof x === 'object') delete x[ps[ps.length - 1]]; }
-function whenHolds(b, when) {
-  for (const [path, want] of Object.entries(when || {})) {
-    const v = getP(b, path);
-    if (want === '*') { if (v === undefined) return false; }
-    else if (want === null) { if (v !== undefined) return false; }
-    else if (!deepEq(v, want)) return false;
-  }
-  return true;
-}
-function applyRule(b, rule, out) {
-  const force = !!rule.force;
-  for (const [o, n] of Object.entries(rule.refs || {})) if (b.refs[o] !== undefined && (force || b.refs[n] === undefined)) { b.refs[n] = b.refs[o]; delete b.refs[o]; }
-  for (const [f, t] of Object.entries(rule.move || {})) if (hasP(b, f) && (force || !hasP(b, t))) { const v = getP(b, f); delP(b, f); setP(b, t, v); }
-  for (const [t, f] of Object.entries(rule.copy || {})) if (hasP(b, f) && (force || !hasP(b, t))) setP(b, t, clone(getP(b, f)));
-  for (const [t, fs] of Object.entries(rule.join || {})) { const vs = fs.map(f => getP(b, f)).filter(v => v !== undefined); setP(b, t, vs.join('.')); }
-  for (const d of rule.drop || []) delP(b, d);
-  for (const [path, v] of Object.entries(rule.set || {})) if (force || !hasP(b, path)) setP(b, path, clone(v));
-  if (rule.settles) out.settles = b.refs[rule.settles];
-  let changed = false;
-  if (rule.type && rule.type !== b.type) { b.type = rule.type; changed = true; }
-  if (rule.kind && rule.kind !== b.state.kind) { b.state.kind = rule.kind; changed = true; }
-  return changed;
-}
-function readAs(block) {
-  const b = { type: block.type, state: clone(block.state || {}), refs: clone(block.refs || {}) };
-  const out = {};
-  // 1. types: per-type rows, then every-type rows (*)
-  let row = A.types[b.type];
-  if (!row && typeof b.type === 'string' && b.type.includes('.')) {
-    const i = b.type.indexOf('.'), base = b.type.slice(0, i), rest = b.type.slice(i + 1);
-    if (A.types[base] && !A.types[base].retired) row = { ...A.types[base], kind: rest };      // GUESS: place.x -> thing, kind x
-    else if (base in P.types) row = { type: base, kind: rest };                              // GUESS: observe.x -> observe, kind x
-  }
-  for (const r of [row, A.types['*']].filter(Boolean)) {
-    if (r.retired) return { type: b.type, state: b.state, refs: b.refs, retired: true };
-    for (const [o, n] of Object.entries(r.fields || {})) if (b.state[o] !== undefined) { b.state[n] = b.state[o]; delete b.state[o]; }
-    if (r.type) b.type = r.type;
-    if (r.kind && b.state.kind === undefined) b.state.kind = r.kind;
-    for (const [k, v] of Object.entries(r)) if (!['type', 'kind', 'fields', 'retired', 'outside'].includes(k) && b.state[k] === undefined) b.state[k] = clone(v);
-  }
-  // 2. shapes: type.kind, then type, then *; read again when a rule changes type or kind
-  for (let guard = 0; guard < 20; guard++) {
-    const lists = [];
-    if (typeof b.state.kind === 'string') lists.push(A.shapes[b.type + '.' + b.state.kind]);
-    lists.push(A.shapes[b.type], A.shapes['*']);
-    let restart = false;
-    outer: for (const list of lists.filter(Boolean)) for (const rule of list) {
-      if (!whenHolds(b, rule.when)) continue;
-      if (applyRule(b, rule, out)) { restart = true; break outer; }
-    }
-    if (!restart) break;
-  }
-  // 3. shared ref renames
-  for (const [o, n] of Object.entries(A.refs)) if (b.refs[o] !== undefined && b.refs[n] === undefined) { b.refs[n] = b.refs[o]; delete b.refs[o]; }
-  // 4. outside
-  for (const [k, v] of Object.entries(b.refs)) if (typeof v === 'string' && v.startsWith(A.outside)) { (out.outside = out.outside || {})[k] = v.slice(A.outside.length); delete b.refs[k]; }
-  return { type: b.type, state: b.state, refs: b.refs, ...out };
-}
-
-// ---------------------------------------------------------------- grammar helpers
-const G = Object.fromEntries(Object.entries(P.grammar).map(([k, v]) => [k, new RegExp(v)]));
-const isHash = s => typeof s === 'string' && G.hash.test(s);
+// ================================================================ the strict check (canonical.md, core.md sections 3, 7, 8)
+const RX = Object.fromEntries(Object.entries(P.grammar).filter(([, v]) => typeof v === 'string' && v.startsWith('^')).map(([k, v]) => [k, new RegExp(v)]));
+const KNOWN_HASH_PREFIX = ['sm3:']; // GUESS: the hashes table also names sha3-256, but the text says that suite is "not usable"; only sm3: is read.
+const CLOSED = new Set(P.closed_types);
+const SHARED_REFS = new Set([...P.refs.who_and_where, ...P.refs.what_and_which, ...P.verbs, ...P.causal]);
+const POWERS = new Set([...P.powers, 'rekey']); // rekey is the power of profiles/rekeys.md
+const STATUSES = new Set(P.statuses);
+const FIELDS_EVERY = new Set(P.fields.every);
+const PROFILE_FIELDS = { every: ['proof', 'assisted_by', 'stays_in'], grant: ['witnesses', 'needed', 'wait', 'keys', 'answer_within', 'marks', 'epoch'] };
+// GUESS: the grant kinds profiles add (successor, recall) are not "grants others act under", so they carry no scope.until; the text names no rule for them.
+const PROFILE_GRANT_KINDS = new Set(['successor', 'recall']);
+const isObj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+const isStr = x => typeof x === 'string';
 const dim = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
 function realDate(s) { const [y, m, d] = s.slice(0, 10).split('-').map(Number); return m >= 1 && m <= 12 && d >= 1 && d <= dim(y, m); }
-const isTime = s => typeof s === 'string' && G.time.test(s) && realDate(s) && +s.slice(11, 13) < 24 && +s.slice(14, 16) < 60 && +s.slice(17, 19) < 60;
-const isDate = s => typeof s === 'string' && G.date.test(s) && realDate(s);
-const isDuration = s => typeof s === 'string' && G.duration.test(s);
+const realTime = s => realDate(s) && +s.slice(11, 13) < 24 && +s.slice(14, 16) < 60 && +s.slice(17, 19) < 60;
+const lonePair = s => { for (let i = 0; i < s.length; i++) { const c = s.charCodeAt(i); if (c >= 0xd800 && c <= 0xdbff) { const d = s.charCodeAt(i + 1); if (d >= 0xdc00 && d <= 0xdfff) { i++; continue; } return true; } if (c >= 0xdc00 && c <= 0xdfff) return true; } return false; };
+const MAXI = P.integers.max;
+
+// A check returns findings { code, detail, stage }. Stage = the number in core.md section 8. GUESS: "The first failure is the refusal" is read as
+// "report the findings of the first stage that fails" (several codes of one stage are all listed, in the list's order); core.md also says a block that
+// fails several checks gets one refusal per check, and the vectors (a bad currency on a transfer with no refs.what gives only shape) fit the first reading.
+function normHeld(h) {
+  if (!h) return new Map();
+  if (h instanceof Map) return h;
+  if (h.held) return normHeld(h.held);
+  if (Array.isArray(h)) return new Map(h.filter(Boolean).map(b => [b.hash, b]));
+  return new Map();
+}
+const asList = v => v === undefined ? [] : Array.isArray(v) ? v : [v];
+// An id: a bare 64-hex (SHA-256) or a known hash name and colon in front.
+function idProblem(s) {
+  if (!isStr(s)) return 'grammar';
+  const m = /^([a-z0-9-]+):(.*)$/.exec(s);
+  if (m) { if (!KNOWN_HASH_PREFIX.includes(m[1] + ':')) return RX.id.test(s) ? 'unknown_suite' : 'grammar'; return /^[0-9a-f]{64}$/.test(m[2]) ? null : 'grammar'; }
+  return RX.hash.test(s) ? null : 'grammar';
+}
+const timeProblem = s => !isStr(s) || !RX.time.test(s) ? 'time' : (!realTime(s) ? 'calendar' : null);
+const dateProblem = s => !isStr(s) || !RX.date.test(s) ? 'time' : (!realDate(s) ? 'calendar' : null);
+const durationProblem = s => !isStr(s) || !RX.duration.test(s) ? 'time' : null;
+
+function currencyProblem(c) {
+  if (isStr(c)) return RX.currency.test(c) ? null : 'shape';
+  if (!isObj(c)) return 'shape';
+  const keys = P.shapes.currency_unit;
+  if (!keys.every(k => k in c) || Object.keys(c).some(k => !keys.includes(k))) return 'shape';
+  if (idProblem(c.issuer) || !isStr(c.unit) || !c.unit) return 'shape';
+  if (!Number.isInteger(c.decimals) || c.decimals < 0 || c.decimals > P.limits.decimals_max) return 'shape';
+  return null;
+}
+function moneyProblem(m) {
+  if (!isObj(m) || !Number.isInteger(m.minor)) return 'shape';
+  return currencyProblem(m.currency);
+}
+const has = (o, ...ks) => ks.every(k => k in o);
+// Shapes are recognised by their keys wherever they sit in state.
+function shapeFindings(v, out, key) {
+  if (Array.isArray(v)) { v.forEach(x => shapeFindings(x, out, key)); return; }
+  if (!isObj(v)) return;
+  const bad = c => c && out.push({ code: c, detail: 'shape at ' + key });
+  if (has(v, 'minor', 'currency')) bad(moneyProblem(v));
+  else if (has(v, 'issuer', 'unit', 'decimals')) bad(currencyProblem(v));
+  if (has(v, 'value', 'unit')) {
+    if (!isStr(v.value)) bad('shape'); else if (!RX.decimal.test(v.value)) bad('decimal');
+    if (!isStr(v.unit) || !v.unit) bad('shape');
+  } else if (has(v, 'scheme', 'value')) { if (!isStr(v.scheme) || !isStr(v.value)) bad('shape'); }
+  if (has(v, 'money', 'per') && isObj(v.per)) { bad(moneyProblem(v.money)); if (!has(v.per, 'value', 'unit')) bad('shape'); }
+  if (has(v, 'share', 'of')) { if (!isStr(v.share) || !RX.decimal.test(v.share)) bad('decimal'); bad(idProblem(v.of) && 'grammar'); }
+  else if (has(v, 'from', 'share')) { if (!isStr(v.share) || !RX.decimal.test(v.share)) bad('decimal'); bad(idProblem(v.from) && 'grammar'); }
+  if (has(v, 'lat', 'lon')) { for (const k of ['lat', 'lon']) if (!isStr(v[k]) || !RX.decimal.test(v[k])) bad('shape'); if ('radius' in v && !(isObj(v.radius) && has(v.radius, 'value', 'unit'))) bad('shape'); }
+  if (has(v, 'min', 'max')) { /* a range: its ends are amounts or decimals, read by the schema */ }
+  for (const [k, x] of Object.entries(v)) shapeFindings(x, out, k);
+}
+
+function contentFindings(b, ctx) {
+  const out = [];
+  const add = (stage, code, detail) => out.push({ stage, code, detail: detail || '' });
+  const held = ctx.held;
+  const whole = isObj(b) && ['type', 'state', 'refs'].every(k => k in b);
+  // ---- stage 1: exactly {type,state,refs}, strict writing
+  if (!isObj(b) || !whole || Object.keys(b).some(k => !['type', 'state', 'refs'].includes(k))) { add(1, 'not_canonical', 'not exactly type, state and refs'); return out; }
+  const { type, state, refs } = b;
+  if (!isStr(type)) add(1, 'not_canonical', 'type is not text');
+  if (!isObj(state)) add(1, 'not_canonical', 'state is not an object');
+  if (!isObj(refs)) add(1, 'not_canonical', 'refs is not an object');
+  if (out.length) return out;
+  const walk = (v, path) => {
+    if (v === null) return add(1, 'not_canonical', 'null at ' + path.join('.'));
+    if (isStr(v)) { if (v !== v.normalize('NFC') || lonePair(v)) add(1, 'not_canonical', 'not NFC at ' + path.join('.')); return; }
+    if (typeof v === 'number') {
+      if (!Number.isInteger(v)) add(2, 'float', path.join('.'));
+      else if (Object.is(v, -0) || Math.abs(v) > MAXI) add(2, 'integer_range', path.join('.'));
+      return;
+    }
+    if (typeof v === 'boolean') return;
+    if (Array.isArray(v)) {
+      if (path.length === 2 && path[0] === 'refs' && v.every(isStr)) for (let i = 1; i < v.length; i++) if (!(v[i - 1] < v[i])) { add(1, 'not_canonical', 'a set under ' + path.join('.') + ' is not sorted, or repeats'); break; }
+      v.forEach((x, i) => walk(x, [...path, i])); return;
+    }
+    if (isObj(v)) for (const [k, x] of Object.entries(v)) { if (k !== k.normalize('NFC') || lonePair(k)) add(1, 'not_canonical', 'key not NFC'); walk(x, [...path, k]); }
+  };
+  walk(state, ['state']); walk(refs, ['refs']);
+  // ---- stage 2: values
+  if (!RX.type_name.test(type)) add(2, 'type_name', type);
+  for (const [k, v] of Object.entries(refs)) for (const id of asList(v)) { const p = idProblem(id); if (p) add(2, p, 'refs.' + k); }
+  const timeAt = (o, where) => {
+    if (!isObj(o)) return;
+    for (const f of P.time_fields) if (f in o) {
+      const v = o[f];
+      if (f === 'when' && isObj(v)) {
+        if (has(v, 'after')) { const p = idProblem(v.after); if (p) add(2, p, 'when.after'); if ('wait' in v) { const q = durationProblem(v.wait); if (q) add(2, q, 'when.wait'); } }
+        for (const e of ['from', 'to']) if (e in v) { const q = timeProblem(v[e]); if (q) add(2, q, 'when.' + e); }
+      } else if (!isObj(v)) { const q = timeProblem(v); if (q) add(2, q, where + '.' + f); }
+    }
+    for (const f of P.date_fields) if (f in o) { const q = dateProblem(o[f]); if (q) add(2, q, where + '.' + f); }
+    for (const f of P.duration_fields) if (f in o && !isObj(o[f])) { const q = durationProblem(o[f]); if (q) add(2, q, where + '.' + f); }
+  };
+  timeAt(state, 'state'); timeAt(state.terms, 'terms'); timeAt(state.scope, 'scope');
+  if (isObj(state.when)) timeAt({ when: state.when }, 'state');
+  if (isObj(state.terms)) for (const l of asList(state.terms.lines)) timeAt(l, 'line');
+  if ('confidence' in state && (!isStr(state.confidence) || !RX.confidence.test(state.confidence))) add(2, 'grammar', 'confidence');
+  if ('lang' in state && (!isStr(state.lang) || !RX.lang.test(state.lang))) add(2, 'grammar', 'lang');
+  if ('nonce' in state && (!isStr(state.nonce) || !RX.nonce.test(state.nonce))) add(2, 'grammar', 'nonce');
+  for (const f of ['counted_to', 'custodian', 'recovery_key_hash', 'assisted_by']) if (f in state) { const p = idProblem(state[f]); if (p) add(2, p, f); }
+  for (const f of ['parties']) if (f in state) for (const id of asList(state[f])) { const p = idProblem(id); if (p) add(2, p, f); }
+  if (isObj(state.terms) && 'settled_by' in state.terms) { const p = idProblem(state.terms.settled_by); if (p) add(2, p, 'settled_by'); }
+  // suites and keys
+  for (const f of ['suite', 'recovery_suite']) if (f in state && !['std', 'p256', 'sm'].includes(state[f])) add(2, 'unknown_suite', f);
+  const ks = ['std', 'p256', 'sm'].includes(state.suite) ? state.suite : 'std';
+  if ('public_key_sign' in state && !(isStr(state.public_key_sign) && keyGrammar(ks).test(state.public_key_sign))) add(2, 'unknown_suite', 'public_key_sign');
+  for (const f of ['replaces', 'recovery_key', 'orderer']) if (f in state && suiteOfKey(state[f]) === null) add(2, 'unknown_suite', f);
+  if ('public_key_encrypt' in state && !(isStr(state.public_key_encrypt) && encGrammar(ks).test(state.public_key_encrypt))) add(2, 'unknown_suite', 'public_key_encrypt');
+  { const found = []; shapeFindings(state, found, 'state'); found.forEach(x => add(2, x.code, x.detail)); }
+  if (out.some(o => o.stage <= 2)) return out;
+  // ---- stage 3: size
+  if (Buffer.byteLength(canonical(type, state, refs), 'utf8') > P.limits.block_bytes) add(3, 'size_limit', 'over ' + P.limits.block_bytes);
+  if (asList(refs.after).length > P.limits.after_heads) add(3, 'after_limit', 'after names more than ' + P.limits.after_heads);
+  if (out.length) return out;
+  // ---- stage 4: genesis, or the common five
+  const isActor = type === 'actor';
+  // GUESS: the text defines a genesis as an actor with no author; an actor that has an author but no prev and no seq is read as a malformed genesis (bad_genesis)
+  const genesis = isActor && (refs.author === undefined || (refs.prev === undefined && state.seq === undefined));
+  if (genesis) {
+    const bad = [];
+    if (refs.author !== undefined || refs.prev !== undefined || refs.after !== undefined || state.seq !== undefined) bad.push('has author, prev, after or seq');
+    if (state.audience !== 'public') bad.push('not public');
+    for (const f of P.genesis.required) if (!(f in state) || (f !== 'audience' && !isStr(state[f]))) bad.push('missing ' + f);
+    if (('recovery_key_hash' in state) !== ('recovery_reach' in state)) bad.push('only one of the recovery fields');
+    const allowed = new Set([...P.genesis.required, ...P.genesis.optional, 'name', 'marks', 'lang']);
+    for (const k of Object.keys(state)) if (!allowed.has(k)) bad.push('field ' + k);
+    for (const k of Object.keys(refs)) bad.push('ref ' + k);
+    if (bad.length) add(4, 'bad_genesis', bad.join('; '));
+  } else {
+    for (const f of ['author', 'prev']) if (refs[f] === undefined) add(4, 'chain', 'no refs.' + f);
+    if (!Number.isInteger(state.seq) || state.seq < 1) add(4, 'chain', 'no state.seq');
+    if (state.audience === undefined) add(4, 'chain', 'no state.audience');
+    else {
+      const a = state.audience;
+      if (a !== 'public') {
+        if (!Array.isArray(a) || !a.length || !a.every(isStr) || a.some(x => idProblem(x)) || a.some((x, i) => i && !(a[i - 1] < x))) add(4, 'audience', 'neither public nor a sorted list of commitments');
+        else if (!('nonce' in state)) add(4, 'audience', 'a private block carries a nonce'); // GUESS: the text gives the nonce to private blocks but names no code for its absence
+      }
+    }
+    if (state.at === undefined && !['observe', 'transform', 'transfer'].includes(type)) add(4, 'at_missing', type);
+  }
+  if (out.length) return out;
+  // ---- stage 7: closed types and their modules (stages 5 and 6 need keys and a chain: valid())
+  if (CLOSED.has(type) && !genesis && !ctx.noClosed) closedFindings(b, ctx, add);
+  return out;
+}
+
+function schemaOf(refs, held) { return refs.schema && held.get(refs.schema); }
+function closedFindings(b, ctx, add) {
+  const { type, state, refs } = b, held = ctx.held;
+  const A = 7;
+  const answer = refs.answers !== undefined;
+  const counter = type === 'promise' && answer && state.status === undefined;
+  const update = refs.updates !== undefined && state.status !== undefined; // the author stopping its own promise or grant: an updates that carries a status
+  const asAnswer = (answer && !counter) || update;
+  // required
+  const req = (cond, what) => { if (!cond) add(A, 'required', what); };
+  if (asAnswer) req(state.status !== undefined, 'an answer carries state.status');
+  if (type === 'actor') { if (!asAnswer) req(isStr(state.kind), 'actor kind'); }
+  if (type === 'grant') {
+    if (!asAnswer) {
+      req(isStr(state.kind), 'grant kind');
+      if (state.kind === 'key') {
+        req(refs.subject !== undefined, 'key grant subject');
+        const recoveryPair = 'recovery_key_hash' in state && 'recovery_reach' in state;
+        req('public_key_sign' in state || 'public_key_encrypt' in state || recoveryPair, 'a key grant names a key');
+        if ('replaces' in state) { req('counted_to' in state, 'a rotation names counted_to'); req('public_key_sign' in state, 'a rotation names the new key'); }
+        if ('recovery_key_hash' in state !== 'recovery_reach' in state) req(false, 'recovery fields come together');
+      }
+      if (state.kind === 'member') { req(refs.subject !== undefined, 'member grant subject'); req(refs.as !== undefined, 'member grant is signed as the circle'); }
+      if (state.kind === 'operator') req(refs.to !== undefined, 'operator grant names the agent in refs.to');
+    }
+  }
+  if (type === 'transfer' && !asAnswer) {
+    req(refs.what !== undefined || state.money !== undefined, 'transfer what'); // GUESS: core.md section 7 requires refs.what, but things.md moves money with no refs.what; money is exempt
+    req(['to_owner', 'to_holder', 'to_place'].some(k => refs[k] !== undefined) || state.count !== undefined, 'transfer moves something');
+  }
+  if (type === 'promise' && !asAnswer && !counter) req(refs.what !== undefined || state.what !== undefined, 'promise what');
+  // undeclared
+  const schema = schemaOf(refs, held);
+  if (!(refs.schema && !schema) && !schema) {
+    const allowed = new Set([...FIELDS_EVERY, ...PROFILE_FIELDS.every, ...(P.fields[type] || []), ...(PROFILE_FIELDS[type] || [])]);
+    for (const k of Object.keys(state)) if (!allowed.has(k)) add(A, 'undeclared_field', k);
+    for (const k of Object.keys(refs)) if (!SHARED_REFS.has(k)) add(A, 'undeclared_ref', k);
+  } else if (refs.schema && !schema) {
+    // GUESS: a block that names a schema the checker does not hold is not judged on fields the schema may declare
+  }
+  // module checks
+  if (type === 'actor' && state.kind === 'circle') {
+    const roles = state.roles;
+    const ok = Array.isArray(roles) && roles.length > 0 && roles.every(r => isObj(r) && isStr(r.name) && r.name && Array.isArray(r.powers) && r.powers.every(p => POWERS.has(p)));
+    if (!ok) add(A, 'bad_roles', 'a circle lists roles [{ name, powers }] and the founder holds the first');
+  }
+  if (type === 'promise') {
+    if (state.status !== undefined) {
+      if (!answer && refs.updates === undefined) add(A, 'status_not_answer', 'status on a block that neither answers nor updates');
+      const stopOk = s => s === 'before' || s === 'onward' || (isObj(s) && Array.isArray(s.occurrences));
+      if (!STATUSES.has(state.status) || (state.status === 'stopped' && !stopOk(state.stop))) add(A, 'bad_status', String(state.status));
+    }
+    if (answer) {
+      if (refs.for === undefined) add(A, 'deal_not_named', 'an answer or counter names the first promise in refs.for');
+      else {
+        const target = held.get(refs.answers);
+        if (target) { const first = target.refs.answers === undefined ? target.hash : target.refs.for; if (first !== undefined && refs.for !== first) add(A, 'deal_not_named', 'refs.for is not the first promise'); }
+      }
+    }
+    // sides
+    if (update) {
+      const target = held.get(refs.updates);
+      if (target && target.type === 'promise' && refs.under === undefined && ![target.refs.from, target.refs.to].includes(refs.author)) add(A, 'not_a_side', 'signed by neither side');
+    } else if (!answer) {
+      const sides = [refs.from, refs.to];
+      if (!sides.includes(refs.author) && refs.under === undefined) add(A, 'not_a_side', 'signed by neither side');
+      const ask = refs.to !== undefined && refs.to === refs.author && refs.from !== refs.author;
+      if (ask && !(isObj(state.terms) && state.terms.expires !== undefined)) add(A, 'ask_without_expires', 'every ask carries terms.expires');
+    } else {
+      const target = held.get(refs.answers);
+      if (target && target.type === 'promise' && refs.under === undefined) {
+        const sides = [target.refs.from, target.refs.to];
+        if (sides.every(x => x !== undefined) && !sides.includes(refs.author)) add(A, 'not_a_side', 'signed by neither side of the deal');
+      }
+    }
+    const terms = isObj(state.terms) ? state.terms : {};
+    if (Array.isArray(terms.lines)) {
+      const ids = terms.lines.map(l => isObj(l) ? l.id : undefined);
+      if (ids.some(i => !isStr(i)) || new Set(ids).size !== ids.length) add(A, 'lines', 'a line has an id unique in the promise');
+      else if (terms.price !== undefined || terms.quantity !== undefined) add(A, 'lines', 'lines and a top-level price or quantity');
+      else { const w = [...new Set(terms.lines.map(l => l.what))].sort(), r = [...new Set(asList(refs.what))].sort(); if (jcs(w) !== jcs(r)) add(A, 'lines', 'refs.what is not the set of the lines\' what'); }
+    }
+  }
+  if (type === 'grant' && isStr(state.kind) && !asAnswer) {
+    const scope = isObj(state.scope) ? state.scope : null;
+    const readByProtocol = ['key', 'member', 'operator'].includes(state.kind);
+    if (readByProtocol) { if (scope && scope.until !== undefined) add(A, 'scope_until', state.kind + ' grants carry no scope.until'); }
+    else if (!PROFILE_GRANT_KINDS.has(state.kind) && !(scope && scope.until !== undefined)) add(A, 'scope_until', 'a grant others act under carries scope.until');
+    if (refs.parent !== undefined) {
+      const parent = held.get(refs.parent);
+      if (parent) {
+        if (parent.refs.to !== refs.author) add(A, 'not_receiver', 'passed on by someone other than the receiver');
+        else if (!scopeWithin(state, parent.state)) add(A, 'wider_than_parent', 'wider than the parent');
+      }
+    }
+  }
+}
+
+// ---- scope subset rules (authority.md): a child's scope is a subset of its parent's on every field.
+// Durations are compared by adding both to the same instant, the parent grant's at.
 function parseDur(s) {
   const m = /^P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(s);
-  if (!m) throw new Error('bad duration ' + s);
+  if (!m) return null;
   const n = m.slice(1).map(x => +(x || 0));
   return { Y: n[0], M: n[1], W: n[2], D: n[3], h: n[4], m: n[5], s: n[6] };
 }
-function addDur(iso, dur, sign = 1) { // calendar months and years, in UTC
-  const d = new Date(iso), p = parseDur(dur);
-  d.setUTCFullYear(d.getUTCFullYear() + sign * p.Y, d.getUTCMonth() + sign * p.M);
+function addDur(iso, dur, sign = 1) { // calendar months and years in UTC, then days and time
+  const p = parseDur(dur), d = new Date(iso);
+  const day = d.getUTCDate();
+  d.setUTCDate(1); d.setUTCFullYear(d.getUTCFullYear() + sign * p.Y, d.getUTCMonth() + sign * p.M);
+  d.setUTCDate(Math.min(day, dim(d.getUTCFullYear(), d.getUTCMonth() + 1))); // GUESS: a month end is clamped to the last day of the month
   return new Date(d.getTime() + sign * (((p.W * 7 + p.D) * 24 + p.h) * 3600 + p.m * 60 + p.s) * 1000).toISOString();
 }
-// decimals as exact rationals
-function dec(s) { const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(String(s)); if (!m) return null; const f = m[3] || ''; return { n: BigInt(m[1] + m[2] + f), d: 10n ** BigInt(f.length) }; }
-const qty = a => a && a.value !== undefined ? dec(a.value) : null;
-const rNum = r => Number(r.n) / Number(r.d);
-const rAdd = (a, b) => ({ n: a.n * b.d + b.n * a.d, d: a.d * b.d });
-const rGe = (a, b) => a.n * b.d >= b.n * a.d;
-const asList = v => v === undefined ? [] : Array.isArray(v) ? v : [v];
-
-// ---------------------------------------------------------------- the write check (strict)
-const SHARED = new Set([...P.refs.who_and_where, ...P.refs.what_and_which, ...P.refs.verbs]);
-const DATE_FIELDS = P.date_fields;                      // protocol.json date_fields
-const DURATION_FIELDS = ['recovery_reach', 'per', 'notice', 'wait'];
-// encoding.md, Numbers: a currency is an ISO 4217 code, or an issuer's own unit { issuer, unit, decimals }.
-function currencyOk(c) {
-  if (typeof c === 'string') return G.currency.test(c);
-  if (!c || typeof c !== 'object' || Array.isArray(c)) return false;
-  const keys = P.shapes.currency_unit;
-  return Object.keys(c).every(k => keys.includes(k)) && keys.every(k => k in c)
-    && isHash(c.issuer) && typeof c.unit === 'string' && c.unit.trim() !== ''
-    && Number.isInteger(c.decimals) && c.decimals >= 0 && c.decimals <= P.limits.decimals_max;
-}
-
-function check(block, ctx = {}) {
-  const R = [], C = new Map();
-  const bad = (code, msg) => { R.push(msg); C.set(msg, code); };
-  check.codes = C;
-  const calendarOrTime = (v, rx = G.time) => (typeof v === 'string' && rx.test(v) ? 'calendar' : 'time');
-  if (!block || typeof block !== 'object' || typeof block.type !== 'string') return ['not a block'];
-  const { type } = block, state = block.state || {}, refs = block.refs || {};
-  if (!(type in P.types)) return [`${type} is not a FoodBlock 1.6 type`];
-  // numbers and keys, everywhere
-  (function walk(v, path) {
-    if (typeof v === 'number') {
-      if (!Number.isFinite(v)) bad('float', `${path} is not a finite number`);
-      else if (!Number.isInteger(v)) bad('float', `${path} is a float`);
-      else if (v > P.integers.max || v < P.integers.min) bad('integer_range', `${path} is out of integer bounds`);
-    } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${path}[${i}]`));
-    else if (v && typeof v === 'object') for (const k of Object.keys(v)) {
-      if (k.normalize('NFC') !== k) bad('not_canonical', `${path} has a key not in NFC`);
-      walk(v[k], `${path}.${k}`);
-    }
-  })({ state, refs }, '');
-  for (let i = 0; i < R.length; i++) { const was = R[i]; R[i] = was.replace(/^\./, ''); if (R[i] !== was) C.set(R[i], C.get(was)); }
-  let bytes = 0; try { bytes = Buffer.byteLength(canonOf(block), 'utf8'); } catch (e) { bad('not_canonical', 'not canonical: ' + e.message); }
-  if (bytes > P.limits.block_bytes) bad('size_limit', `body over ${P.limits.block_bytes} bytes`);
-  // schema (if held)
-  const schema = refs.schema && ctx.get ? ctx.get(refs.schema) : null;
-  const sroles = schema && Array.isArray(schema.state.roles) ? schema.state.roles : [];
-  const sfields = schema && schema.state.fields && typeof schema.state.fields === 'object' ? Object.keys(schema.state.fields) : [];
-  // refs
-  for (const [k, v] of Object.entries(refs)) {
-    if (!SHARED.has(k) && !sroles.includes(k)) bad('undeclared_ref', `refs.${k} is not declared`);
-    if (!(isHash(v) || (Array.isArray(v) && v.every(isHash)))) bad('grammar', `refs.${k} is not a hash or a set of hashes`);
-  }
-  if (Array.isArray(refs.after) && refs.after.length > P.limits.after_heads) bad('after_limit', `refs.after names more than ${P.limits.after_heads} heads`);
-  // fields
-  const genesis = type === 'actor' && refs.author === undefined;
-  const allowed = new Set([...P.fields.every, ...(P.fields[type] || []), ...sfields]);
-  for (const k of Object.keys(state)) if (!allowed.has(k)) bad('undeclared_field', `state.${k} is not declared for ${type}`);
-  // shapes by keys, anywhere in state
-  (function shapes(v, path) {
-    if (Array.isArray(v)) return v.forEach((x, i) => shapes(x, `${path}[${i}]`));
-    if (!v || typeof v !== 'object') return;
-    if ('unit' in v && 'value' in v && !(typeof v.value === 'string' && G.decimal.test(v.value) && typeof v.unit === 'string' && v.unit))
-      bad(typeof v.value === 'string' && v.unit && !G.decimal.test(v.value) ? 'decimal' : 'shape', `${path} is an amount { value (decimal string), unit }`);
-    if ('currency' in v && 'minor' in v && !(Number.isInteger(v.minor) && currencyOk(v.currency)))
-      bad('shape', `${path} is money { minor (integer), currency (an ISO 4217 code, or an issuer's { issuer, unit, decimals }) }`);
-    for (const k of Object.keys(v)) shapes(v[k], `${path}.${k}`);
-  })(state, 'state');
-  // custody, admission and limits: shapes named in protocol.json `shapes`, `channels`, and the prose of §2, §7, §10
-  const moneyOk = m => m && typeof m === 'object' && !Array.isArray(m) && Number.isInteger(m.minor) && currencyOk(m.currency) && Object.keys(m).every(k => P.shapes.money.includes(k));
-  if (state.deposit !== undefined) {
-    const d = state.deposit;
-    if (!(d && typeof d === 'object' && !Array.isArray(d) && P.shapes.deposit.every(k => k in d) && Object.keys(d).every(k => P.shapes.deposit.includes(k)) && moneyOk(d.money))) bad('shape', 'state.deposit is { money, holder }');
-    else if (!isHash(d.holder)) bad('grammar', 'state.deposit.holder is an id');
-  }
-  if (state.limit !== undefined && !moneyOk(state.limit)) bad('shape', 'state.limit is money');
-  if (state.channel !== undefined && !P.channels.includes(state.channel)) bad('shape', `state.channel is one of ${P.channels.join(', ')}`);
-  if (state.custodian !== undefined && !isHash(state.custodian)) bad('grammar', 'state.custodian is an id');
-  if (state.confidence !== undefined && !(typeof state.confidence === 'string' && G.confidence.test(state.confidence))) bad('grammar', 'state.confidence is a decimal string from 0 to 1');
-  // times, dates, durations: top-level state, terms, scope, each line
-  const homes = [['state', state], ['terms', state.terms], ['scope', state.scope],
-    ...asList(state.terms && state.terms.lines).map((l, i) => [`terms.lines[${i}]`, l])];
-  for (const [name, o] of homes) {
-    if (!o || typeof o !== 'object' || Array.isArray(o)) continue;
-    for (const f of P.time_fields) {
-      if (o[f] === undefined) continue;
-      const v = o[f];
-      const ok = f === 'when' && v && typeof v === 'object' ? isTime(v.from) && (v.to === undefined || isTime(v.to)) : isTime(v);
-      if (!ok) bad(calendarOrTime(v), `${name}.${f} is a UTC time YYYY-MM-DDTHH:MM:SS.sssZ`);
-    }
-    for (const f of DATE_FIELDS) if (o[f] !== undefined && !isDate(o[f])) bad(calendarOrTime(o[f], G.date), `${name}.${f} is a date YYYY-MM-DD`);
-    for (const f of DURATION_FIELDS) if (o[f] !== undefined && !isDuration(o[f])) bad('time', `${name}.${f} is an ISO 8601 duration`);
-  }
-  // grammar of keys and hashes in state
-  // identity.md, Algorithms: a key names its algorithms (defaults in protocol.json `algs`); an unknown one is refused, and a key
-  // is checked against the grammar of its algorithm (a key outside the grammar of an algorithm the block names is unknown_alg).
-  const signAlg = state.alg_sign === undefined ? P.algs.sign.default : state.alg_sign;
-  const encAlg = state.alg_encrypt === undefined ? P.algs.encrypt.default : state.alg_encrypt;
-  const signRow = P.algs.sign.known[signAlg], encRow = P.algs.encrypt.known[encAlg];
-  if (state.alg_sign !== undefined && !signRow) bad('unknown_alg', `state.alg_sign names ${signAlg}, which is not known`);
-  if (state.alg_encrypt !== undefined && !encRow) bad('unknown_alg', `state.alg_encrypt names ${encAlg}, which is not known`);
-  if (state.alg_recovery !== undefined && !P.algs.sign.known[state.alg_recovery]) bad('unknown_alg', `state.alg_recovery names ${state.alg_recovery}, which is not known`);
-  const gram = { public_key_sign: signRow && signRow.key, replaces: P.algs.sign.known[P.algs.sign.default].key, recovery_key: P.algs.sign.known[P.algs.sign.default].key, public_key_encrypt: encRow && encRow.key, nonce: 'nonce', recovery_key_hash: 'hash', counted_to: 'hash' };
-  for (const [f, g] of Object.entries(gram)) if (g && state[f] !== undefined && !(typeof state[f] === 'string' && G[g].test(state[f]))) {
-    const named = (f === 'public_key_sign' && state.alg_sign !== undefined) || (f === 'public_key_encrypt' && state.alg_encrypt !== undefined);
-    bad(named ? 'unknown_alg' : 'grammar', `state.${f} does not match ${g}`);
-  }
-  if (state.manifest !== undefined && !(Array.isArray(state.manifest) && state.manifest.every(isHash))) bad('grammar', 'state.manifest is a set of hashes');
-  if (state.audience !== undefined && state.audience !== 'public') {
-    const a = state.audience;
-    if (!(Array.isArray(a) && a.length && a.every(isHash) && a.every((x, i) => i === 0 || a[i - 1] < x))) bad('audience', 'state.audience is public or a sorted list of commitments');
-  }
-  // chain fields
-  if (genesis) {
-    for (const f of ['seq', 'prev', 'after']) if (state[f] !== undefined || refs[f] !== undefined) bad('bad_genesis', `a genesis has no ${f}`);
-    for (const f of P.genesis) if (state[f] === undefined) bad('bad_genesis', `a genesis carries state.${f}`);
-    if (state.audience !== undefined && state.audience !== 'public') bad('bad_genesis', 'a genesis is public');
-  } else {
-    for (const f of P.chain) {
-      if ((f === 'author' || f === 'prev' ? refs[f] : state[f]) !== undefined) continue;
-      // blocks.md: only an observe, transform or transfer may leave out `at` (a micro with no clock); every other block says when
-      if (f === 'at') { if (!['observe', 'transform', 'transfer'].includes(type)) bad('at_missing', 'every block but an observe, transform or transfer carries state.at'); continue; }
-      bad('bad_genesis', `every block but a genesis carries ${f === 'author' || f === 'prev' ? 'refs' : 'state'}.${f}`);
-    }
-    // blocks.md, Causal order: a block's `at` may not be earlier than that of a block it names in `after`, when both carry one
-    if (state.at !== undefined && ctx.get) for (const h of asList(refs.after)) {
-      const o = ctx.get(h);
-      if (o && o.state && typeof o.state.at === 'string' && typeof state.at === 'string' && state.at < o.state.at) bad('at_before_after', `state.at is earlier than ${h}, which it names in after`);
-    }
-    if (state.audience === undefined) bad('bad_genesis', 'every block but a genesis carries state.audience');
-    if (state.seq !== undefined && !(Number.isInteger(state.seq) && state.seq >= 1)) bad('chain', 'state.seq is a whole number from 1');
-  }
-  // status
-  if (state.status !== undefined) {
-    if (refs.answers === undefined && refs.updates === undefined) bad('status_not_answer', 'only an answer (refs.answers) or an update by the author carries a status');
-    if (!P.answers.includes(state.status)) bad('bad_status', `state.status is one of ${P.answers.join(', ')}`);
-    if (state.status === 'stopped') {
-      const s = state.stop;
-      const ok = s === 'before' || s === 'onward' || (s && typeof s === 'object' && Array.isArray(s.occurrences) && s.occurrences.every(isTime));
-      if (!ok) bad('bad_status', 'a stopped answer says how far in state.stop');
-    }
-  }
-  // promises
-  if (type === 'promise') {
-    const terms = state.terms || {};
-    for (const k of Object.keys(terms)) if (!P.terms.includes(k)) bad('shape', `terms.${k} is not a term`);
-    if (refs.answers !== undefined && refs.for === undefined) bad('deal_not_named', 'an answer or counter names its deal in refs.for');
-    if (state.status === undefined && refs.updates === undefined) {
-      const sides = [refs.from, refs.to].filter(Boolean), au = refs.author;
-      if (!(sides.includes(au) || (refs.as && sides.includes(refs.as)) || refs.under)) bad('not_a_side', 'a promise is signed by a side (from or to), as it, or under its grant');
-      const askSide = refs.to && (au === refs.to || refs.as === refs.to) && refs.from !== refs.to;
-      if (askSide && terms.expires === undefined) bad('ask_without_expires', 'every ask carries terms.expires');
-    }
-    if (terms.lines !== undefined) {
-      const lines = asList(terms.lines), ids = new Set();
-      lines.forEach((l, i) => {
-        for (const k of Object.keys(l || {})) if (!P.line.includes(k)) bad('shape', `terms.lines[${i}].${k} is not a line field`);
-        if (typeof (l && l.id) !== 'string' || !l.id) bad('lines', `terms.lines[${i}].id is missing`);
-        else if (ids.has(l.id)) bad('lines', `terms.lines[${i}].id is not unique`); else ids.add(l.id);
-      });
-      if (terms.price !== undefined || terms.quantity !== undefined) bad('lines', 'with lines there is no top-level price or quantity');
-      const w = new Set(asList(refs.what)), lw = new Set(lines.map(l => l && l.what));
-      if (w.size !== lw.size || [...w].some(x => !lw.has(x))) bad('lines', 'refs.what equals the set of the lines\' what');
-    }
-  }
-  // grants
-  if (type === 'grant') {
-    const sc = state.scope;
-    if (sc !== undefined) {
-      for (const k of Object.keys(sc)) if (!P.scope.includes(k)) bad('shape', `scope.${k} is not a scope field`);
-      if (sc.parties !== undefined && !(Array.isArray(sc.parties) && sc.parties.every(isHash))) bad('grammar', 'scope.parties is a set of hashes');
-      if (sc.acts !== undefined && !(Array.isArray(sc.acts) && sc.acts.every(a => typeof a === 'string'))) bad('shape', 'scope.acts is a list');
-    }
-    if (P.grant_kinds.includes(state.kind) && sc && sc.until !== undefined) bad('scope_until', 'a key, member, successor or operator grant carries no scope.until');
-    if (state.depth !== undefined && !(Number.isInteger(state.depth) && state.depth >= 0)) bad('shape', 'state.depth is a whole number');
-    if (!P.grant_kinds.includes(state.kind) && state.status === undefined && refs.answers === undefined && refs.updates === undefined && !(sc && sc.until))
-      bad('scope_until', 'a grant others act under carries scope.until');
-    if (refs.parent && ctx.get) {
-      const par = ctx.get(refs.parent);
-      if (par) scopeSubset(state, par.state).forEach(m => bad('wider_than_parent', m));
-    }
-  }
-  return [...new Set(R)];
-}
-// The strict check as the protocol states it (§Refusals): one { code, detail } per rule found, in the order of protocol.json `refusals.codes.block`.
-function refusals(block, ctx = {}) {
-  const details = check(block, ctx), codes = check.codes || new Map(), order = Object.keys(P.refusals.codes.block), by = new Map();
-  for (const d of details) { const code = codes.get(d) || 'unknown_type'; by.set(code, [...(by.get(code) || []), d]); }
-  return [...by].sort(([a], [b]) => order.indexOf(a) - order.indexOf(b)).map(([code, ds]) => ({ code, detail: ds.join('; ') }));
-}
-function scopeSubset(child, parent) {
-  const R = [], c = child.scope || {}, p = parent.scope || {};
-  const anchor = parent.at;
+const subsetOf = (a, b) => asList(a).every(x => asList(b).some(y => jcs(x) === jcs(y)));
+function scopeWithin(child, parent) {
+  const c = isObj(child.scope) ? child.scope : {}, p = isObj(parent.scope) ? parent.scope : {};
   for (const f of ['acts', 'parties']) {
     if (p[f] === undefined) continue;
-    if (c[f] === undefined) R.push(`scope.${f} may be left out only if the parent leaves it out`);
-    else if (!c[f].every(x => p[f].includes(x))) R.push(`scope.${f} is not a subset of the parent's`);
+    if (c[f] === undefined || !subsetOf(c[f], p[f])) return false;
   }
   if (p.limit !== undefined) {
-    if (c.limit === undefined) R.push('scope.limit may be left out only if the parent leaves it out');
-    else if (c.limit.currency !== p.limit.currency || c.limit.minor > p.limit.minor) R.push('scope.limit is larger than the parent\'s');
+    if (c.limit === undefined) return false;
+    if (jcs(c.limit.currency) !== jcs(p.limit.currency) || c.limit.minor > p.limit.minor) return false;
   }
-  const longer = (a, b) => addDur(anchor, a) > addDur(anchor, b);
-  if (p.per !== undefined) { if (c.per === undefined) R.push('scope.per may be left out only if the parent leaves it out'); else if (longer(c.per, p.per)) R.push('scope.per is longer than the parent\'s'); }
-  if (p.until !== undefined) { if (c.until === undefined) R.push('scope.until may be left out only if the parent leaves it out'); else if (c.until > p.until) R.push('scope.until is later than the parent\'s'); }
-  if (p.notice !== undefined) { if (c.notice === undefined) R.push('scope.notice may be left out only if the parent leaves it out'); else if (longer(p.notice, c.notice)) R.push('scope.notice is shorter than the parent\'s'); }
+  const at = parent.at || child.at;
+  if (p.per !== undefined) {
+    if (c.per === undefined) { if (c.limit !== undefined) return false; }
+    else if (at && addDur(at, c.per) > addDur(at, p.per)) return false;
+  }
+  if (p.until !== undefined && (c.until === undefined || c.until > p.until)) return false;
+  const pd = parent.depth === undefined ? 0 : parent.depth, cd = child.depth === undefined ? 0 : child.depth;
+  if (pd < 1 || !(cd <= pd - 1)) return false;
+  if (p.notice !== undefined) { if (c.notice === undefined) return false; if (at && addDur(at, c.notice) < addDur(at, p.notice)) return false; }
   if (p.condition !== undefined) {
-    const pc = asList(p.condition), cc = asList(c.condition);
-    if (!pc.every(x => cc.some(y => deepEq(x, y)))) R.push('scope.condition drops a parent condition');
+    if (c.condition === undefined) return false;
+    if (isObj(p.condition) && isObj(c.condition)) { if (!Object.entries(p.condition).every(([k, v]) => jcs(c.condition[k]) === jcs(v))) return false; }
+    else if (!subsetOf(p.condition, c.condition)) return false;
   }
-  if ((child.depth || 0) > (parent.depth || 0) - 1) R.push('state.depth is not smaller than the parent\'s by at least one');
-  return R;
-}
-
-// ---------------------------------------------------------------- a pool of blocks (one reader's node)
-class Pool {
-  constructor(entries = [], opts = {}) {
-    this.m = new Map(); this.order = []; this.arrivals = opts.arrivals || {}; this.now = opts.now;
-    this._id = new Map(); this._cp = new Map(); this._circle = new Map();
-    for (const e of entries) this.add(e.block, e.signature);
-  }
-  add(block, signature) {
-    const hash = hashOf(block);
-    if (this.m.has(hash)) return hash;
-    this.m.set(hash, { hash, block, signature, read: readAs(block), n: this.order.length + 1 });
-    this.order.push(hash);
-    return hash;
-  }
-  has(h) { return this.m.has(h); }
-  get(h) { const e = this.m.get(h); return e ? e.read : null; }
-  raw(h) { const e = this.m.get(h); return e ? e.block : null; }
-  all() { return this.order.map(h => this.m.get(h)); }
-  arrival(h) { return this.arrivals[h]; }
-  // causal past: every block reachable through refs (named hashes count; held ones are followed)
-  cp(h) {
-    if (this._cp.has(h)) return this._cp.get(h);
-    const seen = new Set(), stack = [h];
-    while (stack.length) {
-      const x = stack.pop(); const e = this.m.get(x); if (!e) continue;
-      for (const v of Object.values(e.block.refs || {})) for (const y of asList(v)) if (typeof y === 'string' && !seen.has(y)) { seen.add(y); stack.push(y); }
-    }
-    this._cp.set(h, seen); return seen;
-  }
-  sees(a, b) { return this.cp(a).has(b) || this.cp(b).has(a); }
-  identity(id) { if (!this._id.has(id)) this._id.set(id, foldIdentity(id, this)); return this._id.get(id); }
-  counts(h) { // signed by a live key of its author and allowed by the history rule
-    const e = this.m.get(h); if (!e) return false;
-    const au = e.block.refs && e.block.refs.author;
-    if (au === undefined) return e.block.type === 'actor' && this.identity(h).signed[h] === true;
-    if (!this.m.has(au)) return false;
-    return this.identity(au).counts[h] === true && !this.barred(au, h);
-  }
-  // Equivocations (protocol.md, Folds): the two blocks of a pair (one signing key, one seq) count for nothing in any fold,
-  // and neither does any later block of the same key. The identity fold is the exception and does not ask.
-  barred(au, h) {
-    const id = this.identity(au), k = id.signer[h], seq = this.raw(h).state && this.raw(h).state.seq;
-    if (!k || !Number.isInteger(seq)) return false;
-    this._pairs = this._pairs || new Map();
-    if (!this._pairs.has(au)) {
-      const at = new Map(), first = new Map();
-      for (const e of this.all()) {
-        const b = e.block, kk = id.signer[e.hash];
-        if (!kk || !b.refs || b.refs.author !== au || !Number.isInteger(b.state && b.state.seq)) continue;
-        const slot = kk + '|' + b.state.seq;
-        at.set(slot, new Set([...(at.get(slot) || []), e.hash]));
-        if (at.get(slot).size > 1) first.set(kk, Math.min(first.has(kk) ? first.get(kk) : Infinity, b.state.seq));
-      }
-      this._pairs.set(au, first);
-    }
-    const from = this._pairs.get(au).get(k);
-    return from !== undefined && seq >= from;
-  }
-}
-
-// ---------------------------------------------------------------- identity fold (Who someone is)
-function foldIdentity(id, pool) {
-  const out = { id, signed: {}, signer: {}, counts: {}, keys: [], frozen: [], history: null, ended: false, operators: [], under: {} };
-  const g = pool.raw(id), ge = pool.m.get(id);
-  if (!g || g.type !== 'actor' || (g.refs || {}).author !== undefined) return out;
-  const gkey = g.state.public_key_sign;
-  out.signed[id] = verifyBlock(g, gkey, ge.signature);
-  if (!out.signed[id]) return out;
-  const is16 = g.state.recovery_key_hash !== undefined;
-  const authored = pool.all().filter(e => e.block.refs && e.block.refs.author === id);
-  // candidate keys
-  const cands = new Set([gkey]);
-  let recHash = g.state.recovery_key_hash, recReach = g.state.recovery_reach;
-  for (const e of authored) {
-    const s = e.block.state || {};
-    if (e.block.type === 'grant' && s.kind === 'key') {
-      if (s.public_key_sign && (s.alg_sign === undefined || P.algs.sign.known[s.alg_sign])) cands.add(s.public_key_sign);   // a key of an unknown algorithm verifies nothing
-      if (s.recovery_key) cands.add(s.recovery_key);
-      if (s.recovery_key_hash && !recHash && s.seq !== undefined) { recHash = s.recovery_key_hash; recReach = s.recovery_reach; } // an older genesis adds recovery once
-    }
-  }
-  const recKey = [...cands].find(k => sha256(k) === recHash) || null;
-  const signer = {};
-  for (const e of authored) for (const k of cands) if (verifyBlock(e.block, k, e.signature)) { signer[e.hash] = k; break; }
-  out.signer = signer;
-  const withSeq = authored.filter(e => e.block.state && e.block.state.seq !== undefined && signer[e.hash]);
-  // history
-  const first16 = withSeq.filter(e => signer[e.hash] === gkey && e.block.state.seq === 1)[0] || withSeq[0];
-  const open = !is16 && !first16;
-  out.history = is16 ? 'none' : open ? 'open' : 'closed';
-  const closed = new Set();
-  if (!is16 && first16) { for (const h of pool.cp(first16.hash)) closed.add(h); for (const h of asList(first16.block.state.manifest)) closed.add(h); }
-  // key chains: key -> {by, blocks by seq}
-  const byKey = {};
-  for (const e of withSeq) (byKey[signer[e.hash]] = byKey[signer[e.hash]] || []).push(e);
-  // fixpoint over: which keys are brought in, which blocks fit chains, which are void
-  let voidSet = new Set(), frozen = new Set(), keysIn = new Map(), fits = new Set(), rotations = [];
-  for (let iter = 0; iter < 30; iter++) {
-    const nKeys = new Map([[gkey, id]]);
-    if (recKey) nKeys.set(recKey, id);
-    // key grants from fitting, non-void blocks
-    const kg = withSeq.filter(e => fits.has(e.hash) && !voidSet.has(e.hash) && e.block.type === 'grant' && e.block.state.kind === 'key' && e.block.refs.subject === id);
-    const nRot = [];
-    for (const e of kg) {
-      const s = e.block.state, k = signer[e.hash];
-      if (s.replaces) {
-        const byRecovery = recKey && k === recKey && s.recovery_key === recKey;
-        if (k !== s.replaces && !byRecovery) continue;              // rotated only by itself or the recovery key
-        nRot.push({ e, old: s.replaces, recovery: !!byRecovery });
-        if (s.public_key_sign && !nKeys.has(s.public_key_sign)) nKeys.set(s.public_key_sign, e.hash);
-      } else if (s.public_key_sign && !nKeys.has(s.public_key_sign)) {
-        if (k === recKey) {} // the recovery key signs only key grants: allowed
-        nKeys.set(s.public_key_sign, e.hash);
-      }
-    }
-    // chains
-    const nFits = new Set();
-    for (const [k, by] of nKeys) {
-      const list = (byKey[k] || []).slice().sort((a, b) => a.block.state.seq - b.block.state.seq);
-      // a chain may fork (two blocks at one seq prove a lie); each branch is followed so folds can see both
-      const fitted = new Map([[by, 0]]);
-      for (const e of list) {
-        const ps = fitted.get(e.block.refs.prev);
-        if (ps === undefined || e.block.state.seq !== ps + 1) continue;
-        nFits.add(e.hash); fitted.set(e.hash, e.block.state.seq);
-      }
-    }
-    // void: rotations
-    const nVoid = new Set();
-    for (const r of nRot) {
-      const cnt = r.e.read.state.counted_to;          // read through aliases: last_good is an older name
-      const lg = pool.raw(cnt);
-      const lgSeq = lg && signer[cnt] === r.old ? lg.state.seq : 0;
-      const recArr = pool.arrival(r.e.hash);
-      const reachStart = r.recovery && recArr && recReach ? addDur(recArr, recReach, -1) : null;
-      for (const e of byKey[r.old] || []) {
-        if (e.block.state.seq <= lgSeq || e.hash === r.e.hash) continue;
-        if (nRot.some(x => x.e.hash === e.hash)) continue;           // a rotation itself stands
-        if (r.recovery && reachStart) {
-          const arr = pool.arrival(e.hash);
-          const usedBefore = pool.all().some(o => o.block.refs && o.block.refs.author !== id && pool.cp(o.hash).has(e.hash) && pool.arrival(o.hash) && pool.arrival(o.hash) < reachStart);
-          if (usedBefore) continue;
-          if (arr && arr < reachStart) continue;
-        }
-        nVoid.add(e.hash);
-      }
-    }
-    // freezes: two rotations of one key that do not see each other, or any two key grants of one signing key at one seq
-    // (protocol.md, Who someone is: Conflict, and Two blocks at one seq: "whether or not they rotate")
-    const nFrozen = new Set(); let ended = false;
-    const grants = kg.map(e => ({ e, k: signer[e.hash], rot: nRot.find(r => r.e.hash === e.hash) || null }));
-    for (let i = 0; i < grants.length; i++) for (let j = i + 1; j < grants.length; j++) {
-      const a = grants[i], b = grants[j];
-      const sameSlot = a.k === b.k && a.e.block.state.seq === b.e.block.state.seq;
-      const crossing = a.rot && b.rot && a.rot.old === b.rot.old && !pool.sees(a.e.hash, b.e.hash);
-      if (!sameSlot && !crossing) continue;
-      if (a.rot && b.rot && a.rot.recovery && b.rot.recovery && a.rot.old === b.rot.old) { ended = true; continue; }
-      const key = crossing ? a.rot.old : a.k;
-      for (const x of [a, b]) {
-        const brought = x.e.block.state.public_key_sign;
-        if (!brought) continue;
-        // a recovery rotation of the same key settles the pair: the keys brought in by grants in its causal past speak
-        const settled = nRot.some(r => r.recovery && r.old === key && pool.cp(r.e.hash).has(x.e.hash));
-        if (!settled) nFrozen.add(brought);
-      }
-    }
-    // void spreads: a key brought in by a void block is void, with every block it signed
-    let grew = true;
-    while (grew) {
-      grew = false;
-      for (const [k, by] of nKeys) if (nVoid.has(by)) for (const e of byKey[k] || []) if (!nVoid.has(e.hash)) { nVoid.add(e.hash); grew = true; }
-    }
-    const sig = [...nKeys.keys()].sort().join() + '|' + [...nFits].sort().join() + '|' + [...nVoid].sort().join() + '|' + [...nFrozen].sort().join();
-    const prevSig = [...keysIn.keys()].sort().join() + '|' + [...fits].sort().join() + '|' + [...voidSet].sort().join() + '|' + [...frozen].sort().join();
-    keysIn = nKeys; fits = nFits; voidSet = nVoid; frozen = nFrozen; rotations = nRot; out.ended = ended;
-    if (sig === prevSig) break;
-  }
-  const voidKeys = new Set([...keysIn].filter(([, by]) => voidSet.has(by)).map(([k]) => k));
-  out.keys = [...keysIn.keys()].filter(k => k !== recKey && !voidKeys.has(k)).sort();
-  out.frozen = [...frozen].sort();
-  out.recovery_key = recKey;
-  // the ended identity: nothing after counts except the causal past of either crossing recovery rotation
-  let endPast = null;
-  if (out.ended) { endPast = new Set(); for (const r of rotations.filter(x => x.recovery)) { endPast.add(r.e.hash); for (const h of pool.cp(r.e.hash)) endPast.add(h); } }
-  for (const e of authored) {
-    const k = signer[e.hash];
-    let ok;
-    if (!k) ok = false;
-    else if (e.block.state && e.block.state.seq === undefined) ok = true; // history: checked by signature only
-    else ok = fits.has(e.hash) && !voidSet.has(e.hash) && !frozen.has(k) && !voidKeys.has(k) && (!endPast || endPast.has(e.hash));
-    out.signed[e.hash] = ok;
-    const noSeq = e.block.state && e.block.state.seq === undefined;
-    out.counts[e.hash] = ok && (!noSeq || (!is16 && (open || closed.has(e.hash))));
-  }
-  out.counts[id] = true;
-  // operators: authors of live grants of kind operator naming this id in refs.to
-  for (const e of pool.all()) {
-    const r = e.read;
-    if (r.type === 'grant' && r.state.kind === 'operator' && r.refs.to === id && !r.refs.answers && !r.refs.updates && !stoppedByAuthor(pool, e.hash))
-      if (pool.identity(r.refs.author).counts[e.hash]) out.operators.push(r.refs.author);
-  }
-  out.operators = [...new Set(out.operators)].sort();
-  for (const e of authored) if (e.read.refs.under) out.under[e.hash] = underOk(pool, e.hash);
-  return out;
-}
-function stoppedByAuthor(pool, gh) {
-  const g = pool.get(gh);
-  return pool.all().some(e => e.read.refs.updates === gh && e.read.state.status === 'stopped' && e.read.refs.author === g.refs.author && pool.counts(e.hash));
-}
-function actName(r) { return typeof r.state.kind === 'string' ? [r.type, r.type + '.' + r.state.kind] : [r.type]; }
-function underOk(pool, h) { // signer, scope and liveness of the grant a block names in refs.under
-  const b = pool.get(h), gh = b.refs.under, g = pool.get(gh);
-  if (!g || g.type !== 'grant' || !pool.counts(gh)) return false;
-  if (g.refs.to !== undefined && g.refs.to !== b.refs.author) return false;
-  if (stoppedByAuthor(pool, gh)) return false;
-  const sc = g.state.scope || {};
-  if (sc.acts && !actName(b).some(a => sc.acts.includes(a))) return false;
-  if (sc.until && b.state.at && b.state.at > sc.until) return false;
-  if (g.refs.parent) { const fake = { refs: { under: g.refs.parent, author: g.refs.author }, state: b.state, type: b.type }; void fake; }
   return true;
 }
 
-// ---------------------------------------------------------------- circles (membership and roles)
-function foldCircle(C, pool, limit = null) {
-  const key = C + '|' + (limit ? limit.tag : '');
-  if (pool._circle.has(key)) return pool._circle.get(key);
-  const res = { members: {}, removed: [], admins: new Set() };
-  pool._circle.set(key, res); // guard against cycles
-  const circle = pool.get(C);
-  if (!circle) return res;
-  const founder = circle.refs.author;
-  const inScope = h => !limit || limit.set.has(h);
-  const grants = pool.all().filter(e => inScope(e.hash) && e.read.type === 'grant' && e.read.state.kind === 'member' && e.read.refs.subject === C && pool.counts(e.hash));
-  const isAdminAt = (who, h) => who === founder || (foldAt(C, pool, h).members[who] || []).includes('admin');
-  // records: root invitations, versions by admins, member answers
-  const root = h => { let x = h, seen = new Set(); while (true) { const r = pool.get(x); if (!r || !r.refs.updates || seen.has(x)) return x; seen.add(x); x = r.refs.updates; } };
-  const invites = grants.filter(e => !e.read.refs.updates && !e.read.refs.answers && e.read.refs.as === C && isAdminAt(e.read.refs.author, e.hash));
-  const needed = (circle.state.removal && circle.state.removal.needed) || P.circle.removal_default.needed;
-  const recs = [];
-  for (const inv of invites) {
-    const member = inv.read.refs.to;
-    if (!member) continue; // open groups: not folded here
-    const updates = grants.filter(e => e.read.refs.updates && root(e.hash) === inv.hash && e.read.refs.as === C && isAdminAt(e.read.refs.author, e.hash));
-    const versions = [inv, ...updates.filter(u => u.read.state.status === undefined)].sort((a, b) => pool.cp(b.hash).has(a.hash) ? -1 : pool.cp(a.hash).has(b.hash) ? 1 : 0);
-    const answers = grants.filter(e => e.read.refs.answers && e.read.refs.author === member && [inv.hash, ...updates.map(u => u.hash)].includes(e.read.refs.answers));
-    const stops = updates.filter(u => u.read.state.status === 'stopped');
-    recs.push({ inv, member, versions, answers, stops });
-  }
-  // roles per record, in causal order
-  for (const r of recs) {
-    let held = null;
-    for (const v of r.versions) {
-      const yes = r.answers.find(a => a.read.refs.answers === v.hash && a.read.state.status === 'accepted');
-      const roles = asList(v.read.state.roles);
-      if (yes) held = roles.slice(); else if (held) held = held.filter(x => roles.includes(x));
+// ---- the check as the door gives it
+function check(block, held) {
+  const ctx = { held: normHeld(held) };
+  const found = contentFindings(block, ctx);
+  if (!found.length) return [];
+  const stage = Math.min(...found.map(f => f.stage));
+  const seen = new Set(), list = [];
+  for (const f of found.filter(f => f.stage === stage)) { if (!seen.has(f.code)) { seen.add(f.code); list.push({ code: f.code, detail: f.detail }); } }
+  return list;
+}
+const refusals = (type, state, refs, held) => check({ type, state, refs }, held);
+
+// strict_text: a block as TEXT. Duplicate keys and number tokens are visible only here.
+function strictText(text) {
+  let i = 0; const extra = [];
+  const ws = () => { while (/\s/.test(text[i])) i++; };
+  const fail = () => { throw new Error('not JSON'); };
+  function value() {
+    ws();
+    const c = text[i];
+    if (c === '{') {
+      i++; const o = {}; ws();
+      if (text[i] === '}') { i++; return o; }
+      for (;;) {
+        ws(); const k = str(); ws(); if (text[i++] !== ':') fail();
+        if (Object.prototype.hasOwnProperty.call(o, k)) extra.push({ stage: 1, code: 'not_canonical', detail: 'duplicate key ' + k });
+        o[k] = value(); ws();
+        if (text[i] === ',') { i++; continue; } if (text[i] === '}') { i++; return o; } fail();
+      }
     }
-    r.held = held;
-    const leave = r.answers.find(a => a.read.state.status === 'stopped');
-    const firstYes = r.answers.find(a => a.read.state.status === 'accepted' && a.read.refs.answers === r.inv.hash);
-    r.accepted = held !== null;
-    if (r.accepted && firstYes && r.stops.some(st => pool.cp(firstYes.hash).has(st.hash))) r.accepted = false; // stopped before it was answered
-    r.left = !!leave;
+    if (c === '[') { i++; const a = []; ws(); if (text[i] === ']') { i++; return a; } for (;;) { a.push(value()); ws(); if (text[i] === ',') { i++; continue; } if (text[i] === ']') { i++; return a; } fail(); } }
+    if (c === '"') return str();
+    const m = /^-?\d+(\.\d+)?([eE][+-]?\d+)?/.exec(text.slice(i));
+    if (m) {
+      i += m[0].length;
+      if (m[1] || m[2]) return 0.5; // a number with a fraction or exponent: a float, whatever its value
+      if (m[0] === '-0') return -0;
+      return Number(m[0]);
+    }
+    for (const [w, v] of [['true', true], ['false', false], ['null', null]]) if (text.startsWith(w, i)) { i += w.length; return v; }
+    fail();
   }
-  // removal: an admin needs N other admins; crossing admin removals go to the earlier admin grant
-  const adminGrantOf = who => { const r = recs.find(x => x.member === who && (x.held || []).includes('admin')); return r ? r.inv.hash : null; };
-  for (const r of recs) {
-    if (!r.accepted) { r.ended = r.stops.length > 0; continue; }
-    const Y = r.member, targetAdmin = (r.held || []).includes('admin');
-    const removers = r.stops.filter(s => s.read.refs.author !== Y).filter(s => {
-      if (!targetAdmin) return true;
-      const X = s.read.refs.author;
-      if (X === founder) return true;
-      const crossing = recs.some(o => o.member === X && o.stops.some(t => t.read.refs.author === Y && !pool.sees(t.hash, s.hash)));
-      if (!crossing) return true;
-      if (Y === founder) return false;
-      const gx = adminGrantOf(X), gy = adminGrantOf(Y);
-      return !(gx && gy && pool.cp(gx).has(gy)); // the target's grant earlier: the target wins; neither earlier: both stand
-    });
-    const n = new Set(removers.map(s => s.read.refs.author)).size;
-    r.removed = targetAdmin ? n >= needed : n > 0;
-    r.removers = removers;
-    r.ended = r.removed || r.left;
+  function str() { if (text[i] !== '"') fail(); let j = i + 1; while (text[j] !== '"') { if (text[j] === '\\') j++; j++; } const s = JSON.parse(text.slice(i, j + 1)); i = j + 1; return s; }
+  let b;
+  try { b = value(); ws(); if (i !== text.length) fail(); } catch { return [{ code: 'not_canonical', detail: 'not JSON' }]; }
+  const found = [...extra, ...contentFindings(b, { held: new Map() })];
+  if (!found.length) return [];
+  const stage = Math.min(...found.map(f => f.stage)), seen = new Set(), list = [];
+  for (const f of found.filter(f => f.stage === stage)) if (!seen.has(f.code)) { seen.add(f.code); list.push({ code: f.code, detail: f.detail }); }
+  return list;
+}
+
+// ================================================================ blocks held, causal past (blocks.md)
+const refIds = b => { const out = []; for (const v of Object.values(b.refs || {})) for (const x of asList(v)) if (isStr(x)) out.push(x); return out; };
+class Pool {
+  constructor(blocks) { this.m = new Map(); for (const b of blocks || []) if (b && b.hash) this.m.set(b.hash, b); this.memo = new Map(); this.folds = new Map(); }
+  get(h) { return this.m.get(h); }
+  all() { return [...this.m.values()]; }
+  // the causal past: every block reachable through refs (not the block itself)
+  past(h) {
+    if (this.memo.has(h)) return this.memo.get(h);
+    const seen = new Set(), stack = [h];
+    this.memo.set(h, seen); // cycles cannot happen in sound data; guard anyway
+    while (stack.length) { const b = this.m.get(stack.pop()); if (!b) continue; for (const r of refIds(b)) if (!seen.has(r)) { seen.add(r); stack.push(r); } }
+    return seen;
   }
-  const everIn = new Set();
-  for (const r of recs) {
-    if (r.accepted) everIn.add(r.member);
-    if (r.accepted && !r.ended) res.members[r.member] = [...new Set([...(res.members[r.member] || []), ...r.held])].sort();
-  }
-  if (!res.members[founder]) res.members[founder] = ['admin'];
-  else if (!res.members[founder].includes('admin')) res.members[founder] = [...res.members[founder], 'admin'].sort();
-  res.removed = [...everIn].filter(m => !res.members[m]).sort();
-  // circles.md: the fold keeps the counted_to the stop named (null if none); the removal's, or the member's own leaving
-  res.counted_to = {};
-  for (const m of res.removed) {
-    const r = recs.filter(x => x.member === m && x.accepted && x.ended).pop();
-    const enders = r ? (r.removed ? r.removers : r.answers.filter(a => a.read.state.status === 'stopped')) : [];
-    const last = enders.slice().sort((a, b) => pool.cp(b.hash).has(a.hash) ? -1 : pool.cp(a.hash).has(b.hash) ? 1 : 0).pop();
-    res.counted_to[m] = (last && last.read.state.counted_to) || null;
-  }
+  sees(a, b) { return this.past(a).has(b); } // b is in a's causal past
+}
+const poolOf = x => x instanceof Pool ? x : new Pool(x);
+const blockOnly = b => ({ type: b.type, state: b.state, refs: b.refs });
+
+// ================================================================ the identity fold (identity.md)
+// Output: signed_by_author { hash: bool }, keys, frozen (sorted), operators, history 'none', plus the working data valid() needs.
+const isKeyGrant = b => b.type === 'grant' && b.state && b.state.kind === 'key';
+function emptyIdentity() { return { signed_by_author: {}, keys: [], frozen: [], operators: [], history: 'none', info: new Map(), cutoff: {}, keyMap: new Map(), ended: false, timeline: [] }; }
+function identityFold(id, poolIn, visiting) {
+  const pool = poolOf(poolIn);
+  if (pool.folds.has(id)) return pool.folds.get(id);
+  visiting = visiting || new Set();
+  if (visiting.has(id)) return emptyIdentity();
+  visiting.add(id);
+  const res = computeIdentity(id, pool, visiting);
+  visiting.delete(id);
+  pool.folds.set(id, res);
   return res;
 }
-function foldAt(C, pool, h) { const set = pool.cp(h); return foldCircle(C, pool, { set, tag: h }); }
-function mayAct(pool, h) { // signing for a circle: a role listed in the circle's signers, in its fold at that block
-  const b = pool.get(h), C = b.refs.as, c = pool.get(C);
-  if (!c) return false;
-  const signers = c.state.signers || P.circle.signers_default;
-  const roles = foldAt(C, pool, h).members[b.refs.author] || [];
-  return roles.some(r => signers.includes(r));
-}
-function audienceMembers(pool, h, recipient) { // members then
-  const [C, role] = recipient.split('#');
-  const f = foldAt(C, pool, h);
-  return Object.entries(f.members).filter(([, roles]) => !role || roles.includes(role)).map(([m]) => m).sort();
-}
-function foldRekeys(C, pool) {
-  const circle = pool.get(C);
-  let epoch = 0, cur = [C], keys = [circle.state.public_key_encrypt];
-  const grants = pool.all().filter(e => e.read.type === 'grant' && e.read.state.kind === 'key' && e.read.refs.subject === C && e.read.refs.as === C && Number.isInteger(e.read.state.epoch) && pool.counts(e.hash) && (foldAt(C, pool, e.hash).members[e.read.refs.author] || []).includes('admin'));
-  for (;;) {
-    const next = grants.filter(e => e.read.state.epoch === epoch + 1 && asList(e.read.refs.after).some(a => cur.includes(a)));
-    if (!next.length) break;
-    epoch++; cur = next.map(e => e.hash); keys = next.map(e => e.read.state.public_key_encrypt).sort();
+function computeIdentity(id, pool, visiting) {
+  const g = pool.get(id);
+  if (!g || g.type !== 'actor' || g.refs.author !== undefined || !isStr(g.state.public_key_sign)) return emptyIdentity();
+  const genKey = g.state.public_key_sign;
+  const idSuite = g.state.suite || 'std';
+  const all = pool.all();
+  const authored = all.filter(b => b.refs.author === id && b.hash !== id);
+  const grantsFor = all.filter(b => isKeyGrant(b) && b.refs.subject === id);
+  const opCandidates = grantsFor.filter(b => b.refs.author !== id);
+  const claim = new Set([genKey]);
+  for (const b of grantsFor) if (isStr(b.state.public_key_sign)) claim.add(b.state.public_key_sign);
+  // the recovery key hash: the genesis's, else the one a key grant of the identity names with its reach
+  let rh = g.state.recovery_key_hash;
+  if (rh === undefined) for (const b of authored) if (isKeyGrant(b) && b.state.recovery_key_hash !== undefined && b.state.recovery_reach !== undefined) { rh = b.state.recovery_key_hash; break; }
+  const recoveryOk = rk => isStr(rk) && rh !== undefined && recoveryKeyHash(rk, idSuite) === rh;
+  const info = new Map();
+  for (const b of authored) {
+    if (b.state.recovery_key !== undefined && recoveryOk(b.state.recovery_key) && verifyBlock(b, b.signature, b.state.recovery_key)) { info.set(b.hash, { key: b.state.recovery_key, role: 'recovery' }); continue; }
+    for (const k of claim) if (verifyBlock(b, b.signature, k)) { info.set(b.hash, { key: k, role: 'key' }); break; }
   }
-  return { epoch, keys };
-}
-function ballotCounted(pool, result, commitmentHex, counter) {
-  const r = pool.get(result);
-  return !!r && r.refs.author === counter && pool.counts(result) && asList(r.state.counted).includes(commitmentHex);
-}
-function foldSuccessor(pool, gh, now) {
-  const g = pool.get(gh), person = g.refs.author, wit = asList(g.state.witnesses), needed = g.state.needed || 1;
-  let events = pool.all().filter(e => e.read.type === 'observe' && e.read.refs.under === gh && wit.includes(e.read.refs.author) && pool.counts(e.hash));
-  const defeats = pool.all().filter(e => e.read.refs.defeats && pool.counts(e.hash) && (e.read.refs.author === person));
-  const fireOf = evs => {
-    const byW = {}; for (const e of evs) { const a = pool.arrival(e.hash); if (!byW[e.read.refs.author] || a < byW[e.read.refs.author]) byW[e.read.refs.author] = a; }
-    const arr = Object.values(byW).filter(Boolean).sort();
-    return arr.length >= needed ? addDur(arr[needed - 1], g.state.wait || 'PT0S') : null;
+  const order = [...authored, ...opCandidates].sort((a, b) => pool.past(a.hash).size - pool.past(b.hash).size || (a.state.seq || 0) - (b.state.seq || 0) || (a.hash < b.hash ? -1 : 1));
+  const posOf = b => b.hash === id ? 0 : (b.state.seq === undefined ? 0 : b.state.seq);
+  // position of counted_to in the replaced key's chain. GUESS: a block that is not of that key (or not held) places at 0.
+  const countedPos = (R, ct) => {
+    if (ct === id) return 0;
+    const c = pool.get(ct), ci = c && info.get(c.hash);
+    return c && ci && ci.key === R ? posOf(c) : 0;
   };
-  for (let i = 0; i < 10; i++) {
-    const fires = fireOf(events);
-    const kill = defeats.filter(d => events.some(e => e.hash === d.read.refs.defeats) && (!fires || !pool.arrival(d.hash) || pool.arrival(d.hash) < fires));
-    if (!kill.length) break;
-    const dead = new Set(kill.map(d => d.read.refs.defeats));
-    events = events.filter(e => !dead.has(e.hash));
+  const isAgentLike = ['agent', 'machine'].includes(g.state.kind);
+  const opAuthorized = b => {
+    if (!isAgentLike || visiting.has(b.refs.author)) return false;
+    const O = b.refs.author;
+    if (!operatorsOf(id, pool, visiting).includes(O)) return false;
+    const of = identityFold(O, pool, visiting);
+    return of.signed_by_author[b.hash] === true;
+  };
+  // one pass: which blocks count, given cutoffs and frozen keys assumed
+  const pass = (cutoff, frozen) => {
+    const keys = new Map([[genKey, { via: null }]]), counting = new Set([id]), brings = new Map(), rotations = [];
+    for (const b of order) {
+      const inf = info.get(b.hash);
+      let ok = false, permitted = true, role;
+      if (b.refs.author !== id) { // the operator route
+        if (isKeyGrant(b) && opAuthorized(b)) { ok = true; role = 'operator'; } else continue;
+      } else if (!inf) continue;
+      else if (inf.role === 'recovery') { ok = true; role = 'recovery'; }
+      else {
+        role = 'key';
+        const X = inf.key;
+        if (keys.has(X) && !frozen.has(X)) {
+          const self = isKeyGrant(b) && b.state.replaces === X;
+          ok = self || cutoff[X] === undefined || posOf(b) <= cutoff[X];
+        }
+      }
+      if (!ok) continue;
+      if (isKeyGrant(b) && b.state.replaces !== undefined) {
+        const R = b.state.replaces;
+        permitted = role === 'recovery' || role === 'operator' || (info.get(b.hash) && info.get(b.hash).key === R);
+        if (b.refs.author === id) counting.add(b.hash);
+        if (!permitted) continue;
+        rotations.push({ b, R, role, ct: countedPos(R, b.state.counted_to) });
+      } else if (b.refs.author === id) counting.add(b.hash);
+      if (isKeyGrant(b) && isStr(b.state.public_key_sign) && permitted) { if (!keys.has(b.state.public_key_sign)) keys.set(b.state.public_key_sign, { via: b }); brings.set(b.hash, b.state.public_key_sign); }
+    }
+    return { keys, counting, brings, rotations };
+  };
+  let cutoff = {}, frozen = new Set(), ended = false, st;
+  const unrelated = (a, b) => !pool.sees(a.hash, b.hash) && !pool.sees(b.hash, a.hash);
+  for (let it = 0; it < 16; it++) {
+    st = pass(cutoff, frozen);
+    const nc = {}, nf = new Set();
+    const byR = new Map();
+    for (const r of st.rotations) { if (!byR.has(r.R)) byR.set(r.R, []); byR.get(r.R).push(r); }
+    for (const [R, list] of byR) {
+      const rec = list.filter(r => r.role === 'recovery');
+      nc[R] = rec.length ? Math.min(...rec.map(r => r.ct)) : Math.min(...list.map(r => r.ct)); // GUESS: with a recovery rotation, its counted_to decides
+    }
+    // conflicts: two counting key grants of one key naming one prev, or two rotations of one key that do not see each other
+    const grants = order.filter(b => isKeyGrant(b) && st.counting.has(b.hash));
+    const pairs = [];
+    for (let i = 0; i < grants.length; i++) for (let j = i + 1; j < grants.length; j++) {
+      const a = grants[i], c = grants[j], ia = info.get(a.hash), ic = info.get(c.hash);
+      const forkPair = ia && ic && ia.key === ic.key && a.refs.prev === c.refs.prev;
+      const rotPair = a.state.replaces !== undefined && a.state.replaces === c.state.replaces && unrelated(a, c) && st.rotations.some(r => r.b === a) && st.rotations.some(r => r.b === c);
+      if (forkPair || rotPair) pairs.push([a, c, rotPair ? a.state.replaces : ia.key]);
+    }
+    const rrots = st.rotations.filter(r => r.role === 'recovery');
+    ended = false;
+    for (let i = 0; i < rrots.length; i++) for (let j = i + 1; j < rrots.length; j++) if (unrelated(rrots[i].b, rrots[j].b)) ended = true;
+    for (const [a, c, R] of pairs) {
+      const rr = rrots.filter(r => r.R === R);
+      for (const m of [a, c]) {
+        const S = m.state.public_key_sign;
+        if (!isStr(S)) continue;
+        const settled = rr.some(r => pool.sees(r.b.hash, m.hash) || r.b.state.counted_to === m.hash);
+        if (!settled) nf.add(S);
+      }
+      if (a.state.replaces !== undefined && c.state.replaces !== undefined) nc[R] = Math.min(nc[R] === undefined ? Infinity : nc[R], countedPos(R, a.state.counted_to), countedPos(R, c.state.counted_to));
+      if (rr.length) nc[R] = Math.min(...rr.map(r => r.ct));
+    }
+    if (JSON.stringify(nc) === JSON.stringify(cutoff) && [...nf].sort().join() === [...frozen].sort().join()) break;
+    cutoff = nc; frozen = nf;
   }
-  const fires = fireOf(events);
-  return { events: events.map(e => e.hash).sort(), fired: !!fires && !!now && now >= fires, fires };
+  let counting = st.counting;
+  if (ended) { // two recovery rotations that do not see each other end the identity: only the causal past of either stands
+    const rrots = st.rotations.filter(r => r.role === 'recovery'), keep = new Set([id]);
+    for (const r of rrots) { keep.add(r.b.hash); for (const h of pool.past(r.b.hash)) keep.add(h); }
+    counting = new Set([...counting].filter(h => keep.has(h)));
+  }
+  const sba = { [id]: true };
+  for (const b of authored) sba[b.hash] = counting.has(b.hash);
+  const keyList = [...st.keys.keys()];
+  const timeline = [];
+  for (const k of keyList) timeline.push({ key: k, suite: suiteOfKey(k) || 'std', frozen: frozen.has(k) });
+  const res = { signed_by_author: sba, keys: keyList.slice().sort(), frozen: [...frozen].filter(k => st.keys.has(k)).sort(), operators: [], history: 'none', info, cutoff, keyMap: st.keys, ended, timeline, rotations: st.rotations, rh, recoveryOk, genKey, idSuite, order, counting };
+  return res;
+}
+// The operators of an agent or machine: authors of live grants of kind operator naming it in refs.to.
+function operatorsOf(id, poolIn, visiting) {
+  const pool = poolOf(poolIn);
+  visiting = visiting || new Set();
+  const out = new Set();
+  for (const gr of pool.all()) {
+    if (gr.type !== 'grant' || gr.state.kind !== 'operator' || gr.refs.to !== id || !isStr(gr.refs.author)) continue;
+    if (visiting.has(gr.refs.author) && gr.refs.author !== id) { /* in progress: read below */ }
+    const O = gr.refs.author;
+    if (O === id) continue;
+    const of = identityFold(O, pool, visiting);
+    if (of.signed_by_author[gr.hash] !== true) continue;
+    // the author ends it by an updates that carries status stopped
+    const stopped = pool.all().some(u => u.refs.updates === gr.hash && u.refs.author === O && u.state.status === 'stopped' && of.signed_by_author[u.hash] === true);
+    if (!stopped) out.add(O);
+  }
+  return [...out].sort();
+}
+// The recovery_reach view: the voided blocks the reach protects (identity.md). arrivals: { hash: time } or null.
+function recoveryReachView(rotation, blocks, arrivals) {
+  const pool = poolOf(blocks);
+  const id = rotation.refs.subject || rotation.refs.author;
+  const f = identityFold(id, pool);
+  const g = pool.get(id);
+  const reach = g && g.state.recovery_reach;
+  if (!arrivals || !reach || !arrivals[rotation.hash]) return [];
+  const start = addDur(arrivals[rotation.hash], reach, -1);
+  const voided = pool.all().filter(b => b.refs.author === id && f.info.has(b.hash) && f.signed_by_author[b.hash] === false);
+  const out = [];
+  for (const v of voided) {
+    const built = pool.all().some(o => o.refs.author !== id && pool.sees(o.hash, v.hash));
+    const arr = arrivals[v.hash];
+    if (built && arr !== undefined && arr < start) out.push(v.hash);
+  }
+  return out.sort();
 }
 
-// ---------------------------------------------------------------- things: where now, who owns
-function ownerOf(pool, thing) {
-  const t = pool.get(thing); if (!t) return { owner: null, conflict: null };
-  let owner = t.refs.author, last = null;
-  const xfers = pool.all().filter(e => e.read.type === 'transfer' && e.read.refs.what === thing && pool.counts(e.hash) && e.read.state.amount === undefined && (e.read.refs.to_owner !== undefined || e.read.state.count !== undefined));
-  const accepted = x => x.read.refs.to_owner === undefined ? true :
-    pool.all().some(a => a.read.refs.answers === x.hash && a.read.state.status === 'accepted' && a.read.refs.author === x.read.refs.to_owner && pool.counts(a.hash));
-  for (let i = 0; i < 100; i++) {
-    const c = xfers.filter(x => x.read.refs.author === owner && (!last || pool.cp(x.hash).has(last)) && accepted(x) && x.hash !== last);
-    if (!c.length) break;
-    const minimal = c.filter(x => !c.some(y => y !== x && pool.cp(x.hash).has(y.hash)));
-    if (minimal.length > 1) return { owner, conflict: minimal.map(x => x.hash).sort() };
-    const x = minimal[0];
-    last = x.hash; owner = x.read.refs.to_owner === undefined ? null : x.read.refs.to_owner;
-    if (owner === null) break;
-  }
-  return { owner, conflict: null };
-}
-function whereNow(pool, thing, seen = new Set()) {
-  if (seen.has(thing)) return []; seen.add(thing);
-  const t = pool.get(thing); if (!t) return [];
-  // the owners it has had, and holders they named
-  const ok = new Set([t.refs.author]);
-  for (const e of pool.all()) if (e.read.type === 'transfer' && e.read.refs.what === thing) { if (e.read.refs.to_owner) ok.add(e.read.refs.to_owner); if (e.read.refs.to_holder) ok.add(e.read.refs.to_holder); }
-  const moves = pool.all().filter(e => e.read.type === 'transfer' && e.read.refs.what === thing && e.read.refs.to_place && ok.has(e.read.refs.author) && pool.counts(e.hash));
-  const heads = moves.filter(m => !moves.some(o => o !== m && pool.cp(o.hash).has(m.hash)));
-  const places = heads.length ? heads.map(m => m.read.refs.to_place) : t.refs.place ? [t.refs.place] : [];
-  const outp = new Set();
-  for (const p of places) { const deeper = pool.has(p) ? whereNow(pool, p, new Set(seen)) : []; (deeper.length ? deeper : [p]).forEach(x => outp.add(x)); }
-  return [...outp].sort();
-}
-
-// ---------------------------------------------------------------- promise stage
-function foldPromise(pool, first, now) {
-  const P0 = pool.get(first);
-  const from = P0.refs.from, to = P0.refs.to, offerer = P0.refs.author;
-  const out = { stage: null };
-  // input: blocks naming P in for, or answering a block in the deal
-  const deal = new Map();
-  for (const e of pool.all()) if (e.hash !== first && asList(e.read.refs.for).includes(first) && pool.counts(e.hash)) deal.set(e.hash, e);
-  let grew = true;
-  while (grew) { grew = false; for (const e of pool.all()) if (!deal.has(e.hash) && e.hash !== first && (deal.has(e.read.refs.answers) || e.read.refs.answers === first) && pool.counts(e.hash)) { deal.set(e.hash, e); grew = true; } }
-  const sides = new Set([from, to].filter(Boolean));
-  const open = !from || !to;
-  const isSide = e => sides.has(e.read.refs.author) || (e.read.refs.as && sides.has(e.read.refs.as)) || (e.read.refs.under && underOk(pool, e.hash) && sides.has(pool.get(e.read.refs.under).refs.author));
-  const B = [...deal.values()];
-  const kept = B.filter(e => isSide(e) || open && e.read.type === 'promise');
-  const pr = kept.filter(e => e.read.type === 'promise');
-  // to yourself
-  const self = from && to && from === to && offerer === from;
-  // live offer: P, or the latest counter between the same two sides
-  let live = first, liveAuthor = offerer;
-  if (!open) for (let i = 0; i < 50; i++) {
-    const c = pr.find(e => e.read.state.status === undefined && e.read.refs.answers === live && e.read.refs.author !== liveAuthor && e.read.refs.from === from && e.read.refs.to === to);
-    if (!c) break; live = c.hash; liveAuthor = c.read.refs.author;
-  }
-  out.offer = live;
-  const other = liveAuthor === from ? to : from;
-  const stopsBefore = pr.filter(e => e.read.state.status === 'stopped' && e.read.state.stop === 'before' && (e.read.refs.updates === live || e.read.refs.updates === first) && e.read.refs.author === liveAuthor);
-  const declines = pr.filter(e => e.read.state.status === 'declined' && e.read.refs.answers === live && e.read.refs.author === other);
-  let binding = null, takers = [];
-  if (self) binding = first;
-  else if (!open) {
-    const acc = pr.filter(e => e.read.state.status === 'accepted' && e.read.refs.answers === live && e.read.refs.author === other);
-    const b = acc.find(a => !stopsBefore.some(s => pool.cp(a.hash).has(s.hash)));
-    if (b) binding = b.hash;
+// ================================================================ valid(block, context)  (core.md section 8)
+// block: { hash?, type, state, refs, signature, suite? }; context: the blocks held (array, Map or Pool). Returns refusals [{ code, detail }].
+function uniqueCodes(list) { const seen = new Set(), out = []; for (const f of list) if (!seen.has(f.code)) { seen.add(f.code); out.push({ code: f.code, detail: f.detail || '' }); } return out; }
+function validStages(block, poolIn) {
+  const pool = poolOf(poolIn);
+  const b = blockOnly(block);
+  const ctx = { held: pool.m, noClosed: true };
+  // 1 to 4: the bytes, the values, the size, the genesis or the common five
+  const early = contentFindings(b, ctx);
+  if (early.length) { const stage = Math.min(...early.map(f => f.stage)); return { stage, findings: early.filter(f => f.stage === stage) }; }
+  const fail = (stage, code, detail) => ({ stage, findings: [{ code, detail }] });
+  const sig = block.signature;
+  if (block.suite !== undefined && !['std', 'p256', 'sm'].includes(block.suite)) return fail(5, 'unknown_suite', block.suite);
+  const type = b.type, st = b.state, refs = b.refs;
+  const genesis = type === 'actor' && refs.author === undefined;
+  let signerKey, signerSuite, role = 'key', idf = null;
+  if (genesis) {
+    signerKey = st.public_key_sign;
+    if (!isStr(sig) || !verifyBlock(b, sig, signerKey)) return fail(5, 'bad_signature', 'a genesis is signed by its own key');
+    signerSuite = suiteOfKey(signerKey) || 'std';
   } else {
-    const requests = pr.filter(e => e.read.state.status === 'accepted' && e.read.refs.answers === first && e.read.refs.author !== offerer);
-    for (const rq of requests) {
-      const al = pr.find(e => e.read.state.status === 'accepted' && e.read.refs.answers === rq.hash && e.read.refs.author === offerer);
-      if (!al || stopsBefore.some(s => pool.cp(al.hash).has(s.hash))) continue;
-      takers.push({ who: rq.read.refs.author, request: rq.hash, allocation: al.hash, quantity: (al.read.state.terms && al.read.state.terms.quantity) || (rq.read.state.terms && rq.read.state.terms.quantity) || null });
+    const id = refs.author;
+    idf = identityFold(id, pool);
+    if (!idf.keyMap.size) return fail(5, 'bad_signature', 'the author\'s genesis is not held');
+    // which key opens it: any key the identity ever named, or its recovery key
+    let found = null;
+    if (st.recovery_key !== undefined && idf.recoveryOk(st.recovery_key) && isStr(sig) && verifyBlock(b, sig, st.recovery_key)) found = { key: st.recovery_key, role: 'recovery' };
+    if (!found) {
+      const claims = new Set([idf.genKey]);
+      for (const x of pool.all()) if (isKeyGrant(x) && x.refs.subject === id && isStr(x.state.public_key_sign)) claims.add(x.state.public_key_sign);
+      for (const k of claims) if (isStr(sig) && verifyBlock(b, sig, k)) { found = { key: k, role: 'key' }; break; }
     }
-    // allocations that do not see each other prove a lie (Equivocation): neither counts, and the fold names them in `forks`
-    const forked = new Set();
-    for (const a of takers) for (const b of takers) if (a !== b && !pool.sees(a.allocation, b.allocation)) { forked.add(a.allocation); forked.add(b.allocation); }
-    if (forked.size) { out.forks = [...forked].sort(); takers = takers.filter(t => !forked.has(t.allocation)); }
-    if (takers.length) binding = takers[0].allocation;
-  }
-  out.takers = takers;
-  const terms = (pool.get(live).state.terms) || {};
-  // the quantity accepted and the total
-  let qAcc = null;
-  if (open && takers.length) {
-    const t0 = takers.filter(t => t.quantity);
-    if (t0.length) { let s = { n: 0n, d: 1n }; for (const t of t0) s = rAdd(s, qty(t.quantity)); qAcc = { value: fmtR(s), unit: t0[0].quantity.unit }; }
-  } else if (binding && !self) {
-    const a = pool.get(binding);
-    qAcc = (a.state.terms && a.state.terms.quantity) || (terms.quantity && terms.quantity.value !== undefined ? terms.quantity : null);
-  } else if (terms.quantity && terms.quantity.value !== undefined) qAcc = terms.quantity;
-  out.quantity = qAcc;
-  out.total = totalOf(terms, qAcc);
-  // stage 3-6
-  if (stopsBefore.length && !binding) { out.stage = 'stopped'; out.stop = 'before'; return out; }
-  if (declines.length && !binding) { out.stage = 'declined'; return out; }
-  if (!binding) {
-    if (now && terms.expires && now > terms.expires) out.stage = 'expired';
-    else out.stage = liveAuthor === from ? 'offered' : liveAuthor === to ? 'asked' : 'offered';
-    return out;
-  }
-  out.stage = 'accepted'; out.accept = binding;
-  // counted blocks (Settling)
-  const schema = P0.refs.schema ? pool.get(P0.refs.schema) : null;
-  const confirmers = schema && schema.state.grounds ? asList(schema.state.grounds.confirmers) : [];
-  const answeredBy = (x, who) => B.some(a => a.read.refs.answers === x.hash && a.read.state.status === 'accepted' && a.read.refs.author === who);
-  const confirmed = x => confirmers.length && pool.all().some(c => c.read.refs.confirms === x.hash && confirmers.includes(c.read.refs.author) && pool.counts(c.hash));
-  const settle = kept.filter(e => !e.read.refs.answers && !e.read.refs.updates && e.read.type !== 'promise');
-  const counted = settle.filter(x => {
-    if (x.read.type === 'transfer') {
-      const R = x.read.refs.to_owner || x.read.refs.to_holder;
-      if (R) return answeredBy(x, R) || confirmed(x);
-      return x.read.state.count !== undefined && x.read.refs.author === offerer; // open receiver: the sequencer signs
+    if (!found) return fail(5, 'bad_signature', 'no key of the author opens it');
+    role = found.role; signerKey = found.key;
+    if (role === 'key') {
+      const self = isKeyGrant(b) && st.replaces === signerKey;
+      const speaks = idf.keyMap.has(signerKey) && !idf.frozen.includes(signerKey) && (self || idf.cutoff[signerKey] === undefined || st.seq <= idf.cutoff[signerKey]);
+      if (!speaks) return fail(5, 'void_key', 'the key does not speak for the author');
     }
-    const recv = x.read.refs.author === from ? to : from;
-    return answeredBy(x, recv) || confirmed(x);
-  });
-  // occurrences stopped
-  const occ = pr.filter(e => e.read.state.status === 'stopped' && e.read.state.stop && typeof e.read.state.stop === 'object').flatMap(e => asList(e.read.state.stop.occurrences));
-  if (occ.length) out.stopped = [...new Set(occ)].sort();
-  // lines and money
-  const kindOf = h => { const t = pool.get(h); return t && t.refs.kind ? t.refs.kind : h; };
-  const lines = terms.lines ? terms.lines.map(l => ({ id: l.id, what: l.what, quantity: l.quantity })) : [{ id: null, what: P0.refs.what, quantity: qAcc }];
-  const moneyIn = counted.filter(x => x.read.type === 'transfer' && x.read.state.money);
-  const share = x => { const sp = asList(x.read.state.split).find(s => s.for === first); return sp ? sp.money.minor : asList(x.read.refs.for).length > 1 ? 0 : x.read.state.money.minor; };
-  // promises.md / folds.md: money counts only in the price's own currency (else the first payment's); currencies are never mixed
-  const toFrom = moneyIn.filter(x => x.read.refs.to_owner === from);
-  const own = out.total ? out.total.currency : toFrom.length ? toFrom[0].read.state.money.currency : null;
-  const sameCur = x => own === null || deepEq(x.read.state.money.currency, own);
-  let paid = 0;
-  for (const x of toFrom) if (sameCur(x)) paid += share(x);
-  out.paid = { minor: paid, currency: own || 'GBP' };
-  out.lines = lines.map(l => {
-    let moved = { n: 0n, d: 1n };
-    for (const x of counted) if (x.read.type === 'transfer' && !x.read.state.money && (x.read.refs.to_owner === to || x.read.refs.to_holder === to) && l.what && (x.read.refs.what === l.what || kindOf(x.read.refs.what) === l.what) && (l.id === null || x.read.state.line === l.id))
-      moved = rAdd(moved, x.read.state.amount ? qty(x.read.state.amount) : { n: 1n, d: 1n });
-    const need = l.quantity ? qty(l.quantity) : { n: 1n, d: 1n };
-    return { id: l.id, needed: rNum(need), moved: rNum(moved), _ok: rGe(moved, need) };
-  });
-  if (counted.length) out.stage = 'underway';
-  // done
-  const work = counted.filter(x => x.read.type === 'observe' && x.read.state.kind === 'work');
-  let goodsOk = true, jobOk = true;
-  if (P0.refs.what !== undefined || terms.lines) goodsOk = out.lines.every(l => l._ok);
-  else if (P0.state.what !== undefined) {
-    if (terms.quantity && terms.quantity.value !== undefined) { let s = { n: 0n, d: 1n }; for (const w of work) if (w.read.state.amount) s = rAdd(s, qty(w.read.state.amount)); jobOk = rGe(s, qty(terms.quantity)); }
-    else jobOk = work.length > 0;
+    signerSuite = suiteOfKey(signerKey) || 'std';
   }
-  const moneyOk = !out.total || paid >= out.total.minor;
-  const done = counted.length > 0 && goodsOk && jobOk && moneyOk;
-  if (done) out.stage = 'done';
-  for (const l of out.lines) delete l._ok;
-  // stopped onward
-  const onward = pr.find(e => e.read.state.status === 'stopped' && e.read.state.stop === 'onward' && (e.read.refs.answers === first || e.read.refs.answers === live || e.read.refs.updates === first || e.read.refs.updates === live));
-  if (onward) { out.stage = 'stopped'; out.stop = 'onward'; out.stopped_by = onward.hash; }
-  // reversed
-  if (done) {
-    let back = 0; for (const x of moneyIn) if (x.read.refs.to_owner === to) back += share(x);
-    if (paid > 0 && back >= paid) out.stage = 'reversed';
-  }
-  return out;
-}
-function fmtR(r) { // exact decimal string of a rational with a power-of-ten denominator
-  let d = r.d, n = r.n, s = 0; while (d > 1n) { if (d % 10n) break; d /= 10n; s++; }
-  if (d !== 1n) return String(rNum(r));
-  if (!s) return String(n);
-  const neg = n < 0n, a = (neg ? -n : n).toString().padStart(s + 1, '0');
-  return (neg ? '-' : '') + a.slice(0, -s) + '.' + a.slice(-s).replace(/0+$/, '') .replace(/\.$/, '');
-}
-function totalOf(terms, qAcc) {
-  const priceOf = (price, q) => {
-    if (!price) return null;
-    if (price.minor !== undefined) return { minor: price.minor, currency: price.currency };
-    if (price.money && price.per && q) {
-      const m = BigInt(price.money.minor), per = dec(price.per.value), qq = qty(q);
-      const num = m * qq.n * per.d, den = qq.d * per.n;
-      // rounded to the nearest minor unit, halves up (promises.md): floor(num/den + 1/2)
-      const two = 2n * num + den, twoDen = 2n * den, whole = two / twoDen, rounded = (two % twoDen !== 0n && two < 0n) ? whole - 1n : whole;
-      return { minor: Number(rounded), currency: price.money.currency };
+  if (block.hash !== undefined && hashOfBlock(b, signerSuite) !== block.hash) return fail(5, 'bad_hash', 'the id is not the hash of the canonical bytes');
+  // 6: prev and seq fit the key's chain, or the block is a skip
+  if (!genesis) {
+    const id = refs.author, prev = pool.get(refs.prev);
+    const bad = d => fail(6, 'chain', d);
+    if (!prev) return bad('prev is not held');
+    const pinfo = idf.info.get(prev.hash);
+    const sameKey = pinfo && pinfo.key === signerKey && prev.refs.author === id;
+    const skip = st.skip === true;
+    if (sameKey) {
+      if (skip ? !(st.seq > prev.state.seq) : st.seq !== prev.state.seq + 1) return bad('seq does not follow prev');
+    } else {
+      // the key's first block: prev is the block that brought the key in (the genesis, or a key grant), seq 1 (a skip may start higher)
+      const via = role === 'recovery' ? { b: pool.get(id) } : idf.keyMap.get(signerKey) && (idf.keyMap.get(signerKey).via || { b: pool.get(id) });
+      const bringer = via && (via.b || via);
+      const ok = bringer && (bringer.hash === prev.hash || prev.hash === id && signerKey === idf.genKey);
+      if (!ok) return bad('prev does not name the block that brought the key in');
+      if (skip ? !(st.seq >= 1) : st.seq !== 1) return bad('a key\'s first block has seq 1');
     }
-    return null;
-  };
-  if (terms.lines) {
-    let s = 0, cur = null;
-    for (const l of terms.lines) { const p = priceOf(l.price, l.quantity); if (p && (cur === null || deepEq(p.currency, cur))) { s += p.minor; cur = p.currency; } }   // never across currencies: the first line's
-    return cur ? { minor: s, currency: cur } : null;
   }
-  return priceOf(terms.price, qAcc);
+  // 7: a closed type's required fields, undeclared fields and its module's checks
+  const late = [];
+  if (CLOSED.has(type) && !genesis) closedFindings(b, { held: pool.m, recoverySigned: role === 'recovery' }, (stage, code, detail) => late.push({ stage, code, detail }));
+  if (role === 'recovery' && !isKeyGrant(b) && !(refs.defeats !== undefined)) late.push({ stage: 7, code: 'recovery_scope', detail: 'the recovery key signs only key grants and the defeats a profile gives it' });
+  if (late.length) return { stage: 7, findings: late };
+  return { stage: 0, findings: [] };
 }
+function valid(block, context) { return uniqueCodes(validStages(block, context).findings); }
 
-// ---------------------------------------------------------------- the node: accept (push), pull, signed answers
-function acceptIncoming(pool, h) { // the history rule on push; signature and shape checked elsewhere
-  const b = pool.raw(h);
-  if (!b) return { refused: 'not held' };
-  const au = b.refs && b.refs.author;
-  if (b.state && b.state.seq === undefined && au) {
-    const g = pool.raw(au);
-    if (g && g.state.recovery_key_hash !== undefined) return { refused: 'a block without seq from an identity with a 1.6 genesis' };
-    const id = pool.identity(au);
-    if (id.history === 'closed' && !id.counts[h]) return { refused: 'a block without seq outside the closed history' };
-    if (!id.signed[h]) return { refused: 'not signed by a live key of its author' };
-    return { taken: true, history: true };
-  }
-  return pool.counts(h) ? { taken: true } : { refused: 'not signed by a live key of its author' };
-}
-function headerOf(block, hash) { return { author: block.refs.author, seq: block.state.seq, prev: block.refs.prev, hash }; }
-// aliases.json `messages`: older field names of a message read as today's (asker, pusher -> signer); the signature covers the bytes as sent
-function readMessage(kind, m) {
-  const out = { ...m };
-  for (const [o, n] of Object.entries((A.messages || {})[kind] || {})) if (out[o] !== undefined && out[n] === undefined) { out[n] = out[o]; delete out[o]; }
-  return out;
-}
-function signMsg(m, privHex) { return { ...m, signature: signStr(canonMsg(m), privHex) }; }
-function verifyMsg(m, pubHex) { return verifyStr(canonMsg(m), pubHex, m.signature); }
-function liveSigningKeys(pool, id) { return pool.identity(id).keys.filter(k => !pool.identity(id).frozen.includes(k)); }
-function verifyBy(pool, m, id) { return liveSigningKeys(pool, id).some(k => verifyMsg(m, k)); }
-// a node's store: messages in arrival order
-class Node {
-  constructor(holder, signPriv, pool) { this.holder = holder; this.priv = signPriv; this.pool = pool; this.store = []; this.nonces = new Set(); }
-  take(message) { this.store.push({ n: this.store.length + 1, message }); }
-  pull(req, opts = {}) {
-    let asker = null;
-    if (req.signature !== undefined) {
-      if (req.node !== this.holder) throw new Error('pull is for another node');
-      if (this.nonces.has(req.nonce)) throw new Error('nonce seen');
-      const win = opts.window_ms || 5 * 60 * 1000;                // GUESS: "a short window" is not given
-      if (!opts.now || Math.abs(new Date(req.at) - new Date(opts.now)) > win) throw new Error('at outside the window');
-      const who = readMessage('signed_pull', req).signer;
-      if (!verifyBy(this.pool, req, who)) throw new Error('bad pull signature');
-      this.nonces.add(req.nonce); asker = who;
-    }
-    const f = req.filter || {}, since = req.since || 0;
-    const blockOf = m => m.block || null;
-    const match = s => {
-      const m = s.message, b = blockOf(m), hd = m.header;
-      const hash = b ? hashOf(b) : hd.hash;
-      const r = b ? readAs(b) : null;
-      if (f.hash && f.hash !== hash) return false;
-      if (f.author && (b ? b.refs.author : hd.author) !== f.author) return false;
-      if (f.type && (!r || r.type !== f.type)) return false;
-      if (f.kind && (!r || r.state.kind !== f.kind)) return false;
-      if (f.refs && (!r || Object.entries(f.refs).some(([k, v]) => !asList(r.refs[k]).includes(v)))) return false;
-      if (f.record) { let x = hash, ok = false; for (let i = 0; i < 1000 && x; i++) { if (x === f.record) { ok = true; break; } const y = this.pool.get(x); x = y && y.refs.updates; } if (!ok) return false; }
-      return true;
-    };
-    let hits = this.store.filter(s => s.n > since && match(s));
-    if (req.heads) hits = hits.filter(s => { const h = s.message.block ? hashOf(s.message.block) : s.message.header.hash; return !hits.some(o => { const b = o.message.block ? readAs(o.message.block) : null; return b && (b.refs.prev === h || b.refs.updates === h); }); });
-    const cap = Math.min(req.limit || 100, opts.cap || 100);
-    hits = hits.slice(0, cap);
-    const blocks = hits.map(s => {
-      const m = s.message;
-      if (m.envelope && !(asker && (opts.sealedFor || {})[m.header.hash] === asker)) { const { envelope, ...pub } = m; return { n: s.n, message: pub }; }
-      return { n: s.n, message: m };
-    });
-    const ans = { node: this.holder, request: sha256(ser(req, false)), blocks, next: hits.length ? hits[hits.length - 1].n : since };
-    return signMsg(ans, this.priv);
-  }
-}
-function discovery(node, holds, speaks_for, admission, endpoints) { return { protocol: 'foodblock', version: P.version, node, holds, speaks_for, admission, endpoints }; }
-
-// ---------------------------------------------------------------- micro: write a block into one's own chain
-function genesis(signKey, { kind = 'person', at, recoveryKeyHash, reach = 'P30D', encryptKey } = {}) {
-  const state = { kind, at, audience: 'public', public_key_sign: signKey.public_key_sign, recovery_key_hash: recoveryKeyHash, recovery_reach: reach };
-  if (encryptKey) state.public_key_encrypt = encryptKey;
-  const block = { type: 'actor', state, refs: {} };
-  return { block, hash: hashOf(block), signature: signBlock(block, signKey.private_key) };
-}
-function write(chain, type, state, refs, ctx) { // chain: {author, head, seq, key}
-  const block = { type, state: { ...state, seq: chain.seq + 1 }, refs: { ...refs, author: chain.author, prev: chain.head } };
-  const reasons = check(block, ctx);
-  if (reasons.length) return { refused: reasons };
-  const hash = hashOf(block), signature = signBlock(block, chain.key.private_key);
-  chain.seq++; chain.head = hash;
-  return { block, hash, signature };
-}
-
-
-// ---------------------------------------------------------------- the compact form (encoding.md, "The compact form (CBOR)")
-// A public block as CBOR (RFC 8949). The id is always the hash of the canonical JSON: a receiver rebuilds the block, writes its
-// canonical JSON and hashes that. Writing is deterministic; reading refuses indefinite lengths, floats, tags, null, undefined,
-// duplicate keys and integers outside +-(2^53 - 1), and accepts any other well-formed encoding of the same content.
-const CB = P.cbor, MAXI = BigInt(P.integers.max);
-const cbHead = (major, n) => { // shortest form
+// ================================================================ the compact form (encoding.md, CBOR)
+// A public block as CBOR (RFC 8949). The id is always the hash of the canonical JSON. Writing is deterministic; a reader refuses
+// indefinite lengths, floats, tags, null, undefined, duplicate keys and integers outside +-(2^53 - 1).
+const CB = P.cbor, MAXBI = BigInt(P.integers.max);
+const cbHead = (major, n) => {
   const m = major << 5;
   if (n < 24n) return Buffer.from([m | Number(n)]);
   if (n < 256n) return Buffer.from([m | 24, Number(n)]);
@@ -1033,7 +870,7 @@ const cbHead = (major, n) => { // shortest form
   if (n < 4294967296n) { const b = Buffer.alloc(5); b[0] = m | 26; b.writeUInt32BE(Number(n), 1); return b; }
   const b = Buffer.alloc(9); b[0] = m | 27; b.writeBigUInt64BE(n, 1); return b;
 };
-const cbEnc = v => { // v: {int: BigInt} | {bytes} | {text} | {array} | {map: [[k, v]]} | {bool}
+const cbEnc = v => { // v: {int} | {bytes} | {text} | {array} | {map: [[k, v]]} | {bool} | {raw}
   if ('int' in v) return v.int >= 0n ? cbHead(0, v.int) : cbHead(1, -1n - v.int);
   if ('bytes' in v) return Buffer.concat([cbHead(2, BigInt(v.bytes.length)), v.bytes]);
   if ('text' in v) { const b = Buffer.from(v.text, 'utf8'); return Buffer.concat([cbHead(3, BigInt(b.length)), b]); }
@@ -1041,55 +878,57 @@ const cbEnc = v => { // v: {int: BigInt} | {bytes} | {text} | {array} | {map: [[
   if ('bool' in v) return Buffer.from([v.bool ? 0xf5 : 0xf4]);
   if ('raw' in v) return v.raw;
   const pairs = v.map.map(([k, x]) => [cbEnc(k), cbEnc(x)]);
-  pairs.sort((a, b) => a[0].length - b[0].length || Buffer.compare(a[0], b[0])); // encoded keys, length first, then bytewise
+  pairs.sort((a, b) => a[0].length - b[0].length || Buffer.compare(a[0], b[0])); // RFC 8949 4.2.1: length first, then bytewise
   for (let i = 1; i < pairs.length; i++) if (pairs[i][0].equals(pairs[i - 1][0])) throw new Error('cbor: duplicate key');
   return Buffer.concat([cbHead(5, BigInt(pairs.length)), ...pairs.flatMap(([k, x]) => [k, x])]);
 };
 const cbTokens = pat => pat.split('.').flatMap(t => t.endsWith('[]') ? [t.slice(0, -2), '[]'] : [t]);
-function cbMatch(pat, path) { // a pattern of protocol.json cbor.bytes against the path of a value ('[]' for each array step)
-  const p = cbTokens(pat), q = p.includes('[]') ? path : path.filter(t => t !== '[]'); // every value under refs.*, arrays included
+function cbMatch(pat, path) {
+  const p = cbTokens(pat), q = p.includes('[]') ? path : path.filter(t => t !== '[]'); // under refs.* an array's elements count too
   return p.length === q.length && p.every((t, i) => t === '*' || t === q[i]);
 }
 function cbKind(path) {
   for (const [kind, list] of [['hash', CB.bytes.hash], ['sign', CB.bytes.sign_key], ['enc', CB.bytes.encrypt_key], ['nonce', CB.bytes.nonce]]) if (list.some(pat => cbMatch(pat, path))) return kind;
   return null;
 }
-const SPKI = Buffer.from(P.algs.sign.known[P.algs.sign.default].spki_prefix, 'hex');
+const STD_PREFIX = Buffer.from(SPKI_PREFIX.std, 'hex');
 const timePlace = path => { const j = path.join('.'); return j === 'state' || j === 'state.terms' || j === 'state.scope' || j === 'state.terms.lines.[]'; };
+const TYPE_INDEX = Object.keys(P.types);
 function cbOut(v, path, short) {
-  if (v === null || v === undefined) return null;
   if (typeof v === 'boolean') return { bool: v };
   if (typeof v === 'number') {
     if (!Number.isInteger(v) || Math.abs(v) > P.integers.max) throw new Error('cbor: ' + path.join('.') + ' is not an integer in range');
     return { int: BigInt(v) };
   }
   if (typeof v === 'string') {
-    const t = v.normalize('NFC'), kind = cbKind(path);
-    if (kind === 'hash' && G.hash.test(t)) return { bytes: Buffer.from(t, 'hex') };
-    if (kind === 'sign' && G.sign_key.test(t)) return { bytes: Buffer.from(t, 'hex').subarray(SPKI.length) };
-    if (kind === 'enc' && G.encrypt_key.test(t)) return { bytes: Buffer.from(t, 'hex') };
-    if (kind === 'nonce' && G.nonce.test(t)) return { bytes: Buffer.from(t, 'hex') };
-    return { text: t };
+    const kind = cbKind(path);
+    if (kind === 'hash' && RX.hash.test(v)) return { bytes: Buffer.from(v, 'hex') };
+    if (kind === 'sign' && suiteOfKey(v)) return { bytes: suiteOfKey(v) === 'std' ? Buffer.from(v, 'hex').subarray(STD_PREFIX.length) : Buffer.from(v, 'hex') };
+    if (kind === 'enc' && (/^[0-9a-f]{64}$/.test(v) || /^04[0-9a-f]{128}$/.test(v))) return { bytes: Buffer.from(v, 'hex') };
+    if (kind === 'nonce' && RX.nonce.test(v)) return { bytes: Buffer.from(v, 'hex') };
+    return { text: v };
   }
-  if (Array.isArray(v)) return { array: v.map(x => cbOut(x, [...path, '[]'], short)).filter(x => x !== null) };
+  if (Array.isArray(v)) return { array: v.map(x => cbOut(x, [...path, '[]'], short)) };
   const key = k => short && CB.keys.includes(k) ? { int: BigInt(CB.keys.indexOf(k)) } : { text: k };
   const here = timePlace(path);
   return { map: Object.entries(v).map(([k, x]) => {
     const p = [...path, k];
     let val;
-    if (path.length === 0 && k === 'type' && short && P.types[x] !== undefined) val = { int: BigInt(Object.keys(P.types).indexOf(x)) };
-    else if (here && P.time_fields.includes(k) && typeof x === 'string' && G.time.test(x)) val = { int: BigInt(Date.parse(x)) };
-    else if (here && k === 'when' && x && typeof x === 'object' && !Array.isArray(x))
-      val = { map: Object.entries(x).map(([wk, wv]) => [key(wk), (wk === 'from' || wk === 'to') && typeof wv === 'string' && G.time.test(wv) ? { int: BigInt(Date.parse(wv)) } : cbOut(wv, [...p, wk], short)]) };
+    if (path.length === 0 && k === 'type' && short && TYPE_INDEX.includes(x)) val = { int: BigInt(TYPE_INDEX.indexOf(x)) };
+    else if (here && P.time_fields.includes(k) && typeof x === 'string' && RX.time.test(x)) val = { int: BigInt(Date.parse(x)) };
+    else if (here && k === 'when' && isObj(x)) val = { map: Object.entries(x).map(([wk, wv]) => [key(wk), (wk === 'from' || wk === 'to') && typeof wv === 'string' && RX.time.test(wv) ? { int: BigInt(Date.parse(wv)) } : cbOut(wv, [...p, wk], short)]) };
     else val = cbOut(x, p, short);
-    return val === null ? null : [key(k), val];
-  }).filter(Boolean) };
+    return [key(k), val];
+  }) };
 }
-function cborEncode(block, { short = false } = {}) { // the message [t, block, signature]
-  const body = cbOut({ type: block.type, state: block.state, refs: block.refs }, [], short);
-  return cbEnc({ array: [{ int: BigInt(short ? CB.table : 0) }, body, { bytes: Buffer.from(block.signature, 'hex') }] });
+// cbor_encode(block, short): the message [t, block, signature] (+ a text suite entry when the suite is not std)
+function cborEncode(block, short) {
+  const body = cbOut({ type: block.type, state: block.state, refs: block.refs }, [], !!short);
+  const items = [{ int: BigInt(short ? CB.table : 0) }, body, { bytes: Buffer.from(block.signature, 'hex') }];
+  if (block.suite && block.suite !== 'std') items.push({ text: block.suite });
+  return cbEnc({ array: items });
 }
-function cbRead(buf) { // one well-formed item; refuses what the spec says a reader refuses
+function cbRead(buf) {
   let at = 0;
   const need = n => { if (at + n > buf.length) throw new Error('cbor: ends too soon'); };
   const item = depth => {
@@ -1103,8 +942,8 @@ function cbRead(buf) { // one well-formed item; refuses what the spec says a rea
       if (ai === 27) { need(8); const x = buf.readBigUInt64BE(at); at += 8; return x; }
       throw new Error('cbor: indefinite or reserved length');
     };
-    if (major === 0) { const n = arg(); if (n > MAXI) throw new Error('cbor: integer out of range'); return { int: n }; }
-    if (major === 1) { const n = arg(); if (n >= MAXI) throw new Error('cbor: integer out of range'); return { int: -1n - n }; }
+    if (major === 0) { const n = arg(); if (n > MAXBI) throw new Error('cbor: integer out of range'); return { int: n }; }
+    if (major === 1) { const n = arg(); if (n >= MAXBI) throw new Error('cbor: integer out of range'); return { int: -1n - n }; }
     if (major === 2 || major === 3) {
       const n = Number(arg()); need(n); const b = buf.subarray(at, at + n); at += n;
       if (major === 2) return { bytes: Buffer.from(b) };
@@ -1121,16 +960,16 @@ function cbRead(buf) { // one well-formed item; refuses what the spec says a rea
   if (at !== buf.length) throw new Error('cbor: bytes follow the item');
   return out;
 }
-function cbIn(v, path, short) {
+function cbIn(v, path) {
   if ('bool' in v) return v.bool;
   if ('int' in v) return Number(v.int);
   if ('text' in v) return v.text;
-  if ('array' in v) return v.array.map(x => cbIn(x, [...path, '[]'], short));
+  if ('array' in v) return v.array.map(x => cbIn(x, [...path, '[]']));
   if ('bytes' in v) {
     const kind = cbKind(path), b = v.bytes;
     if (kind === 'hash' && b.length === 32) return b.toString('hex');
-    if (kind === 'sign') return (b.length === 32 ? Buffer.concat([SPKI, b]) : b).toString('hex');
-    if (kind === 'enc' && b.length === 32) return b.toString('hex');
+    if (kind === 'sign') return (b.length === 32 ? Buffer.concat([STD_PREFIX, b]) : b).toString('hex');
+    if (kind === 'enc' && (b.length === 32 || b.length === 65)) return b.toString('hex');
     if (kind === 'nonce' && b.length === 16) return b.toString('hex');
     throw new Error('cbor: a byte string where the protocol has none: ' + path.join('.'));
   }
@@ -1140,33 +979,799 @@ function cbIn(v, path, short) {
     const n = name(k);
     if (n in out) throw new Error('cbor: duplicate key');
     const p = [...path, n];
-    if (path.length === 0 && n === 'type' && 'int' in x) out[n] = Object.keys(P.types)[Number(x.int)];
+    if (path.length === 0 && n === 'type' && 'int' in x) out[n] = TYPE_INDEX[Number(x.int)];
     else if (here && P.time_fields.includes(n) && 'int' in x) out[n] = new Date(Number(x.int)).toISOString();
     else if (here && n === 'when' && 'map' in x) {
       const w = {};
-      for (const [wk, wv] of x.map) { const wn = name(wk); if (wn in w) throw new Error('cbor: duplicate key'); w[wn] = (wn === 'from' || wn === 'to') && 'int' in wv ? new Date(Number(wv.int)).toISOString() : cbIn(wv, [...p, wn], short); }
+      for (const [wk, wv] of x.map) { const wn = name(wk); if (wn in w) throw new Error('cbor: duplicate key'); w[wn] = (wn === 'from' || wn === 'to') && 'int' in wv ? new Date(Number(wv.int)).toISOString() : cbIn(wv, [...p, wn]); }
       out[n] = w;
-    } else out[n] = cbIn(x, p, short);
+    } else out[n] = cbIn(x, p);
   }
   return out;
 }
-function cborDecode(buf) { // -> { hash, type, state, refs, signature }; the id is the hash of the rebuilt canonical JSON
-  const m = cbRead(Buffer.from(buf));
-  if (!('array' in m) || m.array.length !== 3 || !('int' in m.array[0]) || !('map' in m.array[1]) || !('bytes' in m.array[2])) throw new Error('cbor: a message is [t, block, signature]');
+// cbor_decode(bytes or hex) -> { hash, type, state, refs, signature, suite? }; the id is the hash of the rebuilt canonical JSON
+function cborDecode(input) {
+  const buf = Buffer.isBuffer(input) || input instanceof Uint8Array ? Buffer.from(input) : Buffer.from(input, 'hex');
+  const m = cbRead(buf);
+  if (!('array' in m) || m.array.length < 3 || m.array.length > 4 || !('int' in m.array[0]) || !('map' in m.array[1]) || !('bytes' in m.array[2])) throw new Error('cbor: a message is [t, block, signature]');
   const t = Number(m.array[0].int);
   if (t !== 0 && t !== CB.table) throw new Error('cbor: a key table this reader does not have');
+  if (m.array.length === 4 && !('text' in m.array[3])) throw new Error('cbor: the suite is text');
+  const suite = m.array.length === 4 ? m.array[3].text : 'std';
   if (m.array[2].bytes.length !== 64) throw new Error('cbor: a signature is 64 bytes');
-  const b = cbIn(m.array[1], [], t !== 0);
+  const b = cbIn(m.array[1], []);
   if (Object.keys(b).sort().join() !== 'refs,state,type') throw new Error('cbor: a block is { type, state, refs }');
-  return { hash: hashOf(b), ...b, signature: m.array[2].bytes.toString('hex') };
+  const out = { hash: hashOfBlock(b, suite), ...b, signature: m.array[2].bytes.toString('hex') };
+  if (suite !== 'std') out.suite = suite;
+  return out;
 }
-function cborHeader(h, { short = false } = {}) { // a chain header { author, seq, prev, hash }: ids as bytes
+function cborHeader(h, short) { // a chain header { author, seq, prev, hash }: ids as bytes
   const key = k => short && CB.keys.includes(k) ? { int: BigInt(CB.keys.indexOf(k)) } : { text: k };
-  return cbEnc({ map: ['author', 'seq', 'prev', 'hash'].map(k => [key(k), k === 'seq' ? { int: BigInt(h.seq) } : { bytes: Buffer.from(h[k], 'hex') }]) });
+  const val = (k, x) => k === 'seq' ? { int: BigInt(x) } : k === 'withheld' ? { bool: x } : RX.hash.test(x) ? { bytes: Buffer.from(x, 'hex') } : { text: x };
+  return cbEnc({ map: Object.entries(h).map(([k, x]) => [key(k), val(k, x)]) });
 }
-function cborEncodePush(blocks, o) { return cbEnc({ array: blocks.map(b => ({ raw: cborEncode(b, o) })) }); }
+function cborHeaderDecode(input) {
+  const m = cbRead(Buffer.isBuffer(input) ? input : Buffer.from(input, 'hex'));
+  if (!('map' in m)) throw new Error('cbor: a header is a map');
+  const out = {};
+  for (const [k, x] of m.map) {
+    const n = 'text' in k ? k.text : CB.keys[Number(k.int)];
+    out[n] = 'int' in x ? Number(x.int) : 'bool' in x ? x.bool : 'bytes' in x ? x.bytes.toString('hex') : x.text;
+  }
+  return out;
+}
+function cborEncodePush(blocks, short) { return cbEnc({ array: blocks.map(b => ({ raw: cborEncode(b, short) })) }); }
+function cborDecodePush(input) {
+  const buf = Buffer.isBuffer(input) ? input : Buffer.from(input, 'hex');
+  // split the array of messages: read the outer head, then each message's extent
+  const m = cbRead(buf);
+  if (!('array' in m)) throw new Error('cbor: a push is an array of messages');
+  const out = []; let at = 0;
+  const head = buf[0], n = head & 31;
+  at = n < 24 ? 1 : n === 24 ? 2 : n === 25 ? 3 : 5;
+  for (let i = 0; i < m.array.length; i++) {
+    let end = at;
+    // find the extent by re-reading item by item
+    const probe = (start) => { for (let e = start + 1; e <= buf.length; e++) { try { cbRead(buf.subarray(start, e)); return e; } catch (err) { /* try longer */ } } throw new Error('cbor: bad push'); };
+    end = probe(at);
+    out.push(cborDecode(buf.subarray(at, end)));
+    at = end;
+  }
+  return out;
+}
 
-module.exports = { P, A, ser, canonical, canonOf, hashOf, sha256, canonMsg, signStr, verifyStr, signBlock, verifyBlock, newSigningKey,
-  commitment, randHex, seal, openEnvelope, readAs, check, refusals, scopeSubset, Pool, foldIdentity, foldCircle, foldAt, mayAct, audienceMembers,
-  foldRekeys, ballotCounted, foldSuccessor, ownerOf, whereNow, foldPromise, acceptIncoming, headerOf, signMsg, verifyMsg, Node, discovery,
-  genesis, write, addDur, isTime, deepEq, underOk, readMessage, cborEncode, cborDecode, cborEncodePush, cborHeader };
+// ================================================================ what counts in a fold (core.md invariant 3, folds.md Equivocations)
+// A block counts in a fold when its author's identity says a key that speaks signed it, and it is not one of a pair that name
+// one prev nor a later block of the same key.
+function signerKeyOf(b, pool) {
+  const idf = identityFold(b.refs.author, pool);
+  const i = idf.info.get(b.hash);
+  if (i) return i.key;
+  // not yet known to the fold (e.g. a block outside the pool): try the keys the identity names
+  for (const k of idf.keyMap.keys()) if (verifyBlock(b, b.signature, k)) return k;
+  return null;
+}
+function forkPairs(blocksIn) {
+  const pool = poolOf(blocksIn);
+  const groups = new Map();
+  for (const b of pool.all()) {
+    if (!isStr(b.refs.author) || !isStr(b.refs.prev)) continue;
+    const key = signerKeyOf(b, pool) || b.refs.author;
+    const k = b.refs.author + '|' + key + '|' + b.refs.prev;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(b.hash);
+  }
+  const pairs = [];
+  for (const list of groups.values()) for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) pairs.push([list[i], list[j]].sort());
+  return pairs.sort((a, b) => (a[0] + a[1] < b[0] + b[1] ? -1 : 1));
+}
+function equivocated(pool) {
+  if (pool._eq) return pool._eq;
+  const out = new Set();
+  const pairs = forkPairs(pool);
+  for (const [a, b] of pairs) {
+    const A = pool.get(a), B = pool.get(b), key = signerKeyOf(A, pool) || A.refs.author;
+    out.add(a); out.add(b);
+    const from = Math.min(A.state.seq || 0, B.state.seq || 0);
+    for (const x of pool.all()) if (x.refs.author === A.refs.author && x.hash !== a && x.hash !== b && (signerKeyOf(x, pool) || x.refs.author) === key && (x.state.seq || 0) > from) out.add(x.hash);
+  }
+  pool._eq = out;
+  return out;
+}
+function counts(b, pool) {
+  if (!b.refs || !isStr(b.refs.author)) return true; // actors without an author: their own genesis
+  const idf = identityFold(b.refs.author, pool);
+  if (idf.keyMap.size && idf.signed_by_author[b.hash] === false) return false;
+  return !equivocated(pool).has(b.hash);
+}
+
+// ================================================================ the chain (nodes.md, folds.md)
+function chainFold(blocksIn, id) {
+  const pool = poolOf(blocksIn);
+  const mine = pool.all().filter(b => b.refs.author === id && b.hash !== id && b.state.seq !== undefined);
+  const sorted = mine.slice().sort((a, b) => a.state.seq - b.state.seq || (a.hash < b.hash ? -1 : 1));
+  const pairs = forkPairs(mine);
+  const inPair = new Set(pairs.flat());
+  const gaps = [], skips = [], broken = [];
+  const bySeq = [];
+  for (const b of sorted) if (!bySeq.length || bySeq[bySeq.length - 1].state.seq !== b.state.seq) bySeq.push(b);
+  let expect = 1;
+  for (const b of sorted) {
+    if (b.state.skip === true) skips.push(b.hash);
+  }
+  let last = 0;
+  for (const b of bySeq) {
+    if (b.state.seq > last + 1 && !b.state.skip) for (let n = last + 1; n < b.state.seq; n++) gaps.push(n);
+    last = Math.max(last, b.state.seq);
+  }
+  const have = new Set([id, ...mine.map(b => b.hash)]);
+  for (const b of sorted) {
+    const p = pool.get(b.refs.prev);
+    if (!have.has(b.refs.prev) || (p && p.state.seq !== undefined && p.state.seq >= b.state.seq)) broken.push(b.hash);
+  }
+  // blocks counted: those before the first pair
+  const firstPairSeq = pairs.length ? Math.min(...pairs.flat().map(h => pool.get(h).state.seq)) : Infinity;
+  const counted = sorted.filter(b => b.state.seq < firstPairSeq && !inPair.has(b.hash));
+  // protocol.json (folds.chain.output.head) says head is "hash of the latest block": a string. The vector writes it as { hash }.
+  return {
+    head: counted.length ? counted[counted.length - 1].hash : null, length: counted.length, gaps, skips: skips.sort(), equivocations: pairs, broken: broken.sort(),
+    ok: !gaps.length && !pairs.length && !broken.length,
+  };
+}
+const nextLink = (headBlock, bringer) => headBlock ? { seq: headBlock.state.seq + 1, prev: headBlock.hash } : { seq: 1, prev: bringer };
+const header = b => { const h = { author: b.refs.author, seq: b.state.seq, prev: b.refs.prev, hash: b.hash }; if (b.state.withheld === true) h.withheld = true; return h; };
+
+// ---- pull filter (nodes.md): exact match on type, kind, author, hash, record, marks and refs; keys AND together
+function matches(b, filter, heldIn) {
+  const pool = poolOf(heldIn);
+  for (const [k, v] of Object.entries(filter || {})) {
+    if (k === 'type') { if (b.type !== v) return false; }
+    else if (k === 'kind') { if (b.state.kind !== v) return false; }
+    else if (k === 'author') { if (b.refs.author !== v) return false; }
+    else if (k === 'hash') { if (b.hash !== v) return false; }
+    else if (k === 'record') {
+      let cur = b, n = 0, ok = false;
+      while (cur && n++ < 1000) { if (cur.hash === v) { ok = true; break; } cur = cur.refs.updates ? pool.get(cur.refs.updates) : null; }
+      if (!ok) return false;
+    } else if (k === 'marks') { if (!asList(b.state.marks).some(m => isObj(m) && m.scheme === v.scheme && m.value === v.value)) return false; }
+    else if (k === 'refs') { for (const [rk, rv] of Object.entries(v)) if (!asList(b.refs[rk]).includes(rv)) return false; }
+    else return false; // a key the filter does not know matches nothing
+  }
+  return true;
+}
+
+// ---- push admission (nodes.md): take in causal order; a block whose prev is not held waits; the second of a pair is only listed
+function accept(incomingIn, heldIn) {
+  const pool = new Pool(poolOf(heldIn).all());
+  const incoming = incomingIn.filter(b => b && !pool.get(b.hash));
+  const taken = [], refused = [], waiting = [], equivocations = [];
+  let pending = incoming.slice();
+  for (;;) {
+    let progressed = false;
+    const rest = [];
+    for (const b of pending) {
+      const prev = b.refs && b.refs.prev;
+      if (prev !== undefined && !pool.get(prev)) { rest.push(b); continue; }
+      progressed = true;
+      pool.folds = new Map(); pool.memo = new Map(); pool._eq = null;
+      // an equivocation: another block of this key already names this prev
+      const key = b.refs.author !== undefined ? signerKeyOf(b, pool) : null;
+      const twin = key && pool.all().find(x => x.refs.author === b.refs.author && x.refs.prev === b.refs.prev && x.hash !== b.hash && signerKeyOf(x, pool) === key);
+      if (twin) { equivocations.push([twin.hash, b.hash].sort()); continue; }
+      const why = valid(b, pool);
+      if (why.length) { for (const r of why) refused.push({ hash: b.hash, code: r.code, detail: r.detail }); continue; }
+      taken.push(b); pool.m.set(b.hash, b);
+    }
+    pending = rest;
+    if (!progressed || !pending.length) break;
+  }
+  for (const b of pending) waiting.push({ hash: b.hash });
+  return { taken, waiting, refused, equivocations: equivocations.sort((a, b) => (a.join() < b.join() ? -1 : 1)) };
+}
+
+// ================================================================ authority (authority.md)
+const actNames = b => isStr(b.state.kind) ? [b.type, b.type + '.' + b.state.kind] : [b.type];
+function stoppedByAuthor(g, pool) {
+  return pool.all().some(u => u.refs.updates === g.hash && u.refs.author === g.refs.author && u.state.status === 'stopped' && counts(u, pool));
+}
+// A grant is live only while every ancestor grant is live (invariant 9).
+function grantLive(g, pool, seen = new Set()) {
+  if (!g || g.type !== 'grant' || seen.has(g.hash)) return false;
+  seen.add(g.hash);
+  if (!counts(g, pool) || stoppedByAuthor(g, pool)) return false;
+  if (g.refs.parent !== undefined) return grantLive(pool.get(g.refs.parent), pool, seen);
+  return true;
+}
+// The schema marking an act undo: never (things.md). It is named in refs.schema, or targets the act.
+function undoNever(b, pool) {
+  const s = b.refs.schema && pool.get(b.refs.schema);
+  if (s && s.state.undo === 'never') return true;
+  return pool.all().some(x => x.type === 'thing' && x.state.kind === 'schema' && x.state.undo === 'never' && actNames(b).includes(x.state.target));
+}
+function whyNotUnder(b, poolIn) {
+  const pool = poolOf(poolIn);
+  const fail = d => [{ code: 'not_live', detail: d }];
+  const g = pool.get(b.refs.under);
+  if (!g || g.type !== 'grant') return fail('the grant is not held');
+  if (g.refs.to !== undefined && g.refs.to !== b.refs.author) return fail('the signer is not the receiver of the grant');
+  if (!grantLive(g, pool)) return fail('the grant is not live');
+  const sc = isObj(g.state.scope) ? g.state.scope : {};
+  const names = actNames(b);
+  if (sc.acts !== undefined && !names.some(n => asList(sc.acts).includes(n))) return fail('the act is outside the grant\'s scope');
+  if (undoNever(b, pool)) {
+    const specificGrant = sc.limit !== undefined && asList(sc.acts).some(n => names.includes(n) && n.includes('.'));
+    const ask = b.refs.for && pool.get(b.refs.for);
+    const askedAndAccepted = ask && ask.type === 'promise' && [ask.state.what, ask.refs.what].some(w => names.includes(w)) &&
+      pool.all().some(a => a.type === 'promise' && a.refs.answers === ask.hash && a.state.status === 'accepted' && a.refs.author === g.refs.author && counts(a, pool));
+    if (!specificGrant && !askedAndAccepted) return fail('an act that cannot be undone needs a specific accepted ask or a grant that names it with a limit');
+  }
+  return [];
+}
+// live_grant (view): every grant's scope.until is later than the clock of the node that relies on the act
+const liveGrant = (block, grants, clock) => grants.every(g => { const u = g.state && g.state.scope && g.state.scope.until; return u === undefined || u > clock; });
+// withdrawal_seen (view): in the causal past of the counterparty's block, or arrived on its node
+function withdrawalSeen(w, block, blocks, arrivals) {
+  const pool = poolOf(blocks);
+  return pool.sees(block.hash, w.hash) || !!(arrivals && arrivals[w.hash] !== undefined);
+}
+
+// ================================================================ circles (circles.md, folds.md)
+// The fold reads the circle and every member grant naming it, in causal order. limit = a set of hashes (the causal past of a block).
+function circleFold(circleId, poolIn, limit) {
+  const pool = poolOf(poolIn);
+  const inScope = h => !limit || limit.has(h);
+  const C = pool.get(circleId);
+  const empty = { founder: null, members: {}, removed: {}, roles: [] };
+  if (!C || C.type !== 'actor' || !isStr(C.refs.author) && false) return empty;
+  const founder = C.refs.author;
+  const roles = Array.isArray(C.state.roles) ? C.state.roles : [];
+  const powersOf = names => new Set(asList(names).flatMap(n => (roles.find(r => r.name === n) || { powers: [] }).powers));
+  const needed = (C.state.removal && C.state.removal.needed) || 1;
+  const grants = pool.all().filter(b => b.type === 'grant' && b.state.kind === 'member' && b.refs.subject === circleId && inScope(b.hash) && counts(b, pool));
+  const founderRoles = roles.length ? [roles[0].name] : [];
+  const members = {};
+  // powers of an author at a block: the circle fold of the block's causal past (recursion on a strictly smaller set)
+  const holdsAt = (author, power, atBlock) => {
+    const sub = new Set(pool.past(atBlock.hash));
+    sub.delete(atBlock.hash);
+    const f = circleFold(circleId, pool, sub);
+    const m = f.members[author];
+    return !!m && powersOf(m.roles).has(power);
+  };
+  // base member grants: not an answer, not a version of another grant
+  const invites = grants.filter(g => g.refs.answers === undefined && g.refs.updates === undefined && g.state.status === undefined);
+  const validInvite = g => g.refs.as === circleId && (g.refs.author === founder ? true : holdsAt(g.refs.author, 'admit', g));
+  const versionsOf = (base) => { const chain = [base]; for (;;) { const nxt = grants.filter(u => u.refs.updates === chain[chain.length - 1].hash && u.state.status === undefined && u.refs.as === circleId && (u.refs.author === founder || holdsAt(u.refs.author, 'admit', u))); if (!nxt.length) break; chain.push(nxt.sort((a, b) => pool.past(a.hash).size - pool.past(b.hash).size)[nxt.length - 1]); } return chain; };
+  const answerTo = (v, status, m) => grants.find(a => a.refs.answers === v.hash && a.state.status === status && (m === undefined || a.refs.author === m));
+  const removedMap = {}, memberInfo = {};
+  for (const inv of invites) {
+    if (!validInvite(inv)) continue;
+    const m = inv.refs.to;
+    if (m === undefined) continue; // GUESS: an open group's joiners are not folded here
+    const acc = answerTo(inv, 'accepted', m);
+    if (!acc) continue;
+    const chain = versionsOf(inv);
+    let counted = asList(inv.state.roles).slice();
+    for (let i = 1; i < chain.length; i++) {
+      const v = chain[i], prevSet = counted;
+      const ack = answerTo(v, 'accepted', m);
+      counted = asList(v.state.roles).filter(r => prevSet.includes(r) || ack);
+    }
+    memberInfo[m] = memberInfo[m] || [];
+    memberInfo[m].push({ inv, acc, roles: counted, chain });
+  }
+  // ends: the member's own stopped/declined answer to a grant they accepted, or a remover's stopped update
+  const stops = [];
+  for (const [m, list] of Object.entries(memberInfo)) for (const info of list) {
+    for (const g of info.chain) {
+      const leave = grants.find(a => a.refs.answers === g.hash && a.state.status === 'stopped' && a.refs.author === m);
+      if (leave) stops.push({ m, info, by: m, block: leave, leave: true });
+      const rem = grants.filter(u => u.refs.updates === g.hash && u.state.status === 'stopped' && u.refs.as === circleId);
+      for (const r of rem) stops.push({ m, info, by: r.refs.author, block: r, leave: false });
+    }
+  }
+  const stopEffective = new Map();
+  for (const s of stops) {
+    if (s.leave) { stopEffective.set(s.block.hash, true); continue; }
+    const remover = s.by;
+    const holds = remover === founder || holdsAt(remover, 'remove', s.block);
+    if (!holds) { stopEffective.set(s.block.hash, false); continue; }
+    const target = roles.length && (memberInfo[s.m] || []).some(i => powersOf(i.roles).has('admit') || powersOf(i.roles).has('remove'));
+    if (target && s.m !== remover) {
+      const agreeing = new Set(stops.filter(x => x.m === s.m && !x.leave && (x.by === founder || holdsAt(x.by, 'remove', x.block))).map(x => x.by));
+      if (!(agreeing.has(founder) || agreeing.size >= needed)) { stopEffective.set(s.block.hash, false); continue; }
+    }
+    stopEffective.set(s.block.hash, true);
+  }
+  // crossing removals: of two removers each removing the other, the one whose grant is earlier in causal order wins; the founder above all
+  const grantOf = id => ((memberInfo[id] || [])[0] || {}).inv;
+  for (const s of stops) {
+    if (s.leave || !stopEffective.get(s.block.hash)) continue;
+    if (s.by === founder) continue;
+    const crossing = stops.find(x => !x.leave && x.m === s.by && x.by === s.m && stopEffective.get(x.block.hash));
+    if (crossing) {
+      if (crossing.by === founder) { stopEffective.set(s.block.hash, false); continue; }
+      const gMine = grantOf(s.by), gTheirs = grantOf(s.m);
+      if (gMine && gTheirs) {
+        if (pool.sees(gTheirs.hash, gMine.hash)) { /* my grant is earlier: my removal wins */ }
+        else if (pool.sees(gMine.hash, gTheirs.hash)) stopEffective.set(s.block.hash, false); // their grant is earlier: theirs wins
+      }
+    }
+  }
+  // GUESS: a removal made by a member who has itself been removed by an earlier-grant remover is dropped (handled by the crossing rule)
+  for (const [m, list] of Object.entries(memberInfo)) {
+    const live = list.slice();
+    let latest = null;
+    for (const info of live) {
+      const ended = stops.filter(s => s.m === m && s.info === info && stopEffective.get(s.block.hash));
+      if (ended.length) {
+        const s = ended[0];
+        const ct = s.block.state.counted_to;
+        removedMap[m] = ct === undefined ? null : ct;
+      } else latest = info;
+    }
+    if (latest) { members[m] = { roles: latest.roles.slice(), grant: latest.inv.hash, counted_to: null }; delete removedMap[m]; }
+  }
+  members[founder] = { roles: founderRoles, grant: circleId, counted_to: null };
+  return { founder, members, removed: removedMap, roles };
+}
+const circleState = (circleId, blocks) => { const f = circleFold(circleId, blocks); return { founder: f.founder, members: f.members, removed: f.removed }; };
+// may_act_as(block, circle): the author holds a role with the sign power in the circle's fold of the block's causal past
+function mayActAs(block, circleId, blocks) {
+  const pool = poolOf(blocks);
+  if (circleId === undefined || circleId === null) return true; // GUESS: a block that signs for no circle needs no role
+  if (block.refs.as !== circleId) return false;
+  const past = new Set(pool.past(block.hash)); past.delete(block.hash);
+  const f = circleFold(circleId, pool, past);
+  const C = pool.get(circleId);
+  const m = f.members[block.refs.author];
+  if (!m || !C) return false;
+  return asList(m.roles).some(rn => ((C.state.roles || []).find(r => r.name === rn) || { powers: [] }).powers.includes('sign'));
+}
+// members_then(block, recipient): the members of a circle (or the holders of circle#role) in the circle fold of the block's causal past
+function membersThen(block, recipient, blocks) {
+  const pool = poolOf(blocks);
+  const [circleId, role] = recipient.includes('#') ? [recipient.slice(0, recipient.lastIndexOf('#')), recipient.slice(recipient.lastIndexOf('#') + 1)] : [recipient, null];
+  const past = new Set(pool.past(block.hash)); past.delete(block.hash);
+  const f = circleFold(circleId, pool, past);
+  return Object.entries(f.members).filter(([, m]) => role === null || m.roles.includes(role)).map(([id]) => id).sort();
+}
+// circle_key (profiles/rekeys.md)
+function circleKey(circleId, blocks) {
+  const pool = poolOf(blocks);
+  const C = pool.get(circleId);
+  const rekeys = pool.all().filter(b => b.type === 'grant' && b.state.kind === 'key' && b.state.epoch !== undefined && b.refs.subject === circleId && b.refs.as === circleId && counts(b, pool));
+  const countedBy = new Map();
+  const can = r => {
+    const past = new Set(pool.past(r.hash)); past.delete(r.hash);
+    const f = circleFold(circleId, pool, past);
+    const m = f.members[r.refs.author];
+    return !!m && ((C.state.roles || []).filter(x => m.roles.includes(x.name)).some(x => asList(x.powers).includes('rekey')));
+  };
+  const ok = new Set();
+  for (const r of rekeys.sort((a, b) => a.state.epoch - b.state.epoch)) {
+    if (!can(r)) continue;
+    const n = r.state.epoch;
+    const prevOk = n === 1 ? asList(r.refs.after).includes(circleId) : asList(r.refs.after).some(h => ok.has(h) && pool.get(h).state.epoch === n - 1);
+    if (prevOk) ok.add(r.hash);
+  }
+  const counted = rekeys.filter(r => ok.has(r.hash));
+  const epoch = counted.length ? Math.max(...counted.map(r => r.state.epoch)) : 0;
+  const top = counted.filter(r => r.state.epoch === epoch);
+  const keys = (epoch === 0 ? [C.state.public_key_encrypt] : top.map(r => r.state.public_key_encrypt)).filter(Boolean).sort();
+  return { epoch, keys, grants: top.map(r => r.hash).sort() };
+}
+// counted_in (profiles/ballots.md)
+const countedIn = (result, commitment, counter) => result.refs.author === counter && asList(result.state.counted).includes(commitment);
+
+// ================================================================ decimals (core.md: amounts are decimal strings; the fold's counts are numbers)
+function dec(s) { const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(String(s)); if (!m) return null; const f = m[3] || ''; return { n: BigInt(m[1] + m[2] + f), d: 10n ** BigInt(f.length) }; }
+const decNum = a => (a && a.value !== undefined ? Number(a.value) : null);
+// money per unit: minor times quantity over per, rounded to the nearest minor unit, halves up
+function perUnitTotal(minor, per, qty) {
+  const q = dec(qty.value), p = dec(per.value);
+  const num = BigInt(minor) * q.n * p.d, den = p.n * q.d;
+  return Number((2n * num + den) / (2n * den));
+}
+
+// ================================================================ a promise's stage (folds.md, promises.md)
+function promiseStage(firstIn, poolIn) {
+  const pool = poolOf(poolIn);
+  const P = typeof firstIn === 'string' ? pool.get(firstIn) : (pool.get(firstIn.hash) || firstIn);
+  const out = { stage: null, stop: null, from: null, offer: P.hash, accept: null, sides: { from: P.refs.from === undefined ? null : P.refs.from, to: P.refs.to === undefined ? null : P.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [] };
+  const from = P.refs.from, to = P.refs.to;
+  const all = pool.all().filter(b => counts(b, pool));
+  // the deal: P, and every block that names P in for or answers a block in the deal. A promise with no answers is a new deal.
+  const deal = new Map([[P.hash, P]]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const b of all) {
+      if (deal.has(b.hash)) continue;
+      const names = asList(b.refs.for).includes(P.hash) && !(b.type === 'promise' && b.refs.answers === undefined);
+      if (names || (b.refs.answers !== undefined && deal.has(b.refs.answers)) || (b.refs.updates !== undefined && deal.has(b.refs.updates))) { deal.set(b.hash, b); grew = true; }
+    }
+  }
+  const D = [...deal.values()];
+  // who a block speaks for: its author, or the principal of the live grant it acts under
+  const cover = b => {
+    if (b.refs.under === undefined) return null;
+    const g = pool.get(b.refs.under);
+    if (!g || g.type !== 'grant' || !grantLive(g, pool) || (g.refs.to !== undefined && g.refs.to !== b.refs.author)) return { principal: null, covered: false };
+    const sc = isObj(g.state.scope) ? g.state.scope : {};
+    return { principal: g.refs.author, covered: sc.acts === undefined || actNames(b).some(n => asList(sc.acts).includes(n)) };
+  };
+  const who = b => { const c = cover(b); return c && c.principal ? c.principal : b.refs.author; };
+  const quote = b => { const c = cover(b); return !!c && !c.covered; };
+  const isSide = id => id === from || id === to;
+  const open = from === undefined || to === undefined;
+  const self = from !== undefined && from === to && from === who(P);
+  // ---- the live offer: P, or the latest counter between the same two sides (not on an open offer)
+  let live = P;
+  if (!open) {
+    const counters = D.filter(b => b.type === 'promise' && b.refs.answers !== undefined && b.state.status === undefined && b.hash !== P.hash &&
+      b.refs.from === from && b.refs.to === to && isSide(who(b)));
+    for (const c of counters) if (pool.past(c.hash).size >= pool.past(live.hash).size) live = c;
+  }
+  out.offer = live.hash;
+  const offerAuthor = who(live);
+  const otherSide = offerAuthor === from ? to : from;
+  const stopsBefore = D.filter(b => b.type === 'promise' && b.state.status === 'stopped' && b.state.stop === 'before' && isSide(who(b)));
+  const onward = D.filter(b => b.type === 'promise' && b.state.status === 'stopped' && b.state.stop === 'onward' && isSide(who(b))).sort((a, b) => pool.past(a.hash).size - pool.past(b.hash).size);
+  const declines = D.filter(b => b.type === 'promise' && b.state.status === 'declined');
+  const seenStop = a => stopsBefore.some(s => pool.sees(a.hash, s.hash));
+  // ---- binding accepts
+  let accept = null, takers = [], forks = [];
+  if (self) accept = P;
+  else if (!open) {
+    const accepts = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && b.refs.answers === live.hash && who(b) === otherSide && !quote(b));
+    const refused = a => declines.some(d => d.refs.answers === a.hash && who(d) === offerAuthor);
+    const principalOk = !quote(live) || D.some(b => b.type === 'promise' && b.state.status === 'accepted' && b.refs.answers === live.hash && who(b) === offerAuthor && !quote(b));
+    const binding = accepts.filter(a => !seenStop(a) && !refused(a) && principalOk);
+    binding.sort((a, b) => pool.past(a.hash).size - pool.past(b.hash).size);
+    accept = binding[0] || null;
+  } else {
+    // an open offer binds only through the offerer's allocation: its own accepted answer to an accept
+    const requests = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && b.refs.answers === P.hash && who(b) !== who(P));
+    const allocs = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && requests.some(r => r.hash === b.refs.answers) && who(b) === who(P))
+      .sort((a, b) => pool.past(a.hash).size - pool.past(b.hash).size);
+    const chain = [];
+    for (const a of allocs) {
+      if (!chain.length || pool.sees(a.hash, chain[chain.length - 1].hash)) chain.push(a); else forks.push(a.hash);
+    }
+    const offeredQty = P.state.terms && P.state.terms.quantity ? (P.state.terms.quantity.max ? Number(P.state.terms.quantity.max.value) : decNum(P.state.terms.quantity)) : null;
+    let sum = 0;
+    for (const a of chain) {
+      const r = requests.find(x => x.hash === a.refs.answers);
+      const q = (a.state.terms && a.state.terms.quantity) || (r.state.terms && r.state.terms.quantity) || null;
+      const qn = q ? decNum(q) : 0;
+      if (offeredQty !== null && sum + qn > offeredQty) continue; // invariant 11: what is bound never exceeds what is offered
+      sum += qn;
+      takers.push({ who: r.refs.author, request: r.hash, allocation: a.hash, quantity: q });
+    }
+    if (takers.length) accept = pool.get(takers[0].allocation);
+  }
+  out.takers = takers; out.forks = forks.sort();
+  out.accept = accept ? accept.hash : null;
+  if (accept) out.accept = accept.hash;
+  // the quantity chosen
+  const terms = isObj(live.state.terms) ? live.state.terms : (isObj(P.state.terms) ? P.state.terms : {});
+  const pterms = isObj(P.state.terms) ? P.state.terms : {};
+  let chosen = null;
+  if (takers.length === 1) chosen = takers[0].quantity;
+  else if (accept && accept !== P && accept.state.terms && accept.state.terms.quantity) chosen = accept.state.terms.quantity;
+  else if (isObj(terms.quantity) && terms.quantity.value !== undefined) chosen = terms.quantity;
+  out.quantity = chosen;
+  // total: a plain money price is the whole price; a per-unit price is minor times quantity over per; lines add up
+  const price = terms.price;
+  let total = null;
+  if (Array.isArray(terms.lines)) total = { minor: terms.lines.reduce((s, l) => s + (isObj(l.price) ? l.price.minor : 0), 0), currency: terms.lines.find(l => isObj(l.price)) ? terms.lines.find(l => isObj(l.price)).price.currency : undefined };
+  else if (isObj(price) && has(price, 'minor', 'currency')) total = { minor: price.minor, currency: price.currency };
+  else if (isObj(price) && has(price, 'money', 'per') && isObj(price.per)) {
+    if (takers.length > 1) { const sumq = takers.reduce((s, t) => s + decNum(t.quantity), 0); total = { minor: perUnitTotal(price.money.minor, price.per, { value: String(sumq) }), currency: price.money.currency }; }
+    else if (chosen) total = { minor: perUnitTotal(price.money.minor, price.per, chosen), currency: price.money.currency };
+  }
+  out.total = total;
+  // ---- settling: counted blocks made for P
+  const schema = P.refs.schema && pool.get(P.refs.schema);
+  const confirmers = new Set(schema && isObj(schema.state.grounds) ? asList(schema.state.grounds.confirmers).flatMap(c => c.includes('#') ? membersThen({ hash: P.hash }, c, pool) : [c]) : []);
+  const confirmed = h => pool.all().some(c => asList(c.refs.confirms).includes(h) && confirmers.has(c.refs.author) && counts(c, pool));
+  const accepted = (h, receiver) => D.some(a => a.refs.answers === h && a.state.status === 'accepted' && (receiver === undefined || a.refs.author === receiver));
+  const settling = D.filter(b => b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && isSide(who(b)));
+  const goods = [], pays = [], refunds = [], works = [];
+  for (const b of settling) {
+    if (b.type === 'transfer') {
+      const money = b.state.money !== undefined;
+      const ok = b.refs.to_owner !== undefined ? (accepted(b.hash, b.refs.to_owner) || confirmed(b.hash)) : (b.state.count !== undefined || confirmed(b.hash));
+      if (!ok) continue;
+      if (!money) { if (b.state.amount === undefined || true) goods.push(b); }
+      else if (b.refs.to_owner === from) pays.push(b);
+      else refunds.push(b);
+    } else if (b.type === 'observe' && b.state.kind === 'work') {
+      const receiver = who(b) === from ? to : from;
+      if (accepted(b.hash, receiver) || confirmed(b.hash)) works.push(b);
+    } else if (b.type === 'transform') {
+      if (accepted(b.hash) || confirmed(b.hash)) goods.push(b);
+    }
+  }
+  const moneyFor = b => {
+    if (isObj(b.state.money) && Array.isArray(b.state.split)) { const e = b.state.split.find(s => s.for === P.hash); return e ? e.money : null; }
+    return b.state.money;
+  };
+  const sameCur = (m) => m && total && jcs(m.currency) === jcs(total.currency);
+  const paidMinor = pays.map(moneyFor).filter(m => m && (!total || sameCur(m))).reduce((s, m) => s + m.minor, 0);
+  const anyPay = pays.map(moneyFor).filter(Boolean).length > 0;
+  if (anyPay) out.paid = { minor: paidMinor, currency: total ? total.currency : pays.map(moneyFor).find(Boolean).currency };
+  const refunded = refunds.map(moneyFor).filter(m => m && (!total || sameCur(m))).reduce((s, m) => s + m.minor, 0);
+  // lines: how much of each line the counted transfers moved
+  const lineSpecs = Array.isArray(terms.lines) ? terms.lines.map(l => ({ id: l.id, unit: l.quantity && l.quantity.unit, needed: l.quantity ? decNum(l.quantity) : null })) :
+    (P.refs.what !== undefined && !(P.state.what !== undefined && P.refs.what === undefined) ? [{ id: null, unit: chosen ? chosen.unit : (terms.quantity && terms.quantity.unit), needed: chosen ? decNum(chosen) : (isObj(terms.quantity) && terms.quantity.value !== undefined ? decNum(terms.quantity) : null) }] : []);
+  const isWork = P.refs.what === undefined && P.state.what !== undefined;
+  for (const l of lineSpecs) {
+    let moved = 0, whole = false;
+    for (const t of goods) {
+      if (l.id !== null && t.state.line !== l.id) continue;
+      if (t.state.amount) moved += decNum(t.state.amount);
+      else {
+        const inst = pool.get(asList(t.refs.what)[0]);
+        const pack = inst && inst.state.pack;
+        if (pack && pack.unit === l.unit) moved += decNum(pack); else whole = true;
+      }
+    }
+    if (l.needed !== null && (whole || moved > l.needed)) moved = l.needed;
+    out.lines.push({ id: l.id, needed: l.needed, moved });
+  }
+  let covered = false;
+  if (lineSpecs.length) covered = out.lines.every(l => l.needed === null ? l.moved > 0 : l.moved >= l.needed);
+  else if (isWork) {
+    if (isObj(pterms.quantity) && pterms.quantity.value !== undefined) covered = works.filter(w => w.state.amount && w.state.amount.unit === pterms.quantity.unit).reduce((s, w) => s + decNum(w.state.amount), 0) >= decNum(pterms.quantity);
+    else covered = works.length > 0;
+  }
+  const paidAll = total === null || (out.paid !== null && out.paid.minor >= total.minor);
+  const anySettling = goods.length + pays.length + works.length > 0;
+  // ---- onward stop and occurrences
+  const occ = new Set();
+  for (const b of D) if (b.type === 'promise' && b.state.status === 'stopped' && isObj(b.state.stop) && Array.isArray(b.state.stop.occurrences) && isSide(who(b))) b.state.stop.occurrences.forEach(o => occ.add(o));
+  out.stopped = [...occ].sort();
+  // ---- the stage: the first of these that holds, from the furthest along back to the start
+  if (accept && covered && paidAll && refunded > 0 && out.paid && refunded >= out.paid.minor) out.stage = 'reversed';
+  else if (accept && covered && paidAll) out.stage = 'done';
+  else if (accept && onward.length) { out.stage = 'stopped'; out.stop = 'onward'; out.from = onward[0].hash; }
+  else if (accept && anySettling) out.stage = 'underway';
+  else if (accept) out.stage = 'accepted';
+  else if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
+  else if (declines.some(d => (d.refs.answers === live.hash || d.refs.answers === P.hash) && who(d) !== offerAuthor && isSide(who(d)))) out.stage = 'declined';
+  else out.stage = who(P) === to && who(P) !== from ? 'asked' : 'offered';
+  return out;
+}
+function promiseView(first, blocks, opts) {
+  const s = promiseStage(first, blocks);
+  const pool = poolOf(blocks);
+  const live = pool.get(s.offer);
+  const exp = live && live.state.terms && live.state.terms.expires;
+  if ((s.stage === 'offered' || s.stage === 'asked') && exp && opts && opts.now !== undefined && opts.now > exp) return { ...s, stage: 'expired' };
+  return s;
+}
+// due (view): a relative when is due wait after the anchor arrived on the performer's node, on the performer's clock
+function due(promise, arrivals) {
+  const w = promise.state.when;
+  if (!isObj(w) || w.after === undefined || w.wait === undefined) return null;
+  const at = arrivals && arrivals[w.after];
+  return at ? addDur(at, w.wait) : null;
+}
+
+// ================================================================ ownership and place (folds.md)
+function ownershipFold(thingIn, blocks) {
+  const pool = poolOf(blocks);
+  const thing = typeof thingIn === 'string' ? pool.get(thingIn) : thingIn;
+  const maker = thing.refs.author;
+  const named = t => t.refs.to_owner !== undefined;
+  const transfers = pool.all().filter(t => t.type === 'transfer' && t.refs.answers === undefined && asList(t.refs.what).includes(thing.hash) && t.state.amount === undefined && (named(t) || t.state.count !== undefined) && counts(t, pool));
+  const accepted = t => !named(t) || pool.all().some(a => a.refs.answers === t.hash && a.state.status === 'accepted' && a.refs.author === t.refs.to_owner && counts(a, pool));
+  let owner = maker, prev = null, conflict = null;
+  const list = [];
+  for (;;) {
+    const elig = transfers.filter(t => t.refs.author === owner && accepted(t) && (prev ? pool.sees(t.hash, prev.hash) : true) && t !== prev && !list.includes(t));
+    if (!elig.length) break;
+    const maximal = elig.filter(t => !elig.some(u => u !== t && pool.sees(u.hash, t.hash)));
+    if (maximal.length > 1) { conflict = maximal.map(t => t.hash).sort(); break; }
+    const t = maximal[0];
+    list.push(t); prev = t;
+    owner = named(t) ? t.refs.to_owner : null;
+    if (owner === null) break;
+  }
+  return { owner, transfers: list.map(t => t.hash), conflict };
+}
+function whereNow(thingIn, blocks, seen) {
+  const pool = poolOf(blocks);
+  const thing = typeof thingIn === 'string' ? pool.get(thingIn) : thingIn;
+  seen = seen || new Set();
+  if (seen.has(thing.hash)) return [];
+  seen = new Set([...seen, thing.hash]);
+  const own = ownershipFold(thing, pool);
+  const ownerNow = own.owner === null ? thing.refs.author : own.owner;
+  const holders = new Set();
+  const moves = pool.all().filter(t => t.type === 'transfer' && t.refs.answers === undefined && asList(t.refs.what).includes(thing.hash) && counts(t, pool));
+  for (const t of moves) if (t.refs.to_holder !== undefined && (t.refs.author === ownerNow || t.refs.author === thing.refs.author)) holders.add(t.refs.to_holder);
+  const placed = moves.filter(t => t.refs.to_place !== undefined && (t.refs.author === ownerNow || t.refs.author === thing.refs.author || holders.has(t.refs.author)));
+  const maximal = placed.filter(t => !placed.some(u => u !== t && pool.sees(u.hash, t.hash)));
+  const direct = maximal.length ? [...new Set(maximal.map(t => t.refs.to_place))] : (thing.refs.place !== undefined ? [thing.refs.place] : []);
+  const res = new Set();
+  for (const p of direct) {
+    const pb = pool.get(p);
+    const sub = pb ? whereNow(pb, pool, seen) : [];
+    if (sub.length) sub.forEach(x => res.add(x)); else res.add(p);
+  }
+  return [...res].sort();
+}
+
+// ================================================================ the successor view (profiles/successor.md)
+function successorView(grant, blocks, o) {
+  const pool = poolOf(blocks);
+  const arrivals = (o && o.arrivals) || {}, now = o && o.now;
+  const witnesses = asList(grant.state.witnesses), needed = grant.state.needed || witnesses.length || 1, wait = grant.state.wait;
+  // GUESS: a witness observe is any observe of a listed witness naming the grant in refs.under (the text says kind trigger; the vectors say event)
+  let events = pool.all().filter(b => b.type === 'observe' && b.refs.under === grant.hash && witnesses.includes(b.refs.author) && arrivals[b.hash] !== undefined && counts(b, pool));
+  const seenW = new Set(); events = events.filter(b => seenW.has(b.refs.author) ? false : (seenW.add(b.refs.author), true));
+  const defeats = pool.all().filter(b => b.refs.defeats !== undefined && b.refs.author === grant.refs.author && arrivals[b.hash] !== undefined);
+  const cancelled = new Set();
+  const fire = list => { const s = list.map(e => arrivals[e.hash]).sort(); return list.length >= needed ? { since: s[needed - 1], fires: addDur(s[needed - 1], wait) } : { since: null, fires: null }; };
+  for (let changed = true; changed;) {
+    changed = false;
+    const standing = events.filter(e => !cancelled.has(e.hash)), f = fire(standing);
+    for (const d of defeats) {
+      const e = events.find(x => x.hash === d.refs.defeats);
+      if (e && !cancelled.has(e.hash) && (f.fires === null || arrivals[d.hash] <= f.fires)) { cancelled.add(e.hash); changed = true; break; }
+    }
+  }
+  const standing = events.filter(e => !cancelled.has(e.hash)), f = fire(standing);
+  return { events: standing.map(e => e.hash).sort(), cancelled: [...cancelled].sort(), since: f.since, fires: f.fires, fired: f.fires !== null && now !== undefined && now >= f.fires };
+}
+
+// ================================================================ consent and admission (strangers.md)
+function consentFold(person, sender, blocks) {
+  const pool = poolOf(blocks);
+  const cons = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'consent' && b.refs.author === person && counts(b, pool));
+  const operators = sender === undefined || sender === null ? [] : operatorsOf(sender, pool);
+  const later = (a, b) => pool.sees(a.hash, b.hash) || (a.state.seq > b.state.seq && signerKeyOf(a, pool) === signerKeyOf(b, pool));
+  const decide = group => {
+    if (!group.length) return null;
+    const maximal = group.filter(a => !group.some(b => b !== a && later(b, a)));
+    return maximal.find(b => b.state.word === 'stop') || maximal[0];
+  };
+  const names = [sender, ...operators].filter(Boolean);
+  const named = decide(cons.filter(b => b.refs.subject !== undefined && names.includes(b.refs.subject)));
+  const pick = named || decide(cons.filter(b => b.refs.subject === undefined));
+  return pick ? { word: pick.state.word, block: pick.hash } : { word: null, block: null };
+}
+// admission_refusals(block, recipient, held, rule, arrivedToday): the message refusals of nodes.md and strangers.md
+function admissionRefusals(block, recipient, held, rule, today) {
+  const pool = poolOf(held);
+  rule = rule || {};
+  const out = [];
+  const author = block.refs.author;
+  const consent = consentFold(recipient, author, pool);
+  if (consent.word === 'stop') out.push({ code: 'stopped', detail: 'the person has a live STOP naming the author or its operator' });
+  const authorGenesis = pool.get(author);
+  const isAgent = (authorGenesis && ['agent', 'machine'].includes(authorGenesis.state.kind)) || block.refs.under !== undefined;
+  const answered = pool.all().some(b => b.refs.author === recipient && asList(b.refs.answers).some(h => { const t = pool.get(h); return t && t.refs.author === author; }));
+  const stranger = !answered && consent.word !== 'yes';
+  const listed = asList(rule.parties).includes(author);
+  if (stranger && isAgent) {
+    const channel = asList(rule.order_channel).some(n => actNames(block).includes(n));
+    if (!channel) out.push({ code: 'not_human', detail: 'a first block to a stranger that an agent signed' });
+  }
+  if (stranger && !listed && rule.per_stranger !== undefined && today >= rule.per_stranger) out.push({ code: 'not_admitted', detail: 'the node took its per_stranger blocks for the day' });
+  return out;
+}
+// GUESS: "inside" is read as: every region the node holds in is written in stays_in (EU is not expanded to its countries)
+const residencyRefusals = (block, holdsIn) => {
+  const stays = block.state.stays_in;
+  if (stays === undefined) return [];
+  return asList(holdsIn).every(r => asList(stays).includes(r)) ? [] : [{ code: 'residency', detail: 'the node holds outside stays_in' }];
+};
+const depositShapeOk = d => isObj(d) && !moneyProblem(d.money) && isStr(d.holder) && !idProblem(d.holder) && Object.keys(d).every(k => ['money', 'holder'].includes(k));
+function depositPaid(ask, deposit, blocks) {
+  const pool = poolOf(blocks);
+  return pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ask.hash) && t.refs.to_owner === deposit.holder && isObj(t.state.money) &&
+    jcs(t.state.money.currency) === jcs(deposit.money.currency) && t.state.money.minor >= deposit.money.minor && counts(t, pool));
+}
+// A model's reading is the agent's claim; it becomes the person's only when the person's own block confirms it (strangers.md)
+const readingIsPersonsClaim = (reading, person, blocks) => poolOf(blocks).all().some(b => b.refs.author === person && asList(b.refs.confirms).includes(reading.hash));
+
+// ================================================================ messages (privacy.md, nodes.md)
+const withoutSignature = m => { const o = { ...m }; delete o.signature; return o; };
+const signMessage = (m, privHex, suite) => ({ ...withoutSignature(m), signature: signBytes(Buffer.from(jcs(withoutSignature(m)), 'utf8'), privHex, suite) });
+const verifyMessage = (m, pubHex) => verifyBytes(Buffer.from(jcs(withoutSignature(m)), 'utf8'), m.signature, pubHex);
+// A signed request carries the signer, the node it is for, exactly one of counter or challenge (no time), and a signature.
+function requestRefusals(m, o) {
+  const out = [];
+  const keys = asList(o.keys);
+  if (!isStr(m.signature) || !keys.some(k => verifyMessage(m, k))) out.push({ code: 'bad_signature', detail: 'not signed by the signer it names' });
+  if (m.node !== o.node) out.push({ code: 'wrong_node', detail: 'it names another node' });
+  const hasC = m.counter !== undefined, hasCh = m.challenge !== undefined;
+  const replay = (hasC === hasCh) || (hasC && !(Number.isInteger(m.counter) && m.counter > (o.highest === undefined ? -1 : o.highest))) || (hasCh && !asList(o.issued).includes(m.challenge));
+  if (replay) out.push({ code: 'replay', detail: 'its counter is not above the highest seen, or its challenge was not issued or was used' });
+  return out;
+}
+const pullRefusals = requestRefusals, pushRefusals = requestRefusals;
+const answerSignedBy = (a, pubHex) => verifyMessage(a, pubHex);
+const pushAnswer = (fields, o) => signMessage({ ...withoutSignature(fields), node: o.node }, o.privateKey, o.suite || 'std');
+const pushRequest = (messages, forWhom) => ({ messages, for: forWhom });
+function wellKnownErrors(d) {
+  const out = [];
+  for (const k of P.messages.discovery) if (!(k in d)) out.push('missing ' + k);
+  if (d.protocol !== 'foodblock') out.push('protocol');
+  if (!isObj(d.endpoints)) out.push('endpoints'); else for (const k of P.messages.endpoints) if (!isStr(d.endpoints[k])) out.push('endpoint ' + k);
+  return out;
+}
+const announcement = d => ({ protocol: d.protocol, version: d.version, node: d.node, endpoints: d.endpoints });
+// A sealed copy: open it, check the block inside (size limit), return what the recipient learns.
+function openCopy(msg, privHex) {
+  const plain = open(msg.envelope, privHex);
+  const b = blockOnly(plain.block);
+  if (Buffer.byteLength(canonical(b.type, b.state, b.refs), 'utf8') > P.limits.block_bytes) { const e = new Error('size_limit'); e.code = 'size_limit'; e.kind = 'refusal'; throw e; }
+  const suite = msg.header && isStr(msg.header.hash) && msg.header.hash.startsWith('sm3:') ? 'sm' : 'std';
+  return { version: plain.version, block: plain.block, signature: plain.signature, reveals: plain.reveals, hash: hashOfBlock(b, suite) };
+}
+const headerSignedBy = (msg, pubHex) => verifyBytes(Buffer.from(jcs(msg.header), 'utf8'), msg.header_signature, pubHex);
+// wrap / unwrap (core.md section 6): a public block as a message
+const wrap = b => { const m = { version: P.version, block: blockOnly(b), signature: b.signature }; if (b.suite && b.suite !== 'std') m.suite = b.suite; return m; };
+function unwrap(m) {
+  const suite = suiteOf(m.suite);
+  const b = blockOnly(m.block);
+  const out = { hash: hashOfBlock(b, suite), ...b, signature: m.signature };
+  if (suite !== 'std') out.suite = suite;
+  return out;
+}
+
+// ================================================================ the door: one case per rule
+function door(op, ...a) {
+  switch (op) {
+    case 'recovery_reach': return recoveryReachView(a[0], a[1], a[2]);
+    case 'check_chain': return chainFold(a[0], a[1]);
+    case 'fork_pairs': return forkPairs(a[0]);
+    case 'header': return header(a[0]);
+    case 'matches': return matches(a[0], a[1], a[2]);
+    case 'keypair': return keypair(a[0], a[1]);
+    case 'sign': return signBlock(a[0], a[1], a[2]);
+    case 'verify': return verifyBlock(a[0], a[1], a[2]);
+    case 'hash': return hashOfBlock({ type: a[0], state: a[1], refs: a[2] }, a[3]);
+    case 'valid': return valid(a[0], a[1]);
+    case 'recovery_key_hash': return recoveryKeyHash(a[0], a[1]);
+    case 'salted_hash': return saltedHash(a[0], a[1], a[2]);
+    case 'wrap': return wrap(a[0]);
+    case 'unwrap': return unwrap(a[0]);
+    case 'seal': return seal(a[0], a[1], a[2], a[3]);
+    case 'open': return open(a[0], a[1]);
+    case 'cbor_encode': return cborEncode(a[0], a[1]).toString('hex');
+    case 'cbor_decode': return cborDecode(a[0]);
+    case 'suite_of_key': return suiteOfKey(a[0]);
+    case 'key_timeline': return identityFold(a[0], a[1]).timeline;
+    case 'strict_text': return strictText(a[0]);
+    case 'next_link': return nextLink(a[0], a[1]);
+    case 'due': return due(a[0], a[1]);
+    case 'refusals': return refusals(a[0], a[1], a[2], a[3]);
+    case 'promise_view': return promiseView(a[0], a[1], a[2]);
+    case 'promise_stage': return promiseStage(a[0], a[1]);
+    case 'live_grant': return liveGrant(a[0], a[1], a[2]);
+    case 'withdrawal_seen': return withdrawalSeen(a[0], a[1], a[2], a[3]);
+    case 'consent': return consentFold(a[0], a[1], a[2]);
+    case 'admission_refusals': return admissionRefusals(a[0], a[1], a[2], a[3], a[4]);
+    case 'receipt_code': return receiptCode(a[0]);
+    case 'residency_refusals': return residencyRefusals(a[0], a[1]);
+    case 'deposit_shape_ok': return depositShapeOk(a[0]);
+    case 'deposit_paid': return depositPaid(a[0], a[1], a[2]);
+    case 'reading_is_persons_claim': return readingIsPersonsClaim(a[0], a[1], a[2]);
+    default: throw new Error('the oracle has no op ' + op);
+  }
+}
+
+// ================================================================ exports
+module.exports = {
+  P, door, jcs, canonical, canonOf, hashBytes, hashStr, hashOfBlock, saltedHash, recoveryKeyHash, receiptCode, keypair, signBlock, verifyBlock, verifyBytes, signBytes,
+  seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, addDur, valid, validStages,
+  cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
+  whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
+  successorView, consentFold, admissionRefusals, residencyRefusals, depositShapeOk, depositPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
+};

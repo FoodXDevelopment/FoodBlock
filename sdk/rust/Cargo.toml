@@ -11,12 +11,12 @@ categories = ["cryptography", "embedded", "no-std", "encoding"]
 include = ["src/**", "spec/**", "include/**", "README.md", "LICENSE", "Cargo.toml"]
 
 [features]
-default = ["std", "node"]
+default = ["std", "node", "suites", "successor", "ballots", "rekeys", "deposits", "door", "legacy"]
 # The standard library: OS randomness for new keys, salts and envelopes. Without it the crate is no_std + alloc, and
 # the caller hands in random bytes.
 std = ["dep:getrandom", "serde_json/std"]
 # The three profiles of protocol.json `profiles`. The micro core (canonical form, SHA-256, Ed25519, the write check,
-# its own chain, the grant check and aliases) is always built; edge and node add to it.
+# its own chain and the grant check) is always built; edge and node add to it.
 micro = []
 edge = ["micro", "folds", "sync"]
 node = ["edge", "envelope"]
@@ -24,15 +24,27 @@ node = ["edge", "envelope"]
 folds = []
 sync = []
 envelope = ["dep:x25519-dalek", "dep:aes-gcm", "dep:hkdf"]
+# The suites past std (core.md, Suites): p256 (ECDSA and ECDH on P-256) and sm (SM2, SM3, SM4). `std` is always built.
+suites = ["dep:p256", "dep:sm2", "dep:sm3", "dep:sm4", "dep:elliptic-curve", "dep:ecdsa", "dep:hmac"]
+# The optional profiles (spec/profiles): code that only a peer that adopts them needs.
+successor = ["folds"]
+ballots = ["folds"]
+rekeys = ["folds"]
+deposits = []
+# The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol.
+legacy = []
+# The JSON door (src/door.rs): one call, one data shape, shared by every language binding.
+door = ["std", "node"]
 # The C ABI (include/foodblock.h), JSON in and JSON out.
-ffi = ["std", "node"]
+ffi = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "deposits", "legacy"]
 # The WebAssembly door for the JavaScript SDK (sdk/javascript/core): the JSON door as plain exports; the host gives
 # randomness and the clock. Build: node sdk/javascript/scripts/build-wasm.cjs
-wasm = ["std", "node", "getrandom/custom"]
+wasm = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "deposits", "legacy", "getrandom/custom"]
 # The JNI door for Kotlin (sdk/kotlin): one native call, JSON in and out. Pick the profile beside it.
-jni = ["std", "dep:jni"]
+jni = ["door", "std", "dep:jni", "suites", "successor", "ballots", "rekeys", "deposits", "legacy"]
 
 [dependencies]
+serde = { version = "1", default-features = false, features = ["alloc"] }
 serde_json = { version = "1.0.120", default-features = false, features = ["alloc", "preserve_order", "float_roundtrip"] }
 indexmap = { version = "2", default-features = false }
 sha2 = { version = "0.10", default-features = false }
@@ -44,6 +56,13 @@ x25519-dalek = { version = "2", default-features = false, features = ["static_se
 aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"], optional = true }
 hkdf = { version = "0.12", default-features = false, optional = true }
 jni = { version = "0.21", optional = true }
+p256 = { version = "0.13", default-features = false, features = ["ecdsa", "ecdh", "arithmetic", "pkcs8"], optional = true }
+sm2 = { version = "0.13", default-features = false, features = ["dsa", "arithmetic"], optional = true }
+sm3 = { version = "0.4", default-features = false, optional = true }
+sm4 = { version = "0.5", default-features = false, optional = true }
+elliptic-curve = { version = "0.13", default-features = false, features = ["ecdh", "sec1", "arithmetic"], optional = true }
+ecdsa = { version = "0.16", default-features = false, features = ["signing", "verifying", "arithmetic"], optional = true }
+hmac = { version = "0.12", default-features = false, optional = true }
 
 [profile.dev.package."*"]
 # Signature checks run thousands of times in the conformance tests; keep the crypto fast in debug builds.
@@ -66,3 +85,16 @@ inherits = "release"
 opt-level = "s"
 panic = "abort"
 strip = true
+
+# Which build each test needs: the micro build tests what it has (cargo test --no-default-features --features std,micro).
+[[test]]
+name = "api"
+required-features = ["node", "suites"]
+
+[[test]]
+name = "vectors"
+required-features = ["door", "legacy", "successor", "ballots", "rekeys", "deposits", "suites"]
+
+[[test]]
+name = "legacy"
+required-features = ["legacy"]

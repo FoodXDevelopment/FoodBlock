@@ -10,67 +10,80 @@ func PullRequest(request map[string]any) map[string]any {
 	return must[map[string]any]("pull_request", orEmpty(request))
 }
 
-// SignPullOptions: who signs (Signer; Asker is the older name for it), which node it is for, the signer's private key;
-// Nonce and At default to fresh values.
-type SignPullOptions struct {
-	Signer, Asker, Node, PrivateKey, Nonce, At string
+// SignOptions: who signs (Signer), which node it is for, the signer's private key and its Suite, and exactly one proof
+// against replay: Counter (above the highest the node has seen from the signer) or Challenge (one the node issued).
+// A signed request carries no time.
+type SignOptions struct {
+	Signer, Node, PrivateKey, Suite, Challenge string
+	Counter                                    int64
 }
 
-// SignPull is a signed pull: the request, plus signer, node, a fresh nonce and at, signed by one of the signer's keys.
-func SignPull(request map[string]any, o SignPullOptions) (map[string]any, error) {
-	who := o.Signer
-	if who == "" {
-		who = o.Asker
+func (o SignOptions) json() map[string]any {
+	given := map[string]any{"who": o.Signer, "node": o.Node, "private_key": o.PrivateKey}
+	if o.Suite != "" {
+		given["suite"] = o.Suite
 	}
-	given := map[string]any{"who": who, "node": o.Node, "private_key": o.PrivateKey}
-	if o.Nonce != "" {
-		given["nonce"] = o.Nonce
+	if o.Counter != 0 {
+		given["counter"] = o.Counter
 	}
-	if o.At != "" {
-		given["at"] = o.At
+	if o.Challenge != "" {
+		given["challenge"] = o.Challenge
 	}
-	return ask[map[string]any]("sign_pull", orEmpty(request), given)
+	return given
 }
 
-// PullCheck: the node `Node` whose clock reads Now (default now); Keys, the signer's live signing keys; Seen, whether
-// this node has seen a nonce; Window, how far `at` may be from its clock (default protocol.json limits.signed_window).
+// SignPull is a signed pull: the request, plus signer, node and one proof against replay, signed by one of the
+// signer's keys.
+func SignPull(request map[string]any, o SignOptions) (map[string]any, error) {
+	return ask[map[string]any]("sign_pull", orEmpty(request), o.json())
+}
+
+// SignPush is a signed push: the push, plus signer, node and one proof against replay.
+func SignPush(push map[string]any, o SignOptions) (map[string]any, error) {
+	return ask[map[string]any]("sign_push", orEmpty(push), o.json())
+}
+
+// NewChallenge is a new challenge value a node hands out at its `challenge` endpoint.
+func NewChallenge() string { return must[string]("new_challenge") }
+
+// PullCheck is what a node remembers: Node (its id), Keys (the signer's live signing keys), Highest (the highest
+// counter seen from the signer; nil when none) and Issued (challenges issued and not yet used). No clock.
 type PullCheck struct {
-	Node, Now string
-	Keys      []string
-	Seen      func(nonce string) bool
-	Window    time.Duration
+	Node    string
+	Keys    []string
+	Highest *int64
+	Issued  []string
 }
 
-func (o PullCheck) json(message map[string]any) map[string]any {
-	out := map[string]any{"node": o.Node, "keys": plural(o.Keys)}
-	if o.Now != "" {
-		out["now"] = o.Now
+func (o PullCheck) json() map[string]any {
+	var highest any
+	if o.Highest != nil {
+		highest = *o.Highest
 	}
-	if o.Window != 0 {
-		out["window_ms"] = o.Window.Milliseconds()
-	}
-	if nonce := str(message["nonce"]); nonce != "" && o.Seen != nil && o.Seen(nonce) {
-		out["seen"] = []string{nonce}
-	}
-	return out
+	return map[string]any{"node": o.Node, "keys": plural(o.Keys), "highest": highest, "issued": plural(o.Issued)}
 }
 
 // PullRefusals is why a node refuses a signed pull: none when it may be answered.
 func PullRefusals(message map[string]any, o PullCheck) []Finding {
-	return plural(must[[]Finding]("pull_refusals", orEmpty(message), o.json(message)))
+	return plural(must[[]Finding]("pull_refusals", orEmpty(message), o.json()))
 }
 
 // PushRefusals is why a node refuses a signed push: none when it may be taken.
 func PushRefusals(message map[string]any, o PullCheck) []Finding {
-	return plural(must[[]Finding]("push_refusals", orEmpty(message), o.json(message)))
+	return plural(must[[]Finding]("push_refusals", orEmpty(message), o.json()))
 }
 
 // PullErrors is what is wrong with a signed pull, in plain words: none when it may be answered.
 func PullErrors(message map[string]any, o PullCheck) []string {
-	return plural(must[[]string]("pull_errors", orEmpty(message), o.json(message)))
+	return plural(must[[]string]("pull_errors", orEmpty(message), o.json()))
 }
 
-// Matches is whether a block matches a pull filter: every key, ANDed; `type` read through aliases; `record` resolved
+// PushErrors is what is wrong with a signed push, in plain words.
+func PushErrors(message map[string]any, o PullCheck) []string {
+	return plural(must[[]string]("push_errors", orEmpty(message), o.json()))
+}
+
+// Matches is whether a block matches a pull filter: every key, ANDed; `record` resolved
 // among held.
 func Matches(b Block, filter map[string]any, held []Block) bool {
 	return must[bool]("matches", b, filter, plural(held))
@@ -89,10 +102,10 @@ type Arrival struct {
 	HeaderSignature string
 }
 
-// AnswerOptions: the node's id and private key (the answer is unsigned without one); Signer (default the request's; Asker is the older name);
-// Cap, the node's own limit (default 500).
+// AnswerOptions: the node's id and private key (the answer is unsigned without one) and its Suite; Signer (default
+// the request's); Cap, the node's own limit (default 500); Held (blocks that sealed copies are checked against).
 type AnswerOptions struct {
-	Node, PrivateKey, Signer, Asker string
+	Node, PrivateKey, Signer, Suite string
 	Cap                             int64
 	Held                            []Block
 }
@@ -112,12 +125,6 @@ func AnswerPull(log []Arrival, request map[string]any, o AnswerOptions) (map[str
 		}
 		entries = append(entries, entry)
 	}
-	request = cloneMap(request)
-	if o.Signer != "" {
-		request["signer"] = o.Signer
-	} else if o.Asker != "" {
-		request["signer"] = o.Asker
-	}
 	cap := o.Cap
 	if cap == 0 {
 		cap = 500
@@ -126,7 +133,14 @@ func AnswerPull(log []Arrival, request map[string]any, o AnswerOptions) (map[str
 	if o.PrivateKey != "" {
 		key = o.PrivateKey
 	}
-	return ask[map[string]any]("answer_pull", entries, request, o.Node, key, cap)
+	var signer, held any
+	if o.Signer != "" {
+		signer = o.Signer
+	}
+	if o.Held != nil {
+		held = o.Held
+	}
+	return ask[map[string]any]("answer_pull", entries, orEmpty(request), o.Node, key, cap, signer, held, suiteOf([]string{o.Suite}))
 }
 
 // AnswerSignedBy is whether a node's answer (pull or push) is signed by one of the node's keys.
@@ -177,7 +191,7 @@ func Accept(incoming, held []Block, options ...AcceptOptions) Accepted {
 		Waiting       []Waiting  `json:"waiting"`
 		Refused       []Refusal  `json:"refused"`
 		Equivocations [][]string `json:"equivocations"`
-	}]("accept", plural(incoming), plural(held), arrivals(o.ArrivedAt, held), blockList(o.Schemas))
+	}]("accept", plural(incoming), plural(held), arrivals(o.ArrivedAt, append(append([]Block{}, incoming...), held...)), blockList(o.Schemas))
 	byHash := map[string]Block{}
 	for _, b := range incoming {
 		byHash[b.id()] = b
@@ -196,7 +210,7 @@ func WaitedTooLong(since, now string, ttl time.Duration) bool {
 
 // PushAnswer is a node's signed answer to a push: { node, taken, waiting, refused: [{ hash, code, detail }],
 // equivocations: [[hash, hash]], signature }. Every key is always there; an empty list is []. Each pair is sorted.
-func PushAnswer(result Accepted, node, privateKey string) (map[string]any, error) {
+func PushAnswer(result Accepted, node, privateKey string, suite ...string) (map[string]any, error) {
 	taken, waiting := []string{}, []string{}
 	for _, b := range result.Taken {
 		taken = append(taken, b.id())
@@ -205,7 +219,18 @@ func PushAnswer(result Accepted, node, privateKey string) (map[string]any, error
 		waiting = append(waiting, w.Hash)
 	}
 	parts := map[string]any{"taken": taken, "waiting": waiting, "refused": plural(result.Refused), "equivocations": plural(result.Equivocations)}
-	return ask[map[string]any]("push_answer", parts, node, privateKey)
+	return ask[map[string]any]("push_answer", parts, node, privateKey, suiteOf(suite))
+}
+
+// AdmissionRefusals is what a node's admission and strangers rules refuse of a block for a person: not_admitted,
+// not_human, stopped. admission is the node's admission rules (JSON); strangersToday counts strangers already taken today.
+func AdmissionRefusals(b Block, receiver string, blocks []Block, admission map[string]any, strangersToday int) []Finding {
+	return plural(must[[]Finding]("admission_refusals", b, receiver, plural(blocks), orEmpty(admission), strangersToday))
+}
+
+// ResidencyRefusals is a block that stays in regions its node does not hold in (profiles/residency.md).
+func ResidencyRefusals(b Block, holdsIn []string) []Finding {
+	return plural(must[[]Finding]("residency_refusals", b, plural(holdsIn)))
 }
 
 // Discovery is what a node publishes at `.well-known/foodblock`. Admission is the hash of its owner's admission block,

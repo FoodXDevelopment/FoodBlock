@@ -6,39 +6,39 @@ How the parts of this repository fit together. The protocol itself is [`spec/pro
 ## One rule, one place
 
 ```
-spec/                    the rules: protocol.md, protocol.json (every list), canonical.md, transport.md,
-  │                      aliases.json, vectors.json
-  ├── sdk/javascript     the reference: every rule as code, checked against spec/vectors.json
-  ├── sdk/python, go,    the same rules in other languages, each running every vector section
-  │   swift
+spec/                    the rules: core.md and modules/ (protocol.md is the index), protocol.json (every list),
+  │                      canonical.md, transport.md, profiles/, vectors.json; oracle/ checks the vectors from the text alone
+  ├── sdk/rust           the one core: every rule once (Rust), as a crate, a C library, WebAssembly and JNI
+  ├── sdk/javascript     the reference API (the core in WebAssembly), checked against spec/vectors.json
+  ├── sdk/python, go,    thin layers over the same core, each running every vector section
+  │   swift, kotlin
   │
   ├── server/            a node: stores and numbers blocks, answers signed pull and push, .well-known
   ├── mcp/               an AI agent's way in: writes and reads signed blocks over MCP
   └── cli/               a person's or a machine's way in: the same, from a terminal
 ```
 
-**Every list is data.** Types, verbs, ref keys, fields, terms, grammar, limits and profiles are in
-`spec/protocol.json`; older shapes are in `spec/aliases.json`. Every SDK loads both files and copies nothing into
-code.
+**Every list is data.** Types, verbs, ref keys, fields, terms, grammar, limits, suites and profiles are in
+`spec/protocol.json`. Every SDK loads it and copies nothing into code. There is no earlier version in the protocol:
+the one-time converter (`sdk/rust` feature `legacy`, `fb convert`) reads `spec/legacy/aliases-0.x.json` and is not
+part of it.
 
 **The SDK decides; everything else asks it.** The server, the MCP server and the CLI never check a block
 themselves. They write with the SDK's one write path (`write`: compose, check, sign, place in the key's chain), and
-take blocks in with its checks (`sync.accept`, `identity.signedByAuthor`, `sync.pullErrors`, `readAs`). So a rule
+take blocks in with its checks (`valid`, `sync.accept`, `identity.signedByAuthor`, `sync.pullRefusals`). So a rule
 changes in one place and every part follows.
 
 ## Packaging: one source, exact copies
 
-A package installed somewhere else cannot reach `spec/`. So each SDK package carries an exact copy of the two files
-it loads, `protocol.json` and `aliases.json`:
+A package installed somewhere else cannot reach `spec/`. So the two packages that hold the core carry an exact copy
+of what they load:
 
-| SDK | Where the copy lives | How it is loaded |
+| Package | Where the copy lives | How it is loaded |
 |---|---|---|
-| Python | `sdk/python/foodblock/spec/` | package data |
-| Go | `sdk/go/spec/` | `go:embed` |
-| Swift | `sdk/swift/Sources/spec/` | a SwiftPM resource |
-| JavaScript | `sdk/javascript/spec/` once that folder exists | (today it reads `../../../spec/` directly) |
+| Rust crate (and so C, Python, Go, Swift, Kotlin) | `sdk/rust/spec/protocol.json`, `aliases-0.x.json` | `include_bytes!` |
+| JavaScript | `sdk/javascript/spec/protocol.json` | `require` |
 
-`node test/sync-spec.cjs` makes the copies; `--check` fails if any differs from `spec/`. Each SDK's own tests check
+`node test/sync-spec.cjs` makes the copies; `--check` fails if any differs from `spec/`. Each package's own tests check
 their copy byte for byte too, so a copy can never drift.
 
 The node, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev/foodblock":
@@ -53,12 +53,13 @@ The node, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev
 2. **Sent.** A public block travels as `{ version, block, signature }` (`wrap`). A private one travels as a sealed
    copy: its public header `{ author, seq, prev, hash }`, signed, beside an envelope only its audience can open
    (`sealCopy`). Email, a QR code or a link can carry either (`spec/transport.md`).
-3. **Taken in.** A node recomputes the hash, never trusting a sent one (`unwrap`). It keeps a block only if a key
-   that still speaks for its author signed it, it passes the write check, it fits its key's chain, and the owner's
-   admission rule lets it in. A block whose previous block is missing waits, then expires. Two blocks from one key
-   with one `seq` are kept and served together, as proof of a lie.
+3. **Taken in.** A node recomputes the hash, never trusting a sent one (`unwrap`). It keeps a block only if it is
+   `valid`: a key that still speaks for its author signed it, it passes the checks of core.md, it fits its key's
+   chain, and the owner's admission rule lets it in. A block whose previous block is missing waits, then expires.
+   Two blocks of one key naming one `prev` are kept and served together, as proof of a lie.
 4. **Kept.** Exactly as it arrived, numbered on arrival (`sql/schema.sql`). The node never updates or deletes a block.
-5. **Read.** Through `readAs`, so a block from any earlier version reads as 1.6 without changing it.
+5. **Read.** As it was signed. Old data from before 1.6 is converted once into fresh blocks that name the old hash in
+   `derives_from`; nothing reads an older shape.
 
 ## The node (server/)
 
@@ -67,13 +68,14 @@ or a machine, and signs every answer with a device key of theirs, brought in by 
 
 | Route | Request | Answer |
 |---|---|---|
-| `POST /pull` | `{ since, limit, filter, heads }`, or a signed pull (adds `signer`, `node`, `nonce`, `at`, `signature`) | `{ node, request, blocks: [{ n, message }], next, signature }` |
-| `POST /push` | `{ messages, for }` | `{ node, taken, waiting, refused: [{ hash, reason }], signature }` |
-| `GET /.well-known/foodblock` | | `{ protocol, version, node, holds, speaks_for, admission, endpoints: { pull, push } }` |
+| `POST /pull` | `{ since, limit, filter, heads }`, or a signed pull (adds `signer`, `node`, a `counter` or a `challenge`, `signature`; no time) | `{ node, request, blocks: [{ n, message }], next, signature }` |
+| `POST /push` | `{ messages, for }` (signed or not) | `{ node, taken, waiting, refused: [{ hash, code, detail }], equivocations, signature }` |
+| `GET /challenge` | | `{ challenge }`: issued once, used once |
+| `GET /.well-known/foodblock` | | `{ protocol, version, node, holds, speaks_for, admission, endpoints: { pull, push, challenge } }` |
 
-A pull's filter (`type`, `kind`, `author`, `hash`, `record`, `refs`) is read on each block's 1.6 reading, so a filter
-for `thing` also finds an old `place`. An unsigned pull gets public blocks and the public headers of sealed ones; a
-signed pull also gets the copies sealed to its signer. A nonce is answered once.
+A pull's filter (`type`, `kind`, `author`, `hash`, `record`, `marks`, `refs`) matches exactly. An unsigned pull gets
+public blocks and the public headers of sealed ones; a signed pull also gets the copies sealed to its signer. A
+counter must be above the highest the node has seen from that signer; a challenge is answered once.
 
 The owner's admission rule is a block they publish and push to the node, named by `ADMISSION`: an `observe` of kind
 admission whose schema declares `parties` (ids always admitted) and `per_stranger` (blocks a day from anyone else).

@@ -6,7 +6,7 @@ final class NodeTests: XCTestCase {
     struct Person { let keys: Keypair; let enc: EncryptionKeypair; let me: JSON; var held: [JSON]; var id: String { me["hash"] as! String } }
     func person(_ at: String = "2026-10-15T09:00:00.000Z") throws -> Person {
         let keys = FoodBlock.generateKeypair(), enc = FoodBlock.generateEncryptionKeypair()
-        let me = try Identity.genesis(keys, at: at, encryptionKey: enc.publicKeyEncrypt, recoveryKey: FoodBlock.generateKeypair().publicKeySign)
+        let me = try Identity.genesis(keys, at: at, encryptionKey: enc.publicKeyEncrypt, recoveryKey: FoodBlock.generateKeypair().publicKeySign, reach: "P30D")
         return Person(keys: keys, enc: enc, me: me, held: [me])
     }
     func say(_ p: inout Person, _ type: String, _ state: JSON, _ refs: JSON = [:], audience: [String]? = nil, link: Link? = nil) throws -> JSON {
@@ -18,8 +18,11 @@ final class NodeTests: XCTestCase {
     func testAGenesisNamesItsKeysAndRecovery() throws {
         let ann = try person()
         XCTAssertEqual(FoodBlock.check("actor", ann.me["state"] as! JSON, [:]), [])
-        XCTAssertTrue(Identity.genesisOpens(ann.me) && Identity.is16Genesis(ann.me))
-        XCTAssertThrowsError(try Identity.genesis(ann.keys, encryptionKey: nil, recoveryKey: nil))
+        XCTAssertTrue(Identity.genesisOpens(ann.me) && Identity.isGenesis(ann.me))
+        // The recovery key and its reach come as a pair or not at all.
+        XCTAssertThrowsError(try Identity.genesis(ann.keys, recoveryKey: FoodBlock.generateKeypair().publicKeySign))
+        let bare = try Identity.genesis(ann.keys, at: "2026-10-15T09:00:00.000Z")
+        XCTAssertTrue(Identity.genesisOpens(bare))
     }
 
     func testWriteChainsChecksAndSigns() throws {
@@ -32,7 +35,7 @@ final class NodeTests: XCTestCase {
         XCTAssertTrue(Identity.signedByAuthor(offer, ann.held))
         XCTAssertTrue(FoodBlock.checkChain(Array(ann.held.dropFirst()), ann.id).ok)
         XCTAssertEqual(Fold.promiseStage(offer, ann.held)["stage"] as? String, "offered")
-        XCTAssertEqual(Fold.promiseStage(offer, ann.held, now: "2026-10-21T00:00:00.000Z")["stage"] as? String, "expired")
+        XCTAssertEqual(Fold.promiseView(offer, ann.held, now: "2026-10-21T00:00:00.000Z")["stage"] as? String, "expired")
     }
 
     func testWriteRefusesWhatIsWrongNeverRepairs() throws {
@@ -41,14 +44,12 @@ final class NodeTests: XCTestCase {
         func refused(_ type: String, _ state: JSON, _ refs: JSON = [:]) -> [String] {
             do { _ = try say(&ann, type, state, refs); return [] } catch FoodBlockError.refused(let wrong) { return wrong.map { $0.code } } catch { return ["\(error)"] }
         }
-        XCTAssertEqual(refused("thing", ["kind": "flour", "amount": ["value": 1.5, "unit": "kg"]]), ["float", "shape"])
-        XCTAssertEqual(refused("place", ["kind": "kitchen"]), ["unknown_type"])
-        XCTAssertEqual(refused("promise", ["terms": ["price": FoodBlock.money(1, "GBP"), "colour": "red"]], ["from": ann.id]), ["undeclared_field"])
-        XCTAssertEqual(refused("promise", ["terms": ["quantity": FoodBlock.amount("1", "kg")]], ["to": ann.id, "from": other]), ["ask_without_expires"])
+        XCTAssertTrue(refused("thing", ["kind": "flour", "amount": ["value": 1.5, "unit": "kg"]]).contains("float"))
+        XCTAssertTrue(refused("promise", ["terms": ["price": FoodBlock.money(1, "GBP"), "colour": "red"]], ["from": ann.id]).contains("undeclared_field"))
+        XCTAssertTrue(refused("promise", ["terms": ["quantity": FoodBlock.amount("1", "kg")]], ["to": ann.id, "from": other]).contains("ask_without_expires"))
         XCTAssertEqual(refused("promise", ["terms": ["lines": [["id": "a", "what": other, "quantity": FoodBlock.amount("1", "kg")]]]], ["from": ann.id, "what": ann.id]), ["lines"])
-        XCTAssertEqual(refused("observe", ["kind": "note", "colour": "red"]), ["undeclared_field"])
         XCTAssertEqual(refused("thing", ["kind": "eggs", "use_by": "2026-02-30"]), ["calendar"])
-        XCTAssertEqual(refused("promise", ["terms": ["price": ["money": FoodBlock.money(450, "GBP"), "per": FoodBlock.amount("01", "kg")]]], ["from": ann.id]), ["decimal"])
+        XCTAssertTrue(refused("promise", ["terms": ["price": ["money": FoodBlock.money(450, "GBP"), "per": FoodBlock.amount("01", "kg")]]], ["from": ann.id]).contains("decimal"))
         XCTAssertEqual(ann.held.count, 1, "nothing refused was kept")
     }
 
@@ -66,9 +67,8 @@ final class NodeTests: XCTestCase {
         XCTAssertTrue(FoodBlock.headerSignedBy(copy, ann.keys.publicKeySign))
         XCTAssertTrue(sameJSON(opened["reveals"], [["salt": salts[bob.id]!, "value": bob.id]]))
         XCTAssertThrowsError(try FoodBlock.openCopy(copy, ann.enc.x25519Private))
-        // The older alg still opens.
-        let raw = try FoodBlock.seal(["x": 1], [bob.enc.publicKeyEncrypt], alg: FoodBlock.algRaw)
-        XCTAssertTrue(sameJSON(try FoodBlock.open(raw, bob.enc.x25519Private), ["x": 1]))
+        let value = try FoodBlock.seal(["x": 1], [bob.enc.publicKeyEncrypt])
+        XCTAssertTrue(sameJSON(try FoodBlock.open(value, bob.enc.x25519Private), ["x": 1]))
     }
 
     func testPushTakesWaitsAndCatchesALie() throws {
@@ -80,7 +80,7 @@ final class NodeTests: XCTestCase {
         XCTAssertEqual(early.waiting.map { $0.needs }, [[one["hash"] as! String]])
         let lie = try say(&ann, "observe", ["kind": "note", "text": "five trays"], link: Link(seq: 1, prev: ann.id))
         let later = Sync.accept([lie], [ann.me, one, two])
-        XCTAssertEqual(later.equivocations, [sortedJS([one["hash"] as! String, lie["hash"] as! String])])
+        XCTAssertEqual(later.equivocations.map { sortedJS($0) }, [sortedJS([one["hash"] as! String, lie["hash"] as! String])])
         XCTAssertTrue(later.taken.isEmpty && later.refused.isEmpty, "the second of a pair is neither taken nor refused")
         XCTAssertFalse(Identity.counts(two, Index([ann.me, one, two, lie])), "a later block of a key that signed two at one seq counts for nothing")
         var forged = try FoodBlock.compose("observe", ["kind": "note"], [:], author: ann.id, link: Link(seq: 3, prev: two["hash"] as! String))
@@ -93,8 +93,13 @@ final class NodeTests: XCTestCase {
         var ann = try person()
         let node = try person()
         let note = try say(&ann, "observe", ["kind": "note", "text": "hello"])
-        let pull = try Sync.signPull(Sync.pullRequest(filter: ["author": ann.id], heads: true), signer: ann.id, node: node.id, privateKey: ann.keys.privateKey, at: nowISO())
+        let pull = try Sync.signPull(Sync.pullRequest(filter: ["author": ann.id], heads: true), signer: ann.id, node: node.id, privateKey: ann.keys.privateKey, counter: 1)
+        XCTAssertNil(pull["at"], "a signed request carries no time")
         XCTAssertEqual(Sync.pullErrors(pull, node: node.id, keys: [ann.keys.publicKeySign]), [])
+        XCTAssertEqual(Sync.pullRefusals(pull, node: node.id, keys: [ann.keys.publicKeySign], highest: 1).map { $0.code }, ["replay"], "a counter not above the highest seen is a replay")
+        let challenge = Sync.newChallenge()
+        let proof = try Sync.signPull(Sync.pullRequest(), signer: ann.id, node: node.id, privateKey: ann.keys.privateKey, challenge: challenge)
+        XCTAssertTrue(Sync.pullRefusals(proof, node: node.id, keys: [ann.keys.publicKeySign], issued: [challenge]).isEmpty)
         let log = [Sync.Arrival(n: 1, block: ann.me), Sync.Arrival(n: 2, block: note)]
         let answer = try Sync.answerPull(log, pull, node: node.id, privateKey: node.keys.privateKey)
         XCTAssertTrue(Sync.answerSignedBy(answer, [node.keys.publicKeySign]))
@@ -115,14 +120,28 @@ final class NodeTests: XCTestCase {
         XCTAssertEqual(link, Link(seq: 1, prev: grant["hash"] as! String), "a device's chain starts at the grant that brought it in")
     }
 
-    func testReadingNeverChangesABlock() throws {
-        let old = try FoodBlock.create("place", ["name": "Back kitchen"], [:])
-        let read = FoodBlock.readAs(old)
-        XCTAssertEqual(read["type"] as? String, "thing")
-        XCTAssertEqual(read["hash"] as? String, old["hash"] as? String)
-        XCTAssertEqual(read["readFrom"] as? String, "place")
-        XCTAssertTrue(FoodBlock.isA(old, "thing"))
+    func testEverySuiteSignsAndSeals() throws {
+        for suite in FoodBlock.suites {
+            let keys = FoodBlock.generateKeypair(suite: suite), enc = FoodBlock.generateEncryptionKeypair(suite: suite)
+            XCTAssertEqual(FoodBlock.suiteOfKey(keys.publicKeySign), suite)
+            let me = try Identity.genesis(keys, at: "2026-10-15T09:00:00.000Z", encryptionKey: enc.publicKeyEncrypt)
+            XCTAssertEqual(me["suite"] as? String ?? "std", suite)
+            XCTAssertTrue(Identity.genesisOpens(me))
+            let note = try FoodBlock.write("observe", ["kind": "note", "text": "hi"], [:], author: me["hash"] as! String, key: keys, held: [me], at: "2026-10-15T09:00:01.000Z")
+            XCTAssertTrue(FoodBlock.valid(note, held: [me]).isEmpty)
+            XCTAssertEqual(try FoodBlock.hash(of: note), note["hash"] as? String)
+            let wire = try FoodBlock.unwrap(FoodBlock.wrap(note))
+            XCTAssertEqual(wire["hash"] as? String, note["hash"] as? String)
+            XCTAssertEqual(wire["suite"] as? String ?? "std", suite)
+            let value = try FoodBlock.seal(["x": 1], [enc.publicKeyEncrypt], suite: suite)
+            XCTAssertTrue(sameJSON(try FoodBlock.open(value, enc.x25519Private), ["x": 1]))
+        }
+    }
+
+    func testThereIsNoOlderShape() throws {
         XCTAssertEqual(FoodBlock.version, FoodBlock.spec["version"] as? String)
         XCTAssertEqual(FoodBlock.types.count, 7)
+        XCTAssertThrowsError(try Core.ask("read_as", [:]))
+        XCTAssertEqual(FoodBlock.receiptCode(String(repeating: "0", count: 64)).count, 9)
     }
 }

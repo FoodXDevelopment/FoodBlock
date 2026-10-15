@@ -1,93 +1,88 @@
-# FoodBlock Canonical Serialization Specification
+# FoodBlock canonical form
 
 **Version:** FoodBlock 1.6
 **Status:** Normative
-**Purpose:** The one exact byte form of a block, so every implementation in any language gets the same hash. Follow these rules exactly.
+**Purpose:** The one exact byte form of a block, so every implementation in any language gets the same id.
 
-## Overview
+## The rule in one line
 
-A FoodBlock is three fields: `type` (a string), `state` (an object) and `refs` (an object). Its hash is
+The canonical form is **RFC 8785** (the JSON Canonicalization Scheme, JCS), applied to a block that already follows the **strict writing** rules below. The id is the hash of those bytes:
 
 ```
-hash = SHA-256(canonical(type, state, refs))
+id = Hash_suite( JCS({ "type": type, "state": state, "refs": refs }) )
 ```
 
-where `canonical()` makes one exact UTF-8 JSON string. The seven 1.6 types are in `protocol.json`; older names (`place`, `substance`, `schema`) hash the same way, because the canonical form never reads the type.
+`Hash_suite` is the hash of the signing key's suite (core.md, Suites): SHA-256 written as 64 lowercase hex characters, or another hash written with its name as a prefix (`sm3:...`).
 
-## Algorithm
+## What RFC 8785 gives
 
-Build `{ "type": type, "state": state, "refs": refs }` and write it with these rules.
+Cite it; do not copy it. In short:
+- Object keys are sorted by UTF-16 code units, at every depth.
+- No whitespace.
+- Strings use the shortest JSON escapes, in UTF-8.
+- Numbers are written as ECMAScript writes them. FoodBlock allows only integers (core.md, section 3), so a number is plain digits with an optional leading `-`.
 
-1. **Key order.** Every object's keys are sorted at every depth, by UTF-16 code units, as JavaScript's default sort compares strings. This differs from code-point order only outside the Basic Multilingual Plane, and every implementation must follow it. The same order sorts the string arrays of Rule 5.
-2. **No whitespace.** Compact JSON: `{"a":1,"b":2}`.
-3. **Numbers.** No trailing decimal zeros (`1`, not `1.0`), no leading zeros, no `+` sign. Negative zero is `0`. `Infinity` and `NaN` are an error. Writers refuse floats (modules/encoding.md, Numbers); this rule only keeps old hashes valid (Inherited quirks).
-4. **Strings are Unicode NFC.** Values are normalised before encoding. Writers write keys already in NFC and refuse a block with a key that is not; readers hash the keys as sent (sort, then serialise). Escaping follows RFC 8259.
-5. **Sets in `refs`.** A string array under a key named `refs` is sorted (Inherited quirks). An array holding anything but strings keeps its order.
-6. **Sequences in `state`.** Every other array keeps its declared order.
-7. **Nulls are dropped.** A key with `null` or `undefined` is left out; a null inside an array is dropped.
+## Strict writing
 
-The string is encoded as UTF-8 and hashed with SHA-256; the hash is 64 lowercase hex characters.
+JCS fixes the bytes. These rules fix the content. A writer follows them. A reader **refuses** a block that breaks one (`not_canonical`, or the code in brackets) and never repairs it. Nothing is sorted, dropped or normalised on the way in.
 
-## Inherited quirks
+1. **Three fields.** The block is exactly `type`, `state` and `refs`.
+2. **No null, no float.** A key with `null` is refused, so is a `null` in an array (`not_canonical`). A number with a fraction or exponent is refused (`float`).
+3. **Integers only** within ±(2^53 - 1) (`integer_range`). `-0` is refused.
+4. **NFC.** Every string and every key is Unicode NFC, with no unpaired surrogates.
+5. **Sorted sets.** A string array directly under a `refs` key is a set. It is written in ascending UTF-16 order, with no repeats. An array of anything else keeps its written order. A `refs` key inside `state` is an ordinary key: nothing is sorted there.
+6. **No duplicate keys** in any object.
+7. **Sorted audience.** `state.audience` is `"public"` or a sorted list with no repeats (privacy.md).
 
-Three rules exist only because blocks from earlier versions exist. Each is kept because changing it would change every existing hash.
-- **Nulls are dropped**, in objects and in arrays.
-- **String arrays under any key named `refs`, at any depth, are set-sorted.** That means the top-level `refs` and anything inside it, and also a key called `refs` inside `state`.
-- **Legacy floats are written as JavaScript writes them** (ECMAScript `Number::toString`): `1e+21`, `1e-7`, `0.000001`, `123.456`; never as another language's default (`1e-07`). New blocks hold no floats.
+Every other array keeps its written order.
 
 ## Complete example
 
-**Input:**
+**Input** (ids shortened for reading; a real block has 64-hex ids):
 ```
 type: "thing"
-state: { "name": "Sourdough", "price": { "minor": 450, "currency": "GBP" }, "weight": { "value": "0.8", "unit": "kg" }, "tags": null }
-refs: { "author": "abc123", "kind": "def456" }
+state: { "name": "Sourdough", "price": { "minor": 450, "currency": "GBP" }, "weight": { "value": "0.8", "unit": "kg" } }
+refs: { "author": "abc123", "of": "def456" }
 ```
 
-**Canonical string** (keys sorted at every depth, `tags` dropped as null, `450` an integer, `"0.8"` a string):
+**Canonical string:**
 ```
-{"refs":{"author":"abc123","kind":"def456"},"state":{"name":"Sourdough","price":{"currency":"GBP","minor":450},"weight":{"unit":"kg","value":"0.8"}},"type":"thing"}
+{"refs":{"author":"abc123","of":"def456"},"state":{"name":"Sourdough","price":{"currency":"GBP","minor":450},"weight":{"unit":"kg","value":"0.8"}},"type":"thing"}
 ```
 
-**Hash:** `ac1c39cfaf51942db52fbbda1b7c2451473e164a8dae7b05d59a8f900154b4ee`
+**Id** (SHA-256): `7bda2dba2c55126f32646c376de02d3f7d91a21ff956336649307dd6e7c0d51d`
 
 ## Edge cases
 
-| Input | Canonical output | Why |
+| Input | Result | Why |
 |---|---|---|
-| `state: {}` | `"state":{}` | Empty objects are preserved |
-| `state: { "a": [] }` | `"state":{"a":[]}` | Empty arrays are preserved |
-| `refs: { "participants": ["b","a"] }` | `"refs":{"participants":["a","b"]}` | String arrays in refs are sorted |
-| `state: { "steps": ["b","a"] }` | `"state":{"steps":["b","a"]}` | Arrays in state preserve order |
-| `state: { "x": null }` | `"state":{}` | Null values omitted |
-| `state: { "n": -0 }` | `"state":{"n":0}` | Negative zero → zero |
-| `state: { "n": 1.0 }` | `"state":{"n":1}` | No trailing decimal zeros |
-| `refs: { "tags": [1, "a"] }` | `"refs":{"tags":[1,"a"]}` | Mixed arrays NOT sorted |
-| `state: { "a": [1, null, 2] }` | `"state":{"a":[1,2]}` | Nulls inside arrays are dropped (Rule 7) |
-| `state: { "n": 1e21 }` (old data) | `"state":{"n":1e+21}` | JavaScript's number form |
-| `state: { "n": 1e-7 }` (old data) | `"state":{"n":1e-7}` | JavaScript's number form |
-| a key not in NFC (`"é"` decomposed) | refused | Keys are written in NFC (Rule 4); a writer refuses the block |
-| `state: { "x": { "refs": ["b","a"] } }` | `"state":{"x":{"refs":["a","b"]}}` | A key named `refs`, at any depth |
-
-## Verification
-
-Two conforming implementations produce identical hashes for identical inputs. Vectors: `spec/canonical-vectors.json` (adversarial cases, run with `node spec/run-vectors.cjs`) and `test/vectors.json` (cross-language, each with its `expected_canonical` and `expected_hash`). Older vectors there use pre-1.6 type names and floats; they still hash the same.
+| `state: {}` | `"state":{}` | Empty objects are kept |
+| `state: { "a": [] }` | `"state":{"a":[]}` | Empty arrays are kept |
+| `refs: { "participants": ["a","b"] }` | as written | Sorted set |
+| `refs: { "participants": ["b","a"] }` | refused | Set not sorted |
+| `refs: { "participants": ["a","a"] }` | refused | Repeat in a set |
+| `state: { "steps": ["b","a"] }` | `"steps":["b","a"]` | State arrays keep order |
+| `state: { "x": null }` | refused | No null |
+| `state: { "n": 1.0 }`, `1e21`, `-0` | refused | No float, no negative zero |
+| a key or string not in NFC | refused | NFC only |
+| `state: { "x": { "refs": ["b","a"] } }` | as written | Only the top-level `refs` holds sets |
+| keys `"😀"` and `"～"` | emoji sorts first | UTF-16 order; code-point order would put it last |
 
 ## Signatures
 
-When a block is signed, the signature covers the same canonical string:
+The signature covers the same canonical bytes:
 
 ```
-signature = Sign_alg(private_key, utf8_bytes(canonical(type, state, refs)))   (Ed25519 by default)
+signature = Sign_alg( private_key, JCS(block) )
+valid     = Verify_alg( public_key, JCS(block), signature )
 ```
 
-Verification:
-```
-valid = Verify_alg(public_key, utf8_bytes(canonical(type, state, refs)), signature)
-```
+The key is one of the author's live keys: the genesis `state.public_key_sign`, or a key brought in by a key grant (modules/identity.md). The reader tries each live key with that key's suite. The algorithms, key bytes and signature bytes are in core.md.
 
-The signing key is one of the author's live keys: the genesis's `state.public_key_sign`, or a key brought in by a `grant` of kind key (modules/identity.md). The reader tries each live key with that key's own algorithm (`alg_sign`, default ed25519; `algs` in `protocol.json`).
+## The compact form
 
-## Compact form
+A block sent as CBOR (modules/encoding.md) is still hashed and signed as the JCS bytes above. The receiver rebuilds the JSON first. The id never covers CBOR bytes.
 
-A block sent as CBOR (modules/encoding.md) is still hashed and signed as the canonical JSON above. A receiver rebuilds the JSON first. The hash never covers CBOR bytes.
+## Checking an implementation
+
+Vectors: `spec/canonical-vectors.json` and `spec/vectors.json`. Two conforming implementations give the same id for the same block, and both refuse the same bad blocks.

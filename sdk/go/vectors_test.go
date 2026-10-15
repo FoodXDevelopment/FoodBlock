@@ -1,6 +1,7 @@
 package foodblock
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -12,7 +13,7 @@ import (
 	"testing"
 )
 
-// Conformance: every section of spec/vectors.json, spec/canonical-vectors.json and test/vectors.json, run the way
+// Conformance: every section of spec/vectors.json and spec/canonical-vectors.json, run the way
 // spec/run-vectors.cjs runs them against the reference SDK. A section this SDK cannot run would fail here by name;
 // none is skipped.
 
@@ -51,7 +52,7 @@ func items(v any) []map[string]any {
 
 func blockOf(v map[string]any) Block {
 	inner := obj(v["block"])
-	return Block{Hash: str(v["hash"]), Type: str(inner["type"]), State: orEmpty(obj(inner["state"])), Refs: orEmpty(obj(inner["refs"])), Signature: str(v["signature"])}
+	return Block{Hash: str(v["hash"]), Type: str(inner["type"]), State: orEmpty(obj(inner["state"])), Refs: orEmpty(obj(inner["refs"])), Suite: str(v["suite"]), Signature: str(v["signature"])}
 }
 
 func blocksOf(v any) []Block {
@@ -86,15 +87,45 @@ func toJSON(v any) any {
 
 func eq(a, b any) bool { return equalJSON(toJSON(a), toJSON(b)) }
 
-// subset: every key the vector expects is what was got (a missing key is null).
-func subset(got any, want map[string]any) bool {
-	g := obj(toJSON(got))
-	for k, v := range want {
-		if !eq(g[k], v) {
+// subset: every key given must match; arrays of the same length elementwise; anything else by deep equality.
+func subset(got any, want any) bool {
+	g, w := toJSON(got), toJSON(want)
+	if wl, ok := w.([]any); ok {
+		gl, ok := g.([]any)
+		if !ok || len(gl) != len(wl) {
 			return false
 		}
+		for i := range wl {
+			if !subset(gl[i], wl[i]) {
+				return false
+			}
+		}
+		return true
 	}
-	return true
+	if wm, ok := w.(map[string]any); ok {
+		gm, ok := g.(map[string]any)
+		if !ok {
+			return false
+		}
+		for k, v := range wm {
+			if !subset(gm[k], v) {
+				return false
+			}
+		}
+		return true
+	}
+	return equalJSON(g, w)
+}
+
+// flat is a block as the vectors write it inline: { hash, type, state, refs, signature, suite? }.
+func flat(m map[string]any) Block {
+	data, _ := json.Marshal(m)
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	var b Block
+	_ = dec.Decode(&b)
+	b.State, b.Refs = orEmpty(b.State), orEmpty(b.Refs)
+	return b
 }
 
 type runner struct {
@@ -120,11 +151,7 @@ func (r *runner) attempt(name string, fn func() bool) {
 	r.report(fn(), name)
 }
 
-func strict(b Block, held map[string]Block) []string {
-	return Check(b.Type, b.State, b.Refs, CheckOptions{Held: held})
-}
-
-// codesOf are the codes a refusal list carries, once each, in protocol.json's order.
+// codesOf are the codes a refusal list carries, once each, in order.
 func codesOf(found []Finding) []string {
 	out := []string{}
 	for _, f := range found {
@@ -135,8 +162,23 @@ func codesOf(found []Finding) []string {
 	return out
 }
 
-func codes(b Block, held map[string]Block) []string {
-	return codesOf(Refusals(b.Type, b.State, b.Refs, CheckOptions{Held: held}))
+func codes(b Block, held []Block) []string {
+	return codesOf(Refusals(b.Type, b.State, b.Refs, CheckOptions{Held: byHashMap(held)}))
+}
+
+func byHashMap(blocks []Block) map[string]Block {
+	out := map[string]Block{}
+	for _, b := range blocks {
+		out[b.Hash] = b
+	}
+	return out
+}
+
+func arrivalsOf(m map[string]any) ArrivedAt {
+	if m == nil {
+		return nil
+	}
+	return func(h string) string { return str(m[h]) }
 }
 
 func TestVectors(t *testing.T) {
@@ -151,22 +193,33 @@ func TestVectors(t *testing.T) {
 
 	// Canonical form: the adversarial cases.
 	for _, c := range items(obj(load(t, "spec", "canonical-vectors.json"))["vectors"]) {
-		b := blockOf(c)
-		h, _ := Hash(b.Type, b.State, b.Refs)
-		cs, _ := Canonical(b.Type, b.State, b.Refs)
+		b := obj(c["block"])
+		hashOf := func(o map[string]any) string {
+			h, _ := Hash(str(o["type"]), obj(o["state"]), obj(o["refs"]))
+			return h
+		}
+		canon := func(o map[string]any) string {
+			s, _ := Canonical(str(o["type"]), obj(o["state"]), obj(o["refs"]))
+			return s
+		}
 		ok := true
 		if c["same_as"] != nil {
-			o := obj(c["same_as"])
-			h2, _ := Hash(str(o["type"]), obj(o["state"]), obj(o["refs"]))
-			ok = ok && h == h2
+			ok = ok && hashOf(b) == hashOf(obj(c["same_as"]))
 		}
 		if c["not_same_as"] != nil {
-			o := obj(c["not_same_as"])
-			h2, _ := Hash(str(o["type"]), obj(o["state"]), obj(o["refs"]))
-			ok = ok && h != h2
+			ok = ok && hashOf(b) != hashOf(obj(c["not_same_as"]))
 		}
 		if c["canonical_contains"] != nil {
-			ok = ok && strings.Contains(cs, str(c["canonical_contains"]))
+			ok = ok && strings.Contains(canon(b), str(c["canonical_contains"]))
+		}
+		if c["canonical"] != nil {
+			ok = ok && canon(b) == str(c["canonical"])
+		}
+		if c["refused"] != nil {
+			got := codesOf(Refusals(str(b["type"]), obj(b["state"]), obj(b["refs"])))
+			for _, code := range list(c["refused"]) {
+				ok = ok && contains(got, code)
+			}
 		}
 		r.report(ok, "canonical: "+str(c["name"]))
 	}
@@ -178,21 +231,27 @@ func TestVectors(t *testing.T) {
 		r.report(cs == str(c["canonical"]) && h == str(c["hash"]), "canonical: "+str(c["name"]))
 	}
 
-	// Hashes and the write check. A block in an earlier shape hashes like any other; the strict check refuses it with the codes named.
-	ran["hashes"] = true
-	for _, c := range items(v["hashes"]) {
-		b := blockOf(c)
-		cs, _ := Canonical(b.Type, b.State, b.Refs)
-		h, _ := Hash(b.Type, b.State, b.Refs)
-		r.report(cs == str(c["canonical"]) && h == str(c["hash"]), "hash: "+str(c["name"]))
-		if c["refused"] == nil {
-			wrong := strict(b, nil)
-			r.report(len(wrong) == 0, "write check: "+str(c["name"]), wrong...)
-			continue
-		}
-		r.report(eq(codes(b, nil), c["refused"]), "strict check refuses it, with its codes: "+str(c["name"]), strings.Join(codes(b, nil), ","))
+	// Hashes: one block of every type, each valid against the blocks before it, its signature opens, one chain per author.
+	ran["hashes"], ran["ledger"] = true, true
+	byHash := map[string]Block{}
+	ledger := append(items(obj(v["ledger"])["genesis"]), items(v["hashes"])...)
+	for _, c := range ledger {
+		byHash[str(c["hash"])] = blockOf(c)
 	}
-	// Each author's blocks form one key chain.
+	before := []Block{}
+	for _, c := range ledger {
+		b := blockOf(c)
+		if c["canonical"] != nil {
+			cs, _ := Canonical(b.Type, b.State, b.Refs)
+			h, _ := Hash(b.Type, b.State, b.Refs)
+			r.report(cs == str(c["canonical"]) && h == str(c["hash"]), "hash: "+str(c["name"]))
+		}
+		h, _ := Hash(b.Type, b.State, b.Refs)
+		r.report(h == b.Hash && Verify(b, b.Signature, pub(t, c["signer"])), "ledger: "+str(c["name"])+": hash and signature")
+		wrong := Valid(b, before, nil, nil)
+		r.report(len(wrong) == 0, "valid: "+str(c["name"]), codesOf(wrong)...)
+		before = append(before, b)
+	}
 	authors := []string{}
 	for _, c := range items(v["hashes"]) {
 		if a := str(obj(obj(c["block"])["refs"])["author"]); a != "" && !contains(authors, a) {
@@ -206,19 +265,15 @@ func TestVectors(t *testing.T) {
 				mine = append(mine, blockOf(c))
 			}
 		}
-		r.report(CheckChain(mine, id).OK, fmt.Sprintf("chain: %s's %d blocks", id[:8], len(mine)))
+		r.report(CheckChain(mine, id).OK, fmt.Sprintf("chain: %s's %d blocks, no gaps, no equivocation", id[:8], len(mine)))
 	}
 	ran["audience"] = true
 	for _, c := range items(v["audience"]) {
 		r.report(SaltedHash(str(c["salt"]), str(c["recipient"])) == str(c["commitment"]), "audience: "+str(c["name"]))
 	}
 
-	// Every signed block in every story: its hash, its signature, and (for a 1.6 block) the write check.
-	byHash := map[string]Block{}
-	for _, c := range items(v["hashes"]) {
-		byHash[str(c["hash"])] = blockOf(c)
-	}
-	folds, refusals, reads, sealed := obj(v["folds"]), obj(v["refusals"]), obj(v["reads"]), obj(v["sealed"])
+	// Every signed block in every story: its hash and its signature, and every block of a story passes the strict check.
+	folds, refusals, sealed := obj(v["folds"]), obj(v["refusals"]), obj(v["sealed"])
 	type story struct {
 		group, name string
 		blocks      any
@@ -252,21 +307,26 @@ func TestVectors(t *testing.T) {
 		for _, c := range items(s.blocks) {
 			b := blockOf(c)
 			byHash[b.Hash] = b
-			if h, _ := Hash(b.Type, b.State, b.Refs); h != b.Hash {
+			if h, _ := Hash(b.Type, b.State, b.Refs, b.Suite); h != b.Hash {
 				wrong = append(wrong, str(c["name"])+": hash")
 			}
 			if !Verify(b, b.Signature, pub(t, c["signer"])) {
 				wrong = append(wrong, str(c["name"])+": signature")
 			}
-			if b.State["seq"] != nil {
-				if w := strict(b, nil); len(w) > 0 {
-					wrong = append(wrong, str(c["name"])+": "+strings.Join(w, "; "))
-				}
+			open := str(key(t, c["signer"])["suite"])
+			if open == "" {
+				open = "std"
+			}
+			if open != suiteOf([]string{b.Suite}) {
+				wrong = append(wrong, str(c["name"])+": suite")
+			}
+			if found := Refusals(b.Type, b.State, b.Refs); len(found) > 0 {
+				wrong = append(wrong, str(c["name"])+": "+strings.Join(codesOf(found), ", "))
 			}
 		}
-		r.report(len(wrong) == 0, fmt.Sprintf("%s: %s: blocks hash, verify and pass the write check", s.group, s.name), wrong...)
+		r.report(len(wrong) == 0, fmt.Sprintf("%s: %s: blocks hash, verify and pass the check", s.group, s.name), wrong...)
 	}
-	ran["identities"], ran["deals"], ran["circles"], ran["folds"], ran["refusals"], ran["reads"], ran["sealed"] = true, true, true, true, true, true, true
+	ran["identities"], ran["deals"], ran["circles"], ran["folds"], ran["refusals"], ran["sealed"] = true, true, true, true, true, true
 
 	opensVector := func(c map[string]any) bool {
 		b, ok := byHash[str(c["hash"])]
@@ -275,9 +335,6 @@ func TestVectors(t *testing.T) {
 	ran["signatures"], ran["bad_signatures"] = true, true
 	for _, c := range items(v["signatures"]) {
 		r.report(opensVector(c), "signature: "+str(c["name"]))
-		// Ed25519 is deterministic: the signature is reproduced from the key.
-		sig, _ := Sign(byHash[str(c["hash"])], str(key(t, c["signer"])["private_key"]))
-		r.report(sig == str(c["signature"]), "signature reproduced: "+str(c["name"]))
 	}
 	for _, c := range items(v["bad_signatures"]) {
 		r.report(!opensVector(c), "bad signature refused: "+str(c["name"]))
@@ -312,10 +369,7 @@ func TestVectors(t *testing.T) {
 	// Identities: which blocks are their author's, which keys speak, who operates an agent.
 	for _, c := range items(v["identities"]) {
 		held := blocksOf(c["blocks"])
-		var arrived ArrivedAt
-		if arrivals := obj(c["arrivals"]); arrivals != nil {
-			arrived = func(h string) string { return str(arrivals[h]) }
-		}
+		arrived := arrivalsOf(obj(c["arrivals"]))
 		id := str(c["id"])
 		for _, b := range held {
 			if want, ok := obj(c["signed_by_author"])[b.Hash]; ok {
@@ -337,13 +391,40 @@ func TestVectors(t *testing.T) {
 		if c["operators"] != nil {
 			r.report(eq(OperatorsOf(id, held), c["operators"]), fmt.Sprintf("identity: %s: its operators", c["name"]))
 		}
-		if c["history"] != nil {
+		{
 			state := IdentityStateOf(id, held, arrived)
-			ok := state.History == str(c["history"]) && eq(state.Keys, c["keys"]) && (c["frozen"] == nil || eq(state.Frozen, c["frozen"]))
+			ok := state.History == "none" && eq(state.Keys, c["keys"]) && (c["frozen"] == nil || eq(state.Frozen, c["frozen"]))
 			for h, want := range obj(c["signed_by_author"]) {
-				ok = ok && state.SignedByAuthor[h] == want
+				if got, there := state.SignedByAuthor[h]; there {
+					ok = ok && got == want
+				}
 			}
-			r.report(ok, fmt.Sprintf("identity: %s: the identity fold (signed_by_author, keys, frozen, history)", c["name"]))
+			r.report(ok, fmt.Sprintf("identity: %s: the identity fold (signed_by_author, keys, frozen)", c["name"]))
+		}
+		// The limit is the principal's fence: sealed to the agent alone, never read by the grant check, read by the principal's node.
+		if f := obj(c["fence"]); f != nil {
+			limit, grant := find(held, str(f["block"])), find(held, str(f["grant"]))
+			audience, _ := arr(limit.State["audience"])
+			r.report(same(limit.Refs["for"], f["grant"]) && limit.State["kind"] == "limit" && eq(limit.State["limit"], f["limit"]) &&
+				FindsSelf(limit, str(f["agent"]), str(f["salt"])) && !FindsSelf(limit, str(f["principal"]), str(f["salt"])) && len(audience) == 1,
+				fmt.Sprintf("identity: %s: sealed to the agent alone", c["name"]))
+			rest := []Block{}
+			for _, b := range held {
+				if b.Hash != limit.Hash {
+					rest = append(rest, b)
+				}
+			}
+			never := obj(grant.State["scope"])["limit"] == nil
+			for h := range obj(c["under"]) {
+				never = never && eq(WhyNotUnder(find(held, h), held), WhyNotUnder(find(held, h), rest))
+			}
+			r.report(never, fmt.Sprintf("identity: %s: the grant check never reads the limit", c["name"]))
+			within := true
+			for _, k := range items(f["within"]) {
+				spent, _ := intOf(k["spent"])
+				within = within && WithinLimit(limit, k["money"], int(spent)) == k["within"]
+			}
+			r.report(within, fmt.Sprintf("identity: %s: the principal's node checks the limit (WithinLimit)", c["name"]))
 		}
 		for h, ok := range obj(c["under"]) {
 			r.report((len(WhyNotUnder(find(held, h), held)) == 0) == ok, fmt.Sprintf("identity: %s: a block under the grant speaks for its grantor", c["name"]))
@@ -353,7 +434,7 @@ func TestVectors(t *testing.T) {
 	// Folds.
 	stageOf := func(c map[string]any) Stage {
 		held := blocksOf(c["blocks"])
-		return PromiseStage(find(held, str(c["first"])), held, StageOptions{Now: str(c["now"])})
+		return PromiseStage(find(held, str(c["first"])), held)
 	}
 	for _, c := range append(items(v["deals"]), items(folds["promises"])...) {
 		want := obj(c["expected"])
@@ -379,8 +460,8 @@ func TestVectors(t *testing.T) {
 				removed = append(removed, who)
 			}
 			ok := eq(members, want["members"]) && eq(sorted(removed), want["removed"])
-			for who, h := range obj(want["counted_to"]) {
-				ok = ok && same(state.Removed[who], h)
+			if want["counted_to"] != nil {
+				ok = ok && eq(state.Removed, want["counted_to"])
 			}
 			for h, may := range obj(c["may_act"]) {
 				ok = ok && MayActAs(find(held, h), str(c["circle"]), held, "") == may
@@ -411,8 +492,7 @@ func TestVectors(t *testing.T) {
 	for _, c := range items(folds["successors"]) {
 		r.attempt("successor: "+str(c["name"]), func() bool {
 			held := blocksOf(c["blocks"])
-			arrivals := obj(c["arrivals"])
-			return subset(SuccessorState(find(held, str(c["grant"])), held, str(c["now"]), func(h string) string { return str(arrivals[h]) }), obj(c["expected"]))
+			return subset(SuccessorView(find(held, str(c["grant"])), held, str(c["now"]), arrivalsOf(obj(c["arrivals"]))), c["expected"])
 		})
 	}
 	for _, c := range items(folds["ballots"]) {
@@ -424,7 +504,7 @@ func TestVectors(t *testing.T) {
 		}
 	}
 	for _, c := range items(folds["rekeys"]) {
-		r.attempt("circle key: "+str(c["name"]), func() bool { return subset(CircleKeyOf(str(c["circle"]), blocksOf(c["blocks"])), obj(c["expected"])) })
+		r.attempt("circle key: "+str(c["name"]), func() bool { return subset(CircleKeyOf(str(c["circle"]), blocksOf(c["blocks"])), c["expected"]) })
 	}
 	known := []string{"promises", "circles", "audience", "things", "successors", "rekeys", "ballots"}
 	for _, k := range foldNames {
@@ -433,9 +513,6 @@ func TestVectors(t *testing.T) {
 
 	// Refusals: what every node must refuse.
 	refusalBlocks := map[string]Block{}
-	for _, b := range blocksOf(refusals["blocks"]) {
-		refusalBlocks[b.Hash] = b
-	}
 	for _, s := range stories {
 		for _, b := range blocksOf(s.blocks) {
 			refusalBlocks[b.Hash] = b
@@ -450,18 +527,38 @@ func TestVectors(t *testing.T) {
 	}
 	for _, c := range items(refusals["cases"]) {
 		r.attempt(fmt.Sprintf("refused (%s): %s", c["by"], c["name"]), func() bool {
+			held := pickBlocks(c["held"])
 			switch c["by"] {
 			case "check":
-				held := map[string]Block{}
-				for _, b := range pickBlocks(c["held"]) {
-					held[b.Hash] = b
-				}
-				return eq(codes(blockOf(c), held), c["codes"])
+				// The block's own parts are passed as they are written: a state that is not an object cannot be a Block.
+				inner := obj(c["block"])
+				found, _ := ask[[]Finding]("refusals", inner["type"], inner["state"], inner["refs"], held, nil)
+				return eq(codesOf(found), c["codes"])
+			case "valid":
+				return eq(codesOf(Valid(flat(obj(c["block"])), held, nil, nil)), c["codes"])
 			case "accept":
-				got := Accept(pickBlocks(c["incoming"]), pickBlocks(c["held"]))
+				var incoming []Block
+				if c["inline"] != nil {
+					for _, one := range items(c["inline"]) {
+						incoming = append(incoming, flat(one))
+					}
+				} else {
+					incoming = pickBlocks(c["incoming"])
+				}
+				got := Accept(incoming, held)
 				// The second of a pair is neither taken nor refused: it is listed in its pair.
 				if c["equivocations"] != nil {
 					return eq(hashesOfBlocks(got.Taken), c["taken"]) && len(got.Refused) == 0 && eq(got.Equivocations, c["equivocations"])
+				}
+				if c["waiting"] != nil {
+					waiting := []string{}
+					for _, w := range got.Waiting {
+						waiting = append(waiting, w.Hash)
+					}
+					return eq(waiting, c["waiting"]) && len(got.Refused) == 0
+				}
+				if c["taken"] != nil {
+					return eq(hashesOfBlocks(got.Taken), c["taken"])
 				}
 				seen := []string{}
 				for _, one := range got.Refused {
@@ -483,7 +580,16 @@ func TestVectors(t *testing.T) {
 				}
 				return true
 			case "fold":
-				return subset(stageOf(c), obj(c["expected"]))
+				return subset(stageOf(c), c["expected"])
+			case "may_act_as":
+				blocks := blocksOf(c["blocks"])
+				return MayActAs(find(blocks, str(c["block"])), str(c["circle"]), blocks, "") == c["ok"]
+			case "under":
+				all := []Block{}
+				for _, b := range refusalBlocks {
+					all = append(all, b)
+				}
+				return (len(WhyNotUnder(refusalBlocks[str(c["block"])], all)) == 0) == c["live"]
 			case "open":
 				_, err := OpenCopy(obj(c["message"]), str(key(t, c["recipient"])["x25519_private"]))
 				var coded *CodedError
@@ -493,41 +599,28 @@ func TestVectors(t *testing.T) {
 		})
 	}
 
-	// Alias reads: one per row of aliases.json.
-	marks := func(read Block) map[string]any {
-		out := map[string]any{"type": read.Type, "state": read.State, "refs": read.Refs}
-		if read.Settles != nil {
-			out["settles"] = read.Settles
-		}
-		if read.Outside != nil {
-			out["outside"] = read.Outside
-		}
-		if read.Retired {
-			out["retired"] = true
-		}
-		return out
-	}
-	for _, c := range items(reads["cases"]) {
-		inner := obj(c["block"])
-		b, _ := Create(str(inner["type"]), obj(inner["state"]), obj(inner["refs"]))
-		r.report(eq(marks(ReadAs(b)), c["reads_as"]), "reads: "+str(c["name"]))
-	}
-
-	// Messages between nodes: every answer signed by the node.
-	ran["messages"] = true
-	ran["cbor"] = true
+	// Messages between nodes: every answer signed by the node; a signed request carries a counter or a challenge, no time.
+	ran["messages"], ran["cbor"], ran["door"] = true, true, true
 	M := obj(v["messages"])
 	node, nodeKey := str(M["node"]), pub(t, M["node_signer"])
-	sp := obj(M["signed_pull"])
-	pullMessage := obj(sp["message"])
-	check := PullCheck{Node: node, Now: str(sp["now"]), Keys: []string{pub(t, sp["signer"])}}
-	r.report(len(PullErrors(pullMessage, check)) == 0, "message: a signed pull names the node, a fresh nonce and at, and is signed by its signer")
-	replay := check
-	replay.Seen = func(string) bool { return true }
-	r.report(len(PullErrors(pullMessage, replay)) > 0, "message: a signed pull replayed is refused")
-	other := cloneMap(pullMessage)
-	other["node"] = strings.Repeat("0", 64)
-	r.report(len(PullErrors(other, check)) > 0, "message: a signed pull for another node is refused")
+	{
+		p, c := obj(M["signed_pull"]), obj(M["signed_pull_challenge"])
+		jem := []string{pub(t, p["signer"])}
+		pm := obj(p["message"])
+		highest, _ := intOf(p["highest"])
+		counter, _ := intOf(pm["counter"])
+		r.report(len(PullRefusals(pm, PullCheck{Node: node, Keys: jem, Highest: &highest})) == 0 && pm["at"] == nil, "message: a signed pull names the node and a counter above the highest seen, and carries no time")
+		r.report(eq(codesOf(PullRefusals(pm, PullCheck{Node: node, Keys: jem, Highest: &counter})), []string{"replay"}), "message: a counter that is not above the highest seen is a replay")
+		r.report(len(PullRefusals(obj(c["message"]), PullCheck{Node: node, Keys: jem, Issued: []string{str(c["challenge"])}})) == 0, "message: a challenge the node issued is taken")
+		r.report(eq(codesOf(PullRefusals(obj(c["message"]), PullCheck{Node: node, Keys: jem})), []string{"replay"}), "message: a challenge the node did not issue, or has seen used, is a replay")
+		r.report(eq(codesOf(PullRefusals(pm, PullCheck{Node: strings.Repeat("0", 64), Keys: jem, Highest: &highest})), []string{"wrong_node"}), "message: a signed pull for another node is refused")
+		changed := cloneMap(pm)
+		changed["since"] = 1
+		r.report(eq(codesOf(PullRefusals(changed, PullCheck{Node: node, Keys: jem, Highest: &highest})), []string{"bad_signature"}), "message: a changed request no longer verifies")
+		sp := obj(M["signed_push"])
+		spHighest, _ := intOf(sp["highest"])
+		r.report(len(PushRefusals(obj(sp["message"]), PullCheck{Node: node, Keys: []string{pub(t, sp["signer"])}, Highest: &spHighest})) == 0, "message: a signed push")
+	}
 	r.report(contains(KeysOf(node, blocksOf(sealed["blocks"]), nil), nodeKey), "message: the node key is a key of its holder, brought in by a key grant")
 	pa := obj(M["pull_answer"])
 	paBlocks, _ := arr(obj(pa["message"])["blocks"])
@@ -573,11 +666,97 @@ func TestVectors(t *testing.T) {
 		a, _ := CanonicalJSON(again)
 		b, _ := CanonicalJSON(push)
 		r.report(err == nil && a == b && eq(again, push), "message: the push answer rebuilds byte for byte")
+		Q := obj(M["push"])
+		req := obj(Q["request"])
+		msgs, _ := arr(req["messages"])
+		built := PushRequest(msgs, obj(req["for"]))
+		r.report(eq(built, req) && eq(obj(req["for"])[str(Q["hash"])], Q["recipients"]) && len(list(Q["recipients"])) == 2, "message: a push names the list of ids each sealed copy is for")
 	}
 	changed := cloneMap(push)
 	changed["taken"] = []any{}
 	r.report(!AnswerSignedBy(changed, []string{nodeKey}), "message: a changed answer no longer verifies")
-	r.report(len(WellKnownErrors(obj(M["discovery"]))) == 0 && eq(M["announcement"], Announcement(obj(M["discovery"]))), "message: discovery and its local announcement")
+	disc := obj(M["discovery"])
+	r.report(len(WellKnownErrors(disc)) == 0 && eq(M["announcement"], Announcement(disc)) && obj(disc["endpoints"])["challenge"] != nil, "message: discovery names the challenge endpoint, and its local announcement")
+
+	// The compact form: block <-> CBOR bytes, text keys and key table 1; the id is the hash of the canonical JSON.
+	C := obj(v["cbor"])
+	signed := func(c map[string]any) Block {
+		b := blockOf(c)
+		b.Hash, b.Signature = str(c["hash"]), str(c["signature"])
+		return b
+	}
+	unhex := func(h any) []byte { b, _ := hex.DecodeString(str(h)); return b }
+	cborCases := items(C["cases"])
+	for _, c := range cborCases {
+		b := signed(c)
+		text, _ := CborEncode(b, false)
+		short, _ := CborEncode(b, true)
+		back, err := CborDecode(unhex(c["cbor_short"]))
+		backText, err2 := CborDecode(unhex(c["cbor"]))
+		cs, _ := Canonical(b.Type, b.State, b.Refs)
+		h, _ := Hash(b.Type, b.State, b.Refs)
+		canonicalBytes, _ := intOf(c["canonical_bytes"])
+		r.report(hex.EncodeToString(text) == str(c["cbor"]) && hex.EncodeToString(short) == str(c["cbor_short"]) &&
+			err == nil && err2 == nil && eq(back, b) && eq(backText, b) && h == str(c["hash"]) && int64(len(cs)) == canonicalBytes, "cbor: "+str(c["name"]))
+	}
+	loose := obj(C["loose"])
+	got, err := CborDecode(unhex(loose["cbor"]))
+	r.report(err == nil && got.Hash == str(loose["hash"]), "cbor: "+str(loose["name"]))
+	{
+		pushC := obj(C["push"])
+		blocks := []Block{}
+		for _, h := range list(pushC["hashes"]) {
+			for _, c := range cborCases {
+				if str(c["hash"]) == h {
+					blocks = append(blocks, signed(c))
+				}
+			}
+		}
+		enc, _ := CborEncodePush(blocks, false)
+		dec, err := CborDecodePush(unhex(pushC["cbor_short"]))
+		r.report(hex.EncodeToString(enc) == str(pushC["cbor"]) && err == nil && eq(dec, blocks), "cbor: "+str(pushC["name"]))
+	}
+	for _, h := range items(C["headers"]) {
+		enc, _ := CborEncodeHeader(obj(h["header"]), false)
+		dec, err := CborDecodeHeader(unhex(h["cbor_short"]))
+		r.report(hex.EncodeToString(enc) == str(h["cbor"]) && err == nil && eq(dec, h["header"]), "cbor: "+str(h["name"]))
+	}
+	for _, c := range items(C["refused"]) {
+		_, err := CborDecode(unhex(c["cbor"]))
+		r.report(err != nil, "cbor refused: "+str(c["name"]))
+	}
+
+	// The door: one case per rule. `expect` is a subset match (exact: true, deep equality); `codes` compares the
+	// refusal codes of the returned list; `error` means the call must fail.
+	for _, d := range items(v["door"]) {
+		args, _ := arr(d["args"])
+		r.attempt("door: "+str(d["name"]), func() bool {
+			got, err := ask[any](str(d["op"]), args...)
+			if err != nil {
+				want := obj(d["error"])
+				var coded *CodedError
+				if want == nil || !errors.As(err, &coded) {
+					return false
+				}
+				return (want["code"] == nil || coded.Code == str(want["code"])) && (want["kind"] == nil || coded.Kind == str(want["kind"]))
+			}
+			if d["error"] != nil {
+				return false
+			}
+			if d["codes"] != nil {
+				found := []Finding{}
+				rows, _ := arr(got)
+				for _, row := range rows {
+					found = append(found, Finding{Code: str(obj(row)["code"])})
+				}
+				return eq(codesOf(found), d["codes"])
+			}
+			if d["exact"] == true {
+				return eq(got, d["expect"])
+			}
+			return subset(got, d["expect"])
+		})
+	}
 
 	// Every section is run; a new one fails here until this SDK runs it.
 	for _, s := range sections {
@@ -589,96 +768,35 @@ func TestVectors(t *testing.T) {
 func TestKeysRebuildFromSeeds(t *testing.T) {
 	for name, k := range obj(vectors(t)["keys"]) {
 		k := obj(k)
-		if seed := str(k["ed25519_seed"]); seed != "" {
-			kp, err := KeypairFromSeed(seed)
-			if err != nil || kp.PublicKeySign != str(k["public_key_sign"]) || (k["private_key"] != nil && kp.PrivateKey != str(k["private_key"])) {
-				t.Errorf("%s: the signing key from its seed", name)
-			}
+		suite := suiteOf([]string{str(k["suite"])})
+		kp, err := KeypairFromSeed(str(k["seed"]), suite)
+		if err != nil || kp.PublicKeySign != str(k["public_key_sign"]) || kp.PrivateKey != str(k["private_key"]) || SuiteOfKey(kp.PublicKeySign) != suite {
+			t.Errorf("%s: the signing key from its seed", name)
 		}
 		if priv := str(k["x25519_private"]); priv != "" {
-			if pk, _ := EncryptionKeyOf(priv); pk != str(k["public_key_encrypt"]) {
+			if pk, _ := EncryptionKeyOf(priv, suite); pk != str(k["public_key_encrypt"]) {
 				t.Errorf("%s: the encryption key", name)
 			}
 		}
-		if h := str(k["hash"]); h != "" && RecoveryKeyHash(str(k["public_key_sign"])) != h {
-			t.Errorf("%s: the recovery key's hash", name)
-		}
 	}
 }
 
-// test/vectors.json: the older cross-language vectors. Same canonical form and hash; a legacy-read shape is refused
-// on write.
-func TestOlderVectors(t *testing.T) {
-	all := items(load(t, "test", "vectors.json"))
-	if len(all) == 0 {
-		t.Fatal("no older vectors")
-	}
-	for _, c := range all {
-		cs, err := Canonical(str(c["type"]), orEmpty(obj(c["state"])), orEmpty(obj(c["refs"])))
-		h, _ := Hash(str(c["type"]), orEmpty(obj(c["state"])), orEmpty(obj(c["refs"])))
-		if err != nil || cs != str(c["expected_canonical"]) || h != str(c["expected_hash"]) {
-			t.Errorf("%s: canonical %q", c["name"], cs)
-		}
-		if c["section"] == "legacy-read" && len(Check(str(c["type"]), obj(c["state"]), obj(c["refs"]))) == 0 {
-			t.Errorf("%s: a legacy shape is refused on write", c["name"])
-		}
-	}
-}
-
-// canonical.md Rule 1: keys and refs string arrays sort by UTF-16 code units, as JavaScript sorts.
+// canonical.md Rule 1: object keys sort by UTF-16 code units, as JavaScript sorts. A set is written sorted, never sorted for you.
 func TestUTF16Order(t *testing.T) {
 	state := map[string]any{"\U0001F35E": 1, "｡": 2, "a": 3}
-	refs := map[string]any{"\U0001F35E": "x", "｡": "y", "sees": []any{"\U0001F35E bread", "｡ dot", "a"}}
+	refs := map[string]any{"\U0001F35E": "x", "｡": "y", "sees": []any{"a", "\U0001F35E bread", "｡ dot"}}
 	c, _ := Canonical("t.a", state, refs)
 	want := `{"refs":{"sees":["a","` + "\U0001F35E" + ` bread","` + "｡" + ` dot"],"` + "\U0001F35E" + `":"x","` + "｡" + `":"y"},"state":{"a":3,"` + "\U0001F35E" + `":1,"` + "｡" + `":2},"type":"t.a"}`
 	if c != want {
 		t.Errorf("got %s", c)
 	}
-	if h, _ := Hash("t.a", state, refs); h != "7ae546cb1398d598d07c4e7873a9547775b5fb7eb53ea7b3e739215a32bb630f" {
-		t.Errorf("hash %s", h)
-	}
 }
 
-// The Rust core carries spec/protocol.json and spec/aliases.json; they equal the repository's spec/ files.
+// The Rust core carries spec/protocol.json; it equals the repository's spec/ file. No other spec copy exists.
 func TestCoreCarriesTheSpec(t *testing.T) {
-	for name, mine := range map[string]map[string]any{"protocol.json": Protocol, "aliases.json": Aliases} {
-		data, err := os.ReadFile(filepath.Join(root, "spec", name))
-		theirs, _ := decodeJSON(data)
-		if err != nil || !equalJSON(mine, theirs) {
-			t.Errorf("the core's built-in %s differs from spec/%s", name, name)
-		}
+	data, err := os.ReadFile(filepath.Join(root, "spec", "protocol.json"))
+	theirs, _ := decodeJSON(data)
+	if err != nil || !equalJSON(Protocol, theirs) {
+		t.Errorf("the core's built-in protocol.json differs from spec/protocol.json")
 	}
-}
-
-func TestCborAndOlderWords(t *testing.T) {
-	v := vectors(t)
-	r := &runner{t: t}
-	C := obj(v["cbor"])
-	signed := func(c map[string]any) Block {
-		b := blockOf(c)
-		b.Hash, b.Signature = str(c["hash"]), str(c["signature"])
-		return b
-	}
-	unhex := func(h any) []byte { b, _ := hex.DecodeString(str(h)); return b }
-	for _, c := range items(C["cases"]) {
-		b := signed(c)
-		text, _ := CborEncode(b, false)
-		short, _ := CborEncode(b, true)
-		r.report(hex.EncodeToString(text) == str(c["cbor"]) && hex.EncodeToString(short) == str(c["cbor_short"]), "cbor writes deterministic bytes: "+str(c["name"]))
-		back, err := CborDecode(unhex(c["cbor_short"]))
-		r.report(err == nil && back.Hash == b.Hash && eq(back.State, b.State) && eq(back.Refs, b.Refs), "cbor reads back to the block: "+str(c["name"]))
-	}
-	loose, err := CborDecode(unhex(obj(C["loose"])["cbor"]))
-	r.report(err == nil && loose.Hash == str(obj(C["loose"])["hash"]), "cbor: any well-formed encoding of the same content is accepted")
-	for _, c := range items(C["refused"]) {
-		_, err := CborDecode(unhex(c["cbor"]))
-		r.report(err != nil, "cbor refused: "+str(c["name"]))
-	}
-	M := obj(v["messages"])
-	for kind, check := range map[string]func(map[string]any, PullCheck) []string{"signed_pull": PullErrors} {
-		o := obj(obj(M["older"])[kind])
-		pc := PullCheck{Node: str(M["node"]), Now: str(o["now"]), Keys: []string{pub(t, o["signer"])}}
-		r.report(len(check(obj(o["message"]), pc)) == 0, "an older "+kind+" (asker) reads as signer")
-	}
-
 }

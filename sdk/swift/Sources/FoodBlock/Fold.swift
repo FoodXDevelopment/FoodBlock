@@ -2,10 +2,15 @@ import Foundation
 
 /// The folds (spec/protocol.md §11): thin calls into the Rust core.
 public enum Fold {
-    public static func promiseStage(_ firstBlock: JSON, _ blocks: [JSON], now: String? = nil, confirmers: [String] = []) -> JSON {
+    /// A promise's stage, from its first promise and every block in its deal. No clock.
+    public static func promiseStage(_ firstBlock: JSON, _ blocks: [JSON], confirmers: [String] = []) -> JSON {
+        (try? Core.json("promise_stage", firstBlock, blocks, ["confirmers": confirmers] as JSON)) ?? [:]
+    }
+    /// The view: the same answer, with stage `expired` once the reader's `now` passes `expires` and nothing binds.
+    public static func promiseView(_ firstBlock: JSON, _ blocks: [JSON], now: String? = nil, confirmers: [String] = []) -> JSON {
         var o: JSON = ["confirmers": confirmers]
         if let n = now { o["now"] = n }
-        return (try? Core.json("promise_stage", firstBlock, blocks, o)) ?? [:]
+        return (try? Core.json("promise_view", firstBlock, blocks, o)) ?? [:]
     }
 
     /// A member, as the spec names it: { roles, grant, counted_to } (counted_to nil for a current member).
@@ -48,9 +53,52 @@ public enum Fold {
     }
     public static func ownerOf(_ instance: JSON, _ blocks: [JSON]) -> String? { Core.maybe("owner_of", instance, blocks) as? String }
     public static func whereNow(_ thing: JSON, _ blocks: [JSON]) -> [String] { Core.strings("where_now", thing, blocks) }
-    public static func successorState(_ grant: JSON, _ blocks: [JSON], now: String? = nil, arrivedAt: Identity.Arrival? = nil) -> JSON {
-        (try? Core.json("successor_state", grant, blocks, now, Identity.log(arrivedAt, blocks))) ?? [:]
+    /// The optional successor profile's view: a grant's events, whether it fired, read at `now` and the arrivals.
+    public static func successorView(_ grant: JSON, _ blocks: [JSON], now: String? = nil, arrivedAt: Identity.Arrival? = nil) -> JSON {
+        (try? Core.json("successor_view", grant, blocks, now, Identity.log(arrivedAt, blocks))) ?? [:]
     }
+    /// The block's orderer (a record's `state.orderer`).
+    public static func ordererOf(_ record: JSON) -> Any? { Core.maybe("orderer_of", record) }
+    public static func receiverOf(_ promise: JSON, _ blocks: [JSON]) -> String? { Core.maybe("receiver_of", promise, blocks) as? String }
+    /// The consent fold: a person's live word about a sender (or none): { word, block }.
+    public static func consent(_ person: String, _ sender: String?, _ blocks: [JSON]) -> JSON { (try? Core.json("consent", person, sender, blocks)) ?? [:] }
+    /// Views, each saying whose clock or arrivals it reads.
+    public static func liveGrant(_ act: JSON, _ grants: [JSON], now: String) -> Bool { Core.bool("live_grant", act, grants, now) }
+    public static func withdrawalSeen(_ withdrawal: JSON, _ block: JSON, _ blocks: [JSON], arrivedAt: Identity.Arrival? = nil) -> Bool {
+        Core.bool("withdrawal_seen", withdrawal, block, blocks, Identity.log(arrivedAt, blocks + [withdrawal, block]))
+    }
+    public static func due(_ promise: JSON, arrivedAt: Identity.Arrival? = nil, held: [JSON] = []) -> Any? { Core.maybe("due", promise, Identity.log(arrivedAt, held + [promise])) }
     public static func circleKey(_ circle: String, _ blocks: [JSON]) -> JSON { (try? Core.json("circle_key", circle, blocks)) ?? [:] }
     public static func countedIn(_ result: JSON?, _ commitment: String, _ counter: String) -> Bool { Core.bool("counted_in", result ?? [:], commitment, counter) }
+}
+
+/// Strangers (modules/strangers.md) and the small profiles: thin calls into the Rust core.
+public enum Strangers {
+    /// A model's reading is the person's claim only once the person's own block confirms it.
+    public static func readingIsPersonsClaim(_ reading: JSON, _ person: String, _ blocks: [JSON]) -> Bool { Core.bool("reading_is_persons_claim", reading, person, blocks) }
+    /// Tasks profile: whether a `reading_condition` holds on the readings held, at the reader's clock.
+    public static func readingConditionHolds(_ condition: JSON, _ blocks: [JSON], now: String) -> Bool { Core.bool("reading_condition_holds", condition, blocks, now) }
+    /// Deposits profile: the shape of an admission's deposit, and whether an ask's deposit is paid.
+    public static func depositShapeOk(_ deposit: Any?) -> Bool { Core.bool("deposit_shape_ok", deposit) }
+    public static func depositPaid(_ ask: JSON, _ deposit: JSON, _ blocks: [JSON]) -> Bool { Core.bool("deposit_paid", ask, deposit, blocks) }
+    /// What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human, stopped.
+    public static func admissionRefusals(_ block: JSON, receiver: String, _ blocks: [JSON], admission: JSON = [:], strangersToday: Int = 0) -> [FoodBlock.Finding] {
+        FoodBlock.findings(Core.maybe("admission_refusals", block, receiver, blocks, admission, strangersToday))
+    }
+    /// Residency (profiles/residency.md): a block that stays in regions its node does not hold in.
+    public static func residencyRefusals(_ block: JSON, holdsIn: [String]) -> [FoodBlock.Finding] { FoodBlock.findings(Core.maybe("residency_refusals", block, holdsIn)) }
+}
+
+/// The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol: no node reads an older shape.
+public enum Legacy {
+    /// Convert old blocks into fresh 1.6 blocks, each deriving from the old hash, signed by the key given for each old identity.
+    /// `keys` maps each old identity to `{ public_key_sign, private_key, suite? }`. Returns { blocks, map, skipped }.
+    public static func convert(_ oldBlocks: [JSON], keys: JSON, at: String, map: JSON = [:], existing: [JSON] = [], channel: String? = nil, requestHash: String? = nil) throws -> JSON {
+        var o: JSON = ["keys": keys, "at": at, "map": map, "existing": existing]
+        if let c = channel { o["channel"] = c }
+        if let r = requestHash { o["request_hash"] = r }
+        return try Core.json("convert", oldBlocks, o)
+    }
+    /// The id an old block had under the old canonical form.
+    public static func oldHash(_ block: JSON) -> String { (try? Core.string("old_hash", block)) ?? "" }
 }

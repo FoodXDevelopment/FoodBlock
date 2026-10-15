@@ -1,1893 +1,682 @@
 [
-  {
-    "name": "legacy-read: empty genesis block",
-    "section": "legacy-read",
-    "type": "actor.producer",
-    "state": {},
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"actor.producer\"}",
-    "expected_hash": "cc9729a4fdef14684cfed69d2969181696c229d551128dc69ec37ffc36058fc2"
-  },
-  {
-    "name": "legacy-read: simple product",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "Sourdough",
-      "price": 4.5
-    },
-    "refs": {
-      "seller": "abc123def456"
-    },
-    "expected_canonical": "{\"refs\":{\"seller\":\"abc123def456\"},\"state\":{\"name\":\"Sourdough\",\"price\":4.5},\"type\":\"substance.product\"}",
-    "expected_hash": "81ad9371a67f4e4bc25ce1fea089789b9e8ad9c0af1c7157b31348850428cb11"
-  },
-  {
-    "name": "legacy-read: multi-ref transform",
-    "section": "legacy-read",
-    "type": "transform.process",
-    "state": {
-      "name": "Baking",
-      "temp": 220,
-      "instance_id": "5b2a94d2-9c9e-981c-3f7a-3113a631bae40000"
-    },
-    "refs": {
-      "inputs": [
-        "flour_hash",
-        "water_hash",
-        "yeast_hash"
-      ],
-      "output": "bread_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\",\"yeast_hash\"],\"output\":\"bread_hash\"},\"state\":{\"instance_id\":\"5b2a94d2-9c9e-981c-3f7a-3113a631bae40000\",\"name\":\"Baking\",\"temp\":220},\"type\":\"transform.process\"}",
-    "expected_hash": "e391506aa2de714c79b1402cbd9596fddaa91acbc855246138de69503c8d8aec"
-  },
-  {
-    "name": "legacy-read: refs array order independence",
-    "section": "legacy-read",
-    "type": "transform.process",
-    "state": {
-      "instance_id": "58745400-1d15-2f8f-e69b-3e63194da53c0000"
-    },
-    "refs": {
-      "inputs": [
-        "zzz",
-        "aaa",
-        "mmm"
-      ]
-    },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"aaa\",\"mmm\",\"zzz\"]},\"state\":{\"instance_id\":\"58745400-1d15-2f8f-e69b-3e63194da53c0000\"},\"type\":\"transform.process\"}",
-    "expected_hash": "075958acfb3f2ee2e27e37b68a8516ea6c8800093b08776e7aa6a8432228a5cf"
-  },
-  {
-    "name": "legacy-read: state array order preservation",
-    "section": "legacy-read",
-    "type": "observe.post",
-    "state": {
-      "content_order": [
-        "block_c",
-        "block_a",
-        "block_b"
-      ],
-      "instance_id": "2f542759-6391-7889-6e5d-7233415426de0000"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"content_order\":[\"block_c\",\"block_a\",\"block_b\"],\"instance_id\":\"2f542759-6391-7889-6e5d-7233415426de0000\"},\"type\":\"observe.post\"}",
-    "expected_hash": "c8037e1d94525cbd89094639bf9853900c9d3561b598d26ea273ae0847167b5e"
-  },
-  {
-    "name": "key order independence",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "z": 26,
-      "a": 1,
-      "m": 13
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":1,\"m\":13,\"z\":26},\"type\":\"test\"}",
-    "expected_hash": "32e651fad98db90391aae263803581771607f01a41849d96375b8038908ddb85"
-  },
-  {
-    "name": "legacy-read: nested state",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "Eggs",
-      "weight": {
-        "value": 500,
-        "unit": "g"
-      },
-      "allergens": {
-        "gluten": false,
-        "dairy": false,
-        "eggs": true
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"allergens\":{\"dairy\":false,\"eggs\":true,\"gluten\":false},\"name\":\"Eggs\",\"weight\":{\"unit\":\"g\",\"value\":500}},\"type\":\"substance.product\"}",
-    "expected_hash": "cacbbb0608b5cd9cb1c82d5d5cf9f8646b246a5243bab68ba00a8b39d14afd77"
-  },
-  {
-    "name": "legacy-read: visibility in state",
-    "section": "legacy-read",
-    "type": "observe.review",
-    "state": {
-      "rating": 5,
-      "text": "Excellent",
-      "visibility": "public",
-      "instance_id": "82aef924-7d70-9055-71d6-b1add10137f60000"
-    },
-    "refs": {
-      "subject": "product_hash",
-      "author": "user_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"author\":\"user_hash\",\"subject\":\"product_hash\"},\"state\":{\"instance_id\":\"82aef924-7d70-9055-71d6-b1add10137f60000\",\"rating\":5,\"text\":\"Excellent\",\"visibility\":\"public\"},\"type\":\"observe.review\"}",
-    "expected_hash": "a86b3e27a280462e57fdc88952c9f7d1c0e656089f1e7d7eff7e01fa1904b590"
-  },
-  {
-    "name": "legacy-read: unicode content",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": {
-        "en": "Bread",
-        "ar": "خبز",
-        "fr": "Pain",
-        "ja": "パン"
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":{\"ar\":\"خبز\",\"en\":\"Bread\",\"fr\":\"Pain\",\"ja\":\"パン\"}},\"type\":\"substance.product\"}",
-    "expected_hash": "2b8e566561b9d3aa2168f4e4b5ec1ae76407744d31532a0848711959e1fd5f99"
-  },
-  {
-    "name": "legacy-read: IoT fridge scan",
-    "section": "legacy-read",
-    "type": "observe.scan",
-    "state": {
-      "visibility": "direct",
-      "detected": [
-        {
-          "item": "Sourdough",
-          "gtin": "5000128000123",
-          "best_before": "2026-02-20",
-          "confidence": 0.94
-        }
-      ],
-      "instance_id": "c678b5df-2d36-2466-a888-d5e7e5f9f4fe0000"
-    },
-    "refs": {
-      "author": "camera_hash",
-      "place": "fridge_hash",
-      "owner": "user_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"author\":\"camera_hash\",\"owner\":\"user_hash\",\"place\":\"fridge_hash\"},\"state\":{\"detected\":[{\"best_before\":\"2026-02-20\",\"confidence\":0.94,\"gtin\":\"5000128000123\",\"item\":\"Sourdough\"}],\"instance_id\":\"c678b5df-2d36-2466-a888-d5e7e5f9f4fe0000\",\"visibility\":\"direct\"},\"type\":\"observe.scan\"}",
-    "expected_hash": "6bb491000d333929cca02458cca8ef9de67d76e47fe8462036bb48c3cb4b48ee"
-  },
-  {
-    "name": "legacy-read: tombstone block",
-    "section": "legacy-read",
-    "type": "observe.tombstone",
-    "state": {
-      "reason": "gdpr_erasure",
-      "requested_by": "user_abc",
-      "instance_id": "9a9c12eb-fbb8-01cd-118d-bbcf9f7b97110000"
-    },
-    "refs": {
-      "target": "block_hash_123",
-      "updates": "block_hash_123"
-    },
-    "expected_canonical": "{\"refs\":{\"target\":\"block_hash_123\",\"updates\":\"block_hash_123\"},\"state\":{\"instance_id\":\"9a9c12eb-fbb8-01cd-118d-bbcf9f7b97110000\",\"reason\":\"gdpr_erasure\",\"requested_by\":\"user_abc\"},\"type\":\"observe.tombstone\"}",
-    "expected_hash": "a352e82759f7d4973e6a7b7c79c087c02a368b1c1853038a39352ed3ae7df7ca"
-  },
-  {
-    "name": "legacy-read: schema reference in state",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "$schema": "foodblock:substance.product@1.0",
-      "name": "Sourdough",
-      "price": 4.5
-    },
-    "refs": {
-      "seller": "bakery_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"seller\":\"bakery_hash\"},\"state\":{\"$schema\":\"foodblock:substance.product@1.0\",\"name\":\"Sourdough\",\"price\":4.5},\"type\":\"substance.product\"}",
-    "expected_hash": "42ccd2b220c939a1d3bf7ad335536914f889e12eccedbfde83a7b203601a9570"
-  },
-  {
-    "name": "legacy-read: instance_id for unique events",
-    "section": "legacy-read",
-    "type": "transfer.order",
-    "state": {
-      "instance_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-      "quantity": 50,
-      "unit": "kg",
-      "total": 90
-    },
-    "refs": {
-      "buyer": "bakery_hash",
-      "seller": "mill_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"buyer\":\"bakery_hash\",\"seller\":\"mill_hash\"},\"state\":{\"instance_id\":\"f47ac10b-58cc-4372-a567-0e02b2c3d479\",\"quantity\":50,\"total\":90,\"unit\":\"kg\"},\"type\":\"transfer.order\"}",
-    "expected_hash": "50e1ce905a96f30cf3b1e9808f3ba038bda04a6f804ae3a5c51d95a9a5ad3f4b"
-  },
-  {
-    "name": "legacy-read: boolean values",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "Bread",
-      "organic": true,
-      "gluten_free": false
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"gluten_free\":false,\"name\":\"Bread\",\"organic\":true},\"type\":\"substance.product\"}",
-    "expected_hash": "f1c51ad7c155f2426b8a7a086ccd79fc85ba7ed054c43ec2faf6abd17c4e002d"
-  },
-  {
-    "name": "legacy-read: approval block",
-    "section": "legacy-read",
-    "type": "observe.approval",
-    "state": {
-      "action": "transfer_update_rights",
-      "target_chain": "genesis_abc",
-      "granted_to": "new_author_xyz",
-      "instance_id": "c0941131-81c1-1991-687f-b549ca14dc300000"
-    },
-    "refs": {
-      "author": "original_author_hash",
-      "grantee": "new_author_xyz"
-    },
-    "expected_canonical": "{\"refs\":{\"author\":\"original_author_hash\",\"grantee\":\"new_author_xyz\"},\"state\":{\"action\":\"transfer_update_rights\",\"granted_to\":\"new_author_xyz\",\"instance_id\":\"c0941131-81c1-1991-687f-b549ca14dc300000\",\"target_chain\":\"genesis_abc\"},\"type\":\"observe.approval\"}",
-    "expected_hash": "b5b47dcd578f7df6f8d1516219ecab628fc77952773d31788fcc5d5e21fbe7c4"
-  },
-  {
-    "name": "negative zero normalization",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 0
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
-    "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
-  },
-  {
-    "name": "legacy-read: very small decimal (RFC 8785)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 1e-06
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.000001},\"type\":\"test\"}",
-    "expected_hash": "fa0a7de1e5637a8dafde2691154c3c330f2e08f0e3788124c8a0696403cebd7b"
-  },
-  {
-    "name": "large integer",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "count": 1000000000
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"count\":1000000000},\"type\":\"test\"}",
-    "expected_hash": "5418cd53b4931e4f14394edc8edaf9eaa2d7c4c6daf35d77100fef60c14ab97d"
-  },
-  {
-    "name": "float that equals integer (RFC 8785)",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 100
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100},\"type\":\"test\"}",
-    "expected_hash": "e5a8c71154ce0ff3835c188333a4fc8d9d48e1bb581cf0569db549f934a9fbf5"
-  },
-  {
-    "name": "deeply nested state",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "a": {
-        "b": {
-          "c": {
-            "d": 1
-          }
-        }
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":1}}}},\"type\":\"test\"}",
-    "expected_hash": "d964cdf78572f89b32210d648227b11a000458c6bdb87145c2e5db18aef3bd9c"
-  },
-  {
-    "name": "null values omitted",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "name": "Keep",
-      "removed": null
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Keep\"},\"type\":\"test\"}",
-    "expected_hash": "06a9ca35335254ff9b19568be5f4bd9881a9da40deaec7c0b306798691cb07ab"
-  },
-  {
-    "name": "legacy-read: vocabulary block",
-    "section": "legacy-read",
-    "type": "observe.vocabulary",
-    "state": {
-      "domain": "bakery",
-      "for_types": [
-        "substance.product"
-      ],
-      "fields": {
-        "price": {
-          "type": "number",
-          "aliases": [
-            "costs",
-            "sells for"
-          ]
-        }
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"domain\":\"bakery\",\"fields\":{\"price\":{\"aliases\":[\"costs\",\"sells for\"],\"type\":\"number\"}},\"for_types\":[\"substance.product\"]},\"type\":\"observe.vocabulary\"}",
-    "expected_hash": "8c8241561e4ecbf14283e143d82091e4611f6b73a6782625d74790484ae80be9"
-  },
-  {
-    "name": "legacy-read: attestation block",
-    "section": "legacy-read",
-    "type": "observe.attestation",
-    "state": {
-      "confidence": "verified",
-      "method": "on-site inspection",
-      "instance_id": "d204d924-9f9f-bf68-b83a-d748cf39bfe20000"
-    },
-    "refs": {
-      "confirms": "claim_hash",
-      "attestor": "inspector_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"attestor\":\"inspector_hash\",\"confirms\":\"claim_hash\"},\"state\":{\"confidence\":\"verified\",\"instance_id\":\"d204d924-9f9f-bf68-b83a-d748cf39bfe20000\",\"method\":\"on-site inspection\"},\"type\":\"observe.attestation\"}",
-    "expected_hash": "938d5fc725d9ecc6c63cbff044d47f12d6a6b6cfc19e92a2877b2169ff54a663"
-  },
-  {
-    "name": "legacy-read: merge block with refs array sorting",
-    "section": "legacy-read",
-    "type": "observe.merge",
-    "state": {
-      "strategy": "a_wins",
-      "instance_id": "e4eedd4b-06a7-b593-ba74-23cc6fe80cd00000"
-    },
-    "refs": {
-      "merges": [
-        "fork_b_hash",
-        "fork_a_hash"
-      ]
-    },
-    "expected_canonical": "{\"refs\":{\"merges\":[\"fork_a_hash\",\"fork_b_hash\"]},\"state\":{\"instance_id\":\"e4eedd4b-06a7-b593-ba74-23cc6fe80cd00000\",\"strategy\":\"a_wins\"},\"type\":\"observe.merge\"}",
-    "expected_hash": "0832298d25da61880f49345d9d74042c6ea71c69d850e03688efa8d96bd958b8"
-  },
-  {
-    "name": "legacy-read: snapshot block",
-    "section": "legacy-read",
-    "type": "observe.snapshot",
-    "state": {
-      "block_count": 500,
-      "merkle_root": "abc123",
-      "instance_id": "5032832a-8a58-9a72-e6b5-022cd13d99480000"
-    },
-    "refs": {
-      "author": "server_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"author\":\"server_hash\"},\"state\":{\"block_count\":500,\"instance_id\":\"5032832a-8a58-9a72-e6b5-022cd13d99480000\",\"merkle_root\":\"abc123\"},\"type\":\"observe.snapshot\"}",
-    "expected_hash": "f3765047cd8b0cc622565142909049930f63753d773348268e5d9cea7d2b8cd6"
-  },
-  {
-    "name": "legacy-read: dispute block",
-    "section": "legacy-read",
-    "type": "observe.dispute",
-    "state": {
-      "reason": "certificate expired",
-      "instance_id": "debd78ce-f6fd-3dcc-6ed5-fece97e9bbeb0000"
-    },
-    "refs": {
-      "challenges": "claim_hash",
-      "disputor": "challenger_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"challenges\":\"claim_hash\",\"disputor\":\"challenger_hash\"},\"state\":{\"instance_id\":\"debd78ce-f6fd-3dcc-6ed5-fece97e9bbeb0000\",\"reason\":\"certificate expired\"},\"type\":\"observe.dispute\"}",
-    "expected_hash": "d3cbdd4659c323045733f76e09c210e833220b8b5dddd1082921fa91c51fed22"
-  },
-  {
-    "name": "legacy-read: mixed number types",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "integer": 42,
-      "float_val": 3.14,
-      "zero": 0
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"float_val\":3.14,\"integer\":42,\"zero\":0},\"type\":\"test\"}",
-    "expected_hash": "d6b1fe55985b70931fd4405a1367e922ff7a643e6e7509db581ddba04d983bbf"
-  },
-  {
-    "name": "empty string value",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "name": ""
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
-    "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
-  },
-  {
-    "name": "special characters in string",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "note": "Line 1\nLine 2\ttab"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"Line 1\\nLine 2\\ttab\"},\"type\":\"test\"}",
-    "expected_hash": "1316ddda14979ab171b80bf2baf6ac26e191d59d5f40a248dcfff44f7b2487a4"
-  },
-  {
-    "name": "legacy-read: unicode: café (precomposed)",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "café"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"café\"},\"type\":\"substance.product\"}",
-    "expected_hash": "8b08091c8330476cd3961bd0624abadbd6a1a30e1dd712c3615d62c03f798257"
-  },
-  {
-    "name": "legacy-read: unicode: résumé",
-    "section": "legacy-read",
-    "type": "actor",
-    "state": {
-      "title": "résumé"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"title\":\"résumé\"},\"type\":\"actor\"}",
-    "expected_hash": "d0069c27971345636f90bdea9edd711165c337bff34ae6939b166c4e76daf1f6"
-  },
-  {
-    "name": "unicode: naïve",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "word": "naïve"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"word\":\"naïve\"},\"type\":\"test\"}",
-    "expected_hash": "4426d0848edf7f17bffe83473426f07cc47268692568d0f7db75d39119d07bda"
-  },
-  {
-    "name": "unicode: decomposed e+combining acute",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "name": "café"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"café\"},\"type\":\"test\"}",
-    "expected_hash": "a87b416b4098de9fcd4c4098622429199d9910c702226bf9c63cf001ad08bf1b"
-  },
-  {
-    "name": "unicode: precomposed é",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "letter": "é"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"letter\":\"é\"},\"type\":\"test\"}",
-    "expected_hash": "15782df426c9df607ca1abe5d955cbd9f02c642e201cc7189143fea3b7bb22b4"
-  },
-  {
-    "name": "unicode: decomposed e+acute (should match precomposed)",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "letter": "é"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"letter\":\"é\"},\"type\":\"test\"}",
-    "expected_hash": "15782df426c9df607ca1abe5d955cbd9f02c642e201cc7189143fea3b7bb22b4"
-  },
-  {
-    "name": "legacy-read: unicode: bread emoji",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "🍞 Sourdough"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"🍞 Sourdough\"},\"type\":\"substance.product\"}",
-    "expected_hash": "4a95b2ed6004006682aebad22a2f5a306df442ae9a36c45ce2edca5d72448ce0"
-  },
-  {
-    "name": "legacy-read: unicode: cheese emoji",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "🧀 Cheddar"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"🧀 Cheddar\"},\"type\":\"substance.product\"}",
-    "expected_hash": "510665fffdec51a23fc7764bcd2ee9f5c16bc2a4ce5ae70e37541443db5ed47e"
-  },
-  {
-    "name": "legacy-read: unicode: carrot emoji",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "🥕 Carrot"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"🥕 Carrot\"},\"type\":\"substance.product\"}",
-    "expected_hash": "17576873483d880e4b9004c9f5c6b319f9db36569cda93dfca0781f9523fe06c"
-  },
-  {
-    "name": "legacy-read: unicode: CJK sushi",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "寿司"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"寿司\"},\"type\":\"substance.product\"}",
-    "expected_hash": "9fa0e54ac9ef906ad3754918b65e098fa8606c4168a66559fec5fd2a7a865e3e"
-  },
-  {
-    "name": "legacy-read: unicode: CJK bread (面包)",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "面包"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"面包\"},\"type\":\"substance.product\"}",
-    "expected_hash": "aa10339b6e962f0e3158408c5fa22c0edbf5432f8e793ce514a55d8d59c287ed"
-  },
-  {
-    "name": "legacy-read: unicode: mixed ASCII + CJK + emoji",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "Bread 面包 🍞"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Bread 面包 🍞\"},\"type\":\"substance.product\"}",
-    "expected_hash": "4f5064c5bdf31f67b69f95bbad3bfad95065222b1d4894321370dd61318210d5"
-  },
-  {
-    "name": "legacy-read: unicode: Arabic bread (خبز)",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "خبز"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"خبز\"},\"type\":\"substance.product\"}",
-    "expected_hash": "d923c4a376ea48e52c912ea544cd3a52cca1a65dcc7ad3fb0c9b1d2b50ff1c46"
-  },
-  {
-    "name": "legacy-read: unicode: Korean rice (밥)",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "밥"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"밥\"},\"type\":\"substance.product\"}",
-    "expected_hash": "4c71916c05c50523f5478a2966f9cca06bdc967e27346436194cf7c6cbec2f36"
-  },
-  {
-    "name": "nested: 2-level",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "a": {
-        "b": "c"
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":\"c\"}},\"type\":\"test\"}",
-    "expected_hash": "d549cf7e04c384bd84e23311efd7240357695a281788ba7a08ecacfb7d9ce960"
-  },
-  {
-    "name": "nested: 3-level",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "a": {
-        "b": {
-          "c": "d"
-        }
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":\"d\"}}},\"type\":\"test\"}",
-    "expected_hash": "f5039c5f5773726a38e17d0d802733bc2397a723a7f4225c03fe1310afd7301f"
-  },
-  {
-    "name": "nested: 4-level with value",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "a": {
-        "b": {
-          "c": {
-            "d": 42
-          }
-        }
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":42}}}},\"type\":\"test\"}",
-    "expected_hash": "5bf434aa60de62ce4211b71e81626f9baa718d00adc2d3e501cb934dc9638024"
-  },
-  {
-    "name": "nested: arrays in objects",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "menu": {
-        "items": [
-          "pizza",
-          "pasta",
-          "salad"
-        ]
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"menu\":{\"items\":[\"pizza\",\"pasta\",\"salad\"]}},\"type\":\"test\"}",
-    "expected_hash": "d543d59014080c4abf92d78cd06fe23bfa3007f07fe45de7ee5b428ca8739883"
-  },
-  {
-    "name": "nested: objects in arrays",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "items": [
-        {
-          "name": "a",
-          "qty": 1
-        },
-        {
-          "name": "b",
-          "qty": 2
-        }
-      ]
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"items\":[{\"name\":\"a\",\"qty\":1},{\"name\":\"b\",\"qty\":2}]},\"type\":\"test\"}",
-    "expected_hash": "afc9144aa85176b9f362b11796f407dcd84956cbde4e4a80b3e8f7f3b5d4f415"
-  },
-  {
-    "name": "nested: mixed nesting deep",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "config": {
-        "limits": {
-          "max": 100,
-          "min": 1
-        },
-        "tags": [
-          "organic",
-          "local"
-        ],
-        "nested": {
-          "deep": {
-            "value": true
-          }
-        }
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"config\":{\"limits\":{\"max\":100,\"min\":1},\"nested\":{\"deep\":{\"value\":true}},\"tags\":[\"organic\",\"local\"]}},\"type\":\"test\"}",
-    "expected_hash": "1044ae5ca37a4be08f11e82117b91ecceeed0ed4dfc8d752832be6313f508d39"
-  },
-  {
-    "name": "nested: key ordering at every level",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "z": {
-        "z2": "last",
-        "a2": "first"
-      },
-      "a": {
-        "z1": "last",
-        "a1": "first"
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"a1\":\"first\",\"z1\":\"last\"},\"z\":{\"a2\":\"first\",\"z2\":\"last\"}},\"type\":\"test\"}",
-    "expected_hash": "15b91ea960af98c2e510ec499f15ae1bd76ad62c435c0b307ff37d831c4591d4"
-  },
-  {
-    "name": "array: 10+ string elements",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "ingredients": [
-        "flour",
-        "water",
-        "salt",
-        "yeast",
-        "sugar",
-        "butter",
-        "eggs",
-        "milk",
-        "vanilla",
-        "cinnamon",
-        "nutmeg"
-      ]
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"ingredients\":[\"flour\",\"water\",\"salt\",\"yeast\",\"sugar\",\"butter\",\"eggs\",\"milk\",\"vanilla\",\"cinnamon\",\"nutmeg\"]},\"type\":\"test\"}",
-    "expected_hash": "6201470c4ad17f75e2baa15066031b146a987e3d702200617790e4843b61a2e7"
-  },
-  {
-    "name": "legacy-read: array: mixed types",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "values": [
-        "hello",
-        42,
-        true,
-        false,
-        3.14,
-        "world",
-        0,
-        -1
-      ]
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"values\":[\"hello\",42,true,false,3.14,\"world\",0,-1]},\"type\":\"test\"}",
-    "expected_hash": "11a3efde10c929ae1de3a522a54e23f4b38295b7cc122f71427b285d1f2d0ef7"
-  },
-  {
-    "name": "array: empty array",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "items": []
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"items\":[]},\"type\":\"test\"}",
-    "expected_hash": "cc74a3e0596f7f22f2b72216cd96496b0fe9d4b2336c1714bbf5d6be2a2e10c4"
-  },
-  {
-    "name": "array: nested arrays",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "matrix": [
-        [
-          1,
-          2
-        ],
-        [
-          3,
-          4
-        ],
-        [
-          5,
-          6
-        ]
-      ]
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"matrix\":[[1,2],[3,4],[5,6]]},\"type\":\"test\"}",
-    "expected_hash": "a2177132e12c45962e6b407a6f29792f2f5ed648e2dd7c4827ac574c86ac67e0"
-  },
-  {
-    "name": "array: single element",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "tags": [
-        "organic"
-      ]
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"tags\":[\"organic\"]},\"type\":\"test\"}",
-    "expected_hash": "02a98ce904cc79c012c9387e4b0dd650215911cb4dd2706537debfda463a705d"
-  },
-  {
-    "name": "array: objects with varying keys",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "records": [
-        {
-          "id": 1,
-          "name": "first"
-        },
-        {
-          "id": 2,
-          "name": "second",
-          "extra": true
-        },
-        {
-          "id": 3
-        }
-      ]
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"records\":[{\"id\":1,\"name\":\"first\"},{\"extra\":true,\"id\":2,\"name\":\"second\"},{\"id\":3}]},\"type\":\"test\"}",
-    "expected_hash": "1d384578e01b4cfa975a7c4c12d7e12718f2a66d5368a47c1c581af10399b869"
-  },
-  {
-    "name": "legacy-read: refs: 5+ roles",
-    "section": "legacy-read",
-    "type": "transfer.order",
-    "state": {
-      "quantity": 100,
-      "instance_id": "1c196c21-4cfe-4537-3814-1d6e5d184fb60000"
-    },
-    "refs": {
-      "buyer": "buyer_hash",
-      "seller": "seller_hash",
-      "product": "product_hash",
-      "warehouse": "warehouse_hash",
-      "inspector": "inspector_hash",
-      "carrier": "carrier_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"buyer\":\"buyer_hash\",\"carrier\":\"carrier_hash\",\"inspector\":\"inspector_hash\",\"product\":\"product_hash\",\"seller\":\"seller_hash\",\"warehouse\":\"warehouse_hash\"},\"state\":{\"instance_id\":\"1c196c21-4cfe-4537-3814-1d6e5d184fb60000\",\"quantity\":100},\"type\":\"transfer.order\"}",
-    "expected_hash": "2b3197188d7878553c41159c57ca28abfd255d19a276bb990614a1ad569e58d8"
-  },
-  {
-    "name": "legacy-read: refs: array with multiple hashes sorted",
-    "section": "legacy-read",
-    "type": "transform.process",
-    "state": {
-      "instance_id": "750bb54a-f2bf-ad86-5afc-b1883befa3a20000"
-    },
-    "refs": {
-      "inputs": [
-        "hash_z",
-        "hash_a",
-        "hash_m",
-        "hash_b"
-      ],
-      "output": "result_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"hash_a\",\"hash_b\",\"hash_m\",\"hash_z\"],\"output\":\"result_hash\"},\"state\":{\"instance_id\":\"750bb54a-f2bf-ad86-5afc-b1883befa3a20000\"},\"type\":\"transform.process\"}",
-    "expected_hash": "04a317507d11b57887e63e378c61e8579a1080f1ddbba62e3fe06725635d3d23"
-  },
-  {
-    "name": "refs: empty refs object",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 1
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1},\"type\":\"test\"}",
-    "expected_hash": "c2f43a1e46114ed16c26ee08c6ae08552ab84e133990c7279c067a53444d749a"
-  },
-  {
-    "name": "legacy-read: refs: single ref",
-    "section": "legacy-read",
-    "type": "observe.review",
-    "state": {
-      "rating": 4,
-      "instance_id": "57cfc26a-294b-dd93-d5d2-8b2659536ffa0000"
-    },
-    "refs": {
-      "subject": "product_hash_abc"
-    },
-    "expected_canonical": "{\"refs\":{\"subject\":\"product_hash_abc\"},\"state\":{\"instance_id\":\"57cfc26a-294b-dd93-d5d2-8b2659536ffa0000\",\"rating\":4},\"type\":\"observe.review\"}",
-    "expected_hash": "ff4f43f0be161eeea16a5c0e738670b4d00535a154882fc99ca200d63bda4fd1"
-  },
-  {
-    "name": "legacy-read: refs: multiple array refs",
-    "section": "legacy-read",
-    "type": "observe.merge",
-    "state": {
-      "instance_id": "f5c5116c-32ab-059d-ebfb-1e5f04eb871d0000"
-    },
-    "refs": {
-      "merges": [
-        "chain_b",
-        "chain_a",
-        "chain_c"
-      ],
-      "witnesses": [
-        "witness_2",
-        "witness_1"
-      ]
-    },
-    "expected_canonical": "{\"refs\":{\"merges\":[\"chain_a\",\"chain_b\",\"chain_c\"],\"witnesses\":[\"witness_1\",\"witness_2\"]},\"state\":{\"instance_id\":\"f5c5116c-32ab-059d-ebfb-1e5f04eb871d0000\"},\"type\":\"observe.merge\"}",
-    "expected_hash": "32ec2e4951189670e487ee8cab7999fb6d45c3c769422116fadd9e3c797f6e0d"
-  },
-  {
-    "name": "refs: refs key ordering",
-    "section": "canonical",
-    "type": "test",
-    "state": {},
-    "refs": {
-      "z_ref": "zzz",
-      "a_ref": "aaa",
-      "m_ref": "mmm"
-    },
-    "expected_canonical": "{\"refs\":{\"a_ref\":\"aaa\",\"m_ref\":\"mmm\",\"z_ref\":\"zzz\"},\"state\":{},\"type\":\"test\"}",
-    "expected_hash": "1b7bc3e57297d70ba0c340efe3cab32a406dbe2641150910f7143d9a838ea1e8"
-  },
-  {
-    "name": "minimal: empty state empty refs",
-    "section": "canonical",
-    "type": "test",
-    "state": {},
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"test\"}",
-    "expected_hash": "151b9ba09bc59cf04dbe8730169e4f5533946c6c598678e733ebb3809d7459e1"
-  },
-  {
-    "name": "minimal: empty string value",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "name": ""
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
-    "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
-  },
-  {
-    "name": "minimal: zero value",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "count": 0
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"count\":0},\"type\":\"test\"}",
-    "expected_hash": "2cbeaddeca0823e02e390ca18f35e5a6630d325f8a8978a928f0a98b7350c9ff"
-  },
-  {
-    "name": "minimal: false value",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "active": false
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"active\":false},\"type\":\"test\"}",
-    "expected_hash": "162f1f6264db712ffa98ef152b04d11a6dd4c791f5cbbcbe50e8c0c5566efbf6"
-  },
-  {
-    "name": "minimal: single field",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "x": 1
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"x\":1},\"type\":\"test\"}",
-    "expected_hash": "be2583c3143be138e79f88b77d934c8f07d07eaea1a403c0e2ecfd9e28b960da"
-  },
-  {
-    "name": "legacy-read: minimal: type only (substance)",
-    "section": "legacy-read",
-    "type": "substance",
-    "state": {},
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"substance\"}",
-    "expected_hash": "06b0a732788eecd189b393429723529da1e47d9485e05e0e6983b19f323b5509"
-  },
-  {
-    "name": "number: 1e15 (quadrillion)",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 1000000000000000
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1000000000000000},\"type\":\"test\"}",
-    "expected_hash": "d82b837bf2002e2d5bc68854c3516e817978453247b8cec9ed255d27d68c2499"
-  },
-  {
-    "name": "number: 1e20",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 100000000000000000000
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100000000000000000000},\"type\":\"test\"}",
-    "expected_hash": "4514f135ed4b5a7b20ddee22af3de618dc8e74e5a4a093fbc0d774cbf5e2f005"
-  },
-  {
-    "name": "legacy-read: number: 1e-7 (small)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 1e-07
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-7},\"type\":\"test\"}",
-    "expected_hash": "15d2d0de8fd5dce0d013de0dbe271d6aa5d4574049d655b572ff8d5d005ae164"
-  },
-  {
-    "name": "legacy-read: number: 1e-15 (very small)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 1e-15
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-15},\"type\":\"test\"}",
-    "expected_hash": "434442f3b45bb73df61feb005d0ca988fad19e4a4b0d7bc2889d3253d71445c8"
-  },
-  {
-    "name": "number: negative zero becomes 0",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 0
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
-    "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
-  },
-  {
-    "name": "number: integer-like float 1.0",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 1
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1},\"type\":\"test\"}",
-    "expected_hash": "c2f43a1e46114ed16c26ee08c6ae08552ab84e133990c7279c067a53444d749a"
-  },
-  {
-    "name": "number: integer-like float 42.0",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 42
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":42},\"type\":\"test\"}",
-    "expected_hash": "8a96f347b533d254b04a708527948558b7936dfef36a7be6afdb846918dfb68a"
-  },
-  {
-    "name": "legacy-read: number: pi",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 3.141592653589793
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":3.141592653589793},\"type\":\"test\"}",
-    "expected_hash": "eb64f334b087f88bfd0a5400894d56d0ea4e4d0e261fff3bc896b5b29e78945d"
-  },
-  {
-    "name": "legacy-read: number: e (Euler)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 2.718281828459045
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":2.718281828459045},\"type\":\"test\"}",
-    "expected_hash": "0ceb74fc6df92de5dd8ba6623f3ea285b237e1dd6be5d996fc39fe945fa44649"
-  },
-  {
-    "name": "number: negative integer",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": -42
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-42},\"type\":\"test\"}",
-    "expected_hash": "6d2f1212fca6e70740388ec876641c4c1ea0edc5e0b75b29c902477cdf599ba9"
-  },
-  {
-    "name": "legacy-read: number: negative float",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": -3.14
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-3.14},\"type\":\"test\"}",
-    "expected_hash": "51ab7d9f1cf26d44e16cfde5e3d2e62691a334a97a4f96933036fac1b922c691"
-  },
-  {
-    "name": "number: MAX_SAFE_INTEGER",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 9007199254740991
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":9007199254740991},\"type\":\"test\"}",
-    "expected_hash": "df9cf2ce064a3b04b4fb277b919a5fcb1f2fd1ee84ee4c97ad134b0cf26d21fe"
-  },
-  {
-    "name": "number: MIN_SAFE_INTEGER",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": -9007199254740991
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-9007199254740991},\"type\":\"test\"}",
-    "expected_hash": "799ed23507c40c807eda5093d6cbc40687283085b60d40c0b11def36d261858d"
-  },
-  {
-    "name": "legacy-read: number: 0.1 (IEEE 754 representation)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 0.1
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.1},\"type\":\"test\"}",
-    "expected_hash": "82ef10d40a523f4e80423ec9eb711c19c7d8c5ff64d6af5ccbbb0ff18d22d6cd"
-  },
-  {
-    "name": "legacy-read: number: 0.2",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 0.2
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.2},\"type\":\"test\"}",
-    "expected_hash": "ab7f4bb56e3dfb65dd58c1856cc5beb0da48ba44570e03a2b5de5065a9e4a104"
-  },
-  {
-    "name": "legacy-read: number: 0.1 + 0.2 (IEEE 754)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 0.30000000000000004
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0.30000000000000004},\"type\":\"test\"}",
-    "expected_hash": "0b22f10f2ca08e9787866f404ff376165b709cd963d531bda1a6e8033dd4407f"
-  },
-  {
-    "name": "legacy-read: number: 1e-20 (very very small)",
-    "section": "legacy-read",
-    "type": "test",
-    "state": {
-      "value": 1e-20
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1e-20},\"type\":\"test\"}",
-    "expected_hash": "ad1d6a06d2f824b15961a02578188aa1412fc93693440083eba21f78f2a8d83b"
-  },
-  {
-    "name": "number: 999999999999 (large integer)",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 999999999999
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":999999999999},\"type\":\"test\"}",
-    "expected_hash": "3e7ef1ae76cb00e76639921b6b71ca3a3d705d8beb7a212d6a62fd05765deb95"
-  },
-  {
-    "name": "legacy-read: type: actor",
-    "section": "legacy-read",
-    "type": "actor",
-    "state": {
-      "name": "Test Actor"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Test Actor\"},\"type\":\"actor\"}",
-    "expected_hash": "efc99cb1107e6898024701cde41d1a3ce03eec75951fa19ef678eb61091c08ab"
-  },
-  {
-    "name": "legacy-read: type: actor.producer",
-    "section": "legacy-read",
-    "type": "actor.producer",
-    "state": {
-      "name": "Green Farm"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Green Farm\"},\"type\":\"actor.producer\"}",
-    "expected_hash": "14c1e706d37376b70e1d2de71227faf13402d1e716e5c4069661dd936af734ab"
-  },
-  {
-    "name": "legacy-read: type: actor.venue",
-    "section": "legacy-read",
-    "type": "actor.venue",
-    "state": {
-      "name": "City Market"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"City Market\"},\"type\":\"actor.venue\"}",
-    "expected_hash": "e966df1f761deda57217bb4c7a376ca0ad245efa9e853bc3b80cbf5fb78a28e5"
-  },
-  {
-    "name": "legacy-read: type: place",
-    "section": "legacy-read",
-    "type": "place",
-    "state": {
-      "name": "Main Street"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Main Street\"},\"type\":\"place\"}",
-    "expected_hash": "2a5b1fe2f20ee521a5c4831f0464f1d3615a3115a797e69d67e6bde45261f365"
-  },
-  {
-    "name": "legacy-read: type: place.farm",
-    "section": "legacy-read",
-    "type": "place.farm",
-    "state": {
-      "name": "Green Acres",
-      "acres": 200
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"acres\":200,\"name\":\"Green Acres\"},\"type\":\"place.farm\"}",
-    "expected_hash": "3916d383565216f422d48ba426d747eb14b3f8de3f10d84364b6a1247e696f03"
-  },
-  {
-    "name": "legacy-read: type: place.warehouse",
-    "section": "legacy-read",
-    "type": "place.warehouse",
-    "state": {
-      "name": "Cold Storage",
-      "temp_c": 4
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Cold Storage\",\"temp_c\":4},\"type\":\"place.warehouse\"}",
-    "expected_hash": "2df9caa5c437fe6e7570c0be9954dfee7d4b7b9de31dd6858458e9702621b809"
-  },
-  {
-    "name": "legacy-read: type: substance",
-    "section": "legacy-read",
-    "type": "substance",
-    "state": {
-      "name": "Wheat"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Wheat\"},\"type\":\"substance\"}",
-    "expected_hash": "7c83b73955e6cb53b6e3af63d735be3ceefa74b0888864aee92c4b48ef6b2ea5"
-  },
-  {
-    "name": "legacy-read: type: substance.product",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "Flour",
-      "price": 2.5
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Flour\",\"price\":2.5},\"type\":\"substance.product\"}",
-    "expected_hash": "9e15d358c86575b252c5ca4a6e68ddf42ca901e576c5ae5dd02a07304263a3e0"
-  },
-  {
-    "name": "legacy-read: type: substance.ingredient",
-    "section": "legacy-read",
-    "type": "substance.ingredient",
-    "state": {
-      "name": "Salt",
-      "organic": false
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Salt\",\"organic\":false},\"type\":\"substance.ingredient\"}",
-    "expected_hash": "7d5ab5fe4bb010b9feb174e8d489476aa3619272f1882f57e889b92860734232"
-  },
-  {
-    "name": "legacy-read: type: transform",
-    "section": "legacy-read",
-    "type": "transform",
-    "state": {
-      "name": "Milling"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"Milling\"},\"type\":\"transform\"}",
-    "expected_hash": "68b307c7dc40867cb9586eb9d23030fed13222ccbeee1727c6ddf564c3ffd926"
-  },
-  {
-    "name": "legacy-read: type: transform.process",
-    "section": "legacy-read",
-    "type": "transform.process",
-    "state": {
-      "name": "Baking",
-      "duration_min": 45,
-      "instance_id": "2b2f8595-d554-87dc-f32e-43ab753a77c70000"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"duration_min\":45,\"instance_id\":\"2b2f8595-d554-87dc-f32e-43ab753a77c70000\",\"name\":\"Baking\"},\"type\":\"transform.process\"}",
-    "expected_hash": "d6cb4d395f53d0a494ac61fc240e33e9b0341ecd10c466c3ced24a68328be77c"
-  },
-  {
-    "name": "legacy-read: type: transfer",
-    "section": "legacy-read",
-    "type": "transfer",
-    "state": {
-      "quantity": 10
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"quantity\":10},\"type\":\"transfer\"}",
-    "expected_hash": "1477a7f68f86c9f8c07c8e260fa287036a60aa76e2bc4cb97c4d74c06074ac23"
-  },
-  {
-    "name": "legacy-read: type: transfer.order",
-    "section": "legacy-read",
-    "type": "transfer.order",
-    "state": {
-      "quantity": 50,
-      "unit": "kg",
-      "instance_id": "eaa39d77-520b-8d16-01c2-373ce1bde9290000"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"instance_id\":\"eaa39d77-520b-8d16-01c2-373ce1bde9290000\",\"quantity\":50,\"unit\":\"kg\"},\"type\":\"transfer.order\"}",
-    "expected_hash": "2edeae81bc7e0bef8d7208f2ea0a96b186b41cbbc053ce0cb8d6aa33a48f4d1a"
-  },
-  {
-    "name": "legacy-read: type: observe",
-    "section": "legacy-read",
-    "type": "observe",
-    "state": {
-      "note": "General observation"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"General observation\"},\"type\":\"observe\"}",
-    "expected_hash": "b02139b61d12e3b449b818e456588e9a7ebc64c73cf5232e917d0e226766e0df"
-  },
-  {
-    "name": "legacy-read: type: observe.review",
-    "section": "legacy-read",
-    "type": "observe.review",
-    "state": {
-      "rating": 5,
-      "text": "Great!",
-      "instance_id": "f3eeb947-23b7-8f77-fecb-3963d8081c770000"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"instance_id\":\"f3eeb947-23b7-8f77-fecb-3963d8081c770000\",\"rating\":5,\"text\":\"Great!\"},\"type\":\"observe.review\"}",
-    "expected_hash": "e076cbd7a255a3af3fb7d06c7335f5a2b0eff24b6dfe0c39c959e62f644c3ad9"
-  },
-  {
-    "name": "legacy-read: type: observe.certification",
-    "section": "legacy-read",
-    "type": "observe.certification",
-    "state": {
-      "cert": "USDA Organic",
-      "valid_until": "2027-01-01",
-      "instance_id": "ed1aed1a-5293-5302-de3c-412714d76cbf0000"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"cert\":\"USDA Organic\",\"instance_id\":\"ed1aed1a-5293-5302-de3c-412714d76cbf0000\",\"valid_until\":\"2027-01-01\"},\"type\":\"observe.certification\"}",
-    "expected_hash": "9a3cd92e4cdbc32302257d1d59662d64d30ece0e53c6e227eff1f13b19c40a2b"
-  },
-  {
-    "name": "legacy-read: type: observe.reading",
-    "section": "legacy-read",
-    "type": "observe.reading",
-    "state": {
-      "sensor": "temp",
-      "value": 4.2,
-      "unit": "celsius",
-      "instance_id": "1745ea40-daab-a597-5e52-cf65a29f24a20000"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"instance_id\":\"1745ea40-daab-a597-5e52-cf65a29f24a20000\",\"sensor\":\"temp\",\"unit\":\"celsius\",\"value\":4.2},\"type\":\"observe.reading\"}",
-    "expected_hash": "15eb4ae0575bb24a8545067c8c3ab8b9336f1d49bde77cecf98a899b5756cb08"
-  },
-  {
-    "name": "string: embedded quotes",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "note": "He said \"hello\""
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"He said \\\"hello\\\"\"},\"type\":\"test\"}",
-    "expected_hash": "3011906e7cea1b678a960eb10c38adddef05601b8e66c0731855e518f69a3374"
-  },
-  {
-    "name": "string: backslashes",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "path": "C:\\Users\\food"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"path\":\"C:\\\\Users\\\\food\"},\"type\":\"test\"}",
-    "expected_hash": "06351f838be7c31ad0b08818c2c8044e312d2fef0cb4324aa14d413a6d6e0217"
-  },
-  {
-    "name": "string: newlines and tabs",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "text": "line1\nline2\ttab"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"text\":\"line1\\nline2\\ttab\"},\"type\":\"test\"}",
-    "expected_hash": "47ac049c6ee6eb71e7cd12cc4ed7da2ff6409e6b3ac90f0e0eb5b6c107ba6ccb"
-  },
-  {
-    "name": "string: empty string",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": ""
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"\"},\"type\":\"test\"}",
-    "expected_hash": "40aba3879ebfc80e8081c7e2a85b93f7ef1f57a0254059f5e254f5d270f16ecc"
-  },
-  {
-    "name": "string: very long string",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "data": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"data\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"type\":\"test\"}",
-    "expected_hash": "18f5654b875e4eea77c56f0896ae6993b65563ee12e3b7bdaa3a0d12d85b9f06"
-  },
-  {
-    "name": "string: looks like integer",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": "123"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"123\"},\"type\":\"test\"}",
-    "expected_hash": "4c8f8780baca9857b19276ebeaf75e3c4b3a6cfd97644be17ee9932712edbbd5"
-  },
-  {
-    "name": "string: looks like float",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": "4.5"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"4.5\"},\"type\":\"test\"}",
-    "expected_hash": "a99fab0fd8483082198e3bd10cdf77900769472840114349de652844c86ab150"
-  },
-  {
-    "name": "string: looks like boolean",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": "true"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"true\"},\"type\":\"test\"}",
-    "expected_hash": "2ebd90a50a3089904d121bbc86914ce53117f53d3b5378cda8670d3a21659cc8"
-  },
-  {
-    "name": "null: multiple null values omitted",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "a": "keep",
-      "b": null,
-      "c": null,
-      "d": "also_keep"
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":\"keep\",\"d\":\"also_keep\"},\"type\":\"test\"}",
-    "expected_hash": "ccc3d24f0eabbcaead105cf3c07c66911455d8d08ace46722970d854731ebb79"
-  },
-  {
-    "name": "null: nested null omitted",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "outer": {
-        "inner": null,
-        "keep": 1
-      }
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"outer\":{\"keep\":1}},\"type\":\"test\"}",
-    "expected_hash": "7c6d2adcca5fafca3591f36ece01f38be786c5eedb7fb2ec16a38875bdf7e377"
-  },
-  {
-    "name": "sorting: many keys alphabetical",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "zebra": 1,
-      "apple": 2,
-      "mango": 3,
-      "banana": 4,
-      "cherry": 5,
-      "date": 6,
-      "elderberry": 7,
-      "fig": 8,
-      "grape": 9,
-      "honeydew": 10
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"apple\":2,\"banana\":4,\"cherry\":5,\"date\":6,\"elderberry\":7,\"fig\":8,\"grape\":9,\"honeydew\":10,\"mango\":3,\"zebra\":1},\"type\":\"test\"}",
-    "expected_hash": "58788fa5fbd2b2e496736ab6ac5496001e5a3339bce3891db8718aac3e3a2bf7"
-  },
-  {
-    "name": "unicode: key with accent",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "café": true
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"café\":true},\"type\":\"test\"}",
-    "expected_hash": "fbacf42bd9be7c28bdd9e66cc0b5445ceeb95375cf8c82d048f4b29e6de694bf"
-  },
-  {
-    "name": "legacy-read: complex: nested with refs",
-    "section": "legacy-read",
-    "type": "transform.process",
-    "state": {
-      "steps": [
-        {
-          "action": "mix",
-          "duration": 10
-        },
-        {
-          "action": "bake",
-          "duration": 30
-        }
-      ],
-      "instance_id": "6bce1aaa-8fbd-27d2-8142-6d8f7fc863870000"
-    },
-    "refs": {
-      "inputs": [
-        "flour_hash",
-        "water_hash"
-      ],
-      "output": "dough_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"flour_hash\",\"water_hash\"],\"output\":\"dough_hash\"},\"state\":{\"instance_id\":\"6bce1aaa-8fbd-27d2-8142-6d8f7fc863870000\",\"steps\":[{\"action\":\"mix\",\"duration\":10},{\"action\":\"bake\",\"duration\":30}]},\"type\":\"transform.process\"}",
-    "expected_hash": "e0009b7d637e4e4b040930d1c93e38c77b841d5caa78a67454419c6a2fb04c79"
-  },
-  {
-    "name": "boolean: true only",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "flag": true
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"flag\":true},\"type\":\"test\"}",
-    "expected_hash": "71fca9c5aad0f42a5a78cbcce7bdccb6203db18d59fac822f30af081793be8c8"
-  },
-  {
-    "name": "boolean: false only",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "flag": false
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"flag\":false},\"type\":\"test\"}",
-    "expected_hash": "491e854e02b990e52db407d6f1840536d2bbfc3dce6a72f21777e70aeec2fc0c"
-  },
-  {
-    "name": "boolean: multiple booleans",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "a": true,
-      "b": false,
-      "c": true,
-      "d": false
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"a\":true,\"b\":false,\"c\":true,\"d\":false},\"type\":\"test\"}",
-    "expected_hash": "4d1ed390dd3fce1388ab3d0430fccf8e504e5d23a355c68abf966d0da8ed904c"
-  },
-  {
-    "name": "number: 0.0 should be 0",
-    "section": "canonical",
-    "type": "test",
-    "state": {
-      "value": 0
-    },
-    "refs": {},
-    "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
-    "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
-  },
-  {
-    "name": "legacy-read: refs: updates chain",
-    "section": "legacy-read",
-    "type": "substance.product",
-    "state": {
-      "name": "Updated Product",
-      "price": 5
-    },
-    "refs": {
-      "updates": "previous_block_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"updates\":\"previous_block_hash\"},\"state\":{\"name\":\"Updated Product\",\"price\":5},\"type\":\"substance.product\"}",
-    "expected_hash": "9e57b74abca9168428c4b7234adbb55c10ec8fab7049dd89430270042efd4fd1"
-  },
-  {
-    "name": "refs: single string ref",
-    "section": "canonical",
-    "type": "test",
-    "state": {},
-    "refs": {
-      "parent": "parent_hash_123"
-    },
-    "expected_canonical": "{\"refs\":{\"parent\":\"parent_hash_123\"},\"state\":{},\"type\":\"test\"}",
-    "expected_hash": "43ffaa521dbd794712aade83d9ba73a6d98431e1d00a4188344f861bd8cebf4e"
-  },
-  {
-    "name": "legacy-read: realistic: full supply chain transfer",
-    "section": "legacy-read",
-    "type": "transfer.order",
-    "state": {
-      "instance_id": "order-2026-001",
-      "product": "Organic Sourdough Bread",
-      "quantity": 200,
-      "unit": "loaves",
-      "price_per_unit": 4.5,
-      "total": 900,
-      "currency": "USD",
-      "delivery_date": "2026-02-20",
-      "notes": "Deliver before 8am"
-    },
-    "refs": {
-      "buyer": "restaurant_hash",
-      "seller": "bakery_hash",
-      "product": "sourdough_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"buyer\":\"restaurant_hash\",\"product\":\"sourdough_hash\",\"seller\":\"bakery_hash\"},\"state\":{\"currency\":\"USD\",\"delivery_date\":\"2026-02-20\",\"instance_id\":\"order-2026-001\",\"notes\":\"Deliver before 8am\",\"price_per_unit\":4.5,\"product\":\"Organic Sourdough Bread\",\"quantity\":200,\"total\":900,\"unit\":\"loaves\"},\"type\":\"transfer.order\"}",
-    "expected_hash": "7587bf78cbf87b837f0d06ba22aca34752158ccbf64345f47c390654540634e4"
-  },
-  {
-    "name": "legacy-read: realistic: temperature sensor reading",
-    "section": "legacy-read",
-    "type": "observe.reading",
-    "state": {
-      "sensor_id": "temp-sensor-042",
-      "value": -18.5,
-      "unit": "celsius",
-      "location": "freezer-A",
-      "timestamp": "2026-02-18T10:30:00Z",
-      "within_range": true,
-      "instance_id": "84d7fddc-3d53-bec6-f119-fe2efa49f0f10000"
-    },
-    "refs": {
-      "place": "warehouse_hash",
-      "device": "sensor_hash"
-    },
-    "expected_canonical": "{\"refs\":{\"device\":\"sensor_hash\",\"place\":\"warehouse_hash\"},\"state\":{\"instance_id\":\"84d7fddc-3d53-bec6-f119-fe2efa49f0f10000\",\"location\":\"freezer-A\",\"sensor_id\":\"temp-sensor-042\",\"timestamp\":\"2026-02-18T10:30:00Z\",\"unit\":\"celsius\",\"value\":-18.5,\"within_range\":true},\"type\":\"observe.reading\"}",
-    "expected_hash": "d32272e448b9e9726e541859fcbfa3974b61a172192efb6ac65e8a32dc5c68b1"
-  },
-  {
-    "name": "legacy-read: EPCIS harvest CTE",
-    "type": "transform.harvest",
-    "state": {
-      "instance_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
-      "event_time": "2026-09-18T16:00:00Z",
-      "event_time_zone_offset": "-07:00",
-      "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
-      "action": "ADD",
-      "epcis_type": "ObjectEvent",
-      "cte": "harvesting",
-      "commodity": "spinach",
-      "variety": "baby leaf",
-      "quantity": {
-        "value": 1200,
-        "unit": "kg"
-      },
-      "reference_document": {
-        "type": "field_tag",
-        "number": "FT-4412"
-      }
-    },
-    "refs": {
-      "farm": "sha256:place_farm_placeholder_0001",
-      "field": "sha256:place_field_north3_placeholder_0001",
-      "harvester": "sha256:actor_producer_placeholder_0001",
-      "subsequent_recipient": "sha256:place_packhouse_placeholder_0001",
-      "outputs": [
-        "sha256:substance_spinach_bulk_placeholder_0001"
-      ],
-      "read_point": "sha256:place_field_north3_placeholder_0001"
-    },
-    "expected_canonical": "{\"refs\":{\"farm\":\"sha256:place_farm_placeholder_0001\",\"field\":\"sha256:place_field_north3_placeholder_0001\",\"harvester\":\"sha256:actor_producer_placeholder_0001\",\"outputs\":[\"sha256:substance_spinach_bulk_placeholder_0001\"],\"read_point\":\"sha256:place_field_north3_placeholder_0001\",\"subsequent_recipient\":\"sha256:place_packhouse_placeholder_0001\"},\"state\":{\"action\":\"ADD\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:commissioning\",\"commodity\":\"spinach\",\"cte\":\"harvesting\",\"epcis_type\":\"ObjectEvent\",\"event_time\":\"2026-09-18T16:00:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"7c9e6679-7425-40de-944b-e07fc1f90ae7\",\"quantity\":{\"unit\":\"kg\",\"value\":1200},\"reference_document\":{\"number\":\"FT-4412\",\"type\":\"field_tag\"},\"variety\":\"baby leaf\"},\"type\":\"transform.harvest\"}",
-    "expected_hash": "5afa6ac1c5f09a7d0871db0d06d8b6f0a27a4c05a5af64ce957f1c81164bc27f",
-    "section": "legacy-read"
-  },
-  {
-    "name": "legacy-read: EPCIS cooling CTE",
-    "type": "transform.cool",
-    "state": {
-      "instance_id": "8d0f7780-8536-41ef-a55c-f18fd2a01bf8",
-      "event_time": "2026-09-18T18:30:00Z",
-      "event_time_zone_offset": "-07:00",
-      "biz_step": "urn:epcglobal:cbv:bizstep:other",
-      "disposition": "urn:epcglobal:cbv:disp:in_progress",
-      "action": "OBSERVE",
-      "epcis_type": "ObjectEvent",
-      "cte": "cooling",
-      "quantity": {
-        "value": 1200,
-        "unit": "kg"
-      },
-      "sensor": {
-        "type": "temperature",
-        "value": 2,
-        "unit": "celsius",
-        "device_id": "cooler-probe-3"
-      },
-      "reference_document": {
-        "type": "cool_log",
-        "number": "CL-918"
-      }
-    },
-    "refs": {
-      "objects": [
-        "sha256:substance_spinach_bulk_placeholder_0001"
-      ],
-      "farm": "sha256:place_farm_placeholder_0001",
-      "read_point": "sha256:place_cooler_placeholder_0001",
-      "biz_location": "sha256:place_cooler_placeholder_0001",
-      "subsequent_recipient": "sha256:place_packhouse_placeholder_0001",
-      "updates": "sha256:transform_harvest_placeholder_0001"
-    },
-    "expected_canonical": "{\"refs\":{\"biz_location\":\"sha256:place_cooler_placeholder_0001\",\"farm\":\"sha256:place_farm_placeholder_0001\",\"objects\":[\"sha256:substance_spinach_bulk_placeholder_0001\"],\"read_point\":\"sha256:place_cooler_placeholder_0001\",\"subsequent_recipient\":\"sha256:place_packhouse_placeholder_0001\",\"updates\":\"sha256:transform_harvest_placeholder_0001\"},\"state\":{\"action\":\"OBSERVE\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:other\",\"cte\":\"cooling\",\"disposition\":\"urn:epcglobal:cbv:disp:in_progress\",\"epcis_type\":\"ObjectEvent\",\"event_time\":\"2026-09-18T18:30:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"8d0f7780-8536-41ef-a55c-f18fd2a01bf8\",\"quantity\":{\"unit\":\"kg\",\"value\":1200},\"reference_document\":{\"number\":\"CL-918\",\"type\":\"cool_log\"},\"sensor\":{\"device_id\":\"cooler-probe-3\",\"type\":\"temperature\",\"unit\":\"celsius\",\"value\":2}},\"type\":\"transform.cool\"}",
-    "expected_hash": "44f49e1d8dff281efa9fa1c5da064bc500e6dcdaea86087d0f84bee2880b3fc1",
-    "section": "legacy-read"
-  },
-  {
-    "name": "legacy-read: EPCIS initial packing + TLC",
-    "type": "transform.pack",
-    "state": {
-      "instance_id": "9b2c3d4e-1111-2222-3333-444455556666",
-      "event_time": "2026-09-18T22:10:00Z",
-      "event_time_zone_offset": "-07:00",
-      "biz_step": "urn:epcglobal:cbv:bizstep:packing",
-      "action": "ADD",
-      "epcis_type": "TransformationEvent",
-      "cte": "initial_packing",
-      "tlc": "TLC-GA-20260918-01",
-      "product_description": "Baby spinach 200g clamshell",
-      "quantity_in": {
-        "value": 1200,
-        "unit": "kg"
-      },
-      "quantity_out": {
-        "value": 4800,
-        "unit": "each"
-      },
-      "reference_document": {
-        "type": "pack_log",
-        "number": "PL-918"
-      }
-    },
-    "refs": {
-      "inputs": [
-        "sha256:substance_spinach_bulk_placeholder_0001"
-      ],
-      "outputs": [
-        "sha256:substance_lot_TLC_GA_20260918_01_placeholder"
-      ],
-      "tlc_source": "sha256:place_packhouse_placeholder_0001",
-      "farm": "sha256:place_farm_placeholder_0001",
-      "field": "sha256:place_field_north3_placeholder_0001",
-      "harvester": "sha256:actor_producer_placeholder_0001",
-      "read_point": "sha256:place_packhouse_placeholder_0001"
-    },
-    "expected_canonical": "{\"refs\":{\"farm\":\"sha256:place_farm_placeholder_0001\",\"field\":\"sha256:place_field_north3_placeholder_0001\",\"harvester\":\"sha256:actor_producer_placeholder_0001\",\"inputs\":[\"sha256:substance_spinach_bulk_placeholder_0001\"],\"outputs\":[\"sha256:substance_lot_TLC_GA_20260918_01_placeholder\"],\"read_point\":\"sha256:place_packhouse_placeholder_0001\",\"tlc_source\":\"sha256:place_packhouse_placeholder_0001\"},\"state\":{\"action\":\"ADD\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:packing\",\"cte\":\"initial_packing\",\"epcis_type\":\"TransformationEvent\",\"event_time\":\"2026-09-18T22:10:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"9b2c3d4e-1111-2222-3333-444455556666\",\"product_description\":\"Baby spinach 200g clamshell\",\"quantity_in\":{\"unit\":\"kg\",\"value\":1200},\"quantity_out\":{\"unit\":\"each\",\"value\":4800},\"reference_document\":{\"number\":\"PL-918\",\"type\":\"pack_log\"},\"tlc\":\"TLC-GA-20260918-01\"},\"type\":\"transform.pack\"}",
-    "expected_hash": "eff151e99c07390f91b3917aeda96a680f2bef1110b1ae617f190e81aa0028d3",
-    "section": "legacy-read"
-  },
-  {
-    "name": "legacy-read: EPCIS shipping CTE",
-    "type": "transfer.shipment",
-    "state": {
-      "instance_id": "a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee",
-      "event_time": "2026-09-19T08:00:00Z",
-      "event_time_zone_offset": "-07:00",
-      "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
-      "disposition": "urn:epcglobal:cbv:disp:in_transit",
-      "action": "OBSERVE",
-      "epcis_type": "ObjectEvent",
-      "cte": "shipping",
-      "tlc": "TLC-GA-20260918-01",
-      "product_description": "Baby spinach 200g clamshell",
-      "quantity": {
-        "value": 40,
-        "unit": "case"
-      },
-      "sscc": "006141419999999999",
-      "reference_document": {
-        "type": "BOL",
-        "number": "BOL-88921"
-      },
-      "biz_transactions": [
-        {
-          "type": "urn:epcglobal:cbv:btt:bol",
-          "id": "BOL-88921"
-        }
-      ]
-    },
-    "refs": {
-      "objects": [
-        "sha256:substance_lot_TLC_GA_20260918_01_placeholder"
-      ],
-      "from": "sha256:place_packhouse_placeholder_0001",
-      "to": "sha256:place_dc_placeholder_0001",
-      "tlc_source": "sha256:place_packhouse_placeholder_0001",
-      "shipper": "sha256:actor_producer_placeholder_0001",
-      "read_point": "sha256:place_packhouse_placeholder_0001"
-    },
-    "expected_canonical": "{\"refs\":{\"from\":\"sha256:place_packhouse_placeholder_0001\",\"objects\":[\"sha256:substance_lot_TLC_GA_20260918_01_placeholder\"],\"read_point\":\"sha256:place_packhouse_placeholder_0001\",\"shipper\":\"sha256:actor_producer_placeholder_0001\",\"tlc_source\":\"sha256:place_packhouse_placeholder_0001\",\"to\":\"sha256:place_dc_placeholder_0001\"},\"state\":{\"action\":\"OBSERVE\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:shipping\",\"biz_transactions\":[{\"id\":\"BOL-88921\",\"type\":\"urn:epcglobal:cbv:btt:bol\"}],\"cte\":\"shipping\",\"disposition\":\"urn:epcglobal:cbv:disp:in_transit\",\"epcis_type\":\"ObjectEvent\",\"event_time\":\"2026-09-19T08:00:00Z\",\"event_time_zone_offset\":\"-07:00\",\"instance_id\":\"a1a1a1a1-bbbb-cccc-dddd-eeeeeeeeeeee\",\"product_description\":\"Baby spinach 200g clamshell\",\"quantity\":{\"unit\":\"case\",\"value\":40},\"reference_document\":{\"number\":\"BOL-88921\",\"type\":\"BOL\"},\"sscc\":\"006141419999999999\",\"tlc\":\"TLC-GA-20260918-01\"},\"type\":\"transfer.shipment\"}",
-    "expected_hash": "7bf08ebd3001f25c76a7a8274d112660e740d0d092bc359b4633dff273e487f7",
-    "section": "legacy-read"
-  },
-  {
-    "name": "legacy-read: EPCIS transformation CTE",
-    "type": "transform.process",
-    "state": {
-      "instance_id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
-      "event_time": "2026-09-21T10:00:00Z",
-      "event_time_zone_offset": "+01:00",
-      "biz_step": "urn:epcglobal:cbv:bizstep:creating_class_instance",
-      "action": "ADD",
-      "epcis_type": "TransformationEvent",
-      "cte": "transformation",
-      "process": "stone_milling",
-      "input_lots": [
-        {
-          "tlc": "WHEAT-LOT-55",
-          "quantity": {
-            "value": 500,
-            "unit": "kg"
-          }
-        }
-      ],
-      "tlc": "FLOUR-LOT-90",
-      "product_description": "Stoneground bread flour 25kg",
-      "quantity": {
-        "value": 480,
-        "unit": "kg"
-      },
-      "reference_document": {
-        "type": "work_order",
-        "number": "WO-3321"
-      }
-    },
-    "refs": {
-      "inputs": [
-        "sha256:substance_lot_wheat_55_placeholder"
-      ],
-      "outputs": [
-        "sha256:substance_lot_flour_90_placeholder"
-      ],
-      "tlc_source": "sha256:place_mill_placeholder_0001",
-      "operator": "sha256:actor_maker_placeholder_0001",
-      "read_point": "sha256:place_mill_placeholder_0001"
-    },
-    "expected_canonical": "{\"refs\":{\"inputs\":[\"sha256:substance_lot_wheat_55_placeholder\"],\"operator\":\"sha256:actor_maker_placeholder_0001\",\"outputs\":[\"sha256:substance_lot_flour_90_placeholder\"],\"read_point\":\"sha256:place_mill_placeholder_0001\",\"tlc_source\":\"sha256:place_mill_placeholder_0001\"},\"state\":{\"action\":\"ADD\",\"biz_step\":\"urn:epcglobal:cbv:bizstep:creating_class_instance\",\"cte\":\"transformation\",\"epcis_type\":\"TransformationEvent\",\"event_time\":\"2026-09-21T10:00:00Z\",\"event_time_zone_offset\":\"+01:00\",\"input_lots\":[{\"quantity\":{\"unit\":\"kg\",\"value\":500},\"tlc\":\"WHEAT-LOT-55\"}],\"instance_id\":\"cccccccc-cccc-cccc-cccc-cccccccccccc\",\"process\":\"stone_milling\",\"product_description\":\"Stoneground bread flour 25kg\",\"quantity\":{\"unit\":\"kg\",\"value\":480},\"reference_document\":{\"number\":\"WO-3321\",\"type\":\"work_order\"},\"tlc\":\"FLOUR-LOT-90\"},\"type\":\"transform.process\"}",
-    "expected_hash": "806ad8e7504e5e386f2b52ff224c879324b490f87952c1d4b2183bea33087bb1",
-    "section": "legacy-read"
-  }
+ {
+  "name": "key order independence",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "z": 26,
+   "a": 1,
+   "m": 13
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":1,\"m\":13,\"z\":26},\"type\":\"test\"}",
+  "expected_hash": "32e651fad98db90391aae263803581771607f01a41849d96375b8038908ddb85"
+ },
+ {
+  "name": "negative zero normalization",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 0
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
+  "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
+ },
+ {
+  "name": "large integer",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "count": 1000000000
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"count\":1000000000},\"type\":\"test\"}",
+  "expected_hash": "5418cd53b4931e4f14394edc8edaf9eaa2d7c4c6daf35d77100fef60c14ab97d"
+ },
+ {
+  "name": "float that equals integer (RFC 8785)",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 100
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100},\"type\":\"test\"}",
+  "expected_hash": "e5a8c71154ce0ff3835c188333a4fc8d9d48e1bb581cf0569db549f934a9fbf5"
+ },
+ {
+  "name": "deeply nested state",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "a": {
+    "b": {
+     "c": {
+      "d": 1
+     }
+    }
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":1}}}},\"type\":\"test\"}",
+  "expected_hash": "d964cdf78572f89b32210d648227b11a000458c6bdb87145c2e5db18aef3bd9c"
+ },
+ {
+  "name": "empty string value",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "name": ""
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
+  "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
+ },
+ {
+  "name": "special characters in string",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "note": "Line 1\nLine 2\ttab"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"Line 1\\nLine 2\\ttab\"},\"type\":\"test\"}",
+  "expected_hash": "1316ddda14979ab171b80bf2baf6ac26e191d59d5f40a248dcfff44f7b2487a4"
+ },
+ {
+  "name": "unicode: naïve",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "word": "naïve"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"word\":\"naïve\"},\"type\":\"test\"}",
+  "expected_hash": "4426d0848edf7f17bffe83473426f07cc47268692568d0f7db75d39119d07bda"
+ },
+ {
+  "name": "unicode: precomposed é",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "letter": "é"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"letter\":\"é\"},\"type\":\"test\"}",
+  "expected_hash": "15782df426c9df607ca1abe5d955cbd9f02c642e201cc7189143fea3b7bb22b4"
+ },
+ {
+  "name": "nested: 2-level",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "a": {
+    "b": "c"
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":\"c\"}},\"type\":\"test\"}",
+  "expected_hash": "d549cf7e04c384bd84e23311efd7240357695a281788ba7a08ecacfb7d9ce960"
+ },
+ {
+  "name": "nested: 3-level",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "a": {
+    "b": {
+     "c": "d"
+    }
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":\"d\"}}},\"type\":\"test\"}",
+  "expected_hash": "f5039c5f5773726a38e17d0d802733bc2397a723a7f4225c03fe1310afd7301f"
+ },
+ {
+  "name": "nested: 4-level with value",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "a": {
+    "b": {
+     "c": {
+      "d": 42
+     }
+    }
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"b\":{\"c\":{\"d\":42}}}},\"type\":\"test\"}",
+  "expected_hash": "5bf434aa60de62ce4211b71e81626f9baa718d00adc2d3e501cb934dc9638024"
+ },
+ {
+  "name": "nested: arrays in objects",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "menu": {
+    "items": [
+     "pizza",
+     "pasta",
+     "salad"
+    ]
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"menu\":{\"items\":[\"pizza\",\"pasta\",\"salad\"]}},\"type\":\"test\"}",
+  "expected_hash": "d543d59014080c4abf92d78cd06fe23bfa3007f07fe45de7ee5b428ca8739883"
+ },
+ {
+  "name": "nested: objects in arrays",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "items": [
+    {
+     "name": "a",
+     "qty": 1
+    },
+    {
+     "name": "b",
+     "qty": 2
+    }
+   ]
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"items\":[{\"name\":\"a\",\"qty\":1},{\"name\":\"b\",\"qty\":2}]},\"type\":\"test\"}",
+  "expected_hash": "afc9144aa85176b9f362b11796f407dcd84956cbde4e4a80b3e8f7f3b5d4f415"
+ },
+ {
+  "name": "nested: mixed nesting deep",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "config": {
+    "limits": {
+     "max": 100,
+     "min": 1
+    },
+    "tags": [
+     "organic",
+     "local"
+    ],
+    "nested": {
+     "deep": {
+      "value": true
+     }
+    }
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"config\":{\"limits\":{\"max\":100,\"min\":1},\"nested\":{\"deep\":{\"value\":true}},\"tags\":[\"organic\",\"local\"]}},\"type\":\"test\"}",
+  "expected_hash": "1044ae5ca37a4be08f11e82117b91ecceeed0ed4dfc8d752832be6313f508d39"
+ },
+ {
+  "name": "nested: key ordering at every level",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "z": {
+    "z2": "last",
+    "a2": "first"
+   },
+   "a": {
+    "z1": "last",
+    "a1": "first"
+   }
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":{\"a1\":\"first\",\"z1\":\"last\"},\"z\":{\"a2\":\"first\",\"z2\":\"last\"}},\"type\":\"test\"}",
+  "expected_hash": "15b91ea960af98c2e510ec499f15ae1bd76ad62c435c0b307ff37d831c4591d4"
+ },
+ {
+  "name": "array: 10+ string elements",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "ingredients": [
+    "flour",
+    "water",
+    "salt",
+    "yeast",
+    "sugar",
+    "butter",
+    "eggs",
+    "milk",
+    "vanilla",
+    "cinnamon",
+    "nutmeg"
+   ]
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"ingredients\":[\"flour\",\"water\",\"salt\",\"yeast\",\"sugar\",\"butter\",\"eggs\",\"milk\",\"vanilla\",\"cinnamon\",\"nutmeg\"]},\"type\":\"test\"}",
+  "expected_hash": "6201470c4ad17f75e2baa15066031b146a987e3d702200617790e4843b61a2e7"
+ },
+ {
+  "name": "array: empty array",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "items": []
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"items\":[]},\"type\":\"test\"}",
+  "expected_hash": "cc74a3e0596f7f22f2b72216cd96496b0fe9d4b2336c1714bbf5d6be2a2e10c4"
+ },
+ {
+  "name": "array: nested arrays",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "matrix": [
+    [
+     1,
+     2
+    ],
+    [
+     3,
+     4
+    ],
+    [
+     5,
+     6
+    ]
+   ]
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"matrix\":[[1,2],[3,4],[5,6]]},\"type\":\"test\"}",
+  "expected_hash": "a2177132e12c45962e6b407a6f29792f2f5ed648e2dd7c4827ac574c86ac67e0"
+ },
+ {
+  "name": "array: single element",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "tags": [
+    "organic"
+   ]
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"tags\":[\"organic\"]},\"type\":\"test\"}",
+  "expected_hash": "02a98ce904cc79c012c9387e4b0dd650215911cb4dd2706537debfda463a705d"
+ },
+ {
+  "name": "array: objects with varying keys",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "records": [
+    {
+     "id": 1,
+     "name": "first"
+    },
+    {
+     "id": 2,
+     "name": "second",
+     "extra": true
+    },
+    {
+     "id": 3
+    }
+   ]
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"records\":[{\"id\":1,\"name\":\"first\"},{\"extra\":true,\"id\":2,\"name\":\"second\"},{\"id\":3}]},\"type\":\"test\"}",
+  "expected_hash": "1d384578e01b4cfa975a7c4c12d7e12718f2a66d5368a47c1c581af10399b869"
+ },
+ {
+  "name": "refs: empty refs object",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 1
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1},\"type\":\"test\"}",
+  "expected_hash": "c2f43a1e46114ed16c26ee08c6ae08552ab84e133990c7279c067a53444d749a"
+ },
+ {
+  "name": "refs: refs key ordering",
+  "section": "canonical",
+  "type": "test",
+  "state": {},
+  "refs": {
+   "z_ref": "zzz",
+   "a_ref": "aaa",
+   "m_ref": "mmm"
+  },
+  "expected_canonical": "{\"refs\":{\"a_ref\":\"aaa\",\"m_ref\":\"mmm\",\"z_ref\":\"zzz\"},\"state\":{},\"type\":\"test\"}",
+  "expected_hash": "1b7bc3e57297d70ba0c340efe3cab32a406dbe2641150910f7143d9a838ea1e8"
+ },
+ {
+  "name": "minimal: empty state empty refs",
+  "section": "canonical",
+  "type": "test",
+  "state": {},
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{},\"type\":\"test\"}",
+  "expected_hash": "151b9ba09bc59cf04dbe8730169e4f5533946c6c598678e733ebb3809d7459e1"
+ },
+ {
+  "name": "minimal: empty string value",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "name": ""
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"name\":\"\"},\"type\":\"test\"}",
+  "expected_hash": "2395122b4ce8c1598dd1ed2913addc569c77bc4982244bfe86f31d4fadc0fc08"
+ },
+ {
+  "name": "minimal: zero value",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "count": 0
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"count\":0},\"type\":\"test\"}",
+  "expected_hash": "2cbeaddeca0823e02e390ca18f35e5a6630d325f8a8978a928f0a98b7350c9ff"
+ },
+ {
+  "name": "minimal: false value",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "active": false
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"active\":false},\"type\":\"test\"}",
+  "expected_hash": "162f1f6264db712ffa98ef152b04d11a6dd4c791f5cbbcbe50e8c0c5566efbf6"
+ },
+ {
+  "name": "minimal: single field",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "x": 1
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"x\":1},\"type\":\"test\"}",
+  "expected_hash": "be2583c3143be138e79f88b77d934c8f07d07eaea1a403c0e2ecfd9e28b960da"
+ },
+ {
+  "name": "number: 1e15 (quadrillion)",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 1000000000000000
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1000000000000000},\"type\":\"test\"}",
+  "expected_hash": "d82b837bf2002e2d5bc68854c3516e817978453247b8cec9ed255d27d68c2499"
+ },
+ {
+  "name": "number: 1e20",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 100000000000000000000
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":100000000000000000000},\"type\":\"test\"}",
+  "expected_hash": "4514f135ed4b5a7b20ddee22af3de618dc8e74e5a4a093fbc0d774cbf5e2f005"
+ },
+ {
+  "name": "number: negative zero becomes 0",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 0
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
+  "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
+ },
+ {
+  "name": "number: integer-like float 1.0",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 1
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":1},\"type\":\"test\"}",
+  "expected_hash": "c2f43a1e46114ed16c26ee08c6ae08552ab84e133990c7279c067a53444d749a"
+ },
+ {
+  "name": "number: integer-like float 42.0",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 42
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":42},\"type\":\"test\"}",
+  "expected_hash": "8a96f347b533d254b04a708527948558b7936dfef36a7be6afdb846918dfb68a"
+ },
+ {
+  "name": "number: negative integer",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": -42
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-42},\"type\":\"test\"}",
+  "expected_hash": "6d2f1212fca6e70740388ec876641c4c1ea0edc5e0b75b29c902477cdf599ba9"
+ },
+ {
+  "name": "number: MAX_SAFE_INTEGER",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 9007199254740991
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":9007199254740991},\"type\":\"test\"}",
+  "expected_hash": "df9cf2ce064a3b04b4fb277b919a5fcb1f2fd1ee84ee4c97ad134b0cf26d21fe"
+ },
+ {
+  "name": "number: MIN_SAFE_INTEGER",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": -9007199254740991
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":-9007199254740991},\"type\":\"test\"}",
+  "expected_hash": "799ed23507c40c807eda5093d6cbc40687283085b60d40c0b11def36d261858d"
+ },
+ {
+  "name": "number: 999999999999 (large integer)",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 999999999999
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":999999999999},\"type\":\"test\"}",
+  "expected_hash": "3e7ef1ae76cb00e76639921b6b71ca3a3d705d8beb7a212d6a62fd05765deb95"
+ },
+ {
+  "name": "string: embedded quotes",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "note": "He said \"hello\""
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"note\":\"He said \\\"hello\\\"\"},\"type\":\"test\"}",
+  "expected_hash": "3011906e7cea1b678a960eb10c38adddef05601b8e66c0731855e518f69a3374"
+ },
+ {
+  "name": "string: backslashes",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "path": "C:\\Users\\food"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"path\":\"C:\\\\Users\\\\food\"},\"type\":\"test\"}",
+  "expected_hash": "06351f838be7c31ad0b08818c2c8044e312d2fef0cb4324aa14d413a6d6e0217"
+ },
+ {
+  "name": "string: newlines and tabs",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "text": "line1\nline2\ttab"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"text\":\"line1\\nline2\\ttab\"},\"type\":\"test\"}",
+  "expected_hash": "47ac049c6ee6eb71e7cd12cc4ed7da2ff6409e6b3ac90f0e0eb5b6c107ba6ccb"
+ },
+ {
+  "name": "string: empty string",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": ""
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"\"},\"type\":\"test\"}",
+  "expected_hash": "40aba3879ebfc80e8081c7e2a85b93f7ef1f57a0254059f5e254f5d270f16ecc"
+ },
+ {
+  "name": "string: very long string",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "data": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"data\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"},\"type\":\"test\"}",
+  "expected_hash": "18f5654b875e4eea77c56f0896ae6993b65563ee12e3b7bdaa3a0d12d85b9f06"
+ },
+ {
+  "name": "string: looks like integer",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": "123"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"123\"},\"type\":\"test\"}",
+  "expected_hash": "4c8f8780baca9857b19276ebeaf75e3c4b3a6cfd97644be17ee9932712edbbd5"
+ },
+ {
+  "name": "string: looks like float",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": "4.5"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"4.5\"},\"type\":\"test\"}",
+  "expected_hash": "a99fab0fd8483082198e3bd10cdf77900769472840114349de652844c86ab150"
+ },
+ {
+  "name": "string: looks like boolean",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": "true"
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":\"true\"},\"type\":\"test\"}",
+  "expected_hash": "2ebd90a50a3089904d121bbc86914ce53117f53d3b5378cda8670d3a21659cc8"
+ },
+ {
+  "name": "sorting: many keys alphabetical",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "zebra": 1,
+   "apple": 2,
+   "mango": 3,
+   "banana": 4,
+   "cherry": 5,
+   "date": 6,
+   "elderberry": 7,
+   "fig": 8,
+   "grape": 9,
+   "honeydew": 10
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"apple\":2,\"banana\":4,\"cherry\":5,\"date\":6,\"elderberry\":7,\"fig\":8,\"grape\":9,\"honeydew\":10,\"mango\":3,\"zebra\":1},\"type\":\"test\"}",
+  "expected_hash": "58788fa5fbd2b2e496736ab6ac5496001e5a3339bce3891db8718aac3e3a2bf7"
+ },
+ {
+  "name": "unicode: key with accent",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "café": true
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"café\":true},\"type\":\"test\"}",
+  "expected_hash": "fbacf42bd9be7c28bdd9e66cc0b5445ceeb95375cf8c82d048f4b29e6de694bf"
+ },
+ {
+  "name": "boolean: true only",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "flag": true
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"flag\":true},\"type\":\"test\"}",
+  "expected_hash": "71fca9c5aad0f42a5a78cbcce7bdccb6203db18d59fac822f30af081793be8c8"
+ },
+ {
+  "name": "boolean: false only",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "flag": false
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"flag\":false},\"type\":\"test\"}",
+  "expected_hash": "491e854e02b990e52db407d6f1840536d2bbfc3dce6a72f21777e70aeec2fc0c"
+ },
+ {
+  "name": "boolean: multiple booleans",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "a": true,
+   "b": false,
+   "c": true,
+   "d": false
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"a\":true,\"b\":false,\"c\":true,\"d\":false},\"type\":\"test\"}",
+  "expected_hash": "4d1ed390dd3fce1388ab3d0430fccf8e504e5d23a355c68abf966d0da8ed904c"
+ },
+ {
+  "name": "number: 0.0 should be 0",
+  "section": "canonical",
+  "type": "test",
+  "state": {
+   "value": 0
+  },
+  "refs": {},
+  "expected_canonical": "{\"refs\":{},\"state\":{\"value\":0},\"type\":\"test\"}",
+  "expected_hash": "11991bd488b6ebbd355bf6f181fea9dbe2d04372b5e5dcecec6a09c3a094e133"
+ },
+ {
+  "name": "refs: single string ref",
+  "section": "canonical",
+  "type": "test",
+  "state": {},
+  "refs": {
+   "parent": "parent_hash_123"
+  },
+  "expected_canonical": "{\"refs\":{\"parent\":\"parent_hash_123\"},\"state\":{},\"type\":\"test\"}",
+  "expected_hash": "43ffaa521dbd794712aade83d9ba73a6d98431e1d00a4188344f861bd8cebf4e"
+ }
 ]

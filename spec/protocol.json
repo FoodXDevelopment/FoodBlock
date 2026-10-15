@@ -1,5 +1,5 @@
 {
- "about": "FoodBlock 1.6: every closed list and grammar in the spec (core.md and modules/), for code to load. Where the spec states a list, it matches this file exactly. Older words are read through aliases.json, never written.",
+ "about": "FoodBlock 1.6: every closed list and grammar in the spec (core.md, modules/ and profiles/), for code to load. Where the spec states a list, it matches this file exactly. Year zero: no older shape is read.",
  "version": "1.6",
  "types": {
   "actor": "exists",
@@ -10,6 +10,13 @@
   "promise": "must",
   "grant": "may"
  },
+ "closed_types": [
+  "actor",
+  "promise",
+  "transfer",
+  "grant"
+ ],
+ "type_note": "Any other type name matching grammar.type_name is open: stored and passed on, no authority.",
  "verbs": [
   "updates",
   "answers",
@@ -37,25 +44,19 @@
    "place"
   ],
   "what_and_which": [
-   "prev",
-   "after",
-   "kind",
+   "of",
    "schema",
    "what",
    "under",
    "parent"
   ],
-  "verbs": [
-   "updates",
-   "answers",
-   "confirms",
-   "defeats",
-   "for",
-   "derives_from",
-   "same_as"
-  ]
+  "also": [
+   "verbs",
+   "causal"
+  ],
+  "note": "Shared ref keys are these lists plus the verbs and the causal keys. refs.of names the kind an instance belongs to; state.kind is a label."
  },
- "answers": [
+ "statuses": [
   "accepted",
   "declined",
   "stopped"
@@ -68,25 +69,45 @@
  "grant_kinds": [
   "key",
   "member",
-  "successor",
   "operator"
  ],
- "roles": [
-  "admin"
+ "powers": [
+  "sign",
+  "admit",
+  "remove"
  ],
- "genesis": [
-  "kind",
-  "at",
-  "audience",
-  "public_key_sign",
-  "recovery_key_hash",
-  "recovery_reach"
- ],
- "chain": [
+ "circle": {
+  "removal": [
+   "needed"
+  ],
+  "removal_default": {
+   "needed": 1
+  },
+  "roles_shape": "state.roles: [{ name, powers }]; the founder holds the first role; powers are from `powers` and from profile powers"
+ },
+ "genesis": {
+  "required": [
+   "kind",
+   "at",
+   "audience",
+   "public_key_sign"
+  ],
+  "optional": [
+   "suite",
+   "public_key_encrypt",
+   "recovery_key_hash",
+   "recovery_reach",
+   "recovery_suite",
+   "custodian"
+  ],
+  "recovery_note": "recovery_key_hash and recovery_reach come together or not at all"
+ },
+ "common": [
   "author",
   "seq",
   "prev",
-  "at"
+  "at",
+  "audience"
  ],
  "header": [
   "author",
@@ -94,6 +115,30 @@
   "prev",
   "hash"
  ],
+ "header_optional": [
+  "withheld"
+ ],
+ "required": {
+  "actor": [
+   "state.kind"
+  ],
+  "transfer": [
+   "refs.what",
+   "one of refs.to_owner, refs.to_holder, refs.to_place, state.count"
+  ],
+  "promise": [
+   "refs.what or state.what",
+   "terms.expires on an ask"
+  ],
+  "grant": [
+   "state.kind"
+  ],
+  "answer": [
+   "refs.answers",
+   "state.status"
+  ],
+  "open": []
+ },
  "fields": {
   "every": [
    "seq",
@@ -104,26 +149,27 @@
    "kind",
    "nonce",
    "confidence",
-   "sequencer",
-   "manifest",
+   "orderer",
+   "skip",
+   "lang",
+   "withheld",
    "line",
    "status",
    "stop",
-   "counted",
    "channel"
   ],
   "actor": [
    "name",
+   "marks",
    "public_key_sign",
    "public_key_encrypt",
    "recovery_key_hash",
    "recovery_reach",
+   "recovery_suite",
+   "suite",
    "removal",
-   "signers",
-   "custodian",
-   "alg_sign",
-   "alg_encrypt",
-   "alg_recovery"
+   "roles",
+   "custodian"
   ],
   "thing": [
    "name",
@@ -136,19 +182,23 @@
    "target",
    "fields",
    "roles",
-   "grounds"
+   "grounds",
+   "undo",
+   "labels"
   ],
   "observe": [
    "text",
    "amount",
    "accuracy",
    "coverage",
-   "dkim",
    "parties",
    "per_stranger",
-   "deposit",
+   "order_channel",
    "limit",
-   "per"
+   "per",
+   "word",
+   "to",
+   "method"
   ],
   "transform": [
    "shares"
@@ -170,20 +220,15 @@
    "depth",
    "public_key_sign",
    "public_key_encrypt",
+   "suite",
    "replaces",
    "counted_to",
    "recovery_key",
    "recovery_key_hash",
    "recovery_reach",
-   "epoch",
+   "recovery_suite",
    "roles",
-   "witnesses",
-   "needed",
-   "wait",
-   "keys",
-   "custodian",
-   "alg_sign",
-   "alg_encrypt"
+   "custodian"
   ]
  },
  "terms": [
@@ -216,18 +261,6 @@
   "notice",
   "condition"
  ],
- "schema": [
-  "target",
-  "fields",
-  "roles",
-  "grounds"
- ],
- "grounds": [
-  "event",
-  "confirms",
-  "defeats",
-  "confirmers"
- ],
  "field_types": [
   "text",
   "integer",
@@ -244,6 +277,20 @@
   "marks",
   "object",
   "list"
+ ],
+ "schema": [
+  "target",
+  "fields",
+  "roles",
+  "grounds",
+  "undo",
+  "labels"
+ ],
+ "grounds": [
+  "event",
+  "confirms",
+  "defeats",
+  "confirmers"
  ],
  "shapes": {
   "amount": [
@@ -300,16 +347,16 @@
    "datum": "WGS84",
    "values": "decimal strings; radius is an amount in m"
   },
-  "deposit": [
-   "money",
-   "holder"
-  ],
   "currency_unit": [
    "issuer",
    "unit",
    "decimals"
   ],
-  "money_note": "currency is an ISO 4217 code (grammar.currency) or a currency_unit: issuer an id (grammar.hash) whose published schema defines the unit, unit its name, decimals an integer 0 to limits.decimals_max. Money in different currencies is never added or compared by the protocol."
+  "money_note": "currency is an ISO 4217 code (grammar.currency) or a currency_unit: issuer an id (grammar.id) whose published schema defines the unit, unit its name, decimals an integer 0 to limits.decimals_max. Money in different currencies is never added or compared by the protocol.",
+  "when_after": [
+   "after",
+   "wait"
+  ]
  },
  "time_fields": [
   "at",
@@ -322,11 +369,24 @@
  "date_fields": [
   "use_by"
  ],
+ "duration_fields": [
+  "recovery_reach",
+  "wait",
+  "per",
+  "notice",
+  "answer_within",
+  "quiet"
+ ],
+ "time_fields_checked_in": [
+  "state",
+  "terms",
+  "scope",
+  "lines"
+ ],
  "grammar": {
   "hash": "^[0-9a-f]{64}$",
-  "sign_key": "^302a300506032b6570032100[0-9a-f]{64}$",
-  "signature": "^[0-9a-f]{128}$",
-  "encrypt_key": "^[0-9a-f]{64}$",
+  "id": "^([a-z0-9-]+:)?[0-9a-f]{64}$",
+  "id_note": "A bare id is SHA-256. Any other hash carries its name and a colon (suites, hashes).",
   "salt": "^[0-9a-f]{32}$",
   "nonce": "^[0-9a-f]{32}$",
   "decimal": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$",
@@ -334,8 +394,16 @@
   "time": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",
   "date": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
   "duration": "^P(?:(?:[0-9]+Y(?:[0-9]+M)?(?:[0-9]+W)?(?:[0-9]+D)?|[0-9]+M(?:[0-9]+W)?(?:[0-9]+D)?|[0-9]+W(?:[0-9]+D)?|[0-9]+D)(?:T(?:[0-9]+H(?:[0-9]+M)?(?:[0-9]+S)?|[0-9]+M(?:[0-9]+S)?|[0-9]+S))?|T(?:[0-9]+H(?:[0-9]+M)?(?:[0-9]+S)?|[0-9]+M(?:[0-9]+S)?|[0-9]+S))$",
-  "role_ref": "^[0-9a-f]{64}#.+$",
-  "currency": "^[A-Z]{3}$"
+  "role_ref": "^([a-z0-9-]+:)?[0-9a-f]{64}#.+$",
+  "currency": "^[A-Z]{3}$",
+  "type_name": "^[a-z][a-z0-9_]*$",
+  "lang": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
+  "receipt_code": "^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$"
+ },
+ "grammar_notes": {
+  "duration": "Written without lookahead so every regex engine runs it.",
+  "time": "The pattern is the shape; the value must also be a real calendar instant (no 30 February).",
+  "date": "The pattern is the shape; the value must also be a real calendar date."
  },
  "integers": {
   "min": -9007199254740991,
@@ -344,15 +412,103 @@
  "limits": {
   "block_bytes": 65536,
   "after_heads": 16,
-  "signed_window": "PT5M",
-  "decimals_max": 18
+  "decimals_max": 15
+ },
+ "hashes": {
+  "sha256": {
+   "prefix": null,
+   "bytes": 32
+  },
+  "sm3": {
+   "prefix": "sm3:",
+   "bytes": 32
+  },
+  "sha3-256": {
+   "prefix": "sha3-256:",
+   "bytes": 32
+  }
+ },
+ "suites": {
+  "about": "A suite names a hash, a signature algorithm and an envelope together. A key names its suite in state.suite; left out, std. A block is hashed with the hash of the suite of the key that signed it. A reader refuses an unknown suite (refusals.codes.block.unknown_suite).",
+  "default": "std",
+  "std": {
+   "hash": "sha256",
+   "sign": "ed25519",
+   "encrypt": "x25519",
+   "envelope": "x25519-hkdf-sha256-aes-256-gcm",
+   "kdf": "hkdf-sha256",
+   "cipher": "aes-256-gcm",
+   "sign_key": {
+    "grammar": "^302a300506032b6570032100[0-9a-f]{64}$",
+    "spki_prefix": "302a300506032b6570032100",
+    "raw_key_bytes": 32
+   },
+   "signature": {
+    "grammar": "^[0-9a-f]{128}$",
+    "bytes": 64
+   },
+   "encrypt_key": {
+    "grammar": "^[0-9a-f]{64}$",
+    "bytes": 32
+   }
+  },
+  "p256": {
+   "hash": "sha256",
+   "sign": "ecdsa-p256-sha256",
+   "encrypt": "ecdh-p256",
+   "envelope": "p256-hkdf-sha256-aes-256-gcm",
+   "kdf": "hkdf-sha256",
+   "cipher": "aes-256-gcm",
+   "sign_key": {
+    "grammar": "^3059301306072a8648ce3d020106082a8648ce3d030107034200[0-9a-f]{130}$",
+    "spki_prefix": "3059301306072a8648ce3d020106082a8648ce3d030107034200",
+    "raw_key_bytes": 65
+   },
+   "signature": {
+    "grammar": "^[0-9a-f]{128}$",
+    "bytes": 64,
+    "form": "r then s, 32 bytes each"
+   },
+   "encrypt_key": {
+    "grammar": "^04[0-9a-f]{128}$",
+    "bytes": 65,
+    "form": "SEC1 uncompressed point"
+   }
+  },
+  "sm": {
+   "hash": "sm3",
+   "sign": "sm2-sm3",
+   "sm2_user_id": "1234567812345678",
+   "encrypt": "ecdh-sm2",
+   "envelope": "sm2-hkdf-sm3-sm4-gcm",
+   "kdf": "hkdf-sm3",
+   "cipher": "sm4-gcm",
+   "sign_key": {
+    "grammar": "^3059301306072a8648ce3d020106082a811ccf5501822d034200[0-9a-f]{130}$",
+    "spki_prefix": "3059301306072a8648ce3d020106082a811ccf5501822d034200",
+    "raw_key_bytes": 65
+   },
+   "signature": {
+    "grammar": "^[0-9a-f]{128}$",
+    "bytes": 64,
+    "form": "r then s, 32 bytes each"
+   },
+   "encrypt_key": {
+    "grammar": "^04[0-9a-f]{128}$",
+    "bytes": 65,
+    "form": "SEC1 uncompressed point"
+   }
+  },
+  "future": {
+   "pq": {
+    "hash": "sha3-256",
+    "sign": "ml-dsa-44",
+    "encrypt": "ml-kem-768",
+    "status": "noted, not usable until sizes are fixed in vectors; a signature must still fit limits.block_bytes"
+   }
+  }
  },
  "envelope": {
-  "write": "x25519-hkdf-sha256-aes-256-gcm",
-  "read": [
-   "x25519-hkdf-sha256-aes-256-gcm",
-   "x25519-aes-256-gcm"
-  ],
   "hkdf_info": "foodblock envelope key",
   "fields": [
    "alg",
@@ -363,14 +519,17 @@
   ],
   "recipient": [
    "encrypted_key"
-  ]
+  ],
+  "alg": "the suite's envelope name"
  },
  "messages": {
   "public_block": [
    "version",
    "block",
-   "signature"
+   "signature",
+   "suite"
   ],
+  "public_block_note": "suite only when it is not std",
   "sealed_block": [
    "version",
    "header",
@@ -396,10 +555,11 @@
    "heads",
    "signer",
    "node",
-   "nonce",
-   "at",
+   "counter",
+   "challenge",
    "signature"
   ],
+  "proof_note": "A signed request carries exactly one of counter (an integer above the highest the node has seen from the signer) or challenge (issued by the node, used once). It carries no time.",
   "pull_answer": [
    "node",
    "request",
@@ -407,9 +567,22 @@
    "next",
    "signature"
   ],
+  "pull_answer_block": [
+   "n",
+   "message"
+  ],
   "push": [
    "messages",
    "for"
+  ],
+  "signed_push": [
+   "messages",
+   "for",
+   "signer",
+   "node",
+   "counter",
+   "challenge",
+   "signature"
   ],
   "push_answer": [
    "node",
@@ -425,6 +598,7 @@
    "author",
    "hash",
    "record",
+   "marks",
    "refs"
   ],
   "discovery": [
@@ -438,7 +612,8 @@
   ],
   "endpoints": [
    "pull",
-   "push"
+   "push",
+   "challenge"
   ],
   "announcement": [
    "protocol",
@@ -446,19 +621,10 @@
    "node",
    "endpoints"
   ],
-  "signed_push": [
-   "messages",
-   "for",
-   "signer",
-   "node",
-   "nonce",
-   "at",
-   "signature"
-  ],
   "admission": [
    "parties",
    "per_stranger",
-   "deposit"
+   "order_channel"
   ],
   "refusal": [
    "hash",
@@ -469,19 +635,11 @@
    "t",
    "block",
    "signature"
-  ]
- },
- "aliases": {
-  "file": "aliases.json",
-  "order": [
-   "types",
-   "shapes",
-   "refs",
-   "outside"
   ],
-  "shapes_order": "the rules for type.kind, then for type, each in listed order; each `when` is tested on the block as read so far",
-  "types_order": "per-type rows, then every-type rows (`*`); a name with no row, written base.rest, reads by `types_dotted`",
-  "messages": "message field renames in aliases.json `messages`, read on messages"
+  "foodblock_file": [
+   "version",
+   "messages"
+  ]
  },
  "local_discovery": {
   "links": [
@@ -496,29 +654,31 @@
   ],
   "path": "/.well-known/foodblock"
  },
- "profiles": {
+ "peers": {
+  "about": "Three peers: micro, edge, node. A micro that acts and an index are variants.",
   "micro": [
    "canonical",
-   "sha256",
-   "ed25519",
-   "write_check",
+   "hash",
+   "sign",
+   "valid",
    "own_chain",
    "vectors",
    "cbor_optional"
   ],
-  "micro_acting": [
+  "micro_acts": [
    "micro",
    "grant_check",
    "obey_stop"
   ],
   "edge": [
-   "micro_acting",
+   "micro_acts",
    "local_discovery",
    "pull",
    "push",
    "promise_fold_own_deals",
    "offline",
-   "read_unsigned_devices"
+   "read_unsigned_devices",
+   "admission"
   ],
   "node": [
    "edge",
@@ -539,22 +699,25 @@
   "modules": {
    "micro": [
     "core",
+    "canonical",
     "blocks",
     "encoding",
+    "peers",
     "identity_own_keys",
     "things_written"
    ],
-   "micro_acting": [
+   "micro_acts": [
     "micro",
     "authority"
    ],
    "edge": [
-    "micro_acting",
+    "micro_acts",
     "things",
     "identity",
     "nodes_local",
     "promises_own_deals",
-    "folds_promise"
+    "folds_promise",
+    "strangers_own_asks"
    ],
    "node": [
     "edge",
@@ -562,7 +725,8 @@
     "promises",
     "folds",
     "privacy",
-    "circles"
+    "circles",
+    "strangers"
    ],
    "index": [
     "node",
@@ -570,35 +734,282 @@
    ]
   }
  },
- "circle": {
-  "removal": [
-   "needed"
-  ],
-  "removal_default": {
-   "needed": 1
+ "kinds": {
+  "about": "The state.kind labels the protocol reads. Every other kind is an open label.",
+  "actor": {
+   "circle": "circles.md",
+   "contact": "identity.md",
+   "agent": "strangers.md",
+   "machine": "strangers.md",
+   "person": "strangers.md"
   },
-  "signers_default": [
-   "admin"
-  ]
+  "thing": {
+   "schema": "things.md"
+  },
+  "observe": {
+   "receipt": "blocks.md",
+   "limit": "authority.md",
+   "admission": "nodes.md",
+   "erase": "privacy.md",
+   "work": "things.md",
+   "reading": "things.md",
+   "import": "things.md",
+   "message": "transport.md",
+   "profile": "identity.md",
+   "consent": "strangers.md"
+  },
+  "grant": {
+   "key": "identity.md",
+   "member": "circles.md",
+   "operator": "identity.md"
+  }
  },
- "time_fields_checked_in": [
-  "state",
-  "terms",
-  "scope",
-  "lines"
+ "consent_words": [
+  "yes",
+  "stop",
+  "keep",
+  "move"
  ],
- "grammar_notes": {
-  "duration": "Written without lookahead so every regex engine runs it.",
-  "time": "The pattern is the shape; the value must also be a real calendar instant (no 30 February).",
-  "date": "The pattern is the shape; the value must also be a real calendar date."
+ "modules": [
+  "blocks",
+  "identity",
+  "things",
+  "promises",
+  "authority",
+  "circles",
+  "privacy",
+  "nodes",
+  "folds",
+  "strangers",
+  "encoding",
+  "peers"
+ ],
+ "optional_profiles": {
+  "about": "Optional. A node that has never heard of a profile still accepts every block in it.",
+  "successor": {
+   "file": "profiles/successor.md",
+   "grant_kinds": [
+    "successor"
+   ],
+   "observe_kinds": [
+    "trigger",
+    "close"
+   ],
+   "fields": {
+    "grant": [
+     "witnesses",
+     "needed",
+     "wait",
+     "keys"
+    ]
+   },
+   "views": {
+    "successor_view": {
+     "input": "a successor grant, arrivals on this node, the reader's clock",
+     "output": {
+      "events": "the standing event observes, one per witness, sorted",
+      "cancelled": "the event observes the person defeated in time, sorted",
+      "since": "the arrival of the needed-th event, or null",
+      "fires": "since plus wait, or null",
+      "fired": "true once the reader's clock reaches fires"
+     }
+    }
+   }
+  },
+  "ballots": {
+   "file": "profiles/ballots.md",
+   "fields": {
+    "observe": [
+     "counted"
+    ]
+   },
+   "folds": {
+    "counted_in": {
+     "input": "a ballot result, a commitment, the named counter",
+     "output": "true when the result is signed by that counter and lists the commitment in counted"
+    }
+   }
+  },
+  "rekeys": {
+   "file": "profiles/rekeys.md",
+   "powers": [
+    "rekey"
+   ],
+   "fields": {
+    "grant": [
+     "epoch",
+     "keys"
+    ]
+   },
+   "folds": {
+    "circle_key": {
+     "input": "a circle",
+     "output": {
+      "epoch": "the current epoch; 0 is the circle actor's key",
+      "keys": "the encryption keys of the epoch's counted rekeys, sorted",
+      "grants": "their hashes, sorted"
+     }
+    }
+   }
+  },
+  "deposits": {
+   "file": "profiles/deposits.md",
+   "admission_fields": [
+    "deposit"
+   ],
+   "shapes": {
+    "deposit": [
+     "money",
+     "holder"
+    ]
+   }
+  },
+  "short-form": {
+   "file": "profiles/short-form.md",
+   "grammar": "receipt_code",
+   "receipt_code": {
+    "bits": 40,
+    "alphabet": "crockford-base32",
+    "group": "XXXX-XXXX"
+   }
+  },
+  "custody": {
+   "file": "profiles/custody.md",
+   "observe_kinds": [
+    "custody_policy"
+   ],
+   "fields": {
+    "every": [
+     "proof",
+     "assisted_by"
+    ],
+    "observe": [
+     "quiet",
+     "step_up",
+     "assisted"
+    ]
+   }
+  },
+  "erasure": {
+   "file": "profiles/erasure.md",
+   "personal_fields": [
+    "given_name",
+    "family_name",
+    "phone",
+    "email",
+    "address",
+    "birth",
+    "id_number",
+    "face",
+    "voice"
+   ],
+   "observe_kinds": [
+    "erase"
+   ]
+  },
+  "attestations": {
+   "file": "profiles/attestations.md",
+   "observe_kinds": [
+    "attestation"
+   ],
+   "fields": {
+    "observe": [
+     "scheme",
+     "value",
+     "kind_of"
+    ]
+   }
+  },
+  "residency": {
+   "file": "profiles/residency.md",
+   "admission_fields": [
+    "holds_in"
+   ],
+   "fields": {
+    "every": [
+     "stays_in"
+    ]
+   },
+   "message_refusals": [
+    "residency"
+   ],
+   "regions": "ISO 3166-1 alpha-2 codes, EU, EEA"
+  },
+  "payment-proof": {
+   "file": "profiles/payment-proof.md",
+   "observe_kinds": [
+    "payment"
+   ],
+   "schemes": [
+    "mpesa",
+    "mtn_momo",
+    "telebirr",
+    "upi",
+    "pix",
+    "qris",
+    "promptpay",
+    "raast",
+    "open_banking"
+   ],
+   "schemes_note": "labels; any other label is allowed"
+  },
+  "addressing": {
+   "file": "profiles/addressing.md",
+   "mark_schemes": [
+    "tel",
+    "upi",
+    "pix",
+    "vpa"
+   ]
+  },
+  "tax-recall": {
+   "file": "profiles/tax-recall.md",
+   "observe_kinds": [
+    "tax_report"
+   ],
+   "grant_kinds": [
+    "recall"
+   ],
+   "fields": {
+    "observe": [
+     "period",
+     "gross",
+     "fees",
+     "country",
+     "tax_id"
+    ],
+    "grant": [
+     "answer_within",
+     "marks"
+    ]
+   }
+  },
+  "adapters": {
+   "file": "profiles/adapters.md"
+  },
+  "tasks": {
+   "file": "profiles/tasks.md",
+   "observe_kinds": [
+    "progress"
+   ],
+   "condition_schemas": [
+    "reading_condition"
+   ],
+   "fields": {
+    "observe": [
+     "phase",
+     "fraction"
+    ]
+   }
+  },
+  "foodblock-profile-epcis": {
+   "file": "profiles/foodblock-profile-epcis.md"
+  }
  },
- "genesis_optional": [
-  "public_key_encrypt",
-  "custodian",
-  "alg_sign",
-  "alg_encrypt",
-  "alg_recovery"
- ],
+ "legacy": {
+  "file": "legacy/converter.md",
+  "note": "Not part of the protocol. No node reads an older shape."
+ },
  "refusals": {
   "about": "Every refusal is { hash, code, detail }: code from these lists, detail free text for people. block: why a node refuses a block's bytes (final for those bytes). fold: why a fold counts a block for nothing. message: why a node refuses a pull or push. A block breaking several rules gets one entry per rule found, in this order.",
   "fields": [
@@ -608,57 +1019,57 @@
   ],
   "codes": {
    "block": {
-    "not_canonical": "not in canonical form (key order, NFC, nulls)",
-    "bad_hash": "a hash sent with it is not the hash of its canonical bytes",
+    "not_canonical": "not in canonical form: key or set order, NFC, null, duplicate keys, a repeat in a set, or not exactly type, state and refs",
+    "bad_hash": "an id sent with it is not the hash of its canonical bytes",
     "bad_signature": "its signature opens with no key of its author",
     "void_key": "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to",
+    "unknown_suite": "a key that names a suite the reader does not know, or a key, signature or id outside its suite's grammar",
     "size_limit": "its canonical body is over limits.block_bytes (a sealed copy's block, once opened)",
     "after_limit": "refs.after names more than limits.after_heads heads",
     "float": "a number with a fraction or exponent in signed content",
-    "integer_range": "a whole number outside integers.min..integers.max",
+    "integer_range": "a whole number outside integers.min..integers.max, or -0",
     "decimal": "a decimal string outside grammar.decimal",
-    "grammar": "a hash, key, signature, salt, nonce, confidence or role ref outside its grammar",
+    "grammar": "an id, salt, nonce, confidence, role ref, language tag or type name outside its grammar",
     "time": "a time, date or duration outside its grammar",
     "calendar": "a time or date in the right shape that is not a real calendar instant",
     "shape": "an amount, money, price, range, mark, share, split, when, where or reveal without its keys",
-    "unknown_type": "a type that is not one of the seven",
-    "undeclared_ref": "a ref key neither shared nor declared by its schema",
-    "undeclared_field": "a state field neither its type's base field nor declared by its schema",
-    "bad_genesis": "a genesis with author, prev, after or seq, not public, missing a genesis field, or not signed by its own key",
+    "type_name": "a type that does not match grammar.type_name",
+    "required": "a closed block missing a required field (core.md, section 7)",
+    "undeclared_ref": "on a closed type, a ref key neither shared nor declared by its schema",
+    "undeclared_field": "on a closed type, a state field neither its type's base field nor declared by its schema",
+    "bad_genesis": "a genesis with author, prev, after or seq, not public, missing a genesis field, with only one of the recovery fields, or not signed by its own key",
     "audience": "an audience that is neither public nor a sorted list of commitments",
-    "chain": "a seq or prev that does not fit its key's chain",
-    "at_before_after": "its at is earlier than the at of a block it names in after, when both carry at",
+    "chain": "a seq or prev that does not fit its key's chain, or a skip that goes backwards",
     "at_missing": "no at on a block that is not an observe, transform or transfer",
-    "no_history": "a block without seq from a 1.6 identity",
-    "history_closed": "a block without seq outside an older identity's closed history",
-    "not_own_rotation": "a rotation signed by neither the key it replaces nor the recovery key",
-    "recovery_scope": "the recovery key signed something other than a key grant or a defeats of a successor's trigger",
+    "not_own_rotation": "a rotation signed by none of the key it replaces, the recovery key, or the operator of an agent or machine",
+    "recovery_scope": "the recovery key signed something other than a key grant or a defeats a profile gives it",
     "status_not_answer": "a status on a block that neither answers nor updates its author's own",
-    "bad_status": "a status not in answers, or stopped without a stop from stop",
+    "bad_status": "a status not in statuses, or stopped without a stop from stop",
     "ask_without_expires": "an ask with no terms.expires",
     "not_a_side": "a promise, or a deal block, signed by neither side nor an agent under a side's live grant",
     "deal_not_named": "an answer or counter in a deal that does not name the first promise in refs.for",
     "lines": "a line without an id unique in the promise, a top-level price or quantity beside lines, or refs.what not the lines' what",
     "wider_than_parent": "a child grant's scope or depth wider than its parent's on any field",
     "not_receiver": "a grant passed on by someone other than its parent's receiver",
-    "scope_until": "a grant others act under without scope.until, or a key, member, successor or operator grant with one",
-    "unknown_alg": "a key that names an alg_sign or alg_encrypt the reader does not know, or a key outside its alg's grammar"
+    "scope_until": "a grant others act under without scope.until, or a key, member or operator grant with one",
+    "bad_roles": "a circle roles list whose powers are not in powers (or a profile's powers), or a founder with no first role"
    },
    "fold": {
     "not_a_side": "signed by neither side nor an agent under a side's live grant",
     "open_offer_counter": "a counter to an open offer: it ends nothing; only the author ends an open offer",
-    "not_live": "acts under a grant that is not live, or outside its scope",
-    "no_role": "signs as a circle without a role in its signers, in the circle's fold of its causal past",
+    "not_live": "acts under a grant that is not live, or outside its scope, or is an act with undo never and has neither a specific accepted ask nor a grant naming it with a limit",
+    "no_role": "signs as a circle without a role with the sign power, in the circle's fold of its causal past",
     "not_counted": "a settling block the receiver has not accepted and no confirmer the grounds name has confirmed",
-    "equivocation": "one of a pair that do not see each other: proof, counted for nothing",
-    "expired": "an accept that reached the offerer after expires, on the offerer's clock"
+    "equivocation": "one of a pair that name one prev: proof, counted for nothing",
+    "quote_only": "an accept of a quote request: an agent's ask whose grant does not name the act binds no one"
    },
    "message": {
     "bad_signature": "the message is not signed by the signer it names",
     "wrong_node": "it names another node",
-    "window": "its at is outside limits.signed_window of the node's clock",
-    "replay": "its nonce was seen",
-    "not_admitted": "the node's admission rule does not admit it"
+    "replay": "its counter is not above the highest seen, or its challenge was not issued or was used",
+    "not_admitted": "the node's admission rule does not admit it",
+    "not_human": "a first block to a stranger signed by an agent, outside the receiver's order channel",
+    "stopped": "a message to a person with a live STOP naming its author or operator"
    }
   }
  },
@@ -674,9 +1085,9 @@
    }
   },
   "promise_stage": {
-   "input": "a first promise and the blocks held; the reader's clock",
+   "input": "a first promise and the blocks held; no clock",
    "output": {
-    "stage": "offered, asked, expired, declined, stopped, accepted, underway, done or reversed",
+    "stage": "offered, asked, declined, stopped, accepted, underway, done or reversed",
     "stop": "before or onward, when stopped",
     "from": "the onward stop's hash",
     "offer": "the live offer's hash",
@@ -701,7 +1112,7 @@
   },
   "may_act_as": {
    "input": "a block, a circle, a role or none",
-   "output": "true when the author holds the role (or one of the circle's signers) in the circle's fold of the block's causal past"
+   "output": "true when the author holds the sign power through a role in the circle's fold of the block's causal past"
   },
   "members_then": {
    "input": "a block and a circle or circle#role",
@@ -719,89 +1130,57 @@
     "conflict": "the crossing pair, sorted, or null"
    }
   },
-  "successor_state": {
-   "input": "a successor grant, arrivals on this node, the reader's clock",
-   "output": {
-    "events": "the standing event observes, one per witness, sorted",
-    "cancelled": "the event observes the person defeated in time, sorted",
-    "since": "the arrival of the needed-th event, or null",
-    "fires": "since plus wait, or null",
-    "fired": "true once the clock reaches fires"
-   }
-  },
-  "circle_key": {
-   "input": "a circle",
-   "output": {
-    "epoch": "the current epoch; 0 is the circle actor's key",
-    "keys": "the encryption keys of the epoch's counted rekeys, sorted",
-    "grants": "their hashes, sorted"
-   }
-  },
-  "counted_in": {
-   "input": "a ballot result, a commitment, the named counter",
-   "output": "true when the result is signed by that counter and lists the commitment in counted"
-  },
   "chain": {
    "head": "hash of the latest block",
    "length": "blocks counted",
-   "gaps": "seq numbers missing",
-   "equivocations": "pairs of hashes at one seq, each pair sorted",
+   "gaps": "seq numbers missing that no skip block explains",
+   "skips": "hashes of skip blocks",
+   "equivocations": "pairs of hashes naming one prev, each pair sorted",
    "broken": "hashes whose prev does not name the block before",
-   "ok": "true when there are no gaps, equivocations or broken links"
+   "ok": "true when there are no unexplained gaps, equivocations or broken links"
   },
   "next_link": {
    "seq": "the next seq for the key",
    "prev": "the hash of the key's previous block, or of the block that brought the key in"
+  },
+  "consent": {
+   "input": "a person and a sender (or none)",
+   "output": {
+    "word": "yes, stop, keep or move, or null",
+    "block": "the consent block that decides, or null"
+   }
   }
  },
- "channels": [
-  "sms",
-  "ussd",
-  "voice",
-  "message",
-  "in_person"
- ],
- "keypairs": {
-  "sign": [
-   "public_key_sign",
-   "private_key"
-  ],
-  "encrypt": [
-   "public_key_encrypt",
-   "x25519_private"
-  ],
-  "note": "How vectors and SDKs pass keys: hex. Private keys never appear in blocks."
- },
- "notes_push_for": "for maps a sealed copy's hash to a list of ids",
- "algs": {
-  "about": "Algorithms a key may name. A genesis or key grant names alg_sign and alg_encrypt; left out, the defaults. The recovery key is the default sign alg unless the genesis names alg_recovery. A reader refuses an unknown alg (refusals.codes.block.unknown_alg). The hash is sha256 for every block.",
-  "sign": {
-   "default": "ed25519",
-   "known": {
-    "ed25519": {
-     "key": "sign_key",
-     "signature": "signature",
-     "raw_key_bytes": 32,
-     "spki_prefix": "302a300506032b6570032100"
-    }
-   },
-   "future": [
-    "ml-dsa-44"
-   ]
+ "views": {
+  "about": "A view reads a fold and the reader's clock or arrivals, and says whose.",
+  "promise_view": {
+   "clock": "the reader's own",
+   "input": "a first promise, the blocks held, the reader's clock",
+   "output": "the promise_stage answer, with stage expired once the clock passes expires and nothing binds"
   },
-  "encrypt": {
-   "default": "x25519",
-   "known": {
-    "x25519": {
-     "key": "encrypt_key",
-     "envelope": "x25519-hkdf-sha256-aes-256-gcm"
-    }
-   }
+  "live_grant": {
+   "clock": "the node that relies on the act, when it takes the block in",
+   "input": "an act block, its grants, that clock",
+   "output": "true when every grant's scope.until is later than the clock"
   },
-  "hash": "sha256"
+  "recovery_reach": {
+   "clock": "the reader's record of arrivals",
+   "input": "a recovery rotation, the identity fold, the reader's arrivals",
+   "output": "the voided blocks the reach protects, sorted"
+  },
+  "withdrawal_seen": {
+   "clock": "arrival on the counterparty's node",
+   "input": "a withdrawal, a counterparty block, its node's arrivals",
+   "output": "true when the withdrawal is in the block's causal past or arrived on its node"
+  },
+  "due": {
+   "clock": "the performer's own, from the anchor's arrival on its node",
+   "input": "a promise with a relative when, the performer's arrivals and clock",
+   "output": "the instant it falls due, or null while the anchor has not arrived"
+  }
  },
  "cbor": {
-  "about": "Compact form of a public block (encoding.md). The id is always the hash of the canonical JSON; CBOR is transport only.",
+  "about": "Compact form of a public block (encoding.md). The id is always the hash of the canonical JSON; CBOR is transport only. At year zero the key table is reset: this is table 1.",
   "rfc": "8949",
   "deterministic": "4.2.1",
   "media_type": "application/foodblock+cbor",
@@ -846,18 +1225,14 @@
    "where",
    "nonce",
    "confidence",
-   "sequencer",
-   "manifest",
    "line",
    "stop",
-   "counted",
    "channel",
    "public_key_sign",
    "public_key_encrypt",
    "recovery_key_hash",
    "recovery_reach",
    "removal",
-   "signers",
    "custodian",
    "marks",
    "words",
@@ -871,10 +1246,8 @@
    "text",
    "accuracy",
    "coverage",
-   "dkim",
    "parties",
    "per_stranger",
-   "deposit",
    "limit",
    "per",
    "shares",
@@ -886,11 +1259,6 @@
    "replaces",
    "counted_to",
    "recovery_key",
-   "epoch",
-   "witnesses",
-   "needed",
-   "wait",
-   "keys",
    "price",
    "quantity",
    "lines",
@@ -924,34 +1292,39 @@
    "holder",
    "issuer",
    "decimals",
-   "alg_sign",
-   "alg_encrypt",
-   "alg_recovery",
-   "occurrences"
+   "occurrences",
+   "orderer",
+   "skip",
+   "lang",
+   "withheld",
+   "suite",
+   "recovery_suite",
+   "order_channel",
+   "word",
+   "method",
+   "challenge",
+   "counter"
   ],
   "types": "position in `types`",
   "bytes": {
-   "about": "A value at one of these paths that matches its grammar is a byte string; otherwise text. `[]` is each element, `*` any key. hash: 32 bytes. sign_key: ed25519 32 raw bytes (algs.sign.known.ed25519.spki_prefix put back), other algs the whole SPKI. encrypt_key: 32 bytes. nonce: 16 bytes.",
+   "about": "A value at one of these paths that matches its grammar is a byte string; otherwise text (an id with a hash prefix stays text). `[]` is each element, `*` any key. hash: 32 bytes. sign_key: std 32 raw bytes (suites.std.sign_key.spki_prefix put back), other suites the whole SPKI. encrypt_key: the suite's raw bytes. nonce: 16 bytes.",
    "hash": [
     "refs.*",
     "state.counted_to",
-    "state.manifest[]",
-    "state.custodian",
-    "state.recovery_key_hash",
     "state.audience[]",
     "state.parties[]",
-    "state.witnesses[]",
-    "state.counted[]",
+    "state.custodian",
+    "state.recovery_key_hash",
+    "state.assisted_by",
     "state.shares[].from",
     "state.split[].for",
-    "state.terms.settled_by",
-    "state.deposit.holder"
+    "state.terms.settled_by"
    ],
    "sign_key": [
     "state.public_key_sign",
     "state.replaces",
     "state.recovery_key",
-    "state.sequencer"
+    "state.orderer"
    ],
    "encrypt_key": [
     "state.public_key_encrypt"

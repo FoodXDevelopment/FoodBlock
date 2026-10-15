@@ -13,4 +13,8 @@ public enum Grant {
     public static func ancestors(_ grant: JSON, _ blocks: [JSON]) -> [JSON] { (Core.maybe("ancestors", grant, blocks) as? [JSON]) ?? [] }
     public static func whyNotUnder(_ block: JSON?, _ blocks: [JSON], now: String? = nil) -> [String] { Core.strings("why_not_under", block, blocks, now) }
     public static func operatorsOf(_ agent: String, _ blocks: [JSON], now: String? = nil) -> [String] { Core.strings("operators_of", agent, blocks, now) }
+    /// Why an act that cannot be undone (its schema says `undo: never`) is not live: empty when it has a specific accepted ask or a grant that names it with a limit.
+    public static func whyNotLiveUndo(_ block: JSON, _ blocks: [JSON]) -> [String] { Core.strings("why_not_live_undo", block, blocks) }
+    /// The act a block is, named `type.kind`.
+    public static func actName(_ block: JSON) -> String { (try? Core.string("act_name", block)) ?? "" }
 }

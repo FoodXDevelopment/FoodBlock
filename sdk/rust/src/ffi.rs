@@ -155,7 +155,7 @@ pub unsafe extern "C" fn fb_keypair(seed_hex: *const c_char, out: *mut *mut c_ch
 }
 
 /// A genesis, signed. `keys_json` is `{ public_key_sign, private_key }`; `options_json` is `{ kind, at,
-/// encryption_key, recovery_key, reach }` (`at` defaults to now, `reach` to P30D).
+/// encryption_key, recovery_key, reach }` (`at` defaults to now; the recovery fields come as a pair or not at all).
 #[no_mangle]
 pub unsafe extern "C" fn fb_genesis(
     keys_json: *const c_char,
@@ -166,6 +166,7 @@ pub unsafe extern "C" fn fb_genesis(
         let keys = json_arg(keys_json, "keys")?;
         let o = json_arg(options_json, "options")?;
         let pair = crate::Keypair {
+            suite: crate::js::text_or_empty(keys.get("suite")),
             public_key_sign: crate::js::text_or_empty(keys.get("public_key_sign")),
             private_key: crate::js::text_or_empty(keys.get("private_key")),
         };
@@ -184,11 +185,9 @@ pub unsafe extern "C" fn fb_genesis(
                     .and_then(Value::as_str)
                     .unwrap_or(""),
                 recovery_key: o.get("recovery_key").and_then(Value::as_str).unwrap_or(""),
-                reach: o.get("reach").and_then(Value::as_str).unwrap_or("P30D"),
+                reach: o.get("reach").and_then(Value::as_str).unwrap_or(""),
+                recovery_suite: o.get("recovery_suite").and_then(Value::as_str).unwrap_or(""),
                 custodian: o.get("custodian").and_then(Value::as_str).unwrap_or(""),
-                alg_sign: o.get("alg_sign").and_then(Value::as_str).unwrap_or(""),
-                alg_encrypt: o.get("alg_encrypt").and_then(Value::as_str).unwrap_or(""),
-                alg_recovery: o.get("alg_recovery").and_then(Value::as_str).unwrap_or(""),
             },
         )?;
         Ok(g.to_string())
@@ -282,14 +281,6 @@ pub unsafe extern "C" fn fb_refusals(
     })
 }
 
-/// A block of any earlier shape, read as 1.6 (aliases.json).
-#[no_mangle]
-pub unsafe extern "C" fn fb_read_as(block_json: *const c_char, out: *mut *mut c_char) -> c_int {
-    run(out, || {
-        Ok(crate::read_as(&json_arg(block_json, "block")?).to_string())
-    })
-}
-
 /// Where a key's next block goes: `{ seq, prev }`. `last_json` is the key's latest block (or null); with none,
 /// `brought_in` is the hash of the genesis or key grant that brought the key in.
 #[no_mangle]
@@ -340,6 +331,7 @@ pub unsafe extern "C" fn fb_write(
             Fail::Argument("options.key is { public_key_sign, private_key }".into())
         })?;
         let pair = crate::Keypair {
+            suite: crate::js::text_or_empty(key.get("suite")),
             public_key_sign: crate::js::text_or_empty(key.get("public_key_sign")),
             private_key: crate::js::text_or_empty(key.get("private_key")),
         };
@@ -359,6 +351,8 @@ pub unsafe extern "C" fn fb_write(
                 link,
                 salts: o.get("salts").cloned().unwrap_or(Value::Null),
                 nonce: o.get("nonce").and_then(Value::as_str).map(String::from),
+                suite: pair.suite.clone(),
+                skip: o.get("skip").and_then(Value::as_bool).unwrap_or(false),
             },
             key: Some(&pair),
             held: &held,

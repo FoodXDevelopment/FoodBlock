@@ -41,8 +41,9 @@ v1.5 paper, kept as the paper; where it and the spec differ, the spec is current
 
 - **Compress, don't expand.** Every change should make the system simpler.
 - **The SDK decides; everything else asks it.** The server, MCP server and CLI never check a block themselves.
-- **Strict when writing, generous when reading.** Write only 1.6 shapes. Read every earlier shape through
-  `spec/aliases.json` (`readAs`). Never change signed content: refuse it, and the author re-signs.
+- **Strict.** Year zero: there is no earlier version in the protocol. Write and read only 1.6 shapes. Never change
+  signed content: refuse it, and the author re-signs. Old data enters once, through the converter outside the protocol
+  (`fb convert`, `sdk/rust` feature `legacy`, `spec/legacy/`); it writes fresh blocks that name the old hash.
 - **Append-only.** A stored block is never updated or deleted. A change is a new block that `updates` the old one.
 - **The protocol describes itself.** Kinds, fields and roles are schemas (a `thing` of kind schema), not code.
 - **Every SDK reproduces the vectors.** `spec/vectors.json` exactly: hashes, signatures, commitments, envelopes.
@@ -53,19 +54,21 @@ v1.5 paper, kept as the paper; where it and the spec differ, the spec is current
 ## Layout
 
 ```
-spec/core.md, modules/  the protocol (1.6, normative; protocol.md is the index); protocol.json (every list), canonical.md, transport.md,
-                        aliases.json, vectors.json beside it
+spec/core.md, modules/  the protocol (1.6, normative; protocol.md is the index); profiles/ (optional); protocol.json
+                        (every list), canonical.md, transport.md, vectors.json beside it; legacy/ is the one-time converter's data
+spec/oracle/            an implementation written from the spec text alone; `node spec/oracle/run.cjs` checks the vectors
+sdk/rust/               the one core (every rule, once): crate, C library, WebAssembly, JNI
 spec/run-vectors.cjs    the conformance runner
 spec/whitepaper.md      the published v1.5 paper (and .pdf)
 sdk/javascript/         the reference SDK (src/index.cjs is its whole API)
-sdk/python, go, swift   the same protocol in other languages; each runs every vector section, and carries an exact
-                        copy of protocol.json and aliases.json
+sdk/python, go, swift,  the same protocol in other languages, thin layers over the Rust core; each runs every vector
+kotlin                  section
 server/                 a node: node.js (store + signed pull / push / .well-known), index.js (runs it)
 sql/schema.sql          the node's store: append-only, each block kept exactly as it arrived
 mcp/                    the MCP server: eight tools, writes as one identity through the SDK's `write`
-cli/bin/fb.js           fb init | key | create | check | read-as | verify
-test/vectors.json       older cross-language hash vectors (pre-1.6 type names; they still hash the same)
-test/sync-spec.cjs      copies spec/protocol.json and aliases.json into each SDK; --check proves they match
+cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
+test/vectors.json       cross-language canonical vectors (they hash the same under 1.6)
+test/sync-spec.cjs      copies spec/protocol.json (and the converter's table) into the Rust and JavaScript packages; --check proves they match
 ```
 
 ## Testing
@@ -73,8 +76,10 @@ test/sync-spec.cjs      copies spec/protocol.json and aliases.json into each SDK
 | What you changed | Run |
 |---|---|
 | Anything in the SDK or hashing | `node spec/run-vectors.cjs` and `cd sdk/javascript && npm test` |
-| spec/protocol.json or aliases.json | `node test/sync-spec.cjs`, then every SDK's tests |
-| Python / Go / Swift SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && go test ./...` / `cd sdk/swift && swift test` (macOS: CryptoKit) |
+| spec/protocol.json | `node test/sync-spec.cjs`, then every SDK's tests |
+| The Rust core | `cd sdk/rust && cargo test`, rebuild WebAssembly (`cd sdk/javascript && node scripts/build-wasm.cjs`), then every SDK's tests |
+| Python / Go / Swift / Kotlin SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && go test ./...` / `cd sdk/swift && swift test` / `cd sdk/kotlin && ./gradlew :foodblock:test` |
+| The oracle | `node spec/oracle/run.cjs` |
 | The node | `cd server && npm test` (in-memory Postgres, no setup; `TEST_DATABASE_URL=postgresql://... npm test` for a real one) |
 | The MCP server | `cd mcp && npm test` (starts the server and calls its tools over stdio) |
 | The CLI | `cd cli && npm test` (makes an identity, writes valid blocks, refuses invalid ones) |

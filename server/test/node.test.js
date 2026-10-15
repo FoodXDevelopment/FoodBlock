@@ -1,4 +1,4 @@
-// The FoodBlock 1.6 node over HTTP (spec/protocol.md §10), against an in-memory Postgres (pg-mem), or a real one when
+// The FoodBlock 1.6 node over HTTP (modules/nodes.md), against an in-memory Postgres (pg-mem), or a real one when
 // TEST_DATABASE_URL is set (its tables are dropped and made again for each test).
 import { describe, it, beforeEach, after } from 'node:test'
 import assert from 'node:assert/strict'
@@ -16,7 +16,7 @@ const at = (n) => new Date(Date.UTC(2026, 9, 15, 9, 0, n)).toISOString()
 // A person or a machine: their keys, their genesis, and every block they have signed (so each takes its place).
 function person(kind = 'person') {
   const keys = fb.generateKeypair(), encryption = fb.generateEncryptionKeypair()
-  const me = fb.identity.genesis(keys, { kind, encryptionKey: encryption.public_key_encrypt, recoveryKey: fb.generateKeypair().public_key_sign, at: at(0) })
+  const me = fb.identity.genesis(keys, { kind, encryptionKey: encryption.public_key_encrypt, recoveryKey: fb.generateKeypair().public_key_sign, reach: 'P30D', at: at(0) })
   const chain = [me]
   const say = (type, state, refs = {}, options = {}) => {
     const block = fb.write(type, state, refs, { author: me.hash, key: keys, held: chain, at: at(chain.length), ...options })
@@ -25,9 +25,10 @@ function person(kind = 'person') {
   }
   return { keys, encryption, me, id: me.hash, chain, say }
 }
-// Signed without the write check, to show the node refuses what the SDK refuses.
+// Signed without the write check (nor strict writing), to show the node refuses what the SDK refuses.
 const unchecked = (who, type, state, refs = {}, link = fb.identity.nextLinkFor(who.id, who.keys.public_key_sign, who.chain)) => {
-  const block = fb.compose(type, state, refs, { author: who.id, at: at(9), link })
+  const body = { type, state: { ...state, seq: link.seq, at: at(9), audience: 'public' }, refs: { ...refs, author: who.id, prev: link.prev } }
+  const block = { hash: fb.hash(body.type, body.state, body.refs), ...body }
   return { ...block, signature: fb.sign(block, who.keys.private_key) }
 }
 const wrap = (...blocks) => blocks.map((block) => fb.wrap(block))
@@ -56,7 +57,7 @@ beforeEach(async () => {
   await pool?.end?.()
   if (process.env.TEST_DATABASE_URL) {
     pool = new pg.Pool({ connectionString: process.env.TEST_DATABASE_URL })
-    await pool.query('DROP TABLE IF EXISTS blocks, copies, waiting, nonces')
+    await pool.query('DROP TABLE IF EXISTS blocks, copies, waiting, counters, challenges')
   } else pool = new (newDb().adapters.createPg().Pool)()
   await pool.query(schema)
   await node()
@@ -109,7 +110,7 @@ describe('push', () => {
     assert.deepEqual((await push(three)).body.taken, [three.hash])
   })
 
-  it('catches two blocks from one key with one seq, and keeps both as proof', async () => {
+  it('catches two blocks of one key naming one prev, and keeps both as proof', async () => {
     const ann = person()
     const one = ann.say('observe', { kind: 'note', text: 'two trays' })
     const other = unchecked(ann, 'observe', { kind: 'note', text: 'five trays' }, {}, { seq: 1, prev: ann.id })
@@ -119,12 +120,34 @@ describe('push', () => {
     assert.deepEqual(hashes((await pull({ filter: { author: ann.id } })).body).sort(), [one.hash, other.hash].sort(), 'both are served with the chain')
   })
 
-  it('refuses a block without seq from a 1.6 identity: it has no history', async () => {
+  it('stores and passes on any type: an open type carries no authority', async () => {
     const ann = person()
-    const old = fb.create('observe', { kind: 'note', text: 'from before', at: at(3), audience: 'public' }, { author: ann.id })
-    const { body } = await push(ann.me, { ...old, signature: fb.sign(old, ann.keys.private_key) })
+    const weather = ann.say('weather', { wind: 'north' }, { seller: ann.id })
+    const { body } = await push(ann.me, weather)
+    assert.deepEqual([...body.taken].sort(), [ann.id, weather.hash].sort())
+    assert.deepEqual(body.refused, [])
+  })
+
+  it('refuses a block without the common five from a identity: no seq, no prev', async () => {
+    const ann = person()
+    const loose = { ...fb.create('observe', { kind: 'note', text: 'from before', at: at(3), audience: 'public' }, { author: ann.id }) }
+    const { body } = await push(ann.me, { ...loose, signature: fb.sign(loose, ann.keys.private_key) })
     assert.deepEqual(body.taken, [ann.id])
-    assert.equal(body.refused[0].code, 'no_history')
+    assert.equal(body.refused[0].code, 'chain')
+  })
+
+  it('a first block to a person this node speaks for: an agent may not write first, a live STOP is honoured', async () => {
+    const me = person(), agent = person('agent'), human = person()
+    await node({ owners: [me.id] })
+    await push(me.me, agent.me, human.me)
+    const ask = agent.say('observe', { kind: 'offer', text: 'buy our bread' }, { subject: me.id })
+    const refused = (await push(ask)).body.refused
+    assert.deepEqual(refused.map((one) => one.code), ['not_human'])
+    const hi = human.say('observe', { kind: 'offer', text: 'hello' }, { subject: me.id })
+    assert.deepEqual((await push(hi)).body.taken, [hi.hash])
+    await push(me.say('observe', { kind: 'consent', word: 'stop' }, { subject: human.id }))
+    const again = human.say('observe', { kind: 'offer', text: 'hello again' }, { subject: me.id })
+    assert.deepEqual((await push(again)).body.refused.map((one) => one.code), ['stopped'])
   })
 })
 
@@ -153,17 +176,14 @@ describe('pull', () => {
     assert.deepEqual(hashes((await pull({ filter: { record: v1.hash } })).body), [v1.hash, v2.hash])
   })
 
-  it('filters on the 1.6 reading, so older shapes are found too, kept exactly as signed', async () => {
+  it('filters by type, kind and marks (profiles/addressing.md): an address finds its contacts', async () => {
     const ann = person()
     const stall = ann.say('thing', { kind: 'stall', name: 'Saturday stall' })
-    await push(ann.me, stall)
-    // A 1.0 block (no seq) from an older store: `place` reads as `thing`.
-    const old = fb.create('place', { kind: 'kitchen', name: 'Back kitchen', at: at(9), audience: 'public' }, { author: ann.id })
-    await pool.query('INSERT INTO blocks (hash, author, seq, prev, sealed, message) VALUES ($1, $2, $3, $4, $5, $6)',
-      [old.hash, ann.id, null, null, false, { version: '1.0', block: { type: old.type, state: old.state, refs: old.refs }, signature: fb.sign(old, ann.keys.private_key) }])
-    const things = (await pull({ filter: { type: 'thing' } })).body.blocks.map((entry) => fb.unwrap(entry.message))
-    assert.deepEqual(things.map((block) => [block.type, block.hash]), [['thing', stall.hash], ['place', old.hash]])
-    assert.equal((await pull({ filter: { type: 'thing', kind: 'kitchen' } })).body.blocks.length, 1)
+    const joseph = ann.say('actor', { kind: 'contact', name: 'Joseph', marks: [{ scheme: 'tel', value: '+254700000000' }] })
+    await push(ann.me, stall, joseph)
+    assert.deepEqual(hashes((await pull({ filter: { type: 'thing', kind: 'stall' } })).body), [stall.hash])
+    assert.deepEqual(hashes((await pull({ filter: { marks: { scheme: 'tel', value: '+254700000000' } } })).body), [joseph.hash])
+    assert.deepEqual(hashes((await pull({ filter: { marks: { scheme: 'tel', value: '+1' } } })).body), [])
   })
 
   it('a sealed block: its header to anyone, its copy only to a signed pull by its recipient', async () => {
@@ -174,16 +194,31 @@ describe('pull', () => {
     assert.deepEqual(pushed.taken.sort(), [ann.id, bo.id, secret.hash].sort())
     const open = (await pull({ filter: { hash: secret.hash } })).body.blocks[0].message
     assert.deepEqual(Object.keys(open).sort(), ['header', 'header_signature', 'version'])
-    const ask = fb.sync.signPull({ filter: { hash: secret.hash } }, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key })
+    const ask = fb.sync.signPull({ filter: { hash: secret.hash } }, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key, counter: 1 })
     const mine = (await pull(ask)).body
     assert.equal(signedByNode(mine), true)
     const read = fb.openCopy(mine.blocks[0].message, bo.encryption.x25519_private)
     assert.deepEqual([read.hash, read.state.text, fb.findsSelf(read, bo.id, read.reveals[0].salt)], [secret.hash, 'for Bo', true])
-    assert.match((await pull(ask)).body.error, /replay/, 'a nonce is answered once')
-    const elsewhere = fb.sync.signPull({}, { signer: bo.id, node: 'c'.repeat(64), privateKey: bo.keys.private_key })
+    assert.match((await pull(ask)).body.error, /replay/, 'a counter is answered once')
+    const elsewhere = fb.sync.signPull({}, { signer: bo.id, node: 'c'.repeat(64), privateKey: bo.keys.private_key, counter: 2 })
     assert.match((await pull(elsewhere)).body.error, /another node/)
-    const stranger = fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: fb.generateKeypair().private_key })
+    const stranger = fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: fb.generateKeypair().private_key, counter: 3 })
     assert.match((await pull(stranger)).body.error, /not signed/)
+  })
+
+  it('a challenge: GET /challenge issues one, a signed request uses it once, a made-up one is refused; no time anywhere', async () => {
+    const bo = person()
+    await push(bo.me)
+    const { challenge } = (await request(app).get('/challenge')).body
+    const ask = fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key, challenge })
+    assert.equal(ask.at, undefined)
+    assert.equal(signedByNode((await pull(ask)).body), true)
+    assert.match((await pull(ask)).body.error, /replay/, 'a challenge is used once')
+    const made = fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key, challenge: fb.sync.newChallenge() })
+    assert.match((await pull(made)).body.error, /not issued/)
+    const lower = fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key, counter: 5 })
+    assert.equal((await pull(lower)).status, 200)
+    assert.match((await pull(fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key, counter: 5 }))).body.error, /replay/)
   })
 })
 
@@ -195,7 +230,7 @@ describe('discovery and admission', () => {
     const doc = (await request(app).get('/.well-known/foodblock')).body
     assert.deepEqual(fb.sync.wellKnownErrors(doc), [])
     assert.deepEqual([doc.node, doc.version, doc.holds.includes(ann.id), doc.speaks_for, doc.admission, doc.endpoints], [owner.holder.id, fb.VERSION, true, [ann.id], null,
-      { pull: 'https://node.example/pull', push: 'https://node.example/push' }])
+      { pull: 'https://node.example/pull', push: 'https://node.example/push', challenge: 'https://node.example/challenge' }])
     assert.deepEqual(await app.node.announcement(), fb.sync.announcement(doc))
   })
 

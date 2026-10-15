@@ -18,10 +18,9 @@ So `npx foodblock-mcp` and `npm install foodblock-cli` give the 0.5 tools, not w
 
 Every package is at `1.6.0`, and the protocol version each one reports is read from `spec/protocol.json`.
 
-1. **The JS SDK carries its spec copy.** Python, Go and Swift already carry exact copies of `protocol.json` and
-   `aliases.json` (`node test/sync-spec.cjs`, checked by each SDK's tests). The JS SDK still reads
-   `../../../spec/`, which an installed package cannot reach. To finish: make `sdk/javascript/spec/`, run
-   `node test/sync-spec.cjs`, point `src/spec.cjs` at `../spec/`, and add `spec/` to its `files`.
+1. **The JS SDK carries its spec copy.** The JS SDK and the Rust crate carry an exact copy of `protocol.json` (and
+   the crate the converter's `aliases-0.x.json`), made by `node test/sync-spec.cjs` and checked by their tests; the
+   other languages read the spec through the Rust core. Year zero: no `aliases.json` is shipped anywhere.
 2. **The MCP server and CLI name the SDK by version.** In this repository they depend on
    `file:../sdk/javascript`. npm does not rewrite that on publish, so at release it becomes `"^1.6.0"`, once the SDK
    is on npm.

@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import fb from '@foodxdev/foodblock'
@@ -37,7 +37,7 @@ test('create: valid blocks, each the next in the key chain, signed by a key that
 
 test('create refuses what the write check refuses, and writes nothing', () => {
   const before = JSON.parse(readFileSync(me, 'utf8')).chain.length
-  for (const args of [['thing', 'flour', '--state', '{"amount":{"value":1.5,"unit":"kg"}}'], ['place', 'kitchen'], ['promise', '--refs', '{}']]) {
+  for (const args of [['thing', 'flour', '--state', '{"amount":{"value":1.5,"unit":"kg"}}'], ['place.venue', 'kitchen'], ['promise', '--refs', '{}']]) {
     const result = run('create', ...args, '--identity', me)
     assert.notEqual(result.status, 0, args.join(' '))
     assert.match(result.stderr, /refused/)
@@ -53,9 +53,25 @@ test('key: a device key brought in by a key grant, ready to sign a node\'s answe
   assert.ok(fb.identity.keysOf(holder, blocks).includes(key.public_key_sign))
 })
 
-test('check and read-as', () => {
+test('check and valid', () => {
   assert.ok(ok('check', 'thing', '--state', '{"kind":"eggs"}').errors.some((error) => /refs.author/.test(error)))
-  assert.equal(ok('read-as', JSON.stringify({ type: 'place', state: { kind: 'kitchen' }, refs: {} })).type, 'thing')
+  const note = ok('create', 'observe', 'note', '--state', '{"text":"hi"}', '--identity', me)
+  assert.deepEqual(ok('valid', JSON.stringify(note), '--identity', me).refusals, [])
+  assert.deepEqual(ok('valid', JSON.stringify({ ...note, signature: 'f'.repeat(128) }), '--identity', me).refusals.map((r) => r.code), ['bad_signature'])
+})
+
+test('convert: the one-time converter turns old blocks into fresh 1.6 blocks, and running again adds nothing', () => {
+  const owner = fb.generateKeypair()
+  const genesis = { type: 'actor.foodie', state: { name: 'Ann', public_key_sign: owner.public_key_sign, at: '2024-01-01T00:00:00.000Z', audience: 'public' }, refs: {} }
+  const id = fb.legacy.oldHash(genesis)
+  const note = { type: 'observe.received', state: { text: 'two trays' }, refs: { author: id } }
+  const files = { old: join(dir, 'old.json'), keys: join(dir, 'keys.json'), map: join(dir, 'map.json') }
+  writeFileSync(files.old, JSON.stringify([genesis, note])); writeFileSync(files.keys, JSON.stringify({ [id]: owner }))
+  const done = ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-15T12:00:00.000Z', '--map', files.map)
+  assert.equal(done.blocks.length, 2)
+  assert.deepEqual(fb.valid(done.blocks[1], [done.blocks[0]]), [])
+  assert.deepEqual(done.blocks[1].refs.derives_from, [fb.legacy.oldHash(note)])
+  assert.equal(ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-16T12:00:00.000Z', '--map', files.map).blocks.length, 0)
 })
 
 test('the package names the protocol version it speaks', () => {

@@ -1,8 +1,11 @@
 package foodblock
 
-import "time"
+import (
+	"sort"
+	"time"
+)
 
-// The protocol's lists and grammars: protocol.json and aliases.json, carried by the Rust core and read through it.
+// The protocol's lists and grammars: protocol.json, carried by the Rust core and read through it.
 var (
 	both = func() map[string]any {
 		out, err := ask[map[string]any]("spec")
@@ -12,9 +15,8 @@ var (
 		return out
 	}()
 
-	// Protocol is spec/protocol.json and Aliases is spec/aliases.json, as plain JSON values.
+	// Protocol is spec/protocol.json as a plain JSON value. There is no alias table: year zero.
 	Protocol = obj(both["protocol"])
-	Aliases  = obj(both["aliases"])
 
 	// Version is the protocol version these rules are ("1.6").
 	Version = str(Protocol["version"])
@@ -23,7 +25,7 @@ var (
 	// Verbs are the seven verbs.
 	Verbs = list(Protocol["verbs"])
 	// RefKeys are the shared ref keys every type may use.
-	RefKeys = append(append(list(obj(Protocol["refs"])["who_and_where"]), list(obj(Protocol["refs"])["what_and_which"])...), list(obj(Protocol["refs"])["verbs"])...)
+	RefKeys = append(append(append(list(obj(Protocol["refs"])["who_and_where"]), list(obj(Protocol["refs"])["what_and_which"])...), Verbs...), list(Protocol["causal"])...)
 	// Fields are each type's base fields, until the base schemas are published (§3).
 	Fields = func() map[string][]string {
 		out := map[string][]string{}
@@ -32,14 +34,28 @@ var (
 		}
 		return out
 	}()
-	// Profiles are the three sizes of peer (micro, edge, node) and what each does.
-	Profiles = func() map[string][]string {
+	// Peers are the three sizes of peer (micro, edge, node) and what each does.
+	Peers = func() map[string][]string {
 		out := map[string][]string{}
-		for name, v := range obj(Protocol["profiles"]) {
+		for name, v := range obj(Protocol["peers"]) {
 			out[name] = list(v)
 		}
 		return out
 	}()
+	// Suites are the suites that hash and sign (std, p256, sm).
+	Suites = func() []string {
+		out := []string{}
+		for name, v := range obj(Protocol["suites"]) {
+			if s := obj(v); s != nil && s["hash"] != nil {
+				out = append(out, name)
+			}
+		}
+		sort.Strings(out)
+		return out
+	}()
+	// Statuses and Powers are the closed lists protocol.json names.
+	Statuses = Protocol["statuses"]
+	Powers   = Protocol["powers"]
 	// RefusalCodes are protocol.json refusals.codes: the groups of codes, in order.
 	RefusalCodes = func() map[string][]string {
 		out := map[string][]string{}
@@ -49,9 +65,8 @@ var (
 		return out
 	}()
 
-	// Alg is the envelope alg written now; AlgRaw (the agreed secret itself sealed the content key) is read forever.
-	Alg    = list(obj(Protocol["envelope"])["read"])[0]
-	AlgRaw = list(obj(Protocol["envelope"])["read"])[1]
+	// Alg is the std suite's envelope name.
+	Alg = str(obj(obj(Protocol["suites"])["std"])["envelope"])
 )
 
 const timeLayout = "2006-01-02T15:04:05.000Z"

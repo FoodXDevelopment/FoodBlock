@@ -242,7 +242,58 @@ pub fn why_not_under_in(block: &Value, index: &Index, now: Option<&str>) -> Vec<
         }
     }
     wrong.extend(why_not_live_in(Some(grant), index, now));
+    wrong.extend(why_not_live_undo(block, index));
     wrong
+}
+
+/// The act a block is, named as `type.kind` (or `type` with no kind).
+pub fn act_name(block: &Value) -> String {
+    match st(block, "kind").filter(|v| truthy(Some(v))) {
+        Some(k) => format!("{}.{}", crate::js::type_of(block), text(Some(k))),
+        None => crate::js::type_of(block).to_string(),
+    }
+}
+
+/// Acts that cannot be undone (authority.md): a block whose schema (`refs.schema`) says `undo: never` is `not_live`
+/// unless it has a specific ask its principal answered `accepted`, naming that act, or a grant whose `scope.acts` names
+/// that act and has a `limit`. Empty when the act can be taken back, or the block has what it needs. A broad grant
+/// that lists only a kind of act is not enough. The block names that ask in `refs.for`. An ask names the act when its `state.what` is the act's name or it
+/// follows the same schema; the principal is the grant's author, or the circle the block signs `as`.
+pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
+    let schema = rs(block, "schema").and_then(|h| index.get(h));
+    if !schema.is_some_and(|s| ss(s, "undo") == Some("never")) {
+        return vec![];
+    }
+    let act = act_name(block);
+    let grant = rs(block, "under").and_then(|h| index.get(h));
+    let principal = grant
+        .and_then(|g| rs(g, "author"))
+        .or_else(|| rs(block, "as"))
+        .or_else(|| rs(block, "author"));
+    let asked = index.values().any(|ask| {
+        crate::js::type_of(ask) == "promise"
+            && (get(ask, "state.what").and_then(Value::as_str) == Some(act.as_str())
+                || (truthy(rf(ask, "schema")) && rf(ask, "schema") == rf(block, "schema")))
+            && index.values().any(|a| {
+                ss(a, "status") == Some("accepted")
+                    && list(rf(a, "answers")).contains(&hash_of(ask))
+                    && rs(a, "author") == principal
+            })
+            && list(rf(block, "for")).contains(&hash_of(ask))
+    });
+    let granted = grant.is_some_and(|g| {
+        get(g, "state.scope.acts")
+            .and_then(Value::as_array)
+            .is_some_and(|a| a.iter().any(|x| x.as_str() == Some(act.as_str())))
+            && truthy(get(g, "state.scope.limit"))
+    });
+    if asked || granted {
+        vec![]
+    } else {
+        vec![format!(
+            "{act} cannot be undone: it needs a specific ask its principal answered accepted, or a grant that names it and has a limit"
+        )]
+    }
 }
 
 /// Whether a block signed under a grant speaks for its grantor, among these blocks: empty, or why not.

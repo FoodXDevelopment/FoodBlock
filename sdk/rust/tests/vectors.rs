@@ -1,1061 +1,415 @@
-//! Conformance: every section of spec/vectors.json, spec/canonical-vectors.json and test/vectors.json, checked the
-//! way spec/run-vectors.cjs checks the reference SDK. `cargo test -- --nocapture` prints every line.
-//! A section this build's profile leaves out says so, by name, instead of passing silently.
-use foodblock::js::{deep_eq, index_of, Index};
-use serde_json::{json, Value};
-use std::sync::OnceLock;
+//! The conformance vectors (spec/vectors.json) through the JSON door of this crate: every section, as
+//! spec/run-vectors.cjs runs them through the JavaScript SDK (which is the same door in WebAssembly).
+use foodblock::door::answer;
+use serde_json::{json, Map, Value};
+use std::collections::BTreeMap;
 
-fn load(path: &str) -> Value {
-    let full = format!("{}/../../{path}", env!("CARGO_MANIFEST_DIR"));
-    serde_json::from_slice(&std::fs::read(&full).unwrap_or_else(|e| panic!("{full}: {e}"))).unwrap()
+fn vectors() -> Value {
+    let text = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../spec/vectors.json")).unwrap();
+    serde_json::from_str(&text).unwrap()
 }
-fn v() -> &'static Value {
-    static V: OnceLock<Value> = OnceLock::new();
-    V.get_or_init(|| load("spec/vectors.json"))
+fn adversarial() -> Value {
+    let text = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../spec/canonical-vectors.json")).unwrap();
+    serde_json::from_str(&text).unwrap()
 }
-fn key(signer: &str, field: &str) -> String {
-    v()["keys"][signer][field]
-        .as_str()
-        .unwrap_or_else(|| panic!("no key {signer}.{field}"))
-        .to_string()
+
+/// One call of the door: Ok(value) or Err(the error answer).
+fn call(op: &str, args: Value) -> Result<Value, Value> {
+    let out = answer(op.as_bytes(), args.to_string().as_bytes());
+    match out.get("ok") {
+        Some(v) => Ok(v.clone()),
+        None => Err(out),
+    }
 }
-fn public(signer: &str) -> String {
-    key(signer, "public_key_sign")
+fn ok(op: &str, args: Value) -> Value {
+    call(op, args.clone()).unwrap_or_else(|e| panic!("{op} {args:.200}: {e}"))
 }
-fn arr(x: &Value) -> &Vec<Value> {
-    x.as_array().unwrap()
-}
-fn s(x: &Value) -> &str {
-    x.as_str().unwrap_or("")
-}
-/// `{ hash, ...block, signature }` for each vector block.
-fn blocks_of(list: &Value) -> Vec<Value> {
-    arr(list)
-        .iter()
-        .map(|b| {
-            let mut out = json!({ "hash": b["hash"] });
-            for (k, val) in b["block"].as_object().unwrap() {
-                out[k] = val.clone();
-            }
-            out["signature"] = b["signature"].clone();
-            out
-        })
-        .collect()
-}
-fn find<'a>(held: &'a [Value], hash: &Value) -> &'a Value {
-    held.iter()
-        .find(|b| b["hash"] == *hash)
-        .unwrap_or_else(|| panic!("no block {hash}"))
-}
-#[allow(dead_code)]
-/// Every key of `want` deep-equals the same key of `got`.
-fn subset(got: &Value, want: &Value) -> bool {
-    want.as_object()
-        .unwrap()
-        .iter()
-        .all(|(k, w)| got.get(k).map_or(w.is_null(), |g| deep_eq(g, w)))
-}
-/// The codes a refusal list carries, once each, in protocol.json's order.
-fn codes_of<'a>(codes: impl IntoIterator<Item = &'a str>) -> Value {
-    let mut out: Vec<&str> = vec![];
-    for c in codes {
+fn codes_of(list: &Value) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for r in list.as_array().cloned().unwrap_or_default() {
+        let c = r["code"].as_str().unwrap_or("").to_string();
         if !out.contains(&c) {
             out.push(c);
         }
     }
-    json!(out)
-}
-fn codes(block: &Value, options: foodblock::CheckOptions) -> Value {
-    let found = foodblock::refusals(s(&block["type"]), &block["state"], &block["refs"], options);
-    codes_of(found.iter().map(|r| r.code.as_str()))
-}
-fn strict(block: &Value) -> Vec<String> {
-    foodblock::check(
-        s(&block["type"]),
-        &block["state"],
-        &block["refs"],
-        Default::default(),
-    )
-}
-
-/// A section's tally: every case named, every failure listed.
-struct Report {
-    section: &'static str,
-    pass: usize,
-    fail: Vec<String>,
-}
-impl Report {
-    fn new(section: &'static str) -> Self {
-        Report {
-            section,
-            pass: 0,
-            fail: vec![],
-        }
-    }
-    fn ok(&mut self, ok: bool, name: impl AsRef<str>) {
-        self.why(ok, name, "");
-    }
-    fn why(&mut self, ok: bool, name: impl AsRef<str>, why: impl AsRef<str>) {
-        let name = name.as_ref();
-        if ok {
-            self.pass += 1;
-            println!("✓ {}: {name}", self.section);
-        } else {
-            println!("✗ {}: {name} {}", self.section, why.as_ref());
-            self.fail.push(format!("{name} {}", why.as_ref()));
-        }
-    }
-    fn done(self) {
-        println!(
-            "{}: {} passed, {} failed",
-            self.section,
-            self.pass,
-            self.fail.len()
-        );
-        assert!(self.pass > 0, "{}: no vectors ran", self.section);
-        assert!(
-            self.fail.is_empty(),
-            "{}: {} failed:\n{}",
-            self.section,
-            self.fail.len(),
-            self.fail.join("\n")
-        );
-    }
-}
-
-#[test]
-fn version_matches_protocol_json() {
-    let p = load("spec/protocol.json");
-    assert_eq!(foodblock::VERSION, p["version"].as_str().unwrap());
-    assert_eq!(foodblock::spec().version, foodblock::VERSION);
-    assert!(
-        env!("CARGO_PKG_VERSION").starts_with(&format!("{}.", foodblock::VERSION)),
-        "the crate's version is the protocol's"
-    );
-    // Every profile this build claims is one protocol.json names.
-    for profile in foodblock::profiles() {
-        assert!(
-            p["profiles"].get(*profile).is_some(),
-            "{profile} is a protocol.json profile"
-        );
-    }
-    println!("profiles in this build: {:?}", foodblock::profiles());
-}
-
-#[test]
-fn canonical() {
-    let mut r = Report::new("canonical");
-    for c in arr(&load("spec/canonical-vectors.json")["vectors"]) {
-        let b = &c["block"];
-        let h = |x: &Value| foodblock::hash(s(&x["type"]), &x["state"], &x["refs"]);
-        let text = foodblock::canonical(s(&b["type"]), &b["state"], &b["refs"]);
-        let ok = c.get("same_as").is_none_or(|o| h(b) == h(o))
-            && c.get("not_same_as").is_none_or(|o| h(b) != h(o))
-            && c.get("canonical_contains")
-                .is_none_or(|t| text.contains(s(t)));
-        r.ok(ok, s(&c["name"]));
-    }
-    for c in arr(&v()["canonical"]) {
-        let b = &c["block"];
-        r.ok(
-            foodblock::canonical(s(&b["type"]), &b["state"], &b["refs"]) == s(&c["canonical"])
-                && foodblock::hash(s(&b["type"]), &b["state"], &b["refs"]) == s(&c["hash"]),
-            s(&c["name"]),
-        );
-    }
-    r.done();
-}
-
-#[test]
-fn legacy_cross_language_hashes() {
-    // test/vectors.json: older shapes and floats; they still hash the same.
-    let mut r = Report::new("test/vectors.json");
-    for c in arr(&load("test/vectors.json")) {
-        let text = foodblock::canonical(s(&c["type"]), &c["state"], &c["refs"]);
-        let hash = foodblock::hash(s(&c["type"]), &c["state"], &c["refs"]);
-        r.why(
-            text == s(&c["expected_canonical"]) && hash == s(&c["expected_hash"]),
-            s(&c["name"]),
-            format!("got {text}"),
-        );
-    }
-    r.done();
-}
-
-#[test]
-fn hashes_write_check_and_reads() {
-    let mut r = Report::new("hashes");
-    for c in arr(&v()["hashes"]) {
-        let b = &c["block"];
-        let name = s(&c["name"]);
-        r.ok(
-            foodblock::canonical(s(&b["type"]), &b["state"], &b["refs"]) == s(&c["canonical"])
-                && foodblock::hash(s(&b["type"]), &b["state"], &b["refs"]) == s(&c["hash"]),
-            format!("hash: {name}"),
-        );
-        // A block in an earlier shape hashes like any other; the strict check refuses it with the codes named.
-        if c.get("refused").is_none() {
-            let wrong = strict(b);
-            r.why(
-                wrong.is_empty(),
-                format!("write check: {name}"),
-                wrong.join("; "),
-            );
-            continue;
-        }
-        let got = codes(b, Default::default());
-        r.why(
-            got == c["refused"],
-            format!("strict check refuses it, with its codes: {name}"),
-            got.to_string(),
-        );
-    }
-    r.done();
-}
-
-#[test]
-fn chains() {
-    let mut r = Report::new("chains");
-    let hashes = arr(&v()["hashes"]);
-    let mut authors: Vec<&str> = hashes
-        .iter()
-        .filter_map(|c| c["block"]["refs"]["author"].as_str())
-        .collect();
-    authors.dedup();
-    let mut seen = vec![];
-    for id in authors {
-        if seen.contains(&id) {
-            continue;
-        }
-        seen.push(id);
-        let mine: Vec<Value> = hashes
-            .iter()
-            .filter(|c| c["block"]["refs"]["author"].as_str() == Some(id))
-            .map(|c| {
-                let mut b = c["block"].clone();
-                b["hash"] = c["hash"].clone();
-                b
-            })
-            .collect();
-        let chain = foodblock::check_chain(&mine, id);
-        r.ok(
-            chain.ok,
-            format!(
-                "{}'s {} blocks, no gaps, no equivocation",
-                &id[..8],
-                mine.len()
-            ),
-        );
-    }
-    r.done();
-}
-
-#[test]
-fn audience() {
-    let mut r = Report::new("audience");
-    for c in arr(&v()["audience"]) {
-        r.ok(
-            foodblock::salted_hash(s(&c["salt"]), s(&c["recipient"])) == s(&c["commitment"]),
-            s(&c["name"]),
-        );
-    }
-    r.done();
-}
-
-/// Every story's blocks, as the runner lists them: (group, name, blocks).
-fn stories() -> Vec<(String, String, Value)> {
-    let v = v();
-    let mut out = vec![];
-    fn add(out: &mut Vec<(String, String, Value)>, group: &str, list: &Value) {
-        for c in arr(list) {
-            out.push((
-                group.to_string(),
-                s(&c["name"]).to_string(),
-                c["blocks"].clone(),
-            ));
-        }
-    }
-    add(&mut out, "identity", &v["identities"]);
-    add(&mut out, "deal", &v["deals"]);
-    add(&mut out, "circle", &v["circles"]);
-    for (k, g) in [
-        ("promises", "promise fold"),
-        ("circles", "circle fold"),
-        ("audience", "audience fold"),
-        ("things", "thing fold"),
-        ("successors", "successor fold"),
-        ("rekeys", "rekey fold"),
-        ("ballots", "ballot fold"),
-    ] {
-        add(&mut out, g, &v["folds"][k]);
-    }
-    out.push((
-        "refusal".into(),
-        "stories".into(),
-        v["refusals"]["blocks"].clone(),
-    ));
-    for c in arr(&v["refusals"]["cases"]) {
-        if c.get("blocks").is_some() {
-            out.push((
-                "refusal".into(),
-                s(&c["name"]).to_string(),
-                c["blocks"].clone(),
-            ));
-        }
-    }
-    out.push((
-        "sealed".into(),
-        "stories".into(),
-        v["sealed"]["blocks"].clone(),
-    ));
     out
 }
-
-fn by_hash() -> Index {
-    let mut index = Index::default();
-    for c in arr(&v()["hashes"]) {
-        index.insert(s(&c["hash"]).to_string(), c["block"].clone());
+fn strs(v: &Value) -> Vec<String> {
+    v.as_array().map(|a| a.iter().map(|x| x.as_str().unwrap_or("").to_string()).collect()).unwrap_or_default()
+}
+fn full(b: &Value) -> Value {
+    let mut o = Map::new();
+    o.insert("hash".into(), b["hash"].clone());
+    for k in ["type", "state", "refs"] {
+        o.insert(k.into(), b["block"][k].clone());
     }
-    for (_, _, list) in stories() {
-        for b in arr(&list) {
-            index.insert(s(&b["hash"]).to_string(), b["block"].clone());
+    if let Some(s) = b.get("suite") {
+        o.insert("suite".into(), s.clone());
+    }
+    o.insert("signature".into(), b["signature"].clone());
+    Value::Object(o)
+}
+fn blocks_of(list: &Value) -> Value {
+    Value::Array(list.as_array().unwrap().iter().map(full).collect())
+}
+fn subset(got: &Value, want: &Value) -> bool {
+    match (got, want) {
+        (Value::Array(g), Value::Array(w)) if g.len() == w.len() => g.iter().zip(w).all(|(a, b)| subset(a, b)),
+        (g, Value::Object(w)) => w.iter().all(|(k, v)| subset(g.get(k).unwrap_or(&Value::Null), v)),
+        (Value::Number(a), Value::Number(b)) => a.as_f64() == b.as_f64(),
+        (g, w) => g == w,
+    }
+}
+fn sorted(mut v: Vec<String>) -> Vec<String> {
+    v.sort();
+    v
+}
+
+struct Tally {
+    pass: usize,
+    failed: Vec<String>,
+}
+impl Tally {
+    fn check(&mut self, ok: bool, name: impl Into<String>) {
+        if ok {
+            self.pass += 1;
+        } else {
+            self.failed.push(name.into());
         }
     }
-    index
 }
 
 #[test]
-fn stories_hash_verify_and_check() {
-    let mut r = Report::new("stories");
-    for (group, name, list) in stories() {
-        let mut wrong = vec![];
-        for b in arr(&list) {
-            let block = &b["block"];
-            if foodblock::hash(s(&block["type"]), &block["state"], &block["refs"]) != s(&b["hash"])
-            {
-                wrong.push(format!("{}: hash", s(&b["name"])));
-            }
-            if !foodblock::verify(block, s(&b["signature"]), &public(s(&b["signer"]))) {
-                wrong.push(format!("{}: signature", s(&b["name"])));
-            }
-            if block["state"].get("seq").is_some() {
-                let w = strict(block);
-                if !w.is_empty() {
-                    wrong.push(format!("{}: {}", s(&b["name"]), w.join("; ")));
-                }
-            }
-        }
-        r.why(
-            wrong.is_empty(),
-            format!(
-                "{group}: {name}: {} blocks hash, verify and pass the write check",
-                arr(&list).len()
-            ),
-            wrong.join(" | "),
-        );
-    }
-    r.done();
-}
+fn every_vector_section() {
+    let v = vectors();
+    let mut t = Tally { pass: 0, failed: vec![] };
+    let key = |name: &str, field: &str| v["keys"][name][field].as_str().unwrap_or("").to_string();
 
-#[test]
-fn signatures_byte_exact_from_seeds() {
-    let mut r = Report::new("signatures");
-    let index = by_hash();
-    // Every vector key rebuilds from its seed, and every signature is reproduced byte for byte.
-    for (name, k) in v()["keys"].as_object().unwrap() {
-        if let Some(seed) = k.get("ed25519_seed").and_then(Value::as_str) {
-            let pair = foodblock::keypair_from_seed(seed).unwrap();
-            let private_ok = k
-                .get("private_key")
-                .is_none_or(|p| pair.private_key == s(p));
-            r.ok(
-                pair.public_key_sign == s(&k["public_key_sign"]) && private_ok,
-                format!("key from seed: {name}"),
-            );
+    // Canonical form.
+    for c in adversarial()["vectors"].as_array().unwrap() {
+        let b = &c["block"];
+        let canon = |b: &Value| ok("canonical", json!([b["type"], b["state"], b["refs"]]));
+        let hash = |b: &Value| ok("hash", json!([b["type"], b["state"], b["refs"]]));
+        let mut good = true;
+        if let Some(s) = c.get("same_as") {
+            good &= hash(b) == hash(s);
         }
-    }
-    for c in arr(&v()["signatures"]) {
-        let block = &index[s(&c["hash"])];
-        let signer = s(&c["signer"]);
-        let ours = foodblock::sign(block, &key(signer, "private_key")).unwrap();
-        r.ok(
-            ours == s(&c["signature"]) && foodblock::verify(block, &ours, &public(signer)),
-            format!("signed byte for byte: {}", s(&c["name"])),
-        );
-    }
-    // And every story block's signature too.
-    let mut count = 0;
-    let mut wrong = vec![];
-    for (_, _, list) in stories() {
-        for b in arr(&list) {
-            let signer = s(&b["signer"]);
-            if v()["keys"][signer].get("private_key").is_none() {
-                continue;
-            }
-            count += 1;
-            if foodblock::sign(&b["block"], &key(signer, "private_key")).unwrap()
-                != s(&b["signature"])
-            {
-                wrong.push(s(&b["name"]).to_string());
-            }
+        if let Some(s) = c.get("not_same_as") {
+            good &= hash(b) != hash(s);
         }
+        if let Some(s) = c["canonical_contains"].as_str() {
+            good &= canon(b).as_str().unwrap().contains(s);
+        }
+        if let Some(s) = c["canonical"].as_str() {
+            good &= canon(b).as_str().unwrap() == s;
+        }
+        if let Some(r) = c.get("refused") {
+            let found = codes_of(&ok("refusals", json!([b["type"], b["state"], b["refs"]])));
+            good &= strs(r).iter().all(|code| found.contains(code));
+        }
+        t.check(good, format!("canonical: {}", c["name"]));
     }
-    r.why(
-        wrong.is_empty(),
-        format!("every story block's signature reproduced from its seed ({count})"),
-        wrong.join(", "),
-    );
-    for c in arr(&v()["bad_signatures"]) {
-        let ok = index
-            .get(s(&c["hash"]))
-            .is_some_and(|b| foodblock::verify(b, s(&c["signature"]), &public(s(&c["signer"]))));
-        r.ok(!ok, format!("bad signature refused: {}", s(&c["name"])));
+    let older: Value = serde_json::from_str(&std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../test/vectors.json")).unwrap()).unwrap();
+    for c in older.as_array().unwrap() {
+        let args = json!([c["type"], c["state"], c["refs"]]);
+        t.check(ok("canonical", args.clone()) == c["expected_canonical"] && ok("hash", args) == c["expected_hash"], format!("canonical (test/vectors.json): {}", c["name"]));
     }
-    r.done();
-}
+    for c in v["canonical"].as_array().unwrap() {
+        let b = &c["block"];
+        let args = json!([b["type"], b["state"], b["refs"]]);
+        t.check(ok("canonical", args.clone()) == c["canonical"] && ok("hash", args) == c["hash"], format!("canonical: {}", c["name"]));
+    }
 
-#[test]
-fn headers() {
-    let mut r = Report::new("headers");
-    let index = by_hash();
-    for c in arr(&v()["headers"]) {
-        let mut block = index[s(&c["hash"])].clone();
-        block["hash"] = c["hash"].clone();
+    // The ledger: valid against the blocks before it, a signature that opens, one chain per author.
+    let mut by_hash: BTreeMap<String, Value> = BTreeMap::new();
+    let mut before: Vec<Value> = vec![];
+    let ledger: Vec<&Value> = v["ledger"]["genesis"].as_array().unwrap().iter().chain(v["hashes"].as_array().unwrap()).collect();
+    for e in &ledger {
+        let b = full(e);
+        by_hash.insert(e["hash"].as_str().unwrap().to_string(), (*e).clone());
+        let signer_pub = key(e["signer"].as_str().unwrap(), "public_key_sign");
+        let args = json!([e["block"]["type"], e["block"]["state"], e["block"]["refs"]]);
+        t.check(ok("hash", args) == e["hash"] && ok("verify", json!([b, e["signature"], signer_pub])) == json!(true), format!("ledger: {}", e["name"]));
+        let wrong = ok("valid", json!([b, before]));
+        t.check(wrong.as_array().unwrap().is_empty(), format!("valid: {} {wrong}", e["name"]));
+        before.push(b);
+    }
+    for c in v["audience"].as_array().unwrap() {
+        t.check(ok("salted_hash", json!([c["salt"], c["recipient"]])) == c["commitment"], format!("audience: {}", c["name"]));
+    }
+
+    // Stories: every block hashes, verifies and passes the strict check.
+    let mut stories: Vec<(String, Value)> = vec![];
+    for k in ["identities", "deals", "circles"] {
+        for s in v[k].as_array().unwrap() {
+            stories.push((format!("{k}: {}", s["name"]), s["blocks"].clone()));
+        }
+    }
+    for k in ["promises", "circles", "audience", "things", "successors", "rekeys", "ballots"] {
+        for s in v["folds"][k].as_array().unwrap() {
+            stories.push((format!("{k} fold: {}", s["name"]), s["blocks"].clone()));
+        }
+    }
+    stories.push(("refusal stories".into(), v["refusals"]["blocks"].clone()));
+    stories.push(("sealed stories".into(), v["sealed"]["blocks"].clone()));
+    for c in v["refusals"]["cases"].as_array().unwrap() {
+        if c.get("blocks").is_some() {
+            stories.push((format!("refusal: {}", c["name"]), c["blocks"].clone()));
+        }
+    }
+    let mut refusal_blocks: BTreeMap<String, Value> = BTreeMap::new();
+    for (name, list) in &stories {
+        let mut wrong: Vec<String> = vec![];
+        for e in list.as_array().unwrap() {
+            let b = full(e);
+            by_hash.insert(e["hash"].as_str().unwrap().to_string(), e.clone());
+            refusal_blocks.insert(e["hash"].as_str().unwrap().to_string(), b.clone());
+            let suite = e.get("suite").cloned().unwrap_or(json!("std"));
+            let args = json!([e["block"]["type"], e["block"]["state"], e["block"]["refs"], suite]);
+            if ok("hash", args) != e["hash"] {
+                wrong.push(format!("{}: hash", e["name"]));
+            }
+            if ok("verify", json!([b, e["signature"], key(e["signer"].as_str().unwrap(), "public_key_sign")])) != json!(true) {
+                wrong.push(format!("{}: signature", e["name"]));
+            }
+            let found = ok("refusals", json!([e["block"]["type"], e["block"]["state"], e["block"]["refs"]]));
+            if !found.as_array().unwrap().is_empty() {
+                wrong.push(format!("{}: {:?}", e["name"], codes_of(&found)));
+            }
+        }
+        t.check(wrong.is_empty(), format!("story {name}: {}", wrong.join(" | ")));
+    }
+    for c in v["signatures"].as_array().unwrap() {
+        let b = &by_hash[c["hash"].as_str().unwrap()];
+        t.check(ok("verify", json!([full(b), c["signature"], key(c["signer"].as_str().unwrap(), "public_key_sign")])) == json!(true), format!("signature: {}", c["name"]));
+    }
+    for c in v["bad_signatures"].as_array().unwrap() {
+        let b = &by_hash[c["hash"].as_str().unwrap()];
+        t.check(ok("verify", json!([full(b), c["signature"], key(c["signer"].as_str().unwrap(), "public_key_sign")])) == json!(false), format!("bad signature: {}", c["name"]));
+    }
+
+    // Envelopes, sealed copies, headers.
+    for c in v["envelopes"].as_array().unwrap() {
+        let inside = ok("open", json!([c["envelope"], key(c["recipient"].as_str().unwrap(), "x25519_private")]));
+        let m = ok("unwrap", json!([inside]));
+        t.check(m["hash"] == c["opens_to"]["hash"] && m["signature"] == c["opens_to"]["signature"] && m["version"] == c["opens_to"]["version"], format!("envelope: {}", c["name"]));
+    }
+    for c in v["sealed"]["cases"].as_array().unwrap() {
+        let m = ok("open_copy", json!([c["message"], key(c["recipient"].as_str().unwrap(), "x25519_private")]));
+        let signed = ok("header_signed_by", json!([c["message"], key(c["signer"].as_str().unwrap(), "public_key_sign")])) == json!(true);
+        t.check(m["hash"] == c["opens_to"]["hash"] && m["signature"] == c["opens_to"]["signature"] && m["reveals"] == c["opens_to"]["reveals"] && signed, format!("sealed: {}", c["name"]));
+    }
+    for c in v["headers"].as_array().unwrap() {
+        let b = full(&by_hash[c["hash"].as_str().unwrap()]);
         let mut part = c["header"].clone();
         part["signature"] = c["header_signature"].clone();
-        r.ok(
-            deep_eq(&foodblock::header(&block), &c["header"])
-                && foodblock::verify_message(&part, &public(s(&c["signer"]))),
-            s(&c["name"]),
-        );
+        t.check(ok("header", json!([b])) == c["header"] && ok("verify_message", json!([part, key(c["signer"].as_str().unwrap(), "public_key_sign")])) == json!(true), format!("header: {}", c["name"]));
     }
-    r.done();
-}
 
-#[cfg(feature = "envelope")]
-#[test]
-fn envelopes_and_sealed_copies() {
-    let mut r = Report::new("envelopes");
-    for c in arr(&v()["envelopes"]) {
-        let got = foodblock::open(&c["envelope"], &key(s(&c["recipient"]), "x25519_private"))
-            .and_then(|p| foodblock::unwrap(&p));
-        let want = &c["opens_to"];
-        r.why(
-            got.as_ref().is_ok_and(|m| {
-                m["hash"] == want["hash"]
-                    && m["signature"] == want["signature"]
-                    && m["version"] == want["version"]
-            }),
-            format!("envelope: {}", s(&c["name"])),
-            got.err().map(|e| e.to_string()).unwrap_or_default(),
-        );
-    }
-    for c in arr(&v()["sealed"]["cases"]) {
-        let got = foodblock::open_copy(&c["message"], &key(s(&c["recipient"]), "x25519_private"));
-        let want = &c["opens_to"];
-        let ok = got.as_ref().is_ok_and(|m| {
-            m["hash"] == want["hash"]
-                && m["signature"] == want["signature"]
-                && deep_eq(&m["reveals"], &want["reveals"])
-                && foodblock::header_signed_by(&c["message"], &public(s(&c["signer"])))
-        });
-        r.why(
-            ok,
-            format!("sealed: {}", s(&c["name"])),
-            got.err().map(|e| e.to_string()).unwrap_or_default(),
-        );
-    }
-    // A copy sealed here opens with the reference rules, and its header is signed by the block's key.
-    let index = by_hash();
-    let c = &arr(&v()["signatures"])[0];
-    let mut block = index[s(&c["hash"])].clone();
-    block["hash"] = c["hash"].clone();
-    block["signature"] = c["signature"].clone();
-    let copy = foodblock::seal_copy(
-        &block,
-        &[&key("bob", "public_key_encrypt")],
-        &json!([]),
-        &key(s(&c["signer"]), "private_key"),
-        None,
-    )
-    .unwrap();
-    let opened = foodblock::open_copy(&copy, &key("bob", "x25519_private")).unwrap();
-    r.ok(
-        opened["hash"] == c["hash"] && foodblock::header_signed_by(&copy, &public(s(&c["signer"]))),
-        "a copy sealed here opens and its header verifies",
-    );
-    r.done();
-}
-#[cfg(not(feature = "envelope"))]
-#[test]
-fn envelopes_and_sealed_copies() {
-    println!("envelopes, sealed copies: excluded by this build's profile (they are node: build with --features envelope or node)");
-}
-
-#[test]
-fn identities() {
-    let mut r = Report::new("identities");
-    for c in arr(&v()["identities"]) {
+    // Identities.
+    for c in v["identities"].as_array().unwrap() {
         let held = blocks_of(&c["blocks"]);
-        let arrivals = c.get("arrivals").cloned();
-        let lookup = |h: &str| {
-            arrivals
-                .as_ref()
-                .and_then(|a| a.get(h))
-                .and_then(Value::as_str)
-                .map(String::from)
-        };
-        let arrived: foodblock::identity::ArrivedAt = if arrivals.is_some() {
-            Some(&lookup)
+        let arrivals = c.get("arrivals").cloned().unwrap_or(Value::Null);
+        for e in c["blocks"].as_array().unwrap() {
+            if let Some(want) = c["signed_by_author"].get(e["hash"].as_str().unwrap()) {
+                let got = ok("signed_by_author", json!([full(e), held, arrivals]));
+                t.check(&got == want, format!("identity: {}: {} stands={want}", c["name"], e["name"]));
+            }
+        }
+        let keys = sorted(strs(&ok("keys_of", json!([c["id"], held, arrivals]))));
+        t.check(json!(keys) == c["keys"], format!("identity: {}: keys", c["name"]));
+        if let Some(f) = c.get("frozen") {
+            let timeline = ok("key_timeline", json!([c["id"], held, Value::Null]));
+            let frozen: Vec<String> = sorted(timeline.as_array().unwrap().iter().filter(|k| k["frozen"] == json!(true)).map(|k| k["key"].as_str().unwrap().to_string()).collect());
+            t.check(&json!(frozen) == f, format!("identity: {}: frozen", c["name"]));
+        }
+        if let Some(o) = c.get("operators") {
+            t.check(&ok("operators_of", json!([c["id"], held, Value::Null])) == o, format!("identity: {}: operators", c["name"]));
+        }
+        let state = ok("identity_state", json!([c["id"], held, arrivals]));
+        let all_stand = c["signed_by_author"].as_object().unwrap().iter().all(|(h, want)| state["signed_by_author"].get(h).is_none_or(|g| g == want));
+        t.check(state["keys"] == c["keys"] && all_stand && c.get("frozen").is_none_or(|f| &state["frozen"] == f), format!("identity: {}: the fold", c["name"]));
+        if let Some(f) = c.get("fence") {
+            let find = |h: &Value| held.as_array().unwrap().iter().find(|b| &b["hash"] == h).unwrap().clone();
+            let limit = find(&f["block"]);
+            let salt = f["salt"].clone();
+            let finds = |who: &Value| ok("finds_self", json!([limit, who, salt])) == json!(true);
+            t.check(limit["refs"]["for"] == f["grant"] && limit["state"]["limit"] == f["limit"] && finds(&f["agent"]) && !finds(&f["principal"]), format!("identity: {}: sealed to the agent alone", c["name"]));
+            let without: Vec<Value> = held.as_array().unwrap().iter().filter(|b| b["hash"] != limit["hash"]).cloned().collect();
+            let same_check = c["under"].as_object().unwrap().keys().all(|h| ok("why_not_under", json!([find(&json!(h)), held, Value::Null])) == ok("why_not_under", json!([find(&json!(h)), without, Value::Null])));
+            t.check(same_check, format!("identity: {}: the grant check never reads the limit", c["name"]));
+            let within = f["within"].as_array().unwrap().iter().all(|w| ok("within_limit", json!([limit, w["money"], w["spent"]])) == w["within"]);
+            t.check(within, format!("identity: {}: within_limit", c["name"]));
+        }
+        for (h, live) in c.get("under").and_then(Value::as_object).cloned().unwrap_or_default() {
+            let b = held.as_array().unwrap().iter().find(|b| b["hash"] == json!(h)).unwrap().clone();
+            let why = ok("why_not_under", json!([b, held, Value::Null]));
+            t.check(why.as_array().unwrap().is_empty() == live.as_bool().unwrap(), format!("identity: {}: under", c["name"]));
+        }
+    }
+
+    // Folds.
+    let stage = |c: &Value| {
+        let held = blocks_of(&c["blocks"]);
+        let first = held.as_array().unwrap().iter().find(|b| b["hash"] == c["first"]).unwrap().clone();
+        ok("promise_stage", json!([first, held, {}]))
+    };
+    for c in v["deals"].as_array().unwrap().iter().chain(v["folds"]["promises"].as_array().unwrap()) {
+        t.check(subset(&stage(c), &c["expected"]), format!("promise fold: {}", c["name"]));
+    }
+    for c in v["circles"].as_array().unwrap().iter().chain(v["folds"]["circles"].as_array().unwrap()) {
+        let held = blocks_of(&c["blocks"]);
+        let state = ok("circle_state", json!([c["circle"], held, Value::Null]));
+        let members = if c["expected"]["members"].is_array() {
+            json!(sorted(state["members"].as_object().unwrap().keys().cloned().collect()))
         } else {
-            None
+            Value::Object(state["members"].as_object().unwrap().iter().map(|(k, m)| (k.clone(), json!(sorted(strs(&m["roles"]))))).collect())
         };
-        let name = s(&c["name"]);
-        let id = s(&c["id"]);
-        for b in &held {
-            if let Some(want) = c["signed_by_author"].get(s(&b["hash"])) {
-                let label = arr(&c["blocks"])
-                    .iter()
-                    .find(|x| x["hash"] == b["hash"])
-                    .map(|x| s(&x["name"]))
-                    .unwrap_or("");
-                let got = foodblock::identity::signed_by_author(b, &held, arrived);
-                r.ok(
-                    Value::Bool(got) == *want,
-                    format!(
-                        "{name}: {label} {}",
-                        if want == true { "stands" } else { "is void" }
-                    ),
-                );
-            }
+        let mut good = members == c["expected"]["members"] && json!(sorted(state["removed"].as_object().unwrap().keys().cloned().collect())) == c["expected"]["removed"];
+        if let Some(ct) = c["expected"].get("counted_to") {
+            good &= &state["removed"] == ct;
         }
-        if let Some(keys) = c.get("keys") {
-            let mut got = foodblock::identity::keys_of(id, &held, arrived);
-            got.sort();
-            r.why(
-                json!(got) == *keys,
-                format!("{name}: the keys that speak"),
-                format!("{got:?}"),
-            );
+        for (h, want) in c.get("may_act").and_then(Value::as_object).cloned().unwrap_or_default() {
+            let b = held.as_array().unwrap().iter().find(|b| b["hash"] == json!(h)).unwrap().clone();
+            good &= ok("may_act_as", json!([b, c["circle"], held, Value::Null])) == want;
         }
-        if let Some(frozen) = c.get("frozen") {
-            let mut got: Vec<String> = foodblock::identity::key_timeline(id, &held, None)
-                .into_iter()
-                .filter(|k| k.frozen)
-                .map(|k| k.key)
-                .collect();
-            got.sort();
-            r.ok(json!(got) == *frozen, format!("{name}: the frozen keys"));
-        }
-        if let Some(ops) = c.get("operators") {
-            r.ok(
-                json!(foodblock::grant::operators_of(id, &held, None)) == *ops,
-                format!("{name}: its operators"),
-            );
-        }
-        if c.get("history").is_some() {
-            let state = foodblock::identity_state(id, &held, arrived);
-            let signed_ok = c["signed_by_author"].as_object().is_none_or(|m| {
-                m.iter().all(|(h, ok)| {
-                    state
-                        .signed_by_author
-                        .iter()
-                        .any(|(x, got)| x == h && Value::Bool(*got) == *ok)
-                })
-            });
-            r.why(
-                json!(state.history) == c["history"]
-                    && json!(state.keys) == c["keys"]
-                    && c.get("frozen").is_none_or(|f| json!(state.frozen) == *f)
-                    && signed_ok,
-                format!("{name}: the identity fold (signed_by_author, keys, frozen, history)"),
-                state.to_json().to_string(),
-            );
-        }
-        if let Some(Value::Object(under)) = c.get("under") {
-            for (h, ok) in under {
-                let block = find(&held, &json!(h));
-                r.ok(
-                    foodblock::grant::why_not_under(block, &held, None).is_empty()
-                        == ok.as_bool().unwrap(),
-                    format!("{name}: a block under the grant speaks for its grantor"),
-                );
-            }
-        }
+        t.check(good, format!("circle fold: {}", c["name"]));
     }
-    r.done();
-}
-
-#[cfg(feature = "folds")]
-mod folds {
-    use super::*;
-    use foodblock::fold::{self, StageOptions};
-
-    pub fn stage_of(c: &Value) -> Value {
+    for c in v["folds"]["audience"].as_array().unwrap() {
         let held = blocks_of(&c["blocks"]);
-        let first = find(&held, &c["first"]).clone();
-        let now = c.get("now").and_then(Value::as_str);
-        fold::promise_stage(
-            &first,
-            &held,
-            &StageOptions {
-                now,
-                confirmers: vec![],
-            },
-        )
+        for k in c["cases"].as_array().unwrap() {
+            let b = held.as_array().unwrap().iter().find(|b| b["hash"] == k["block"]).unwrap().clone();
+            t.check(ok("members_then", json!([b, k["recipient"], held])) == k["members"], format!("audience fold: {}", k["name"]));
+        }
+    }
+    for c in v["folds"]["things"].as_array().unwrap() {
+        let held = blocks_of(&c["blocks"]);
+        let find = |h: &Value| held.as_array().unwrap().iter().find(|b| &b["hash"] == h).unwrap().clone();
+        for k in c["where"].as_array().unwrap() {
+            t.check(ok("where_now", json!([find(&k["thing"]), held])) == k["places"], format!("where now: {}", k["name"]));
+        }
+        for k in c["owners"].as_array().unwrap() {
+            let o = ok("ownership", json!([find(&k["thing"]), held]));
+            t.check(o["owner"] == k["owner"] && o["conflict"] == k["conflict"], format!("owner: {}", k["name"]));
+        }
+    }
+    for c in v["folds"]["successors"].as_array().unwrap() {
+        let held = blocks_of(&c["blocks"]);
+        let grant = held.as_array().unwrap().iter().find(|b| b["hash"] == c["grant"]).unwrap().clone();
+        t.check(subset(&ok("successor_view", json!([grant, held, c["now"], c["arrivals"]])), &c["expected"]), format!("successor: {}", c["name"]));
+    }
+    for c in v["folds"]["ballots"].as_array().unwrap() {
+        let held = blocks_of(&c["blocks"]);
+        for k in c["cases"].as_array().unwrap() {
+            let r = held.as_array().unwrap().iter().find(|b| b["hash"] == k["result"]).unwrap().clone();
+            t.check(ok("counted_in", json!([r, k["commitment"], k["counter"]])) == k["counted"], format!("ballot: {}", k["name"]));
+        }
+    }
+    for c in v["folds"]["rekeys"].as_array().unwrap() {
+        t.check(subset(&ok("circle_key", json!([c["circle"], blocks_of(&c["blocks"])])), &c["expected"]), format!("circle key: {}", c["name"]));
     }
 
-    #[test]
-    fn promise_folds() {
-        let mut r = Report::new("promise fold");
-        for c in arr(&v()["deals"])
-            .iter()
-            .chain(arr(&v()["folds"]["promises"]))
-        {
-            let got = stage_of(c);
-            r.why(
-                subset(&got, &c["expected"]),
-                format!("{}: {}", s(&c["name"]), s(&c["expected"]["stage"])),
-                got.to_string(),
-            );
-        }
-        r.done();
-    }
-
-    #[test]
-    fn circle_folds() {
-        let mut r = Report::new("circle fold");
-        for c in arr(&v()["circles"])
-            .iter()
-            .chain(arr(&v()["folds"]["circles"]))
-        {
-            let held = blocks_of(&c["blocks"]);
-            let circle = s(&c["circle"]);
-            let state = fold::circle_state(circle, &held, None).unwrap();
-            let members = if c["expected"]["members"].is_array() {
-                let mut keys: Vec<&String> = state.members.keys().collect();
-                keys.sort();
-                json!(keys)
-            } else {
-                Value::Object(
-                    state
-                        .members
-                        .iter()
-                        .map(|(who, m)| {
-                            let mut roles = m.roles.clone();
-                            roles.sort();
-                            (who.clone(), json!(roles))
-                        })
-                        .collect(),
-                )
-            };
-            let mut removed: Vec<&String> = state.removed.keys().collect();
-            removed.sort();
-            let may_act = c.get("may_act").and_then(Value::as_object).is_none_or(|m| {
-                m.iter().all(|(h, ok)| {
-                    fold::may_act_as(find(&held, &json!(h)), circle, &held, None)
-                        == ok.as_bool().unwrap()
-                })
-            });
-            r.why(
-                deep_eq(&members, &c["expected"]["members"])
-                    && json!(removed) == c["expected"]["removed"]
-                    && c["expected"].get("counted_to").is_none_or(|want| {
-                        want.as_object().unwrap().iter().all(|(who, h)| state.removed.get(who).and_then(|x| x.as_deref()) == h.as_str())
-                    })
-                    && may_act,
-                s(&c["name"]),
-                state.to_json().to_string(),
-            );
-        }
-        r.done();
-    }
-
-    #[test]
-    fn audience_folds() {
-        let mut r = Report::new("audience fold");
-        for c in arr(&v()["folds"]["audience"]) {
-            let held = blocks_of(&c["blocks"]);
-            for case in arr(&c["cases"]) {
-                let got =
-                    fold::members_then(find(&held, &case["block"]), s(&case["recipient"]), &held);
-                r.why(
-                    json!(got) == case["members"],
-                    s(&case["name"]),
-                    format!("{got:?}"),
-                );
-            }
-        }
-        r.done();
-    }
-
-    #[test]
-    fn things_where_and_owner() {
-        let mut r = Report::new("thing fold");
-        for c in arr(&v()["folds"]["things"]) {
-            let held = blocks_of(&c["blocks"]);
-            for case in arr(&c["where"]) {
-                let got = fold::where_now(find(&held, &case["thing"]), &held);
-                r.why(
-                    json!(got) == case["places"],
-                    format!("where now: {}", s(&case["name"])),
-                    format!("{got:?}"),
-                );
-            }
-            for case in arr(&c["owners"]) {
-                let got = fold::ownership(find(&held, &case["thing"]), &held);
-                r.why(
-                    json!(got.owner) == case["owner"] && json!(got.conflict) == case["conflict"],
-                    format!("owner: {}", s(&case["name"])),
-                    format!("{got:?}"),
-                );
-            }
-        }
-        r.done();
-    }
-
-    #[test]
-    fn successors() {
-        let mut r = Report::new("successor fold");
-        for c in arr(&v()["folds"]["successors"]) {
-            let held = blocks_of(&c["blocks"]);
-            let arrivals = c["arrivals"].clone();
-            let lookup = |h: &str| arrivals.get(h).and_then(Value::as_str).map(String::from);
-            let got = fold::successor_state(
-                find(&held, &c["grant"]),
-                &held,
-                c["now"].as_str(),
-                Some(&lookup),
-            );
-            r.why(subset(&got, &c["expected"]), s(&c["name"]), got.to_string());
-        }
-        r.done();
-    }
-
-    #[test]
-    fn ballots_and_rekeys() {
-        let mut r = Report::new("ballot and rekey folds");
-        for c in arr(&v()["folds"]["ballots"]) {
-            let held = blocks_of(&c["blocks"]);
-            for case in arr(&c["cases"]) {
-                let got = fold::counted_in(
-                    find(&held, &case["result"]),
-                    s(&case["commitment"]),
-                    s(&case["counter"]),
-                );
-                r.ok(
-                    Value::Bool(got) == case["counted"],
-                    format!("ballot: {}", s(&case["name"])),
-                );
-            }
-        }
-        for c in arr(&v()["folds"]["rekeys"]) {
-            let got = fold::circle_key(s(&c["circle"]), &blocks_of(&c["blocks"]));
-            r.why(
-                subset(&got, &c["expected"]),
-                format!("circle key: {}", s(&c["name"])),
-                got.to_string(),
-            );
-        }
-        r.done();
-    }
-}
-#[cfg(not(feature = "folds"))]
-#[test]
-fn folds_excluded() {
-    println!("folds (promises, circles, audience, things, successors, ballots, rekeys): excluded by this build's profile (edge and node: --features folds)");
-}
-
-#[test]
-fn refusals() {
-    let mut r = Report::new("refusals");
-    let mut all = blocks_of(&v()["refusals"]["blocks"]);
-    for (_, _, list) in stories() {
-        all.extend(blocks_of(&list));
-    }
-    let known: Index = index_of(all.iter());
-    let get = |h: &Value| {
-        known
-            .get(s(h))
-            .cloned()
-            .unwrap_or_else(|| panic!("no block {h}"))
-    };
-    for c in arr(&v()["refusals"]["cases"]) {
-        let name = format!("refused ({}): {}", s(&c["by"]), s(&c["name"]));
-        match s(&c["by"]) {
-            "check" => {
-                let held: Index = c
-                    .get("held")
-                    .map(|h| index_of(arr(h).iter().map(|x| known.get(s(x)).unwrap())))
-                    .unwrap_or_default();
-                let b = &c["block"];
-                // The codes exactly, as protocol.json orders them: the code carries the meaning.
-                let got = codes(
-                    b,
-                    foodblock::CheckOptions {
-                        schemas: None,
-                        held: Some(&held),
-                    },
-                );
-                r.why(got == c["codes"], &name, got.to_string());
-            }
+    // Refusals.
+    for c in v["refusals"]["cases"].as_array().unwrap() {
+        let by = c["by"].as_str().unwrap();
+        let held: Vec<Value> = c["held"].as_array().map(|h| h.iter().map(|x| refusal_blocks[x.as_str().unwrap()].clone()).collect()).unwrap_or_default();
+        let good = match by {
+            "check" => codes_of(&ok("refusals", json!([c["block"]["type"], c["block"]["state"], c["block"]["refs"], held]))) == strs(&c["codes"]),
+            "valid" => codes_of(&ok("valid", json!([c["block"], held]))) == strs(&c["codes"]),
             "accept" => {
-                #[cfg(feature = "sync")]
-                {
-                    let incoming: Vec<Value> = arr(&c["incoming"]).iter().map(get).collect();
-                    let held: Vec<Value> = arr(&c["held"]).iter().map(get).collect();
-                    let got = foodblock::sync::accept(&incoming, &held, None, None);
-                    let ok = if let Some(pairs) = c.get("equivocations") {
-                        // The second of a pair is neither taken nor refused: it is listed in its pair.
-                        got.to_json()["taken"] == c["taken"]
-                            && got.refused.is_empty()
-                            && json!(got.equivocations) == *pairs
-                    } else {
-                        incoming
-                            .iter()
-                            .all(|b| got.refused.iter().any(|r| r.hash == s(&b["hash"])))
-                            && codes_of(got.refused.iter().map(|r| r.code.as_str())) == c["codes"]
-                    };
-                    r.why(ok, &name, got.to_json().to_string());
+                let incoming: Vec<Value> = match c.get("inline") {
+                    Some(i) => i.as_array().unwrap().clone(),
+                    None => c["incoming"].as_array().unwrap().iter().map(|h| refusal_blocks[h.as_str().unwrap()].clone()).collect(),
+                };
+                let got = ok("accept", json!([incoming, held, Value::Null, Value::Null]));
+                if let Some(e) = c.get("equivocations") {
+                    got["taken"] == c["taken"] && got["refused"].as_array().unwrap().is_empty() && &got["equivocations"] == e
+                } else if let Some(w) = c.get("waiting") {
+                    json!(got["waiting"].as_array().unwrap().iter().map(|x| x["hash"].clone()).collect::<Vec<_>>()) == *w && got["refused"].as_array().unwrap().is_empty()
+                } else if c.get("taken").is_some() {
+                    got["taken"] == c["taken"]
+                } else {
+                    c["incoming"].as_array().unwrap().iter().all(|h| got["refused"].as_array().unwrap().iter().any(|r| &r["hash"] == h)) && codes_of(&got["refused"]) == strs(&c["codes"])
                 }
-                #[cfg(not(feature = "sync"))]
-                println!(
-                    "{name}: excluded by this build's profile (push is edge: --features sync)"
-                );
             }
-            "fold" => {
-                #[cfg(feature = "folds")]
-                {
-                    let got = folds::stage_of(c);
-                    r.why(subset(&got, &c["expected"]), &name, got.to_string());
-                }
-                #[cfg(not(feature = "folds"))]
-                println!(
-                    "{name}: excluded by this build's profile (folds are edge: --features folds)"
-                );
+            "fold" => subset(&stage(c), &c["expected"]),
+            "may_act_as" => {
+                let held = blocks_of(&c["blocks"]);
+                let b = held.as_array().unwrap().iter().find(|b| b["hash"] == c["block"]).unwrap().clone();
+                ok("may_act_as", json!([b, c["circle"], held, Value::Null])) == c["ok"]
             }
-            "open" => {
-                #[cfg(feature = "envelope")]
-                {
-                    let got = foodblock::open_copy(
-                        &c["message"],
-                        &key(s(&c["recipient"]), "x25519_private"),
-                    );
-                    r.why(
-                        got.as_ref().is_err_and(|e| json!([e.code]) == c["codes"]),
-                        &name,
-                        format!("{:?}", got.err()),
-                    );
-                }
-                #[cfg(not(feature = "envelope"))]
-                println!("{name}: excluded by this build's profile (envelopes are node: --features envelope)");
+            "under" => {
+                let all: Vec<Value> = refusal_blocks.values().cloned().collect();
+                let b = refusal_blocks[c["block"].as_str().unwrap()].clone();
+                ok("why_not_under", json!([b, all, Value::Null])).as_array().unwrap().is_empty() == c["live"].as_bool().unwrap()
             }
-            other => r.ok(false, format!("{name}: unknown refusal kind {other}")),
-        }
-    }
-    let _ = &get;
-    r.done();
-}
-
-#[test]
-fn alias_reads() {
-    let mut r = Report::new("reads");
-    for c in arr(&v()["reads"]["cases"]) {
-        let b = &c["block"];
-        let read =
-            foodblock::read_as(&foodblock::create(s(&b["type"]), &b["state"], &b["refs"]).unwrap());
-        let mut got = json!({ "type": read["type"], "state": read["state"], "refs": read["refs"] });
-        for mark in ["settles", "outside"] {
-            if foodblock::js::truthy(read.get(mark)) {
-                got[mark] = read[mark].clone();
-            }
-        }
-        if foodblock::js::truthy(read.get("retired")) {
-            got["retired"] = json!(true);
-        }
-        r.why(
-            deep_eq(&got, &c["reads_as"]),
-            s(&c["name"]),
-            got.to_string(),
-        );
-    }
-    r.done();
-}
-
-#[cfg(feature = "sync")]
-#[test]
-fn messages() {
-    use foodblock::sync;
-    let mut r = Report::new("messages");
-    let m = &v()["messages"];
-    let node = s(&m["node"]);
-    let node_key = public(s(&m["node_signer"]));
-    let pull = &m["signed_pull"];
-    let keys = vec![public(s(&pull["signer"]))];
-    let fresh = |seen: &dyn Fn(&str) -> bool, node: &str, message: &Value| {
-        sync::pull_errors(
-            message,
-            &sync::Freshness {
-                node,
-                now: s(&pull["now"]),
-                keys: &keys,
-                seen,
-                window_ms: sync::signed_window_ms(),
+            "open" => match call("open_copy", json!([c["message"], key(c["recipient"].as_str().unwrap(), "x25519_private")])) {
+                Ok(_) => false,
+                Err(e) => json!([e["code"]]) == c["codes"],
             },
-        )
-    };
-    let never = |_: &str| false;
-    let always = |_: &str| true;
-    r.ok(
-        fresh(&never, node, &pull["message"]).is_empty(),
-        "a signed pull names the node, a fresh nonce and at, and is signed by its signer",
-    );
-    r.ok(
-        !fresh(&always, node, &pull["message"]).is_empty(),
-        "a signed pull replayed is refused",
-    );
-    let mut other = pull["message"].clone();
-    other["node"] = json!("0".repeat(64));
-    r.ok(
-        !fresh(&never, node, &other).is_empty(),
-        "a signed pull for another node is refused",
-    );
-    let sealed = blocks_of(&v()["sealed"]["blocks"]);
-    r.ok(
-        foodblock::identity::keys_of(node, &sealed, None).contains(&node_key),
-        "the node key is a key of its holder, brought in by a key grant",
-    );
-    let answer = &m["pull_answer"]["message"];
-    r.ok(
-        sync::answer_signed_by(answer, &[node_key.clone()])
-            && arr(&answer["blocks"]).len() as u64 == m["pull_answer"]["matches"].as_u64().unwrap(),
-        "a pull answer is signed by the node",
-    );
-    // The answer names the request it answers: SHA-256 of the canonical signed pull.
-    r.ok(
-        s(&answer["request"]) == foodblock::hash_hex(&foodblock::canonical_json(&pull["message"])),
-        "a pull answer names its request by the hash of its canonical form",
-    );
-    r.ok(
-        sync::answer_signed_by(&m["push_answer"]["message"], &[node_key.clone()]),
-        "a push answer is signed by the node",
-    );
-    {
-        // Every key is always there; each refusal is { hash, code, detail } with a code from protocol.json; each pair
-        // sorted. Rebuilt from its parts by the node's key, it is the same message, byte for byte.
-        let p = &m["push_answer"]["message"];
-        let keys: Vec<&String> = p.as_object().unwrap().keys().collect();
-        let want = foodblock::spec().list("messages.push_answer");
-        let fields = foodblock::spec().list("messages.refusal");
-        r.ok(
-            keys.iter().map(|k| k.as_str()).eq(want.iter().map(|k| k.as_str()))
-                && arr(&p["refused"]).iter().all(|x| {
-                    x.as_object().unwrap().keys().eq(fields.iter())
-                        && foodblock::check::is_code(s(&x["code"]))
-                })
-                && arr(&p["equivocations"]).iter().all(|pair| {
-                    let mut sorted = arr(pair).clone();
-                    sorted.sort_by(|a, b| s(a).cmp(s(b)));
-                    sorted == *arr(pair)
-                }),
-            "a push answer carries every key, refusals as { hash, code, detail }, equivocations as sorted pairs",
-        );
-        let rebuilt =
-            sync::push_answer_of(p, s(&p["node"]), &key(s(&m["node_signer"]), "private_key"))
-                .unwrap();
-        r.why(
-            rebuilt == *p,
-            "the push answer rebuilds byte for byte",
-            rebuilt.to_string(),
-        );
+            _ => false,
+        };
+        t.check(good, format!("refused ({by}): {}", c["name"]));
     }
-    let mut changed = m["push_answer"]["message"].clone();
-    changed["taken"] = json!([]);
-    r.ok(
-        !sync::answer_signed_by(&changed, &[node_key.clone()]),
-        "a changed answer no longer verifies",
-    );
-    r.ok(
-        sync::well_known_errors(&m["discovery"]).is_empty()
-            && deep_eq(&m["announcement"], &sync::announcement(&m["discovery"])),
-        "discovery and its local announcement",
-    );
-    r.done();
-}
-#[cfg(not(feature = "sync"))]
-#[test]
-fn messages() {
-    println!("messages (pull, push, discovery): excluded by this build's profile (edge: --features sync)");
-}
 
-/// The compact form: block <-> CBOR bytes in both key forms, the loose encodings a reader accepts, and what it refuses.
-#[test]
-fn cbor_compact_form() {
-    use foodblock::cbor;
-    let mut r = Report::new("cbor");
-    let c = &v()["cbor"];
-    let hex = |b: &[u8]| foodblock::block::hex(b);
-    let bytes = |t: &Value| foodblock::block::unhex(s(t)).unwrap();
-    let signed = |case: &Value| {
-        let mut b = case["block"].clone();
-        b["hash"] = case["hash"].clone();
-        b["signature"] = case["signature"].clone();
-        b
-    };
-    for case in arr(&c["cases"]) {
-        let b = signed(case);
-        let text = cbor::encode_message(&b, false).unwrap();
-        let short = cbor::encode_message(&b, true).unwrap();
-        r.why(
-            hex(&text) == s(&case["cbor"]) && hex(&short) == s(&case["cbor_short"]),
-            format!("writes deterministic bytes: {}", s(&case["name"])),
-            hex(&short),
-        );
-        let back_text = cbor::decode_message(&bytes(&case["cbor"])).unwrap();
-        let back_short = cbor::decode_message(&bytes(&case["cbor_short"])).unwrap();
-        r.ok(
-            back_text == b && back_short == b && back_text["hash"] == case["hash"],
-            format!("reads back to the block, id the hash of its canonical JSON: {}", s(&case["name"])),
-        );
-    }
-    let loose = cbor::decode_message(&bytes(&c["loose"]["cbor"])).unwrap();
-    r.ok(loose["hash"] == c["loose"]["hash"], "any well-formed encoding of the same content is accepted");
-    let pushed: Vec<Value> = arr(&c["push"]["hashes"])
-        .iter()
-        .map(|h| signed(arr(&c["cases"]).iter().find(|x| x["hash"] == *h).unwrap()))
-        .collect();
-    r.ok(
-        hex(&cbor::encode_push_with(foodblock::spec(), &pushed, false).unwrap()) == s(&c["push"]["cbor"])
-            && cbor::decode_push_with(foodblock::spec(), &bytes(&c["push"]["cbor_short"])).unwrap() == pushed,
-        "a push of several blocks is an array of messages",
-    );
-    for h in arr(&c["headers"]) {
-        r.ok(
-            hex(&cbor::encode_header_with(foodblock::spec(), &h["header"], false).unwrap()) == s(&h["cbor"])
-                && cbor::decode_header_with(foodblock::spec(), &bytes(&h["cbor_short"])).unwrap() == h["header"],
-            format!("a chain header: {}", s(&h["name"])),
-        );
-    }
-    for x in arr(&c["refused"]) {
-        r.ok(cbor::decode_message(&bytes(&x["cbor"])).is_err(), format!("refused: {}", s(&x["name"])));
-    }
-    r.done();
-}
+    // Messages.
+    let m = &v["messages"];
+    let node = m["node"].clone();
+    let fresh = |o: Value| o;
+    let jem = key(m["signed_pull"]["signer"].as_str().unwrap(), "public_key_sign");
+    let p = &m["signed_pull"];
+    let pull = |msg: &Value, o: Value| ok("pull_refusals", json!([msg, o]));
+    t.check(pull(&p["message"], fresh(json!({ "node": node, "keys": [jem], "highest": p["highest"] }))).as_array().unwrap().is_empty() && p["message"].get("at").is_none(), "message: signed pull");
+    t.check(codes_of(&pull(&p["message"], json!({ "node": node, "keys": [jem], "highest": p["message"]["counter"] }))) == vec!["replay"], "message: counter replay");
+    let c = &m["signed_pull_challenge"];
+    t.check(pull(&c["message"], json!({ "node": node, "keys": [jem], "issued": [c["challenge"]] })).as_array().unwrap().is_empty(), "message: issued challenge");
+    t.check(codes_of(&pull(&c["message"], json!({ "node": node, "keys": [jem], "issued": [] }))) == vec!["replay"], "message: challenge not issued");
+    t.check(codes_of(&pull(&p["message"], json!({ "node": "0".repeat(64), "keys": [jem], "highest": p["highest"] }))) == vec!["wrong_node"], "message: wrong node");
+    let mut changed = p["message"].clone();
+    changed["since"] = json!(1);
+    t.check(codes_of(&pull(&changed, json!({ "node": node, "keys": [jem], "highest": p["highest"] }))) == vec!["bad_signature"], "message: changed request");
+    let node_key = key(m["node_signer"].as_str().unwrap(), "public_key_sign");
+    t.check(ok("answer_signed_by", json!([m["pull_answer"]["message"], [node_key]])) == json!(true), "message: pull answer signed");
+    t.check(ok("answer_signed_by", json!([m["push_answer"]["message"], [node_key]])) == json!(true), "message: push answer signed");
+    let rebuilt = ok("push_answer", json!([m["push_answer"]["message"], m["push_answer"]["message"]["node"], key(m["node_signer"].as_str().unwrap(), "private_key")]));
+    t.check(rebuilt == m["push_answer"]["message"], "message: the push answer rebuilds byte for byte");
+    t.check(ok("well_known_errors", json!([m["discovery"]])).as_array().unwrap().is_empty() && ok("announcement", json!([m["discovery"]])) == m["announcement"], "message: discovery");
 
-/// A signed pull's `asker` and a signed push's `pusher` read as `signer` (aliases.json `messages`).
-#[cfg(feature = "sync")]
-#[test]
-fn older_message_words() {
-    use foodblock::sync;
-    let mut r = Report::new("older messages");
-    let m = &v()["messages"];
-    for (kind, check) in [("signed_pull", true), ("signed_push", false)] {
-        let o = &m["older"][kind];
-        let keys = vec![public(s(&o["signer"]))];
-        let never = |_: &str| false;
-        let f = sync::Freshness { node: s(&m["node"]), now: s(&o["now"]), keys: &keys, seen: &never, window_ms: sync::signed_window_ms() };
-        let found = if check { sync::pull_refusals(&o["message"], &f) } else { sync::push_refusals(&o["message"], &f) };
-        r.ok(found.is_empty(), format!("an older {kind} reads as signer"));
+    // The compact form.
+    let cb = &v["cbor"];
+    for c in cb["cases"].as_array().unwrap() {
+        let block = json!({ "hash": c["hash"], "type": c["block"]["type"], "state": c["block"]["state"], "refs": c["block"]["refs"], "signature": c["signature"] });
+        let text = ok("cbor_encode", json!([block, false]));
+        let short = ok("cbor_encode", json!([block, true]));
+        t.check(text == c["cbor"] && short == c["cbor_short"] && ok("cbor_decode", json!([c["cbor"]])) == block && ok("cbor_decode", json!([c["cbor_short"]])) == block, format!("cbor: {}", c["name"]));
     }
-    r.done();
+    t.check(ok("cbor_decode", json!([cb["loose"]["cbor"]]))["hash"] == cb["loose"]["hash"], "cbor: loose");
+    for r in cb["refused"].as_array().unwrap() {
+        t.check(call("cbor_decode", json!([r["cbor"]])).is_err(), format!("cbor refused: {}", r["name"]));
+    }
+
+    // The door.
+    for d in v["door"].as_array().unwrap() {
+        let res = call(d["op"].as_str().unwrap(), d["args"].clone());
+        let good = if let Some(e) = d.get("error") {
+            match &res {
+                Err(a) => e.get("code").is_none_or(|c| &a["code"] == c) && e.get("kind").is_none_or(|k| &a["error"] == k),
+                Ok(_) => false,
+            }
+        } else if let Ok(got) = &res {
+            if let Some(c) = d.get("codes") {
+                json!(codes_of(got)) == *c
+            } else if d.get("exact") == Some(&json!(true)) {
+                got == &d["expect"]
+            } else {
+                subset(got, &d["expect"])
+            }
+        } else {
+            false
+        };
+        t.check(good, format!("door: {} {:?}", d["name"], res.err()));
+    }
+
+    assert!(t.failed.is_empty(), "{} passed, {} failed:\n{}", t.pass, t.failed.len(), t.failed.join("\n"));
+    println!("{} vectors pass", t.pass);
 }

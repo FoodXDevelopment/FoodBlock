@@ -1,7 +1,7 @@
-//! The commitment (protocol.md §9): the one privacy primitive. A salted hash, SHA-256 of the salt's hex followed by
-//! the value, as UTF-8. The salt (or the salt and the value) travels beside the block only to whoever it is for, in
+//! The commitment (modules/privacy.md): the one privacy primitive. A salted hash, in the author's suite hash (written
+//! like an id), of the salt's hex followed by the value, as UTF-8. The salt (or the salt and the value) travels beside the block only to whoever it is for, in
 //! their own copy (`reveals`). A salt is fresh per block per recipient, never reused.
-use crate::block::{hash_hex, hex};
+use crate::block::hex;
 use crate::error::{Error, Result};
 use crate::js::{cmp16, unique};
 use crate::prelude::*;
@@ -17,12 +17,17 @@ pub fn try_new_salt() -> Result<String> {
     Ok(hex(&crate::random::bytes::<16>()?))
 }
 
-/// The commitment to a value under a salt.
-pub fn salted_hash(salt: &str, value: &str) -> String {
+/// The commitment to a value under a salt, in a suite's hash.
+pub fn salted_hash_in(suite: &str, salt: &str, value: &str) -> String {
     let mut text = String::with_capacity(salt.len() + value.len());
     text.push_str(salt);
     text.push_str(value);
-    hash_hex(&text)
+    crate::block::hash_in(suite, &text)
+}
+
+/// The `std` commitment to a value under a salt.
+pub fn salted_hash(salt: &str, value: &str) -> String {
+    salted_hash_in("std", salt, value)
 }
 
 /// An audience: the sorted commitments, and each recipient's salt (kept beside the block, never signed).
@@ -52,6 +57,11 @@ impl Audience {
 /// An audience for these recipients (people, circles, `circle#role`). Each gets a fresh salt unless one is given in
 /// `salts` (only to reproduce a vector, or on a build without randomness).
 pub fn commit(recipients: &[&str], salts: &Value) -> Result<Audience> {
+    commit_in("std", recipients, salts)
+}
+
+/// `commit` in a suite's hash.
+pub fn commit_in(suite: &str, recipients: &[&str], salts: &Value) -> Result<Audience> {
     let who = unique(recipients.iter());
     if who.is_empty() || who.iter().any(|one| one.is_empty()) {
         return Err(Error::new(
@@ -66,7 +76,7 @@ pub fn commit(recipients: &[&str], salts: &Value) -> Result<Audience> {
         };
         given.push((one.clone(), salt));
     }
-    let mut audience = unique(given.iter().map(|(one, salt)| salted_hash(salt, one)));
+    let mut audience = unique(given.iter().map(|(one, salt)| salted_hash_in(suite, salt, one)));
     audience.sort_by(|a, b| cmp16(a, b));
     Ok(Audience {
         audience,
@@ -82,7 +92,7 @@ pub fn finds_self(block: &Value, recipient: &str, salt: &str) -> bool {
     !salt.is_empty()
         && audience
             .iter()
-            .any(|c| c.as_str() == Some(&salted_hash(salt, recipient)))
+            .any(|c| c.as_str() == Some(&salted_hash_in(crate::block::suite_of(block), salt, recipient)))
 }
 
 /// The reveal a recipient's copy carries for its audience entry: `{ salt, value }` (its own id).

@@ -16,7 +16,7 @@ class ApiTest {
     private val keys = FoodBlock.keypairFromSeed("1".repeat(64))
     private val recovery = FoodBlock.keypairFromSeed("2".repeat(64))
     private val me = Identity.genesis(
-        keys, kind = "sensor", recoveryKey = recovery.publicKeySign,
+        keys, kind = "sensor", recoveryKey = recovery.publicKeySign, reach = "P30D",
         encryptionKey = "0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",
         at = "2026-10-15T09:00:00.000Z",
     )
@@ -56,13 +56,34 @@ class ApiTest {
     }
 
     @Test fun aSealedValueOpensOnlyForItsRecipient() {
-        if ("node" !in FoodBlock.PROFILES) return println("envelopes: excluded by this build's profile (node)")
+        if ("node" !in FoodBlock.PEERS) return println("envelopes: excluded by this build's peer (node)")
         val bob = FoodBlock.generateEncryptionKeypair()
         val eve = FoodBlock.generateEncryptionKeypair()
         val value = buildJsonObject { put("kind", "eggs") }
         val sealed = FoodBlock.seal(value, listOf(bob["public_key_encrypt"]!!.jsonPrimitive.content))
         assertEquals(value, FoodBlock.open(sealed, bob["x25519_private"]!!.jsonPrimitive.content))
         assertFailsWith<FoodBlockException> { FoodBlock.open(sealed, eve["x25519_private"]!!.jsonPrimitive.content) }
+    }
+
+    @Test fun everySuiteSignsAndWrites() {
+        for (suite in listOf("std", "p256", "sm")) {
+            val k = FoodBlock.generateKeypair(suite)
+            assertEquals(suite, FoodBlock.suiteOfKey(k.publicKeySign) ?: "std")
+            val genesis = Identity.genesis(k, kind = "sensor", at = "2026-10-15T09:00:00.000Z")
+            val gid = genesis["hash"]!!.jsonPrimitive.content
+            val block = FoodBlock.write(
+                "observe", buildJsonObject { put("kind", "note"); put("text", "hi") }, buildJsonObject {},
+                WriteOptions(author = gid, key = k, held = listOf(genesis), at = "2026-10-15T09:01:00.000Z"),
+            )
+            assertTrue(FoodBlock.valid(block, listOf(genesis)).isEmpty(), "$suite: valid")
+            assertEquals(block["hash"]!!.jsonPrimitive.content, FoodBlock.hash(block))
+            assertEquals(block["hash"], FoodBlock.unwrap(FoodBlock.wrap(block))["hash"])
+        }
+    }
+
+    @Test fun thereIsNoOlderShape() {
+        assertFailsWith<FoodBlockException> { FoodBlock.call("read_as", buildJsonObject {}) }
+        assertEquals(9, FoodBlock.receiptCode("0".repeat(64)).length)
     }
 
     @Test fun badInputIsAnErrorNotACrash() {

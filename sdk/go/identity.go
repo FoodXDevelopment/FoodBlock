@@ -1,6 +1,6 @@
 package foodblock
 
-// Who someone is (protocol.md §5): thin calls into the Rust core.
+// Who someone is (modules/identity.md): thin calls into the Rust core.
 
 // ArrivedAt is when this reader first held a block (a time), or "" when it keeps no arrival log.
 type ArrivedAt func(hash string) string
@@ -19,22 +19,24 @@ func arrivals(arrivedAt ArrivedAt, blocks []Block) any {
 	return out
 }
 
-// RecoveryKeyHash is the hash a genesis writes for its recovery key.
-func RecoveryKeyHash(publicKeyHex string) string {
-	return must[string]("recovery_key_hash", publicKeyHex)
+// RecoveryKeyHash is the hash a genesis writes for its recovery key, in a suite (std when none is given).
+func RecoveryKeyHash(publicKeyHex string, suite ...string) string {
+	return must[string]("recovery_key_hash", publicKeyHex, suiteOf(suite))
 }
 
-// GenesisOptions: Kind (default person), At (default now), EncryptionKey (X25519 public, if it will receive sealed
-// blocks), RecoveryKey (required: the offline key's public signing key), Reach (default P30D) and Custodian (the id of
-// whoever holds the key for the person, if anyone).
+// GenesisOptions: Kind (default person), At (default now), EncryptionKey (the public encryption key, if it will
+// receive sealed blocks), RecoveryKey and Reach (they come as a pair or not at all; RecoverySuite when the recovery
+// key is not std) and Custodian (the id of whoever holds the key for the person, if anyone). The keys' own Suite is
+// the genesis's suite.
 type GenesisOptions struct {
-	Kind, At, EncryptionKey, RecoveryKey, Reach, Custodian string
+	Kind, At, EncryptionKey, RecoveryKey, Reach, RecoverySuite, Custodian string
 }
 
-// Genesis is a new person, agent, machine or signing circle: their genesis, signed.
+// Genesis is a new person, agent, machine or signing circle: their genesis, signed. It needs only kind, at, audience
+// and the key.
 func Genesis(keys Keypair, o GenesisOptions) (Block, error) {
 	given := map[string]any{}
-	for k, v := range map[string]string{"kind": o.Kind, "at": o.At, "encryption_key": o.EncryptionKey, "recovery_key": o.RecoveryKey, "reach": o.Reach, "custodian": o.Custodian} {
+	for k, v := range map[string]string{"kind": o.Kind, "at": o.At, "encryption_key": o.EncryptionKey, "recovery_key": o.RecoveryKey, "reach": o.Reach, "recovery_suite": o.RecoverySuite, "custodian": o.Custodian} {
 		if v != "" {
 			given[k] = v
 		}
@@ -45,31 +47,32 @@ func Genesis(keys Keypair, o GenesisOptions) (Block, error) {
 // IsGenesis is whether a block is a genesis.
 func IsGenesis(b Block) bool { return must[bool]("is_genesis", b) }
 
-// Is16Genesis is a genesis with the recovery fields: a 1.6 genesis, which has no history.
-func Is16Genesis(b Block) bool { return must[bool]("is_16_genesis", b) }
-
 // GenesisOpens is whether a genesis is opened by its own key.
 func GenesisOpens(b Block) bool { return must[bool]("genesis_opens", b) }
 
-// KeySigner signs a key grant: a key the id holds (PrivateKey, its Last block, the block that brought it in), or the
-// recovery key (PrivateKey and RecoveryKey, its public key), whose chain starts at the genesis.
+// KeySigner signs a key grant: a key the id holds (PrivateKey and its Suite, its Last block, the block that brought it
+// in), or the recovery key (PrivateKey and RecoveryKey, its public key), whose chain starts at the genesis.
 type KeySigner struct {
-	PrivateKey, BroughtIn, RecoveryKey string
-	Last                               *Block
+	PrivateKey, Suite, BroughtIn, RecoveryKey string
+	Last                                      *Block
 }
 
-// KeyGrantOptions: a rotation names the key it Replaces and that key's CountedTo block (LastGood is the older name);
-// Encrypt brings in an encryption key; Recovery adds recovery to an older genesis (once); Custodian names who holds the
-// key for the person.
+// KeyGrantOptions: a rotation names the key it Replaces and that key's CountedTo block; Suite is the new key's; Skip
+// is a deliberate skip in the chain; Encrypt brings in an encryption key; Recovery adds recovery (once); Custodian
+// names who holds the key for the person.
 type KeyGrantOptions struct {
-	Replaces, CountedTo, LastGood, At, Encrypt, Custodian string
-	After                                                 []string
-	Recovery                                              *struct{ Key, Reach string }
+	Replaces, CountedTo, At, Encrypt, Custodian, Suite string
+	Skip                                               bool
+	After                                              []string
+	Recovery                                           *struct{ Key, Reach string }
 }
 
 // KeyGrant is a key grant, signed: brings newPublicKey into the id.
 func KeyGrant(id, newPublicKey string, signer KeySigner, o KeyGrantOptions) (Block, error) {
 	s := map[string]any{"private_key": signer.PrivateKey}
+	if signer.Suite != "" {
+		s["suite"] = signer.Suite
+	}
 	if signer.Last != nil {
 		s["last"] = *signer.Last
 	}
@@ -80,10 +83,10 @@ func KeyGrant(id, newPublicKey string, signer KeySigner, o KeyGrantOptions) (Blo
 		s["recovery_key"] = signer.RecoveryKey
 	}
 	opts := map[string]any{"after": plural(o.After)}
-	if o.CountedTo == "" {
-		o.CountedTo = o.LastGood
+	if o.Skip {
+		opts["skip"] = true
 	}
-	for k, v := range map[string]string{"replaces": o.Replaces, "counted_to": o.CountedTo, "at": o.At, "encrypt": o.Encrypt, "custodian": o.Custodian} {
+	for k, v := range map[string]string{"replaces": o.Replaces, "counted_to": o.CountedTo, "at": o.At, "encrypt": o.Encrypt, "custodian": o.Custodian, "suite": o.Suite} {
 		if v != "" {
 			opts[k] = v
 		}
@@ -99,8 +102,9 @@ func KeyGrant(id, newPublicKey string, signer KeySigner, o KeyGrantOptions) (Blo
 }
 
 // KeyEntry is one key an id has held: who brought it in (By), which key signed that (Signer: a key, "recovery", or ""
-// for the genesis), and whether it is void or frozen.
+// for the genesis), whether it is void or frozen, and its Suite.
 type KeyEntry struct {
+	Suite  string `json:"suite"`
 	Key    string `json:"key"`
 	By     string `json:"by"`
 	Signer string `json:"signer"`
@@ -123,8 +127,8 @@ func SignedByAuthor(b Block, blocks []Block, arrivedAt ArrivedAt) bool {
 	return must[bool]("signed_by_author", b, plural(blocks), arrivals(arrivedAt, blocks))
 }
 
-// IdentityState is the identity fold (§11): signed_by_author (hash -> bool), keys, frozen, operators (sorted) and
-// history (none for a 1.6 genesis, open or closed).
+// IdentityState is the identity fold: signed_by_author (hash -> bool), keys, frozen, operators (sorted) and history
+// (always "none").
 type IdentityState struct {
 	SignedByAuthor map[string]bool `json:"signed_by_author"`
 	Keys           []string        `json:"keys"`
@@ -141,9 +145,9 @@ func IdentityStateOf(id string, blocks []Block, arrivedAt ArrivedAt) IdentitySta
 // Forked is whether a block's key signed two blocks at one seq.
 func Forked(b Block, blocks []Block) bool { return must[bool]("forked", b, plural(blocks)) }
 
-// HistoryCounts is whether a block without seq counts as its author's history.
-func HistoryCounts(b Block, id string, blocks []Block) bool {
-	return must[bool]("history_counts", b, id, plural(blocks))
+// ForkPairs are the pairs of blocks one key signed naming one prev.
+func ForkPairs(blocks []Block) [][]string {
+	return plural(must[[][]string]("fork_pairs", plural(blocks)))
 }
 
 // NextLinkFor is where an id's next block goes for one of its keys.

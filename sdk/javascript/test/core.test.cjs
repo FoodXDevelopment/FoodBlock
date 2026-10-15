@@ -35,7 +35,7 @@ test('the door says what went wrong as an error with the core\'s refusals', () =
   assert.throws(() => core.call('no_such_op'), /not in this build/)
   assert.throws(() => core.call('hash', 5), /argument 0 is text/)
   const fb = require('../src/index.cjs'), keys = fb.generateKeypair()
-  const me = fb.identity.genesis(keys, { recoveryKey: fb.generateKeypair().public_key_sign })
+  const me = fb.identity.genesis(keys, { recoveryKey: fb.generateKeypair().public_key_sign, reach: 'P30D' })
   assert.throws(() => fb.write('thing', { kind: 'eggs', price: 1.5 }, {}, { author: me.hash, key: keys, held: [me] }),
     (error) => /^write: refused: /.test(error.message) && error.refused.some((one) => one.code === 'float') && error.wrong.length === error.refused.length)
 })

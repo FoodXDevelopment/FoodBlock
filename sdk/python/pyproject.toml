@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "foodblock"
 version = "1.6.0"
-description = "FoodBlock 1.6 for Python: a thin layer over the one Rust core: canonical form, signatures, the write check, key chains, identities, aliases, envelopes, folds and the messages between nodes"
+description = "FoodBlock 1.6 for Python: a thin layer over the one Rust core: canonical form, signatures, the write check, key chains, identities, envelopes, folds and the messages between nodes"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"

@@ -1,0 +1,763 @@
+{
+ "$comment": "Converter fixtures (spec/legacy/converter.md): the 0.x and 1.5 examples that were conformance vectors before year zero. Each old block read through spec/legacy/aliases-0.x.json gives `reads_as` (type, state, refs; `retired` when the type is no longer protocol). The conversion pipeline is tested in tests/legacy.rs.",
+ "cases": [
+  {
+   "name": "types: place reads as thing",
+   "block": {
+    "type": "place.venue",
+    "state": {
+     "name": "Hill Bakery"
+    },
+    "refs": {}
+   },
+   "reads_as": {
+    "type": "thing",
+    "state": {
+     "kind": "venue",
+     "name": "Hill Bakery"
+    },
+    "refs": {}
+   }
+  },
+  {
+   "name": "types: substance reads as thing",
+   "block": {
+    "type": "substance.product",
+    "state": {
+     "name": "Sourdough"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Sourdough"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "types: base.kind of a 1.6 type keeps the kind",
+   "block": {
+    "type": "observe.whatever",
+    "state": {},
+    "refs": {}
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "whatever"
+    },
+    "refs": {}
+   }
+  },
+  {
+   "name": "types: a retired type",
+   "block": {
+    "type": "observe.checkout_error",
+    "state": {},
+    "refs": {}
+   },
+   "reads_as": {
+    "type": "observe.checkout_error",
+    "state": {},
+    "refs": {},
+    "retired": true
+   }
+  },
+  {
+   "name": "types: fields renamed (a preference's kind is what it says)",
+   "block": {
+    "type": "observe.preference",
+    "state": {
+     "kind": "vegan"
+    },
+    "refs": {}
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "preference",
+     "says": "vegan"
+    },
+    "refs": {}
+   }
+  },
+  {
+   "name": "promise: seller, buyer and need; due",
+   "block": {
+    "type": "transfer.order",
+    "state": {
+     "status": "accepted",
+     "due": "2026-10-20T00:00:00.000Z"
+    },
+    "refs": {
+     "seller": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "buyer": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "need": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   },
+   "reads_as": {
+    "type": "promise",
+    "state": {
+     "kind": "order",
+     "status": "accepted",
+     "terms": {
+      "deliver_by": "2026-10-20T00:00:00.000Z"
+     }
+    },
+    "refs": {
+     "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "for": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "promise: delivered marks what it settles",
+   "block": {
+    "type": "promise",
+    "state": {
+     "status": "delivered"
+    },
+    "refs": {
+     "seller": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "buyer": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   },
+   "reads_as": {
+    "type": "promise",
+    "state": {
+     "status": "accepted"
+    },
+    "refs": {
+     "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+    },
+    "settles": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+   }
+  },
+  {
+   "name": "transfer: order reads as for",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "payment"
+    },
+    "refs": {
+     "order": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   },
+   "reads_as": {
+    "type": "transfer",
+    "state": {
+     "kind": "payment"
+    },
+    "refs": {
+     "for": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "grant.member: member and group",
+   "block": {
+    "type": "grant",
+    "state": {
+     "kind": "member"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "member": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "member"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "grant.member: a join by confirms reads as an accepted answer",
+   "block": {
+    "type": "grant",
+    "state": {
+     "kind": "member"
+    },
+    "refs": {
+     "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "confirms": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "member",
+     "status": "accepted"
+    },
+    "refs": {
+     "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "answers": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+    }
+   }
+  },
+  {
+   "name": "grant.member: an end by defeats reads as an update with status stopped",
+   "block": {
+    "type": "grant",
+    "state": {
+     "kind": "member"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "defeats": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "member",
+     "status": "stopped",
+     "stop": "onward"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "updates": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+     "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "grant.member: an invitation without as reads as signed as the circle",
+   "block": {
+    "type": "grant",
+    "state": {
+     "seq": 2,
+     "kind": "member"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "seq": 2,
+     "kind": "member"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "grant.holder: member and group",
+   "block": {
+    "type": "grant",
+    "state": {
+     "kind": "holder"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "member": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "holder"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "grant.voice: member and group",
+   "block": {
+    "type": "grant",
+    "state": {
+     "kind": "voice"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "member": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "voice"
+    },
+    "refs": {
+     "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "observe.received: confirms marks what it settles",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "received"
+    },
+    "refs": {
+     "confirms": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "received"
+    },
+    "refs": {
+     "confirms": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    },
+    "settles": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+   }
+  },
+  {
+   "name": "observe.attestation: received marks what it settles",
+   "block": {
+    "type": "observe.attestation",
+    "state": {
+     "received": true
+    },
+    "refs": {
+     "confirms": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "attestation",
+     "received": true
+    },
+    "refs": {
+     "confirms": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    },
+    "settles": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+   }
+  },
+  {
+   "name": "observe.attestation: accepted reads as a member's answer",
+   "block": {
+    "type": "observe.attestation",
+    "state": {
+     "accepted": true
+    },
+    "refs": {
+     "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "confirms": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "member",
+     "accepted": true,
+     "status": "accepted"
+    },
+    "refs": {
+     "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "answers": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+    }
+   }
+  },
+  {
+   "name": "observe.attestation: not accepted reads as an end",
+   "block": {
+    "type": "observe.attestation",
+    "state": {
+     "accepted": false
+    },
+    "refs": {
+     "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "group": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "confirms": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "kind": "member",
+     "accepted": false,
+     "status": "stopped",
+     "stop": "onward"
+    },
+    "refs": {
+     "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+     "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
+     "updates": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4",
+     "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+    }
+   }
+  },
+  {
+   "name": "refs: order reads as answers",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "order": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "answers": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: reply_to reads as answers",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "reply_to": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "answers": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: corrects reads as defeats",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "corrects": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "defeats": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: challenges reads as defeats",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "challenges": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "defeats": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: witnesses reads as confirms",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "witnesses": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "confirms": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: source reads as derives_from",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "source": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "derives_from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: about reads as subject",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "about": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "subject": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: supersedes reads as updates",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "supersedes": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: contradicts reads as defeats",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "contradicts": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "defeats": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "refs: derived_by reads as derives_from",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "derived_by": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "note"
+    },
+    "refs": {
+     "derives_from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    }
+   }
+  },
+  {
+   "name": "outside: a ref naming someone with no record is an open side",
+   "block": {
+    "type": "promise",
+    "state": {
+     "status": "accepted"
+    },
+    "refs": {
+     "seller": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+     "buyer": "outside:Plenish"
+    }
+   },
+   "reads_as": {
+    "type": "promise",
+    "state": {
+     "status": "accepted"
+    },
+    "refs": {
+     "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+    },
+    "outside": {
+     "to": "Plenish"
+    }
+   }
+  },
+  {
+   "name": "types_dotted: an unknown base.rest never overwrites the block's own kind",
+   "block": {
+    "type": "observe.fridge_log",
+    "state": {
+     "kind": "temperature"
+    },
+    "refs": {}
+   },
+   "reads_as": {
+    "type": "observe",
+    "state": {
+     "kind": "temperature"
+    },
+    "refs": {}
+   }
+  },
+  {
+   "name": "types_dotted: a base that is a type row reads as that row, with the kind after the dot",
+   "block": {
+    "type": "substance.flour",
+    "state": {},
+    "refs": {}
+   },
+   "reads_as": {
+    "type": "thing",
+    "state": {
+     "kind": "flour"
+    },
+    "refs": {}
+   }
+  },
+  {
+   "name": "grant: a rotation names its last_good block reads as counted_to",
+   "block": {
+    "type": "grant",
+    "state": {
+     "seq": 2,
+     "kind": "key",
+     "public_key_sign": "302a300506032b6570032100ff5214dd381e30eaf44d681e7168e6cb5465c71a40d27461085af9f24d5a0a76",
+     "replaces": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+     "last_good": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+    },
+    "refs": {
+     "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "seq": 2,
+     "kind": "key",
+     "public_key_sign": "302a300506032b6570032100ff5214dd381e30eaf44d681e7168e6cb5465c71a40d27461085af9f24d5a0a76",
+     "replaces": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+     "counted_to": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+    },
+    "refs": {
+     "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+    }
+   }
+  },
+  {
+   "name": "grant: a removal names its last_counted block reads as counted_to",
+   "block": {
+    "type": "grant",
+    "state": {
+     "seq": 3,
+     "kind": "member",
+     "status": "stopped",
+     "stop": "onward",
+     "last_counted": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+    },
+    "refs": {
+     "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "subject": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+     "as": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+     "updates": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
+    }
+   },
+   "reads_as": {
+    "type": "grant",
+    "state": {
+     "seq": 3,
+     "kind": "member",
+     "status": "stopped",
+     "stop": "onward",
+     "counted_to": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+    },
+    "refs": {
+     "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "subject": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+     "as": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+     "updates": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
+    }
+   }
+  }
+ ]
+}

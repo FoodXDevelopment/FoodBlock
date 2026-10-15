@@ -38,12 +38,12 @@ describe('FoodBlock MCP', () => {
 
   it('offers the eight tools', async () => {
     const names = (await call('tools/list')).result.tools.map((item) => item.name).sort()
-    assert.deepEqual(names, ['foodblock_check', 'foodblock_create', 'foodblock_get', 'foodblock_history', 'foodblock_info', 'foodblock_query', 'foodblock_read_as', 'foodblock_verify'])
+    assert.deepEqual(names, ['foodblock_check', 'foodblock_create', 'foodblock_get', 'foodblock_history', 'foodblock_info', 'foodblock_query', 'foodblock_valid', 'foodblock_verify'])
   })
-  it('says what the protocol is, from protocol.json: seven types, seven verbs, no place', async () => {
+  it('says what the protocol is, from protocol.json: seven known types (four closed), seven verbs', async () => {
     const info = (await tool('foodblock_info')).value
     assert.deepEqual([info.protocol, info.types, info.verbs, info.terms], [fb.VERSION, fb.TYPES, fb.VERBS, fb.PROTOCOL.terms])
-    assert.deepEqual([info.types.length, info.types.includes('place'), info.types.includes('schema')], [7, false, false])
+    assert.deepEqual([info.types.length, info.types.includes('place'), info.closed_types], [7, false, ['actor', 'promise', 'transfer', 'grant']])
   })
   it('writes a block in its key chain, checked and signed, and refuses a malformed one', async () => {
     const made = (await tool('foodblock_create', { type: 'thing', kind: 'oats', state: { name: 'Oats' } })).value
@@ -54,8 +54,10 @@ describe('FoodBlock MCP', () => {
     const floaty = await tool('foodblock_create', { type: 'thing', kind: 'flour', state: { amount: { value: 1.5, unit: 'kg' } } })
     assert.equal(floaty.error, true)
     assert.match(String(floaty.value), /float/)
-    const place = await tool('foodblock_create', { type: 'place', kind: 'kitchen' })
-    assert.equal(place.error, true, 'place is read, never written')
+    const dotted = await tool('foodblock_create', { type: 'place.venue', kind: 'kitchen' })
+    assert.equal(dotted.error, true, 'a dotted old type is not a type name')
+    const open = await tool('foodblock_create', { type: 'weather', state: { wind: 'north' } })
+    assert.equal(open.error, false, 'any other word is an open type')
   })
   it('writes a private block as audience commitments, with the salts beside it', async () => {
     const someone = 'a'.repeat(64)
@@ -64,14 +66,12 @@ describe('FoodBlock MCP', () => {
     assert.notEqual(made.state.audience[0], someone)
     assert.ok(made.salts[someone] && made.state.nonce)
   })
-  it('finds the seeded offer by type, and reads an older block as 1.6', async () => {
+  it('finds the seeded offer by type, and checks a held block with valid', async () => {
     const offers = (await tool('foodblock_query', { type: 'promise' })).value
     assert.deepEqual([offers[0].state.terms.price.minor, offers[0].state.status, Boolean(offers[0].refs.from && offers[0].refs.to && offers[0].refs.what)], [2400, undefined, true])
     assert.deepEqual(fb.check(offers[0].type, offers[0].state, offers[0].refs), [], 'an offer carries no status: offered is read from who signed it')
-    const old = (await tool('foodblock_read_as', { type: 'place', state: { kind: 'kitchen' }, refs: {} })).value
-    assert.equal(old.type, 'thing')
-    const sale = (await tool('foodblock_read_as', { type: 'promise', state: {}, refs: { seller: 'a'.repeat(64), buyer: 'b'.repeat(64) } })).value
-    assert.deepEqual([sale.refs.from, sale.refs.to], ['a'.repeat(64), 'b'.repeat(64)])
+    const mine = (await tool('foodblock_create', { type: 'thing', kind: 'rye2' })).value
+    assert.deepEqual((await tool('foodblock_valid', { hash: mine.hash })).value.refusals, [])
   })
   it('checks a block without writing it', async () => {
     const { errors } = (await tool('foodblock_check', { type: 'thing', state: { kind: 'eggs' }, refs: {} })).value

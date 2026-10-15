@@ -1,9 +1,9 @@
-//! Writing a block and carrying it (protocol.md §1, §9, Encoding: Messages). `compose` stamps an author's words with
+//! Writing a block and carrying it (core.md sections 5 and 6, modules/privacy.md). `compose` stamps an author's words with
 //! what every block carries (who, when, its place in the signing key's chain, what was seen, who may see it); `write`
 //! is the one path every writer shares: compose, check, sign, chain. On the wire a public block is
 //! `{ version, block, signature }`; a sealed one is `{ version, header, header_signature, envelope }`.
-use crate::audience::{commit, try_new_salt};
-use crate::block::{create, hash};
+use crate::audience::{commit_in, try_new_salt};
+use crate::block::{create_in, hash_suite, suite_of};
 use crate::canonical::canonical;
 use crate::chain::Link;
 use crate::check::{refusals, CheckOptions};
@@ -11,8 +11,8 @@ use crate::error::{Error, Result};
 use crate::js::{index_of, rf, st, Index};
 use crate::prelude::*;
 #[cfg(feature = "envelope")]
-use crate::sign::sign_message;
-use crate::sign::{sign, verify_message, Keypair};
+use crate::sign::sign_message_in;
+use crate::sign::{sign_in, verify_message_in, Keypair};
 
 pub const PUBLIC: &str = "public";
 
@@ -36,6 +36,10 @@ pub struct ComposeOptions {
     pub salts: Value,
     /// The block's nonce for a private block (fresh when None).
     pub nonce: Option<String>,
+    /// The suite of the signing key (the hash of its commitments and of the id); `std` when empty.
+    pub suite: String,
+    /// Mark the block `skip`: it jumps `seq` forward because the counter was lost.
+    pub skip: bool,
 }
 
 fn at_or_now(at: &Option<String>) -> Result<String> {
@@ -74,7 +78,7 @@ pub fn compose(
         state.insert("audience".into(), Value::String(PUBLIC.into()));
     } else {
         let who: Vec<&str> = options.audience.iter().map(String::as_str).collect();
-        let written = commit(&who, &options.salts)?;
+        let written = commit_in(&options.suite, &who, &options.salts)?;
         state.insert("audience".into(), json!(written.audience));
         salts = Some(written.salts_json());
     }
@@ -95,7 +99,10 @@ pub fn compose(
     if !seen.is_empty() {
         refs.insert("after".into(), json!(seen));
     }
-    let mut block = create(type_name, &Value::Object(state), &Value::Object(refs))?;
+    if options.skip {
+        state.insert("skip".into(), Value::Bool(true));
+    }
+    let mut block = create_in(&options.suite, type_name, &Value::Object(state), &Value::Object(refs))?;
     if let Some(salts) = salts {
         block["salts"] = salts;
     }
@@ -127,6 +134,9 @@ pub fn write(
         .ok_or_else(|| Error::new("write: a block is signed with its author's key"))?;
     let held = index_of(options.held);
     let mut compose_options = options.compose.clone();
+    if compose_options.suite.is_empty() {
+        compose_options.suite = key.suite.clone();
+    }
     if compose_options.link.is_none() {
         compose_options.link = Some(crate::identity::next_link_for_in(
             &compose_options.author,
@@ -148,22 +158,29 @@ pub fn write(
     if !refused.is_empty() {
         return Err(Error::refused(refused));
     }
-    let signature = sign(&block, &key.private_key)?;
+    let signature = sign_in(&key.suite, &block, &key.private_key)?;
     block["signature"] = Value::String(signature);
     Ok(block)
 }
 
 // ---- Messages ----
-/// A signed public block as it travels: `{ version, block, signature }`. Never the hash: readers recompute it.
+/// A signed public block as it travels: `{ version, block, signature }`, and `suite` when it is not `std`. Never the
+/// hash: readers recompute it.
 pub fn wrap(signed: &Value) -> Value {
-    json!({
+    let mut out = json!({
         "version": crate::spec().version,
         "block": { "type": signed.get("type"), "state": signed.get("state"), "refs": signed.get("refs") },
         "signature": signed.get("signature"),
-    })
+    });
+    let suite = suite_of(signed);
+    if !suite.is_empty() && suite != "std" {
+        out["suite"] = json!(suite);
+    }
+    out
 }
 
-/// A block off the wire: its hash recomputed from its content, its signature and version kept beside.
+/// A block off the wire: its hash recomputed from its content in the message's suite, its signature and version kept
+/// beside. A suite the reader does not know is refused (`unknown_suite`).
 pub fn unwrap(message: &Value) -> Result<Value> {
     let inner = message.get("block");
     let type_name = inner.and_then(|b| b.get("type")).and_then(Value::as_str);
@@ -173,6 +190,10 @@ pub fn unwrap(message: &Value) -> Result<Value> {
             "write: a message is { version, block, signature }",
         ));
     };
+    let suite = message.get("suite").and_then(Value::as_str).unwrap_or("std");
+    if crate::spec().suite(suite).is_none() {
+        return Err(Error::coded("unknown_suite", format!("write: the suite {suite} is not one this reader knows")));
+    }
     let state = inner
         .and_then(|b| b.get("state"))
         .cloned()
@@ -189,9 +210,12 @@ pub fn unwrap(message: &Value) -> Result<Value> {
         ));
     }
     let mut out = json!({
-        "hash": hash(type_name, &state, &refs), "type": type_name, "state": state, "refs": refs,
+        "hash": hash_suite(suite, type_name, &state, &refs), "type": type_name, "state": state, "refs": refs,
         "signature": signature, "version": message.get("version"),
     });
+    if suite != "std" {
+        out["suite"] = json!(suite);
+    }
     if let Some(r) = message
         .get("reveals")
         .filter(|r| crate::js::truthy(Some(r)))
@@ -219,11 +243,16 @@ pub fn header(block: &Value) -> Value {
         .map(String::from)
         .unwrap_or_else(|| crate::block::rehash(block));
     out.insert("hash".into(), Value::String(h));
+    // A safety report made under a law may leave its subject out of the audience: its header says so (privacy.md).
+    if st(block, "withheld") == Some(&Value::Bool(true)) {
+        out.insert("withheld".into(), Value::Bool(true));
+    }
     Value::Object(out)
 }
 
 /// Whether a sealed copy's header is signed by this key (the key that signed the block).
 pub fn header_signed_by(message: &Value, public_key: &str) -> bool {
+    let suite = crate::sign::suite_of_key(public_key).unwrap_or_else(|| "std".to_string());
     let mut part = message.get("header").cloned().unwrap_or_else(|| json!({}));
     if let Value::Object(m) = &mut part {
         m.insert(
@@ -234,11 +263,11 @@ pub fn header_signed_by(message: &Value, public_key: &str) -> bool {
                 .unwrap_or(Value::Null),
         );
     }
-    verify_message(&part, public_key)
+    verify_message_in(&suite, &part, public_key)
 }
 
 /// A sealed copy: `{ version, header, header_signature, envelope }`. The plaintext `{ version, block, signature,
-/// reveals }` is sealed to `keys` (X25519 public keys, hex). A copy with reveals goes to one recipient, or to several
+/// reveals }` is sealed to `keys` (public encryption keys of the suite `enc_suite`, hex). A copy with reveals goes to one recipient, or to several
 /// who share every reveal. `private_key` is the key that signed the block.
 #[cfg(feature = "envelope")]
 pub fn seal_copy(
@@ -247,9 +276,10 @@ pub fn seal_copy(
     reveals: &Value,
     private_key: &str,
     fixed: Option<&crate::envelope::Fixed>,
+    enc_suite: &str,
 ) -> Result<Value> {
     let top = header(signed);
-    let header_signature = sign_message(&top, private_key)?
+    let header_signature = sign_message_in(suite_of(signed), &top, private_key)?
         .get("signature")
         .cloned()
         .unwrap_or(Value::Null);
@@ -259,13 +289,13 @@ pub fn seal_copy(
     } else {
         reveals.clone()
     };
-    let envelope = crate::envelope::seal_with(&plaintext, keys, crate::envelope::ALG, fixed)?;
+    let envelope = crate::envelope::seal_with(&plaintext, keys, enc_suite, fixed)?;
     Ok(
         json!({ "version": crate::spec().version, "header": top, "header_signature": header_signature, "envelope": envelope }),
     )
 }
 
-/// Open a sealed copy with a recipient's X25519 private key (hex): the block, its signature and its reveals. The
+/// Open a sealed copy with a recipient's private encryption key (hex): the block, its signature and its reveals. The
 /// header must name it.
 #[cfg(feature = "envelope")]
 pub fn open_copy(message: &Value, x25519_private: &str) -> Result<Value> {

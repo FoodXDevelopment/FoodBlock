@@ -1,8 +1,8 @@
-//! The write check (protocol.md §1, Refusals): `refusals(type, state, refs)` says what is wrong with a block as every
+//! The write check (core.md section 8, the checks that read a block's bytes): `refusals(type, state, refs)` says what is wrong with a block as every
 //! node checks it before writing: `[{ code, detail }]`, one entry per rule found, in the order of protocol.json's
 //! `refusals.codes.block` (empty when it is a well-formed 1.6 block). The code carries the meaning; the detail is free
 //! text for people. `check` gives the details alone. Every list and grammar it reads comes from protocol.json; none is
-//! written here. Older shapes are read, never re-checked (`read_as`).
+//! written here. There is no earlier version to read: year zero.
 use crate::canonical::{canonical, nfc};
 pub use crate::error::Refusal;
 use crate::error::{Error, Result};
@@ -96,7 +96,7 @@ impl<'a> Checker<'a> {
             Some(c @ Value::Object(_)) => {
                 keys_within(c, &self.list("shapes.currency_unit"))
                     && self.list("shapes.currency_unit").iter().all(|k| c.get(k).is_some())
-                    && self.is("hash", c.get("issuer"))
+                    && self.is("id", c.get("issuer"))
                     && c.get("unit").and_then(Value::as_str).is_some_and(|u| !u.trim().is_empty())
                     && int(c.get("decimals"))
                         .is_some_and(|d| d >= 0.0 && d <= self.spec.decimals_max as f64)
@@ -145,16 +145,17 @@ impl<'a> Checker<'a> {
         }
     }
     fn hash_shape(&self, value: Option<&Value>, name: &str) -> W {
-        if value.is_none() || self.is("hash", value) {
+        if value.is_none() || self.is("id", value) {
             vec![]
         } else {
             s("grammar", format!("{name} is a hash"))
         }
     }
+    #[allow(dead_code)]
     fn hash_list_shape(&self, value: Option<&Value>, name: &str) -> W {
         let ok = match value {
             None => true,
-            Some(Value::Array(a)) => !a.is_empty() && a.iter().all(|i| self.test("hash", Some(i))),
+            Some(Value::Array(a)) => !a.is_empty() && a.iter().all(|i| self.test("id", Some(i))),
             _ => false,
         };
         if ok {
@@ -180,23 +181,38 @@ impl<'a> Checker<'a> {
             )
         }
     }
+    // A time; or a range { from, to }; or relative { after, wait } (promises.md, Relative time). A schema-led window
+    // may add not_before, not_after and takes (profiles/tasks.md).
     fn when_shape(&self, value: Option<&Value>, name: &str) -> W {
         let Some(v) = value else { return vec![] };
         if v.is_string() {
             return self.time_shape(value, name);
         }
-        if !(is_obj(Some(v))
-            && keys_within(v, &self.list("shapes.when"))
-            && v.get("from").is_some()
-            && v.get("to").is_some())
-        {
-            return s("shape", format!("{name} is a time, or {{ from, to }}"));
+        let mut allowed = self.list("shapes.when");
+        allowed.extend(self.list("shapes.when_after"));
+        allowed.extend(["not_before".to_string(), "not_after".to_string(), "takes".to_string()]);
+        let range = v.get("from").is_some() && v.get("to").is_some();
+        let relative = v.get("after").is_some() && v.get("wait").is_some();
+        let windowed = ["not_before", "not_after", "takes"].iter().any(|k| v.get(*k).is_some());
+        if !(is_obj(Some(v)) && keys_within(v, &allowed) && (range || relative || windowed)) {
+            return s("shape", format!("{name} is a time, a range {{ from, to }}, or relative {{ after, wait }}"));
         }
-        let mut wrong = self.time_shape(v.get("from"), &format!("{name}.from"));
-        wrong.extend(self.time_shape(v.get("to"), &format!("{name}.to")));
-        if wrong.is_empty() && text(v.get("from")) > text(v.get("to")) {
-            return s("shape", format!("{name}.from is after its to"));
+        let mut wrong = vec![];
+        if range {
+            wrong.extend(self.time_shape(v.get("from"), &format!("{name}.from")));
+            wrong.extend(self.time_shape(v.get("to"), &format!("{name}.to")));
+            if wrong.is_empty() && text(v.get("from")) > text(v.get("to")) {
+                return s("shape", format!("{name}.from is after its to"));
+            }
         }
+        if relative {
+            wrong.extend(self.hash_shape(v.get("after"), &format!("{name}.after")));
+            wrong.extend(self.duration_shape(v.get("wait"), &format!("{name}.wait")));
+        }
+        for k in ["not_before", "not_after"] {
+            wrong.extend(self.time_shape(v.get(k), &format!("{name}.{k}")));
+        }
+        wrong.extend(self.duration_shape(v.get("takes"), &format!("{name}.takes")));
         wrong
     }
     fn decimal_in(&self, value: Option<&Value>, low: f64, high: f64) -> bool {
@@ -268,7 +284,7 @@ impl<'a> Checker<'a> {
         if is_obj(value) && v.get("share").is_some() {
             let ok = keys_within(v, &self.list("shapes.price_share"))
                 && v.get("share").is_some_and(Value::is_string)
-                && self.test("hash", v.get("of"));
+                && self.test("id", v.get("of"));
             if !ok {
                 return s("shape", format!("{name} as a share is {{ share (a decimal string), of (the schema saying what is measured) }}"));
             }
@@ -341,14 +357,14 @@ impl<'a> Checker<'a> {
         match value {
             Value::Number(n) => {
                 let x = n.as_f64().unwrap_or(f64::NAN);
-                if !crate::js::is_whole(x) {
+                if x == 0.0 && x.is_sign_negative() {
+                    s("integer_range", format!("{path} is -0: write 0"))
+                } else if n.is_f64() || !crate::js::is_whole(x) {
                     s("float", format!("{path} is a float; write a decimal string, money {{ minor, currency }} or an amount {{ value, unit }}"))
                 } else if x < self.spec.int_min || x > self.spec.int_max {
                     s(
                         "integer_range",
-                        format!(
-                            "{path} is outside the whole numbers a block may hold (±(2^53 - 1))"
-                        ),
+                        format!("{path} is outside the whole numbers a block may hold (±(2^53 - 1))"),
                     )
                 } else {
                     vec![]
@@ -359,25 +375,10 @@ impl<'a> Checker<'a> {
                 .enumerate()
                 .flat_map(|(i, item)| self.numbers(item, &format!("{path}[{i}]")))
                 .collect(),
-            Value::Object(map) => {
-                let mut w: W = map
-                    .keys()
-                    .filter(|k| nfc(k).as_ref() != k.as_str())
-                    .map(|k| {
-                        f(
-                            "not_canonical",
-                            format!(
-                                "{path} has a key not written in NFC ({})",
-                                Value::String(k.clone())
-                            ),
-                        )
-                    })
-                    .collect();
-                for (k, v) in map {
-                    w.extend(self.numbers(v, &format!("{path}.{k}")));
-                }
-                w
-            }
+            Value::Object(map) => map
+                .iter()
+                .flat_map(|(k, v)| self.numbers(v, &format!("{path}.{k}")))
+                .collect(),
             _ => vec![],
         }
     }
@@ -498,7 +499,7 @@ impl<'a> Checker<'a> {
                         {
                             w.push(f("lines", format!("terms.lines[{i}].id names the line")));
                         }
-                        if !self.test("hash", line.get("what")) {
+                        if !self.test("id", line.get("what")) {
                             w.push(f(
                                 "lines",
                                 format!("terms.lines[{i}].what is a thing's hash"),
@@ -570,10 +571,11 @@ impl<'a> Checker<'a> {
                 )
             })
             .collect();
-        // A key, member, successor or operator grant carries no scope.until; a grant others act under always does.
+        // A key, member or operator grant (and a profile's own kinds) carries no scope.until; a grant others act under always does.
+        let profile_kinds = self.profile_grant_kinds();
         let own = kind
             .and_then(Value::as_str)
-            .filter(|k| self.spec.grant_kinds.iter().any(|g| g == k));
+            .filter(|k| self.spec.grant_kinds.iter().any(|g| g == k) || profile_kinds.iter().any(|g| g == k));
         match (own, scope.get("until")) {
             (Some(k), Some(_)) => w.push(f(
                 "scope_until",
@@ -594,7 +596,7 @@ impl<'a> Checker<'a> {
         }
         if !scope.get("parties").is_none_or(|a| {
             a.as_array()
-                .is_some_and(|a| a.iter().all(|p| self.test("hash", Some(p))))
+                .is_some_and(|a| a.iter().all(|p| self.test("id", Some(p))))
         }) {
             w.push(f(
                 "grammar",
@@ -614,7 +616,7 @@ impl<'a> Checker<'a> {
         }
         let Some(list) = audience
             .and_then(Value::as_array)
-            .filter(|a| !a.is_empty() && a.iter().all(|w| self.test("hash", Some(w))))
+            .filter(|a| !a.is_empty() && a.iter().all(|w| self.test("id", Some(w))))
         else {
             return s(
                 "audience",
@@ -624,7 +626,7 @@ impl<'a> Checker<'a> {
         let mut w = vec![];
         let sorted = list
             .windows(2)
-            .all(|p| text(Some(&p[0])) < text(Some(&p[1])));
+            .all(|p| crate::js::cmp16(&text(Some(&p[0])), &text(Some(&p[1]))).is_lt());
         if !sorted {
             w.push(f(
                 "audience",
@@ -640,50 +642,65 @@ impl<'a> Checker<'a> {
         w
     }
 
-    // The genesis (§2): the one block with no author, prev, after or seq; public, naming its own keys and its recovery.
-    // An encryption key is optional (genesis_optional): a micro that only signs leaves it out and adds one by a key grant.
-    // What is missing or extra is `bad_genesis`; what is there but malformed is its grammar's code.
-    // Keys and the algorithms they name (identity.md, Algorithms; protocol.json `algs`). A key is checked against its
-    // algorithm's grammar: `grammar` when the algorithm is the default and unnamed, `unknown_alg` when the block names
-    // an algorithm the reader does not know, or a key outside the grammar of the algorithm it names.
+    // ---- Suites and keys (core.md, Suites) ----
+    // The suite a block's state names for its key: `state.suite`, else the default. `unknown_suite` when the name is
+    // not a row of protocol.json `suites`.
+    fn suite_named(&self, name_value: Option<&Value>, field: &str, w: &mut W) -> Option<String> {
+        match name_value {
+            None => Some(self.spec.suite_default.clone()),
+            Some(Value::String(n)) if self.spec.suite(n).is_some() => Some(n.clone()),
+            Some(other) => {
+                w.push(f(
+                    "unknown_suite",
+                    format!(
+                        "state.{field} names {}, which is not a suite this reader knows ({})",
+                        text(Some(other)),
+                        self.spec.suites.iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join(", ")
+                    ),
+                ));
+                None
+            }
+        }
+    }
+    // A key against its suite's grammar; a key outside it is `unknown_suite` (protocol.json refusals.codes.block).
+    fn key_in_suite(&self, key: Option<&Value>, suite: &Option<String>, what: &str, encrypt: bool, w: &mut W) {
+        let (Some(key), Some(suite)) = (key, suite) else { return };
+        let Some(info) = self.spec.suite(suite) else { return };
+        let (rule, re) = if encrypt { (&info.encrypt_key_rule, &info.encrypt_key_re) } else { (&info.sign_key_rule, &info.sign_key_re) };
+        let ok = matches!(key, Value::String(k) if re.as_ref().is_some_and(|r| r.test(k)));
+        if !ok {
+            w.push(f(
+                "unknown_suite",
+                format!("state.{what} is not a key of the suite {suite} ({rule})"),
+            ));
+        }
+    }
+    // A signing key of any suite (a key named without its suite beside it: `replaces`, `recovery_key`, `orderer`).
+    fn any_sign_key(&self, key: Option<&Value>, what: &str, w: &mut W) {
+        let Some(key) = key else { return };
+        let ok = matches!(key, Value::String(k) if self.spec.suites.iter().any(|s| s.sign_key_re.as_ref().is_some_and(|r| r.test(k))));
+        if !ok {
+            w.push(f("unknown_suite", format!("state.{what} is a signing key of one of the suites")));
+        }
+    }
+    // state.suite, public_key_sign, public_key_encrypt, recovery_suite on a genesis or a key grant.
     fn key_checks(&self, state: &Value) -> W {
-        let g = |k: &str| state.get(k);
         let mut w: W = vec![];
-        let named = |k: &str| g(k).is_some();
-        // alg_sign / public_key_sign
-        let alg = g("alg_sign").map(|a| text_or_empty(Some(a))).unwrap_or_else(|| self.spec.sign_default.clone());
-        let rule = self.spec.sign_key_rule(&alg);
-        if named("alg_sign") && rule.is_none() {
-            w.push(f("unknown_alg", format!("state.alg_sign names {alg}, which this reader does not know ({})", self.spec.sign_algs.join(", "))));
-        } else if let (Some(key), Some(rule)) = (g("public_key_sign"), rule) {
-            if !self.is(rule, Some(key)) {
-                let code = if named("alg_sign") { "unknown_alg" } else { "grammar" };
-                w.push(f(code, format!("state.public_key_sign is a {alg} key ({rule})")));
-            }
-        }
-        // alg_encrypt / public_key_encrypt
-        let alg = g("alg_encrypt").map(|a| text_or_empty(Some(a))).unwrap_or_else(|| self.spec.encrypt_default.clone());
-        let rule = self.spec.encrypt_key_rule(&alg);
-        if named("alg_encrypt") && rule.is_none() {
-            w.push(f("unknown_alg", format!("state.alg_encrypt names {alg}, which this reader does not know ({})", self.spec.encrypt_algs.join(", "))));
-        } else if let (Some(key), Some(rule)) = (g("public_key_encrypt"), rule) {
-            if !self.is(rule, Some(key)) {
-                let code = if named("alg_encrypt") { "unknown_alg" } else { "grammar" };
-                w.push(f(code, format!("state.public_key_encrypt is a {alg} key ({rule})")));
-            }
-        }
-        // alg_recovery: the recovery key's signing algorithm
-        if let Some(a) = g("alg_recovery") {
-            let alg = text_or_empty(Some(a));
-            if self.spec.sign_key_rule(&alg).is_none() {
-                w.push(f("unknown_alg", format!("state.alg_recovery names {alg}, which this reader does not know ({})", self.spec.sign_algs.join(", "))));
-            }
+        let g = |k: &str| state.get(k);
+        let suite = self.suite_named(g("suite"), "suite", &mut w);
+        self.key_in_suite(g("public_key_sign"), &suite, "public_key_sign", false, &mut w);
+        self.key_in_suite(g("public_key_encrypt"), &suite, "public_key_encrypt", true, &mut w);
+        if g("recovery_suite").is_some() {
+            self.suite_named(g("recovery_suite"), "recovery_suite", &mut w);
         }
         w
     }
 
+    // The genesis (core.md section 4): the one block with no author, prev, after or seq; public, naming kind, at,
+    // audience and its signing key. A suite, an encryption key, a custodian and the recovery pair are optional.
+    // What is missing or extra is `bad_genesis`; what is there but malformed is its grammar's code.
     fn genesis_errors(&self, state: &Value, refs: &Value) -> W {
-        let genesis = &self.spec.genesis;
+        let required = &self.spec.genesis_required;
         let optional = &self.spec.genesis_optional;
         let mut w: W = refs
             .as_object()
@@ -692,81 +709,46 @@ impl<'a> Checker<'a> {
             .map(|k| f("bad_genesis", format!("a genesis has no refs (refs.{k})")))
             .collect();
         for k in state.as_object().unwrap().keys() {
-            if !genesis.contains(k) && !optional.contains(k) {
+            if !required.contains(k) && !optional.contains(k) {
                 w.push(f(
                     "bad_genesis",
                     format!(
-                        "a genesis names only {}, and {} if it has one (state.{k})",
-                        genesis.join(", "),
+                        "a genesis names only {}, and {} if it has them (state.{k})",
+                        required.join(", "),
                         optional.join(", ")
                     ),
                 ));
             }
         }
-        if !truthy(state.get("kind")) {
+        for k in required {
+            if state.get(k).is_none() {
+                w.push(f("bad_genesis", format!("a genesis names state.{k}")));
+            }
+        }
+        if state.get("kind").is_some() && !truthy(state.get("kind")) {
             w.push(f("bad_genesis", "state.kind says what they are"));
         }
-        if state.get("at").is_none() {
-            w.push(f("bad_genesis", "state.at is when it was said"));
-        } else {
-            w.extend(self.time_shape(state.get("at"), "state.at"));
-        }
-        if state.get("audience").and_then(Value::as_str) != Some("public") {
+        if state.get("audience").is_some() && state.get("audience").and_then(Value::as_str) != Some("public") {
             w.push(f(
                 "bad_genesis",
                 "a genesis is public: anyone checks signatures against its key",
             ));
         }
-        if state.get("public_key_sign").is_none() {
-            w.push(f(
-                "bad_genesis",
-                "state.public_key_sign names its signing key",
-            ));
-        }
         w.extend(self.key_checks(state));
-        if state.get("recovery_key_hash").is_none() {
+        let pair = state.get("recovery_key_hash").is_some() as u8 + state.get("recovery_reach").is_some() as u8;
+        if pair == 1 {
             w.push(f(
                 "bad_genesis",
-                "state.recovery_key_hash names the recovery key",
-            ));
-        } else if !self.test("hash", state.get("recovery_key_hash")) {
-            w.push(f(
-                "grammar",
-                "state.recovery_key_hash is the hash of the recovery key",
+                "recovery_key_hash and recovery_reach come together or not at all",
             ));
         }
-        if state.get("recovery_reach").is_none() {
-            w.push(f(
-                "bad_genesis",
-                "state.recovery_reach says how far back the recovery key may reach",
-            ));
-        } else {
-            w.extend(self.duration_shape(state.get("recovery_reach"), "state.recovery_reach"));
+        if state.get("recovery_suite").is_some() && pair != 2 {
+            w.push(f("bad_genesis", "recovery_suite goes with the recovery pair"));
         }
+        w.extend(self.hash_shape(state.get("recovery_key_hash"), "state.recovery_key_hash"));
+        w.extend(self.duration_shape(state.get("recovery_reach"), "state.recovery_reach"));
         w.extend(self.hash_shape(state.get("custodian"), "state.custodian"));
         w
-    }
-
-    // An admission's deposit is money held by a named holder: { money, holder } (§10). The shape only.
-    fn deposit_shape(&self, value: Option<&Value>) -> W {
-        let Some(v) = value else { return vec![] };
-        let allowed = self.list("shapes.deposit");
-        if is_obj(Some(v)) && keys_within(v, &allowed) && v.get("money").is_some() && v.get("holder").is_some() {
-            let mut w = self.money_shape(v.get("money"), "state.deposit.money");
-            w.extend(self.hash_shape(v.get("holder"), "state.deposit.holder"));
-            w
-        } else {
-            s("shape", format!("state.deposit is {{ {} }}: the money held and who holds it", allowed.join(", ")))
-        }
-    }
-    // A block a custodian signed on the person's word names the channel it came by (§2 Held keys).
-    fn channel_shape(&self, value: Option<&Value>) -> W {
-        let channels = self.list("channels");
-        match value {
-            None => vec![],
-            Some(v) if v.as_str().is_some_and(|c| channels.iter().any(|x| x == c)) => vec![],
-            Some(_) => s("shape", format!("state.channel is one of {}", channels.join(", "))),
-        }
     }
 
     fn status_shape(&self, state: &Value, refs: &Value) -> W {
@@ -783,11 +765,11 @@ impl<'a> Checker<'a> {
         }
         if !status
             .as_str()
-            .is_some_and(|x| self.spec.answers.iter().any(|a| a == x))
+            .is_some_and(|x| self.spec.statuses.iter().any(|a| a == x))
         {
             w.push(f(
                 "bad_status",
-                format!("state.status is one of {}", self.spec.answers.join(", ")),
+                format!("state.status is one of {}", self.spec.statuses.join(", ")),
             ));
         }
         if status.as_str() == Some("stopped") {
@@ -798,107 +780,124 @@ impl<'a> Checker<'a> {
         w
     }
 
-    fn rules(&self, type_name: &str, state: &Value, refs: &Value) -> Option<W> {
-        let g = |k: &str| state.get(k);
-        let r = |k: &str| refs.get(k);
-        let mut w: W = vec![];
-        match type_name {
-            "actor" => {
-                if !truthy(g("kind")) {
-                    w.push(f(
-                        "shape",
-                        "state.kind says what it is: a person, an agent, a circle, a contact",
-                    ));
+    // The powers a circle role may hold: the protocol's, and every optional profile's (a node that has never heard of
+    // a profile still accepts a block that uses its power).
+    fn all_powers(&self) -> Vec<String> {
+        let mut out = self.spec.powers.clone();
+        if let Some(Value::Object(profiles)) = self.spec.protocol.get("optional_profiles") {
+            for p in profiles.values() {
+                out.extend(crate::spec::strings_pub(p.get("powers")));
+            }
+        }
+        out
+    }
+    // Every field, over all optional profiles, that a profile adds to `where_` (`every`, `grant`...).
+    fn profile_fields(&self, where_: &str) -> Vec<String> {
+        let mut out = Vec::new();
+        if let Some(Value::Object(profiles)) = self.spec.protocol.get("optional_profiles") {
+            for p in profiles.values() {
+                out.extend(crate::spec::strings_pub(p.get("fields").and_then(|x| x.get(where_))));
+            }
+        }
+        out
+    }
+    fn profile_grant_kinds(&self) -> Vec<String> {
+        let mut out = Vec::new();
+        if let Some(Value::Object(profiles)) = self.spec.protocol.get("optional_profiles") {
+            for p in profiles.values() {
+                out.extend(crate::spec::strings_pub(p.get("grant_kinds")));
+            }
+        }
+        out
+    }
+
+    // A circle's roles: [{ name, powers }], the powers from the closed list (and the profiles'); the founder holds
+    // the first role, so the list is not empty.
+    fn roles_shape(&self, roles: Option<&Value>, circle: bool) -> W {
+        let allowed = self.all_powers();
+        match roles {
+            None => {
+                if circle {
+                    s("bad_roles", "a circle lists its roles: state.roles [{ name, powers }]; the founder holds the first")
+                } else {
+                    vec![]
                 }
-                for key in ["public_key_sign", "recovery_key_hash", "recovery_reach"] {
-                    if g(key).is_some() {
+            }
+            Some(Value::Array(list)) if !list.is_empty() => {
+                let mut w = vec![];
+                for (i, role) in list.iter().enumerate() {
+                    let ok = is_obj(Some(role))
+                        && keys_within(role, &["name".to_string(), "powers".to_string()])
+                        && role.get("name").and_then(Value::as_str).is_some_and(|n| !n.is_empty())
+                        && role.get("powers").and_then(Value::as_array).is_some_and(|p| {
+                            p.iter().all(|x| x.as_str().is_some_and(|x| allowed.iter().any(|a| a == x)))
+                        });
+                    if !ok {
                         w.push(f(
-                            "undeclared_field",
-                            format!(
-                                "only a genesis names state.{key}; a key comes in by a key grant"
-                            ),
+                            "bad_roles",
+                            format!("state.roles[{i}] is {{ name (text), powers (from {}) }}", allowed.join(", ")),
                         ));
                     }
                 }
-                if g("kind").and_then(Value::as_str) == Some("contact")
-                    && g("public_key_encrypt").is_some()
-                {
+                w
+            }
+            Some(_) => s("bad_roles", "state.roles is a list of roles with at least the founder's first role"),
+        }
+    }
+
+    fn rules(&self, type_name: &str, state: &Value, refs: &Value) -> W {
+        let g = |k: &str| state.get(k);
+        let r = |k: &str| refs.get(k);
+        let mut w: W = vec![];
+        // An answer (refs.answers) or the author stopping their own (updates with a status) is exempt from the
+        // type's required fields (core.md, section 7).
+        let answering = truthy(r("answers")) || (truthy(r("updates")) && g("status").is_some());
+        match type_name {
+            "actor" => {
+                if !truthy(g("kind")) {
+                    w.push(f("required", "state.kind says what it is: a person, an agent, a circle, a contact"));
+                }
+                for key in ["public_key_sign", "recovery_key_hash", "recovery_reach", "recovery_suite", "suite"] {
+                    if g(key).is_some() {
+                        w.push(f(
+                            "undeclared_field",
+                            format!("only a genesis names state.{key}; a key comes in by a key grant"),
+                        ));
+                    }
+                }
+                let kind = g("kind").and_then(Value::as_str);
+                if kind == Some("contact") && g("public_key_encrypt").is_some() {
                     w.push(f("undeclared_field", "a contact has no keys"));
                 }
-                if !g("signers").is_none_or(|x| {
-                    x.as_array().is_some_and(|a| {
-                        !a.is_empty() && a.iter().all(|r| r.as_str().is_some_and(|r| !r.is_empty()))
-                    })
-                }) {
-                    w.push(f(
-                        "shape",
-                        "state.signers lists the roles that may sign as the circle",
-                    ));
-                }
+                w.extend(self.roles_shape(g("roles"), kind == Some("circle")));
                 if !g("removal").is_none_or(|x| {
                     is_obj(Some(x))
                         && keys_within(x, &self.list("circle.removal"))
                         && int(x.get("needed")).is_some_and(|n| n >= 1.0)
                 }) {
-                    w.push(f("shape", "state.removal is { needed: N }, how many other admins must agree to remove an admin"));
-                }
-                w.extend(self.key_checks(state));
-            }
-            "thing" => {
-                if !(truthy(g("kind")) || truthy(r("kind"))) {
-                    w.push(f(
-                        "shape",
-                        "a thing is a kind (state.kind) or one of a kind (refs.kind)",
-                    ));
+                    w.push(f("shape", "state.removal is { needed: N }, how many other holders of remove must agree to remove one who holds admit or remove"));
                 }
                 w.extend(self.marks_shape(g("marks"), "state.marks"));
-                if !g("words").is_none_or(Value::is_string) {
-                    w.push(f(
-                        "shape",
-                        "state.words are the words printed on it, as read",
-                    ));
-                }
-                if g("kind").and_then(Value::as_str) == Some("schema") {
-                    w.extend(self.schema_shape(state));
-                } else {
-                    for key in &self.spec.schema {
-                        if g(key).is_some() {
-                            w.push(f(
-                                "undeclared_field",
-                                format!("state.{key} belongs to a schema (a thing of kind schema)"),
-                            ));
-                        }
-                    }
-                }
-            }
-            "transform" => {
-                let inputs = hashes_text(r("derives_from"));
-                let share = self.list("shapes.share");
-                let ok = g("shares").is_none_or(|x| {
-                    x.as_array().is_some_and(|a| {
-                        a.iter().all(|item| {
-                            is_obj(Some(item))
-                                && keys_within(item, &share)
-                                && item.get("from").is_some_and(|f| {
-                                    inputs.iter().any(|i| Some(i.as_str()) == f.as_str())
-                                })
-                                && self.is("decimal", item.get("share"))
-                        })
-                    })
-                });
-                if !ok {
-                    w.push(f("shape", "state.shares lists { from (an input it derives_from), share (a decimal string) }"));
+                w.extend(self.hash_shape(g("custodian"), "state.custodian"));
+                if g("public_key_encrypt").is_some() {
+                    w.extend(self.key_checks(&json!({ "public_key_encrypt": g("public_key_encrypt") })));
                 }
             }
             "transfer" => {
-                if !(truthy(r("answers"))
-                    || truthy(r("to_owner"))
-                    || truthy(r("to_holder"))
-                    || truthy(r("to_place"))
-                    || g("count").is_some())
-                {
-                    w.push(f("shape", "a transfer says what changed (refs.to_owner, to_holder, to_place), or how many received (state.count)"));
+                if !answering {
+                    // Money moves by transfer too, naming no thing (things.md): a payment is `to_owner`, `for` and `money`.
+                    if !truthy(r("what")) && g("money").is_none() {
+                        w.push(f("required", "a transfer names what moved: refs.what (a payment of state.money names none)"));
+                    }
+                    if !(truthy(r("to_owner"))
+                        || truthy(r("to_holder"))
+                        || truthy(r("to_place"))
+                        || g("count").is_some())
+                    {
+                        w.push(f("required", "a transfer says what changed (refs.to_owner, to_holder, to_place), or how many received (state.count)"));
+                    }
                 }
+                w.extend(self.status_shape(state, refs));
                 w.extend(self.whole_shape(g("count"), "state.count", 1.0));
                 w.extend(self.marks_shape(g("marks"), "state.marks"));
                 if let Some(split) = g("split") {
@@ -916,283 +915,157 @@ impl<'a> Checker<'a> {
                                 if !ok {
                                     w.push(f(
                                         "shape",
-                                        format!(
-                                            "state.split[{i}].for is one of what it is for (refs.for)"
-                                        ),
+                                        format!("state.split[{i}].for is one of what it is for (refs.for)"),
                                     ));
                                 }
                                 if part.get("money").is_none() {
-                                    w.push(f(
-                                        "shape",
-                                        format!("state.split[{i}].money says how much"),
-                                    ));
+                                    w.push(f("shape", format!("state.split[{i}].money says how much")));
                                 }
                                 if !part.get("line").is_none_or(Value::is_string) {
-                                    w.push(f(
-                                        "shape",
-                                        format!("state.split[{i}].line is a line id"),
-                                    ));
+                                    w.push(f("shape", format!("state.split[{i}].line is a line id")));
                                 }
                             }
                         }
                     }
                 }
             }
-            "observe" => {
-                if (truthy(r("confirms")) || truthy(r("same_as"))) && g("confidence").is_none() {
-                    w.push(f("shape", "a confirm or a same_as carries a confidence"));
-                }
-                if !g("dkim").is_none_or(|d| {
-                    is_obj(Some(d))
-                        && d.get("domain").is_some_and(Value::is_string)
-                        && d.get("pass").is_some_and(Value::is_boolean)
-                }) {
-                    w.push(f("shape", "state.dkim is { domain, pass }"));
-                }
-                w.extend(self.money_shape(g("limit"), "state.limit"));
-                w.extend(self.duration_shape(g("per"), "state.per"));
-                w.extend(self.deposit_shape(g("deposit")));
-            }
             "promise" => {
-                let answer = truthy(r("answers")) && g("status").is_some();
-                let stopping = truthy(r("updates")) && g("status").is_some();
                 let from_speaks = speaks_for(refs, r("from"));
                 let to_speaks = speaks_for(refs, r("to"));
                 let asked = to_speaks && !from_speaks;
                 w.extend(self.status_shape(state, refs));
-                if !(answer || stopping || from_speaks || to_speaks) {
+                if !answering && !truthy(r("what")) && !truthy(g("what")) {
+                    w.push(f("required", "a promise names what moves: refs.what, or state.what for time or a job"));
+                }
+                if !(answering || from_speaks || to_speaks) {
                     w.push(f("not_a_side", "a promise is signed by a side: from (an offer) or to (an ask), as it, or under its grant"));
                 }
-                if !answer && !stopping && asked && !is_time(get(state, "terms.expires")) {
+                if !answering && asked && !is_time(get(state, "terms.expires")) {
                     w.push(f("ask_without_expires", "every ask carries terms.expires"));
                 }
                 if truthy(r("answers")) && !truthy(r("for")) {
-                    w.push(f(
-                        "deal_not_named",
-                        "an answer or a counter names its deal in refs.for (the first promise)",
-                    ));
+                    w.push(f("deal_not_named", "an answer or a counter names its deal in refs.for (the first promise)"));
                 }
                 if !g("not").is_none_or(|n| n == &Value::Bool(true)) {
-                    w.push(f(
-                        "shape",
-                        "state.not is true (a promise not to do the step), or left out",
-                    ));
+                    w.push(f("shape", "state.not is true (a promise not to do the step), or left out"));
                 }
                 if !g("what").is_none_or(|x| x.is_string() || x.is_object()) {
-                    w.push(f(
-                        "shape",
-                        "state.what describes time or a job (text, or data under a schema)",
-                    ));
+                    w.push(f("shape", "state.what describes time or a job (text, or data under a schema)"));
                 }
                 w.extend(self.terms_shape(g("terms"), refs, state));
             }
             "grant" => {
-                let ending =
-                    (truthy(r("answers")) || truthy(r("updates"))) && g("status").is_some();
-                if !truthy(g("kind")) {
-                    w.push(f("shape", "state.kind says what authority it gives"));
+                if !answering && !truthy(g("kind")) {
+                    w.push(f("required", "state.kind says what authority it gives"));
                 }
                 w.extend(self.status_shape(state, refs));
                 w.extend(self.whole_shape(g("depth"), "state.depth", 0.0));
                 if let Some(scope) = g("scope") {
                     w.extend(self.scope_shape(scope, g("kind")));
                 }
-                if !(ending || truthy(r("answers"))) {
+                if !(answering || truthy(r("answers"))) {
                     match g("kind").and_then(Value::as_str) {
                         Some("key") => w.extend(self.key_grant_shape(state, refs)),
                         Some("member") => w.extend(self.member_shape(state, refs)),
-                        Some("successor") => w.extend(self.successor_shape(state, refs)),
                         Some("operator") => {
                             if !truthy(r("to")) {
-                                w.push(f("shape", "an operator grant names the agent or machine it answers for (refs.to)"));
+                                w.push(f("required", "an operator grant names the agent or machine it answers for (refs.to)"));
                             }
                         }
+                        #[cfg(feature = "successor")]
+                        Some("successor") => w.extend(self.successor_shape(state, refs)),
                         _ => {}
                     }
                 }
                 w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
             }
-            _ => return None,
+            _ => {}
         }
-        Some(w)
+        w
     }
 
     fn key_grant_shape(&self, state: &Value, refs: &Value) -> W {
         let g = |k: &str| state.get(k);
         let mut w = vec![];
         if !truthy(refs.get("subject")) {
-            w.push(f(
-                "shape",
-                "a key grant names the id it is for (refs.subject)",
-            ));
+            w.push(f("required", "a key grant names the id it is for (refs.subject)"));
         }
-        if g("public_key_sign").is_none()
-            && g("public_key_encrypt").is_none()
-            && g("recovery_key_hash").is_none()
-        {
+        if g("public_key_sign").is_none() && g("public_key_encrypt").is_none() && g("recovery_key_hash").is_none() {
             w.push(f(
-                "shape",
-                "a key grant names the new key (state.public_key_sign or public_key_encrypt)",
+                "required",
+                "a key grant names the new key (state.public_key_sign or public_key_encrypt) or the recovery pair",
             ));
         }
         w.extend(self.key_checks(state));
         if g("replaces").is_none() != g("counted_to").is_none() {
-            w.push(f(
-                "shape",
-                "a rotation names both the key it replaces and that key's counted_to block",
-            ));
+            w.push(f("required", "a rotation names both the key it replaces and that key's counted_to block"));
         }
-        if !g("replaces").is_none_or(|x| self.is("sign_key", Some(x))) {
-            w.push(f("grammar", "state.replaces is the key it replaces"));
-        }
+        self.any_sign_key(g("replaces"), "replaces", &mut w);
         w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
         w.extend(self.hash_shape(g("custodian"), "state.custodian"));
-        if !g("recovery_key").is_none_or(|x| self.is("sign_key", Some(x))) {
-            w.push(f(
-                "grammar",
-                "state.recovery_key is the recovery key that signed it",
-            ));
-        }
+        self.any_sign_key(g("recovery_key"), "recovery_key", &mut w);
         if g("recovery_key_hash").is_none() != g("recovery_reach").is_none() {
-            w.push(f(
-                "shape",
-                "adding recovery names both recovery_key_hash and recovery_reach",
-            ));
+            w.push(f("required", "adding recovery names both recovery_key_hash and recovery_reach"));
         }
         w.extend(self.hash_shape(g("recovery_key_hash"), "state.recovery_key_hash"));
         w.extend(self.duration_shape(g("recovery_reach"), "state.recovery_reach"));
-        w.extend(self.whole_shape(g("epoch"), "state.epoch", 1.0));
-        if g("epoch").is_some() && !truthy(refs.get("as")) {
-            w.push(f(
-                "shape",
-                "a rekey (state.epoch) is signed as the circle (refs.as)",
-            ));
-        }
-        if g("epoch").is_some() && (g("keys").is_none() || !truthy(refs.get("after"))) {
-            w.push(f("shape", "a rekey holds the new private key sealed to each member (state.keys) and names epoch n-1 in refs.after"));
+        #[cfg(feature = "rekeys")]
+        if g("epoch").is_some() {
+            w.extend(self.whole_shape(g("epoch"), "state.epoch", 1.0));
+            if !truthy(refs.get("as")) {
+                w.push(f("required", "a rekey (state.epoch) is signed as the circle (refs.as)"));
+            }
+            if g("keys").is_none() || !truthy(refs.get("after")) {
+                w.push(f("required", "a rekey holds the new private key sealed to each member (state.keys) and names epoch n-1 in refs.after"));
+            }
         }
         w
     }
     fn member_shape(&self, state: &Value, refs: &Value) -> W {
         let mut w = vec![];
         if !truthy(refs.get("subject")) {
-            w.push(f("shape", "a member grant names the circle (refs.subject)"));
+            w.push(f("required", "a member grant names the circle (refs.subject)"));
         }
         if !strict_eq(refs.get("as"), refs.get("subject")) {
-            w.push(f(
-                "shape",
-                "a member grant is signed as the circle (refs.as)",
-            ));
+            w.push(f("required", "a member grant is signed as the circle (refs.as)"));
         }
         if !state.get("roles").is_none_or(|x| {
             x.as_array()
                 .is_some_and(|a| a.iter().all(|r| r.as_str().is_some_and(|r| !r.is_empty())))
         }) {
-            w.push(f("shape", "state.roles lists the roles it gives (words)"));
+            w.push(f("shape", "state.roles lists the role names it gives (text)"));
         }
         w
     }
+    #[cfg(feature = "successor")]
     fn successor_shape(&self, state: &Value, refs: &Value) -> W {
         let g = |k: &str| state.get(k);
         let mut w = vec![];
         if !truthy(refs.get("to")) {
-            w.push(f(
-                "shape",
-                "a successor grant names the successor (refs.to)",
-            ));
+            w.push(f("required", "a successor grant names the successor (refs.to)"));
         }
         if g("witnesses").is_none() {
-            w.push(f("shape", "state.witnesses names who may record the event"));
+            w.push(f("required", "state.witnesses names who may record the event"));
         } else {
             w.extend(self.hash_list_shape(g("witnesses"), "state.witnesses"));
         }
-        let count = g("witnesses")
-            .and_then(Value::as_array)
-            .map(|a| a.len())
-            .unwrap_or(0) as f64;
+        let count = g("witnesses").and_then(Value::as_array).map(|a| a.len()).unwrap_or(0) as f64;
         if !int(g("needed")).is_some_and(|n| n >= 1.0 && n <= count) {
-            w.push(f(
-                "shape",
-                "state.needed is how many witnesses must record it (1 to their number)",
-            ));
+            w.push(f("shape", "state.needed is how many witnesses must record it (1 to their number)"));
         }
         if g("wait").is_none() {
-            w.push(f(
-                "shape",
-                "state.wait is how long the trigger waits (a duration)",
-            ));
+            w.push(f("required", "state.wait is how long the trigger waits (a duration)"));
         } else {
             w.extend(self.duration_shape(g("wait"), "state.wait"));
         }
         if g("public_key_sign").is_some() {
-            w.push(f(
-                "undeclared_field",
-                "a successor gets decryption keys only, never signing keys",
-            ));
-        }
-        w
-    }
-    fn schema_shape(&self, state: &Value) -> W {
-        let target = text_or_empty(state.get("target"));
-        let mut parts = target.split('.');
-        let t = parts.next().unwrap_or("");
-        let kind: Vec<&str> = parts.collect();
-        let types = &self.spec.types;
-        let mut w = vec![];
-        if !(types.iter().any(|x| x == t) && (kind.is_empty() || !kind.join(".").is_empty())) {
-            w.push(f(
-                "shape",
-                format!(
-                    "a schema names its target: a type ({}) or type.kind",
-                    types.join(", ")
-                ),
-            ));
-        }
-        let field_types = self.list("field_types");
-        if !state.get("fields").is_none_or(|f| {
-            f.as_object().is_some_and(|m| {
-                m.values().all(|v| {
-                    v.as_str()
-                        .is_some_and(|v| field_types.iter().any(|x| x == v))
-                })
-            })
-        }) {
-            w.push(f(
-                "shape",
-                format!(
-                    "state.fields maps each field to a field type ({})",
-                    field_types.join(", ")
-                ),
-            ));
-        }
-        if !state
-            .get("roles")
-            .is_none_or(|x| x.as_array().is_some_and(|a| a.iter().all(Value::is_string)))
-        {
-            w.push(f("shape", "state.roles lists the ref keys it declares"));
-        }
-        let grounds = state.get("grounds");
-        if !grounds.is_none_or(|x| is_obj(Some(x)) && keys_within(x, &self.spec.grounds)) {
-            w.push(f(
-                "shape",
-                format!("state.grounds is {{ {} }}", self.spec.grounds.join(", ")),
-            ));
-        }
-        if !grounds.and_then(|g| g.get("confirmers")).is_none_or(|c| {
-            c.as_array().is_some_and(|a| {
-                a.iter()
-                    .all(|who| self.test("hash", Some(who)) || self.test("role_ref", Some(who)))
-            })
-        }) {
-            w.push(f(
-                "grammar",
-                "state.grounds.confirmers lists ids or circle#role",
-            ));
+            w.push(f("undeclared_field", "a successor gets decryption keys only, never signing keys"));
         }
         w
     }
 
-    // The fields and roles a block may name: the base, and what its schema declares (when the reader holds it).
+    // The fields and ref keys a closed block may name: the base, the profiles', and what its schema declares (when
+    // the reader holds it).
     fn declared(
         &self,
         type_name: &str,
@@ -1209,6 +1082,8 @@ impl<'a> Checker<'a> {
         }
         let mut fields = self.spec.every.clone();
         fields.extend(self.spec.fields(type_name));
+        fields.extend(self.profile_fields("every"));
+        fields.extend(self.profile_fields(type_name));
         if let Some(Value::Object(f)) = schema.and_then(|s| get(s, "state.fields")) {
             fields.extend(f.keys().cloned());
         }
@@ -1219,25 +1094,152 @@ impl<'a> Checker<'a> {
         Some((fields, roles))
     }
 
-    // Every finding, in the order found.
+    // Strict writing (canonical.md): a null, a set not sorted or with a repeat, text or a key outside NFC. All are
+    // `not_canonical`. (A float or an integer out of range is its own code, in `numbers`.)
+    fn strict(&self, value: &Value, path: &str, in_refs_top: bool) -> W {
+        match value {
+            Value::Null => s("not_canonical", format!("{path} is null: leave the key out")),
+            Value::String(t) if nfc(t).as_ref() != t.as_str() => {
+                s("not_canonical", format!("{path} is not Unicode NFC"))
+            }
+            Value::Array(items) => {
+                let mut w: W = vec![];
+                if in_refs_top && items.iter().all(Value::is_string) {
+                    let strs: Vec<&str> = items.iter().filter_map(Value::as_str).collect();
+                    let sorted = strs.windows(2).all(|p| crate::js::cmp16(p[0], p[1]).is_lt());
+                    if !sorted {
+                        w.push(f("not_canonical", format!("{path} is a set: ascending UTF-16 order, no repeats")));
+                    }
+                }
+                for (i, item) in items.iter().enumerate() {
+                    w.extend(self.strict(item, &format!("{path}[{i}]"), false));
+                }
+                w
+            }
+            Value::Object(map) => {
+                let mut w: W = vec![];
+                for (k, v) in map {
+                    if nfc(k).as_ref() != k.as_str() {
+                        w.push(f("not_canonical", format!("{path} has a key not written in NFC ({})", Value::String(k.clone()))));
+                    }
+                    w.extend(self.strict(v, &format!("{path}.{k}"), in_refs_top && path == "refs"));
+                }
+                w
+            }
+            _ => vec![],
+        }
+    }
+
+    // Stage 1 and the number rules: what a strict writer never writes.
+    fn strict_all(&self, state: &Value, refs: &Value) -> W {
+        let mut w = self.strict(state, "state", false);
+        w.extend(self.strict(refs, "refs", true));
+        w.extend(self.numbers(state, "state"));
+        w.extend(self.numbers(refs, "refs"));
+        w
+    }
+
+    // The ids a block names (refs): each a hash or a set of hashes in the grammar of ids; a prefix names a hash.
+    fn refs_grammar(&self, refs: &Value) -> W {
+        let mut w = vec![];
+        for (key, value) in refs.as_object().unwrap() {
+            let items: Vec<&Value> = match value {
+                Value::Array(a) => a.iter().collect(),
+                other => vec![other],
+            };
+            if key == "prev" && value.is_array() {
+                w.push(f("grammar", "refs.prev is one id"));
+                continue;
+            }
+            if items.is_empty() || !items.iter().all(|h| self.is("id", Some(h))) {
+                w.push(f("grammar", format!("refs.{key} is an id or a set of ids (64 lowercase hex, a hash name and a colon before any hash but SHA-256)")));
+                continue;
+            }
+            for h in items {
+                if let Some((name, _)) = h.as_str().and_then(|t| t.split_once(':')) {
+                    if !self.spec.protocol.get("hashes").and_then(Value::as_object).is_some_and(|hs| {
+                        hs.values().any(|h| h.get("prefix").and_then(Value::as_str) == Some(&format!("{name}:")))
+                    }) {
+                        w.push(f("unknown_suite", format!("refs.{key} names the hash {name}, which this reader does not know")));
+                    }
+                }
+            }
+        }
+        w
+    }
+
+    // The field-level value rules that hold for every block, whatever its type (core.md, section 3).
+    fn values(&self, state: &Value, refs: &Value, genesis: bool) -> W {
+        let g = |k: &str| state.get(k);
+        let mut w: W = vec![];
+        w.extend(self.numbers_only_shapes(state, refs, genesis));
+        if !g("confidence").is_none_or(|c| self.is("confidence", Some(c))) {
+            w.push(f("grammar", "state.confidence is a decimal string from 0 to 1"));
+        }
+        if let Some(o) = g("orderer") {
+            self.any_sign_key(Some(o), "orderer", &mut w);
+        }
+        if !g("lang").is_none_or(|l| self.is("lang", Some(l))) {
+            w.push(f("grammar", "state.lang is a BCP 47 language tag (sw, pt-BR)"));
+        }
+        if !g("nonce").is_none_or(|n| self.is("nonce", Some(n))) {
+            w.push(f("grammar", "state.nonce is 16 random bytes, hex"));
+        }
+        for flag in ["skip", "withheld"] {
+            if !g(flag).is_none_or(|v| v == &Value::Bool(true)) {
+                w.push(f("shape", format!("state.{flag} is true, or left out")));
+            }
+        }
+        if !g("line").is_none_or(Value::is_string) {
+            w.push(f("shape", "state.line is a line id"));
+        }
+        if !g("channel").is_none_or(Value::is_string) {
+            w.push(f("shape", "state.channel is an open label (sms, ussd, voice, letter, meeting)"));
+        }
+        // Durations wherever the protocol names one (duration_fields), in the places times are checked.
+        w.extend(self.durations_in(Some(state), "state"));
+        if let Some(terms) = g("terms") {
+            w.extend(self.durations_in(Some(terms), "terms"));
+        }
+        if let Some(scope) = g("scope") {
+            w.extend(self.durations_in(Some(scope), "scope"));
+        }
+        w
+    }
+    fn numbers_only_shapes(&self, state: &Value, _refs: &Value, genesis: bool) -> W {
+        let mut w = self.times_in(Some(state), "state");
+        if state.get("audience").is_some() && !genesis {
+            w.extend(self.audience_shape(state));
+        }
+        w.extend(self.where_shape(state.get("where")));
+        w.extend(self.shapes_in(state, "state"));
+        w
+    }
+    fn durations_in(&self, object: Option<&Value>, path: &str) -> W {
+        let Some(Value::Object(map)) = object else { return vec![] };
+        let names = self.list("duration_fields");
+        let mut w = vec![];
+        for (key, value) in map {
+            if names.iter().any(|n| n == key) && !(key == "per" && value.is_object()) {
+                w.extend(self.duration_shape(Some(value), &format!("{path}.{key}")));
+            }
+        }
+        w
+    }
+
+    // The content checks of a block, in the stages of core.md section 8 that look at its bytes alone. Signature,
+    // key and chain (stages 5 and 6) need the context: `valid`.
     fn findings(&self, type_name: &str, state: &Value, refs: &Value, options: CheckOptions) -> W {
-        let rule_known = matches!(
-            type_name,
-            "actor" | "thing" | "observe" | "transform" | "transfer" | "promise" | "grant"
-        );
-        if !(rule_known && self.spec.has_type(type_name)) {
-            return s(
-                "unknown_type",
-                format!(
-                    "{type_name} is not a FoodBlock 1.6 type ({})",
-                    self.spec.types.join(", ")
-                ),
-            );
+        let mut w = vec![];
+        if !self.spec.is("type_name", type_name) {
+            w.push(f("type_name", format!("{type_name} is not a type name (a lowercase word: letters, digits, underscore)")));
         }
         if !state.is_object() || !refs.is_object() {
-            return s("shape", "state and refs are objects");
+            w.push(f("not_canonical", "a block is exactly { type, state, refs }, state and refs objects"));
+            return w;
         }
-        let mut w = vec![];
+        w.extend(self.strict_all(state, refs));
+        w.extend(self.refs_grammar(refs));
         if canonical(type_name, state, refs).len() > self.spec.block_bytes {
             w.push(f(
                 "size_limit",
@@ -1247,78 +1249,7 @@ impl<'a> Checker<'a> {
                 ),
             ));
         }
-        for (key, value) in refs.as_object().unwrap() {
-            if key == "prev" {
-                if !self.is("hash", Some(value)) {
-                    w.push(f("grammar", "refs.prev is one hash"));
-                }
-            } else {
-                let items: Vec<&Value> = match value {
-                    Value::Array(a) => a.iter().collect(),
-                    other => vec![other],
-                };
-                if items.is_empty() || !items.iter().all(|h| self.is("hash", Some(h))) {
-                    w.push(f(
-                        "grammar",
-                        format!("refs.{key} is a hash or a set of hashes (64 lowercase hex)"),
-                    ));
-                }
-            }
-        }
-        w.extend(self.numbers(state, "state"));
-        w.extend(self.numbers(refs, "refs"));
-        let g = |k: &str| state.get(k);
-        if type_name == "actor" && !truthy(refs.get("author")) && g("seq").is_none() {
-            w.extend(self.genesis_errors(state, refs));
-            return w;
-        }
-        if !truthy(refs.get("author")) {
-            w.push(f("chain", "refs.author names who said it"));
-        }
-        if !int(g("seq")).is_some_and(|n| n >= 1.0) {
-            w.push(f(
-                "chain",
-                "state.seq is its place in its signing key's chain (1, 2, 3...)",
-            ));
-        }
-        if !truthy(refs.get("prev")) {
-            w.push(f(
-                "chain",
-                "refs.prev names the key's previous block (or the block that brought the key in)",
-            ));
-        }
-        // `at` may be left out only by a micro with no clock, and only on an observe, transform or transfer
-        // (protocol.json profiles.micro_clockless); every other block says when.
-        if g("at").is_none() && !matches!(type_name, "observe" | "transform" | "transfer") {
-            w.push(f(
-                "at_missing",
-                "state.at is when it was said (only an observe, transform or transfer may leave it out, with no clock)",
-            ));
-        }
-        w.extend(self.times_in(Some(state), "state"));
-        w.extend(self.audience_shape(state));
-        w.extend(self.where_shape(g("where")));
-        w.extend(self.shapes_in(state, "state"));
-        if !g("confidence").is_none_or(|c| self.is("confidence", Some(c))) {
-            w.push(f(
-                "grammar",
-                "state.confidence is a decimal string from 0 to 1",
-            ));
-        }
-        if !g("sequencer").is_none_or(|c| self.is("sign_key", Some(c))) {
-            w.push(f(
-                "grammar",
-                "state.sequencer is the signing key that orders the record",
-            ));
-        }
-        w.extend(self.channel_shape(g("channel")));
-        w.extend(self.hash_list_shape(g("manifest"), "state.manifest"));
-        w.extend(self.hash_list_shape(g("counted"), "state.counted"));
-        if !g("line").is_none_or(Value::is_string) {
-            w.push(f("shape", "state.line is a line id"));
-        }
-        let after = refs.get("after");
-        if let Some(a) = after {
+        if let Some(a) = refs.get("after") {
             let n = a.as_array().map(|x| x.len()).unwrap_or(1);
             if n > self.spec.after_heads {
                 w.push(f(
@@ -1327,31 +1258,39 @@ impl<'a> Checker<'a> {
                 ));
             }
         }
-        if let (Some(held), Some(a)) = (options.held, after) {
-            if is_time(g("at")) {
-                let at = text(g("at"));
-                let items: Vec<String> = match a {
-                    Value::Array(x) => x.iter().map(|h| text(Some(h))).collect(),
-                    other => vec![text(Some(other))],
-                };
-                for h in items {
-                    let seen_at = held.get(&h).and_then(|b| crate::js::st(b, "at"));
-                    if is_time(seen_at) && text(seen_at) > at {
-                        w.push(f(
-                            "at_before_after",
-                            format!("state.at is earlier than {h}, which it names as seen"),
-                        ));
-                    }
-                }
-            }
+        let g = |k: &str| state.get(k);
+        // A genesis names its own signing key. (Only a genesis does; core.md section 4.)
+        if type_name == "actor" && g("public_key_sign").is_some() {
+            w.extend(self.genesis_errors(state, refs));
+            w.extend(self.values(state, refs, true));
+            return w;
         }
+        // Any other block: the common five (core.md, section 5).
+        let clockless_ok = matches!(type_name, "observe" | "transform" | "transfer");
+        if !truthy(refs.get("author")) {
+            w.push(f("chain", "refs.author names who said it"));
+        }
+        if !int(g("seq")).is_some_and(|n| n >= 1.0) {
+            w.push(f("chain", "state.seq is its place in its signing key's chain (1, 2, 3...)"));
+        }
+        if !truthy(refs.get("prev")) {
+            w.push(f("chain", "refs.prev names the key's previous block (or the block that brought the key in)"));
+        }
+        if g("audience").is_none() {
+            w.push(f("chain", "state.audience is public, or a sorted list of commitments"));
+        }
+        if g("at").is_none() && !clockless_ok {
+            w.push(f("at_missing", "state.at is when it was said (only an observe, transform or transfer may leave it out, with no clock)"));
+        }
+        w.extend(self.values(state, refs, false));
         if let (Some(held), "grant", true) = (options.held, type_name, truthy(refs.get("parent"))) {
             if let Some(parent) = held.get(&text(refs.get("parent"))) {
-                w.extend(crate::grant::scope_refusals(
-                    &json!({ "state": state, "refs": refs }),
-                    parent,
-                ));
+                w.extend(crate::grant::scope_refusals(&json!({ "state": state, "refs": refs }), parent));
             }
+        }
+        // A closed type: its fields are fixed (core.md, Open types, closed authority). An open type stops here.
+        if !self.spec.is_closed(type_name) {
+            return w;
         }
         match self.declared(type_name, refs, options.schemas) {
             None => {
@@ -1367,9 +1306,7 @@ impl<'a> Checker<'a> {
                     if !roles.contains(key) {
                         w.push(f(
                             "undeclared_ref",
-                            format!(
-                                "refs.{key} is not declared (the shared refs, or the schema's roles)"
-                            ),
+                            format!("refs.{key} is not declared (the shared refs, or the schema's roles)"),
                         ));
                     }
                 }
@@ -1380,15 +1317,30 @@ impl<'a> Checker<'a> {
                 }
             }
         }
-        w.extend(self.rules(type_name, state, refs).unwrap_or_default());
+        w.extend(self.rules(type_name, state, refs));
         w
     }
 }
 
+/// The codes of the checks in core.md section 8, in their order: 1 canonical form, 2 values, 3 limits, 4 genesis and
+/// the common five, 5 signing key and signature, 6 the chain (its `chain` code sits with 4), 7 closed types.
+pub const BLOCK_STAGES: [&str; 24] = [
+    "not_canonical", "float", "integer_range", "decimal", "grammar", "time", "calendar", "shape", "type_name",
+    "audience", "size_limit", "after_limit", "bad_genesis", "chain", "at_missing", "bad_hash", "bad_signature",
+    "void_key", "unknown_suite", "not_own_rotation", "recovery_scope", "required", "undeclared_ref", "undeclared_field",
+];
+
 /// Findings as a refusal list: one entry per code, in the order of `group` (a group of protocol.json's
 /// `refusals.codes`: block, fold or message), the details of one code joined with "; " (each once).
 pub fn ordered_with(spec: &Spec, found: Vec<Refusal>, group: &str) -> Vec<Refusal> {
-    let order = spec.list(&format!("refusals.codes.{group}"));
+    let mut order = spec.list(&format!("refusals.codes.{group}"));
+    // A block's refusals follow the seven checks of core.md section 8; the codes a module adds follow, in the order
+    // protocol.json lists them.
+    if group == "block" {
+        let stages: Vec<String> = BLOCK_STAGES.iter().map(|c| c.to_string()).collect();
+        order.retain(|c| !stages.contains(c));
+        order = stages.into_iter().chain(order).collect();
+    }
     let mut by: Vec<(String, Vec<String>)> = Vec::new();
     for one in found {
         match by.iter_mut().find(|(c, _)| *c == one.code) {
@@ -1471,6 +1423,21 @@ fn rrule(value: &str) -> bool {
                         .all(|b| b.is_ascii_alphanumeric() || b",:+-".contains(&b))
             })
         })
+}
+
+/// What a strict writer never writes (canonical.md): a null, an unsorted set, text outside NFC, a float, a number out
+/// of range. `create` refuses a block with any.
+pub fn strict_findings(type_name: &str, state: &Value, refs: &Value) -> Vec<Refusal> {
+    let _ = type_name;
+    if !state.is_object() || !refs.is_object() {
+        return vec![];
+    }
+    Checker { spec: crate::spec() }.strict_all(state, refs)
+}
+
+/// Every finding of the content checks, unordered (the caller orders the whole list once).
+pub fn findings_with(spec: &Spec, type_name: &str, state: &Value, refs: &Value, options: CheckOptions) -> Vec<Refusal> {
+    Checker { spec }.findings(type_name, state, refs, options)
 }
 
 /// What is wrong with a FoodBlock 1.6 block under the given protocol.json: `[{ code, detail }]`, one entry per rule

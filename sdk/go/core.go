@@ -39,8 +39,9 @@ func (r *Refused) Error() string {
 	return out
 }
 
-// CodedError is a refusal with a code from protocol.json's refusals.codes (a sealed copy's block over the size limit).
-type CodedError struct{ Code, Message string }
+// CodedError is a failure the core names: Kind (argument, json, crypto, internal, ...) and, when it is one of
+// protocol.json's refusals.codes, its Code (a sealed copy's block over the size limit).
+type CodedError struct{ Code, Message, Kind string }
 
 func (e *CodedError) Error() string { return e.Message }
 
@@ -78,10 +79,8 @@ func raw(op string, args ...any) (json.RawMessage, error) {
 	switch {
 	case answer.Error == "refused" && len(answer.Refusals) > 0:
 		return nil, &Refused{answer.Refusals, details(answer.Refusals)}
-	case answer.Error != "" && answer.Code != "":
-		return nil, &CodedError{answer.Code, answer.Message}
 	case answer.Error != "":
-		return nil, errors.New(answer.Message)
+		return nil, &CodedError{Code: answer.Code, Message: answer.Message, Kind: answer.Error}
 	}
 	return answer.Ok, nil
 }

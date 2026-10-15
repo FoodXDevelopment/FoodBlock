@@ -9,33 +9,39 @@ public enum Sync {
         if let h = heads { r["heads"] = h }
         return (try? Core.json("pull_request", r)) ?? r
     }
-    /// A signed pull: the request, plus signer, node, a fresh nonce and at. (`asker` was the older name for `signer`.)
-    public static func signPull(_ request: JSON, asker: String, node: String, privateKey: String, nonce: String? = nil, at: String? = nil) throws -> JSON {
-        try signPull(request, signer: asker, node: node, privateKey: privateKey, nonce: nonce, at: at)
+    /// A signed pull: the request, plus signer, node and exactly one proof against replay (`counter` or `challenge`); no time.
+    public static func signPull(_ request: JSON, signer: String, node: String, privateKey: String, suite: String? = nil, counter: Int? = nil, challenge: String? = nil) throws -> JSON {
+        try Core.json("sign_pull", request, signOptions(signer, node, privateKey, suite, counter, challenge))
     }
-    public static func signPull(_ request: JSON, signer: String, node: String, privateKey: String, nonce: String? = nil, at: String? = nil) throws -> JSON {
+    /// A signed push: the push, plus signer, node and one proof against replay.
+    public static func signPush(_ push: JSON, signer: String, node: String, privateKey: String, suite: String? = nil, counter: Int? = nil, challenge: String? = nil) throws -> JSON {
+        try Core.json("sign_push", push, signOptions(signer, node, privateKey, suite, counter, challenge))
+    }
+    static func signOptions(_ signer: String, _ node: String, _ privateKey: String, _ suite: String?, _ counter: Int?, _ challenge: String?) -> JSON {
         var o: JSON = ["who": signer, "node": node, "private_key": privateKey]
-        if let n = nonce { o["nonce"] = n }
-        if let a = at { o["at"] = a }
-        return try Core.json("sign_pull", request, o)
-    }
-
-    /// The node's clock and memory as data: `seen(nonce)` is asked of the message's own nonce.
-    static func fresh(_ message: JSON?, _ node: String, _ now: String?, _ keys: [String], _ seen: (String) -> Bool, _ window: Double?) -> JSON {
-        var o: JSON = ["node": node, "keys": keys]
-        if let n = now { o["now"] = n }
-        if let w = window { o["window_ms"] = Int(w) }
-        if let nonce = message?["nonce"] as? String, seen(nonce) { o["seen"] = [nonce] }
+        if let s = suite { o["suite"] = s }
+        if let c = counter { o["counter"] = c }
+        if let c = challenge { o["challenge"] = c }
         return o
     }
-    public static func pullRefusals(_ message: JSON?, node: String, now: String? = nil, keys: [String] = [], seen: (String) -> Bool = { _ in false }, window: Double? = nil) -> [FoodBlock.Finding] {
-        FoodBlock.findings(Core.maybe("pull_refusals", message ?? [:], fresh(message, node, now, keys, seen, window)))
+    /// A new challenge value a node hands out at its `challenge` endpoint.
+    public static func newChallenge() -> String { (try? Core.string("new_challenge")) ?? "" }
+
+    /// What the core wants to know of a node's memory: the signer's live keys, the highest counter seen from the signer, and the challenges issued and not yet used. No clock.
+    static func fresh(_ node: String, _ keys: [String], _ highest: Int?, _ issued: [String]) -> JSON {
+        ["node": node, "keys": keys, "highest": highest as Any? ?? NSNull(), "issued": issued]
     }
-    public static func pushRefusals(_ message: JSON?, node: String, now: String? = nil, keys: [String] = [], seen: (String) -> Bool = { _ in false }, window: Double? = nil) -> [FoodBlock.Finding] {
-        FoodBlock.findings(Core.maybe("push_refusals", message ?? [:], fresh(message, node, now, keys, seen, window)))
+    public static func pullRefusals(_ message: JSON?, node: String, keys: [String] = [], highest: Int? = nil, issued: [String] = []) -> [FoodBlock.Finding] {
+        FoodBlock.findings(Core.maybe("pull_refusals", message ?? [:], fresh(node, keys, highest, issued)))
     }
-    public static func pullErrors(_ message: JSON?, node: String, now: String? = nil, keys: [String] = [], seen: (String) -> Bool = { _ in false }, window: Double? = nil) -> [String] {
-        Core.strings("pull_errors", message ?? [:], fresh(message, node, now, keys, seen, window))
+    public static func pushRefusals(_ message: JSON?, node: String, keys: [String] = [], highest: Int? = nil, issued: [String] = []) -> [FoodBlock.Finding] {
+        FoodBlock.findings(Core.maybe("push_refusals", message ?? [:], fresh(node, keys, highest, issued)))
+    }
+    public static func pullErrors(_ message: JSON?, node: String, keys: [String] = [], highest: Int? = nil, issued: [String] = []) -> [String] {
+        Core.strings("pull_errors", message ?? [:], fresh(node, keys, highest, issued))
+    }
+    public static func pushErrors(_ message: JSON?, node: String, keys: [String] = [], highest: Int? = nil, issued: [String] = []) -> [String] {
+        Core.strings("push_errors", message ?? [:], fresh(node, keys, highest, issued))
     }
     public static func matches(_ block: JSON, _ filter: JSON?, _ held: [JSON] = []) -> Bool { Core.bool("matches", block, filter, held) }
     public static func headsOf(_ blocks: [JSON]) -> [JSON] { (Core.maybe("heads_of", blocks) as? [JSON]) ?? [] }
@@ -50,8 +56,8 @@ public enum Sync {
         }
         var json: JSON { ["n": n, "block": block, "header": header as Any? ?? NSNull(), "header_signature": headerSignature as Any? ?? NSNull(), "copies": copies] }
     }
-    public static func answerPull(_ log: [Arrival], _ request: JSON = [:], node: String, privateKey: String? = nil, cap: Int = 500, held: [JSON]? = nil) throws -> JSON {
-        try Core.json("answer_pull", log.map { $0.json }, request, node, privateKey, cap)
+    public static func answerPull(_ log: [Arrival], _ request: JSON = [:], node: String, privateKey: String? = nil, cap: Int = 500, signer: String? = nil, held: [JSON]? = nil, suite: String = "std") throws -> JSON {
+        try Core.json("answer_pull", log.map { $0.json }, request, node, privateKey, cap, signer, held, suite)
     }
     public static func answerSignedBy(_ answer: JSON, _ nodeKeys: [String]) -> Bool { Core.bool("answer_signed_by", answer, nodeKeys) }
     public static func pushRequest(_ messages: [JSON], for forWhom: JSON? = nil) -> JSON { (try? Core.json("push_request", messages, forWhom)) ?? [:] }
@@ -82,15 +88,15 @@ public enum Sync {
     }
     public static func waitedTooLong(_ since: String, _ now: String, _ ttl: Double) -> Bool { Core.bool("waited_too_long", since, now, Int(ttl)) }
 
-    public static func pushAnswer(_ result: Accepted, node: String, privateKey: String) throws -> JSON {
+    public static func pushAnswer(_ result: Accepted, node: String, privateKey: String, suite: String = "std") throws -> JSON {
         try pushAnswer(taken: result.taken.compactMap { $0["hash"] as? String }, waiting: result.waiting.map { $0.hash }, refused: result.refused,
-                       equivocations: result.equivocations, node: node, privateKey: privateKey)
+                       equivocations: result.equivocations, node: node, privateKey: privateKey, suite: suite)
     }
     /// A push answer from its parts (hashes).
-    public static func pushAnswer(taken: [String] = [], waiting: [String] = [], refused: [Refusal] = [], equivocations: [[String]] = [], node: String, privateKey: String) throws -> JSON {
+    public static func pushAnswer(taken: [String] = [], waiting: [String] = [], refused: [Refusal] = [], equivocations: [[String]] = [], node: String, privateKey: String, suite: String = "std") throws -> JSON {
         let parts: JSON = ["taken": taken, "waiting": waiting, "equivocations": equivocations,
                            "refused": refused.map { ["hash": $0.hash, "code": $0.code ?? NSNull(), "detail": $0.detail ?? NSNull()] as JSON }]
-        return try Core.json("push_answer", parts, node, privateKey)
+        return try Core.json("push_answer", parts, node, privateKey, suite)
     }
 
     public static func wellKnown(node: String, holds: [String] = [], speaksFor: [String] = [], admission: String? = nil, endpoints: [String: String] = [:]) -> JSON {

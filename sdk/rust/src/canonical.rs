@@ -1,40 +1,28 @@
-//! The canonical form (spec/canonical.md): the deterministic UTF-8 JSON every hash and signature covers. Keys sort by
-//! UTF-16 code units at every level; no whitespace; numbers as JavaScript writes them; strings in NFC; nulls dropped,
-//! inside arrays too; string arrays under any key named `refs` sort as sets; every other array keeps its order.
+//! The canonical form (spec/canonical.md): RFC 8785 (JCS) of `{ type, state, refs }`. Keys sort by UTF-16 code units
+//! at every level; no whitespace; strings in the shortest JSON escapes; numbers as ECMAScript writes them. Nothing is
+//! repaired on the way: a null, a float, an unsorted set or text outside NFC is written as given, and the strict
+//! writing check (`check`) refuses it (`not_canonical`).
 use crate::prelude::*;
 use core::fmt::Write as _;
 use unicode_normalization::{is_nfc_quick, IsNormalized, UnicodeNormalization};
 
-/// The canonical string of `{ type, state, refs }`.
+/// The canonical string of `{ type, state, refs }`: JCS, nothing dropped, sorted or normalised.
 pub fn canonical(type_name: &str, state: &Value, refs: &Value) -> String {
     let mut out = String::with_capacity(128);
-    out.push('{');
-    let mut first = true;
-    for (key, value, in_refs) in [("refs", refs, true), ("state", state, false)] {
-        let mut part = String::new();
-        if write_value(&mut part, value, in_refs) {
-            if !first {
-                out.push(',');
-            }
-            first = false;
-            write_string(&mut out, key);
-            out.push(':');
-            out.push_str(&part);
-        }
-    }
-    if !first {
-        out.push(',');
-    }
-    out.push_str("\"type\":");
+    out.push_str("{\"refs\":");
+    write_value(&mut out, refs);
+    out.push_str(",\"state\":");
+    write_value(&mut out, state);
+    out.push_str(",\"type\":");
     write_string(&mut out, type_name);
     out.push('}');
     out
 }
 
-/// The canonical JSON of any value (a signed message part is signed over it). `None` for a value that is null.
+/// The canonical JSON of any value (a signed message part is signed over it).
 pub fn canonical_json(value: &Value) -> String {
     let mut out = String::new();
-    write_value(&mut out, value, false);
+    write_value(&mut out, value);
     out
 }
 
@@ -47,70 +35,98 @@ pub fn nfc(s: &str) -> alloc::borrow::Cow<'_, str> {
     }
 }
 
-/// Writes a value; false when it is omitted (null).
-fn write_value(out: &mut String, value: &Value, in_refs: bool) -> bool {
+fn write_value(out: &mut String, value: &Value) {
     match value {
-        Value::Null => false,
-        Value::Bool(b) => {
-            out.push_str(if *b { "true" } else { "false" });
-            true
-        }
-        Value::Number(n) => {
-            out.push_str(&js_number(n.as_f64().unwrap_or(0.0)));
-            true
-        }
-        Value::String(s) => {
-            write_string(out, &nfc(s));
-            true
-        }
+        Value::Null => out.push_str("null"),
+        Value::Bool(b) => out.push_str(if *b { "true" } else { "false" }),
+        Value::Number(n) => out.push_str(&js_number(n.as_f64().unwrap_or(0.0))),
+        Value::String(s) => write_string(out, s),
         Value::Array(items) => {
             out.push('[');
-            let mut first = true;
-            let mut push = |out: &mut String, item: &Value| {
-                let mut part = String::new();
-                if write_value(&mut part, item, in_refs) {
-                    if !first {
-                        out.push(',');
-                    }
-                    first = false;
-                    out.push_str(&part);
+            for (i, item) in items.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
                 }
-            };
-            if in_refs && items.iter().all(Value::is_string) {
-                let mut sorted: Vec<&Value> = items.iter().collect();
-                sorted.sort_by(|a, b| crate::js::cmp16(a.as_str().unwrap(), b.as_str().unwrap()));
-                for item in sorted {
-                    push(out, item);
-                }
-            } else {
-                for item in items {
-                    push(out, item);
-                }
+                write_value(out, item);
             }
             out.push(']');
-            true
         }
         Value::Object(map) => {
             let mut keys: Vec<&String> = map.keys().collect();
             keys.sort_by(|a, b| crate::js::cmp16(a, b));
             out.push('{');
-            let mut first = true;
-            for key in keys {
-                let mut part = String::new();
-                if write_value(&mut part, &map[key.as_str()], in_refs || key == "refs") {
-                    if !first {
-                        out.push(',');
-                    }
-                    first = false;
-                    write_string(out, &nfc(key));
-                    out.push(':');
-                    out.push_str(&part);
+            for (i, key) in keys.into_iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
                 }
+                write_string(out, key);
+                out.push(':');
+                write_value(out, &map[key.as_str()]);
             }
             out.push('}');
-            true
         }
     }
+}
+
+/// Parse JSON text and refuse a duplicate key at any depth (canonical.md, strict writing, rule 6): the one thing a
+/// parsed value can no longer show. Returns the value, or the path of the first repeated key.
+pub fn parse_strict(text: &str) -> core::result::Result<Value, String> {
+    use serde::de::{Deserialize, Deserializer, MapAccess, SeqAccess, Visitor};
+    struct Strict(Value);
+    impl<'de> Deserialize<'de> for Strict {
+        fn deserialize<D: Deserializer<'de>>(d: D) -> core::result::Result<Self, D::Error> {
+            struct V;
+            impl<'de> Visitor<'de> for V {
+                type Value = Value;
+                fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                    f.write_str("JSON")
+                }
+                fn visit_bool<E>(self, v: bool) -> core::result::Result<Value, E> {
+                    Ok(Value::Bool(v))
+                }
+                fn visit_i64<E>(self, v: i64) -> core::result::Result<Value, E> {
+                    Ok(Value::from(v))
+                }
+                fn visit_u64<E>(self, v: u64) -> core::result::Result<Value, E> {
+                    Ok(Value::from(v))
+                }
+                fn visit_f64<E>(self, v: f64) -> core::result::Result<Value, E> {
+                    Ok(serde_json::Number::from_f64(v).map(Value::Number).unwrap_or(Value::Null))
+                }
+                fn visit_str<E>(self, v: &str) -> core::result::Result<Value, E> {
+                    Ok(Value::String(v.into()))
+                }
+                fn visit_string<E>(self, v: String) -> core::result::Result<Value, E> {
+                    Ok(Value::String(v))
+                }
+                fn visit_unit<E>(self) -> core::result::Result<Value, E> {
+                    Ok(Value::Null)
+                }
+                fn visit_none<E>(self) -> core::result::Result<Value, E> {
+                    Ok(Value::Null)
+                }
+                fn visit_seq<A: SeqAccess<'de>>(self, mut a: A) -> core::result::Result<Value, A::Error> {
+                    let mut items = Vec::new();
+                    while let Some(Strict(v)) = a.next_element()? {
+                        items.push(v);
+                    }
+                    Ok(Value::Array(items))
+                }
+                fn visit_map<A: MapAccess<'de>>(self, mut a: A) -> core::result::Result<Value, A::Error> {
+                    let mut map = serde_json::Map::new();
+                    while let Some((k, Strict(v))) = a.next_entry::<String, Strict>()? {
+                        if map.contains_key(&k) {
+                            return Err(serde::de::Error::custom(format!("duplicate key {k}")));
+                        }
+                        map.insert(k, v);
+                    }
+                    Ok(Value::Object(map))
+                }
+            }
+            d.deserialize_any(V).map(Strict)
+        }
+    }
+    serde_json::from_str::<Strict>(text).map(|s| s.0).map_err(|e| e.to_string())
 }
 
 /// A JSON string as JavaScript's JSON.stringify writes it.

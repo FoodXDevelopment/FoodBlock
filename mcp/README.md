@@ -43,7 +43,7 @@ Any other MCP client (Claude Desktop, Cursor, Windsurf, Gemini CLI) takes the sa
 | `foodblock_query` | Find blocks by type and kind, or by a ref, read as 1.6 (the SDK's pull filter) |
 | `foodblock_history` | Every version of a record, oldest first |
 | `foodblock_check` | What is wrong with a block, in plain words, without writing it |
-| `foodblock_read_as` | Read a block of any earlier version as 1.6 |
+| `foodblock_valid` | Every refusal of a held block against the blocks held here (`valid(block, context)`) |
 | `foodblock_verify` | Whether a held block was signed by its author |
 
 ## Settings

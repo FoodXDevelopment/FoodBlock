@@ -5,8 +5,9 @@
  * the answer; on failure it holds the reason in plain words (for FB_ERR_REFUSED, a JSON array of refusals). Either
  * way, free *out with fb_free. No call keeps a pointer you gave it. Every call is safe from any thread.
  *
- * A block is JSON: { "hash", "type", "state", "refs", "signature" }. Keys are hex: a signing key is Ed25519 SPKI DER
- * (88 hex characters), a private key PKCS#8 DER (96) or its 32-byte seed (64), an encryption key raw X25519 (64).
+ * A block is JSON: { "hash", "type", "state", "refs", "signature" } (and "suite" when it is not std). Keys are hex:
+ * a std signing key is Ed25519 SPKI DER (88 hex characters), a private key PKCS#8 DER (96) or its 32-byte seed (64),
+ * an encryption key raw X25519 (64). The suites p256 and sm have longer keys (protocol.json "suites"); use fb_call.
  *
  * Build:  cargo rustc --release --features ffi --crate-type staticlib   (target/release/libfoodblock.a)
  * Link:   -lfoodblock, plus on Linux -lpthread -ldl -lm, on macOS -framework Security -framework CoreFoundation.
@@ -35,14 +36,15 @@ int fb_version(char **out);
 /* The canonical string of a block { type, state, refs } (spec/canonical.md). */
 int fb_canonical(const char *block_json, char **out);
 
-/* A block's id: SHA-256 of its canonical form, 64 hex characters. */
+/* A block's id: SHA-256 of its canonical form, 64 hex characters (the std suite). */
 int fb_hash(const char *block_json, char **out);
 
 /* The signing key a 32-byte seed (hex) gives: { "public_key_sign", "private_key" }. A null seed makes a new key. */
 int fb_keypair(const char *seed_hex, char **out);
 
 /* A genesis, signed: who a person, agent or machine is. keys_json { public_key_sign, private_key };
- * options_json { kind, at, encryption_key, recovery_key (the offline key's public signing key), reach (P30D) }. */
+ * options_json { kind, at, encryption_key, recovery_key (the offline key's public signing key), reach }: the recovery
+ * fields come as a pair or not at all. */
 int fb_genesis(const char *keys_json, const char *options_json, char **out);
 
 /* The author's signature over a block's canonical form, 128 hex characters. */
@@ -58,9 +60,6 @@ int fb_check(const char *block_json, const char *options_json, char **out);
 /* Why every node refuses a block: *out is [{ code, detail }], one entry per rule found, codes from protocol.json
  * refusals.codes.block in its order ("[]" when well-formed). options_json as for fb_check. */
 int fb_refusals(const char *block_json, const char *options_json, char **out);
-
-/* A block of any earlier shape, read as 1.6 through aliases.json. */
-int fb_read_as(const char *block_json, char **out);
 
 /* Where a key's next block goes: { "seq", "prev" }. last_json is the key's latest block, or null; then
  * brought_in is the hash of the genesis or key grant that brought the key in. */

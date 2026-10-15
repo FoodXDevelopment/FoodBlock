@@ -260,13 +260,8 @@ impl<'a> Codec<'a> {
             }
         }
         let prefix = spec
-            .protocol
-            .get("algs")
-            .and_then(|a| a.get("sign"))
-            .and_then(|s| s.get("known"))
-            .and_then(|k| k.get(&spec.sign_default))
-            .and_then(|a| a.get("spki_prefix"))
-            .and_then(Value::as_str)
+            .suite(&spec.suite_default)
+            .map(|s| s.spki_prefix.as_str())
             .and_then(unhex)
             .unwrap_or_default();
         let _ = cbor;
@@ -304,7 +299,7 @@ impl<'a> Codec<'a> {
     // JSON -> CBOR
     fn to_c(&self, v: &Value, path: &mut Vec<String>) -> Result<Option<C>> {
         Ok(Some(match v {
-            Value::Null => return Ok(None),
+            Value::Null => return Err(fail(format!("{} is null: canonical form has none", path.join(".")))),
             Value::Bool(b) => C::Bool(*b),
             Value::Number(n) => match n.as_i64() {
                 Some(i) if (-MAX..=MAX).contains(&i) => C::Int(i),
@@ -406,11 +401,22 @@ impl<'a> Codec<'a> {
                 Kind::Hash if self.spec.is("hash", &text) => {
                     return Ok(C::Bytes(unhex(&text).unwrap_or_default()))
                 }
-                Kind::SignKey if self.spec.is("sign_key", &text) => {
-                    let raw = unhex(&text).unwrap_or_default();
-                    return Ok(C::Bytes(raw[self.prefix.len().min(raw.len())..].to_vec()));
+                // A signing key: for `std` its 32 raw bytes (the fixed SPKI prefix left off), for another suite its whole SPKI.
+                Kind::SignKey => {
+                    let std_key = self
+                        .spec
+                        .suite(&self.spec.suite_default)
+                        .and_then(|s| s.sign_key_re.as_ref())
+                        .is_some_and(|r| r.test(&text));
+                    let any_key = self.spec.suites.iter().any(|s| s.sign_key_re.as_ref().is_some_and(|r| r.test(&text)));
+                    if any_key {
+                        let raw = unhex(&text).unwrap_or_default();
+                        return Ok(C::Bytes(if std_key { raw[self.prefix.len().min(raw.len())..].to_vec() } else { raw }));
+                    }
                 }
-                Kind::EncryptKey if self.spec.is("encrypt_key", &text) => {
+                Kind::EncryptKey
+                    if self.spec.suites.iter().any(|s| s.encrypt_key_re.as_ref().is_some_and(|r| r.test(&text))) =>
+                {
                     return Ok(C::Bytes(unhex(&text).unwrap_or_default()))
                 }
                 Kind::Nonce if self.spec.is("nonce", &text) => {
@@ -528,7 +534,7 @@ impl<'a> Codec<'a> {
         })?;
         let ok = match kind {
             Kind::Hash => b.len() == 32,
-            Kind::EncryptKey => b.len() == 32,
+            Kind::EncryptKey => b.len() == 32 || b.len() == 65,
             Kind::Nonce => b.len() == 16,
             Kind::SignKey => !b.is_empty(),
         };
@@ -584,23 +590,34 @@ fn message_to_c(spec: &Spec, codec: &Codec, block: &Value) -> Result<C> {
         .get("signature")
         .and_then(Value::as_str)
         .ok_or_else(|| fail("a message carries the block's signature"))?;
-    if !spec.is("signature", sig) {
+    if !(sig.len() == 128 && unhex(sig).is_some()) {
         return Err(fail("the signature is 64 bytes, in hex"));
     }
-    Ok(C::Array(vec![
+    let mut parts = vec![
         C::Int(table_of(spec, codec.short)),
         block_to_c(codec, block)?,
         C::Bytes(unhex(sig).unwrap_or_default()),
-    ]))
+    ];
+    // A suite other than std is named by a text entry after the signature.
+    let suite = crate::block::suite_of(block);
+    if !suite.is_empty() && suite != "std" {
+        parts.push(C::Text(suite.to_string()));
+    }
+    Ok(C::Array(parts))
 }
 
 fn message_from_c(spec: &Spec, c: &C) -> Result<Value> {
     let C::Array(parts) = c else {
         return Err(fail("a message is [t, block, signature]"));
     };
-    let [C::Int(t), body, C::Bytes(sig)] = parts.as_slice() else {
-        return Err(fail("a message is [t, block, signature]"));
+    let (t, body, sig, suite) = match parts.as_slice() {
+        [C::Int(t), body, C::Bytes(sig)] => (t, body, sig, "std".to_string()),
+        [C::Int(t), body, C::Bytes(sig), C::Text(suite)] => (t, body, sig, suite.clone()),
+        _ => return Err(fail("a message is [t, block, signature] and the suite's name when it is not std")),
     };
+    if spec.suite(&suite).is_none() {
+        return Err(Error::coded("unknown_suite", format!("cbor: the suite {suite} is not one this reader knows")));
+    }
     let table = table_of(spec, true);
     if *t != 0 && *t != table {
         return Err(fail(format!(
@@ -630,8 +647,12 @@ fn message_from_c(spec: &Spec, c: &C) -> Result<Value> {
         return Err(fail("a block is { type, state, refs }"));
     }
     // The id is the hash of the canonical JSON the block is rebuilt as: never of these bytes.
-    let hash = crate::hash(ty, state, refs);
-    Ok(json!({ "hash": hash, "type": ty, "state": state, "refs": refs, "signature": hex(sig) }))
+    let hash = crate::hash_suite(&suite, ty, state, refs);
+    let mut out = json!({ "hash": hash, "type": ty, "state": state, "refs": refs, "signature": hex(sig) });
+    if suite != "std" {
+        out["suite"] = json!(suite);
+    }
+    Ok(out)
 }
 
 /// A signed public block as the CBOR message `[t, block, signature]` (hex-free bytes). `short` uses the key table.
@@ -677,6 +698,7 @@ pub fn encode_header_with(spec: &Spec, header: &Value, short: bool) -> Result<Ve
             Value::String(s) if k != "seq" && spec.is("hash", s) => {
                 C::Bytes(unhex(s).unwrap_or_default())
             }
+            Value::String(s) if k != "seq" && spec.is("id", s) => C::Text(s.clone()),
             Value::Number(n) if k == "seq" => match n.as_i64() {
                 Some(i) if (-MAX..=MAX).contains(&i) => C::Int(i),
                 _ => return Err(fail("seq is a whole number")),
@@ -703,6 +725,7 @@ pub fn decode_header_with(spec: &Spec, bytes: &[u8]) -> Result<Value> {
         let value = match (name.as_str(), v) {
             ("seq", C::Int(i)) => json!(i),
             ("author" | "prev" | "hash", C::Bytes(b)) if b.len() == 32 => Value::String(hex(b)),
+            ("author" | "prev" | "hash", C::Text(t)) if spec.is("id", t) => Value::String(t.clone()),
             _ => return Err(fail(format!("header {name} is wrong"))),
         };
         out.insert(name, value);

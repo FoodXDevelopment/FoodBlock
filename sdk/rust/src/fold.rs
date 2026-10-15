@@ -1,7 +1,8 @@
-//! The folds (protocol.md §11): a set of blocks read into one answer, the same on every node from the same blocks.
-//! Every block is first read as 1.6 through aliases.json. No step reads another author's clock or breaks a tie on
-//! authority by hash; `now` is only the reader's own clock, for views (expired, until).
+//! The folds (modules/folds.md): a set of blocks read into one answer, the same on every node from the same blocks.
+//! A fold reads no clock and no arrival; the views that do are in views.rs. No step breaks a tie on authority by
+//! hash.
 use crate::grant::is_live_in;
+#[allow(unused_imports)]
 use crate::identity::ArrivedAt;
 use crate::js::{
     cmp16, get, hash_of, index_of, int, list, num, number_of, rf, rs, sorted_set, ss, st,
@@ -9,14 +10,15 @@ use crate::js::{
 };
 use crate::order::{causal_order_in, heads_among, past_in, sees_in};
 use crate::prelude::*;
-use crate::read::read_as;
 use core::cell::RefCell;
 
+/// The blocks held, by hash, with the forks marked once (a pair of one key naming one prev counts for nothing).
 fn read_all<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     let mut index = Index::default();
     for b in blocks {
-        index.insert(hash_of(b).to_string(), read_as(b));
+        index.insert(hash_of(b).to_string(), b.clone());
     }
+    crate::identity::mark_forks(&mut index);
     index
 }
 fn earliest<'a>(set: &[&'a Value], index: &Index) -> Vec<&'a Value> {
@@ -100,19 +102,19 @@ fn total_of(price: Option<&Value>, quantity: Option<&Value>) -> Option<(f64, Val
     None
 }
 
-/// Options for a promise's stage: `now` (the reader's clock, for expired), `confirmers` (ids whose confirms count a
-/// transfer, beside those the deal's schema names in its grounds).
+/// Options for a promise's stage: `confirmers` (ids whose confirms count a transfer, beside those the deal's schema
+/// names in its grounds). The fold reads no clock.
 #[derive(Default, Clone)]
 pub struct StageOptions<'a> {
-    pub now: Option<&'a str>,
     pub confirmers: Vec<String>,
+    pub _p: core::marker::PhantomData<&'a ()>,
 }
 
-/// A promise's stage, from its first promise and every block in its deal: offered, asked, expired, declined, stopped,
+/// A promise's stage, from its first promise and every block in its deal: offered, asked, declined, stopped,
 /// accepted, underway, done or reversed. Returns `{ stage, offer, accept, sides, quantity, total, paid, lines,
 /// takers, stopped, forks }` (and `stop`, `from` when stopped).
 pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptions) -> Value {
-    let now = options.now;
+    let now: Option<&str> = None;
     let index = read_all(
         core::iter::once(first_block).chain(index_of(blocks).values().collect::<Vec<_>>()),
     );
@@ -129,7 +131,9 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             if deal.iter().any(|d| d == h) || !crate::identity::counts_in(b, &index) {
                 continue;
             }
-            let joins = list(rf(b, "for")).contains(&first_hash.as_str())
+            // A promise with no `answers` is not in the deal even if it names P in `for`: it is a new deal that P serves.
+            let joins = (list(rf(b, "for")).contains(&first_hash.as_str())
+                && (type_of(b) != "promise" || !list(rf(b, "answers")).is_empty()))
                 || list(rf(b, "answers"))
                     .iter()
                     .any(|a| deal.iter().any(|d| d == a))
@@ -196,6 +200,38 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             live = next;
         }
     }
+    // An author's stop before acceptance. An accept binds unless that stop is in its causal past (promises.md).
+    let before_stops: Vec<&Value> = in_deal
+        .iter()
+        .filter(|b| status(b, "stopped") && ss(b, "stop") == Some("before"))
+        .collect();
+    // An agent's ask is a quote request unless its grant names the act: no accept of it binds. The grantor's own
+    // `accepted` answer to it, or a grant that lists `promise` in scope.acts, makes it bind (promises.md, invariant 22).
+    let quote_only = |offer: &Value| -> bool {
+        let grant = rs(offer, "under").and_then(|h| index.get(h));
+        let agent_by_kind = rs(offer, "author")
+            .and_then(|a| index.get(a))
+            .is_some_and(|g| matches!(ss(g, "kind"), Some("agent" | "machine")));
+        let named = match grant {
+            Some(g) => match get(g, "state.scope.acts") {
+                None => true,
+                Some(Value::Array(acts)) => acts.iter().any(|a| {
+                    a.as_str().is_some_and(|a| a == "promise" || a.starts_with("promise."))
+                }),
+                Some(_) => false,
+            },
+            None => !agent_by_kind && rs(offer, "under").is_none(),
+        };
+        if named {
+            return false;
+        }
+        let principal = grant.and_then(|g| rs(g, "author")).map(String::from);
+        !in_deal.iter().any(|b| {
+            status(b, "accepted")
+                && list(rf(b, "answers")).contains(&hash_of(offer))
+                && principal.as_deref().is_some_and(|p| rs(b, "author") == Some(p))
+        })
+    };
     // 6. A binding accept: one to one, the other side's accept of a live offer unless the offerer declined it; open to
     // many, the offerer's own allocation, each seeing the one before.
     let declined_by_offerer = |accept: &Value| {
@@ -213,17 +249,20 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     } else if !open {
         accept = live
             .iter()
+            .filter(|offer| !quote_only(offer))
             .flat_map(|offer| {
                 let so = side_of(offer);
                 answers_of(hash_of(offer), Some("accepted"))
                     .into_iter()
                     .filter(move |b| side_of(b).is_some() && side_of(b) != so)
             })
-            .find(|b| !declined_by_offerer(b));
+            .find(|b| {
+                !declined_by_offerer(b) && !before_stops.iter().any(|s| sees_in(b, hash_of(s), &index))
+            });
     } else {
         let requests: Vec<&Value> = answers_of(&first_hash, Some("accepted"))
             .into_iter()
-            .filter(|b| !by_offerer(b))
+            .filter(|b| !by_offerer(b) && !quote_only(&first))
             .collect();
         let allocations: Vec<&Value> = in_deal
             .iter()
@@ -240,7 +279,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             .filter(|v| truthy(Some(v)))
             .or(terms_q)
             .filter(|v| truthy(Some(v)));
-        // The sequencer's allocations form one chain, each seeing the one before. Two that do not see each other
+        // The orderer's allocations form one chain, each seeing the one before. Two that do not see each other
         // prove a lie: neither counts, nor anything after them; only what came before the pair binds.
         let mut allocated = 0.0;
         for allocation in causal_order_in(&sub_index(&allocations)) {
@@ -308,43 +347,24 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         out
     };
 
-    // 3. Stopped before, unless an accept binds over it.
     let stops: Vec<&Value> = in_deal.iter().filter(|b| status(b, "stopped")).collect();
-    let before: Vec<&&Value> = stops
-        .iter()
-        .filter(|b| ss(b, "stop") == Some("before"))
-        .collect();
-    if !before.is_empty()
-        && accept.is_none_or(|a| before.iter().any(|s| sees_in(a, hash_of(s), &index)))
-    {
-        return result("stopped", json!({ "stop": "before" }));
-    }
-    // 4. Declined by the other side.
-    if accept.is_none()
-        && !open
-        && live.iter().any(|one| {
-            let so = side_of(one);
-            answers_of(hash_of(one), Some("declined"))
-                .iter()
-                .any(|b| side_of(b).is_some() && side_of(b) != so)
-        })
-    {
-        return result("declined", json!({}));
-    }
-    // 5. No binding accept: offered or asked; expired once the reader's clock passes `expires` (a view).
+    // No binding accept: stopped before (the author withdrew it and no accept binds over the stop), declined by the
+    // other side, or still offered or asked. The fold reads no clock: expired is the view's (views.rs).
     let Some(accept_block) = accept else {
-        let expires = get(live[0], "state.terms.expires").filter(|v| truthy(Some(v)));
-        let expired = matches!((now, expires), (Some(n), Some(e)) if !n.is_empty() && n > text(Some(e)).as_str());
-        return result(
-            if expired {
-                "expired"
-            } else if offerer_is_from {
-                "offered"
-            } else {
-                "asked"
-            },
-            json!({}),
-        );
+        if !before_stops.is_empty() {
+            return result("stopped", json!({ "stop": "before" }));
+        }
+        if !open
+            && live.iter().any(|one| {
+                let so = side_of(one);
+                answers_of(hash_of(one), Some("declined"))
+                    .iter()
+                    .any(|b| side_of(b).is_some() && side_of(b) != so)
+            })
+        {
+            return result("declined", json!({}));
+        }
+        return result(if offerer_is_from { "offered" } else { "asked" }, json!({}));
     };
     // 7, 8. Settling.
     let empty = json!({});
@@ -591,18 +611,19 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         })).collect::<Vec<_>>(),
         "stopped": occurrences,
     });
-    // 10. Reversed: a done promise with counted transfers back for it covering what was paid.
+    // 1. Reversed: a done promise with counted transfers back for it covering what was paid.
     if done && paid > 0.0 && back >= paid {
         return result("reversed", more);
     }
-    // 9. Stopped onward, from that block.
+    // 2. Done.
+    if done {
+        return result("done", more);
+    }
+    // 3. Stopped onward, from that block.
     if let Some(onward) = stops.iter().find(|b| ss(b, "stop") == Some("onward")) {
         more["stop"] = json!("onward");
         more["from"] = json!(hash_of(onward));
         return result("stopped", more);
-    }
-    if done {
-        return result("done", more);
     }
     let stage = if !goods.is_empty() || !pays.is_empty() || !work.is_empty() {
         "underway"
@@ -651,18 +672,26 @@ struct Circle<'a> {
     index: &'a Index,
     id: String,
     founder: String,
+    /// The circle's roles: `[(name, powers)]`, the founder holding the first.
+    roles: Vec<(String, Vec<String>)>,
     removal_needed: f64,
     related: Vec<Value>,
     memo: RefCell<Vec<(String, CircleState)>>,
 }
 
 impl<'a> Circle<'a> {
+    /// Whether any of these role names carries a power.
+    fn has_power(&self, roles: &[String], power: &str) -> bool {
+        self.roles
+            .iter()
+            .any(|(name, powers)| roles.contains(name) && powers.iter().any(|p| p == power))
+    }
     fn empty(&self) -> CircleState {
         let mut members = indexmap::IndexMap::default();
         members.insert(
             self.founder.clone(),
             Member {
-                roles: vec!["admin".into()],
+                roles: self.roles.first().map(|(n, _)| vec![n.clone()]).unwrap_or_default(),
                 grant: Some(self.id.clone()),
             },
         );
@@ -716,12 +745,13 @@ impl<'a> Circle<'a> {
                 .find(|(k, _)| k == who)
                 .map(|(_, g)| g.clone())
         };
-        let admin = |b: &Value| {
+        // A block signed as the circle by a member who holds a power in the fold of the block's causal past.
+        let can = |b: &Value, power: &str| {
             rs(b, "as") == Some(id) && {
                 let past = self.past_fold(b);
                 rs(b, "author")
                     .and_then(|a| past.members.get(a))
-                    .is_some_and(|m| m.roles.iter().any(|r| r == "admin"))
+                    .is_some_and(|m| self.has_power(&m.roles, power))
             }
         };
         let is_stop = |b: &Value| {
@@ -741,7 +771,7 @@ impl<'a> Circle<'a> {
                 _ => false,
             }
         };
-        let stops: Vec<&Value> = set.iter().filter(|b| is_stop(b) && admin(b)).collect();
+        let stops: Vec<&Value> = set.iter().filter(|b| is_stop(b) && can(b, "remove")).collect();
         let counted_to = |b: &Value| {
             ss(b, "counted_to")
                 .filter(|s| !s.is_empty())
@@ -753,7 +783,7 @@ impl<'a> Circle<'a> {
             let updated = list(rf(&block, "updates"));
             let status = ss(&block, "status");
             if answered.is_empty() && updated.is_empty() && st(&block, "status").is_none() {
-                if admin(&block) {
+                if can(&block, "admit") {
                     let roles = match st(&block, "roles") {
                         Some(Value::Array(r)) => r.iter().map(|x| text(Some(x))).collect(),
                         _ => vec![],
@@ -822,7 +852,7 @@ impl<'a> Circle<'a> {
                         state.members.shift_remove(&who);
                     }
                 }
-            } else if !updated.is_empty() && admin(&block) {
+            } else if !updated.is_empty() && (can(&block, if is_stop(&block) { "remove" } else { "admit" })) {
                 let Some(grant) = updated
                     .iter()
                     .find(|h| invitations.iter().any(|(k, _)| k == *h))
@@ -863,7 +893,7 @@ impl<'a> Circle<'a> {
                     let is_admin = state
                         .members
                         .get(&who)
-                        .is_some_and(|m| m.roles.iter().any(|r| r == "admin"));
+                        .is_some_and(|m| self.has_power(&m.roles, "admit") || self.has_power(&m.roles, "remove"));
                     if is_admin && others < self.removal_needed {
                         continue;
                     }
@@ -938,10 +968,26 @@ pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Op
     let default_needed = get(&crate::spec().protocol, "circle.removal_default.needed")
         .and_then(Value::as_f64)
         .unwrap_or(1.0);
+    let roles: Vec<(String, Vec<String>)> = match get(root, "state.roles") {
+        Some(Value::Array(list)) => list
+            .iter()
+            .map(|r| {
+                (
+                    text(r.get("name")),
+                    r.get("powers")
+                        .and_then(Value::as_array)
+                        .map(|p| p.iter().map(|x| text(Some(x))).collect())
+                        .unwrap_or_default(),
+                )
+            })
+            .collect(),
+        _ => Vec::new(),
+    };
     let c = Circle {
         index: read,
         id,
         founder,
+        roles,
         removal_needed: needed.unwrap_or(default_needed),
         related,
         memo: RefCell::new(Vec::new()),
@@ -973,26 +1019,37 @@ pub fn holders_of(state: Option<&CircleState>, role: &str) -> Vec<String> {
 }
 
 fn may_act_as_in(block: &Value, circle: &str, read: &Index, role: Option<&str>) -> bool {
-    let state = circle_state_in(circle, read, Some(block));
-    let root = read.get(circle).map(read_as);
-    let Some(member) = state
-        .as_ref()
-        .and_then(|s| rs(block, "author").and_then(|a| s.members.get(a)))
-    else {
-        return false;
-    };
-    let roles: Vec<String> = match role {
-        Some(r) => vec![r.to_string()],
-        None => match root.as_ref().and_then(|r| st(r, "signers")) {
-            Some(Value::Array(s)) => s.iter().map(|x| text(Some(x))).collect(),
-            _ => crate::spec().list("circle.signers_default"),
-        },
-    };
-    member.roles.iter().any(|r| roles.contains(r))
+    may_with_in(block, circle, read, role, "sign")
+}
+
+// Whether the block's author, in the circle's fold of the block's causal past, holds `role` if one is named, else a
+// role with the power.
+fn may_with_in(block: &Value, circle: &str, read: &Index, role: Option<&str>, power: &str) -> bool {
+    let Some(state) = circle_state_in(circle, read, Some(block)) else { return false };
+    let Some(member) = rs(block, "author").and_then(|a| state.members.get(a)) else { return false };
+    match role {
+        Some(r) => member.roles.iter().any(|x| x == r),
+        None => {
+            let root = &read[circle];
+            let powers: Vec<(String, Vec<String>)> = match get(root, "state.roles") {
+                Some(Value::Array(list)) => list
+                    .iter()
+                    .map(|r| {
+                        (
+                            text(r.get("name")),
+                            r.get("powers").and_then(Value::as_array).map(|p| p.iter().map(|x| text(Some(x))).collect()).unwrap_or_default(),
+                        )
+                    })
+                    .collect(),
+                _ => Vec::new(),
+            };
+            powers.iter().any(|(n, p)| member.roles.contains(n) && p.iter().any(|x| x == power))
+        }
+    }
 }
 
 /// Whether a block may be signed as a circle: its author holds, in the fold of its causal past, `role` if one is
-/// named, else a role the circle actor lists in `state.signers` (default [admin]).
+/// named, else a role with the power `sign`.
 pub fn may_act_as(block: &Value, circle: &str, blocks: &[Value], role: Option<&str>) -> bool {
     may_act_as_in(block, circle, &read_all(blocks), role)
 }
@@ -1134,7 +1191,7 @@ pub fn where_now(thing: &Value, blocks: &[Value]) -> Vec<String> {
 }
 
 fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<String>) -> Vec<String> {
-    let me = read_as(index.get(hash_of(thing)).unwrap_or(thing));
+    let me = index.get(hash_of(thing)).unwrap_or(thing).clone();
     let h = hash_of(&me).to_string();
     if seen.contains(&h) {
         return vec![h];
@@ -1187,7 +1244,7 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
     let mut out: Vec<String> = Vec::new();
     for place in places {
         match index.get(&place) {
-            Some(at) if type_of(&read_as(at)) == "thing" => {
+            Some(at) if type_of(at) == "thing" => {
                 let further = where_now_in(at, index, read, seen);
                 if further.is_empty() {
                     out.push(place);
@@ -1201,10 +1258,11 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
     sorted_set(out)
 }
 
-// ---- A successor's trigger (§7) ----
+// ---- A successor's trigger (profiles/successor.md) ----
 /// Where a successor grant's trigger stands: the needed witnesses' event observes, less those the person defeats
 /// before it fires. It fires `wait` after the needed-th event arrived on this node (`arrived_at`), on the reader's own
 /// clock (`now`). Returns `{ events, cancelled, since, fires, fired }`.
+#[cfg(feature = "successor")]
 pub fn successor_state(
     grant: &Value,
     blocks: &[Value],
@@ -1292,8 +1350,9 @@ pub fn successor_state(
 }
 
 // ---- A circle's key, by epoch (§8) ----
-/// A circle's encryption key now: the key grants signed as the circle by an admin, each with state.epoch one higher,
+/// A circle's encryption key now: the key grants signed as the circle by a holder of the power rekey, each with state.epoch one higher,
 /// naming epoch n-1 in after. Two rekeys in one epoch both open; the next settles. Returns `{ epoch, keys, grants }`.
+#[cfg(feature = "rekeys")]
 pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
     let read = read_all(blocks);
     let Some(root) = read.get(circle) else {
@@ -1309,7 +1368,7 @@ pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
                 && truthy(st(b, "public_key_encrypt"))
                 && crate::identity::counts_in(b, &read)
         })
-        .filter(|b| may_act_as_in(b, circle, &read, Some("admin")))
+        .filter(|b| may_with_in(b, circle, &read, None, "rekey"))
         .collect();
     let mut epoch = 0i64;
     let mut open: Vec<(String, String)> = vec![(
@@ -1338,13 +1397,14 @@ pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
 
 // ---- A secret ballot (§8) ----
 /// Whether a voter's commitment is among those the named counter signed as counted (`state.counted`).
+#[cfg(feature = "ballots")]
 pub fn counted_in(result: &Value, commitment: &str, counter: &str) -> bool {
     rs(result, "author") == Some(counter) && list(st(result, "counted")).contains(&commitment)
 }
 
-/// A record's sequencer: `{ key }` named by its first block's state.sequencer, else `{ author }`.
-pub fn sequencer_of(record: &Value) -> Value {
-    match st(record, "sequencer").filter(|v| truthy(Some(v))) {
+/// A record's orderer: `{ key }` named by its first block's state.orderer, else `{ author }`.
+pub fn orderer_of(record: &Value) -> Value {
+    match st(record, "orderer").filter(|v| truthy(Some(v))) {
         Some(k) => json!({ "key": k }),
         None => json!({ "author": rf(record, "author") }),
     }

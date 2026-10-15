@@ -1,11 +1,11 @@
 """FoodBlock 1.6 (spec/protocol.md), as thin calls into the Rust core: canonical form, ids, signatures, the write check,
-chains, commitments, envelopes, the wire and reading older shapes. No rule lives here."""
+chains, commitments, envelopes and the wire. No rule lives here."""
 
 from ._core import call, Refused, FoodBlockError
 from .spec import PROTOCOL, VERSION
 
 PUBLIC = "public"
-ALG, ALG_RAW = PROTOCOL["envelope"]["read"][0], PROTOCOL["envelope"]["read"][1]
+ALG = PROTOCOL["suites"]["std"]["envelope"]
 
 
 def _blocks(held):
@@ -24,33 +24,40 @@ def canonical_json(value) -> str:
     return call("canonical_json", value)
 
 
-def hash(type_, state=None, refs=None) -> str:  # noqa: A001 (the protocol's word)
-    return call("hash", type_, state or {}, refs or {})
+def hash(type_, state=None, refs=None, suite="std") -> str:  # noqa: A001 (the protocol's word)
+    """The id: the hash of the canonical form in the hash of the suite of the key that signs it."""
+    return call("hash", type_, state or {}, refs or {}, suite)
 
 
-def create(type_, state=None, refs=None) -> dict:
-    return call("create", type_, state or {}, refs or {})
+def create(type_, state=None, refs=None, suite="std") -> dict:
+    """{ hash, type, state, refs } (and `suite` when it is not std). Strict: a null, a float or text outside NFC is refused."""
+    return call("create", type_, state or {}, refs or {}, suite)
 
 
 # ---- Signing ----
-def generate_keypair() -> dict:
-    return call("keypair", None)
+def generate_keypair(suite="std") -> dict:
+    return call("keypair", None, suite)
 
 
-def keypair_from_seed(seed_hex) -> dict:
-    return call("keypair", seed_hex)
+def keypair_from_seed(seed_hex, suite="std") -> dict:
+    return call("keypair", seed_hex, suite)
 
 
-def sign(block, private_key_hex) -> str:
-    return call("sign", block, private_key_hex)
+def sign(block, private_key_hex, suite="std") -> str:
+    return call("sign", block, private_key_hex, suite)
+
+
+def suite_of_key(public_key_hex):
+    """The suite a signing key (SPKI hex) belongs to, or None."""
+    return call("suite_of_key", str(public_key_hex))
 
 
 def verify(block, signature_hex, public_key_sign) -> bool:
     return call("verify", block, signature_hex, public_key_sign)
 
 
-def sign_message(part, private_key_hex) -> dict:
-    return call("sign_message", part, private_key_hex)
+def sign_message(part, private_key_hex, suite="std") -> dict:
+    return call("sign_message", part, private_key_hex, suite)
 
 
 def verify_message(part, public_key_hex) -> bool:
@@ -58,16 +65,17 @@ def verify_message(part, public_key_hex) -> bool:
 
 
 # ---- Envelopes ----
-def generate_encryption_keypair() -> dict:
-    return call("encryption_keypair")
+def generate_encryption_keypair(suite="std") -> dict:
+    return call("encryption_keypair", suite)
 
 
-def encryption_key_of(private_hex) -> str:
-    return call("encryption_key_of", private_hex)
+def encryption_key_of(private_hex, suite="std") -> str:
+    return call("encryption_key_of", private_hex, suite)
 
 
-def seal(value, recipient_keys, alg=ALG) -> dict:
-    return call("seal", value, list(recipient_keys), alg)
+def seal(value, recipient_keys, suite="std", fixed=None) -> dict:
+    """`fixed` exists only to reproduce a vector."""
+    return call("seal", value, list(recipient_keys), suite, fixed)
 
 
 def open(envelope, private_hex):  # noqa: A001 (the protocol's word)
@@ -79,12 +87,12 @@ def new_salt() -> str:
     return call("new_salt")
 
 
-def salted_hash(salt_hex, value) -> str:
-    return call("salted_hash", salt_hex, value)
+def salted_hash(salt_hex, value, suite="std") -> str:
+    return call("salted_hash", salt_hex, value, suite)
 
 
-def commit(recipients, salts=None) -> dict:
-    return call("commit", list(recipients), salts or {})
+def commit(recipients, salts=None, suite="std") -> dict:
+    return call("commit", list(recipients), salts or {}, suite)
 
 
 def finds_self(block, recipient, salt_hex) -> bool:
@@ -102,6 +110,16 @@ def _check_args(type_, state, refs, schemas, held):
 
 def refusals(type_, state=None, refs=None, schemas=None, held=None) -> list:
     return call("refusals", *_check_args(type_, state, refs, schemas, held))
+
+
+def valid(block, held=None, schemas=None, arrivals=None) -> list:
+    """Every refusal of a signed block against the blocks held ([] when valid). `arrivals` is { hash: time } data."""
+    return call("valid", block, _blocks(held) or [], _blocks(schemas), arrivals)
+
+
+def strict_text(text) -> list:
+    """Strict writing from JSON text: a repeated key, then every refusal of the block it holds."""
+    return call("strict_text", str(text))
 
 
 def check(type_, state=None, refs=None, schemas=None, held=None) -> list:
@@ -124,22 +142,34 @@ def terms(given=None, **more) -> dict:
     return call("terms", {**(given or {}), **more})
 
 
-# ---- Reading older shapes ----
-def read_as(block) -> dict:
-    return call("read_as", block)
-
-
-def is_a(block, type_, kind=None) -> bool:
-    return call("is_a", block, type_, kind)
-
-
 # ---- Chains and causal order ----
 def next_link(last, brought_in=None) -> dict:
     return call("next_link", last, brought_in)
 
 
 def check_chain(blocks, brought_in) -> dict:
+    """{ head, length, gaps, skips, equivocations (pairs naming one prev), broken, ok }"""
     return call("check_chain", list(blocks), brought_in)
+
+
+def causes_of(block) -> list:
+    return call("causes_of", block)
+
+
+def past_of(block, blocks) -> list:
+    return call("past_of", block, list(blocks))
+
+
+def heads_among(blocks) -> list:
+    return call("heads_among", list(blocks))
+
+
+def is_time(value) -> bool:
+    return call("is_time", value)
+
+
+def is_date(value) -> bool:
+    return call("is_date", value)
 
 
 def causal_order(blocks) -> list:
@@ -151,8 +181,8 @@ def sees(later, earlier, blocks) -> bool:
 
 
 # ---- Writing and the wire ----
-def compose(type_, state=None, refs=None, author=None, audience=PUBLIC, after=(), at=None, link=None, salts=None) -> dict:
-    return call("compose", type_, state or {}, refs or {}, _options(author=author, audience=audience, after=after, at=at, link=link, salts=salts))
+def compose(type_, state=None, refs=None, author=None, audience=PUBLIC, after=(), at=None, link=None, salts=None, suite=None, skip=None, clockless=None, nonce=None) -> dict:
+    return call("compose", type_, state or {}, refs or {}, _options(author=author, audience=audience, after=after, at=at, link=link, salts=salts, suite=suite, skip=skip, clockless=clockless, nonce=nonce))
 
 
 def _options(audience=PUBLIC, after=(), **rest):
@@ -190,8 +220,8 @@ def header_signed_by(message, public_key) -> bool:
     return call("header_signed_by", message, public_key)
 
 
-def seal_copy(signed, keys, reveals=(), private_key=None, alg=None, fixed=None) -> dict:
-    return call("seal_copy", signed, list(keys), list(reveals or []), private_key)
+def seal_copy(signed, keys, reveals=(), private_key=None, fixed=None, suite="std") -> dict:
+    return call("seal_copy", signed, list(keys), list(reveals or []), private_key, fixed, suite)
 
 
 def open_copy(message, x25519_private) -> dict:

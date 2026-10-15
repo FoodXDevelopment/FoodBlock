@@ -12,7 +12,7 @@
 
 ## 1. Status
 
-This is a **profile**, not a change to the protocol. Core stays as protocol.md says; a node that has never heard of this profile still accepts every block in it.
+This is a **profile**, not a change to the protocol. Core stays as core.md says; a node that has never heard of this profile still accepts every block in it.
 
 - **Normative for** implementers who claim `foodblock-profile-epcis`. **Informative for** everyone else.
 - **Not legal advice.** Covered persons under FSMA 204 stay responsible for their records; FoodBlock carries the key data elements (KDEs).
@@ -21,7 +21,7 @@ This is a **profile**, not a change to the protocol. Core stays as protocol.md s
 ### Decisions
 
 1. **The kind is the CTE.** A step's `state.kind` names the Critical Tracking Event (`harvest`, `cool`, `pack`, `first_land_receive`, `ship`, `receive`, `process`). There is no separate CTE field.
-2. **The lot is an instance; the TLC is a mark.** A lot is a `thing` instance of its product kind. Its Traceability Lot Code (TLC) is one of its marks, so a recall matches it exactly (protocol.md, Things).
+2. **The lot is an instance; the TLC is a mark.** A lot is a `thing` instance of its product kind. Its Traceability Lot Code (TLC) is one of its marks, so a recall matches it exactly (modules/things.md).
 3. **Parties and sites are actors and things.** They are written once and linked, never buried in an event.
 4. **An escape hatch, not a path.** An EPCIS event no row below covers lands as an `observe` of kind `epcis`.
 
@@ -29,7 +29,7 @@ This is a **profile**, not a change to the protocol. Core stays as protocol.md s
 
 | Concern | Core | This profile |
 |---|---|---|
-| Block, types, verbs, canonical form, hashes | As protocol.md | Unchanged |
+| Block, types, verbs, canonical form, hashes | As core.md | Unchanged |
 | Kinds (`state.kind`) | Open labels | Fixes the labels in §4 |
 | Marks `[{ scheme, value }]` | Any scheme | Fixes the schemes in §3 |
 | Fields beyond the base | Declared by a schema | Declares the KDE fields in §5 in profile schemas (things of kind schema, `target` as in §4) |
@@ -43,11 +43,11 @@ An EPCIS event id is not a FoodBlock id: the id of a block is its hash.
 - **Covered person.** A business is a circle (an `actor` of kind circle). Every CTE block is signed `as` it (`refs.as`), by a member who holds a signing role.
 - **Site.** Farm, field, cooler, packhouse, distribution centre, vehicle: each is a `thing` of kind place, with `state.where`, a `name`, and its FSMA location description (§5). Its GLN is a mark `{ scheme: "gln", value }`. A site inside another (a field on a farm, a vehicle at a dock) uses `refs.place`.
 - **Product kind.** A `thing` kind (spinach, flour) with its GTIN as a mark `{ scheme: "gtin", value }`.
-- **Lot.** A `thing` instance: `refs.kind` the product kind, `state.lot` its batch name, `state.amount` or `state.pack` its size, `state.use_by`. Its marks:
+- **Lot.** A `thing` instance: `refs.of` the product kind, `state.lot` its batch name, `state.amount` or `state.pack` its size, `state.use_by`. Its marks:
   - `{ scheme: "tlc", value }`: the Traceability Lot Code;
   - `{ scheme: "tlc_source", value }`: the GLN, or FDA registration number, of the place that assigned it;
   - `{ scheme: "gtin", value }`, `{ scheme: "sscc", value }`, `{ scheme: "sgtin", value }`: any other identifiers the lot carries.
-- **Containment.** An EPCIS parent and children (case on pallet, pallet in truck) are `refs.place`: what is inside moves with its container (protocol.md, Things).
+- **Containment.** An EPCIS parent and children (case on pallet, pallet in truck) are `refs.place`: what is inside moves with its container (modules/things.md).
 - **Traceability plan.** An `observe` of kind `traceability_plan` by the covered person: `state.text` names the plan document by its hash.
 
 ## 4. Events
@@ -80,7 +80,7 @@ A receiving from an exempt source (restaurant and retail food establishment exce
 | TransactionEvent | The `transfer` it records; its business transactions in `biz_transactions` |
 | TransformationEvent | `transform`, inputs in `derives_from` |
 | AssociationEvent | An `observe` that links two things by `refs.subject` and `refs.place` |
-| SensorElement | An `observe` reading: `amount`, `accuracy`, `coverage`, the sensor named in `refs.from`, the shipment or lot in `refs.subject`. Dense streams are linked by their Merkle root (protocol.md, Truth) |
+| SensorElement | An `observe` reading: `amount`, `accuracy`, `coverage`, the sensor named in `refs.from`, the shipment or lot in `refs.subject`. Dense streams are linked by their Merkle root (modules/things.md, Truth) |
 | ErrorDeclaration | The author's `updates` of the wrong event; for another author's event, a `defeats` of it, then a corrected block |
 | eventTime, eventTimeZoneOffset | `state.when`, `state.tz` |
 | recordTime | `state.at` (when it was said) |
@@ -122,7 +122,7 @@ The date a CTE took place is `state.when`. The location is `refs.place`. The qua
 
 - **Forward.** Start from the instances whose marks match the TLC exactly. Follow `derives_from` to what was made from them (each output carries its own new TLC), `refs.what` to where they were shipped, and `refs.place` to what they were packed in.
 - **Backward.** From a received lot, follow the `answers` to the shipping transfer, then `derives_from` to its inputs.
-- **Whose records.** Each covered person holds their own CTE blocks. Sealed blocks show only their public headers, so a recall asks each holder, who answers for the blocks they hold (protocol.md, Open questions).
+- **Whose records.** Each covered person holds their own CTE blocks. Sealed blocks show only their public headers, so a recall asks each holder, who answers for the blocks they hold. The regulator recall grant (tax-recall.md) lets a named authority ask with a 24-hour answer time.
 - **The spreadsheet.** The FDA's 24-hour sortable record is an export from these folds, never a block.
 
 ## 8. Conformance
@@ -136,7 +136,7 @@ An implementation claims `foodblock-profile-epcis` when:
 
 ## 9. Vectors
 
-The five EPCIS vectors in `test/vectors.json` (section `legacy-read`: harvest, cooling, initial packing with TLC, shipping, transformation) were written before 1.6. They are legacy-read only: they still hash the same, and `aliases.json` reads their types as 1.6 types. They are not 1.6 examples.
+The five EPCIS vectors in `test/vectors.json` (section `legacy-read`: harvest, cooling, initial packing with TLC, shipping, transformation) were written before 1.6. They are 0.x data: the converter (legacy/converter.md) turns them into 1.6 blocks, and they are not 1.6 examples.
 
 This profile should gain these 1.6 vectors (not yet written):
 1. Harvest: a `transform` of kind `harvest` with no inputs.

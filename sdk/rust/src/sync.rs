@@ -1,22 +1,17 @@
-//! Between nodes (protocol.md §10, Encoding: Messages): Pull and Push. Pull asks for the blocks the asker may see
-//! since the responder's arrival number (never a time); `heads: true` returns only the heads among the matches. A
-//! signed pull (or push) names its signer, the node it is for, a fresh nonce and `at`. A node takes blocks
-//! signed by a live key of their author that pass the write check, holds back (waiting) those whose prev it lacks,
-//! lists the second of two blocks at one seq beside the first (`equivocations`), and refuses the rest, each
-//! `{ hash, code, detail }` with a code from protocol.json's `refusals.codes`. Every node answer is signed by the node
-//! (invariant 18).
+//! Between nodes (modules/nodes.md): Pull and Push. Pull asks for the blocks the asker may see since the responder's
+//! arrival number (never a time); `heads: true` returns only the heads among the matches. A signed request names its
+//! signer, the node it is for, and one proof against replay (a `counter` or a `challenge`; no time). A node takes
+//! blocks that are `valid` (valid.rs), holds back (waiting) those whose prev it lacks, lists the second of two blocks
+//! naming one prev beside the first (`equivocations`), and refuses the rest, each `{ hash, code, detail }` with a code
+//! from protocol.json's `refusals.codes`. Every node answer is signed by the node (invariant 18).
 use crate::canonical::canonical_json;
-use crate::check::{ordered, refusals, CheckOptions};
+use crate::check::ordered;
 use crate::error::{Refusal, Result};
-use crate::identity::{
-    history_counts_in, is_16_genesis, is_genesis, key_timeline_in, signed_by_author_in, signer_of,
-    ArrivedAt,
-};
-use crate::js::{hash_of, index_of, int, list, rf, rs, ss, st, truthy, type_of, Index};
+use crate::identity::{is_genesis, key_timeline_in, signer_of, ArrivedAt};
+use crate::js::{hash_of, index_of, int, list, rf, rs, st, truthy, Index};
 use crate::order::causal_order;
 use crate::prelude::*;
-use crate::read::read_as;
-use crate::sign::{sign_message, verify_message};
+use crate::sign::{sign_message_in, verify_message_in};
 use crate::write::wrap;
 
 fn pick(object: &Value, keys: &[String]) -> Value {
@@ -42,83 +37,65 @@ pub fn pull_request(request: &Value) -> Value {
     pick(&r, &crate::spec().list("messages.pull"))
 }
 
-/// Who signs a request, for whom, and with what freshness.
+/// Who signs a request, for whom, and the one proof against replay it carries.
 pub struct Signer<'a> {
     /// The signer's id.
     pub who: &'a str,
     /// The node the request is for.
     pub node: &'a str,
     pub private_key: &'a str,
-    /// 16 random bytes, hex (fresh when None, std only).
-    pub nonce: Option<String>,
-    /// When it is sent (now when None, std only).
-    pub at: Option<String>,
+    /// The suite of the signing key (`std` when empty).
+    pub suite: &'a str,
+    /// An integer above the highest the node has seen from this signer; or
+    pub counter: Option<u64>,
+    /// a value the node handed out for this one request.
+    pub challenge: Option<String>,
 }
 
 fn stamp(mut message: Value, role: &str, signer: &Signer) -> Result<Value> {
-    let nonce = match &signer.nonce {
-        Some(n) => n.clone(),
-        None => crate::audience::try_new_salt()?,
-    };
-    let at = match &signer.at {
-        Some(a) => a.clone(),
-        #[cfg(feature = "std")]
-        None => crate::time::now(),
-        #[cfg(not(feature = "std"))]
-        None => {
-            return Err(crate::Error::new(
-                "sync: this build has no clock; give `at`",
-            ))
-        }
-    };
     message[role] = json!(signer.who);
     message["node"] = json!(signer.node);
-    message["nonce"] = json!(nonce);
-    message["at"] = json!(at);
-    sign_message(&message, signer.private_key)
+    match (&signer.counter, &signer.challenge) {
+        (Some(c), None) => message["counter"] = json!(c),
+        (None, Some(ch)) => message["challenge"] = json!(ch),
+        _ => {
+            return Err(crate::Error::new(
+                "sync: a signed request carries exactly one of counter or challenge",
+            ))
+        }
+    }
+    sign_message_in(signer.suite, &message, signer.private_key)
 }
 
-/// A signed pull: the request, plus signer, node, a fresh nonce and at, signed by one of the signer's keys.
+/// A signed pull: the request, plus signer, node and one proof against replay, signed by one of the signer's keys.
 pub fn sign_pull(request: &Value, signer: &Signer) -> Result<Value> {
     stamp(pull_request(request), "signer", signer)
+}
+
+/// A new challenge value a node hands out (16 random bytes, hex). The node keeps what it issued and what was used.
+pub fn new_challenge() -> Result<String> {
+    crate::audience::try_new_salt()
 }
 
 /// What a node checks of a signed request.
 pub struct Freshness<'a> {
     /// This node's id.
     pub node: &'a str,
-    /// This node's clock.
-    pub now: &'a str,
     /// The signer's live signing keys.
     pub keys: &'a [String],
-    /// Whether this node has seen the nonce.
-    pub seen: &'a dyn Fn(&str) -> bool,
-    /// How far `at` may be from this node's clock, in ms: protocol.json `limits.signed_window` ([`signed_window_ms`]).
-    pub window_ms: i64,
+    /// The highest counter this node has seen from the signer (None: none yet).
+    pub highest: Option<u64>,
+    /// Whether this node issued the challenge and has not seen it used.
+    pub issued: &'a dyn Fn(&str) -> bool,
 }
 
-/// How far a signed message's `at` may be from the node's clock, either way, in ms (protocol.json
-/// `limits.signed_window`, PT5M): the window a [`Freshness`] gives unless the node chooses its own.
-pub fn signed_window_ms() -> i64 {
-    let base = "2000-01-01T00:00:00.000Z";
-    crate::time::add_duration(base, &crate::spec().signed_window, 1)
-        .and_then(|t| crate::time::parse(&t))
-        .zip(crate::time::parse(base))
-        .map(|(a, b)| a - b)
-        .unwrap_or(0)
-}
-
-/// Why a node refuses a signed message (`fields`: the protocol.json list of its keys, a pull's or a push's), for the
-/// node whose clock reads `now`: `[{ code, detail }]` with codes from protocol.json's `refusals.codes.message`, empty
-/// when it may be answered.
+/// Why a node refuses a signed message (`fields`: the protocol.json list of its keys, a pull's or a push's):
+/// `[{ code, detail }]` with codes from protocol.json's `refusals.codes.message`, empty when it may be answered. No
+/// clock is read: freshness is the counter or the challenge.
 pub fn message_refusals(message: &Value, fields: &str, f: &Freshness) -> Vec<Refusal> {
     let allowed = crate::spec().list(fields);
-    let sp = crate::spec();
     let mut wrong = Vec::new();
-    // Older names (`asker`, `pusher`) are read as `signer`; the signature below still covers the bytes as sent.
-    let kind = fields.rsplit('.').next().unwrap_or(fields);
-    let read = crate::read::read_message(kind, message);
-    if !read
+    if !message
         .as_object()
         .is_some_and(|m| m.keys().all(|k| allowed.contains(k)))
     {
@@ -130,37 +107,32 @@ pub fn message_refusals(message: &Value, fields: &str, f: &Freshness) -> Vec<Ref
     if rs_top(message, "node") != Some(f.node) {
         wrong.push(Refusal::new("wrong_node", "the message names another node"));
     }
-    match message
-        .get("nonce")
-        .and_then(Value::as_str)
-        .filter(|n| sp.is("nonce", n))
-    {
-        Some(n) if (f.seen)(n) => {
-            wrong.push(Refusal::new("replay", "this nonce was seen: a replay"))
+    let (counter, challenge) = (message.get("counter"), message.get("challenge"));
+    match (counter, challenge) {
+        (Some(c), None) => {
+            let above = c
+                .as_u64()
+                .is_some_and(|c| f.highest.is_none_or(|h| c > h));
+            if !above {
+                wrong.push(Refusal::new("replay", "its counter is not above the highest seen from this signer"));
+            }
         }
-        Some(_) => {}
-        None => wrong.push(Refusal::new(
+        (None, Some(ch)) => {
+            if !ch.as_str().is_some_and(|c| (f.issued)(c)) {
+                wrong.push(Refusal::new("replay", "its challenge was not issued by this node, or was used"));
+            }
+        }
+        _ => wrong.push(Refusal::new(
             "replay",
-            "a signed message carries a fresh nonce",
+            "a signed request carries exactly one of counter or challenge",
         )),
     }
-    let at = message
-        .get("at")
-        .and_then(Value::as_str)
-        .filter(|a| sp.is("time", a))
-        .and_then(crate::time::parse);
-    let fresh = matches!((at, crate::time::parse(f.now)), (Some(a), Some(n)) if (a - n).abs() <= f.window_ms);
-    if !fresh {
-        wrong.push(Refusal::new(
-            "window",
-            "its at is outside this node's window",
-        ));
-    }
-    if !f.keys.iter().any(|k| verify_message(message, k)) {
-        wrong.push(Refusal::new(
-            "bad_signature",
-            "it is not signed by its signer",
-        ));
+    let opens = f.keys.iter().any(|k| {
+        let suite = crate::sign::suite_of_key(k).unwrap_or_else(|| "std".to_string());
+        verify_message_in(&suite, message, k)
+    });
+    if !opens {
+        wrong.push(Refusal::new("bad_signature", "it is not signed by its signer"));
     }
     ordered(wrong, "message")
 }
@@ -203,16 +175,17 @@ pub fn record_of(block: &Value, held: &Index) -> Vec<String> {
     out
 }
 
-/// Whether a block matches a pull filter (every key, ANDed; `type` read through aliases). `held` resolves records.
+/// Whether a block matches a pull filter (every key, ANDed): `type`, `kind`, `author`, `hash`, `record` (a record's
+/// first hash: every version), `marks` (`{ scheme, value }`: the block carries that exact mark) and `refs`
+/// (`{ key: hash }`). `held` resolves records.
 pub fn matches(block: &Value, filter: &Value, held: &Index) -> bool {
     let Some(f) = filter.as_object().filter(|f| !f.is_empty()) else {
         return true;
     };
-    let read = read_as(block);
-    if f.get("type").is_some_and(|t| Some(t) != read.get("type")) {
+    if f.get("type").is_some_and(|t| Some(t) != block.get("type")) {
         return false;
     }
-    if f.get("kind").is_some_and(|k| Some(k) != st(&read, "kind")) {
+    if f.get("kind").is_some_and(|k| Some(k) != st(block, "kind")) {
         return false;
     }
     if f.get("author")
@@ -233,10 +206,21 @@ pub fn matches(block: &Value, filter: &Value, held: &Index) -> bool {
             return false;
         }
     }
+    if let Some(m) = f.get("marks") {
+        let (scheme, value) = (m.get("scheme"), m.get("value"));
+        let has = st(block, "marks").and_then(Value::as_array).is_some_and(|marks| {
+            marks
+                .iter()
+                .any(|x| x.get("scheme") == scheme && x.get("value") == value)
+        });
+        if !has {
+            return false;
+        }
+    }
     match f.get("refs") {
         Some(Value::Object(refs)) => refs
             .iter()
-            .all(|(k, h)| h.as_str().is_some_and(|h| list(rf(&read, k)).contains(&h))),
+            .all(|(k, h)| h.as_str().is_some_and(|h| list(rf(block, k)).contains(&h))),
         _ => true,
     }
 }
@@ -278,6 +262,7 @@ pub fn answer_pull(
     cap: u64,
     asker: Option<&str>,
     held: Option<&Index>,
+    suite: &str,
 ) -> Result<Value> {
     let since = request.get("since").and_then(Value::as_f64).unwrap_or(0.0) as u64;
     let limit = request
@@ -287,8 +272,7 @@ pub fn answer_pull(
         .filter(|l| *l > 0)
         .unwrap_or(cap)
         .min(cap);
-    let read_request = crate::read::read_message("signed_pull", request);
-    let asker = asker.or_else(|| read_request.get("signer").and_then(Value::as_str));
+    let asker = asker.or_else(|| request.get("signer").and_then(Value::as_str));
     let own = index_of(log.iter().map(|e| &e.block));
     let held = held.unwrap_or(&own);
     let filter = request.get("filter").cloned().unwrap_or(Value::Null);
@@ -331,29 +315,29 @@ pub fn answer_pull(
         "next": found.last().map(|e| e.n).unwrap_or(since),
     });
     match private_key {
-        Some(k) => sign_message(&answer, k),
+        Some(k) => sign_message_in(suite, &answer, k),
         None => Ok(answer),
     }
 }
 
 /// Whether a node's answer (pull or push) is signed by one of the node's keys (any live key of its holder).
 pub fn answer_signed_by(answer: &Value, node_keys: &[String]) -> bool {
-    node_keys.iter().any(|k| verify_message(answer, k))
+    node_keys.iter().any(|k| {
+        let suite = crate::sign::suite_of_key(k).unwrap_or_else(|| "std".to_string());
+        verify_message_in(&suite, answer, k)
+    })
 }
 
 // ---- Push ----
-/// Who a sealed copy is for: `for` maps its hash to a list of ids. An older single id (a string) reads as a list
-/// of one.
+/// Who a sealed copy is for: `for` maps its hash to a list of ids.
 pub fn recipients_of(for_whom: &Value, hash: &str) -> Vec<String> {
     match for_whom.get(hash) {
         Some(Value::Array(a)) => a.iter().filter_map(|i| i.as_str().map(String::from)).collect(),
-        Some(Value::String(s)) if !s.is_empty() => vec![s.clone()],
         _ => vec![],
     }
 }
 
-/// A push: `{ messages, for }`, `for` optional (`{ hash: [id] }`, a list of ids per sealed copy; a single id is read
-/// as a list of one).
+/// A push: `{ messages, for }`, `for` optional (`{ hash: [id] }`, a list of ids per sealed copy).
 pub fn push_request(messages: &[Value], for_whom: Option<&Value>) -> Value {
     let mut r = json!({ "messages": messages });
     if let Some(f) = for_whom {
@@ -366,7 +350,7 @@ pub fn push_request(messages: &[Value], for_whom: Option<&Value>) -> Value {
     pick(&r, &crate::spec().list("messages.push"))
 }
 
-/// A signed push: the push, plus signer, node, a fresh nonce and at, signed by one of the signer's keys.
+/// A signed push: the push, plus signer, node and one proof against replay, signed by one of the signer's keys.
 pub fn sign_push(push: &Value, signer: &Signer) -> Result<Value> {
     stamp(
         pick(push, &crate::spec().list("messages.push")),
@@ -418,140 +402,64 @@ impl Accepted {
     }
 }
 
-/// What a node takes of a push (`incoming`, blocks off the wire) given what it holds. A block without seq is taken only
-/// as history: an older identity's, while its history is open or inside its closed history (a grant or an answer
-/// there stands). A 1.6 block passes the write check and is signed by a key of its author that speaks for it
-/// (`bad_signature` when no key of the author opens it, `void_key` when one does but does not speak); one whose key's
-/// previous block is not held waits. The second of two blocks from one key at one seq is neither taken nor refused:
-/// the pair is listed in `equivocations` (sorted), and the node keeps both as proof.
+/// What a node takes of a push (`incoming`, blocks off the wire) given what it holds. A block is taken when it is
+/// `valid` against what the node holds (valid.rs), refused with each code it breaks otherwise; one whose key's
+/// previous block is not held waits. The second of two blocks from one key naming one `prev` is neither taken nor
+/// refused: the pair is listed in `equivocations` (sorted), and the node keeps both as proof. Any type is taken (open
+/// types are stored and passed on): the check reads only what core.md fixes.
 pub fn accept(
     incoming: &[Value],
     held: &[Value],
     arrived_at: ArrivedAt,
     schemas: Option<&Index>,
 ) -> Accepted {
-    let known = index_of(held.iter().chain(incoming));
+    let mut known = index_of(held.iter());
     let mut out = Accepted::default();
     let mut slots: Vec<(String, String)> = Vec::new();
-    let slot = |block: &Value| -> Option<String> {
+    let slot = |block: &Value, known: &Index| -> Option<String> {
         let author = rs(block, "author")?;
-        let key = signer_of(block, &key_timeline_in(author, &known, None))?;
-        Some(format!(
-            "{author} {key} {}",
-            crate::js::text(st(block, "seq"))
-        ))
+        let prev = rs(block, "prev")?;
+        let key = signer_of(block, &key_timeline_in(author, known, None))?;
+        Some(format!("{author} {key} {prev}"))
     };
     for block in held {
-        if int(st(block, "seq")).is_some() && truthy(rf(block, "author")) {
-            if let Some(at) = slot(block) {
+        if truthy(rf(block, "author")) && rs(block, "prev").is_some() {
+            if let Some(at) = slot(block, &known) {
                 slots.push((at, hash_of(block).to_string()));
             }
         }
     }
-    // Not the author's: no key of the author opens it (bad_signature), or one does but does not speak for it
-    // (void_key), the recovery key included. A genesis is signed by its own key.
-    let unsigned = |block: &Value| -> (&'static str, &'static str) {
-        if is_genesis(block) {
-            return ("bad_genesis", "a genesis is signed by its own key");
-        }
-        let author = rs(block, "author").unwrap_or("");
-        let opened = signer_of(block, &key_timeline_in(author, &known, None)).is_some()
-            || ss(block, "recovery_key").is_some_and(|r| crate::identity::opens(block, r));
-        let keys = key_timeline_in(author, &known, None);
-        if !opened && keys.iter().any(|k| !crate::sign::knows_sign_alg(&k.alg)) {
-            (
-                "unknown_alg",
-                "its author has a key that names a signing algorithm this reader does not know",
-            )
-        } else if opened {
-            ("void_key", "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to")
-        } else {
-            (
-                "bad_signature",
-                "its signature opens with no key of its author",
-            )
-        }
-    };
     for block in causal_order(incoming) {
         let h = hash_of(&block).to_string();
-        let mut refuse = |code: &str, detail: &str| {
-            out.refused.push(Refused {
-                hash: h.clone(),
-                code: code.to_string(),
-                detail: detail.to_string(),
-            })
+        let refuse = |out: &mut Accepted, code: &str, detail: &str| {
+            out.refused.push(Refused { hash: h.clone(), code: code.to_string(), detail: detail.to_string() })
         };
-        if !is_genesis(&block) && st(&block, "seq").is_none() {
-            let root = rs(&block, "author").and_then(|a| known.get(a));
-            if root.is_some_and(is_16_genesis) {
-                refuse(
-                    "no_history",
-                    "a 1.6 identity has no history: a block without seq is refused",
-                );
-                continue;
-            }
-            if let Some(r) = root {
-                if !history_counts_in(&block, hash_of(r), &known) {
-                    refuse("history_closed", "history is closed: it is in neither the first 1.6 block's causal past nor its manifest");
-                    continue;
-                }
-            }
-            if !signed_by_author_in(&block, &known, arrived_at) {
-                let (code, detail) = unsigned(&block);
-                refuse(code, detail);
-                continue;
-            }
-            out.taken.push(block);
-            continue;
-        }
+        // A block whose key's previous block is not held waits (nodes.md, Push), unless its content is already wrong.
         let empty = Value::Null;
-        let wrong = refusals(
-            type_of(&block),
+        let content = crate::check::refusals(
+            crate::js::type_of(&block),
             block.get("state").unwrap_or(&empty),
             block.get("refs").unwrap_or(&empty),
-            CheckOptions {
-                schemas,
-                held: None,
-            },
+            crate::check::CheckOptions { schemas, held: None },
         );
-        if !wrong.is_empty() {
-            for one in &wrong {
-                refuse(&one.code, &one.detail);
+        if !content.is_empty() {
+            for one in &content {
+                refuse(&mut out, &one.code, &one.detail);
             }
             continue;
         }
-        if let Some(prev) =
-            rs(&block, "prev").filter(|p| !is_genesis(&block) && !known.contains_key(*p))
-        {
+        if let Some(prev) = rs(&block, "prev").filter(|p| !is_genesis(&block) && !known.contains_key(*p)) {
             out.waiting.push((h.clone(), vec![prev.to_string()]));
             continue;
         }
-        if !signed_by_author_in(&block, &known, arrived_at) {
-            let (code, detail) = unsigned(&block);
-            refuse(code, detail);
+        let wrong = crate::valid::valid(&block, &known, schemas, arrived_at);
+        if !wrong.is_empty() {
+            for one in &wrong {
+                refuse(&mut out, &one.code, &one.detail);
+            }
             continue;
         }
-        if type_of(&block) == "grant"
-            && ss(&block, "kind") == Some("key")
-            && truthy(st(&block, "replaces"))
-            && !truthy(st(&block, "recovery_key"))
-        {
-            let author = rs(&block, "author").unwrap_or("");
-            if signer_of(&block, &key_timeline_in(author, &known, None)).as_deref()
-                != ss(&block, "replaces")
-            {
-                refuse(
-                    "not_own_rotation",
-                    "a key is rotated only by itself or by the recovery key",
-                );
-                continue;
-            }
-        }
-        let at = if int(st(&block, "seq")).is_some() {
-            slot(&block)
-        } else {
-            None
-        };
+        let at = slot(&block, &known);
         if let Some(at) = &at {
             if let Some((_, other)) = slots.iter().find(|(s, _)| s == at) {
                 if *other != h {
@@ -559,26 +467,29 @@ pub fn accept(
                     let mut pair = [other.clone(), h.clone()];
                     pair.sort();
                     out.equivocations.push(pair);
+                    known.insert(h.clone(), block.clone());
                     continue;
                 }
             }
             slots.push((at.clone(), h.clone()));
         }
+        known.insert(h.clone(), block.clone());
         out.taken.push(block);
     }
+    let _ = int;
     out
 }
 
 /// A node's signed answer to a push (signed by a key of its holder, a person or a machine, brought in by a key grant):
 /// `{ node, taken, waiting, refused: [{ hash, code, detail }], equivocations: [[hash, hash]], signature }`. Every key is
 /// always there; an empty list is []. Each pair is sorted as text.
-pub fn push_answer(accepted: &Accepted, node: &str, private_key: &str) -> Result<Value> {
-    push_answer_of(&accepted.to_json(), node, private_key)
+pub fn push_answer(accepted: &Accepted, node: &str, private_key: &str, suite: &str) -> Result<Value> {
+    push_answer_of(&accepted.to_json(), node, private_key, suite)
 }
 
 /// A node's signed answer to a push, from its parts `{ taken, waiting, refused, equivocations }` (each taken or waiting
 /// entry a hash or `{ hash, ... }`, each refusal `{ hash, code, detail }`; a part left out is empty).
-pub fn push_answer_of(parts: &Value, node: &str, private_key: &str) -> Result<Value> {
+pub fn push_answer_of(parts: &Value, node: &str, private_key: &str, suite: &str) -> Result<Value> {
     let items = |key: &str| {
         parts
             .get(key)
@@ -599,7 +510,8 @@ pub fn push_answer_of(parts: &Value, node: &str, private_key: &str) -> Result<Va
             Value::Array(p)
         }).collect::<Vec<_>>(),
     });
-    sign_message(
+    sign_message_in(
+        suite,
         &pick(&answer, &crate::spec().list("messages.push_answer")),
         private_key,
     )
@@ -666,7 +578,7 @@ pub fn well_known_errors(doc: &Value) -> Vec<String> {
     let sp = crate::spec();
     let discovery = sp.list("messages.discovery");
     let endpoints = sp.list("messages.endpoints");
-    let is_hash = |v: Option<&Value>| v.and_then(Value::as_str).is_some_and(|h| sp.is("hash", h));
+    let is_hash = |v: Option<&Value>| v.and_then(Value::as_str).is_some_and(|h| sp.is("id", h));
     let mut w: Vec<String> = doc
         .as_object()
         .unwrap()

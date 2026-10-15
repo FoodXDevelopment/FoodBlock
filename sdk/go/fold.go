@@ -2,7 +2,7 @@ package foodblock
 
 import "sort"
 
-// The folds (protocol.md §11): thin calls into the Rust core.
+// The folds and views (modules/folds.md): thin calls into the Rust core.
 
 // MoneyTotal is an amount of money in minor units.
 type MoneyTotal struct {
@@ -44,24 +44,27 @@ type Stage struct {
 	Stopped  []string       `json:"stopped"`
 }
 
-// StageOptions: Now (the reader's clock, for expired), Confirmers (ids whose confirms count a transfer, beside the
-// schema's grounds).
+// StageOptions: Confirmers (ids whose confirms count a transfer, beside the schema's grounds).
 type StageOptions struct {
-	Now        string
 	Confirmers []string
 }
 
-// PromiseStage is a promise's stage, from its first promise and every block in its deal.
+// PromiseStage is a promise's stage, from its first promise and every block in its deal. No clock.
 func PromiseStage(firstBlock Block, blocks []Block, options ...StageOptions) Stage {
 	var o StageOptions
 	if len(options) > 0 {
 		o = options[0]
 	}
-	given := map[string]any{"confirmers": plural(o.Confirmers)}
-	if o.Now != "" {
-		given["now"] = o.Now
+	return must[Stage]("promise_stage", firstBlock, plural(blocks), map[string]any{"confirmers": plural(o.Confirmers)})
+}
+
+// PromiseView is the same answer with stage `expired` once the reader's now passes `expires` and nothing binds.
+func PromiseView(firstBlock Block, blocks []Block, now string, options ...StageOptions) Stage {
+	var o StageOptions
+	if len(options) > 0 {
+		o = options[0]
 	}
-	return must[Stage]("promise_stage", firstBlock, plural(blocks), given)
+	return must[Stage]("promise_view", firstBlock, plural(blocks), map[string]any{"now": nilIfEmpty(now), "confirmers": plural(o.Confirmers)})
 }
 
 // Member is one member of a circle: the roles they hold, the grant that made them a member, and counted_to (null
@@ -169,6 +172,39 @@ func WhereNow(thing Block, blocks []Block) []string {
 	return plural(must[[]string]("where_now", thing, plural(blocks)))
 }
 
+// ReceiverOf is who receives a promise ("" when none).
+func ReceiverOf(promise Block, blocks []Block) string {
+	return must[string]("receiver_of", promise, plural(blocks))
+}
+
+// OrdererOf is the orderer a record names (state.orderer), or nil.
+func OrdererOf(record Block) any { return must[any]("orderer_of", record) }
+
+// Consent is a person's live word about a sender (or none): { word, block }.
+func Consent(person, sender string, blocks []Block) map[string]any {
+	return must[map[string]any]("consent", person, nilIfEmpty(sender), plural(blocks))
+}
+
+// LiveGrant is the grant, among grants, that makes an act live at the reader's now (nil when none).
+func LiveGrant(act Block, grants []Block, now string) any {
+	return must[any]("live_grant", act, plural(grants), now)
+}
+
+// WithdrawalSeen is whether a withdrawal was seen before a block, on the reader's arrival log.
+func WithdrawalSeen(withdrawal, b Block, blocks []Block, arrivedAt ArrivedAt) any {
+	return must[any]("withdrawal_seen", withdrawal, b, plural(blocks), arrivals(arrivedAt, append(append([]Block{}, blocks...), withdrawal, b)))
+}
+
+// Due is when a promise falls due, on the reader's arrival log (of the blocks it names).
+func Due(promise Block, arrivedAt ArrivedAt, named []Block) any {
+	return must[any]("due", promise, arrivals(arrivedAt, append([]Block{promise}, named...)))
+}
+
+// RecoveryReach lists the voided blocks a recovery rotation's reach protects.
+func RecoveryReach(rotation Block, blocks []Block, arrivedAt ArrivedAt) any {
+	return must[any]("recovery_reach", rotation, plural(blocks), arrivals(arrivedAt, append(append([]Block{}, blocks...), rotation)))
+}
+
 // Successor is where a successor grant's trigger stands.
 type Successor struct {
 	Events    []string `json:"events"`
@@ -178,13 +214,13 @@ type Successor struct {
 	Fired     bool     `json:"fired"`
 }
 
-// SuccessorState is where a successor grant's trigger stands on the reader's own clock (now) and arrival log.
-func SuccessorState(grant Block, blocks []Block, now string, arrivedAt ArrivedAt) Successor {
+// SuccessorView is where a successor grant's trigger stands on the reader's own clock (now) and arrival log.
+func SuccessorView(grant Block, blocks []Block, now string, arrivedAt ArrivedAt) Successor {
 	var n any
 	if now != "" {
 		n = now
 	}
-	return must[Successor]("successor_state", grant, plural(blocks), n, arrivals(arrivedAt, blocks))
+	return must[Successor]("successor_view", grant, plural(blocks), n, arrivals(arrivedAt, blocks))
 }
 
 // CircleKey is a circle's encryption key now: its epoch (0 is the key in the circle's actor), the open keys and the

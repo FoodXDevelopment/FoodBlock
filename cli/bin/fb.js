@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The FoodBlock CLI (spec/protocol.md): the protocol from a terminal. Blocks are JSON on stdout, so they compose with
+// The FoodBlock CLI (spec/core.md): the protocol from a terminal. Blocks are JSON on stdout, so they compose with
 // anything else. Every check is the SDK's; `create` is the SDK's one write path (`write`: compose, check, sign, chain).
 //
 //   fb init <file> [--kind person|machine|agent]     a new identity: keys and genesis, saved to <file> (kept 0600);
@@ -9,7 +9,13 @@
 //   fb create <type> [kind] --state '{...}' --refs '{...}' [--audience public|<id,id>] [--identity <file>]
 //                                                    a block in the identity's key chain, checked and signed
 //   fb check <type> --state '{...}' --refs '{...}'   what is wrong with a block, in plain words
-//   fb read-as '<block json>'                        a block of any earlier version, read as the current one
+//   fb valid '<signed block json>' --identity <file> every refusal of a block against the blocks the identity holds
+//   fb convert <old blocks file> --keys <keys file> [--at <time>] [--map <map file>]
+//                                                    the ONE-TIME converter for blocks from before 1.6 (not part of
+//                                                    the protocol): fresh 1.6 blocks signed by the key you give for
+//                                                    each old identity, each deriving from the old hash. <keys file>
+//                                                    is { "<old genesis hash>": { public_key_sign, private_key } }.
+//                                                    Prints { blocks, map, skipped }; --map continues an earlier run.
 //   fb verify '<signed block json>' [--identity <file> | '<genesis json>']
 //                                                    whether its author signed exactly this, with a key that speaks
 //
@@ -38,7 +44,7 @@ if (command === 'init') {
   if (!file) fail('init needs a file to keep the identity in');
   fresh(file); fresh(`${file}.recovery.json`);
   const keys = fb.generateKeypair(), encryption = fb.generateEncryptionKeypair(), recovery = fb.generateKeypair();
-  const genesis = fb.identity.genesis(keys, { kind: flag('kind') || 'person', encryptionKey: encryption.public_key_encrypt, recoveryKey: recovery.public_key_sign });
+  const genesis = fb.identity.genesis(keys, { kind: flag('kind') || 'person', encryptionKey: encryption.public_key_encrypt, recoveryKey: recovery.public_key_sign, reach: flag('reach') || 'P30D' });
   save(`${file}.recovery.json`, { id: genesis.hash, recovery });
   save(file, { keys, encryption, genesis, chain: [genesis] });
   out(genesis);
@@ -47,7 +53,8 @@ if (command === 'init') {
   if (!file) fail('key needs a file to keep the new key in');
   fresh(file);
   const me = identity(), id = me.genesis.hash, device = fb.generateKeypair();
-  const last = fb.identity.chainsOf(id, me.chain).find((chain) => chain.key === me.keys.public_key_sign)?.head || null;
+  const headHash = fb.identity.chainsOf(id, me.chain).find((chain) => chain.key === me.keys.public_key_sign)?.head;
+  const last = me.chain.find((block) => block.hash === headHash) || null;
   const grant = fb.identity.keyGrant(id, device.public_key_sign, { private_key: me.keys.private_key, last, broughtIn: id });
   const chain = [...me.chain, grant];
   save(me.file, { keys: me.keys, encryption: me.encryption, genesis: me.genesis, chain });
@@ -67,12 +74,24 @@ if (command === 'init') {
   save(me.file, { keys: me.keys, encryption: me.encryption, genesis: me.genesis, chain: [...me.chain, block] });
   out(signed);
 } else if (command === 'check') out({ errors: fb.check(words[0], json(flag('state'), '--state'), json(flag('refs'), '--refs')) });
-else if (command === 'read-as') out(fb.readAs(json(words[0], 'the block')));
+else if (command === 'valid') {
+  const block = json(words[0], 'the block');
+  out({ refusals: fb.valid({ ...block, hash: fb.hash(block.type, block.state, block.refs, block.suite || 'std') }, identity().chain.filter((held) => held.hash !== block.hash)) });
+} else if (command === 'convert') {
+  const [file] = words;
+  if (!file || !flag('keys')) fail('convert needs <old blocks file> and --keys <keys file>');
+  const old = json(readFileSync(file, 'utf8'), file), keys = json(readFileSync(flag('keys'), 'utf8'), '--keys');
+  const earlier = flag('map') && existsSync(flag('map')) ? json(readFileSync(flag('map'), 'utf8'), '--map') : { map: {}, blocks: [] };
+  let done;
+  try { done = fb.legacy.convert(Array.isArray(old) ? old : old.blocks, { keys, at: flag('at') || new Date().toISOString(), map: earlier.map, existing: earlier.blocks }); } catch (error) { fail(error.message); }
+  if (flag('map')) save(flag('map'), { map: done.map, blocks: [...earlier.blocks, ...done.blocks] });
+  out(done);
+}
 else if (command === 'verify') {
   const signed = json(words[0], 'the block');
   const held = flag('identity') ? identity().chain : [words[1] ? json(words[1], 'the genesis') : signed];
   out({ signedByItsAuthor: fb.identity.signedByAuthor({ ...signed, hash: fb.hash(signed.type, signed.state, signed.refs) }, held) });
 } else {
-  process.stdout.write(`FoodBlock ${fb.VERSION}: fb init | key | create | check | read-as | verify (see the top of bin/fb.js)\n`);
+  process.stdout.write(`FoodBlock ${fb.VERSION}: fb init | key | create | check | valid | convert | verify (see the top of bin/fb.js)\n`);
   if (command) process.exit(1);
 }
