@@ -1,0 +1,44 @@
+plugins {
+    kotlin("jvm")
+    `java-library`
+}
+
+kotlin { jvmToolchain(17) }
+
+dependencies {
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    testImplementation(kotlin("test"))
+}
+
+// The one implementation: the Rust core in sdk/rust, built for this computer with its JNI door.
+val rust = rootDir.resolve("../rust")
+val profile = providers.gradleProperty("foodblock.profile").getOrElse("node")
+val osName = System.getProperty("os.name").lowercase()
+val libName = when {
+    osName.contains("mac") -> "libfoodblock.dylib"
+    osName.contains("win") -> "foodblock.dll"
+    else -> "libfoodblock.so"
+}
+
+val cargoHost = tasks.register<Exec>("cargoHost") {
+    description = "Builds the Rust core (sdk/rust) with --features jni for this computer."
+    workingDir = rust
+    commandLine("cargo", "rustc", "--release", "--no-default-features", "--features", "jni,$profile", "--crate-type", "cdylib")
+    inputs.dir(rust.resolve("src"))
+    inputs.dir(rust.resolve("spec"))
+    inputs.file(rust.resolve("Cargo.toml"))
+    inputs.property("profile", profile)
+    outputs.file(rust.resolve("target/release/$libName"))
+}
+
+tasks.test {
+    dependsOn(cargoHost)
+    useJUnitPlatform()
+    systemProperty("foodblock.library", rust.resolve("target/release/$libName").absolutePath)
+    systemProperty("foodblock.repo", rootDir.resolve("../..").canonicalPath)
+    testLogging {
+        events("passed", "failed", "skipped")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}

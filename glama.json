@@ -7,14 +7,21 @@
   },
   "server": {
     "name": "foodblock-mcp",
-    "description": "Food data tools for any AI agent. 17 MCP tools for the food industry — describe food in English, get structured data back. Works standalone with zero config.",
+    "description": "FoodBlock 1.6 for any AI agent: write signed, checked food blocks in one identity's key chain, and read every earlier shape. Eight tools.",
     "repository": "https://github.com/FoodXDevelopment/foodblock",
     "homepage": "https://foodx.world",
     "npm": "foodblock-mcp",
     "license": "MIT",
     "runtime": "node",
-    "transport": ["stdio"],
-    "tools": 17,
-    "categories": ["food", "agriculture", "supply-chain", "data"]
+    "transport": [
+      "stdio"
+    ],
+    "tools": 8,
+    "categories": [
+      "food",
+      "agriculture",
+      "supply-chain",
+      "data"
+    ]
   }
 }

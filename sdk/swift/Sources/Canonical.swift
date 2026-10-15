@@ -1,171 +1,119 @@
 import Foundation
+import CryptoKit
 
-/// Produces deterministic JSON for FoodBlock hashing.
-public enum Canonical {
-
-    /// Generate canonical JSON string from type, state, and refs.
-    public static func canonical(type: String, state: [String: Any], refs: [String: Any]) -> String {
-        let obj: [String: Any] = ["type": type, "state": state, "refs": refs]
-        return stringify(obj, inRefs: false)
+// The canonical form (spec/canonical.md): the bytes a block's hash and signature cover. Keys sorted by UTF-16 code
+// units at every level, no whitespace, numbers as JavaScript writes them, strings in NFC, string arrays inside any
+// `refs` object sorted (set semantics), nulls omitted (inside arrays too).
+extension FoodBlock {
+    /// The canonical UTF-8 string of `{ type, state, refs }`.
+    public static func canonical(_ type: String, _ state: JSON, _ refs: JSON) throws -> String {
+        try canonicalJSON(["type": type, "state": state, "refs": refs])
     }
 
-    private static func stringify(_ value: Any, inRefs: Bool) -> String {
-        if value is NSNull { return "" }
+    /// A signed message part's canonical JSON, by the same rules.
+    public static func canonicalJSON(_ value: Any) throws -> String {
+        var out = ""
+        try write(value, inRefs: false, into: &out)
+        return out
+    }
 
-        if let bool = value as? Bool {
-            return bool ? "true" : "false"
-        }
+    static func sha256Hex(_ data: Data) -> String { SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined() }
+    static func sha256Hex(_ text: String) -> String { sha256Hex(Data(text.utf8)) }
 
-        if let num = value as? NSNumber {
-            // Check if it's actually a boolean (NSNumber wraps bools)
-            if CFBooleanGetTypeID() == CFGetTypeID(num) {
-                return num.boolValue ? "true" : "false"
-            }
-            return canonicalNumber(num.doubleValue)
-        }
-
-        if let int = value as? Int {
-            return "\(int)"
-        }
-
-        if let double = value as? Double {
-            return canonicalNumber(double)
-        }
-
-        if let str = value as? String {
-            let normalized = str.precomposedStringWithCanonicalMapping // NFC
-            return escapeJSON(normalized)
-        }
-
+    private static func write(_ value: Any, inRefs: Bool, into out: inout String) throws {
+        if value is NSNull { out += "null"; return }
+        if isBool(value) { out += truthy(value) ? "true" : "false"; return }
+        if let n = numberOf(value) { out += try numberString(n); return }
+        if let s = value as? String { writeString(s, into: &out); return }
         if let arr = value as? [Any] {
-            var items: [Any]
-            if inRefs, let strArr = arr as? [String] {
-                items = strArr.sorted()
-            } else {
-                items = arr
+            var items = arr
+            if inRefs, let strings = arr as? [String] { items = strings.sorted(by: jsLess) }
+            out += "["
+            var first = true
+            for item in items where !(item is NSNull) {
+                if !first { out += "," }
+                first = false
+                try write(item, inRefs: inRefs, into: &out)
             }
-            let parts = items.compactMap { item -> String? in
-                let s = stringify(item, inRefs: inRefs)
-                return s.isEmpty ? nil : s
-            }
-            return "[" + parts.joined(separator: ",") + "]"
+            out += "]"
+            return
         }
-
-        if let dict = value as? [String: Any] {
-            let keys = dict.keys.sorted()
-            var parts: [String] = []
-            for key in keys {
-                guard let val = dict[key] else { continue }
-                if val is NSNull { continue }
-                let childInRefs = inRefs || key == "refs"
-                let valStr = stringify(val, inRefs: childInRefs)
-                if !valStr.isEmpty {
-                    let normalizedKey = key.precomposedStringWithCanonicalMapping
-                    parts.append(escapeJSON(normalizedKey) + ":" + valStr)
-                }
+        if let dict = value as? JSON {
+            out += "{"
+            var first = true
+            for key in dict.keys.sorted(by: jsLess) {
+                guard let v = dict[key], !(v is NSNull) else { continue }
+                if !first { out += "," }
+                first = false
+                writeString(key, into: &out)
+                out += ":"
+                try write(v, inRefs: inRefs || key == "refs", into: &out)
             }
-            return "{" + parts.joined(separator: ",") + "}"
+            out += "}"
+            return
         }
-
-        return ""
+        throw FoodBlockError.invalid("FoodBlock: unsupported value \(type(of: value))")
     }
 
-    /// Format number per ECMAScript Number::toString (RFC 8785 §3.2.2.3).
-    /// Matches JavaScript's String(n) behavior exactly.
-    private static func canonicalNumber(_ n: Double) -> String {
-        if n == 0.0 { return "0" }
-        if n == n.rounded(.towardZero) && abs(n) < Double(1 << 53) {
-            return "\(Int(n))"
-        }
-
-        // Use repr-like shortest representation via %g, then reformat per ECMAScript rules.
-        // Swift's "\(n)" uses scientific notation for small numbers; we must avoid that.
-        let repr = "\(n)" // e.g. "1e-06" or "0.123"
-        let (sign, absRepr): (String, String) = n < 0
-            ? ("-", String(repr.dropFirst()))
-            : ("", repr)
-
-        // Parse digits and exponent from the repr
-        let digits: String
-        let exponent: Int
-
-        if let eIdx = absRepr.lowercased().range(of: "e") {
-            // Scientific notation from Swift: e.g. "1e-06", "1.5e+20"
-            let mantissa = String(absRepr[absRepr.startIndex..<eIdx.lowerBound])
-            let expPart = String(absRepr[eIdx.upperBound...])
-            let exp = Int(expPart) ?? 0
-            let cleaned = mantissa.replacingOccurrences(of: ".", with: "")
-            let dotPos = mantissa.contains(".")
-                ? mantissa.distance(from: mantissa.startIndex, to: mantissa.firstIndex(of: ".")!)
-                : mantissa.count
-            digits = cleaned
-            exponent = exp - (cleaned.count - dotPos)
-        } else if absRepr.contains(".") {
-            // Plain decimal: e.g. "0.123"
-            let cleaned = absRepr.replacingOccurrences(of: ".", with: "")
-            let dotPos = absRepr.distance(from: absRepr.startIndex, to: absRepr.firstIndex(of: ".")!)
-            digits = cleaned
-            exponent = -(cleaned.count - dotPos)
-        } else {
-            digits = absRepr
-            exponent = 0
-        }
-
-        // Strip leading zeros from digits
-        let stripped = String(digits.drop(while: { $0 == "0" }))
-        guard !stripped.isEmpty else { return "0" }
-
-        let numDigits = stripped.count
-        let nPos = numDigits + exponent  // position of decimal point from left of digit string
-
-        let result: String
-        if numDigits <= nPos && nPos <= 21 {
-            // Integer-like: pad with trailing zeros
-            result = stripped + String(repeating: "0", count: nPos - numDigits)
-        } else if 0 < nPos && nPos <= 21 {
-            // Decimal notation: split at nPos
-            let idx = stripped.index(stripped.startIndex, offsetBy: nPos)
-            result = String(stripped[stripped.startIndex..<idx]) + "." + String(stripped[idx...])
-        } else if -6 < nPos && nPos <= 0 {
-            // Small decimal: 0.000...digits
-            result = "0." + String(repeating: "0", count: -nPos) + stripped
-        } else {
-            // Scientific notation (matches JS format)
-            let mantissa: String
-            if numDigits == 1 {
-                mantissa = stripped
-            } else {
-                let idx = stripped.index(stripped.startIndex, offsetBy: 1)
-                mantissa = String(stripped[stripped.startIndex..<idx]) + "." + String(stripped[idx...])
-            }
-            let e = nPos - 1
-            result = mantissa + (e > 0 ? "e+\(e)" : "e\(e)")
-        }
-
-        return sign + result
+    /// ECMAScript Number::toString.
+    static func numberString(_ n: Double) throws -> String {
+        guard n.isFinite else { throw FoodBlockError.invalid("FoodBlock: Infinity and NaN are not allowed") }
+        if n == 0 { return "0" }
+        let sign = n < 0 ? "-" : ""
+        // Swift's description is the shortest round-trip form: "0.0001", "1e-07", "1e+20", "100.0".
+        let text = "\(abs(n))"
+        let parts = text.split(separator: "e", maxSplits: 1).map(String.init)
+        var exp = parts.count > 1 ? Int(parts[1].replacingOccurrences(of: "+", with: ""))! : 0
+        let mant = parts[0].split(separator: ".", maxSplits: 1).map(String.init)
+        let intPart = mant[0], frac = mant.count > 1 ? mant[1] : ""
+        exp += intPart.count
+        var digits = Array(intPart + frac)
+        while digits.first == "0" { digits.removeFirst(); exp -= 1 }
+        while digits.last == "0" { digits.removeLast() }
+        let s = String(digits), k = digits.count, point = exp
+        if k <= point && point <= 21 { return sign + s + String(repeating: "0", count: point - k) }
+        if 0 < point && point <= 21 { return sign + String(digits[..<point]) + "." + String(digits[point...]) }
+        if -6 < point && point <= 0 { return sign + "0." + String(repeating: "0", count: -point) + s }
+        let e = point - 1
+        return sign + String(digits[0]) + (k > 1 ? "." + String(digits[1...]) : "") + "e" + (e < 0 ? "-" : "+") + String(abs(e))
     }
 
-    private static func escapeJSON(_ str: String) -> String {
-        var result = "\""
-        for char in str {
-            switch char {
-            case "\"": result += "\\\""
-            case "\\": result += "\\\\"
-            case "\n": result += "\\n"
-            case "\r": result += "\\r"
-            case "\t": result += "\\t"
+    /// JSON.stringify of the NFC string: UTF-8 kept, only quotes, backslashes and controls escaped.
+    private static func writeString(_ s: String, into out: inout String) {
+        out += "\""
+        for scalar in s.precomposedStringWithCanonicalMapping.unicodeScalars {
+            switch scalar {
+            case "\"": out += "\\\""
+            case "\\": out += "\\\\"
+            case "\u{08}": out += "\\b"
+            case "\u{0C}": out += "\\f"
+            case "\n": out += "\\n"
+            case "\r": out += "\\r"
+            case "\t": out += "\\t"
             default:
-                if char.asciiValue != nil || char > "\u{1F}" {
-                    result.append(char)
-                } else {
-                    let scalars = char.unicodeScalars
-                    for scalar in scalars {
-                        result += String(format: "\\u%04x", scalar.value)
-                    }
-                }
+                if scalar.value < 0x20 { out += String(format: "\\u%04x", scalar.value) } else { out.unicodeScalars.append(scalar) }
             }
         }
-        result += "\""
-        return result
+        out += "\""
+    }
+
+    // ---- A block and its id ----
+
+    /// A block with its hash: `{ hash, type, state, refs }`, nulls dropped. Refs are hashes or lists of hashes.
+    public static func create(_ type: String, _ state: JSON = [:], _ refs: JSON = [:]) throws -> JSON {
+        let s = omitNulls(state) as! JSON, r = omitNulls(refs) as! JSON
+        for (key, value) in r where !(value is String) && !((value as? [Any])?.allSatisfy { $0 is String } ?? false) {
+            throw FoodBlockError.invalid("FoodBlock: refs.\(key) must be a string or array of strings")
+        }
+        return ["hash": try hash(type, s, r), "type": type, "state": s, "refs": r]
+    }
+
+    /// The block's id: SHA-256 of its canonical form, 64 lowercase hex.
+    public static func hash(_ type: String, _ state: JSON = [:], _ refs: JSON = [:]) throws -> String {
+        sha256Hex(try canonical(type, state, refs))
+    }
+    /// The id of a block given as `{ type, state, refs }`.
+    public static func hash(of block: JSON) throws -> String {
+        try hash(block["type"] as? String ?? "", obj(block["state"]) ?? [:], obj(block["refs"]) ?? [:])
     }
 }

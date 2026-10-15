@@ -1,0 +1,1134 @@
+{
+  "$comment": "FoodBlock 1.6 (protocol.md, Encoding: Aliases): one table reads every earlier shape as 1.6. Read forever, never written; reading never changes a block or its hash. It applies to every block, with or without state.seq, in the order protocol.json `aliases.order` gives: `types` first (each old type name and the 1.6 type and kind it reads as; `fields` renames old state fields first; any other key, such as `status` or `channel`, is state the block read as when it said nothing; `retired` names a type that is no longer protocol, `outside` says where it went; a name with no row reads by `types_dotted`), then `shapes` (for the block's type.kind, then its type, then `*`, the rows for every type, as read so far; read again when a rule changes its type or kind), then `refs` (old ref names that mean the same on every type), then `outside` (a ref value with this prefix names someone with no record: an open side). A shape rule: `when` (paths that must hold: a value, \"*\" for present, null for absent, tested on the block as read so far); then, in this order, `refs` ({old ref: new ref}, renames on this type), `move` ({from path: to path}), `copy` ({to path: from path}), `join` ({to path: [paths]}, joined with '.'), `drop` ([paths]), `set` ({path: value}); then `type` and `kind` (a new reading); `settles` (the ref naming the block this one settles: a reader's mark, never written). refs, move, copy and set never write over a value the block already has there unless `force` is true. `draft: true` marks a rule that reads the words the first 1.6 code wrote (refs.deal, refs.agent, the statuses offered, asked, live, withdrawn, paused, ended; the type schema; state.rule) before 1.6 settled; such blocks carry seq, so rules apply to blocks with seq too. `envelope.ignored`: fields of an older envelope a reader ignores.",
+  "types": {
+    "place": {
+      "type": "thing"
+    },
+    "substance": {
+      "type": "thing"
+    },
+    "actor.foodie": {
+      "type": "actor",
+      "kind": "person"
+    },
+    "actor.creator": {
+      "type": "actor",
+      "kind": "creator"
+    },
+    "actor.producer": {
+      "type": "actor",
+      "kind": "producer"
+    },
+    "actor.maker": {
+      "type": "actor",
+      "kind": "maker"
+    },
+    "actor.mobile": {
+      "type": "actor",
+      "kind": "mobile"
+    },
+    "actor.professional": {
+      "type": "actor",
+      "kind": "professional"
+    },
+    "actor.sustainer": {
+      "type": "actor",
+      "kind": "sustainer"
+    },
+    "actor.community": {
+      "type": "actor",
+      "kind": "community"
+    },
+    "actor.distributor": {
+      "type": "actor",
+      "kind": "distributor"
+    },
+    "actor.innovator": {
+      "type": "actor",
+      "kind": "innovator"
+    },
+    "actor.authority": {
+      "type": "actor",
+      "kind": "authority"
+    },
+    "actor.app": {
+      "type": "actor",
+      "kind": "app"
+    },
+    "actor.agent": {
+      "type": "actor",
+      "kind": "agent"
+    },
+    "actor.seller": {
+      "type": "actor",
+      "kind": "seller"
+    },
+    "actor.customer": {
+      "type": "actor",
+      "kind": "customer"
+    },
+    "actor.capability": {
+      "type": "actor",
+      "kind": "capability"
+    },
+    "actor.system": {
+      "type": "actor",
+      "kind": "system"
+    },
+    "actor.charity": {
+      "type": "actor",
+      "kind": "charity"
+    },
+    "actor.venue": {
+      "type": "actor",
+      "kind": "venue"
+    },
+    "actor.vendor": {
+      "type": "actor",
+      "kind": "vendor"
+    },
+    "actor.processor": {
+      "type": "actor",
+      "kind": "processor"
+    },
+    "actor.caterer": {
+      "type": "actor",
+      "kind": "caterer"
+    },
+    "actor.fishery": {
+      "type": "actor",
+      "kind": "fishery"
+    },
+    "actor.dairy": {
+      "type": "actor",
+      "kind": "dairy"
+    },
+    "actor.butcher": {
+      "type": "actor",
+      "kind": "butcher"
+    },
+    "place.venue": {
+      "type": "thing",
+      "kind": "venue"
+    },
+    "place.market": {
+      "type": "thing",
+      "kind": "market"
+    },
+    "place.farm": {
+      "type": "thing",
+      "kind": "farm"
+    },
+    "substance.product": {
+      "type": "thing",
+      "kind": "product"
+    },
+    "substance.surplus": {
+      "type": "thing",
+      "kind": "surplus"
+    },
+    "substance.ingredient": {
+      "type": "thing",
+      "kind": "ingredient"
+    },
+    "substance.seafood": {
+      "type": "thing",
+      "kind": "seafood"
+    },
+    "substance.dairy": {
+      "type": "thing",
+      "kind": "dairy"
+    },
+    "substance.animal": {
+      "type": "thing",
+      "kind": "animal"
+    },
+    "substance.meat": {
+      "type": "thing",
+      "kind": "meat"
+    },
+    "relationship.deal": {
+      "type": "promise",
+      "kind": "deal"
+    },
+    "relationship.reward": {
+      "type": "grant",
+      "kind": "reward"
+    },
+    "relationship.redemption": {
+      "type": "transfer",
+      "kind": "redemption"
+    },
+    "observe.deal": {
+      "type": "observe",
+      "kind": "deal"
+    },
+    "substance.deal": {
+      "type": "promise",
+      "kind": "deal",
+      "status": "offered"
+    },
+    "transform.harvest": {
+      "type": "transform",
+      "kind": "harvest"
+    },
+    "transform.milling": {
+      "type": "transform",
+      "kind": "milling"
+    },
+    "transform.baking": {
+      "type": "transform",
+      "kind": "baking"
+    },
+    "transform.fermenting": {
+      "type": "transform",
+      "kind": "fermenting"
+    },
+    "transform.cooking": {
+      "type": "transform",
+      "kind": "cooking"
+    },
+    "transform.butchering": {
+      "type": "transform",
+      "kind": "butchering"
+    },
+    "transform.process": {
+      "type": "transform",
+      "kind": "process"
+    },
+    "transform.composting": {
+      "type": "transform",
+      "kind": "composting"
+    },
+    "transform.recipe": {
+      "type": "transform",
+      "kind": "recipe"
+    },
+    "transfer.order": {
+      "type": "promise",
+      "kind": "order"
+    },
+    "transfer.subscription": {
+      "type": "promise",
+      "kind": "subscription"
+    },
+    "transfer.save": {
+      "type": "observe",
+      "kind": "save"
+    },
+    "transfer.share": {
+      "type": "observe",
+      "kind": "share"
+    },
+    "transfer.tip": {
+      "type": "transfer",
+      "kind": "tip"
+    },
+    "transfer.charity_payout": {
+      "type": "transfer",
+      "kind": "charity_payout"
+    },
+    "transfer.shipment": {
+      "type": "transfer",
+      "kind": "shipment"
+    },
+    "transfer.donation": {
+      "type": "transfer",
+      "kind": "donation"
+    },
+    "transfer.payment": {
+      "type": "transfer",
+      "kind": "payment"
+    },
+    "transfer.refund": {
+      "type": "transfer",
+      "kind": "refund"
+    },
+    "transfer.dispute": {
+      "type": "observe",
+      "kind": "dispute"
+    },
+    "transfer.payout": {
+      "type": "transfer",
+      "kind": "payout"
+    },
+    "transfer.checkout": {
+      "type": "transfer",
+      "kind": "checkout"
+    },
+    "transfer.delivery": {
+      "type": "transfer",
+      "kind": "delivery"
+    },
+    "transfer.booking": {
+      "type": "promise",
+      "kind": "booking"
+    },
+    "transfer.catering": {
+      "type": "promise",
+      "kind": "catering"
+    },
+    "transfer.gift": {
+      "type": "transfer",
+      "kind": "gift"
+    },
+    "observe.review": {
+      "type": "observe",
+      "kind": "review"
+    },
+    "observe.capture": {
+      "type": "observe",
+      "kind": "capture"
+    },
+    "observe.post": {
+      "type": "observe",
+      "kind": "post"
+    },
+    "observe.herenow": {
+      "type": "observe",
+      "kind": "herenow"
+    },
+    "observe.meal": {
+      "type": "observe",
+      "kind": "meal"
+    },
+    "observe.waste": {
+      "type": "observe",
+      "kind": "waste"
+    },
+    "observe.concern": {
+      "type": "observe",
+      "kind": "concern"
+    },
+    "observe.delivery_proof": {
+      "type": "observe",
+      "kind": "delivery_proof"
+    },
+    "observe.reaction": {
+      "type": "observe",
+      "kind": "reaction"
+    },
+    "observe.comment": {
+      "type": "observe",
+      "kind": "comment"
+    },
+    "observe.madeit": {
+      "type": "observe",
+      "kind": "madeit"
+    },
+    "observe.helpful": {
+      "type": "observe",
+      "kind": "helpful"
+    },
+    "observe.referral_code": {
+      "type": "observe",
+      "kind": "referral_code"
+    },
+    "observe.referral_claim": {
+      "type": "observe",
+      "kind": "referral_claim"
+    },
+    "observe.poll": {
+      "type": "observe",
+      "kind": "poll"
+    },
+    "observe.vote": {
+      "type": "observe",
+      "kind": "vote"
+    },
+    "observe.interest": {
+      "type": "observe",
+      "kind": "interest"
+    },
+    "observe.like": {
+      "type": "observe",
+      "kind": "like"
+    },
+    "observe.rating": {
+      "type": "observe",
+      "kind": "rating"
+    },
+    "observe.badge_vote": {
+      "type": "observe",
+      "kind": "badge_vote"
+    },
+    "observe.claim": {
+      "type": "observe",
+      "kind": "claim"
+    },
+    "observe.follow": {
+      "type": "observe",
+      "kind": "follow"
+    },
+    "observe.user_block": {
+      "type": "observe",
+      "kind": "user_block"
+    },
+    "observe.report": {
+      "type": "observe",
+      "kind": "report"
+    },
+    "observe.conversation": {
+      "type": "observe",
+      "kind": "conversation"
+    },
+    "observe.message": {
+      "type": "observe",
+      "kind": "message"
+    },
+    "transfer.message": {
+      "type": "observe",
+      "kind": "message"
+    },
+    "observe.read": {
+      "type": "observe",
+      "kind": "read"
+    },
+    "observe.intelligence": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.preference": {
+      "type": "observe",
+      "kind": "preference",
+      "fields": {
+        "kind": "says"
+      }
+    },
+    "observe.delegation": {
+      "type": "grant",
+      "kind": "delegation"
+    },
+    "observe.cooking_session": {
+      "type": "transform",
+      "kind": "cooking"
+    },
+    "observe.preference.dietary": {
+      "type": "observe",
+      "kind": "preference.dietary"
+    },
+    "foodx.preference.notifications": {
+      "retired": true,
+      "outside": "product state, not protocol"
+    },
+    "foodx.onboarding.completion": {
+      "retired": true,
+      "outside": "product state, not protocol"
+    },
+    "foodx.postlogin.completion": {
+      "retired": true,
+      "outside": "product state, not protocol"
+    },
+    "observe.agent_message": {
+      "type": "observe",
+      "kind": "agent_message"
+    },
+    "observe.capability": {
+      "type": "observe",
+      "kind": "capability"
+    },
+    "observe.reasoning": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.inspection": {
+      "type": "observe",
+      "kind": "inspection"
+    },
+    "observe.assessment": {
+      "type": "observe",
+      "kind": "assessment"
+    },
+    "observe.experiment": {
+      "type": "observe",
+      "kind": "experiment"
+    },
+    "observe.event": {
+      "type": "observe",
+      "kind": "event"
+    },
+    "observe.certification": {
+      "type": "observe",
+      "kind": "certification"
+    },
+    "observe.proof": {
+      "type": "observe",
+      "kind": "proof"
+    },
+    "observe.mandate": {
+      "type": "grant",
+      "kind": "mandate"
+    },
+    "observe.close": {
+      "type": "observe",
+      "kind": "close"
+    },
+    "observe.evaluation": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.onboarding.step": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.onboarding.complete": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.message.inbound.email": {
+      "type": "observe",
+      "kind": "message",
+      "channel": "email",
+      "direction": "inbound"
+    },
+    "observe.message.inbound.whatsapp": {
+      "type": "observe",
+      "kind": "message",
+      "channel": "whatsapp",
+      "direction": "inbound"
+    },
+    "observe.message.inbound.sms": {
+      "type": "observe",
+      "kind": "message",
+      "channel": "sms",
+      "direction": "inbound"
+    },
+    "observe.message.inbound.instagram": {
+      "type": "observe",
+      "kind": "message",
+      "channel": "instagram",
+      "direction": "inbound"
+    },
+    "observe.payment.received.square": {
+      "type": "transfer",
+      "kind": "payment",
+      "provider": "square"
+    },
+    "observe.payment.received.stripe": {
+      "type": "transfer",
+      "kind": "payment",
+      "provider": "stripe"
+    },
+    "observe.intent": {
+      "type": "observe",
+      "kind": "want"
+    },
+    "observe.offer": {
+      "type": "promise",
+      "status": "offered"
+    },
+    "observe.match": {
+      "type": "observe",
+      "kind": "match"
+    },
+    "observe.checkout_ready": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.checkout_error": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.receipt": {
+      "type": "observe",
+      "kind": "receipt"
+    },
+    "observe.charity_vote": {
+      "type": "observe",
+      "kind": "charity_vote"
+    },
+    "observe.charity_allocation": {
+      "type": "observe",
+      "kind": "charity_allocation"
+    },
+    "observe.problem": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.tombstone": {
+      "type": "observe",
+      "kind": "tombstone"
+    },
+    "observe.provenance": {
+      "type": "observe",
+      "kind": "provenance"
+    },
+    "observe.attestation": {
+      "type": "observe",
+      "kind": "attestation"
+    },
+    "observe.dispute": {
+      "type": "observe",
+      "kind": "dispute"
+    },
+    "observe.scan": {
+      "type": "observe",
+      "kind": "scan"
+    },
+    "observe.merge": {
+      "type": "observe",
+      "kind": "merge"
+    },
+    "observe.snapshot": {
+      "retired": true,
+      "outside": "execution or product state, not protocol"
+    },
+    "observe.connection": {
+      "type": "grant",
+      "kind": "connection"
+    },
+    "observe.venue_note": {
+      "type": "observe",
+      "kind": "venue_note"
+    },
+    "observe.note": {
+      "type": "observe",
+      "kind": "note"
+    },
+    "observe.access_grant": {
+      "type": "grant",
+      "kind": "access"
+    },
+    "observe.access_revoke": {
+      "type": "grant",
+      "kind": "access",
+      "status": "revoked"
+    },
+    "observe.app_manifest": {
+      "type": "observe",
+      "kind": "app_manifest"
+    },
+    "observe.alert": {
+      "type": "observe",
+      "kind": "alert"
+    },
+    "observe.inventory_event": {
+      "type": "observe",
+      "kind": "inventory_event"
+    },
+    "observe.reading": {
+      "type": "observe",
+      "kind": "reading"
+    },
+    "observe.schema": {
+      "type": "schema",
+      "kind": "schema"
+    },
+    "observe.schema_registry": {
+      "type": "schema",
+      "kind": "registry"
+    },
+    "observe.permission": {
+      "type": "grant",
+      "kind": "permission"
+    },
+    "observe.environment": {
+      "type": "observe",
+      "kind": "environment"
+    },
+    "observe.approval": {
+      "type": "grant",
+      "kind": "approval"
+    },
+    "observe.checkpoint": {
+      "type": "observe",
+      "kind": "checkpoint"
+    },
+    "observe.trust_policy": {
+      "type": "observe",
+      "kind": "trust_policy"
+    },
+    "observe.template": {
+      "type": "observe",
+      "kind": "template"
+    },
+    "observe.extension": {
+      "type": "observe",
+      "kind": "extension"
+    },
+    "observe.inventory": {
+      "type": "observe",
+      "kind": "inventory"
+    },
+    "identity.claim": {
+      "type": "observe",
+      "kind": "identity_claim"
+    },
+    "identity.attestation": {
+      "type": "observe",
+      "kind": "identity_attestation"
+    },
+    "identity.revocation": {
+      "type": "observe",
+      "kind": "identity_revocation"
+    },
+    "collection.list": {
+      "type": "thing",
+      "kind": "list"
+    },
+    "observe.recipe_saved": {
+      "type": "observe",
+      "kind": "recipe_saved"
+    },
+    "observe.idea": {
+      "type": "observe",
+      "kind": "idea"
+    },
+    "observe.relation": {
+      "type": "observe",
+      "kind": "relation"
+    },
+    "observe.meal_event": {
+      "type": "observe",
+      "kind": "meal_event"
+    },
+    "observe.vocabulary": {
+      "type": "observe",
+      "kind": "vocabulary"
+    },
+    "observe.contract": {
+      "type": "promise",
+      "status": "offered",
+      "kind": "contract"
+    },
+    "observe.auction": {
+      "type": "promise",
+      "status": "offered",
+      "kind": "auction"
+    }
+  },
+  "types_dotted": "A type name with no row in `types`, written `base.rest`, where `base` is a 1.6 type or a `types` row that is not retired, reads as `base` reads, with state.kind `rest` (everything after the first dot) unless the block already has a state.kind. `observe.whatever` reads as type `observe`, kind `whatever`. A type row's `kind` likewise never overwrites a state.kind the block has. Applied in the `types` step, after the rows.",
+  "shapes": {
+    "promise": [
+      {
+        "draft": true,
+        "when": {
+          "state.status": "not_true"
+        },
+        "set": {
+          "state.status": "stopped",
+          "state.stop": "onward"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "revoked"
+        },
+        "set": {
+          "state.status": "stopped",
+          "state.stop": "onward"
+        },
+        "force": true
+      },
+      {
+        "refs": {
+          "seller": "from",
+          "buyer": "to",
+          "need": "for"
+        },
+        "move": {
+          "state.due": "state.terms.deliver_by",
+          "state.terms.due": "state.terms.deliver_by"
+        }
+      },
+      {
+        "when": {
+          "state.status": "not_true"
+        },
+        "set": {
+          "state.status": "withdrawn"
+        },
+        "force": true
+      },
+      {
+        "when": {
+          "state.status": "revoked"
+        },
+        "set": {
+          "state.status": "withdrawn"
+        },
+        "force": true
+      },
+      {
+        "when": {
+          "state.status": "delivered",
+          "refs.updates": "*"
+        },
+        "settles": "updates",
+        "set": {
+          "state.status": "accepted"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.delivered": "*",
+          "refs.updates": "*"
+        },
+        "settles": "updates"
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "offered"
+        },
+        "drop": [
+          "state.status"
+        ]
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "asked"
+        },
+        "drop": [
+          "state.status"
+        ]
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "withdrawn"
+        },
+        "set": {
+          "state.status": "stopped",
+          "state.stop": "before"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "ended"
+        },
+        "set": {
+          "state.status": "stopped",
+          "state.stop": "onward"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "paused"
+        },
+        "move": {
+          "state.occurrences": "state.stop.occurrences"
+        },
+        "set": {
+          "state.stop": {
+            "occurrences": []
+          }
+        }
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "paused"
+        },
+        "set": {
+          "state.status": "stopped"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.condition": "*"
+        },
+        "move": {
+          "state.condition": "state.terms.condition"
+        }
+      },
+      {
+        "draft": true,
+        "when": {
+          "refs.counterparty": "*",
+          "refs.from": "*",
+          "refs.to": null
+        },
+        "move": {
+          "refs.counterparty": "refs.to"
+        }
+      },
+      {
+        "draft": true,
+        "when": {
+          "refs.counterparty": "*",
+          "refs.to": "*",
+          "refs.from": null
+        },
+        "move": {
+          "refs.counterparty": "refs.from"
+        }
+      }
+    ],
+    "transfer": [
+      {
+        "refs": {
+          "order": "for"
+        }
+      }
+    ],
+    "observe.want": [
+      {
+        "draft": true,
+        "type": "promise",
+        "copy": {
+          "refs.to": "refs.author"
+        }
+      }
+    ],
+    "grant": [
+      {
+        "draft": true,
+        "when": {
+          "state.status": "revoked"
+        },
+        "set": {
+          "state.status": "stopped",
+          "state.stop": "onward"
+        },
+        "force": true
+      },
+      {
+        "when": {
+          "state.status": "revoked"
+        },
+        "set": {
+          "state.status": "withdrawn"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "live"
+        },
+        "drop": [
+          "state.status"
+        ]
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.status": "withdrawn"
+        },
+        "set": {
+          "state.status": "stopped",
+          "state.stop": "onward"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "refs.agent": "*"
+        },
+        "move": {
+          "refs.agent": "refs.to"
+        }
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.scope.parties": "any"
+        },
+        "drop": [
+          "state.scope.parties"
+        ]
+      }
+    ],
+    "grant.member": [
+      {
+        "refs": {
+          "member": "agent",
+          "group": "subject"
+        }
+      },
+      {
+        "when": {
+          "refs.confirms": "*"
+        },
+        "refs": {
+          "confirms": "answers"
+        },
+        "set": {
+          "state.status": "accepted"
+        }
+      },
+      {
+        "when": {
+          "refs.defeats": "*"
+        },
+        "refs": {
+          "defeats": "updates"
+        },
+        "set": {
+          "state.status": "withdrawn"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "refs.as": null,
+          "refs.subject": "*",
+          "refs.answers": null
+        },
+        "copy": {
+          "refs.as": "refs.subject"
+        }
+      }
+    ],
+    "grant.holder": [
+      {
+        "refs": {
+          "member": "agent",
+          "group": "subject"
+        }
+      }
+    ],
+    "grant.voice": [
+      {
+        "refs": {
+          "member": "agent",
+          "group": "subject"
+        }
+      }
+    ],
+    "grant.body": [
+      {
+        "draft": true,
+        "when": {
+          "refs.member": "*"
+        },
+        "move": {
+          "refs.member": "refs.to"
+        }
+      }
+    ],
+    "grant.successor": [
+      {
+        "draft": true,
+        "when": {
+          "state.sealed": "*"
+        },
+        "move": {
+          "state.sealed": "state.keys"
+        }
+      }
+    ],
+    "actor": [
+      {
+        "draft": true,
+        "drop": [
+          "refs.operator",
+          "state.operator"
+        ]
+      }
+    ],
+    "schema": [
+      {
+        "draft": true,
+        "when": {
+          "state.target": "*"
+        },
+        "join": {
+          "state.target": [
+            "state.target",
+            "state.kind"
+          ]
+        },
+        "type": "thing",
+        "kind": "schema"
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.target": null
+        },
+        "type": "thing",
+        "kind": "schema"
+      }
+    ],
+    "observe.received": [
+      {
+        "when": {
+          "refs.confirms": "*"
+        },
+        "settles": "confirms"
+      }
+    ],
+    "observe.attestation": [
+      {
+        "when": {
+          "state.received": true,
+          "refs.confirms": "*"
+        },
+        "settles": "confirms"
+      },
+      {
+        "when": {
+          "state.accepted": true,
+          "refs.confirms": "*"
+        },
+        "type": "grant",
+        "kind": "member"
+      },
+      {
+        "when": {
+          "state.accepted": false,
+          "refs.confirms": "*"
+        },
+        "type": "grant",
+        "kind": "member",
+        "refs": {
+          "confirms": "defeats"
+        }
+      }
+    ],
+    "*": [
+      {
+        "draft": true,
+        "when": {
+          "refs.deal": "*"
+        },
+        "move": {
+          "refs.deal": "refs.for"
+        },
+        "force": true
+      },
+      {
+        "draft": true,
+        "when": {
+          "state.rule": "*"
+        },
+        "move": {
+          "state.rule": "refs.under"
+        }
+      }
+    ]
+  },
+  "refs": {
+    "order": "answers",
+    "reply_to": "answers",
+    "corrects": "defeats",
+    "challenges": "defeats",
+    "witnesses": "confirms",
+    "source": "derives_from",
+    "about": "subject",
+    "supersedes": "updates",
+    "contradicts": "defeats",
+    "derived_by": "derives_from"
+  },
+  "outside": "outside:",
+  "envelope": {
+    "ignored": [
+      "key_hash"
+    ]
+  }
+}

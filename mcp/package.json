@@ -1,7 +1,7 @@
 {
   "name": "foodblock-mcp",
-  "version": "0.5.3",
-  "description": "MCP server for the FoodBlock protocol — food data tools for any AI agent. Works standalone or connected.",
+  "version": "1.6.0",
+  "description": "MCP server for the FoodBlock 1.6 protocol: any AI agent reads and writes signed FoodBlocks",
   "type": "module",
   "main": "server.js",
   "bin": {
@@ -9,8 +9,6 @@
   },
   "files": [
     "server.js",
-    "store.js",
-    "seed.cjs",
     "README.md",
     "LICENSE"
   ],
@@ -42,7 +40,7 @@
   "homepage": "https://foodx.world",
   "author": "FoodX",
   "dependencies": {
-    "@foodxdev/foodblock": "^0.5.0",
+    "@foodxdev/foodblock": "file:../sdk/javascript",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "zod": "^3.24.0"
   },

@@ -1,6 +1,9 @@
 # @foodxdev/foodblock
 
-SDK for the FoodBlock Protocol — a content-addressable data primitive for universal food data.
+The JavaScript reference SDK for the FoodBlock protocol, version 1.6 (`spec/protocol.md`, normative). A block is
+`{ type, state, refs }`, signed by its author's key; its identity is the SHA-256 of its canonical form. Every closed
+list (types, verbs, ref keys, answers, terms, grammar, limits, profiles) is read from `spec/protocol.json`; every
+older shape is read through `spec/aliases.json`. Nothing is copied into code.
 
 ## Install
 
@@ -8,105 +11,58 @@ SDK for the FoodBlock Protocol — a content-addressable data primitive for univ
 npm install @foodxdev/foodblock
 ```
 
-## Quick Start
+## Quick start
 
 ```js
-const { create, update, chain } = require('@foodxdev/foodblock')
+const fb = require('@foodxdev/foodblock')
 
-// Create a block
-const farm = create('actor.producer', { name: 'Green Acres Farm' })
-// => { hash: 'a1b2c3...', type: 'actor.producer', state: {...}, refs: {} }
-
-// Create with references
-const bread = create('substance.product', { name: 'Sourdough', price: 4.50 }, {
-  seller: farm.hash
+// Who you are: a genesis naming your signing, encryption and (offline) recovery keys.
+const keys = fb.generateKeypair()                       // { public_key_sign, private_key }
+const me = fb.identity.genesis(keys, {
+  encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt,
+  recoveryKey: fb.generateKeypair().public_key_sign
 })
 
-// Update a block (creates a new block referencing the previous)
-const updated = update(bread.hash, 'substance.product', { name: 'Sourdough', price: 5.00 })
-// updated.refs.updates === bread.hash
+// The one write path: compose, check, sign, chain. Money is { minor, currency }; amounts are decimal strings.
+const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, held: [me] })
+const offer = fb.write('promise', { terms: { price: fb.money(450, 'GBP'), quantity: fb.amount('2', '{tray}'), expires: '2026-10-20T00:00:00.000Z' } },
+  { from: me.hash, what: eggs.hash }, { author: me.hash, key: keys, held: [me, eggs] })
 
-// Follow the provenance chain
-const history = await chain(updated.hash, async (hash) => {
-  // your resolver: fetch block by hash from DB/API
-  return await fetch(`/blocks/${hash}`).then(r => r.json())
-})
+fb.promiseStage(offer, [me, eggs, offer]).stage   // 'offered'
+fb.readAs(oldBlock)                                // any earlier shape, read as 1.6
 ```
 
-## Base Types
+## The seven types and seven verbs
 
-FoodBlock defines 6 base types. Subtypes use dot notation (e.g. `actor.producer`).
-
-| Type | Description |
-|------|-------------|
-| `actor` | People, orgs, devices, agents |
-| `place` | Locations, facilities, appliances |
-| `substance` | Ingredients, products, materials |
-| `transform` | Processes that change substances |
-| `transfer` | Movement of substances between actors |
-| `observe` | Reviews, scans, certifications |
+`actor`, `thing` (what exists); `observe`, `transform`, `transfer` (is); `promise` (must); `grant` (may). A schema is a
+`thing` of kind schema. The verbs: `updates`, `answers`, `confirms`, `defeats`, `for`, `derives_from`, `same_as`;
+`prev` and `after` are causal metadata.
 
 ## API
 
-### `create(type, state?, refs?)`
+- The protocol as data: `VERSION`, `PROTOCOL`, `ALIASES`, `TYPES`, `VERBS`, `REF_KEYS`, `FIELDS`, `PROFILES`.
+- Blocks: `create`, `hash`, `canonical`, `canonicalJSON`.
+- Keys and signatures: `generateKeypair`, `keypairFromSeed`, `sign(block, private_key)` (hex),
+  `verify(block, signature, public_key_sign)`, `signMessage`, `verifyMessage`.
+- Encryption: `generateEncryptionKeypair`, `encryptionKeyOf`, `seal(value, keys, { alg })`, `open(envelope, x25519_private)`,
+  `ALG`, `ALG_RAW`.
+- The commitment: `newSalt`, `saltedHash`, `commit`, `findsSelf`, `revealFor`.
+- Writing: `compose`, `write`, `check` (the write check), `amount`, `money`, `confidence`, `terms`.
+- The wire: `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy`.
+- Reading: `readAs`, `isA`.
+- Chains and order: `nextLink`, `checkChain`, `causalOrder`, `pastOf`, `sees`.
+- Identity: `identity.genesis`, `keyGrant`, `identityOf`, `keyTimeline`, `keysOf`, `signedByAuthor`, `chainsOf`,
+  `nextLinkFor`, `recoveryKeyHash`, `historyCounts`.
+- Authority: `grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration`.
+- Folds: `fold.promiseStage`, `circleState`, `holdersOf`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`,
+  `receiverOf`, `whereNow`, `successorState`, `circleKey`, `sequencerOf`.
+- Between nodes: `sync.pullRequest`, `signPull`, `pullErrors`, `matches`, `answerPull`, `answerSignedBy`, `accept`,
+  `pushAnswer`, `waitedTooLong`, `wellKnown`, `announcement`, `wellKnownErrors`.
 
-Create a new FoodBlock. Returns `{ hash, type, state, refs }`.
+## Tests
 
-- `type` — string, required (e.g. `'substance.product'`)
-- `state` — object, the block's data
-- `refs` — object, references to other blocks by hash
-
-The hash is `SHA-256(canonical(type + state + refs))` — deterministic and content-addressable.
-
-### `update(previousHash, type, stateChanges?, additionalRefs?)`
-
-Create an update block that supersedes a previous block. Adds `refs.updates` pointing to the previous hash.
-
-### `hash(type, state?, refs?)`
-
-Compute the SHA-256 hash without creating a full block object.
-
-### `canonical(type, state, refs)`
-
-Produce the deterministic canonical JSON string used for hashing.
-
-### `chain(startHash, resolve, opts?)`
-
-Follow the `updates` chain backwards. `resolve` is `async (hash) => block | null`. Returns array from newest to oldest.
-
-### `tree(startHash, resolve, opts?)`
-
-Follow ALL refs recursively to build the full provenance tree.
-
-### `generateKeypair()`
-
-Generate an Ed25519 keypair for signing. Returns `{ publicKey, privateKey }` as hex strings.
-
-### `sign(block, authorHash, privateKeyHex)`
-
-Sign a block. Returns `{ foodblock, author_hash, signature }`.
-
-### `verify(wrapper, publicKeyHex)`
-
-Verify a signed block wrapper. Returns `true` or `false`.
-
-### `createAgent(name, operatorHash, opts?)`
-
-Create an AI agent identity with its own keypair. Returns an agent object with a `.sign()` method.
-
-## Canonical Form Rules
-
-1. Keys sorted lexicographically at every nesting level
-2. No whitespace
-3. Numbers: no trailing zeros, no leading zeros
-4. Strings: Unicode NFC normalization
-5. Arrays in `refs`: sorted lexicographically (set semantics)
-6. Arrays in `state`: preserve declared order (sequence semantics)
-7. Null values: omitted
-
-## Sandbox
-
-Try the live sandbox at [api.foodx.world/foodblock](https://api.foodx.world/foodblock/)
+`npm test` runs the conformance vectors (`spec/run-vectors.cjs`) and the unit tests. `node test/make-vectors.cjs`
+rebuilds `spec/vectors.json`, keeping every earlier vector byte for byte.
 
 ## License
 

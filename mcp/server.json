@@ -1,27 +1,27 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.FoodXDevelopment/foodblock-mcp",
-  "description": "Food data tools for any AI agent. Describe food in English, get structured data back.",
+  "description": "FoodBlock 1.6 for any AI agent: write signed, checked food blocks and read every earlier shape.",
   "repository": {
     "url": "https://github.com/FoodXDevelopment/foodblock",
     "source": "github"
   },
-  "version": "0.5.2",
+  "version": "1.6.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "foodblock-mcp",
-      "version": "0.5.2",
+      "version": "1.6.0",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
-          "description": "Optional FoodBlock server URL. Leave empty for standalone mode.",
+          "description": "Optional file holding this server's identity (keys, genesis and the blocks it signs), so its key chain carries on across runs.",
           "isRequired": false,
           "format": "string",
-          "isSecret": false,
-          "name": "FOODBLOCK_URL"
+          "isSecret": true,
+          "name": "FOODBLOCK_IDENTITY"
         }
       ]
     }

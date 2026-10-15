@@ -1,0 +1,58 @@
+[package]
+name = "foodblock"
+version = "1.6.0"
+edition = "2021"
+license = "MIT"
+description = "FoodBlock 1.6 for robots, vehicles, sensors and nodes: canonical form, SHA-256, Ed25519, the write check, chains, envelopes and folds, with a C ABI and a C++ layer."
+repository = "https://github.com/FoodXDevelopment/foodblock"
+readme = "README.md"
+keywords = ["foodblock", "protocol", "embedded", "robotics", "ed25519"]
+categories = ["cryptography", "embedded", "no-std", "encoding"]
+include = ["src/**", "spec/**", "include/**", "README.md", "LICENSE", "Cargo.toml"]
+
+[features]
+default = ["std", "node"]
+# The standard library: OS randomness for new keys, salts and envelopes. Without it the crate is no_std + alloc, and
+# the caller hands in random bytes.
+std = ["dep:getrandom", "serde_json/std"]
+# The three profiles of protocol.json `profiles`. The micro core (canonical form, SHA-256, Ed25519, the write check,
+# its own chain, the grant check and aliases) is always built; edge and node add to it.
+micro = []
+edge = ["micro", "folds", "sync"]
+node = ["edge", "envelope"]
+# The parts the profiles turn on.
+folds = []
+sync = []
+envelope = ["dep:x25519-dalek", "dep:aes-gcm", "dep:hkdf"]
+# The C ABI (include/foodblock.h), JSON in and JSON out.
+ffi = ["std", "node"]
+# The JNI door for Kotlin (sdk/kotlin): one native call, JSON in and out. Pick the profile beside it.
+jni = ["std", "dep:jni"]
+
+[dependencies]
+serde_json = { version = "1.0.120", default-features = false, features = ["alloc", "preserve_order", "float_roundtrip"] }
+indexmap = { version = "2", default-features = false }
+sha2 = { version = "0.10", default-features = false }
+ed25519-dalek = { version = "2.1", default-features = false }
+unicode-normalization = { version = "0.1.23", default-features = false }
+once_cell = { version = "1.19", default-features = false, features = ["race", "alloc"] }
+getrandom = { version = "0.2", optional = true }
+x25519-dalek = { version = "2", default-features = false, features = ["static_secrets"], optional = true }
+aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"], optional = true }
+hkdf = { version = "0.12", default-features = false, optional = true }
+jni = { version = "0.21", optional = true }
+
+[profile.dev.package."*"]
+# Signature checks run thousands of times in the conformance tests; keep the crypto fast in debug builds.
+opt-level = 3
+
+[profile.release]
+lto = true
+codegen-units = 1
+
+# The smallest build, for a micro device: cargo build --profile micro --no-default-features --features micro
+[profile.micro]
+inherits = "release"
+opt-level = "z"
+panic = "abort"
+strip = true

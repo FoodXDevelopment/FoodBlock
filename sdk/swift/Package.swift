@@ -8,7 +8,8 @@ let package = Package(
         .library(name: "FoodBlock", targets: ["FoodBlock"]),
     ],
     targets: [
-        .target(name: "FoodBlock", path: "Sources"),
+        // Sources/spec holds exact copies of spec/protocol.json and spec/aliases.json (test/sync-spec.cjs makes them).
+        .target(name: "FoodBlock", path: "Sources", resources: [.copy("spec")]),
         .testTarget(name: "FoodBlockTests", dependencies: ["FoodBlock"], path: "Tests"),
     ]
 )

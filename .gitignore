@@ -36,3 +36,11 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Rust
+sdk/rust/target/
+
+# Kotlin / Android
+sdk/kotlin/.gradle/
+sdk/kotlin/**/build/
+sdk/kotlin/local.properties

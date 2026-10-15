@@ -1,27 +1,14 @@
-FROM node:18-alpine
-
+# Build from the repository root: docker build -f server/Dockerfile .
+FROM node:20-alpine
 WORKDIR /app
-
-# Copy SDK (server depends on it)
+# The node depends on the SDK package (file:../sdk/javascript), which loads spec/protocol.json and spec/aliases.json.
 COPY sdk/javascript/ ./sdk/javascript/
+COPY spec/protocol.json spec/aliases.json ./spec/
 COPY sql/ ./sql/
-
-# Copy server
 COPY server/package*.json ./server/
-COPY server/index.js ./server/
-COPY server/db.js ./server/
-COPY server/logger.js ./server/
-COPY server/pagination.js ./server/
-COPY server/routes/ ./server/routes/
-COPY server/public/ ./server/public/
-
-# Install dependencies
 WORKDIR /app/server
-RUN npm install --production
-
+RUN npm install --omit=dev
+COPY server/index.js server/node.js ./
 EXPOSE 3111
-
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3111/health || exit 1
-
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -q --spider http://localhost:3111/health || exit 1
 CMD ["node", "index.js"]

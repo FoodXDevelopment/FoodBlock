@@ -1,50 +1,32 @@
-# FoodBlock Distribution Checklist
+# Distribution
 
-Status of getting FoodBlock into every AI tool.
+What is published, and what publishing FoodBlock 1.6 needs. Nothing is published without Patrick's go-ahead.
 
-## Published
+## Published today (all 0.x, before 1.6)
 
-- [x] **npm: @foodxdev/foodblock@0.4.0** — SDK
-- [x] **npm: foodblock-mcp@0.5.1** — MCP server (`npx foodblock-mcp` works)
-- [x] **Official MCP Registry** — io.github.FoodXDevelopment/foodblock-mcp (published via mcp-publisher)
+| Where | What | Speaks |
+|---|---|---|
+| npm `@foodxdev/foodblock@0.5.0` | the JS SDK | 0.5 |
+| npm `foodblock-mcp@0.5.x` | the MCP server | 0.5 |
+| npm `foodblock-cli@0.5.1` | the CLI | 0.5 |
+| MCP Registry `io.github.FoodXDevelopment/foodblock-mcp` | points at `foodblock-mcp` on npm | 0.5 |
+| Glama | indexes `glama.json` from the GitHub repository | whatever is pushed there |
 
-## Directories
+So `npx foodblock-mcp` and `npm install foodblock-cli` give the 0.5 tools, not what is in this repository.
 
-- [x] **Official MCP Registry** — published, live at registry.modelcontextprotocol.io
-- [x] **PulseMCP** — auto-indexes from official registry weekly, no action needed
-- [x] **Glama** — glama.json in repo for auto-indexing; also submit PR to punkpeye/awesome-mcp-servers
-- [ ] **Smithery** — namespace created (foodxdevelopment), hosted deploy needs paid plan
+## What publishing 1.6 needs
 
-## AI Tool Configs (ready — just add to config)
+Every package is at `1.6.0`, and the protocol version each one reports is read from `spec/protocol.json`.
 
-- [x] **Claude Code** — configured in ~/.claude.json (restart to activate)
-- [ ] **Claude Desktop** — add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-  ```json
-  {"mcpServers":{"foodblock":{"command":"npx","args":["-y","foodblock-mcp"]}}}
-  ```
-- [ ] **Cursor** — Settings > MCP Servers > Add
-- [ ] **Windsurf** — Settings > MCP
-- [ ] **Gemini CLI** — add to MCP config
+1. **The JS SDK carries its spec copy.** Python, Go and Swift already carry exact copies of `protocol.json` and
+   `aliases.json` (`node test/sync-spec.cjs`, checked by each SDK's tests). The JS SDK still reads
+   `../../../spec/`, which an installed package cannot reach. To finish: make `sdk/javascript/spec/`, run
+   `node test/sync-spec.cjs`, point `src/spec.cjs` at `../spec/`, and add `spec/` to its `files`.
+2. **The MCP server and CLI name the SDK by version.** In this repository they depend on
+   `file:../sdk/javascript`. npm does not rewrite that on publish, so at release it becomes `"^1.6.0"`, once the SDK
+   is on npm.
+3. Then npm (SDK, MCP, CLI), the MCP Registry (`mcp/server.json`), PyPI (`sdk/python`), a Go module tag
+   (`sdk/go/v1.6.0`), and the Swift package (SwiftPM needs `Package.swift` at the root of the repository it fetches,
+   so the Swift SDK publishes from its own repository or a root manifest).
 
-## ChatGPT Custom GPT
-
-See `openai/GPT_SETUP.md` for step-by-step instructions.
-
-Prerequisites:
-1. Domain verification for `api.foodx.world` (DNS TXT or hosted file)
-2. Privacy policy at https://foodx.world/privacy (already exists)
-
-Steps:
-1. Go to https://chatgpt.com/gpts/editor
-2. Paste config from `openai/GPT_SETUP.md`
-3. Add action with `openai/openapi.yaml` schema
-4. Set privacy policy URL to `https://foodx.world/privacy`
-5. Publish as public
-
-## Gemini
-
-- **Gemini CLI**: MCP config (same as other tools)
-- **Gemini API**: Use `gemini/tools.json` for function calling
-- **Google AI Studio**: Paste function declarations from `gemini/tools.json`
-- **Vertex AI**: Same format with snake_case field names
-- Docs: `gemini/README.md`
+The node (`server/`) is not a package: run it from this repository or with its Dockerfile.

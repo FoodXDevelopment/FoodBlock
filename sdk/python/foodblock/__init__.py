@@ -1,56 +1,32 @@
-PROTOCOL_VERSION = '0.5.0'
+"""FoodBlock 1.6 for Python (spec/protocol.md): the same API as the JavaScript reference, in snake_case. Every closed
+list comes from protocol.json (PROTOCOL), every older shape from aliases.json, both carried in foodblock/spec/.
+`sign` signs; `seal` encrypts."""
 
-from .block import create, update, merge_update, compute_hash
-from .chain import chain, tree, head
-from .verify import generate_keypair, sign, verify
-from .canonical import canonical
-from .agent import create_agent, create_draft, approve_draft, load_agent
-from .query import query, Query
-from .tombstone import tombstone
-from .validate import validate
-from .encrypt import encrypt, decrypt, generate_encryption_keypair
-from .offline import offline_queue, OfflineQueue
-from .alias import registry, Registry
-from .notation import parse, parse_all, format_block
-from .explain import explain
-from .uri import to_uri, from_uri
-from .template import create_template, from_template, TEMPLATES
-from .federation import discover, federated_resolver, well_known
-from .vocabulary import create_vocabulary, map_fields, quantity, transition, next_statuses, localize, VOCABULARIES
-from .forward import forward, recall, downstream
-from .merge import detect_conflict, merge, auto_merge
-from .merkle import merkleize, selective_disclose, verify_proof
-from .snapshot import create_snapshot, verify_snapshot, summarize
-from .attestation import attest, dispute, trace_attestations, trust_score
-from .trust import compute_trust, connection_density, create_trust_policy, DEFAULT_WEIGHTS
-from .seed import seed_vocabularies, seed_templates, seed_all
-from .fb import fb
+from .spec import VERSION, PROTOCOL, ALIASES, TYPES, VERBS, REF_KEYS, PROFILES
+from .protocol import FIELDS, CODES, check, refusals, amount, money, confidence, terms
+from .canonical import canonical, canonical_json
+from .block import create, hash  # noqa: A004 (the protocol's word)
+from .sign import generate_keypair, keypair_from_seed, sign, verify, sign_message, verify_message
+from .envelope import ALG, ALG_RAW, seal, open, generate_encryption_keypair, encryption_key_of  # noqa: A004
+from .audience import new_salt, salted_hash, commit, finds_self, reveal_for
+from .write import PUBLIC, Refused, compose, write, wrap, unwrap, header, seal_copy, open_copy, header_signed_by
+from .aliases import read_as, is_a
+from .chain import next_link, check_chain
+from .order import causal_order, past_of, sees
+from . import identity, grant, fold, sync
+from .fold import promise_stage, circle_state, members_then, where_now, owner_of
+from .identity import identity_state
 
 __all__ = [
-    'create', 'update', 'merge_update', 'compute_hash',
-    'chain', 'tree', 'head',
-    'generate_keypair', 'sign', 'verify',
-    'canonical',
-    'create_agent', 'create_draft', 'approve_draft', 'load_agent',
-    'query', 'Query',
-    'tombstone',
-    'validate',
-    'encrypt', 'decrypt', 'generate_encryption_keypair',
-    'offline_queue', 'OfflineQueue',
-    'registry', 'Registry',
-    'parse', 'parse_all', 'format_block',
-    'explain',
-    'to_uri', 'from_uri',
-    'create_template', 'from_template', 'TEMPLATES',
-    'discover', 'federated_resolver', 'well_known',
-    'create_vocabulary', 'map_fields', 'quantity', 'transition', 'next_statuses', 'localize', 'VOCABULARIES',
-    'forward', 'recall', 'downstream',
-    'detect_conflict', 'merge', 'auto_merge',
-    'merkleize', 'selective_disclose', 'verify_proof',
-    'create_snapshot', 'verify_snapshot', 'summarize',
-    'attest', 'dispute', 'trace_attestations', 'trust_score',
-    'compute_trust', 'connection_density', 'create_trust_policy', 'DEFAULT_WEIGHTS',
-    'seed_vocabularies', 'seed_templates', 'seed_all',
-    'fb',
-    'PROTOCOL_VERSION',
+    "VERSION", "PROTOCOL", "ALIASES", "TYPES", "VERBS", "REF_KEYS", "FIELDS", "PROFILES",
+    "create", "hash", "canonical", "canonical_json",
+    "generate_keypair", "keypair_from_seed", "sign", "verify", "sign_message", "verify_message",
+    "generate_encryption_keypair", "encryption_key_of", "seal", "open", "ALG", "ALG_RAW",
+    "new_salt", "salted_hash", "commit", "finds_self", "reveal_for",
+    "PUBLIC", "Refused", "compose", "write", "check", "refusals", "CODES", "amount", "money", "confidence", "terms",
+    "wrap", "unwrap", "header", "seal_copy", "open_copy", "header_signed_by",
+    "read_as", "is_a",
+    "next_link", "check_chain", "causal_order", "past_of", "sees",
+    "identity", "grant", "fold", "sync",
+    "promise_stage", "circle_state", "identity_state", "members_then", "where_now", "owner_of",
 ]

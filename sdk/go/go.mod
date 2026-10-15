@@ -1,8 +1,5 @@
 module github.com/FoodXDevelopment/foodblock/sdk/go
 
-go 1.21
+go 1.24
 
-require (
-	golang.org/x/crypto v0.31.0
-	golang.org/x/text v0.21.0
-)
+require golang.org/x/text v0.21.0

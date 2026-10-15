@@ -1,7 +1,7 @@
 """
-Deterministic JSON serialization for FoodBlock hashing.
-Aligns with RFC 8785 (JSON Canonicalization Scheme) for number formatting
-and key ordering, extended with FoodBlock-specific rules.
+The canonical form (spec/canonical.md): the bytes a block's hash and signature cover.
+Aligns with RFC 8785 for number formatting and key ordering, plus FoodBlock rules.
+Floats are still formatted here so old blocks keep their hashes; writing refuses them (protocol.py, check).
 
 Rules (RFC 8785 + FoodBlock):
 1. Keys sorted lexicographically at every nesting level (RFC 8785 §3.2.3)
@@ -23,8 +23,14 @@ import decimal
 
 
 def canonical(type_: str, state: dict, refs: dict) -> str:
+    """The canonical UTF-8 string of { type, state, refs }: what a block's hash and signature cover."""
     obj = {"type": type_, "state": state, "refs": refs}
     return _stringify(obj, in_refs=False)
+
+
+def canonical_json(value) -> str:
+    """A signed message part (protocol.md, Encoding: Messages) is signed over its canonical JSON by the same rules."""
+    return _stringify(value, in_refs=False)
 
 
 def _stringify(value, in_refs=False) -> Optional[str]:
@@ -45,7 +51,7 @@ def _stringify(value, in_refs=False) -> Optional[str]:
 
     if isinstance(value, list):
         if in_refs:
-            items = sorted(value) if all(isinstance(v, str) for v in value) else value
+            items = sorted(value, key=_utf16) if all(isinstance(v, str) for v in value) else value
             parts = [_stringify(v, in_refs) for v in items]
         else:
             parts = [_stringify(v, in_refs) for v in value]
@@ -53,7 +59,7 @@ def _stringify(value, in_refs=False) -> Optional[str]:
         return "[" + ",".join(filtered) + "]"
 
     if isinstance(value, dict):
-        keys = sorted(value.keys())
+        keys = sorted(value.keys(), key=_utf16)
         parts = []
         for key in keys:
             child_in_refs = in_refs or key == "refs"
@@ -64,6 +70,11 @@ def _stringify(value, in_refs=False) -> Optional[str]:
         return "{" + ",".join(parts) + "}"
 
     raise TypeError(f"FoodBlock: unsupported type {type(value)}")
+
+
+def _utf16(s: str) -> bytes:
+    """Rule 1: order by UTF-16 code units, as JavaScript sorts (big-endian bytes compare the same way)."""
+    return s.encode("utf-16-be", "surrogatepass")
 
 
 def _canonical_number(n) -> str:

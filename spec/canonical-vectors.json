@@ -1,0 +1,32 @@
+{
+  "comment": "Adversarial conformance vectors for the canonical algorithm (protocol v3 §3). A conforming implementation MUST reproduce every canonical string and sha256 exactly. Until an implementation passes these, its identities are not protocol identities.",
+  "vectors": [
+    { "name": "key order is meaningless",
+      "block": { "type": "t.a", "state": { "b": 1, "a": 2 }, "refs": {} },
+      "same_as": { "type": "t.a", "state": { "a": 2, "b": 1 }, "refs": {} } },
+    { "name": "negative zero folds to zero",
+      "block": { "type": "t.a", "state": { "n": -0 }, "refs": {} },
+      "same_as": { "type": "t.a", "state": { "n": 0 }, "refs": {} } },
+    { "name": "number shortest form",
+      "block": { "type": "t.a", "state": { "n": 1.5, "m": 100 }, "refs": {} },
+      "canonical_contains": "\"m\":100,\"n\":1.5" },
+    { "name": "NFC: composed and decomposed é are one string",
+      "block": { "type": "t.a", "state": { "s": "café" }, "refs": {} },
+      "same_as": { "type": "t.a", "state": { "s": "café" }, "refs": {} } },
+    { "name": "emoji and astral characters survive",
+      "block": { "type": "t.a", "state": { "s": "🍞 sourdough" }, "refs": {} },
+      "canonical_contains": "🍞 sourdough" },
+    { "name": "refs arrays are sets (sorted)",
+      "block": { "type": "t.a", "state": {}, "refs": { "sees": ["b2", "a1"] } },
+      "same_as": { "type": "t.a", "state": {}, "refs": { "sees": ["a1", "b2"] } } },
+    { "name": "state arrays are sequences (order preserved)",
+      "block": { "type": "t.a", "state": { "steps": ["knead", "bake"] }, "refs": {} },
+      "not_same_as": { "type": "t.a", "state": { "steps": ["bake", "knead"] }, "refs": {} } },
+    { "name": "nulls are omitted entirely",
+      "block": { "type": "t.a", "state": { "a": 1, "gone": null }, "refs": {} },
+      "same_as": { "type": "t.a", "state": { "a": 1 }, "refs": {} } },
+    { "name": "at is inside identity for claims",
+      "block": { "type": "t.a", "state": { "a": 1, "at": "2026-07-07T15:00:00Z" }, "refs": {} },
+      "not_same_as": { "type": "t.a", "state": { "a": 1, "at": "2026-07-07T15:00:01Z" }, "refs": {} } }
+  ]
+}

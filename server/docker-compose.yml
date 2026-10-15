@@ -1,5 +1,4 @@
-version: '3.8'
-
+# A FoodBlock 1.6 node and its Postgres: docker compose -f server/docker-compose.yml up
 services:
   db:
     image: postgres:16-alpine
@@ -7,10 +6,7 @@ services:
       POSTGRES_DB: foodblock
       POSTGRES_USER: foodblock
       POSTGRES_PASSWORD: ${FOODBLOCK_DB_PASSWORD:-localdev}
-    ports:
-      - "5433:5432"
     volumes:
-      - ../sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U foodblock"]
@@ -18,7 +14,7 @@ services:
       timeout: 3s
       retries: 5
 
-  server:
+  node:
     build:
       context: ..
       dockerfile: server/Dockerfile
@@ -27,11 +23,13 @@ services:
     environment:
       - DATABASE_URL=postgresql://foodblock:${FOODBLOCK_DB_PASSWORD:-localdev}@db:5432/foodblock
       - PORT=3111
-      - FEDERATION_PUBLIC_KEY=${FEDERATION_PUBLIC_KEY:-}
-      - FEDERATION_PRIVATE_KEY=${FEDERATION_PRIVATE_KEY:-}
-      - FOODBLOCK_SERVER_NAME=${FOODBLOCK_SERVER_NAME:-FoodBlock Reference Server}
-      - FOODBLOCK_SERVER_URL=${FOODBLOCK_SERVER_URL:-}
-      - FOODBLOCK_PEERS=${FOODBLOCK_PEERS:-}
+      - NODE_KEY=/keys/node-key.json
+      - NODE_URL=${NODE_URL:-}
+      - SPEAKS_FOR=${SPEAKS_FOR:-}
+      - ADMISSION=${ADMISSION:-}
+    # The node's key file, made by `fb key node-key.json --identity me.json`.
+    volumes:
+      - ${NODE_KEY_FILE:-./node-key.json}:/keys/node-key.json:ro
     depends_on:
       db:
         condition: service_healthy

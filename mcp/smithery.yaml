@@ -3,14 +3,14 @@ startCommand:
   configSchema:
     type: object
     properties:
-      foodblockUrl:
+      identityFile:
         type: string
-        description: "Optional FoodBlock server URL. Leave empty for standalone mode with 47 demo blocks."
+        description: "Optional file holding this server's identity, so its key chain carries on across runs."
     required: []
   commandFunction:
     |-
     (config) => ({
       command: "npx",
       args: ["-y", "foodblock-mcp"],
-      env: config.foodblockUrl ? { FOODBLOCK_URL: config.foodblockUrl } : {}
+      env: config.identityFile ? { FOODBLOCK_IDENTITY: config.identityFile } : {}
     })
