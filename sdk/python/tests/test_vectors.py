@@ -230,7 +230,6 @@ class Identities(unittest.TestCase):
                     self.assertEqual(fb.grant.operators_of(v["id"], held), v["operators"])
             with self.subTest(f"{v['name']}: the identity fold"):
                 state = fb.identity_state(v["id"], held, arrivals)
-                self.assertEqual(state["history"], "none")
                 self.assertEqual(state["keys"], v["keys"])
                 if v.get("frozen"):
                     self.assertEqual(state["frozen"], v["frozen"])

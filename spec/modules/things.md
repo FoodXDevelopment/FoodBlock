@@ -28,15 +28,15 @@ What the types hold, in detail. The types and verbs are in core.md.
 ## Transfers
 - A transfer names what changed: `refs.to_owner`, `refs.to_holder`, `refs.to_place` (any subset), and `refs.what`. Selling moves the owner; lending moves the holder; moving stock moves the place.
 - **Open receivers.** A transfer to someone unnamed leaves `to_owner` out and says how many received (`state.count`).
-- **Money** moves by transfer like anything else: `refs.to_owner`, `refs.for`, `state.money`, and `state.marks` (the payment rail's reference, profiles/payment-proof.md). A refund is the same, the other way. A payment `for` several promises says how much goes to each (`state.split`: `[{ for, line, money }]`). A failed attempt (a declined card) is an `observe`, never a transfer. The protocol never holds money.
+- **Money** moves by transfer like anything else: `refs.to_owner`, `refs.for`, `state.money`, and `state.marks` (the payment rail's reference, profiles/payment-proof.md). A refund is the same, the other way. A payment `for` several promises says how much goes to each (`state.split`: `[{ for, line, money }]`). A payment names no thing, so it needs no `refs.what` (core.md, section 7). A failed attempt (a declined card) is an `observe`, never a transfer. The protocol never holds money.
 
 ## Truth
 
 - An `observe` with no `derives_from` is direct sensing; with it, an interpretation.
 - `confidence` is the author's stated probability. Readers work out whether an author is well calibrated from confirms and defeats over time; it is never written.
 - An `observe` says what is so in `state.text`, or in fields its schema declares. A reading carries its `amount`, and may add its `accuracy` and `coverage`, and names the sensor it came from, a thing, in `refs.from`.
-- **A model's reading is not a person's observation.** An `observe` of kind `reading` is signed by the agent's own key, `derives_from` the raw evidence, and states the `method`. It becomes the person's claim only when the person's own block `confirms` it (strangers.md).
-- **An import** (a record brought back from a platform) is a reading of kind `import`: the agent's `observe`, `derives_from` the export file's hash, naming its source. Platforms do not sign. It is the person's evidence only after the person confirms it.
+- **A model's reading is not a person's observation.** An `observe` of kind `reading` is signed by the agent's own key, `derives_from` the raw evidence, and states the `method`. Sharing it claims nothing. It becomes the person's claim only when she puts that fact to someone else in her own step (strangers.md, section 4).
+- **An import** (a record brought back from a platform) is a reading with `method: import`: the agent's `observe` of kind `reading`, `derives_from` the export file's hash, naming its source in `state.text`. There is one kind, `reading`, for every model's reading. Platforms do not sign. It is the person's claim only once she puts that fact to someone else.
 - **Large content** is linked by its hash. A stream is linked by its **Merkle root**: split it into chunks, hash each chunk with a leading byte `00`, join neighbours by hashing byte `01` then both hashes, and carry an odd one up unchanged. The root proves one chunk without sending the rest.
 - A physical act carries its grounds, linked by hash: the readings, a camera frame's hash, the door sensor's observe. So a stranger can weigh a machine's claim. A sensor gives evidence; it never settles a promise alone (promises.md, Settling).
 - What counts as evidence for a kind of block is its schema's grounds. There is no global score; each reader weighs.

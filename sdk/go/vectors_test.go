@@ -393,7 +393,7 @@ func TestVectors(t *testing.T) {
 		}
 		{
 			state := IdentityStateOf(id, held, arrived)
-			ok := state.History == "none" && eq(state.Keys, c["keys"]) && (c["frozen"] == nil || eq(state.Frozen, c["frozen"]))
+			ok := eq(state.Keys, c["keys"]) && (c["frozen"] == nil || eq(state.Frozen, c["frozen"]))
 			for h, want := range obj(c["signed_by_author"]) {
 				if got, there := state.SignedByAuthor[h]; there {
 					ok = ok && got == want

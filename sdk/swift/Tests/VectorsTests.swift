@@ -217,7 +217,7 @@ final class VectorsTests: XCTestCase {
             do {
                 let state = Identity.identityState(v["id"] as! String, held, arrivedAt: arrived)
                 let signed = state["signed_by_author"] as? JSON ?? [:]
-                expect(sameJSON(state["keys"], v["keys"]) && (v["frozen"] == nil || sameJSON(state["frozen"], v["frozen"])) && state["history"] as? String == "none"
+                expect(sameJSON(state["keys"], v["keys"]) && (v["frozen"] == nil || sameJSON(state["frozen"], v["frozen"]))
                        && (v["signed_by_author"] as? JSON ?? [:]).allSatisfy { h, ok in signed[h].map { truthy($0) == truthy(ok) && isBool($0) } ?? true },
                        "identity: \(name): the identity fold (signed_by_author, keys, frozen) (got \(stableJSON(state)))")
             }

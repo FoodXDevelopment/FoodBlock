@@ -23,7 +23,7 @@ A `grant` gives authority. Every reader can check it.
 
 **The limit is the principal's fence.** The other side sees only the visible scope: that the agent may bind the principal, with them, until a time. The money limit stays on the principal's node: it is an `observe` of kind `limit`, `for` the grant, with `state.limit` and `state.per`, sealed to the agent alone, so no other reader ever sees it. An act over the limit but inside the visible scope still binds the principal, as with a stolen card.
 
-**Withdrawal.** A withdrawal binds a counterparty once it is in the causal past of the counterparty's block, or has arrived on its node. A counterparty binding a large amount first asks for the grantor's heads and names them in `after`, so what it had seen can be checked. `until` caps the damage while someone is offline. A withdrawal is how an offline peer learns of a stop: it learns on its next contact, and `until` is the bound until then.
+**Withdrawal.** A withdrawal binds a counterparty once it is in the causal past of the counterparty's block, or has arrived on its node. **Timing.** The view compares no times: it is true as soon as the counterparty's node records an arrival of the withdrawal, at any time, and false while it records none. A withdrawal that arrives after the counterparty's block was written does not undo that block; it binds from its arrival on. A counterparty binding a large amount first asks for the grantor's heads and names them in `after`, so what it had seen can be checked. `until` caps the damage while someone is offline. A withdrawal is how an offline peer learns of a stop: it learns on its next contact, and `until` is the bound until then.
 
 **Stopping.** A grant's withdrawal and its `until` end authority, for a machine as for anyone. A peer honours a stop the moment it arrives. Before an act that cannot be undone, it also checks that every grant it acts under is still live against the grantor's latest head it holds.
 
@@ -32,6 +32,8 @@ A `grant` gives authority. Every reader can check it.
 - a grant whose `scope.acts` names that act and has a `limit`.
 
 A standing grant that lists only a broad kind of act is not enough.
+
+**How an ask names the act.** An ask names the act when its `state.what` is the act's name (`type.kind`), or when its `refs.schema` is the schema the act follows. The act's block names that ask in `refs.for`, and the principal's own `answers` of `accepted` is signed by the grantor of the grant it acts under, else the circle it signs `as`, else its author.
 
 **Kinds the protocol reads:** `key`, `member`, `operator` (the list is in `protocol.json`; profiles add more). Every other kind is data whose meaning is its scope.
 - `key` is read in identity.md, `member` in circles.md.

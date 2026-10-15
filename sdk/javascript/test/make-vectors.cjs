@@ -139,7 +139,7 @@ function identityVectors() {
   const record = (name, s, id, extra = {}, options = {}) => {
     const held = s.held
     const signed_by_author = Object.fromEntries(held.filter((block) => block.refs?.author === id || block.hash === id).map((block) => [block.hash, signedByAuthor(block, held, options)]))
-    out.push({ name, id, blocks: blocksOf(s), signed_by_author, keys: fb.identity.keysOf(id, held, options).sort(), history: fb.identityState(id, held, options).history, ...extra })
+    out.push({ name, id, blocks: blocksOf(s), signed_by_author, keys: fb.identity.keysOf(id, held, options).sort(), ...extra })
     return signed_by_author
   }
   {
@@ -1278,6 +1278,34 @@ function doorVectors() {
     const n = t.say(a, 'stop, on the phone, not seeing the yes', 'observe', { kind: 'consent', word: 'stop' }, { subject: who.id }, { key: 'tie_phone', link: { seq: 1, prev: t.held.find((b) => b.state.kind === 'key').hash } })
     door('consent: a stop wins a tie between devices that do not see each other', 'consent', [a.id, who.id, t.held], { expect: { word: 'stop', block: n.hash } })
     void y
+    // Two devices say different words (yes and keep) without seeing each other: no live word. Two that agree: the word stands.
+    {
+      const u = story(), ua = u.person('tie2'), uphone = keyOf('tie2_phone'), usender = u.person('tie2_sender')
+      u.keep('tie2 adds a phone', keyGrant(ua.id, uphone.public_key_sign, { private_key: ua.key.private_key, last: null, broughtIn: ua.id }, { at: at() }), 'tie2')
+      const uy = u.say(ua, 'yes, on the laptop', 'observe', { kind: 'consent', word: 'yes' }, { subject: usender.id })
+      const uk = u.say(ua, 'keep, on the phone, not seeing the yes', 'observe', { kind: 'consent', word: 'keep' }, { subject: usender.id }, { key: 'tie2_phone', link: { seq: 1, prev: u.held.find((x) => x.state.kind === 'key').hash } })
+      door('consent: a tie between other words leaves no live word', 'consent', [ua.id, usender.id, u.held], { expect: { word: null, block: null } })
+      const uy2 = u.say(ua, 'yes again, on the phone, not seeing the first', 'observe', { kind: 'consent', word: 'yes' }, { subject: usender.id }, { key: 'tie2_phone', link: { seq: 2, prev: uk.hash } })
+      door('consent: a tie of the same word stands and names the lowest hash', 'consent', [ua.id, usender.id, u.held], { expect: { word: 'yes', block: [uy.hash, uy2.hash].sort()[0] } })
+    }
+    {
+      // A person off FoodX: a contact with no keys. Whoever received her STOP records it, and it binds the recorder's own side only.
+      const o = story(), gate = o.person('gateway'), shop = o.person('shop2'), app = o.person('shop2_app', { kind: 'agent' }), other = o.person('other_shop'), gate2 = o.person('gateway2')
+      o.say(shop, 'the shop answers for its app', 'grant', { kind: 'operator' }, { to: app.id })
+      const contact = o.say(gate, 'a contact: a phone number, no keys', 'actor', { kind: 'contact', marks: [{ scheme: 'phone', value: '+447700900123' }] })
+      door('consent: a person with no keys and no word has none', 'consent', [contact.hash, app.id, o.held], { expect: { word: null, block: null } })
+      const gateStop = o.say(gate, 'the gateway received her STOP and records it against its own sending', 'observe', { kind: 'consent', word: 'stop' }, { from: contact.hash, subject: gate.id, derives_from: sha('STOP, as received') })
+      door('consent: a recorded STOP binds the recorder\'s own side', 'consent', [contact.hash, gate.id, o.held], { expect: { word: 'stop', block: gateStop.hash } })
+      door('consent: a STOP recorded by someone else does not bind another sender', 'consent', [contact.hash, app.id, o.held], { expect: { word: null, block: null } })
+      const appStop = o.say(shop, 'the shop (the asker) sees her reply and records the STOP against its own sending', 'observe', { kind: 'consent', word: 'stop' }, { from: contact.hash, subject: shop.id, derives_from: sha('stop, in her words') })
+      door('consent: the asker may record a STOP for itself: it covers its agents', 'consent', [contact.hash, app.id, o.held], { expect: { word: 'stop', block: appStop.hash } })
+      o.say(app, 'the asker\'s app records a yes from her', 'observe', { kind: 'consent', word: 'yes' }, { from: contact.hash, subject: app.id, derives_from: sha('a reply the app read') }, { after: [appStop.hash] })
+      door('consent: the asker\'s side never lifts a STOP', 'consent', [contact.hash, app.id, o.held], { expect: { word: 'stop', block: appStop.hash } })
+      const lift = o.say(gate, 'her own fresh yes, received by a recorder the asker does not control, with the stop in its past', 'observe', { kind: 'consent', word: 'yes' }, { from: contact.hash, subject: app.id, derives_from: sha('YES, as received') }, { after: [appStop.hash] })
+      door('consent: her fresh yes through a recorder outside the asker\'s side lifts it', 'consent', [contact.hash, app.id, o.held], { expect: { word: 'yes', block: lift.hash } })
+      o.say(gate2, 'a yes from a recorder that never saw a stop', 'observe', { kind: 'consent', word: 'yes' }, { from: contact.hash, subject: other.id })
+      door('consent: a recorder\'s yes that has no stop in its causal past counts for nothing', 'consent', [contact.hash, other.id, o.held], { expect: { word: null, block: null } })
+    }
     // Admission, a human author, STOP.
     const lonely = story(), lp = lonely.person('lp'), lbot = lonely.person('lp_bot', { kind: 'agent' }), lme = lonely.person('lp_me')
     const agentFirst = lonely.say(lbot, 'an agent\'s first block to a stranger', 'observe', { kind: 'offer', text: 'buy our bread' }, { subject: lme.id })
@@ -1325,8 +1353,17 @@ function doorVectors() {
     const agent = s.person('reader', { kind: 'agent' })
     const reading = s.say(agent, 'a model\'s reading of a receipt', 'observe', { kind: 'reading', text: 'milk 1.20', method: 'ocr' }, { derives_from: sha('the receipt photo') })
     door('a reading is the agent\'s claim, not the person\'s', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: false })
-    s.say(me, 'the person confirms it', 'observe', { kind: 'confirm', confidence: '1' }, { confirms: reading.hash })
-    door('it becomes the person\'s claim when the person\'s own block confirms it', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: true })
+    s.say(me, 'the person confirms it privately', 'observe', { kind: 'confirm', confidence: '1' }, { confirms: reading.hash })
+    door('a private confirms is not her claim', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: false })
+    const friend = s.person('reading_friend')
+    s.say(friend, 'someone else shares the reading', 'observe', { kind: 'note', text: 'look at this' }, { to: me.id, derives_from: reading.hash })
+    door('sharing a reading claims nothing', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: false })
+    s.say(me, 'she keeps it for herself, naming no one else', 'observe', { kind: 'note', text: 'milk 1.20' }, { derives_from: reading.hash })
+    door('a block that names no one else is not putting the fact to someone', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: false })
+    s.say(me, 'she puts the fact to someone else in her own step', 'observe', { kind: 'note', text: 'I paid 1.20 for milk' }, { to: friend.id, derives_from: reading.hash })
+    door('it becomes the person\'s claim when she puts that fact to someone else in her own step', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: true })
+    const imported = s.say(agent, 'an import: a record brought back from a platform', 'observe', { kind: 'reading', text: 'platform export', method: 'import' }, { derives_from: sha('the export file') })
+    door('an import is a reading: the agent\'s claim until she puts it to someone', 'reading_is_persons_claim', [imported, me.id, s.held], { expect: false })
     // Tasks: a sensor condition is checked against the observes the performer's edge holds.
     const sensor = s.say(me, 'a soil sensor', 'thing', { kind: 'sensor', name: 'bed 3 moisture' })
     const rd = (t, v) => s.say(me, `reading ${v} at ${t}`, 'observe', { kind: 'moisture', amount: A(v, '%') }, { from: sensor.hash }, { time: `2026-10-16T${t}:00.000Z` })
@@ -1361,11 +1398,14 @@ function doorVectors() {
     const noteHash = call('old_hash', note)
     const out = door('convert: old blocks become fresh 1.6 blocks, signed by the key given, each deriving from the old hash', 'convert', [[g, note], { keys: { [gHash]: { public_key_sign: aKey.public_key_sign, private_key: aKey.private_key } }, at: '2026-10-15T12:00:00.000Z' }], { expect: { skipped: [] }, oracle: false })
     const ids = Object.fromEntries(out.blocks.map((b) => [b.type, b]))
-    assert.ok(out.blocks.length >= 2 && ids.actor && out.map[gHash] === ids.actor.hash && out.map[noteHash])
+    assert.ok(out.blocks.length >= 3 && ids.actor && out.map[gHash] === ids.actor.hash && out.map[noteHash])
+    assert.equal(out.blocks[1].state.kind, 'converted', 'a genesis has no refs: the old identity is named by the first block of the new chain')
+    assert.deepEqual(out.blocks[1].refs.derives_from, [gHash])
     assert.deepEqual(codesOf(fb.valid(out.blocks[1], [out.blocks[0]])), [])
-    assert.ok(out.blocks[1].refs.derives_from.includes(noteHash))
-    assert.equal(out.blocks[1].state.weight, '1.5', 'a float becomes a decimal string')
-    assert.equal(out.blocks[1].state.gone, undefined, 'a null is dropped')
+    assert.deepEqual(codesOf(fb.valid(out.blocks[2], [out.blocks[0], out.blocks[1]])), [])
+    assert.ok(out.blocks[2].refs.derives_from.includes(noteHash))
+    assert.equal(out.blocks[2].state.weight, '1.5', 'a float becomes a decimal string')
+    assert.equal(out.blocks[2].state.gone, undefined, 'a null is dropped')
     const again = call('convert', [g, note], { keys: { [gHash]: { public_key_sign: aKey.public_key_sign, private_key: aKey.private_key } }, at: '2026-10-15T13:00:00.000Z', map: out.map, existing: out.blocks })
     assert.deepEqual(again.blocks, [], 'running again with the same map changes nothing')
     door('convert: an old block whose author has no key given is not converted', 'convert', [[g, note], { keys: {}, at: '2026-10-15T12:00:00.000Z' }], { expect: { blocks: [] }, oracle: false })

@@ -1322,25 +1322,11 @@ impl<'a> Checker<'a> {
     }
 }
 
-/// The codes of the checks in core.md section 8, in their order: 1 canonical form, 2 values, 3 limits, 4 genesis and
-/// the common five, 5 signing key and signature, 6 the chain (its `chain` code sits with 4), 7 closed types.
-pub const BLOCK_STAGES: [&str; 24] = [
-    "not_canonical", "float", "integer_range", "decimal", "grammar", "time", "calendar", "shape", "type_name",
-    "audience", "size_limit", "after_limit", "bad_genesis", "chain", "at_missing", "bad_hash", "bad_signature",
-    "void_key", "unknown_suite", "not_own_rotation", "recovery_scope", "required", "undeclared_ref", "undeclared_field",
-];
-
 /// Findings as a refusal list: one entry per code, in the order of `group` (a group of protocol.json's
 /// `refusals.codes`: block, fold or message), the details of one code joined with "; " (each once).
 pub fn ordered_with(spec: &Spec, found: Vec<Refusal>, group: &str) -> Vec<Refusal> {
-    let mut order = spec.list(&format!("refusals.codes.{group}"));
-    // A block's refusals follow the seven checks of core.md section 8; the codes a module adds follow, in the order
-    // protocol.json lists them.
-    if group == "block" {
-        let stages: Vec<String> = BLOCK_STAGES.iter().map(|c| c.to_string()).collect();
-        order.retain(|c| !stages.contains(c));
-        order = stages.into_iter().chain(order).collect();
-    }
+    // protocol.json lists a block's codes in the order of the checks in core.md section 8.
+    let order = spec.list(&format!("refusals.codes.{group}"));
     let mut by: Vec<(String, Vec<String>)> = Vec::new();
     for one in found {
         match by.iter_mut().find(|(c, _)| *c == one.code) {

@@ -86,7 +86,7 @@ public enum Identity {
     }
     public static func keysOf(_ id: String, _ blocks: [JSON], arrivedAt: Arrival? = nil) -> [String] { Core.strings("keys_of", id, blocks, log(arrivedAt, blocks)) }
     public static func signedByAuthor(_ block: JSON, _ blocks: [JSON], arrivedAt: Arrival? = nil) -> Bool { Core.bool("signed_by_author", block, blocks, log(arrivedAt, blocks)) }
-    /// signed_by_author (hash → bool), keys, frozen, operators (sorted) and history (always "none").
+    /// signed_by_author (hash → bool), keys, frozen, operators (sorted).
     public static func identityState(_ id: String, _ blocks: [JSON], arrivedAt: Arrival? = nil) -> JSON {
         (try? Core.json("identity_state", id, blocks, log(arrivedAt, blocks))) ?? [:]
     }

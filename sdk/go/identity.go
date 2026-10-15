@@ -127,14 +127,12 @@ func SignedByAuthor(b Block, blocks []Block, arrivedAt ArrivedAt) bool {
 	return must[bool]("signed_by_author", b, plural(blocks), arrivals(arrivedAt, blocks))
 }
 
-// IdentityState is the identity fold: signed_by_author (hash -> bool), keys, frozen, operators (sorted) and history
-// (always "none").
+// IdentityState is the identity fold: signed_by_author (hash -> bool), keys, frozen, and operators (sorted).
 type IdentityState struct {
 	SignedByAuthor map[string]bool `json:"signed_by_author"`
 	Keys           []string        `json:"keys"`
 	Frozen         []string        `json:"frozen"`
 	Operators      []string        `json:"operators"`
-	History        string          `json:"history"`
 }
 
 // IdentityStateOf is who an id is among these blocks.

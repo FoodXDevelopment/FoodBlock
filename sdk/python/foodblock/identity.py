@@ -64,7 +64,7 @@ def signed_by_author(block, blocks, arrived_at=None) -> bool:
 
 
 def identity_state(id_, blocks, arrived_at=None) -> dict:
-    """{ signed_by_author, keys, frozen, operators, history } (history is always "none")."""
+    """{ signed_by_author, keys, frozen, operators }."""
     return call("identity_state", id_, list(blocks), _arrived(arrived_at, blocks))
 
 

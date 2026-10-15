@@ -1,9 +1,9 @@
 # Build from the repository root: docker build -f server/Dockerfile .
 FROM node:20-alpine
 WORKDIR /app
-# The node depends on the SDK package (file:../sdk/javascript), which loads spec/protocol.json and spec/aliases.json.
+# The node depends on the SDK package (file:../sdk/javascript), which loads spec/protocol.json.
 COPY sdk/javascript/ ./sdk/javascript/
-COPY spec/protocol.json spec/aliases.json ./spec/
+COPY spec/protocol.json ./spec/
 COPY sql/ ./sql/
 COPY server/package*.json ./server/
 WORKDIR /app/server

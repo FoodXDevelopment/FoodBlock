@@ -68,9 +68,10 @@ test('convert: the one-time converter turns old blocks into fresh 1.6 blocks, an
   const files = { old: join(dir, 'old.json'), keys: join(dir, 'keys.json'), map: join(dir, 'map.json') }
   writeFileSync(files.old, JSON.stringify([genesis, note])); writeFileSync(files.keys, JSON.stringify({ [id]: owner }))
   const done = ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-15T12:00:00.000Z', '--map', files.map)
-  assert.equal(done.blocks.length, 2)
-  assert.deepEqual(fb.valid(done.blocks[1], [done.blocks[0]]), [])
-  assert.deepEqual(done.blocks[1].refs.derives_from, [fb.legacy.oldHash(note)])
+  assert.equal(done.blocks.length, 3)
+  assert.deepEqual(done.blocks[1].refs.derives_from, [id])
+  assert.deepEqual(fb.valid(done.blocks[2], [done.blocks[0], done.blocks[1]]), [])
+  assert.deepEqual(done.blocks[2].refs.derives_from, [fb.legacy.oldHash(note)])
   assert.equal(ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-16T12:00:00.000Z', '--map', files.map).blocks.length, 0)
 })
 

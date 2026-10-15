@@ -68,7 +68,7 @@ sql/schema.sql          the node's store: append-only, each block kept exactly a
 mcp/                    the MCP server: eight tools, writes as one identity through the SDK's `write`
 cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
 test/vectors.json       cross-language canonical vectors (they hash the same under 1.6)
-test/sync-spec.cjs      copies spec/protocol.json (and the converter's table) into the Rust and JavaScript packages; --check proves they match
+test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript packages (and legacy/aliases-0.x.json into the Rust crate); --check proves they match
 ```
 
 ## Testing

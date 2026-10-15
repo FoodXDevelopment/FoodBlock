@@ -290,7 +290,6 @@ class VectorsTest {
                 val state = Identity.identityState(id, held, arrivals)
                 val signed = state.f("signed_by_author").o()
                 val ok = deepEq(state.f("keys"), c.f("keys")) && (c.f("frozen") is JsonNull || deepEq(state.f("frozen"), c.f("frozen"))) &&
-                    state.f("history").s() == "none" &&
                     (c.f("signed_by_author") as? JsonObject)?.all { (h, want) -> signed[h]?.let { it == want } ?: true } ?: true
                 r.ok(ok, "$name: the identity fold (signed_by_author, keys, frozen)") { state.toString() }
             }

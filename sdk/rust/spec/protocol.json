@@ -61,6 +61,7 @@
   "declined",
   "stopped"
  ],
+ "statuses_note": "A counter-offer is an answer (a promise with refs.answers) whose state carries new terms and no status; it is the one answer without a status.",
  "stop": {
   "before": "before acceptance: a withdrawal",
   "onward": "from this block on",
@@ -483,6 +484,8 @@
    "envelope": "sm2-hkdf-sm3-sm4-gcm",
    "kdf": "hkdf-sm3",
    "cipher": "sm4-gcm",
+   "cipher_key_bytes": 16,
+   "key_note": "SM4 takes 16 bytes: the content key is the first 16 of its 32 random bytes and HKDF derives 16 bytes (privacy.md, Envelope).",
    "sign_key": {
     "grammar": "^3059301306072a8648ce3d020106082a811ccf5501822d034200[0-9a-f]{130}$",
     "spki_prefix": "3059301306072a8648ce3d020106082a811ccf5501822d034200",
@@ -753,7 +756,6 @@
    "erase": "privacy.md",
    "work": "things.md",
    "reading": "things.md",
-   "import": "things.md",
    "message": "transport.md",
    "profile": "identity.md",
    "consent": "strangers.md"
@@ -1011,7 +1013,7 @@
   "note": "Not part of the protocol. No node reads an older shape."
  },
  "refusals": {
-  "about": "Every refusal is { hash, code, detail }: code from these lists, detail free text for people. block: why a node refuses a block's bytes (final for those bytes). fold: why a fold counts a block for nothing. message: why a node refuses a pull or push. A block breaking several rules gets one entry per rule found, in this order.",
+  "about": "Every refusal is { hash, code, detail }: code from these lists, detail free text for people. block: why a node refuses a block's bytes (final for those bytes). fold: why a fold counts a block for nothing. message: why a node refuses a pull or push. A block breaking several rules gets one entry per rule found, in this order: block codes are listed in the order of the checks in core.md section 8, and a block refusal list follows that order.",
   "fields": [
    "hash",
    "code",
@@ -1020,12 +1022,6 @@
   "codes": {
    "block": {
     "not_canonical": "not in canonical form: key or set order, NFC, null, duplicate keys, a repeat in a set, or not exactly type, state and refs",
-    "bad_hash": "an id sent with it is not the hash of its canonical bytes",
-    "bad_signature": "its signature opens with no key of its author",
-    "void_key": "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to",
-    "unknown_suite": "a key that names a suite the reader does not know, or a key, signature or id outside its suite's grammar",
-    "size_limit": "its canonical body is over limits.block_bytes (a sealed copy's block, once opened)",
-    "after_limit": "refs.after names more than limits.after_heads heads",
     "float": "a number with a fraction or exponent in signed content",
     "integer_range": "a whole number outside integers.min..integers.max, or -0",
     "decimal": "a decimal string outside grammar.decimal",
@@ -1034,15 +1030,21 @@
     "calendar": "a time or date in the right shape that is not a real calendar instant",
     "shape": "an amount, money, price, range, mark, share, split, when, where or reveal without its keys",
     "type_name": "a type that does not match grammar.type_name",
+    "audience": "an audience that is neither public nor a sorted list of commitments",
+    "size_limit": "its canonical body is over limits.block_bytes (a sealed copy's block, once opened)",
+    "after_limit": "refs.after names more than limits.after_heads heads",
+    "bad_genesis": "a genesis with author, prev, after or seq, not public, missing a genesis field, with only one of the recovery fields, or not signed by its own key",
+    "chain": "a seq or prev that does not fit its key's chain, or a skip that goes backwards",
+    "at_missing": "no at on a block that is not an observe, transform or transfer",
+    "bad_hash": "an id sent with it is not the hash of its canonical bytes",
+    "bad_signature": "its signature opens with no key of its author",
+    "void_key": "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to",
+    "unknown_suite": "a key that names a suite the reader does not know, or a key, signature or id outside its suite's grammar",
+    "not_own_rotation": "a rotation signed by none of the key it replaces, the recovery key, or the operator of an agent or machine",
+    "recovery_scope": "the recovery key signed something other than a key grant or a defeats a profile gives it",
     "required": "a closed block missing a required field (core.md, section 7)",
     "undeclared_ref": "on a closed type, a ref key neither shared nor declared by its schema",
     "undeclared_field": "on a closed type, a state field neither its type's base field nor declared by its schema",
-    "bad_genesis": "a genesis with author, prev, after or seq, not public, missing a genesis field, with only one of the recovery fields, or not signed by its own key",
-    "audience": "an audience that is neither public nor a sorted list of commitments",
-    "chain": "a seq or prev that does not fit its key's chain, or a skip that goes backwards",
-    "at_missing": "no at on a block that is not an observe, transform or transfer",
-    "not_own_rotation": "a rotation signed by none of the key it replaces, the recovery key, or the operator of an agent or machine",
-    "recovery_scope": "the recovery key signed something other than a key grant or a defeats a profile gives it",
     "status_not_answer": "a status on a block that neither answers nor updates its author's own",
     "bad_status": "a status not in statuses, or stopped without a stop from stop",
     "ask_without_expires": "an ask with no terms.expires",
@@ -1080,8 +1082,7 @@
     "signed_by_author": "{ hash: true when the block is the id's }",
     "keys": "the identity's keys (SPKI hex), sorted",
     "frozen": "the frozen keys among them, sorted",
-    "operators": "authors of live operator grants naming it, sorted",
-    "history": "none (1.6 genesis), open or closed"
+    "operators": "authors of live operator grants naming it, sorted"
    }
   },
   "promise_stage": {
@@ -1132,7 +1133,7 @@
   },
   "chain": {
    "head": "hash of the latest block",
-   "length": "blocks counted",
+   "length": "the key's blocks that count: both blocks of an equivocation pair and every later block of the key are left out",
    "gaps": "seq numbers missing that no skip block explains",
    "skips": "hashes of skip blocks",
    "equivocations": "pairs of hashes naming one prev, each pair sorted",
@@ -1144,11 +1145,12 @@
    "prev": "the hash of the key's previous block, or of the block that brought the key in"
   },
   "consent": {
-   "input": "a person and a sender (or none)",
+   "input": "a person and a sender (or none), and the blocks held",
    "output": {
     "word": "yes, stop, keep or move, or null",
-    "block": "the consent block that decides, or null"
-   }
+    "block": "the consent block that decides (the lowest hash of tied blocks that agree), or null"
+   },
+   "note": "The person's own blocks count for every word; anyone else's counts only as a stop that binds the recorder's own side, or as a yes from outside the asker's side that has a stop in its causal past. A stop wins any tie; a tie of other words gives null. There is no public list."
   }
  },
  "views": {
@@ -1171,7 +1173,7 @@
   "withdrawal_seen": {
    "clock": "arrival on the counterparty's node",
    "input": "a withdrawal, a counterparty block, its node's arrivals",
-   "output": "true when the withdrawal is in the block's causal past or arrived on its node"
+   "output": "true when the withdrawal is in the block's causal past, or the node records any arrival of it (no times are compared)"
   },
   "due": {
    "clock": "the performer's own, from the anchor's arrival on its node",

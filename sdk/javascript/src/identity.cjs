@@ -39,7 +39,7 @@ const keyTimeline = (id, blocks, { arrivedAt } = {}) => call('key_timeline', id,
 const keysOf = (id, blocks, { arrivedAt } = {}) => call('keys_of', id, list(blocks), arrivals(arrivedAt, blocks))
 /** Whether a signed block is its author's. */
 const signedByAuthor = (block, blocks, { arrivedAt } = {}) => call('signed_by_author', block, list(blocks), arrivals(arrivedAt, blocks, [block]))
-/** The identity fold: { signed_by_author, keys, frozen, operators, history }. */
+/** The identity fold: { signed_by_author, keys, frozen, operators }. */
 const identityState = (id, blocks, { arrivedAt } = {}) => call('identity_state', id, list(blocks), arrivals(arrivedAt, blocks))
 /** Which of an id's keys signed a block (its public key), or null. */
 const signerOf = (block, keys) => call('signer_of', block, keys)

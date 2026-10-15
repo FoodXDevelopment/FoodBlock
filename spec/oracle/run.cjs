@@ -127,7 +127,7 @@ for (const v of V.identities) {
   if (v.keys) rec('identity', `${v.name}: the keys that speak`, same(f.keys, v.keys), JSON.stringify(f.keys.map(k => k.slice(-6))));
   if (v.frozen) rec('identity', `${v.name}: the frozen keys`, same(f.frozen, v.frozen));
   if (v.operators) rec('identity', `${v.name}: its operators`, same(fb.operatorsOf(v.id, held), v.operators));
-  rec('identity', `${v.name}: the identity fold (signed_by_author, keys, frozen, history)`, same(f.keys, v.keys) && (!v.frozen || same(f.frozen, v.frozen)) && f.history === v.history
+  rec('identity', `${v.name}: the identity fold (signed_by_author, keys, frozen)`, same(f.keys, v.keys) && (!v.frozen || same(f.frozen, v.frozen))
     && Object.entries(v.signed_by_author).every(([h, ok]) => !(h in viewSigned) || viewSigned[h] === ok));
   if (v.fence) {
     const fe = v.fence, limit = held.find(b => b.hash === fe.block), grant = held.find(b => b.hash === fe.grant);

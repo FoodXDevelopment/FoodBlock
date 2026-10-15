@@ -487,6 +487,26 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
                 let n = hash_of(&signed).to_string();
                 map.insert(id.clone(), json!(n));
                 out.push(signed);
+                // The link back: a genesis has no refs, so the old identity is named by the first block of the new
+                // chain, an `observe` of kind `converted` the owner (or custodian) signs, `derives_from` the old hash.
+                let link = crate::chain::next_link(None, Some(&n))?;
+                let mut from = vec![id.clone()];
+                if !options.request_hash.is_empty() {
+                    from.push(options.request_hash.clone());
+                }
+                let mut note = json!({
+                    "kind": "converted", "at": options.at, "seq": link.seq, "audience": "public",
+                });
+                if !options.channel.is_empty() {
+                    note["channel"] = json!(options.channel);
+                }
+                let refs = json!({
+                    "author": n, "prev": link.prev, "subject": n, "derives_from": crate::js::sorted_set(from),
+                });
+                let block = create_in(&suite, "observe", &note, &refs)?;
+                let mut signed = block.clone();
+                signed["signature"] = json!(sign_in(&suite, &block, &pair.private_key)?);
+                out.push(signed);
                 n
             }
         };

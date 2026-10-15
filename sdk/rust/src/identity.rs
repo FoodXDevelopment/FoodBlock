@@ -894,22 +894,20 @@ pub struct IdentityState {
     pub frozen: Vec<String>,
     /// Who answers for it (operator grants), sorted.
     pub operators: Vec<String>,
-    /// Always `none`: year zero has no history to close (protocol.json still lists the field).
-    pub history: String,
 }
 
 impl IdentityState {
-    /// `{ signed_by_author, keys, frozen, operators, history }`.
+    /// `{ signed_by_author, keys, frozen, operators }`.
     pub fn to_json(&self) -> Value {
         json!({
             "signed_by_author": Value::Object(self.signed_by_author.iter().map(|(h, ok)| (h.clone(), Value::Bool(*ok))).collect()),
-            "keys": self.keys, "frozen": self.frozen, "operators": self.operators, "history": self.history,
+            "keys": self.keys, "frozen": self.frozen, "operators": self.operators,
         })
     }
 }
 
 /// The identity fold: who an id is among these blocks: `{ signed_by_author, keys (sorted), frozen (sorted), operators
-/// (sorted), history }`.
+/// (sorted) }`.
 pub fn identity_state(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> IdentityState {
     let index = index_of(blocks);
     let timeline = key_timeline_in(id, &index, arrived_at);
@@ -940,7 +938,6 @@ pub fn identity_state(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> Iden
         keys,
         frozen,
         operators: crate::grant::operators_of(id, &all, None),
-        history: "none".to_string(),
     }
 }
 

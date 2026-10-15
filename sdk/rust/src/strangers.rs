@@ -31,24 +31,20 @@ fn operators(agent: &str, index: &Index) -> Vec<String> {
     crate::grant::operators_of(agent, &blocks, None)
 }
 
-/// The `consent` fold: a person's live word about a sender (strangers.md, section 2). Their latest consent block that
-/// names the sender (or the sender's operator), else the latest that names no one. Ordered by causal order; a `stop`
-/// wins any tie; a tie between other words leaves no live word. `{ word, block }`, both null when there is none.
+/// The `consent` fold: a person's live word about a sender (strangers.md, section 2). The person is the block's
+/// `refs.from`, else its author. The person's own blocks count for every word and bind every sender. Anyone else may
+/// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an agent under
+/// that operator. Only the person lifts a stop: by her own block, or by a `yes` a recorder outside the asker's side
+/// received from her, with the stop in its causal past. The live word is the latest block that names the sender
+/// (or the sender's operator), else the latest that names no one, in causal order (a recorder's chain orders its own
+/// blocks). A `stop` wins any tie; a tie between other words leaves no live word; a tie that agrees stands, naming the
+/// lowest hash. There is no public list: the fold reads only the blocks the caller holds. `{ word, block }`, both null
+/// when there is none.
 pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value]) -> Value {
     let mut index = index_of(blocks.iter());
     crate::identity::mark_forks(&mut index);
     let words = crate::spec().list("consent_words");
-    let all: Vec<&Value> = index
-        .values()
-        .filter(|b| {
-            type_of(b) == "observe"
-                && ss(b, "kind") == Some("consent")
-                && rs(b, "author") == Some(person)
-                && ss(b, "word").is_some_and(|w| words.iter().any(|x| x == w))
-                && crate::identity::counts_in(b, &index)
-        })
-        .collect();
-    let named: Vec<String> = match sender {
+    let asker_side: Vec<String> = match sender {
         Some(s) => {
             let mut n = vec![s.to_string()];
             n.extend(operators(s, &index));
@@ -56,6 +52,43 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value]) -> Value {
         }
         None => vec![],
     };
+    let all: Vec<&Value> = index
+        .values()
+        .filter(|b| {
+            if type_of(b) != "observe" || ss(b, "kind") != Some("consent") || !crate::identity::counts_in(b, &index) {
+                return false;
+            }
+            if !ss(b, "word").is_some_and(|w| words.iter().any(|x| x == w)) {
+                return false;
+            }
+            let author = rs(b, "author").unwrap_or("");
+            if rs(b, "from").or(Some(author)) != Some(person) {
+                return false;
+            }
+            if author == person {
+                return true;
+            }
+            // A recorder's block: only a stop, and it binds only the recorder's own sending (its own side).
+            let by_asker = asker_side.iter().any(|a| a == author)
+                || operators(author, &index).iter().any(|o| asker_side.iter().any(|a| a == o));
+            match ss(b, "word") {
+                Some("stop") => by_asker,
+                // Her fresh yes, received by a recorder the asker does not control: it counts only as the lift of a
+                // stop it has in its causal past.
+                Some("yes") => {
+                    !by_asker
+                        && index.values().any(|o| {
+                            ss(o, "word") == Some("stop")
+                                && ss(o, "kind") == Some("consent")
+                                && rs(o, "from").or(rs(o, "author")) == Some(person)
+                                && sees_in(b, hash_of(o), &index)
+                        })
+                }
+                _ => false,
+            }
+        })
+        .collect();
+    let named = asker_side;
     let about: Vec<&Value> = all
         .iter()
         .copied()
@@ -72,12 +105,13 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value]) -> Value {
         .copied()
         .filter(|b| !pool.iter().any(|o| hash_of(o) != hash_of(b) && sees_in(o, hash_of(b), &index)))
         .collect();
-    let stops: Vec<&&Value> = heads.iter().filter(|b| ss(b, "word") == Some("stop")).collect();
-    let chosen: Option<&Value> = if let Some(s) = stops.first() {
-        Some(**s)
+    let stop = heads.iter().copied().filter(|b| ss(b, "word") == Some("stop")).min_by_key(|b| hash_of(b).to_string());
+    let chosen: Option<&Value> = if let Some(s) = stop {
+        Some(s)
     } else if heads.len() == 1 {
         Some(heads[0])
     } else if !heads.is_empty() && heads.iter().all(|b| ss(b, "word") == ss(heads[0], "word")) {
+        // Tied blocks that agree: the word stands; the block named is the lowest hash (a name, never an authority).
         heads.iter().copied().min_by_key(|b| hash_of(b).to_string())
     } else {
         None
@@ -152,13 +186,18 @@ pub fn admission_refusals(
     ordered(w, "message")
 }
 
-/// A model's reading is not a person's observation (strangers.md, section 4): an `observe` of kind `reading` (and an
-/// `import`, which is one) signed by an agent's key is that agent's claim. It is the person's own claim only when the
-/// person's own block `confirms` it. True when `person` has confirmed `reading` among these blocks.
+/// A model's reading is not a person's observation (strangers.md, section 4): an `observe` of kind `reading` (an
+/// import is one, with `method: import`) signed by an agent's key is that agent's claim. Sharing it claims nothing,
+/// and neither does her private `confirms`. It is the person's own claim only when she puts that fact to someone else
+/// in her own step: a block of hers with the reading in `derives_from` that names someone other than herself in
+/// `refs.to` or `refs.to_owner`. True when `person` has done so among these blocks.
 pub fn reading_is_persons_claim(reading: &Value, person: &str, blocks: &[Value]) -> bool {
-    let kind_ok = matches!(ss(reading, "kind"), Some("reading" | "import"));
-    kind_ok
+    ss(reading, "kind") == Some("reading")
         && blocks.iter().any(|b| {
-            rs(b, "author") == Some(person) && list(rf(b, "confirms")).contains(&hash_of(reading))
+            rs(b, "author") == Some(person)
+                && list(rf(b, "derives_from")).contains(&hash_of(reading))
+                && ["to", "to_owner"]
+                    .iter()
+                    .any(|k| list(rf(b, k)).iter().any(|x| *x != person))
         })
 }

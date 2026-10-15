@@ -57,18 +57,24 @@ fn an_old_record_becomes_fresh_blocks_and_running_again_adds_nothing() {
     let options = ConvertOptions { keys, at: "2026-10-15T12:00:00.000Z".into(), ..Default::default() };
     let done = convert(&[genesis.clone(), note.clone()], &options).unwrap();
     assert!(done.skipped.is_empty(), "{:?}", done.skipped);
-    assert_eq!(done.blocks.len(), 2);
-    let (g, n) = (&done.blocks[0], &done.blocks[1]);
+    assert_eq!(done.blocks.len(), 3);
+    let (g, link, n) = (&done.blocks[0], &done.blocks[1], &done.blocks[2]);
     assert_eq!(done.map[&gh], g["hash"]);
     assert_eq!(done.map[&nh], n["hash"]);
     // Fresh 1.6 blocks, valid, chained from the new genesis, deriving from the old hash, the old time in `when`.
     assert!(valid::valid(g, &js::Index::default(), None, None).is_empty());
+    // The genesis has no refs, so the old identity is named by the first block of the new chain.
+    assert_eq!(link["state"]["kind"], "converted");
+    assert_eq!(link["refs"]["derives_from"], json!([gh]));
+    assert_eq!(link["state"]["seq"], 1);
     let index = js::index_of([g]);
+    assert!(valid::valid(link, &index, None, None).is_empty());
+    let index = js::index_of([g, link]);
     let wrong = valid::valid(n, &index, None, None);
     assert!(wrong.is_empty(), "{wrong:?}");
     assert_eq!(n["refs"]["author"], g["hash"]);
-    assert_eq!(n["refs"]["prev"], g["hash"]);
-    assert_eq!(n["state"]["seq"], 1);
+    assert_eq!(n["refs"]["prev"], link["hash"]);
+    assert_eq!(n["state"]["seq"], 2);
     assert_eq!(n["state"]["at"], "2026-10-15T12:00:00.000Z");
     assert_eq!(n["state"]["when"], "2024-01-02T00:00:00.000Z");
     assert_eq!(n["refs"]["derives_from"], json!([nh]));

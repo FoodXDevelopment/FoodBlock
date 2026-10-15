@@ -60,7 +60,7 @@ An accept that reached the offerer after `expires`, on the offerer's own clock, 
 
 ## Circle membership and roles
 
-The fold reads the circle C and every member grant with `refs.subject` C, in causal order, by the rules in circles.md. The founder holds the first role in C's `roles`. A member grant counts if signed `as` C by a key of someone holding `admit` in the fold of its causal past.
+The fold reads the circle C and every member grant with `refs.subject` C, in causal order, by the rules in circles.md. The founder holds the first role in C's `roles`. A member grant counts if signed `as` C by a key of someone holding `admit` in the fold of its causal past. A circle whose actor lists no roles is refused (`bad_roles`); if a fold meets one anyway, the founder holds no role, so no one holds any power: no member grant counts and no one signs `as` the circle.
 
 ## What each fold returns
 
@@ -69,7 +69,7 @@ Every node returns the same names, so readers share one API. `protocol.json` (`f
 - `accept` is the binding accept: the promise itself when made to oneself, the first allocation on an open offer. `forks` are allocations that do not see the one before: proof, not counted. In `lines`, `moved` is capped at `needed` when a whole instance covers the line.
 - `members` maps each id to `{ roles, grant, counted_to }`, `grant` the member grant that put them in, or the circle for the founder.
 - `where_now` is empty when no place is known, and two or more when moves cross. `ownership` has `owner` null after a transfer to an open receiver; with a `conflict`, `owner` is the owner before the crossing pair.
-- `chain` reports `gaps`, the seq numbers missing. A gap before a `skip` block is explained; any other gap is not.
+- `chain` reports `gaps`, the seq numbers missing. A gap before a `skip` block is explained; any other gap is not. `length` counts the key's blocks that count: it leaves out both blocks of every equivocation pair and every later block of the key that follows one (Equivocations).
 
 ## Invariants
 

@@ -7,7 +7,7 @@ A **circle** is an `actor` of kind `circle`, written by its founder as an ordina
   - `admit`: may give member grants and change roles;
   - `remove`: may remove members.
 
-  The protocol reads powers and never reads a role's name. The founder holds the first role in the list. `circle#role` (the circle's id, `#`, the role's name) names the holders of a role.
+  The protocol reads powers and never reads a role's name. The founder holds the first role in the list. A circle must list at least one role (`bad_roles`); a circle with none gives its founder no power, and so no one. `circle#role` (the circle's id, `#`, the role's name) names the holders of a role.
 - **Membership** is a `grant` of kind `member`: `refs.subject` the circle, `refs.to` the member (left out, for an open group anyone may join), `refs.as` the circle, `state.roles` the role names it gives. It is signed by someone holding `admit`, and counts once the member's own `answers` accepts it.
 - **Changing roles.** A holder of `admit` changes roles by an `updates` of the member grant. A role added counts once the member answers. A role taken away counts at once.
 - **Signing for a circle.** A member names the circle with `refs.as`, and must hold, in the circle's fold at that block, a role with the power `sign`.

@@ -29,7 +29,7 @@ A promise moves a noun from one side to the other. Sides and what moves are in `
 - `declined`: ends it.
 - `stopped`, with `state.stop` saying how far: `before` (before acceptance: a withdrawal), `onward` (from this block on: leaving a job), or `{ occurrences: [start times] }` (named occurrences of a standing promise).
 
-A promise or grant has no status of its own: offered or asked is read from who signed it. Its author stops it by an `updates` that carries `status: stopped`. The other side stops it by an `answers`. A new promise that `answers` one, with no status, is a counter-offer: a reply with different terms, which binds nothing until accepted.
+A promise or grant has no status of its own: offered or asked is read from who signed it. Its author stops it by an `updates` that carries `status: stopped`. The other side stops it by an `answers`. A new promise that `answers` one, with no status, is a **counter-offer**: an answer whose state carries new terms and no `status`. It is the one answer without a status (core.md, section 7). It binds nothing until the other side answers it `accepted`.
 
 **Who may bind.**
 - A one-to-one offer binds on the other side's accept, with no allocation.

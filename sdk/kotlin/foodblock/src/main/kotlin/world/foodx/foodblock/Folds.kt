@@ -39,7 +39,7 @@ object Identity {
     fun recoveryKeyHash(publicKey: String, suite: String = "std"): String =
         Native.invoke("recovery_key_hash", JsonPrimitive(publicKey), JsonPrimitive(suite)).string()
 
-    /** The identity fold: `{ signed_by_author, keys, frozen, operators, history }` (history is always "none"). */
+    /** The identity fold: `{ signed_by_author, keys, frozen, operators }`. */
     fun identityState(id: String, blocks: List<JsonObject>, arrivals: Map<String, String>? = null): JsonObject =
         Native.invoke("identity_state", JsonPrimitive(id), JsonArray(blocks), arrivals(arrivals)).obj()
 

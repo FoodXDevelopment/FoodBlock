@@ -101,10 +101,10 @@ The signature is by the signing key over the canonical bytes of `block`. A suite
 
 - **Every block but a genesis:** the five fields of section 5.
 - **`actor`:** `state.kind`, a label.
-- **`transfer`:** `refs.what`, and at least one of `refs.to_owner`, `refs.to_holder`, `refs.to_place` or `state.count`.
+- **`transfer`:** `refs.what`, and at least one of `refs.to_owner`, `refs.to_holder`, `refs.to_place` or `state.count`. A **payment** is the exemption: a transfer that carries `state.money` names no thing, so it needs no `refs.what` (things.md, Transfers).
 - **`promise`:** `refs.what` or `state.what`; an ask also carries `terms.expires`.
 - **`grant`:** `state.kind`, a label; the grant kinds the protocol reads say more in their modules.
-- **An answer** (a block with `refs.answers`) carries `state.status` and is exempt from the other required fields of its type.
+- **An answer** (a block with `refs.answers`) carries `state.status` and is exempt from the other required fields of its type. The one exception is a **counter-offer**, a promise that answers a promise with new terms and no status (promises.md, Answers).
 - **An open type:** nothing beyond the common five.
 
 The fields each closed type may carry are in `protocol.json` (`fields`). A closed block with any other field is refused (`undeclared_field`), unless a schema the block names declares it.
@@ -121,7 +121,7 @@ The fields each closed type may carry are in `protocol.json` (`fields`). A close
 6. `prev` and `seq` fit the key's chain, or the block is a skip (`chain`).
 7. If the type is closed, it has its required fields and no undeclared ones (`required`, `undeclared_field`, `undeclared_ref`), and its module's checks pass (the codes in `protocol.json`).
 
-A block that fails several checks gets one refusal per check, in this order. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
+A block that fails several checks gets one refusal per code, in the order of the checks above, and `protocol.json` lists `refusals.codes.block` in that same order: canonical form (`not_canonical`), values (`float`, `integer_range`, `decimal`, `grammar`, `time`, `calendar`, `shape`, `type_name`), the audience (`audience`), limits (`size_limit`, `after_limit`), the genesis and the common five (`bad_genesis`, `chain`, `at_missing`), then an id sent that is not the hash (`bad_hash`) and the key and signature (`bad_signature`, `void_key`, `unknown_suite`, `not_own_rotation`, `recovery_scope`), then closed types (`required`, `undeclared_ref`, `undeclared_field`), then the codes a module adds, in the order of the list. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
 
 ## 9. The invariants
 

@@ -620,9 +620,9 @@ const poolOf = x => x instanceof Pool ? x : new Pool(x);
 const blockOnly = b => ({ type: b.type, state: b.state, refs: b.refs });
 
 // ================================================================ the identity fold (identity.md)
-// Output: signed_by_author { hash: bool }, keys, frozen (sorted), operators, history 'none', plus the working data valid() needs.
+// Output: signed_by_author { hash: bool }, keys, frozen (sorted), operators, plus the working data valid() needs.
 const isKeyGrant = b => b.type === 'grant' && b.state && b.state.kind === 'key';
-function emptyIdentity() { return { signed_by_author: {}, keys: [], frozen: [], operators: [], history: 'none', info: new Map(), cutoff: {}, keyMap: new Map(), ended: false, timeline: [] }; }
+function emptyIdentity() { return { signed_by_author: {}, keys: [], frozen: [], operators: [], info: new Map(), cutoff: {}, keyMap: new Map(), ended: false, timeline: [] }; }
 function identityFold(id, poolIn, visiting) {
   const pool = poolOf(poolIn);
   if (pool.folds.has(id)) return pool.folds.get(id);
@@ -748,7 +748,7 @@ function computeIdentity(id, pool, visiting) {
   const keyList = [...st.keys.keys()];
   const timeline = [];
   for (const k of keyList) timeline.push({ key: k, suite: suiteOfKey(k) || 'std', frozen: frozen.has(k) });
-  const res = { signed_by_author: sba, keys: keyList.slice().sort(), frozen: [...frozen].filter(k => st.keys.has(k)).sort(), operators: [], history: 'none', info, cutoff, keyMap: st.keys, ended, timeline, rotations: st.rotations, rh, recoveryOk, genKey, idSuite, order, counting };
+  const res = { signed_by_author: sba, keys: keyList.slice().sort(), frozen: [...frozen].filter(k => st.keys.has(k)).sort(), operators: [], info, cutoff, keyMap: st.keys, ended, timeline, rotations: st.rotations, rh, recoveryOk, genKey, idSuite, order, counting };
   return res;
 }
 // The operators of an agent or machine: authors of live grants of kind operator naming it in refs.to.
@@ -1630,17 +1630,38 @@ function successorView(grant, blocks, o) {
 // ================================================================ consent and admission (strangers.md)
 function consentFold(person, sender, blocks) {
   const pool = poolOf(blocks);
-  const cons = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'consent' && b.refs.author === person && counts(b, pool));
-  const operators = sender === undefined || sender === null ? [] : operatorsOf(sender, pool);
+  const has = sender !== undefined && sender !== null;
+  // The sender's side: a recorder binds only its own side (itself, its operator, and every agent under that operator).
+  const sideOf = (recorder, who) => {
+    if (!has || !who) return false;
+    const mine = [recorder, ...operatorsOf(recorder, pool)];
+    return who === recorder || operatorsOf(recorder, pool).includes(who) || operatorsOf(who, pool).some(o => mine.includes(o));
+  };
+  const personOf = b => b.refs.from !== undefined ? b.refs.from : b.refs.author;
+  const all = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'consent' && personOf(b) === person && counts(b, pool));
+  const stops = all.filter(b => b.state.word === 'stop');
+  const cons = all.filter(b => {
+    if (b.refs.author === person) return true;
+    if (b.state.word === 'stop') return sideOf(b.refs.author, sender);
+    // Her fresh yes through a recorder outside the asker's side counts only as the lift of a stop in its causal past.
+    if (b.state.word === 'yes') return !sideOf(b.refs.author, sender) && stops.some(st => pool.sees(b.hash, st.hash));
+    return false;
+  });
+  const operators = !has ? [] : operatorsOf(sender, pool);
   const later = (a, b) => pool.sees(a.hash, b.hash) || (a.state.seq > b.state.seq && signerKeyOf(a, pool) === signerKeyOf(b, pool));
   const decide = group => {
     if (!group.length) return null;
     const maximal = group.filter(a => !group.some(b => b !== a && later(b, a)));
-    return maximal.find(b => b.state.word === 'stop') || maximal[0];
+    const stop = maximal.filter(b => b.state.word === 'stop').sort((x, y) => (x.hash < y.hash ? -1 : 1))[0];
+    if (stop) return stop;
+    // A tie between other words leaves no live word; a tie that agrees stands, naming the lowest hash.
+    if (maximal.some(b => b.state.word !== maximal[0].state.word)) return null;
+    return maximal.sort((x, y) => (x.hash < y.hash ? -1 : 1))[0];
   };
   const names = [sender, ...operators].filter(Boolean);
-  const named = decide(cons.filter(b => b.refs.subject !== undefined && names.includes(b.refs.subject)));
-  const pick = named || decide(cons.filter(b => b.refs.subject === undefined));
+  const aboutThem = cons.filter(b => b.refs.subject !== undefined && names.includes(b.refs.subject));
+  const named = aboutThem.length ? decide(aboutThem) : undefined;
+  const pick = aboutThem.length ? named : decide(cons.filter(b => b.refs.subject === undefined));
   return pick ? { word: pick.state.word, block: pick.hash } : { word: null, block: null };
 }
 // admission_refusals(block, recipient, held, rule, arrivedToday): the message refusals of nodes.md and strangers.md
@@ -1675,8 +1696,8 @@ function depositPaid(ask, deposit, blocks) {
   return pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ask.hash) && t.refs.to_owner === deposit.holder && isObj(t.state.money) &&
     jcs(t.state.money.currency) === jcs(deposit.money.currency) && t.state.money.minor >= deposit.money.minor && counts(t, pool));
 }
-// A model's reading is the agent's claim; it becomes the person's only when the person's own block confirms it (strangers.md)
-const readingIsPersonsClaim = (reading, person, blocks) => poolOf(blocks).all().some(b => b.refs.author === person && asList(b.refs.confirms).includes(reading.hash));
+// A model's reading is the agent's claim; it becomes the person's only when she puts that fact to someone else in her own step (strangers.md, section 4)
+const readingIsPersonsClaim = (reading, person, blocks) => reading.state.kind === 'reading' && poolOf(blocks).all().some(b => b.refs.author === person && asList(b.refs.derives_from).includes(reading.hash) && [...asList(b.refs.to), ...asList(b.refs.to_owner)].some(x => x !== person));
 
 // ================================================================ messages (privacy.md, nodes.md)
 const withoutSignature = m => { const o = { ...m }; delete o.signature; return o; };
