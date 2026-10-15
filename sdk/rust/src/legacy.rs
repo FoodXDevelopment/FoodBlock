@@ -326,6 +326,75 @@ fn tidy_refs(refs: &Value) -> Value {
     Value::Object(out)
 }
 
+// ---- Values (converter.md step 3): each old value to its 1.6 grammar, from the protocol's own lists ----
+fn to_time(v: &Value) -> Option<String> {
+    match v {
+        Value::String(s) => crate::time::parse(&s.trim().replacen(' ', "T", 1)).map(crate::time::iso),
+        Value::Number(n) => {
+            let x = n.as_f64()?;
+            // Seconds or milliseconds since the epoch.
+            let ms = if x.abs() < 1.0e11 { x * 1000.0 } else { x };
+            if ms.is_finite() { Some(crate::time::iso(ms.round() as i64)) } else { None }
+        }
+        _ => None,
+    }
+}
+
+fn walk(key: &str, v: &mut Value, times: &[String], dates: &[String]) {
+    match v {
+        Value::Object(m) => {
+            for (k, x) in m.iter_mut() {
+                walk(k, x, times, dates);
+            }
+        }
+        Value::Array(a) => {
+            for x in a.iter_mut() {
+                if x.is_object() {
+                    walk(key, x, times, dates);
+                }
+            }
+        }
+        Value::String(_) | Value::Number(_) => {
+            if times.iter().any(|t| t == key) {
+                if let Some(t) = to_time(v) {
+                    *v = Value::String(t);
+                }
+            } else if dates.iter().any(|t| t == key) {
+                if let Some(t) = to_time(v) {
+                    *v = Value::String(t[..10].to_string());
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Times and dates to the 1.6 form (the fields are protocol.json's `time_fields` and `date_fields`), a confidence to a
+/// decimal string from 0 to 1. A confidence that is not a number from 0 to 1 (a label such as "verified") has no 1.6
+/// home: it is kept as `was_confidence`.
+fn normalise(state: &mut Map<String, Value>) {
+    let spec = crate::spec();
+    let (times, dates) = (spec.list("time_fields"), spec.list("date_fields"));
+    for (k, v) in state.iter_mut() {
+        walk(k, v, &times, &dates);
+    }
+    if let Some(c) = state.shift_remove("confidence") {
+        let x = match &c {
+            Value::Number(n) => n.as_f64(),
+            Value::String(s) => s.trim().parse::<f64>().ok(),
+            _ => None,
+        };
+        match x {
+            Some(x) if (0.0..=1.0).contains(&x) => {
+                state.insert("confidence".into(), Value::String(js_number(x)));
+            }
+            _ => {
+                state.insert("was_confidence".into(), c);
+            }
+        }
+    }
+}
+
 fn suite_for(alg: &str) -> Option<&'static str> {
     match alg {
         "ed25519" | "x25519" | "" => None,
@@ -360,6 +429,7 @@ pub fn reshape(read: &Value) -> Value {
     for gone in ["dkim", "manifest", "signers"] {
         state.shift_remove(gone);
     }
+    normalise(&mut state);
     json!({
         "type": read.get("type"),
         "state": tidy(&Value::Object(state), false).unwrap_or_else(|| json!({})),
@@ -370,8 +440,11 @@ pub fn reshape(read: &Value) -> Value {
 /// What a person gives the converter.
 #[derive(Default)]
 pub struct ConvertOptions {
-    /// The key that signs for each old identity, by the old genesis hash: `{ public_key_sign, private_key, suite? }`.
-    /// An identity with no key here is not converted.
+    /// The key that signs for each old identity, by the old genesis hash: `{ public_key_sign, private_key, suite?,
+    /// custodian?, channel? }`. An identity with no key here is not converted (it is reported in `skipped`). A key with
+    /// a `custodian` (an old identity hash that is converted too, or a 1.6 id) is held by that custodian: the new
+    /// genesis names it in `state.custodian`, and every block it signs carries `state.channel` (the key's, else
+    /// `import`).
     pub keys: Map<String, Value>,
     /// The conversion time, UTC (`state.at` of every new block).
     pub at: String,
@@ -385,6 +458,13 @@ pub struct ConvertOptions {
     /// The recovery keys' public signing keys, by old genesis hash, for an identity that had one (only its hash is
     /// carried: it is copied from the old genesis when it has one).
     pub aliases: Option<Value>,
+    /// Schemas already published (things of kind schema, with their `hash`): one that declares what a block needs is
+    /// named in the block's `refs.schema` instead of writing a new one.
+    pub schemas: Vec<Value>,
+    /// The key of a custodian that signs for every identity that has no key of its own (`{ public_key_sign,
+    /// private_key, suite?, custodian, channel? }`, `custodian` being the custodian's own identity). Without it such an
+    /// identity's blocks are reported in `skipped`.
+    pub custodian_key: Option<Value>,
 }
 
 /// What a run made.
@@ -393,14 +473,221 @@ pub struct Converted {
     pub blocks: Vec<Value>,
     /// `old -> new`, this run and the earlier ones.
     pub map: Map<String, Value>,
-    /// Old blocks not converted: no key for their author, a retired type, or a chain a gap broke.
+    /// Old blocks not converted: no key for their author, a retired type, or a block no 1.6 shape holds.
     pub skipped: Vec<(String, String)>,
+    /// For each private block, what each recipient is given: `{ block, to, reveals: [{ salt, value }], sealed }`.
+    /// `sealed` is the sealed copy (privacy.md) when the recipient's genesis names an encryption key, else null.
+    pub deliveries: Vec<Value>,
 }
 
 fn causal(blocks: &[Value]) -> Vec<Value> {
     // Causes first: the old blocks' refs name older blocks. The order among unrelated blocks is by old hash.
     let index = index_of(blocks.iter());
     crate::order::causal_order_in(&index)
+}
+
+/// Whether a ref value is an id the protocol can read: a hash in the id grammar whose hash name (the prefix before a
+/// colon, if any) is one the protocol knows. `message:<hex>` is not a link to a block.
+fn is_ref_value(s: &str) -> bool {
+    let spec = crate::spec();
+    if !(spec.is("id", s) || spec.is("role_ref", s)) {
+        return false;
+    }
+    match s.split('#').next().unwrap_or("").split_once(':') {
+        Some((name, _)) => spec.knows_hash(name),
+        None => true,
+    }
+}
+
+/// The field type a value is declared as in a schema (protocol.json `field_types`).
+fn field_type_of(v: &Value) -> &'static str {
+    match v {
+        Value::Bool(_) => "boolean",
+        Value::Number(_) => "integer",
+        Value::Array(_) => "list",
+        Value::Object(_) => "object",
+        _ => "text",
+    }
+}
+
+/// An old block ready to become a 1.6 block: its type, state and refs (old ids still in the refs), what a schema
+/// must declare for it, or why it cannot be converted.
+struct Prepared {
+    ty: String,
+    state: Map<String, Value>,
+    refs: Map<String, Value>,
+    /// `type.kind`, or the type: what a schema for it targets.
+    target: String,
+    /// Fields and roles beyond the protocol's base for this type, to be declared by a schema.
+    fields: Vec<(String, String)>,
+    roles: Vec<String>,
+    skip: Option<String>,
+}
+
+/// What the protocol's own check (the checks that read the block alone) finds in a block with these parts, a dummy
+/// chain and, when it needs one, a dummy schema declaring exactly its extras.
+fn findings_of(ty: &str, state: &Map<String, Value>, refs: &Map<String, Value>, fields: &[(String, String)], roles: &[String]) -> Vec<String> {
+    let mut st = state.clone();
+    st.insert("seq".into(), json!(1));
+    st.insert("at".into(), json!("2026-01-01T00:00:00.000Z"));
+    st.insert("audience".into(), json!("public"));
+    let mut rf = refs.clone();
+    rf.insert("author".into(), json!("0".repeat(64)));
+    rf.insert("prev".into(), json!("1".repeat(64)));
+    let mut schemas = crate::js::Index::default();
+    if !rf.contains_key("schema") && (!fields.is_empty() || !roles.is_empty()) {
+        let named = "2".repeat(64);
+        let declared: Map<String, Value> = fields.iter().map(|(k, t)| (k.clone(), json!(t))).collect();
+        schemas.insert(named.clone(), json!({ "type": "thing", "state": { "kind": "schema", "fields": declared, "roles": roles }, "refs": {} }));
+        rf.insert("schema".into(), json!(named));
+    }
+    crate::check::findings_with(
+        crate::spec(),
+        ty,
+        &Value::Object(st),
+        &Value::Object(rf),
+        crate::check::CheckOptions { schemas: Some(&schemas), held: None },
+    )
+    .into_iter()
+    .map(|r| r.code)
+    .collect()
+}
+
+/// Step 3 and the exits for what has no 1.6 home. The block is read through the table and reshaped; a ref that is
+/// not an id moves to a `was_<role>` field; whatever its type does not declare is named for a schema (a closed type)
+/// or already allowed (an open one); and if the protocol's own check still refuses the block, it becomes an
+/// `observe` of kind `legacy` (`state.was` names the old type and kind) that carries everything it held.
+fn prepare(read: &Value, circle_roles: &Map<String, Value>, old_id: &str) -> Prepared {
+    let mut shaped = reshape(read);
+    if type_of(&shaped) == "actor" && ss(&shaped, "kind") == Some("circle") {
+        let named: Vec<String> = circle_roles
+            .get(old_id)
+            .and_then(Value::as_array)
+            .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
+            .unwrap_or_default();
+        let signers: Vec<String> = list(st(read, "signers")).iter().map(|s| s.to_string()).collect();
+        let mut roles = vec![json!({ "name": "admin", "powers": ["sign", "admit", "remove"] })];
+        for r in named.iter().chain(signers.iter()) {
+            if r != "admin" && !roles.iter().any(|x| x["name"] == json!(r)) {
+                let powers: Vec<&str> = if signers.contains(r) { vec!["sign"] } else { vec![] };
+                roles.push(json!({ "name": r, "powers": powers }));
+            }
+        }
+        shaped["state"]["roles"] = json!(roles);
+    }
+    let mut ty = type_of(&shaped).to_string();
+    let mut state = shaped["state"].as_object().cloned().unwrap_or_default();
+    let mut refs = shaped["refs"].as_object().cloned().unwrap_or_default();
+    // A ref that is not an id (a message, a URL) is not a link: it is kept as text.
+    for (k, v) in refs.clone() {
+        let not_id = match &v {
+            Value::String(s) => !is_ref_value(s),
+            Value::Array(a) => a.iter().any(|x| !x.as_str().is_some_and(is_ref_value)),
+            _ => false,
+        };
+        if not_id {
+            refs.shift_remove(&k);
+            state.insert(format!("was_{k}"), v);
+        }
+    }
+    let target = match state.get("kind").and_then(Value::as_str) {
+        Some(k) if !k.is_empty() => format!("{ty}.{k}"),
+        _ => ty.clone(),
+    };
+    let extras = |ty: &str, state: &Map<String, Value>, refs: &Map<String, Value>| -> (Vec<(String, String)>, Vec<String>) {
+        if !crate::spec().is_closed(ty) {
+            return (Vec::new(), Vec::new());
+        }
+        let (base_fields, base_roles) = crate::check::base_declared(ty);
+        let fields = state.iter().filter(|(k, _)| !base_fields.contains(k)).map(|(k, v)| (k.clone(), field_type_of(v).to_string())).collect();
+        let roles = refs.keys().filter(|k| !base_roles.contains(k)).cloned().collect();
+        (fields, roles)
+    };
+    let (mut fields, mut roles) = extras(&ty, &state, &refs);
+    let mut skip = None;
+    if !findings_of(&ty, &state, &refs, &fields, &roles).is_empty() {
+        // No 1.6 shape of this type holds it: it is kept whole as an observe of kind `legacy`.
+        state.insert("was".into(), json!(target));
+        state.insert("kind".into(), json!("legacy"));
+        ty = "observe".into();
+        fields = Vec::new();
+        roles = Vec::new();
+        let again = findings_of(&ty, &state, &refs, &fields, &roles);
+        if !again.is_empty() {
+            skip = Some(format!("no 1.6 block holds it: {}", again.join(", ")));
+        }
+    }
+    Prepared { ty, state, refs, target, fields, roles, skip }
+}
+
+/// A recipient of an old audience as a 1.6 id: the old identity's new id (`circle#role` keeps its role).
+fn recipient_id(old: &str, map: &Map<String, Value>) -> Option<String> {
+    let (who, role) = match old.split_once('#') {
+        Some((w, r)) => (w, Some(r)),
+        None => (old, None),
+    };
+    let new = map
+        .get(who)
+        .and_then(Value::as_str)
+        .map(String::from)
+        .or_else(|| map.values().any(|v| v.as_str() == Some(who)).then(|| who.to_string()))?;
+    Some(match role {
+        Some(r) => format!("{new}#{r}"),
+        None => new,
+    })
+}
+
+/// Who signs, and how the blocks it signs are marked.
+struct Signer {
+    suite: String,
+    private_key: String,
+    /// A custodian holds this key: the channel its blocks carry (`state.channel`).
+    channel: Option<String>,
+}
+
+fn signer_of(options: &ConvertOptions, key: &Value) -> Signer {
+    let suite = text(key.get("suite")).replace("undefined", "");
+    let suite = if suite.is_empty() { "std".to_string() } else { suite };
+    let custodian = key.get("custodian").is_some_and(|c| !c.is_null());
+    let channel = if !options.channel.is_empty() {
+        Some(options.channel.clone())
+    } else if custodian {
+        Some(key.get("channel").and_then(Value::as_str).filter(|c| !c.is_empty()).unwrap_or("import").to_string())
+    } else {
+        None
+    };
+    Signer { suite, private_key: text(key.get("private_key")), channel }
+}
+
+/// Write one block into an identity's chain: `author`, `prev`, `seq`, `at` and the channel are put in, the key signs.
+#[allow(clippy::too_many_arguments)]
+fn emit(
+    heads: &mut Map<String, Value>,
+    out: &mut Vec<Value>,
+    options: &ConvertOptions,
+    author_old: &str,
+    signer: &Signer,
+    ty: &str,
+    mut state: Map<String, Value>,
+    mut refs: Map<String, Value>,
+) -> Result<Value> {
+    let head = heads.get(author_old).cloned().unwrap_or(Value::Null);
+    let last = head.get("last").filter(|l| l.is_object()).cloned();
+    let link = crate::chain::next_link(last.as_ref(), Some(&text(head.get("genesis"))))?;
+    refs.insert("author".into(), json!(text(head.get("id"))));
+    refs.insert("prev".into(), json!(link.prev));
+    state.insert("at".into(), json!(options.at));
+    state.insert("seq".into(), json!(link.seq));
+    state.entry("audience".to_string()).or_insert(json!("public"));
+    if let Some(c) = &signer.channel {
+        state.insert("channel".into(), json!(c));
+    }
+    let block = create_in(&signer.suite, ty, &Value::Object(state), &Value::Object(refs))?;
+    let mut signed = block.clone();
+    signed["signature"] = json!(sign_in(&signer.suite, &block, &signer.private_key)?);
+    heads.get_mut(author_old).unwrap()["last"] = signed.clone();
+    out.push(signed.clone());
+    Ok(signed)
 }
 
 /// Convert old blocks into fresh 1.6 blocks (see the module docs). `old` carries each block's `hash` when it has one.
@@ -424,58 +711,90 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
     let mut map = options.map.clone();
     let mut out: Vec<Value> = Vec::new();
     let mut skipped: Vec<(String, String)> = Vec::new();
+    let mut deliveries: Vec<Value> = Vec::new();
     let existing = index_of(options.existing.iter());
+    let reads: Vec<Option<Value>> = olds.iter().map(|b| read_old(&aliases, b)).collect();
+    let by_hash: crate::js::Index = index_of(olds.iter());
+    let read_of: Map<String, Value> = olds.iter().zip(&reads).filter_map(|(b, r)| r.clone().map(|r| (hash_of(b).to_string(), r))).collect();
+    // The identity an old block belongs to: an actor that carries a key and updates nothing is its own identity (the
+    // genesis, whoever made it); any other block belongs to its author.
+    let identity_of = |b: &Value| -> Option<String> {
+        let id = hash_of(b);
+        let genesis = read_of.get(id).is_some_and(|r| type_of(r) == "actor" && ss(r, "public_key_sign").is_some() && rf(r, "updates").is_none());
+        if genesis {
+            Some(id.to_string())
+        } else {
+            rs(b, "author").map(String::from)
+        }
+    };
+    // The key that signs for each identity: its own, else the custodian's (a held key, marked as such).
+    let mut keys = options.keys.clone();
+    if let Some(fallback) = &options.custodian_key {
+        for b in &olds {
+            if let Some(id) = identity_of(b) {
+                if !keys.contains_key(&id) {
+                    keys.insert(id, fallback.clone());
+                }
+            }
+        }
+    }
     // Roles each old circle's members were given, for the circle's new roles list.
     let mut circle_roles: Map<String, Value> = Map::new();
-    for b in &olds {
-        if let Some(read) = read_old(&aliases, b) {
-            if type_of(&read) == "grant" && ss(&read, "kind") == Some("member") {
-                if let Some(circle) = rs(&read, "subject") {
-                    let slot = circle_roles.entry(circle.to_string()).or_insert_with(|| json!([]));
-                    for r in list(st(&read, "roles")) {
-                        if !slot.as_array().unwrap().iter().any(|x| x.as_str() == Some(r)) {
-                            slot.as_array_mut().unwrap().push(json!(r));
-                        }
+    for read in read_of.values() {
+        if type_of(read) == "grant" && ss(read, "kind") == Some("member") {
+            if let Some(circle) = rs(read, "subject") {
+                let slot = circle_roles.entry(circle.to_string()).or_insert_with(|| json!([]));
+                for r in list(st(read, "roles")) {
+                    if !slot.as_array().unwrap().iter().any(|x| x.as_str() == Some(r)) {
+                        slot.as_array_mut().unwrap().push(json!(r));
                     }
                 }
             }
         }
     }
-    // Step 2: a new genesis per identity that has a key.
+    // Step 2: a new genesis per identity that has a key. A custodian's own identity first: others name it.
     let mut identities: Vec<String> = Vec::new();
     for b in &olds {
-        let id = rs(b, "author").map(String::from).unwrap_or_else(|| hash_of(b).to_string());
-        if options.keys.contains_key(&id) && !identities.contains(&id) {
+        let Some(id) = identity_of(b) else { continue };
+        if keys.contains_key(&id) && !identities.contains(&id) {
             identities.push(id);
         }
     }
     identities.sort();
-    let mut heads: Map<String, Value> = Map::new(); // old identity -> { id (new), key, last (block) }
+    let custodians: Vec<String> =
+        identities.iter().filter_map(|i| keys[i].get("custodian").and_then(Value::as_str).map(String::from)).collect();
+    identities.sort_by_key(|i| !custodians.contains(i));
+    let mut heads: Map<String, Value> = Map::new(); // old identity -> { id (new), last (block), genesis }
+    let mut signers: Map<String, Value> = Map::new();
     for id in &identities {
-        let k = options.keys.get(id).unwrap();
+        let k = keys.get(id).unwrap();
         let pair = Keypair {
             suite: text(k.get("suite")).replace("undefined", ""),
             public_key_sign: text(k.get("public_key_sign")),
             private_key: text(k.get("private_key")),
         };
-        let suite = if pair.suite.is_empty() { "std".to_string() } else { pair.suite.clone() };
+        let signer = signer_of(options, k);
+        let suite = signer.suite.clone();
         let new_id = match map.get(id).and_then(Value::as_str) {
             Some(n) => n.to_string(),
             None => {
-                let old_genesis = olds.iter().find(|b| hash_of(b) == id);
-                let read = old_genesis.and_then(|b| read_old(&aliases, b));
-                let kind = read.as_ref().and_then(|r| ss(r, "kind")).unwrap_or("person").to_string();
+                let read = read_of.get(id.as_str());
+                let kind = read.and_then(|r| ss(r, "kind")).unwrap_or("person").to_string();
                 let mut state = json!({
                     "kind": kind, "at": options.at, "audience": "public", "public_key_sign": pair.public_key_sign,
                 });
                 if suite != "std" {
                     state["suite"] = json!(suite);
                 }
-                if let Some(e) = read.as_ref().and_then(|r| ss(r, "public_key_encrypt")) {
+                if let Some(e) = read.and_then(|r| ss(r, "public_key_encrypt")) {
                     state["public_key_encrypt"] = json!(e);
                 }
+                // The held key names its custodian: the custodian's new id when it was converted, else as given.
+                if let Some(c) = k.get("custodian").and_then(Value::as_str) {
+                    state["custodian"] = json!(map.get(c).and_then(Value::as_str).unwrap_or(c));
+                }
                 // The old recovery key's hash and reach are carried as a pair; one without the other is dropped.
-                if let Some(r) = read.as_ref() {
+                if let Some(r) = read {
                     if let (Some(h), Some(reach)) = (ss(r, "recovery_key_hash"), ss(r, "recovery_reach")) {
                         state["recovery_key_hash"] = json!(h);
                         state["recovery_reach"] = json!(reach);
@@ -488,17 +807,17 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
                 map.insert(id.clone(), json!(n));
                 out.push(signed);
                 // The link back: a genesis has no refs, so the old identity is named by the first block of the new
-                // chain, an `observe` of kind `converted` the owner (or custodian) signs, `derives_from` the old hash.
+                // chain, an `observe` the owner (or custodian) signs, `derives_from` the old hash.
                 let link = crate::chain::next_link(None, Some(&n))?;
                 let mut from = vec![id.clone()];
-                if !options.request_hash.is_empty() {
+                if !options.request_hash.is_empty() && signer.channel.is_some() {
                     from.push(options.request_hash.clone());
                 }
                 let mut note = json!({
                     "kind": "converted", "at": options.at, "seq": link.seq, "audience": "public",
                 });
-                if !options.channel.is_empty() {
-                    note["channel"] = json!(options.channel);
+                if let Some(c) = &signer.channel {
+                    note["channel"] = json!(c);
                 }
                 let refs = json!({
                     "author": n, "prev": link.prev, "subject": n, "derives_from": crate::js::sorted_set(from),
@@ -520,96 +839,172 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
             last = out.iter().rev().find(|b| rs(b, "author") == Some(new_id.as_str())).cloned();
         }
         heads.insert(id.clone(), json!({ "id": new_id, "last": last, "genesis": new_id }));
+        signers.insert(id.clone(), json!({ "suite": signer.suite, "private_key": signer.private_key, "channel": signer.channel }));
     }
-    // Steps 3 to 8, in causal order.
-    for b in causal(&olds) {
-        let old_id = hash_of(&b).to_string();
-        let author_old = rs(&b, "author").map(String::from).unwrap_or_else(|| old_id.clone());
-        let is_genesis = type_of(&b) == "actor" && rs(&b, "author").is_none() && identities.contains(&old_id);
-        if map.contains_key(&old_id) || (is_genesis && heads.contains_key(&old_id)) {
+    let signer_for = |author: &str| -> Signer {
+        let s = &signers[author];
+        Signer {
+            suite: text(s.get("suite")),
+            private_key: text(s.get("private_key")),
+            channel: s.get("channel").and_then(Value::as_str).map(String::from),
+        }
+    };
+    let order = causal(&olds);
+    // What each (identity, target) needs a schema to declare: found before any block is written, so one schema
+    // serves them all.
+    let mut needs: Map<String, Value> = Map::new();
+    for b in &order {
+        let id = hash_of(b).to_string();
+        let Some(read) = read_of.get(&id) else { continue };
+        let Some(author_old) = identity_of(b) else { continue };
+        if !heads.contains_key(&author_old) || map.contains_key(&id) {
             continue;
         }
-        let Some(head) = heads.get(&author_old).cloned() else {
-            skipped.push((old_id, "no key was given for its author".into()));
+        let p = prepare(read, &circle_roles, &id);
+        if p.skip.is_some() || (p.fields.is_empty() && p.roles.is_empty()) {
+            continue;
+        }
+        let slot = needs.entry(format!("{author_old} {}", p.target)).or_insert_with(|| json!({ "fields": {}, "roles": [] }));
+        for (name, t) in &p.fields {
+            let have = slot["fields"].get(name).and_then(Value::as_str).map(String::from);
+            let scalar = |x: &str| ["text", "integer", "boolean"].contains(&x);
+            let t = match have {
+                Some(h) if h != *t && scalar(&h) && scalar(t) => "text".to_string(),
+                Some(h) => h,
+                None => t.clone(),
+            };
+            slot["fields"][name.as_str()] = json!(t);
+        }
+        for r in &p.roles {
+            if !slot["roles"].as_array().unwrap().iter().any(|x| x.as_str() == Some(r)) {
+                slot["roles"].as_array_mut().unwrap().push(json!(r));
+            }
+        }
+    }
+    let mut own_schemas: Map<String, Value> = Map::new(); // "identity target" -> hash of the schema written
+    let _ = &by_hash;
+    // Steps 3 to 8, in causal order.
+    for b in &order {
+        let old_id = hash_of(b).to_string();
+        let Some(author_old) = identity_of(b) else {
+            skipped.push((old_id, "it names no author".into()));
             continue;
         };
-        let Some(read) = read_old(&aliases, &b) else {
+        let is_genesis = identities.contains(&old_id) && author_old == old_id;
+        if map.contains_key(&old_id) || is_genesis {
+            continue;
+        }
+        if !heads.contains_key(&author_old) {
+            skipped.push((old_id, "no key was given for its author".into()));
+            continue;
+        }
+        let Some(read) = read_of.get(&old_id) else {
             skipped.push((old_id, "its type is retired".into()));
             continue;
         };
-        let mut shaped = reshape(&read);
-        // Roles: a circle lists its roles as data; `admin` holds the three powers.
-        if type_of(&shaped) == "actor" && ss(&shaped, "kind") == Some("circle") {
-            let named: Vec<String> = circle_roles
-                .get(&old_id)
-                .and_then(Value::as_array)
-                .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
-                .unwrap_or_default();
-            let signers: Vec<String> = list(st(&read, "signers")).iter().map(|s| s.to_string()).collect();
-            let mut roles = vec![json!({ "name": "admin", "powers": ["sign", "admit", "remove"] })];
-            for r in named.iter().chain(signers.iter()) {
-                if r != "admin" && !roles.iter().any(|x| x["name"] == json!(r)) {
-                    let powers: Vec<&str> = if signers.contains(r) { vec!["sign"] } else { vec![] };
-                    roles.push(json!({ "name": r, "powers": powers }));
-                }
-            }
-            shaped["state"]["roles"] = json!(roles);
+        let p = prepare(read, &circle_roles, &old_id);
+        if let Some(why) = p.skip {
+            skipped.push((old_id, why));
+            continue;
         }
-        // Refs: every old id to its new one. A ref to an old block that was not converted stays as it was.
+        let signer = signer_for(&author_old);
+        let new_author = text(heads[&author_old].get("id"));
+        // Refs: every old id to its new one (a ref to an old block that was not converted stays as it was); sets sorted.
         let mut refs = Map::new();
-        for (k, v) in shaped["refs"].as_object().cloned().unwrap_or_default() {
-            let swap = |h: &str| map.get(h).and_then(Value::as_str).map(String::from).unwrap_or_else(|| h.to_string());
-            let nv = match &v {
+        for (k, v) in &p.refs {
+            let swap = |h: &str| match h.split_once('#') {
+                Some((who, role)) => map.get(who).and_then(Value::as_str).map(|n| format!("{n}#{role}")).unwrap_or_else(|| h.to_string()),
+                None => map.get(h).and_then(Value::as_str).map(String::from).unwrap_or_else(|| h.to_string()),
+            };
+            let nv = match v {
                 Value::String(s) => json!(swap(s)),
-                Value::Array(a) => json!(a.iter().filter_map(Value::as_str).map(swap).collect::<Vec<_>>()),
+                Value::Array(a) => json!(crate::js::sorted_set(a.iter().filter_map(Value::as_str).map(swap))),
                 other => other.clone(),
             };
-            refs.insert(k, nv);
+            refs.insert(k.clone(), nv);
         }
-        // Step 5, 7: author, chain, the link back (derives_from the old hash, and the raw request when a custodian signs).
-        let new_author = text(head.get("id"));
-        let last = head.get("last").filter(|l| l.is_object()).cloned();
-        let link = crate::chain::next_link(last.as_ref(), Some(&text(head.get("genesis"))))?;
-        refs.insert("author".into(), json!(new_author));
-        refs.insert("prev".into(), json!(link.prev));
+        // Step 7: the link back (derives_from the old hash, and the raw request when a custodian signs).
         let mut from = list(refs.get("derives_from")).iter().map(|s| s.to_string()).collect::<Vec<_>>();
         from.push(old_id.clone());
-        if !options.request_hash.is_empty() {
+        if !options.request_hash.is_empty() && signer.channel.is_some() {
             from.push(options.request_hash.clone());
         }
         refs.insert("derives_from".into(), json!(crate::js::sorted_set(from)));
+        // A schema declares what the type does not: one already published, else the converter's own (a thing of kind
+        // schema, written first by the same signer).
+        if !p.fields.is_empty() || !p.roles.is_empty() {
+            let known = options.schemas.iter().find(|s| {
+                let target = ss(s, "target");
+                let declared = get(s, "state.fields").and_then(Value::as_object);
+                let roles = list(get(s, "state.roles"));
+                (target == Some(p.target.as_str()) || target == Some(p.ty.as_str()))
+                    && p.fields.iter().all(|(f, _)| declared.is_some_and(|d| d.contains_key(f)))
+                    && p.roles.iter().all(|r| roles.contains(&r.as_str()))
+            });
+            let schema = match known {
+                Some(s) => hash_of(s).to_string(),
+                None => {
+                    let key = format!("{author_old} {}", p.target);
+                    if let Some(h) = own_schemas.get(&key).and_then(Value::as_str) {
+                        h.to_string()
+                    } else {
+                        let need = needs.get(&key).cloned().unwrap_or_else(|| json!({ "fields": {}, "roles": [] }));
+                        let state = json!({ "kind": "schema", "target": p.target, "fields": need["fields"], "roles": need["roles"] });
+                        let made = emit(&mut heads, &mut out, options, &author_old, &signer, "thing", state.as_object().unwrap().clone(), Map::new())?;
+                        let h = hash_of(&made).to_string();
+                        own_schemas.insert(key, json!(h));
+                        h
+                    }
+                }
+            };
+            refs.insert("schema".into(), json!(schema));
+        }
         // Step 6: at is the conversion time; the old time goes in `when`.
-        let mut state = shaped["state"].as_object().cloned().unwrap_or_default();
+        let mut state = p.state.clone();
         if let Some(old_at) = state.shift_remove("at") {
             if crate::time::is_time(Some(&old_at)) {
                 state.entry("when".to_string()).or_insert(old_at);
             }
         }
-        state.insert("at".into(), json!(options.at));
-        state.insert("seq".into(), json!(link.seq));
-        state.entry("audience".to_string()).or_insert(json!("public"));
-        if !options.channel.is_empty() {
-            state.insert("channel".into(), json!(options.channel));
-        }
-        let key = options.keys.get(&author_old).unwrap();
-        let suite = ss(&json!({ "suite": key.get("suite") }), "suite").unwrap_or("std").to_string();
-        let block = match create_in(&suite, type_of(&shaped), &Value::Object(state), &Value::Object(refs)) {
-            Ok(b) => b,
-            Err(e) => {
-                skipped.push((old_id, format!("it does not become a 1.6 block: {e}")));
-                continue;
+        // A private audience: an old plain list of identities becomes one commitment per recipient, and each
+        // recipient is given the salt that opens theirs (privacy.md).
+        let mut gifts: Option<(crate::audience::Audience, Vec<String>)> = None;
+        match state.get("audience").cloned() {
+            Some(Value::String(s)) if s == "public" => {}
+            Some(Value::Null) | None => {}
+            other => {
+                let named: Vec<String> = match &other {
+                    Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).filter_map(|r| recipient_id(r, &map)).collect(),
+                    _ => Vec::new(),
+                };
+                // A recipient with no new id is left out; with none left, the block is its author's alone.
+                let who = if named.is_empty() { vec![new_author.clone()] } else { crate::js::unique(named) };
+                let refs_who: Vec<&str> = who.iter().map(String::as_str).collect();
+                let aud = crate::audience::commit_in(&signer.suite, &refs_who, &json!({}))?;
+                state.insert("audience".into(), json!(aud.audience));
+                state.insert("nonce".into(), json!(crate::audience::try_new_salt()?));
+                gifts = Some((aud, who));
             }
-        };
-        let mut signed = block.clone();
-        signed["signature"] = json!(sign_in(&suite, &block, &text(key.get("private_key")))?);
+        }
+        let signed = emit(&mut heads, &mut out, options, &author_old, &signer, &p.ty, state, refs)?;
         map.insert(old_id, json!(hash_of(&signed)));
-        heads.get_mut(&author_old).unwrap()["last"] = signed.clone();
-        out.push(signed);
+        if let Some((aud, who)) = gifts {
+            for to in who {
+                let reveals = json!([crate::audience::reveal_for(&aud, &to)]);
+                // The recipient's genesis names an encryption key: the copy is sealed to it.
+                let genesis_id = to.split('#').next().unwrap_or("").to_string();
+                let genesis = out.iter().find(|g| hash_of(g) == genesis_id).or_else(|| existing.get(genesis_id.as_str()));
+                let key = genesis.and_then(|g| ss(g, "public_key_encrypt")).map(String::from);
+                let enc_suite = genesis.and_then(|g| ss(g, "suite")).unwrap_or("std").to_string();
+                let sealed = match key {
+                    Some(k) if !to.contains('#') => {
+                        crate::write::seal_copy(&signed, &[k.as_str()], &reveals, &signer.private_key, None, &enc_suite).unwrap_or(Value::Null)
+                    }
+                    _ => Value::Null,
+                };
+                deliveries.push(json!({ "block": hash_of(&signed), "to": to, "reveals": reveals, "sealed": sealed }));
+            }
+        }
     }
-    Ok(Converted { blocks: out, map, skipped })
-}
-
-#[allow(dead_code)]
-fn _keep(v: &Value) -> Option<&Value> {
-    rf(v, "x")
+    Ok(Converted { blocks: out, map, skipped, deliveries })
 }

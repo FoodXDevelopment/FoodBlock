@@ -363,7 +363,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "within_limit" => json!(crate::grant::within_limit(a.v(0), a.v(1), a.v(2).as_i64().unwrap_or(0))),
         "limit_fence" => crate::grant::limit_fence(a.s(0)?, a.s(1)?, a.v(2), a.opt(3)),
         "recipients_of" => json!(crate::sync::recipients_of(a.v(0), a.s(1)?)),
-        // The one-time converter for pre-1.6 data: convert(oldBlocks, { keys, at, map, existing, channel, request_hash }).
+        // The one-time converter for pre-1.6 data: convert(oldBlocks, { keys, at, map, existing, channel, request_hash, schemas }).
         #[cfg(feature = "legacy")]
         "convert" => {
             let o = a.v(1);
@@ -375,11 +375,14 @@ fn dispatch(op: &str, a: &Args) -> Out {
                 channel: text_or_empty(o.get("channel")),
                 request_hash: text_or_empty(o.get("request_hash")),
                 aliases: o.get("aliases").filter(|v| v.is_object()).cloned(),
+                schemas: o.get("schemas").and_then(Value::as_array).cloned().unwrap_or_default(),
+                custodian_key: o.get("custodian_key").filter(|v| v.is_object()).cloned(),
             };
             let done = crate::legacy::convert(&a.list(0), &options)?;
             json!({
                 "blocks": done.blocks, "map": done.map,
                 "skipped": done.skipped.iter().map(|(h, why)| json!({ "hash": h, "why": why })).collect::<Vec<_>>(),
+                "deliveries": done.deliveries,
             })
         }
         #[cfg(feature = "legacy")]

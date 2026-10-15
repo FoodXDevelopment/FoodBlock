@@ -385,7 +385,6 @@
     "type": "grant",
     "state": {
      "kind": "member",
-     "accepted": true,
      "status": "accepted"
     },
     "refs": {
@@ -412,7 +411,6 @@
     "type": "grant",
     "state": {
      "kind": "member",
-     "accepted": false,
      "status": "stopped",
      "stop": "onward"
     },

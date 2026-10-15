@@ -739,6 +739,14 @@
           "state.status": "accepted"
         },
         "force": true
+      },
+      {
+        "when": {
+          "state.migrated_from": "*"
+        },
+        "move": {
+          "state.migrated_from": "refs.derives_from"
+        }
       }
     ],
     "transfer": [
@@ -815,6 +823,14 @@
         "copy": {
           "refs.as": "refs.subject"
         }
+      },
+      {
+        "when": {
+          "state.accepted": "*"
+        },
+        "drop": [
+          "state.accepted"
+        ]
       }
     ],
     "grant.holder": [

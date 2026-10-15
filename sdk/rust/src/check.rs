@@ -1508,3 +1508,10 @@ pub fn terms(given: &Value) -> Value {
             .unwrap_or_default(),
     )
 }
+
+/// The state fields and ref keys the protocol itself declares for a type, before any schema (the base of a closed
+/// type). The one-time converter reads it to know what a schema must declare (spec/legacy/converter.md).
+pub fn base_declared(type_name: &str) -> (Vec<String>, Vec<String>) {
+    let c = Checker { spec: crate::spec() };
+    c.declared(type_name, &json!({}), None).unwrap_or_default()
+}

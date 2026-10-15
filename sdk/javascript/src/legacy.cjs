@@ -7,10 +7,13 @@ const { call, list } = require('./core.cjs')
  * Convert old blocks. `keys` maps each old identity (its old genesis hash) to the key that signs for it
  * ({ public_key_sign, private_key, suite? }); `at` is the conversion time; `map` and `existing` continue an earlier run;
  * `channel` and `requestHash` are for a custodian signing on the owners' word.
- * Returns { blocks, map (old to new), skipped: [{ hash, why }] }.
+ * `schemas` are published schemas (things of kind schema, with their hash) a block may name instead of a new one; a key may
+ * carry `custodian` (and `channel`) when someone else holds it.
+ * `custodianKey` signs for every identity with no key of its own (reported as skipped without it).
+ * Returns { blocks, map (old to new), skipped: [{ hash, why }], deliveries: [{ block, to, reveals, sealed }] }.
  */
-const convert = (oldBlocks, { keys, at, map = {}, existing = [], channel, requestHash } = {}) =>
-  call('convert', list(oldBlocks), { keys, at, map, existing: list(existing), channel, request_hash: requestHash })
+const convert = (oldBlocks, { keys, at, map = {}, existing = [], channel, requestHash, schemas = [], custodianKey } = {}) =>
+  call('convert', list(oldBlocks), { keys, at, map, existing: list(existing), channel, request_hash: requestHash, schemas: list(schemas), custodian_key: custodianKey })
 /** The id an old block had under the old canonical form. */
 const oldHash = (block) => call('old_hash', block)
 

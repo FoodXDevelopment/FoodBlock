@@ -10,12 +10,12 @@
 //                                                    a block in the identity's key chain, checked and signed
 //   fb check <type> --state '{...}' --refs '{...}'   what is wrong with a block, in plain words
 //   fb valid '<signed block json>' --identity <file> every refusal of a block against the blocks the identity holds
-//   fb convert <old blocks file> --keys <keys file> [--at <time>] [--map <map file>]
+//   fb convert <old blocks file> --keys <keys file> [--at <time>] [--map <map file>] [--custodian-key <file>] [--schemas <file>]
 //                                                    the ONE-TIME converter for blocks from before 1.6 (not part of
 //                                                    the protocol): fresh 1.6 blocks signed by the key you give for
 //                                                    each old identity, each deriving from the old hash. <keys file>
 //                                                    is { "<old genesis hash>": { public_key_sign, private_key } }.
-//                                                    Prints { blocks, map, skipped }; --map continues an earlier run.
+//                                                    Prints { blocks, map, skipped, deliveries }; --map continues an earlier run.
 //   fb verify '<signed block json>' [--identity <file> | '<genesis json>']
 //                                                    whether its author signed exactly this, with a key that speaks
 //
@@ -83,7 +83,7 @@ else if (command === 'valid') {
   const old = json(readFileSync(file, 'utf8'), file), keys = json(readFileSync(flag('keys'), 'utf8'), '--keys');
   const earlier = flag('map') && existsSync(flag('map')) ? json(readFileSync(flag('map'), 'utf8'), '--map') : { map: {}, blocks: [] };
   let done;
-  try { done = fb.legacy.convert(Array.isArray(old) ? old : old.blocks, { keys, at: flag('at') || new Date().toISOString(), map: earlier.map, existing: earlier.blocks }); } catch (error) { fail(error.message); }
+  try { done = fb.legacy.convert(Array.isArray(old) ? old : old.blocks, { keys, at: flag('at') || new Date().toISOString(), map: earlier.map, existing: earlier.blocks, ...(flag('custodian-key') ? { custodianKey: json(readFileSync(flag('custodian-key'), 'utf8'), '--custodian-key') } : {}), ...(flag('schemas') ? { schemas: json(readFileSync(flag('schemas'), 'utf8'), '--schemas') } : {}) }); } catch (error) { fail(error.message); }
   if (flag('map')) save(flag('map'), { map: done.map, blocks: [...earlier.blocks, ...done.blocks] });
   out(done);
 }

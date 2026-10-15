@@ -32,7 +32,7 @@ ballots = ["folds"]
 rekeys = ["folds"]
 deposits = []
 # The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol.
-legacy = []
+legacy = ["envelope"]
 # The JSON door (src/door.rs): one call, one data shape, shared by every language binding.
 door = ["std", "node"]
 # The C ABI (include/foodblock.h), JSON in and JSON out.
