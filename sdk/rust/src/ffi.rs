@@ -186,6 +186,9 @@ pub unsafe extern "C" fn fb_genesis(
                 recovery_key: o.get("recovery_key").and_then(Value::as_str).unwrap_or(""),
                 reach: o.get("reach").and_then(Value::as_str).unwrap_or("P30D"),
                 custodian: o.get("custodian").and_then(Value::as_str).unwrap_or(""),
+                alg_sign: o.get("alg_sign").and_then(Value::as_str).unwrap_or(""),
+                alg_encrypt: o.get("alg_encrypt").and_then(Value::as_str).unwrap_or(""),
+                alg_recovery: o.get("alg_recovery").and_then(Value::as_str).unwrap_or(""),
             },
         )?;
         Ok(g.to_string())
@@ -352,6 +355,7 @@ pub unsafe extern "C" fn fb_write(
                 audience: strings("audience"),
                 after: strings("after"),
                 at: o.get("at").and_then(Value::as_str).map(String::from),
+                clockless: o.get("clockless").and_then(Value::as_bool).unwrap_or(false),
                 link,
                 salts: o.get("salts").cloned().unwrap_or(Value::Null),
                 nonce: o.get("nonce").and_then(Value::as_str).map(String::from),

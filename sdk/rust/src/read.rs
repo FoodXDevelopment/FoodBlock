@@ -37,16 +37,6 @@ fn type_alias(spec: &Spec, name: &str) -> Option<Map<String, Value>> {
             return Some(alias);
         }
     }
-    // A type the shapes still read (the draft name `schema`).
-    if name != "*"
-        && spec
-            .aliases
-            .get("shapes")
-            .and_then(|s| s.get(name))
-            .is_some()
-    {
-        return Some(json!({ "type": name }).as_object().unwrap().clone());
-    }
     None
 }
 
@@ -301,4 +291,31 @@ pub fn is_a(block: &Value, type_name: &str, kind: Option<&str>) -> bool {
     !crate::js::truthy(read.get("retired"))
         && type_of(&read) == type_name
         && kind.is_none_or(|k| crate::js::ss(&read, "kind") == Some(k))
+}
+
+/// A message of an earlier shape, read as 1.6: the field renames of aliases.json `messages` for this kind of message
+/// (`signed_pull`, `signed_push`), e.g. an `asker` or a `pusher` read as `signer`. A new name already present is
+/// never written over. Reading never changes the message or its signature, which covers the bytes as sent.
+pub fn read_message_with(spec: &Spec, kind: &str, message: &Value) -> Value {
+    let Some(Value::Object(renames)) = spec.aliases.get("messages").and_then(|m| m.get(kind)) else {
+        return message.clone();
+    };
+    let Value::Object(fields) = message else {
+        return message.clone();
+    };
+    let mut out = Map::new();
+    for (k, v) in fields {
+        let new = renames.get(k).and_then(Value::as_str).unwrap_or(k);
+        if new != k.as_str() && fields.contains_key(new) {
+            out.insert(k.clone(), v.clone());
+        } else {
+            out.insert(new.to_string(), v.clone());
+        }
+    }
+    Value::Object(out)
+}
+
+/// `read_message_with` on the built-in aliases.json.
+pub fn read_message(kind: &str, message: &Value) -> Value {
+    read_message_with(crate::spec(), kind, message)
 }

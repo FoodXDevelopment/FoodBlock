@@ -67,13 +67,13 @@ or a machine, and signs every answer with a device key of theirs, brought in by 
 
 | Route | Request | Answer |
 |---|---|---|
-| `POST /pull` | `{ since, limit, filter, heads }`, or a signed pull (adds `asker`, `node`, `nonce`, `at`, `signature`) | `{ node, request, blocks: [{ n, message }], next, signature }` |
+| `POST /pull` | `{ since, limit, filter, heads }`, or a signed pull (adds `signer`, `node`, `nonce`, `at`, `signature`) | `{ node, request, blocks: [{ n, message }], next, signature }` |
 | `POST /push` | `{ messages, for }` | `{ node, taken, waiting, refused: [{ hash, reason }], signature }` |
 | `GET /.well-known/foodblock` | | `{ protocol, version, node, holds, speaks_for, admission, endpoints: { pull, push } }` |
 
 A pull's filter (`type`, `kind`, `author`, `hash`, `record`, `refs`) is read on each block's 1.6 reading, so a filter
 for `thing` also finds an old `place`. An unsigned pull gets public blocks and the public headers of sealed ones; a
-signed pull also gets the copies sealed to its asker. A nonce is answered once.
+signed pull also gets the copies sealed to its signer. A nonce is answered once.
 
 The owner's admission rule is a block they publish and push to the node, named by `ADMISSION`: an `observe` of kind
 admission whose schema declares `parties` (ids always admitted) and `per_stranger` (blocks a day from anyone else).

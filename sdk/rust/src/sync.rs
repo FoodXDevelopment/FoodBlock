@@ -1,6 +1,6 @@
 //! Between nodes (protocol.md §10, Encoding: Messages): Pull and Push. Pull asks for the blocks the asker may see
 //! since the responder's arrival number (never a time); `heads: true` returns only the heads among the matches. A
-//! signed pull (or push) names the asker (pusher), the node it is for, a fresh nonce and `at`. A node takes blocks
+//! signed pull (or push) names its signer, the node it is for, a fresh nonce and `at`. A node takes blocks
 //! signed by a live key of their author that pass the write check, holds back (waiting) those whose prev it lacks,
 //! lists the second of two blocks at one seq beside the first (`equivocations`), and refuses the rest, each
 //! `{ hash, code, detail }` with a code from protocol.json's `refusals.codes`. Every node answer is signed by the node
@@ -44,7 +44,7 @@ pub fn pull_request(request: &Value) -> Value {
 
 /// Who signs a request, for whom, and with what freshness.
 pub struct Signer<'a> {
-    /// The asker's (or pusher's) id.
+    /// The signer's id.
     pub who: &'a str,
     /// The node the request is for.
     pub node: &'a str,
@@ -78,9 +78,9 @@ fn stamp(mut message: Value, role: &str, signer: &Signer) -> Result<Value> {
     sign_message(&message, signer.private_key)
 }
 
-/// A signed pull: the request, plus asker, node, a fresh nonce and at, signed by one of the asker's keys.
+/// A signed pull: the request, plus signer, node, a fresh nonce and at, signed by one of the signer's keys.
 pub fn sign_pull(request: &Value, signer: &Signer) -> Result<Value> {
-    stamp(pull_request(request), "asker", signer)
+    stamp(pull_request(request), "signer", signer)
 }
 
 /// What a node checks of a signed request.
@@ -89,7 +89,7 @@ pub struct Freshness<'a> {
     pub node: &'a str,
     /// This node's clock.
     pub now: &'a str,
-    /// The asker's (pusher's) live signing keys.
+    /// The signer's live signing keys.
     pub keys: &'a [String],
     /// Whether this node has seen the nonce.
     pub seen: &'a dyn Fn(&str) -> bool,
@@ -115,7 +115,10 @@ pub fn message_refusals(message: &Value, fields: &str, f: &Freshness) -> Vec<Ref
     let allowed = crate::spec().list(fields);
     let sp = crate::spec();
     let mut wrong = Vec::new();
-    if !message
+    // Older names (`asker`, `pusher`) are read as `signer`; the signature below still covers the bytes as sent.
+    let kind = fields.rsplit('.').next().unwrap_or(fields);
+    let read = crate::read::read_message(kind, message);
+    if !read
         .as_object()
         .is_some_and(|m| m.keys().all(|k| allowed.contains(k)))
     {
@@ -265,13 +268,16 @@ pub struct Arrival {
 
 /// Answer a pull from a node's arrival log. A public block travels whole; a sealed one as its header or, to a signed
 /// pull's asker, the copy sealed to them. Signed by the node: `{ node, request, blocks: [{ n, message }], next,
-/// signature }`. `cap` is the responder's own limit.
+/// signature }`. `cap` is the responder's own limit; `asker` overrides the pull's own; `held` is what a filter's record
+/// is read from (the log's own blocks when none).
 pub fn answer_pull(
     log: &[Arrival],
     request: &Value,
     node: &str,
     private_key: Option<&str>,
     cap: u64,
+    asker: Option<&str>,
+    held: Option<&Index>,
 ) -> Result<Value> {
     let since = request.get("since").and_then(Value::as_f64).unwrap_or(0.0) as u64;
     let limit = request
@@ -281,12 +287,14 @@ pub fn answer_pull(
         .filter(|l| *l > 0)
         .unwrap_or(cap)
         .min(cap);
-    let asker = request.get("asker").and_then(Value::as_str);
-    let held = index_of(log.iter().map(|e| &e.block));
+    let read_request = crate::read::read_message("signed_pull", request);
+    let asker = asker.or_else(|| read_request.get("signer").and_then(Value::as_str));
+    let own = index_of(log.iter().map(|e| &e.block));
+    let held = held.unwrap_or(&own);
     let filter = request.get("filter").cloned().unwrap_or(Value::Null);
     let mut found: Vec<&Arrival> = log
         .iter()
-        .filter(|e| e.n > since && matches(&e.block, &filter, &held))
+        .filter(|e| e.n > since && matches(&e.block, &filter, held))
         .collect();
     found.sort_by_key(|e| e.n);
     if truthy(request.get("heads")) {
@@ -358,11 +366,11 @@ pub fn push_request(messages: &[Value], for_whom: Option<&Value>) -> Value {
     pick(&r, &crate::spec().list("messages.push"))
 }
 
-/// A signed push: the push, plus pusher, node, a fresh nonce and at, signed by one of the pusher's keys.
+/// A signed push: the push, plus signer, node, a fresh nonce and at, signed by one of the signer's keys.
 pub fn sign_push(push: &Value, signer: &Signer) -> Result<Value> {
     stamp(
         pick(push, &crate::spec().list("messages.push")),
-        "pusher",
+        "signer",
         signer,
     )
 }
@@ -449,8 +457,14 @@ pub fn accept(
         let author = rs(block, "author").unwrap_or("");
         let opened = signer_of(block, &key_timeline_in(author, &known, None)).is_some()
             || ss(block, "recovery_key").is_some_and(|r| crate::identity::opens(block, r));
-        if opened {
-            ("void_key", "signed by a key of its author that does not speak for it: void, frozen, or rotated past last_good")
+        let keys = key_timeline_in(author, &known, None);
+        if !opened && keys.iter().any(|k| !crate::sign::knows_sign_alg(&k.alg)) {
+            (
+                "unknown_alg",
+                "its author has a key that names a signing algorithm this reader does not know",
+            )
+        } else if opened {
+            ("void_key", "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to")
         } else {
             (
                 "bad_signature",

@@ -1,19 +1,21 @@
 {
   "name": "@foodxdev/foodblock",
   "version": "1.6.0",
-  "description": "SDK for the FoodBlock protocol — a content-addressable primitive for universal food data",
+  "description": "SDK for the FoodBlock protocol \u2014 a content-addressable primitive for universal food data",
   "main": "src/index.cjs",
   "exports": {
     ".": "./src/index.cjs"
   },
   "files": [
     "src/",
+    "core/",
     "spec/",
     "LICENSE",
     "README.md"
   ],
   "scripts": {
-    "test": "node ../../spec/run-vectors.cjs && node --test test/*.test.cjs"
+    "test": "node ../../spec/run-vectors.cjs && node ../../spec/oracle/run.cjs && node --test test/*.test.cjs",
+    "build:wasm": "node scripts/build-wasm.cjs"
   },
   "keywords": [
     "food",

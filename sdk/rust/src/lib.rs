@@ -33,6 +33,7 @@ mod prelude {
 pub mod audience;
 pub mod block;
 pub mod canonical;
+pub mod cbor;
 pub mod chain;
 pub mod check;
 pub mod error;
@@ -50,8 +51,10 @@ pub mod write;
 
 #[cfg(feature = "envelope")]
 pub mod envelope;
-#[cfg(any(feature = "ffi", feature = "jni"))]
+#[cfg(any(feature = "ffi", feature = "jni", feature = "wasm"))]
 pub mod door;
+#[cfg(all(feature = "wasm", target_arch = "wasm32"))]
+pub mod wasm;
 #[cfg(feature = "ffi")]
 pub mod ffi;
 #[cfg(feature = "jni")]

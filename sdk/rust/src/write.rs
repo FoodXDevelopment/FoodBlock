@@ -27,6 +27,9 @@ pub struct ComposeOptions {
     pub after: Vec<String>,
     /// When it was said (UTC, `YYYY-MM-DDTHH:MM:SS.sssZ`). None: now (std only).
     pub at: Option<String>,
+    /// A micro with no clock leaves out `at` (blocks.md, No clock); only an observe, transform or transfer may.
+    /// The write check refuses it on any other type (`at_missing`).
+    pub clockless: bool,
     /// Its place in the signing key's chain. `write` finds it from the held blocks when None.
     pub link: Option<Link>,
     /// Salts by recipient (only to reproduce a vector, or on a build without randomness).
@@ -56,15 +59,17 @@ pub fn compose(
     if options.author.is_empty() {
         return Err(Error::new("write: a block names its author"));
     }
-    let at = at_or_now(&options.at)?;
-    if crate::time::parse(&at).is_none() {
+    let at = if options.clockless && options.at.is_none() { None } else { Some(at_or_now(&options.at)?) };
+    if at.as_deref().is_some_and(|a| crate::time::parse(a).is_none()) {
         return Err(Error::new("write: at is a time"));
     }
     let seen = crate::js::sorted_set(options.after.iter());
     let mut state = state.as_object().cloned().unwrap_or_default();
     let mut refs = refs.as_object().cloned().unwrap_or_default();
     let mut salts = None;
-    state.insert("at".into(), Value::String(at));
+    if let Some(at) = at {
+        state.insert("at".into(), Value::String(at));
+    }
     if options.audience.is_empty() {
         state.insert("audience".into(), Value::String(PUBLIC.into()));
     } else {

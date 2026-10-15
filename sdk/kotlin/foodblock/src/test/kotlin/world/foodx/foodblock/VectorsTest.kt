@@ -124,17 +124,13 @@ class VectorsTest {
             val b = c.f("block").o()
             val name = c.f("name").s()
             r.ok(FoodBlock.canonical(b) == c.f("canonical").s() && FoodBlock.hash(b) == c.f("hash").s(), "hash: $name")
-            if (c.f("draft_words") is JsonNull) {
+            if (c.f("refused") is JsonNull) {
                 val wrong = strict(b)
                 r.ok(wrong.isEmpty(), "write check: $name") { wrong.joinToString("; ") }
                 continue
             }
-            r.ok(strict(b).isNotEmpty(), "strict check refuses the draft words: $name")
-            val read = FoodBlock.readAs(withHash(b, c.f("hash")))
-            val got = JsonObject(mapOf("type" to read.f("type"), "state" to read.f("state"), "refs" to read.f("refs")))
-            r.ok(deepEq(got, c.f("reads_as")), "reads as 1.6: $name") { got.toString() }
+            r.ok(strict(b).isNotEmpty(), "strict check refuses it: $name")
         }
-        println("hashes: the draft-1.6 bridge's lenient check is not in the Rust core (the JS bridge is being deleted)")
         r.done()
     }
 
@@ -165,7 +161,6 @@ class VectorsTest {
         out += Triple("refusal", "stories", v.f("refusals").f("blocks"))
         for (c in v.f("refusals").f("cases").arr()) if (c.f("blocks") !is JsonNull) out += Triple("refusal", c.f("name").s(), c.f("blocks"))
         out += Triple("sealed", "stories", v.f("sealed").f("blocks"))
-        add("draft words", v.f("reads").f("groups"))
         return out
     }
     private fun byHash(): Map<String, JsonObject> {
@@ -183,7 +178,7 @@ class VectorsTest {
                 val block = b.f("block").o()
                 if (FoodBlock.hash(block) != b.f("hash").s()) wrong += "${b.f("name").s()}: hash"
                 if (!FoodBlock.verify(block, b.f("signature").s(), public(b.f("signer").s()))) wrong += "${b.f("name").s()}: signature"
-                if (group != "draft words" && block.f("state").o().containsKey("seq")) {
+                if (block.f("state").o().containsKey("seq")) {
                     val w = strict(block)
                     if (w.isNotEmpty()) wrong += "${b.f("name").s()}: ${w.joinToString("; ")}"
                 }
@@ -323,7 +318,8 @@ class VectorsTest {
                 else JsonObject(membersOf.mapValues { (_, m) -> texts(m.f("roles").arr().map { it.s() }.sorted()) })
             val removed = texts(state.f("removed").o().keys.sorted())
             val mayAct = (c.f("may_act") as? JsonObject)?.all { (h, ok) -> Fold.mayActAs(find(held, JsonPrimitive(h)), circle, held) == ok.bool() } ?: true
-            r.ok(deepEq(members, c.f("expected").f("members")) && removed == c.f("expected").f("removed") && mayAct, c.f("name").s()) { state.toString() }
+            r.ok(deepEq(members, c.f("expected").f("members")) && removed == c.f("expected").f("removed") && mayAct &&
+                (c.f("expected").f("counted_to") as? JsonObject)?.all { (who, h) -> state.f("removed").o()[who] == h } ?: true, c.f("name").s()) { state.toString() }
         }
         r.done()
     }
@@ -438,20 +434,6 @@ class VectorsTest {
             if (truthy(read.f("retired"))) got.put("retired", JsonPrimitive(true))
             r.ok(deepEq(JsonObject(got), c.f("reads_as")), c.f("name").s()) { got.toString() }
         }
-        for (g in v.f("reads").f("groups").arr()) {
-            for (b in g.f("blocks").arr()) {
-                val read = FoodBlock.readAs(withHash(b.f("block"), b.f("hash")))
-                val got = JsonObject(mapOf("type" to read.f("type"), "state" to read.f("state"), "refs" to read.f("refs")))
-                r.ok(deepEq(got, b.f("reads_as")) && read.f("hash") == b.f("hash"), "${g.f("name").s()}: ${b.f("name").s()}") { got.toString() }
-            }
-            val end = g.f("older_end")
-            if (end !is JsonNull) {
-                val read = FoodBlock.readAs(end.f("block").o())
-                val want = end.f("reads_as")
-                r.ok(read.f("type") == want.f("type") && read.f("state").f("status") == want.f("status") && read.f("state").f("stop") == want.f("stop") &&
-                    read.f("refs").f("updates") == want.f("updates"), "an older end (defeats) reads as an updates with status stopped")
-            }
-        }
         r.done()
     }
     private fun codesOf(codes: List<String>) = texts(codes.distinct())
@@ -471,7 +453,7 @@ class VectorsTest {
         val keys = listOf(public(pull.f("signer").s()))
         fun fresh(seen: Set<String>, node: String, message: JsonObject) = Sync.pullErrors(message, Freshness(node, pull.f("now").s(), keys, seen))
         val nonce = pull.f("message").f("nonce").s()
-        r.ok(fresh(emptySet(), nodeId, pull.f("message").o()).isEmpty(), "a signed pull names the node, a fresh nonce and at, and is signed by its asker")
+        r.ok(fresh(emptySet(), nodeId, pull.f("message").o()).isEmpty(), "a signed pull names the node, a fresh nonce and at, and is signed by its signer")
         r.ok(fresh(setOf(nonce), nodeId, pull.f("message").o()).isNotEmpty(), "a signed pull replayed is refused")
         val other = JsonObject(pull.f("message").o() + ("node" to JsonPrimitive("0".repeat(64))))
         r.ok(fresh(emptySet(), nodeId, other).isNotEmpty(), "a signed pull for another node is refused")
@@ -485,6 +467,20 @@ class VectorsTest {
         r.ok(!Sync.answerSignedBy(changed, listOf(nodeKey)), "a changed answer no longer verifies")
         r.ok(Sync.wellKnownErrors(m.f("discovery").o()).isEmpty() && deepEq(m.f("announcement"), Sync.announcement(m.f("discovery").o())),
             "discovery and its local announcement")
+        r.done()
+    }
+
+    @Test fun compactForm() {
+        val r = Report("cbor")
+        val c = v.f("cbor")
+        fun signed(case: JsonElement) = JsonObject(case.f("block").o() + mapOf("hash" to case.f("hash"), "signature" to case.f("signature")))
+        for (case in c.f("cases").arr()) {
+            val b = signed(case)
+            r.ok(Cbor.hex(Cbor.encode(b)) == case.f("cbor").s() && Cbor.hex(Cbor.encode(b, true)) == case.f("cbor_short").s(), "writes deterministic bytes: ${case.f("name").s()}")
+            r.ok(deepEq(Cbor.decode(Cbor.bytes(case.f("cbor").s())), b) && deepEq(Cbor.decode(Cbor.bytes(case.f("cbor_short").s())), b), "reads back to the block: ${case.f("name").s()}")
+        }
+        r.ok(Cbor.decode(Cbor.bytes(c.f("loose").f("cbor").s())).f("hash") == c.f("loose").f("hash"), "any well-formed encoding of the same content is accepted")
+        for (x in c.f("refused").arr()) r.ok(runCatching { Cbor.decode(Cbor.bytes(x.f("cbor").s())) }.isFailure, "refused: ${x.f("name").s()}")
         r.done()
     }
 }

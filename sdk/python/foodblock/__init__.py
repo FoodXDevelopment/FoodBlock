@@ -11,7 +11,7 @@ from .protocol import (
     compose, write, wrap, unwrap, header, seal_copy, open_copy, header_signed_by,
     read_as, is_a, next_link, check_chain, causal_order, sees,
 )
-from . import identity, grant, fold, sync
+from . import identity, grant, fold, sync, cbor
 from .fold import promise_stage, circle_state, members_then, where_now, owner_of
 from .identity import identity_state
 
@@ -26,6 +26,6 @@ __all__ = [
     "wrap", "unwrap", "header", "seal_copy", "open_copy", "header_signed_by",
     "read_as", "is_a",
     "next_link", "check_chain", "causal_order", "sees",
-    "identity", "grant", "fold", "sync",
+    "identity", "grant", "fold", "sync", "cbor",
     "promise_stage", "circle_state", "identity_state", "members_then", "where_now", "owner_of",
 ]

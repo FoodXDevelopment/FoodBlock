@@ -1354,6 +1354,28 @@
    "x25519_private": "67fdd7998a38c4867314c99492328a51a68aa62f4d41662f473784adecdac505",
    "public_key_encrypt": "17c341392156d7e73dc94fd7d4f55545a8f957361dd7dd7ba67af888c77a5443",
    "hash": "dfce13ffadb5bbf3fdc28218fe7a94a3aa311b2e904a4928eb9ab3cfffa51370"
+  },
+  "uri": {
+   "ed25519_seed": "55ed79d8b9999b8b0a0f9131fe4efff7742e685cf5c9161a993c750893aed148",
+   "private_key": "302e020100300506032b65700422042055ed79d8b9999b8b0a0f9131fe4efff7742e685cf5c9161a993c750893aed148",
+   "public_key_sign": "302a300506032b6570032100323b290d30cb8aa914d39b4cb2706f72f3d8dd63c34e89649841c10fbc6b1ca3",
+   "x25519_private": "cefe5b70abf8bcb489fc8848ceda847e43b54de28a4a2f8d6e3608fc74e6b655",
+   "public_key_encrypt": "fcb3947c959bd35ac2f4b4ced607ca8a8859576ea6d6f643884350a0ef1d2650"
+  },
+  "uri_recovery": {
+   "ed25519_seed": "8ea45fadf109412c7953c1f30a321e19aefd56819db18f4cf6650a0d080529be",
+   "private_key": "302e020100300506032b6570042204208ea45fadf109412c7953c1f30a321e19aefd56819db18f4cf6650a0d080529be",
+   "public_key_sign": "302a300506032b6570032100d27169f9e0b2c91037db7c40dee350b66cbae4460b2a5ce7dedb9690775e8404",
+   "x25519_private": "0ecb3f8f23750cb373d091c8c0da89eb391d2346ff52ae0bcd50c0360cf74e5f",
+   "public_key_encrypt": "4e3c1e798c1a18bb8a3683d0bb64b5fa504828755d5426516da9896c2e81153c",
+   "hash": "4ff5107f420d9285afacf33b49708a10e655f9e8a1470500498fffb638f4f7de"
+  },
+  "tal_new": {
+   "ed25519_seed": "51e43941d51b583331c8334331128bcb1c320475222fb1dd472d04aaeaf69562",
+   "private_key": "302e020100300506032b65700422042051e43941d51b583331c8334331128bcb1c320475222fb1dd472d04aaeaf69562",
+   "public_key_sign": "302a300506032b6570032100ff5214dd381e30eaf44d681e7168e6cb5465c71a40d27461085af9f24d5a0a76",
+   "x25519_private": "af3a5768186862051daa69d503a981a7215613e722aa17b2b5e9d81408515eab",
+   "public_key_encrypt": "6d361e71083b8c5461a909306e64815d1cf37c9b1e9effdd62bfa0120df7227d"
   }
  },
  "hashes": [
@@ -1496,51 +1518,11 @@
    },
    "canonical": "{\"refs\":{\"author\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"from\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"prev\":\"b26e87b73367f4857ba04aa5aab67600a112656658ba624ed3be0286c180053f\",\"what\":[\"7e1bc29445192dd9a3442625075549c25aef8c0fe611e670a3e84b889ce6c012\"]},\"state\":{\"at\":\"2026-10-15T09:00:04.000Z\",\"audience\":\"public\",\"seq\":3,\"status\":\"offered\",\"terms\":{\"expires\":\"2026-10-16T09:00:00.000Z\",\"lines\":[{\"price\":{\"currency\":\"GBP\",\"minor\":450},\"quantity\":{\"unit\":\"{tray}\",\"value\":\"2\"},\"what\":\"7e1bc29445192dd9a3442625075549c25aef8c0fe611e670a3e84b889ce6c012\"}],\"price\":{\"currency\":\"GBP\",\"minor\":450},\"quantity\":{\"unit\":\"{tray}\",\"value\":\"2\"}}},\"type\":\"promise\"}",
    "hash": "66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1",
-   "draft_words": [
+   "refused": [
     "status_not_answer",
     "bad_status",
     "lines"
-   ],
-   "reads_as": {
-    "type": "promise",
-    "state": {
-     "seq": 3,
-     "at": "2026-10-15T09:00:04.000Z",
-     "audience": "public",
-     "terms": {
-      "price": {
-       "minor": 450,
-       "currency": "GBP"
-      },
-      "quantity": {
-       "value": "2",
-       "unit": "{tray}"
-      },
-      "lines": [
-       {
-        "what": "7e1bc29445192dd9a3442625075549c25aef8c0fe611e670a3e84b889ce6c012",
-        "quantity": {
-         "value": "2",
-         "unit": "{tray}"
-        },
-        "price": {
-         "minor": 450,
-         "currency": "GBP"
-        }
-       }
-      ],
-      "expires": "2026-10-16T09:00:00.000Z"
-     }
-    },
-    "refs": {
-     "author": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "prev": "b26e87b73367f4857ba04aa5aab67600a112656658ba624ed3be0286c180053f",
-     "from": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "what": [
-      "7e1bc29445192dd9a3442625075549c25aef8c0fe611e670a3e84b889ce6c012"
-     ]
-    }
-   }
+   ]
   },
   {
    "name": "promise: an accept answering the offer, naming the deal",
@@ -1566,30 +1548,10 @@
    },
    "canonical": "{\"refs\":{\"after\":[\"66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1\"],\"answers\":\"66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1\",\"author\":\"8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73\",\"deal\":\"66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1\",\"from\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"prev\":\"8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73\",\"to\":\"8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73\"},\"state\":{\"at\":\"2026-10-15T09:00:05.000Z\",\"audience\":\"public\",\"seq\":1,\"status\":\"accepted\"},\"type\":\"promise\"}",
    "hash": "89ae2c60863223d40098ce8cb2b1e640663ccef7b72c67b6a15cb646de0e4e42",
-   "draft_words": [
+   "refused": [
     "undeclared_ref",
     "deal_not_named"
-   ],
-   "reads_as": {
-    "type": "promise",
-    "state": {
-     "seq": 1,
-     "at": "2026-10-15T09:00:05.000Z",
-     "audience": "public",
-     "status": "accepted"
-    },
-    "refs": {
-     "author": "8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73",
-     "prev": "8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73",
-     "answers": "66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1",
-     "from": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "to": "8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73",
-     "after": [
-      "66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1"
-     ],
-     "for": "66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1"
-    }
-   }
+   ]
   },
   {
    "name": "transfer: owner, holder and place move",
@@ -1617,30 +1579,9 @@
    },
    "canonical": "{\"refs\":{\"author\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"deal\":\"66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1\",\"for\":\"66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1\",\"prev\":\"66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1\",\"to_holder\":\"8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73\",\"to_owner\":\"8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73\",\"to_place\":\"7feb3dc01a6e1d8c4e42153ab3ed075f103888b0804c97cb031be4478b1e4090\",\"what\":\"b26e87b73367f4857ba04aa5aab67600a112656658ba624ed3be0286c180053f\"},\"state\":{\"at\":\"2026-10-15T09:00:06.000Z\",\"audience\":\"public\",\"money\":{\"currency\":\"GBP\",\"minor\":900},\"seq\":4},\"type\":\"transfer\"}",
    "hash": "d5f6eccdaf350f49e6da42a64ea77a0c14e3a6a2cf20541c3220a1883c516bf8",
-   "draft_words": [
+   "refused": [
     "undeclared_ref"
-   ],
-   "reads_as": {
-    "type": "transfer",
-    "state": {
-     "seq": 4,
-     "at": "2026-10-15T09:00:06.000Z",
-     "audience": "public",
-     "money": {
-      "minor": 900,
-      "currency": "GBP"
-     }
-    },
-    "refs": {
-     "author": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "prev": "66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1",
-     "for": "66d074d71e91aae7fcfc30cde7f98496592256b94334611946f4815307ba63b1",
-     "what": "b26e87b73367f4857ba04aa5aab67600a112656658ba624ed3be0286c180053f",
-     "to_owner": "8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73",
-     "to_holder": "8b4717d1919d8e3a7eb239ba28526b85de80289a906744b9a466293994236b73",
-     "to_place": "7feb3dc01a6e1d8c4e42153ab3ed075f103888b0804c97cb031be4478b1e4090"
-    }
-   }
+   ]
   },
   {
    "name": "transform: a make, derived from inputs with shares",
@@ -1757,39 +1698,12 @@
    },
    "canonical": "{\"refs\":{\"agent\":\"be73d6e29b60be122679d43bbd5345b212e6b6d8e446436c0514e7077c0ab102\",\"author\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"prev\":\"4057a4072eab102b170bb773fd7c05b7f9c346b1e6b82e08d38004ee8d714a83\"},\"state\":{\"at\":\"2026-10-15T09:00:10.000Z\",\"audience\":\"public\",\"depth\":1,\"kind\":\"agent\",\"scope\":{\"acts\":[\"offer\",\"accept\"],\"limit\":{\"currency\":\"GBP\",\"minor\":5000},\"parties\":\"any\",\"per\":\"P7D\",\"until\":\"2026-12-31T00:00:00.000Z\"},\"seq\":6,\"status\":\"live\"},\"type\":\"grant\"}",
    "hash": "edc65a33bdfae892797f400ae047e3cd4bf210543d73f6f747cb99223fc2b69c",
-   "draft_words": [
+   "refused": [
     "grammar",
     "undeclared_ref",
     "status_not_answer",
     "bad_status"
-   ],
-   "reads_as": {
-    "type": "grant",
-    "state": {
-     "seq": 6,
-     "at": "2026-10-15T09:00:10.000Z",
-     "audience": "public",
-     "kind": "agent",
-     "depth": 1,
-     "scope": {
-      "acts": [
-       "offer",
-       "accept"
-      ],
-      "limit": {
-       "minor": 5000,
-       "currency": "GBP"
-      },
-      "per": "P7D",
-      "until": "2026-12-31T00:00:00.000Z"
-     }
-    },
-    "refs": {
-     "author": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "prev": "4057a4072eab102b170bb773fd7c05b7f9c346b1e6b82e08d38004ee8d714a83",
-     "to": "be73d6e29b60be122679d43bbd5345b212e6b6d8e446436c0514e7077c0ab102"
-    }
-   }
+   ]
   },
   {
    "name": "grant: a key grant bringing in a device key",
@@ -1868,42 +1782,9 @@
    },
    "canonical": "{\"refs\":{\"author\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"prev\":\"5c48620bdf4f0c4830337c8f2aa16d972e58e1781551068a9ee75d40cbbe2d59\"},\"state\":{\"at\":\"2026-10-15T09:00:13.000Z\",\"audience\":\"public\",\"fields\":{\"lot\":\"text\",\"pack\":\"amount\",\"use_by\":\"date\"},\"grounds\":{\"confirms\":[\"observe\"],\"defeats\":[\"observe\"],\"event\":\"a person saw the eggs\"},\"kind\":\"eggs\",\"roles\":[\"kind\",\"place\",\"subject\"],\"seq\":9,\"target\":\"thing\"},\"type\":\"schema\"}",
    "hash": "ab4410be8456484907c4b8b4f67f98ece2f466cbf657361d9d2c3235b3ccb0d0",
-   "draft_words": [
+   "refused": [
     "unknown_type"
-   ],
-   "reads_as": {
-    "type": "thing",
-    "state": {
-     "seq": 9,
-     "at": "2026-10-15T09:00:13.000Z",
-     "audience": "public",
-     "target": "thing.eggs",
-     "kind": "schema",
-     "fields": {
-      "lot": "text",
-      "use_by": "date",
-      "pack": "amount"
-     },
-     "roles": [
-      "kind",
-      "place",
-      "subject"
-     ],
-     "grounds": {
-      "event": "a person saw the eggs",
-      "confirms": [
-       "observe"
-      ],
-      "defeats": [
-       "observe"
-      ]
-     }
-    },
-    "refs": {
-     "author": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "prev": "5c48620bdf4f0c4830337c8f2aa16d972e58e1781551068a9ee75d40cbbe2d59"
-    }
-   }
+   ]
   },
   {
    "name": "observe: private, audience as commitments, with a nonce",
@@ -2007,41 +1888,9 @@
    },
    "canonical": "{\"refs\":{\"author\":\"44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb\",\"prev\":\"ce8e6ca29c5a9e346de1f797072235a661b3ebeb1f985e9ef032009c93509eea\"},\"state\":{\"at\":\"2026-10-15T09:00:17.000Z\",\"audience\":\"public\",\"kind\":\"recipe\",\"seq\":13,\"steps\":[{\"do\":\"whisk\",\"for\":{\"unit\":\"min\",\"value\":\"2\"}},{\"at_heat\":{\"a\":{\"b\":\"2\",\"y\":\"1\"},\"z\":1},\"do\":\"fry\"}]},\"type\":\"transform\"}",
    "hash": "98b6cd7248709e18e27ddc74a034e17c6918f44a4c369e330a35acd8f21a591b",
-   "draft_words": [
+   "refused": [
     "undeclared_field"
-   ],
-   "reads_as": {
-    "type": "transform",
-    "state": {
-     "kind": "recipe",
-     "steps": [
-      {
-       "do": "whisk",
-       "for": {
-        "value": "2",
-        "unit": "min"
-       }
-      },
-      {
-       "do": "fry",
-       "at_heat": {
-        "z": 1,
-        "a": {
-         "y": "1",
-         "b": "2"
-        }
-       }
-      }
-     ],
-     "at": "2026-10-15T09:00:17.000Z",
-     "audience": "public",
-     "seq": 13
-    },
-    "refs": {
-     "author": "44e107fcadeda9e7320a353d30984e15429a69be3d698cecb0c4a349369b01eb",
-     "prev": "ce8e6ca29c5a9e346de1f797072235a661b3ebeb1f985e9ef032009c93509eea"
-    }
-   }
+   ]
   }
  ],
  "canonical": [
@@ -2254,7 +2103,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b65700321006b5490ac60db280750d8334347f44a114af28b21c44f103271aa6269b6dfe33b",
        "replaces": "302a300506032b65700321002fa5adbf3b0b450874350d65f57a617b560eb21d0363b760b87e79302df8a369",
-       "last_good": "a8485810784054f65887c11a8a2c901677cb13f4ac175e89a024551eb6377911"
+       "counted_to": "a8485810784054f65887c11a8a2c901677cb13f4ac175e89a024551eb6377911"
       },
       "refs": {
        "author": "24842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5",
@@ -2262,9 +2111,9 @@
        "subject": "24842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5"
       }
      },
-     "hash": "c33c4fde78690d0e7404dfd65e918e627088b07396704c35c6b2458f381eb03e",
+     "hash": "5a3f15386060d70bd19cb3c0298d4689db6b0dde1ac29dbc9e30ec28a1dcb6ea",
      "signer": "cat",
-     "signature": "73057812446d28b9f75980f077002ef2519a486c81e7be2d8e749e54220ee792a437a87bace4a130a4e1c79ce7a689b5851f83e43d06d14c30dec24faf2c030e"
+     "signature": "bc204b0010377fcf7680a04d7a2e93906e1e20177c840abbd1edb69406e8f0b2318fe78c449c9a1adb70c0db5e9f5ac47c764caef18adea8d100ad395691f00b"
     },
     {
      "name": "the new key's first block",
@@ -2279,20 +2128,20 @@
       },
       "refs": {
        "author": "24842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5",
-       "prev": "c33c4fde78690d0e7404dfd65e918e627088b07396704c35c6b2458f381eb03e"
+       "prev": "5a3f15386060d70bd19cb3c0298d4689db6b0dde1ac29dbc9e30ec28a1dcb6ea"
       }
      },
-     "hash": "130d3df178238ecd4bd4e35a2ff6b939ae2a26390925d83131dd19ec9bcf3a98",
+     "hash": "478f96133efc145d2c2b4209dd21a97da09f08015f7ff34141d2e74b79530e88",
      "signer": "cat_new",
-     "signature": "4e455cf46aa885e6acfd1fe7a143b166f1e1587be421b66990774cca66d7c562ed0eb396bc5f2b38adcd960366a0bc48c73f90b934b106a276fdcd442601100e"
+     "signature": "de239882904f53a7a00475c3d9a2570e847ac5a611f3472e52b13cecb254f8c0e1b99f183c6936804a5490f98abf1023859080cd3fcef0c7cb6e4c4311406708"
     }
    ],
    "signed_by_author": {
     "24842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5": true,
     "a8485810784054f65887c11a8a2c901677cb13f4ac175e89a024551eb6377911": true,
     "0a18c55f0ff6778b265a238416e39e42073f1b072c39a4ea425221bede480ffa": false,
-    "c33c4fde78690d0e7404dfd65e918e627088b07396704c35c6b2458f381eb03e": true,
-    "130d3df178238ecd4bd4e35a2ff6b939ae2a26390925d83131dd19ec9bcf3a98": true
+    "5a3f15386060d70bd19cb3c0298d4689db6b0dde1ac29dbc9e30ec28a1dcb6ea": true,
+    "478f96133efc145d2c2b4209dd21a97da09f08015f7ff34141d2e74b79530e88": true
    }
   },
   {
@@ -2369,8 +2218,8 @@
        "kind": "key",
        "public_key_sign": "302a300506032b657003210065b3caf5b8f03ccdb4cc3ef9bfb9ea829716e27c0c04d92867f3c33a36022803",
        "replaces": "302a300506032b65700321003712867f53ac8651799c7592f438586f241dbb1f0debaaeb8021e86cf5509db6",
-       "last_good": "c220e7552238139a609740ea8b4a7738b6fd0d65ddb9f2a1c38a1fe90aa75bd0",
-       "recovery_key": "302a300506032b6570032100c081977ad51f08ac0ec50938a67a29922c42bdb4138358201a8e975919a37631"
+       "recovery_key": "302a300506032b6570032100c081977ad51f08ac0ec50938a67a29922c42bdb4138358201a8e975919a37631",
+       "counted_to": "c220e7552238139a609740ea8b4a7738b6fd0d65ddb9f2a1c38a1fe90aa75bd0"
       },
       "refs": {
        "author": "ff79aeaaba2e69aa44a745118d92f49f4236b9d9724eed6af72839e882bf1062",
@@ -2378,9 +2227,9 @@
        "subject": "ff79aeaaba2e69aa44a745118d92f49f4236b9d9724eed6af72839e882bf1062"
       }
      },
-     "hash": "6d2a99fc998d884d90cd23a464cb520e6cde43863c0cc3a150a87105ee821e02",
+     "hash": "28cfd9353d42c4bb28fa43cb2c0f8855bbcd1bdb4dc7639cab2ea9c1b3e8728f",
      "signer": "dan_recovery",
-     "signature": "c8bd7785716f6b3367f4f9a2fa16503589b276c1743587f4a7128e0faa5680bf7873512ff14ac0ba6310686c37112e43a1e2c95d5284344f15242eed29998601"
+     "signature": "c7f82bebf10dbe829b0eeb210339ceb1bf14c5d6164e6b7f373ead78f591c8b009426ace6e969b6e2455aaeb0ae9014c3cc9905f6fcbf1afb2aa5bf12eef0a09"
     },
     {
      "name": "the new key's first block",
@@ -2395,20 +2244,20 @@
       },
       "refs": {
        "author": "ff79aeaaba2e69aa44a745118d92f49f4236b9d9724eed6af72839e882bf1062",
-       "prev": "6d2a99fc998d884d90cd23a464cb520e6cde43863c0cc3a150a87105ee821e02"
+       "prev": "28cfd9353d42c4bb28fa43cb2c0f8855bbcd1bdb4dc7639cab2ea9c1b3e8728f"
       }
      },
-     "hash": "fe3d691618d79b130606afc689b3aa5b240b929a917998e20087185e31153072",
+     "hash": "0804323ba7fe5d0c86982f33673568d647c368f5b76d0096a06af1e23163c815",
      "signer": "dan_new",
-     "signature": "8188445ff5bb0f8574d49116798594fd362f7ba8da7b41ed864c98310cd028d244e66fe54a5299ddf94b0731c9ab72f3842147f61f60830dd211b85507bd170a"
+     "signature": "4e42127ae8f036de80f8284489bc53239cba393f8f569e374ec7e1cd264701c2ff0ca84f42e29057f077ef2ccb85f84e307d37702b85ae3ff32ba20870175006"
     }
    ],
    "signed_by_author": {
     "ff79aeaaba2e69aa44a745118d92f49f4236b9d9724eed6af72839e882bf1062": true,
     "c220e7552238139a609740ea8b4a7738b6fd0d65ddb9f2a1c38a1fe90aa75bd0": true,
     "e33fb5ebd23896eb0af78c8f625c99f7358786bc04b873487565ab69f7d22f4f": false,
-    "6d2a99fc998d884d90cd23a464cb520e6cde43863c0cc3a150a87105ee821e02": true,
-    "fe3d691618d79b130606afc689b3aa5b240b929a917998e20087185e31153072": true
+    "28cfd9353d42c4bb28fa43cb2c0f8855bbcd1bdb4dc7639cab2ea9c1b3e8728f": true,
+    "0804323ba7fe5d0c86982f33673568d647c368f5b76d0096a06af1e23163c815": true
    }
   },
   {
@@ -2536,7 +2385,7 @@
     },
     {
      "name": "the recovery rotation",
-     "hash": "a659ad948355c8070345c4d5cda0e82ce44e2d94ce8d9cac9016f52213522392",
+     "hash": "d67fa425f0866a08de8f33951f66631466ff2ab89aaba41a2f77e154026a1b0e",
      "signer": "gil_recovery",
      "block": {
       "type": "grant",
@@ -2547,7 +2396,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b6570032100b9b37765c9fc8c77a3dd52cfd85fcb267301b46026d1fe92e50bcb52182e44eb",
        "replaces": "302a300506032b6570032100609687d6554c0ec86debd93dd07b6a4aaa621ea25ad2267c59bf8230862c4534",
-       "last_good": "d9f9a781128b35940ab612d4ede5c0971a86e7eb129b844db061375d87341c08",
+       "counted_to": "d9f9a781128b35940ab612d4ede5c0971a86e7eb129b844db061375d87341c08",
        "recovery_key": "302a300506032b6570032100aa7a00c9301cf06c8c91a133a4da996abbbbcc559cddf38653cd8a0897128bc9"
       },
       "refs": {
@@ -2556,7 +2405,7 @@
        "prev": "86081ea980ed8dea772c9ef026f7a9916601442c9b10b2aee4387ffb6a36ae4e"
       }
      },
-     "signature": "39ebe2e1d0b8aede18934c09a4e833b7ab4c89c8018f8db055342e07151dcd36a75db6fddf4a48e98cb17320db3a88bd0cf9ef124dd0287f841ae7fb2c4cc509"
+     "signature": "ecfd3d5e284c56d16238611e807f3bd14040c5f025271ec337843a8af4eec9762f932facdddf67b39b64084fd809d48eca35fdf40f889b68eee0680362daf102"
     }
    ],
    "signed_by_author": {
@@ -2564,7 +2413,7 @@
     "d9f9a781128b35940ab612d4ede5c0971a86e7eb129b844db061375d87341c08": true,
     "87531d52ae3ef1ce1e82596b387ac3ab28187c5a4b4a2832bb98eda87e834ec9": true,
     "90d45c558b8cef3eabdf73d399272437ae2c378191c3e9c94948e8d331f01b2e": false,
-    "a659ad948355c8070345c4d5cda0e82ce44e2d94ce8d9cac9016f52213522392": true
+    "d67fa425f0866a08de8f33951f66631466ff2ab89aaba41a2f77e154026a1b0e": true
    },
    "keys": [
     "302a300506032b6570032100609687d6554c0ec86debd93dd07b6a4aaa621ea25ad2267c59bf8230862c4534",
@@ -2578,7 +2427,7 @@
     "87531d52ae3ef1ce1e82596b387ac3ab28187c5a4b4a2832bb98eda87e834ec9": "2026-09-01T00:00:00.000Z",
     "2b1427925bd7533146ce326c4d25527c303013acef983ebf42b324c838a7aff6": "2026-09-01T00:00:00.000Z",
     "90d45c558b8cef3eabdf73d399272437ae2c378191c3e9c94948e8d331f01b2e": "2026-11-20T00:00:00.000Z",
-    "a659ad948355c8070345c4d5cda0e82ce44e2d94ce8d9cac9016f52213522392": "2026-12-01T00:00:00.000Z"
+    "d67fa425f0866a08de8f33951f66631466ff2ab89aaba41a2f77e154026a1b0e": "2026-12-01T00:00:00.000Z"
    }
   },
   {
@@ -2647,7 +2496,7 @@
     },
     {
      "name": "a rotation to key a",
-     "hash": "f48d417a671a7ed7eb46fed86ca9a260ed59f905af9d108f6799fcff75e7d376",
+     "hash": "fa784d19ef19bfe2e66181a8491cbb26ea546ab2a1d0abb3dea54772ad011483",
      "signer": "ida",
      "block": {
       "type": "grant",
@@ -2658,7 +2507,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b65700321007128a6cce091effceed5f611890fdd511e98f99b3e4e5e3adbe5e406e231ed51",
        "replaces": "302a300506032b657003210028bbc92740db56b91e1bafe3c942dddc661025e26279d918ccdd78eb8bba4d06",
-       "last_good": "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2"
+       "counted_to": "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2"
       },
       "refs": {
        "author": "e9e984507e58b7bb1194c72238d9636b6df635827ca64ee6cd8842cda2ee7526",
@@ -2666,11 +2515,11 @@
        "prev": "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2"
       }
      },
-     "signature": "d785632102531bfa9de65903e366770ff22f0e6370480c79ee528e558218169d1c4e44f8b01413ee60d8b1ac293dbf2012164f5c5ba63ada882789fc6c3b1903"
+     "signature": "9aa28a54bd1443b3f6ac858aecc232aac870f610ac12a0dbc6936546bc22d1e15ca39a57f88e64ddf75632e1141666d02adf8f978f43cd2ba22757d16896b30e"
     },
     {
      "name": "a rival rotation to key b, not seeing it",
-     "hash": "a1baa9c3de335831d5633edaba537ac9e7cb8d450f19bc33052df23b2b15b1e1",
+     "hash": "d73339761a36717a9c8dc49be45f369b5a4c995d2bea709b9fd3665faeb33e8c",
      "signer": "ida",
      "block": {
       "type": "grant",
@@ -2681,7 +2530,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b6570032100881a5857d5ded3e126daa3af794a07bc48f2af905d7d6bb625bad58679cddf86",
        "replaces": "302a300506032b657003210028bbc92740db56b91e1bafe3c942dddc661025e26279d918ccdd78eb8bba4d06",
-       "last_good": "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2"
+       "counted_to": "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2"
       },
       "refs": {
        "author": "e9e984507e58b7bb1194c72238d9636b6df635827ca64ee6cd8842cda2ee7526",
@@ -2689,11 +2538,11 @@
        "prev": "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2"
       }
      },
-     "signature": "75bd34741f6a78fb0925c2b977d56c274336a13ed12642b6f3d3edb30ab91a47fbffd1b0935595d0fbcf9644d8df0d86f3c3215eab2dc09929dd9995c2115306"
+     "signature": "ee8846e5b97f3ff122a7cb5057b696a41634e7a9bf184db0f4df083110b69a457a3f4153ed30567558f2f2f32e51cc20218f390076e106e012849f07f7f3c20a"
     },
     {
      "name": "key a speaks: frozen",
-     "hash": "9329e09c70636f472cc40c0fa39dd5fd9f7d959f0cb8fa195283074c9d3e8afa",
+     "hash": "254a33a1193a1f29d5b240b635631a428ac2d402cd02e0e15f4ae3d862bc8b06",
      "signer": "ida_a",
      "block": {
       "type": "observe",
@@ -2706,10 +2555,10 @@
       },
       "refs": {
        "author": "e9e984507e58b7bb1194c72238d9636b6df635827ca64ee6cd8842cda2ee7526",
-       "prev": "f48d417a671a7ed7eb46fed86ca9a260ed59f905af9d108f6799fcff75e7d376"
+       "prev": "fa784d19ef19bfe2e66181a8491cbb26ea546ab2a1d0abb3dea54772ad011483"
       }
      },
-     "signature": "c9c5bb1c04b77843d238677fc8b7f83eefb663ca578f44dd86e6041bfcc54048902120e9463fb43377e544ca1caa87e9d5f1f749744412f9900ddf07f3cb230a"
+     "signature": "2a12ad6c6646e6612f58203455c69dd2e84b4a067992cac61c6c61c0703f4c3befae8631a35b4f8e8b026fca636f058bfd2129e276a5f920739691663000e70a"
     },
     {
      "name": "the laptop key keeps speaking",
@@ -2736,9 +2585,9 @@
     "e9e984507e58b7bb1194c72238d9636b6df635827ca64ee6cd8842cda2ee7526": true,
     "1cdf7c82559e21f3bc734b3b4567ecc330557622e8b6154c951d03efe7d4e03e": true,
     "a40274fa029c7f24dc076c27f46b3eb758076c355d2c1ea22079f01e744af0d2": true,
-    "f48d417a671a7ed7eb46fed86ca9a260ed59f905af9d108f6799fcff75e7d376": true,
-    "a1baa9c3de335831d5633edaba537ac9e7cb8d450f19bc33052df23b2b15b1e1": true,
-    "9329e09c70636f472cc40c0fa39dd5fd9f7d959f0cb8fa195283074c9d3e8afa": false,
+    "fa784d19ef19bfe2e66181a8491cbb26ea546ab2a1d0abb3dea54772ad011483": true,
+    "d73339761a36717a9c8dc49be45f369b5a4c995d2bea709b9fd3665faeb33e8c": true,
+    "254a33a1193a1f29d5b240b635631a428ac2d402cd02e0e15f4ae3d862bc8b06": false,
     "f3d1fbd6a595e9de1120d6d4ba4be37c9efdfa4dff7f445c9dd164ee3d9a1d02": true
    },
    "keys": [
@@ -2859,8 +2708,8 @@
      "signature": "189b519db70420461c38d3b114b3c154ca1957ac9593047cbd7be031c65aef06b8e8dfd45660b62bc67cfef0adae65c2b2bd51241a89d77a424ce7f2aa14cf08"
     },
     {
-     "name": "the rotation by the key itself, naming its last good block",
-     "hash": "c19b7bf0b4b88b3450b6383a8649b0fb58a33e0f56af82c0a413833524555794",
+     "name": "the rotation by the key itself, naming its counted_to block",
+     "hash": "2f61434ddb5291721a4d9f408522d698a168fcda80ea041aa248c10dccb1b883",
      "signer": "jud",
      "block": {
       "type": "grant",
@@ -2871,7 +2720,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b65700321002177a0a201a448bea43e884512f1d15b1bc0e33bf144300d95a3145b98f896fd",
        "replaces": "302a300506032b6570032100ee1f35a48eede4057ca496906efeb76365cdb7f1caeb3586f22d848f03b241c5",
-       "last_good": "0eda6b3ce42e346611a8d952461a5488aea6c2b217daf6d7ac5ab658a58fad97"
+       "counted_to": "0eda6b3ce42e346611a8d952461a5488aea6c2b217daf6d7ac5ab658a58fad97"
       },
       "refs": {
        "author": "61b93b8e91d1556c2ca607599938df78dbed00ad71d093c7199b0c68edcca840",
@@ -2879,7 +2728,7 @@
        "prev": "cf0bc31fa89acb0dd10fd8f5d5c95d4c4a5f4a97f1de3e8ba8749ad1e643716b"
       }
      },
-     "signature": "9be5212281e48d3879415c5611fad0d38da65df17a23c1568e7b458618a80a7d407afc1b9c4122178e0b8322eef8e29f91281e016ff6454609a93aba25ff6503"
+     "signature": "927c88cd2ba62ec3bb40233192d0370243fd093c51b1fbe9d26aa101056c679a95ce1f9c9600ac30bf1187824cc1aec9c6e3bd9676973574dfe44452788faf0d"
     }
    ],
    "signed_by_author": {
@@ -2888,7 +2737,7 @@
     "cf0bc31fa89acb0dd10fd8f5d5c95d4c4a5f4a97f1de3e8ba8749ad1e643716b": false,
     "c71bd4f292e71aa77494fc30d20c66f3f209de81fb17ea001662dad9760c429d": false,
     "bb7eed40dc2f176d89769314c7545f5799b1c6d748779a6ca624028f5d6e3f0c": false,
-    "c19b7bf0b4b88b3450b6383a8649b0fb58a33e0f56af82c0a413833524555794": true
+    "2f61434ddb5291721a4d9f408522d698a168fcda80ea041aa248c10dccb1b883": true
    },
    "keys": [
     "302a300506032b65700321002177a0a201a448bea43e884512f1d15b1bc0e33bf144300d95a3145b98f896fd",
@@ -2942,7 +2791,7 @@
     },
     {
      "name": "the laptop key tries to rotate the genesis key: not counted",
-     "hash": "027a9578cb2ce11a1be078250ab7ff6f7545b4f1f6ec26579ac9672e4c092ee0",
+     "hash": "2c740825b2767f697def6dbcedfac9868856f0f445a963e49f77fd05111826df",
      "signer": "kit_laptop",
      "block": {
       "type": "grant",
@@ -2953,7 +2802,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b6570032100cbfdd35e06a0d7c061eeb8d11125b2d4ce750b6e82d996fdac01b0a513c8250b",
        "replaces": "302a300506032b657003210064bd89cc1be2a5ef4d5ab1d43a08d90d87c3bd9c63047410cc0b901bdc69edba",
-       "last_good": "9d65d1e1754cab1d48ff0a0bcef99658394fa16e823ac9ad62ff8c0e3f9dbb09"
+       "counted_to": "9d65d1e1754cab1d48ff0a0bcef99658394fa16e823ac9ad62ff8c0e3f9dbb09"
       },
       "refs": {
        "author": "8197bb19bf7ef0ebb9564b88f1e2314fdbf994fd2870fd97241cf4775120de0f",
@@ -2961,7 +2810,7 @@
        "prev": "9d65d1e1754cab1d48ff0a0bcef99658394fa16e823ac9ad62ff8c0e3f9dbb09"
       }
      },
-     "signature": "ca148c67f7fdbf0465f673e6dd0ffa22ba60b5f81c524b5c3da37accd6a859ca8d0f4443ead19ee79b26e9211cf78c1459014fe6fec3e7eccf6746673431a007"
+     "signature": "310774637e0cebbf77f1da2511bc3d47fd293fbcd2be26fae87d369aeee45f738a9f73d7719992fdba9ab10a556f660a22d890f9e41748956d6ae0b61983120b"
     },
     {
      "name": "the genesis key still speaks",
@@ -2987,7 +2836,7 @@
    "signed_by_author": {
     "8197bb19bf7ef0ebb9564b88f1e2314fdbf994fd2870fd97241cf4775120de0f": true,
     "9d65d1e1754cab1d48ff0a0bcef99658394fa16e823ac9ad62ff8c0e3f9dbb09": true,
-    "027a9578cb2ce11a1be078250ab7ff6f7545b4f1f6ec26579ac9672e4c092ee0": true,
+    "2c740825b2767f697def6dbcedfac9868856f0f445a963e49f77fd05111826df": true,
     "2482aa6e1150ffeb46924a126929bd635a9227491214c10578581aee0bde545c": true
    },
    "keys": [
@@ -3686,7 +3535,7 @@
     },
     {
      "name": "the recovery key rotates the forked key, having seen key a's grant",
-     "hash": "653ce5c2e3a7c84fbd33fc32f61a22fb4c3c6e5c8b0bf8e700e24584cc6c2f4f",
+     "hash": "0f0941e85719e14f100664826f8d2e8c3908426c847a8b02ab11711099e7e73a",
      "signer": "xena_recovery",
      "block": {
       "type": "grant",
@@ -3697,7 +3546,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b65700321001a89b74834986d3ce6dfe1ca0580fdd35fe2cc4107fa198bc63e4d3643acc319",
        "replaces": "302a300506032b6570032100fb78d25964ba084ab8354e269891cc8bb0bd8264e08a8c0b14dd6293833e5eba",
-       "last_good": "f043526e6387d7b5d8d4ef189121882f0cd8319dc5f0180b0ed3e55af8f1c275",
+       "counted_to": "f043526e6387d7b5d8d4ef189121882f0cd8319dc5f0180b0ed3e55af8f1c275",
        "recovery_key": "302a300506032b657003210053e857533cf1b861c83196324c0d231fea705e2b4fbde55c8d00a37d030ad58d"
       },
       "refs": {
@@ -3709,7 +3558,7 @@
        ]
       }
      },
-     "signature": "cbda903f0753ba144dc9d9b2b3cc78febc37dc9d1e7151d6b64eb2d2fe369b0a172f72164c43120a428e167b64896015758d5890a6f030c5ca21f26ddda93705"
+     "signature": "63245d8ef4c2a612f0679bac2654fabb2ae15b6f76ec0362a83763eb9977a2fc14a6763684a084104952c57417975b6b41372260992456878b2f026662493d02"
     }
    ],
    "signed_by_author": {
@@ -3717,7 +3566,7 @@
     "f043526e6387d7b5d8d4ef189121882f0cd8319dc5f0180b0ed3e55af8f1c275": true,
     "e0f8b7e3024dffff0c7b8ac6b1c402795312086e4dfcc93d7cd3249c9932e41e": true,
     "906df627f90e25de1da2d9a04b45133333ea6168fbdda84dbb7c32df202f1173": true,
-    "653ce5c2e3a7c84fbd33fc32f61a22fb4c3c6e5c8b0bf8e700e24584cc6c2f4f": true
+    "0f0941e85719e14f100664826f8d2e8c3908426c847a8b02ab11711099e7e73a": true
    },
    "keys": [
     "302a300506032b65700321001a89b74834986d3ce6dfe1ca0580fdd35fe2cc4107fa198bc63e4d3643acc319",
@@ -3796,7 +3645,7 @@
     },
     {
      "name": "ama takes her key: a key grant to her own phone rotates the held key out",
-     "hash": "02fc00c036efa803bfaebc1007afd7c546fbfb672dd8c5265f4f99951d0e935f",
+     "hash": "7e72aace3b6c596afbf6f65cac0cbdf003f8e4605daa9ea36cde597f10ce5dfa",
      "signer": "ama",
      "block": {
       "type": "grant",
@@ -3807,7 +3656,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b65700321002a2965e1ac83808a742869e913a658f61daa77ec6cbec5ed1b29b9f7a3435fbc",
        "replaces": "302a300506032b6570032100c1ae4e677c1e7328c92132f422f0bbfc09b52e9b7943123087357a179fd58c2d",
-       "last_good": "df970bdc12e94976901ed63d66f9b220e6ed7202b64c1ce4b34cfd55e843e5de"
+       "counted_to": "df970bdc12e94976901ed63d66f9b220e6ed7202b64c1ce4b34cfd55e843e5de"
       },
       "refs": {
        "author": "e2d76e831ead12cc60f667459476d123029a436d3e3cedf77aac5e88d6b378c0",
@@ -3815,11 +3664,11 @@
        "prev": "df970bdc12e94976901ed63d66f9b220e6ed7202b64c1ce4b34cfd55e843e5de"
       }
      },
-     "signature": "ddcef3fee8259501c44cae69d09b329265067b88766f12457a13b4096e4db0503a552666fd779444fd412c7d5fc0a5767e35a591354bbd979b6a9de1032a7703"
+     "signature": "ea5acf5c7931c225dbe98537ab51d1ca63e27da52e58cdc2fac4cd6b5b2e5de100122af02fc43d68f1532e7ea328d47c191fe4f077cbc824170a9d2fc34c1709"
     },
     {
      "name": "ama speaks from her own phone",
-     "hash": "d34e6ecbe891241ab9a8ac6e49d252859aad3da58ba69c6bed5a6a0f4d7a6c9f",
+     "hash": "7b38eaa1a6aae98de4939bd26d045bd003523b7955ddd8d4d4831b0dd3fc94dd",
      "signer": "ama_phone",
      "block": {
       "type": "observe",
@@ -3832,17 +3681,17 @@
       },
       "refs": {
        "author": "e2d76e831ead12cc60f667459476d123029a436d3e3cedf77aac5e88d6b378c0",
-       "prev": "02fc00c036efa803bfaebc1007afd7c546fbfb672dd8c5265f4f99951d0e935f"
+       "prev": "7e72aace3b6c596afbf6f65cac0cbdf003f8e4605daa9ea36cde597f10ce5dfa"
       }
      },
-     "signature": "3ec5e9898420cca31a7928871987e6c2a6575f4503a0a3542bd457ff613c35f61eea9977329f33643c7069d891169c81dde41539cc0fc1b2f03acd8087fee90a"
+     "signature": "d4f0d3460a797901d2cb2bf08a216a7fbab4a6baaafd7fa3d2662633753aea33f73965acb5d744b823a652b064a45bfec5f4a8a78941654e77ac9139de7f8609"
     }
    ],
    "signed_by_author": {
     "e2d76e831ead12cc60f667459476d123029a436d3e3cedf77aac5e88d6b378c0": true,
     "df970bdc12e94976901ed63d66f9b220e6ed7202b64c1ce4b34cfd55e843e5de": true,
-    "02fc00c036efa803bfaebc1007afd7c546fbfb672dd8c5265f4f99951d0e935f": true,
-    "d34e6ecbe891241ab9a8ac6e49d252859aad3da58ba69c6bed5a6a0f4d7a6c9f": true
+    "7e72aace3b6c596afbf6f65cac0cbdf003f8e4605daa9ea36cde597f10ce5dfa": true,
+    "7b38eaa1a6aae98de4939bd26d045bd003523b7955ddd8d4d4831b0dd3fc94dd": true
    },
    "keys": [
     "302a300506032b65700321002a2965e1ac83808a742869e913a658f61daa77ec6cbec5ed1b29b9f7a3435fbc",
@@ -3939,7 +3788,7 @@
     },
     {
      "name": "mimi takes her keys: her recovery key rotates the held key out for her own device key",
-     "hash": "a2e6a5442fec4edfaa8d4e470eb851ee33b6d236afccfb46139964e80ce2c37f",
+     "hash": "90bbf9aa0c87c485e4ae64b338e97f77c3004291aa934f93f26305d7f44e9ed0",
      "signer": "mimi_recovery",
      "block": {
       "type": "grant",
@@ -3950,7 +3799,7 @@
        "kind": "key",
        "public_key_sign": "302a300506032b657003210000c16469798f297a8920e1718af0f0a53e2a4a3caabdcc214ea31ec062d38011",
        "replaces": "302a300506032b657003210000c896ad2ff88bd187efa69d67e1a958c7afef95d6ace65c0e0f97f1ba1f4a9b",
-       "last_good": "1139f1f3997e20d76ac16190c99793faa50ab879b5288484eadb2d1068e485f6",
+       "counted_to": "1139f1f3997e20d76ac16190c99793faa50ab879b5288484eadb2d1068e485f6",
        "recovery_key": "302a300506032b6570032100430fefabc26850d495011ccdee1d18eb43edee89e0fb56fc5d0b82873ffcfc70"
       },
       "refs": {
@@ -3959,11 +3808,11 @@
        "prev": "3836a929aec258608ea7863915634ea0667798494362786b85005a57711a4c9f"
       }
      },
-     "signature": "f721bb852b3410e70a646296d1b722546cf24b57d734bf91eb2cb64f2820d4b32d29dc961c588cc3ced731b4ec2879177d15ee7dc4bd8491bb82dde24885ef05"
+     "signature": "52dc3975692536e813efc9d6b4641b58ac675881dcc84d98a83642ee93d87543b06a133a40044c4e1626c993336b6e7445ff7ba498b859af9ac189969792310d"
     },
     {
      "name": "mimi speaks from her own device",
-     "hash": "6cc7789c47f4a9e98ea2fcb2ad80fe4bbc5947995ac043ec7327dd14fb3ba61a",
+     "hash": "7cc28a3674afea9c1e0b5be9043a382fed9bebe198df607eebfa3e93d5c1d8d6",
      "signer": "mimi_own",
      "block": {
       "type": "observe",
@@ -3976,18 +3825,18 @@
       },
       "refs": {
        "author": "3836a929aec258608ea7863915634ea0667798494362786b85005a57711a4c9f",
-       "prev": "a2e6a5442fec4edfaa8d4e470eb851ee33b6d236afccfb46139964e80ce2c37f"
+       "prev": "90bbf9aa0c87c485e4ae64b338e97f77c3004291aa934f93f26305d7f44e9ed0"
       }
      },
-     "signature": "abb62919f1c5f6c9e111c0bfba6aedc482fb77b13ee9b96e68e42f7bc2bafe738e547ec68fd88d0e5d9989258616a2d3d9d22cab36d1b1a68328c786f6cfc404"
+     "signature": "8a36ec01cabd18a35127005c6ff8a8540fc4099a821a0a0a555843d481eecf724f79909f4dcd247c937b97fc4a5be32da3a3f31ead1ebc5bc0d7ba2401298505"
     }
    ],
    "signed_by_author": {
     "3836a929aec258608ea7863915634ea0667798494362786b85005a57711a4c9f": true,
     "d2e9d49b3f9b6a720aa625bcc0468f6a34b5a795cfc4d8b0ed2b7f7146fbd8e4": true,
     "1139f1f3997e20d76ac16190c99793faa50ab879b5288484eadb2d1068e485f6": true,
-    "a2e6a5442fec4edfaa8d4e470eb851ee33b6d236afccfb46139964e80ce2c37f": true,
-    "6cc7789c47f4a9e98ea2fcb2ad80fe4bbc5947995ac043ec7327dd14fb3ba61a": true
+    "90bbf9aa0c87c485e4ae64b338e97f77c3004291aa934f93f26305d7f44e9ed0": true,
+    "7cc28a3674afea9c1e0b5be9043a382fed9bebe198df607eebfa3e93d5c1d8d6": true
    },
    "keys": [
     "302a300506032b657003210000c16469798f297a8920e1718af0f0a53e2a4a3caabdcc214ea31ec062d38011",
@@ -4584,7 +4433,7 @@
     },
     {
      "name": "the end: an updates with status stopped",
-     "hash": "69a5db9cbf778cf75222123b0320d3b6572ad188fc62833b02805dbe5dbbd50e",
+     "hash": "bd7aee76f2c65784a32d26dae08f66497f8d98fa9e467bb5f17420d5f067b85a",
      "signer": "rae",
      "block": {
       "type": "grant",
@@ -4592,7 +4441,7 @@
        "kind": "member",
        "status": "stopped",
        "stop": "onward",
-       "last_counted": "7327eb5bd6192919c83ee39647a14fcfddf1bdde6db9a6b4713e0561c0bcb2db",
+       "counted_to": "7327eb5bd6192919c83ee39647a14fcfddf1bdde6db9a6b4713e0561c0bcb2db",
        "at": "2026-10-15T12:00:11.000Z",
        "audience": "public",
        "seq": 3
@@ -4608,7 +4457,7 @@
        ]
       }
      },
-     "signature": "6ca208cae5201fdfc7f66d0d3bd1bbc91e9790e5121b38fb20b1a4f4dd4ad06f90cd4408335435b25f19fe68da4a4ed8dfeff80ae0e3dead161e8f232a02410f"
+     "signature": "459caab5919b6c3530ca008abb28b8d8767de7f739592903798a1db436b47c865479a7d2f73c7e2bf093127d46d4433f89889c31c47d100f35cdcfe0b047e904"
     }
    ],
    "circle": "6f9f5092c294339e17e21e4d3221c87a009b72cf0e9f3ad1070bc9c47e837453",
@@ -9335,6 +9184,584 @@
       "currency": "GBP"
      }
     }
+   },
+   {
+    "name": "money: a payment in another currency than the price counts for nothing",
+    "blocks": [
+     {
+      "name": "uri: genesis",
+      "hash": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+      "signer": "uri",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "person",
+        "at": "2026-10-15T12:06:39.000Z",
+        "audience": "public",
+        "public_key_sign": "302a300506032b6570032100323b290d30cb8aa914d39b4cb2706f72f3d8dd63c34e89649841c10fbc6b1ca3",
+        "public_key_encrypt": "fcb3947c959bd35ac2f4b4ced607ca8a8859576ea6d6f643884350a0ef1d2650",
+        "recovery_key_hash": "4ff5107f420d9285afacf33b49708a10e655f9e8a1470500498fffb638f4f7de",
+        "recovery_reach": "P30D"
+       },
+       "refs": {}
+      },
+      "signature": "79433301d36c0ec6550490e03c66001e8310dae3101620527293a1f7e755c9d6604f8c720402f3c26f0db420d44e6036c6bd27b9317152691050e8ee8e5de503"
+     },
+     {
+      "name": "vic: genesis",
+      "hash": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+      "signer": "vic",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "person",
+        "at": "2026-10-15T12:06:40.000Z",
+        "audience": "public",
+        "public_key_sign": "302a300506032b6570032100ac4e6a7cc608c6079991d81b3a48dbed3a8686f084d5b48a2b83da40053ef8b9",
+        "public_key_encrypt": "139e045cf7176a4d66744a0422de43f956bac2e10ac4ae364dd407a1a52cd40f",
+        "recovery_key_hash": "b6e4a2d8d9e9cf439a946bdad5b525d9c7303e6907fa5b15de6fe3ac17838c5c",
+        "recovery_reach": "P30D"
+       },
+       "refs": {}
+      },
+      "signature": "3fb7e8b401d9af4005c4bae043b5e0a138d8eae7badb7b3ee5d020f00b57af7051ee555e4b4de85e0ff62e8e54cb5c0bbb964a3feb16cbd2666d224a3d2c890f"
+     },
+     {
+      "name": "the kind: loaves",
+      "hash": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc",
+      "signer": "uri",
+      "block": {
+       "type": "thing",
+       "state": {
+        "kind": "loaves",
+        "at": "2026-10-15T12:06:41.000Z",
+        "audience": "public",
+        "seq": 1
+       },
+       "refs": {
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d"
+       }
+      },
+      "signature": "79b341c2534333039293225ccb27f0bb9dd46b225507478bb64ac9048cf92cd17e1af858775a1d502f295c3ab5b4b0a47824fca82ce6c3a0aa14b5a8c0b65500"
+     },
+     {
+      "name": "an instance: a loaf",
+      "hash": "9cd80dfc422c7b452673823e09389e383b652bbb502506e78061cb41d9ed8364",
+      "signer": "uri",
+      "block": {
+       "type": "thing",
+       "state": {
+        "lot": "L1",
+        "pack": {
+         "value": "1",
+         "unit": "{loaf}"
+        },
+        "at": "2026-10-15T12:06:42.000Z",
+        "audience": "public",
+        "seq": 2
+       },
+       "refs": {
+        "kind": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc"
+       }
+      },
+      "signature": "18fc47f32b94f9b106ba8c8fbb861acaedbcf8f156aeb58b4cdd50dabaf7e02905b79fa47c4db4753fc837fed786057857b29ca3e73389e2445e1df8acc58b02"
+     },
+     {
+      "name": "the offer: a loaf for 500 bread credits",
+      "hash": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+      "signer": "uri",
+      "block": {
+       "type": "promise",
+       "state": {
+        "terms": {
+         "price": {
+          "minor": 500,
+          "currency": {
+           "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+           "unit": "bread credit",
+           "decimals": 0
+          }
+         },
+         "quantity": {
+          "value": "1",
+          "unit": "{loaf}"
+         },
+         "expires": "2026-10-20T00:00:00.000Z"
+        },
+        "at": "2026-10-15T12:06:43.000Z",
+        "audience": "public",
+        "seq": 3
+       },
+       "refs": {
+        "from": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "to": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "what": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "9cd80dfc422c7b452673823e09389e383b652bbb502506e78061cb41d9ed8364"
+       }
+      },
+      "signature": "fbbae788adbb07a492bd14bc55e283758a0e47f38db56adba49b8f3136137e7e23937a82d827178e74180d57edf925db569a170d6fc6aacf2ea0a709c3c2d205"
+     },
+     {
+      "name": "the accept",
+      "hash": "ca77dccd664f3157dbe76e7fbe044e475a692fdc8747da47d7e383e759da8bd1",
+      "signer": "vic",
+      "block": {
+       "type": "promise",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:44.000Z",
+        "audience": "public",
+        "seq": 1
+       },
+       "refs": {
+        "answers": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "after": [
+         "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45"
+        ]
+       }
+      },
+      "signature": "a29f2545a1e0980dc702fb9d3cd1ec406de92322e7db5867576b0c24050bf74320f80f6be2f1e9cd38fc86b0aeb97f731f5c4b363c5c5de1c28d63560e709501"
+     },
+     {
+      "name": "the loaf",
+      "hash": "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716",
+      "signer": "uri",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "amount": {
+         "value": "1",
+         "unit": "{loaf}"
+        },
+        "at": "2026-10-15T12:06:45.000Z",
+        "audience": "public",
+        "seq": 4
+       },
+       "refs": {
+        "to_owner": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "what": "9cd80dfc422c7b452673823e09389e383b652bbb502506e78061cb41d9ed8364",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45"
+       }
+      },
+      "signature": "3308af7025c8b9b3f3efe32f2536cabca896cb677282b09408367c7424e1a18538e4458dfdbe45c768d2f12aa72e6d87c237c3bff6ad244c3e6c6fd17d24c300"
+     },
+     {
+      "name": "the loaf received",
+      "hash": "7a73bcf174493a2e9bd7d59c1ca526047c48c7e2e080119a99b861655b0650fb",
+      "signer": "vic",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:46.000Z",
+        "audience": "public",
+        "seq": 2
+       },
+       "refs": {
+        "answers": "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "ca77dccd664f3157dbe76e7fbe044e475a692fdc8747da47d7e383e759da8bd1",
+        "after": [
+         "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716"
+        ]
+       }
+      },
+      "signature": "018b7cc1eb2af266913131b89d7f940caf10fb8bdebe4f8e31afde92b1982e2677f3a16437ba75c9be7fd809c6b709e7e5d4d75a4b51a9ce26d0c46121356206"
+     },
+     {
+      "name": "500 pounds: another currency",
+      "hash": "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176",
+      "signer": "vic",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "money": {
+         "minor": 500,
+         "currency": "GBP"
+        },
+        "at": "2026-10-15T12:06:47.000Z",
+        "audience": "public",
+        "seq": 3
+       },
+       "refs": {
+        "to_owner": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "7a73bcf174493a2e9bd7d59c1ca526047c48c7e2e080119a99b861655b0650fb"
+       }
+      },
+      "signature": "9c05e2e9494fbd6d4f2865df4fc8c41497e521d5ceb8974937af7155d84c05f86529dc1c50bba567dec7891ef8a2e652d14420cdaa444dad30b8f038e7061909"
+     },
+     {
+      "name": "500 pounds: another currency: received",
+      "hash": "ac1873a3d0a130563ca6f2a1783c7cee681e710dcd8f53e844d6c109578ad957",
+      "signer": "uri",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:48.000Z",
+        "audience": "public",
+        "seq": 5
+       },
+       "refs": {
+        "answers": "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716",
+        "after": [
+         "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176"
+        ]
+       }
+      },
+      "signature": "a2a6ff6e06121b83c8d9f5e876513438e504f7f014b9b3db919ebab9273eba03f7ce468a0500f99bb8c68d5937cca969e823787b055f39f12e342ee97c5ed703"
+     }
+    ],
+    "first": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+    "expected": {
+     "stage": "underway",
+     "paid": {
+      "minor": 0,
+      "currency": {
+       "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+       "unit": "bread credit",
+       "decimals": 0
+      }
+     },
+     "total": {
+      "minor": 500,
+      "currency": {
+       "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+       "unit": "bread credit",
+       "decimals": 0
+      }
+     }
+    }
+   },
+   {
+    "name": "money: the price in an issuer unit is paid in that unit",
+    "blocks": [
+     {
+      "name": "uri: genesis",
+      "hash": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+      "signer": "uri",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "person",
+        "at": "2026-10-15T12:06:39.000Z",
+        "audience": "public",
+        "public_key_sign": "302a300506032b6570032100323b290d30cb8aa914d39b4cb2706f72f3d8dd63c34e89649841c10fbc6b1ca3",
+        "public_key_encrypt": "fcb3947c959bd35ac2f4b4ced607ca8a8859576ea6d6f643884350a0ef1d2650",
+        "recovery_key_hash": "4ff5107f420d9285afacf33b49708a10e655f9e8a1470500498fffb638f4f7de",
+        "recovery_reach": "P30D"
+       },
+       "refs": {}
+      },
+      "signature": "79433301d36c0ec6550490e03c66001e8310dae3101620527293a1f7e755c9d6604f8c720402f3c26f0db420d44e6036c6bd27b9317152691050e8ee8e5de503"
+     },
+     {
+      "name": "vic: genesis",
+      "hash": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+      "signer": "vic",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "person",
+        "at": "2026-10-15T12:06:40.000Z",
+        "audience": "public",
+        "public_key_sign": "302a300506032b6570032100ac4e6a7cc608c6079991d81b3a48dbed3a8686f084d5b48a2b83da40053ef8b9",
+        "public_key_encrypt": "139e045cf7176a4d66744a0422de43f956bac2e10ac4ae364dd407a1a52cd40f",
+        "recovery_key_hash": "b6e4a2d8d9e9cf439a946bdad5b525d9c7303e6907fa5b15de6fe3ac17838c5c",
+        "recovery_reach": "P30D"
+       },
+       "refs": {}
+      },
+      "signature": "3fb7e8b401d9af4005c4bae043b5e0a138d8eae7badb7b3ee5d020f00b57af7051ee555e4b4de85e0ff62e8e54cb5c0bbb964a3feb16cbd2666d224a3d2c890f"
+     },
+     {
+      "name": "the kind: loaves",
+      "hash": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc",
+      "signer": "uri",
+      "block": {
+       "type": "thing",
+       "state": {
+        "kind": "loaves",
+        "at": "2026-10-15T12:06:41.000Z",
+        "audience": "public",
+        "seq": 1
+       },
+       "refs": {
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d"
+       }
+      },
+      "signature": "79b341c2534333039293225ccb27f0bb9dd46b225507478bb64ac9048cf92cd17e1af858775a1d502f295c3ab5b4b0a47824fca82ce6c3a0aa14b5a8c0b65500"
+     },
+     {
+      "name": "an instance: a loaf",
+      "hash": "9cd80dfc422c7b452673823e09389e383b652bbb502506e78061cb41d9ed8364",
+      "signer": "uri",
+      "block": {
+       "type": "thing",
+       "state": {
+        "lot": "L1",
+        "pack": {
+         "value": "1",
+         "unit": "{loaf}"
+        },
+        "at": "2026-10-15T12:06:42.000Z",
+        "audience": "public",
+        "seq": 2
+       },
+       "refs": {
+        "kind": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc"
+       }
+      },
+      "signature": "18fc47f32b94f9b106ba8c8fbb861acaedbcf8f156aeb58b4cdd50dabaf7e02905b79fa47c4db4753fc837fed786057857b29ca3e73389e2445e1df8acc58b02"
+     },
+     {
+      "name": "the offer: a loaf for 500 bread credits",
+      "hash": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+      "signer": "uri",
+      "block": {
+       "type": "promise",
+       "state": {
+        "terms": {
+         "price": {
+          "minor": 500,
+          "currency": {
+           "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+           "unit": "bread credit",
+           "decimals": 0
+          }
+         },
+         "quantity": {
+          "value": "1",
+          "unit": "{loaf}"
+         },
+         "expires": "2026-10-20T00:00:00.000Z"
+        },
+        "at": "2026-10-15T12:06:43.000Z",
+        "audience": "public",
+        "seq": 3
+       },
+       "refs": {
+        "from": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "to": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "what": "06f57a747a4545ee05080f272bf2f0a7a1b0ddce5b0fa6cc082e0a3260c8a6bc",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "9cd80dfc422c7b452673823e09389e383b652bbb502506e78061cb41d9ed8364"
+       }
+      },
+      "signature": "fbbae788adbb07a492bd14bc55e283758a0e47f38db56adba49b8f3136137e7e23937a82d827178e74180d57edf925db569a170d6fc6aacf2ea0a709c3c2d205"
+     },
+     {
+      "name": "the accept",
+      "hash": "ca77dccd664f3157dbe76e7fbe044e475a692fdc8747da47d7e383e759da8bd1",
+      "signer": "vic",
+      "block": {
+       "type": "promise",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:44.000Z",
+        "audience": "public",
+        "seq": 1
+       },
+       "refs": {
+        "answers": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "after": [
+         "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45"
+        ]
+       }
+      },
+      "signature": "a29f2545a1e0980dc702fb9d3cd1ec406de92322e7db5867576b0c24050bf74320f80f6be2f1e9cd38fc86b0aeb97f731f5c4b363c5c5de1c28d63560e709501"
+     },
+     {
+      "name": "the loaf",
+      "hash": "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716",
+      "signer": "uri",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "amount": {
+         "value": "1",
+         "unit": "{loaf}"
+        },
+        "at": "2026-10-15T12:06:45.000Z",
+        "audience": "public",
+        "seq": 4
+       },
+       "refs": {
+        "to_owner": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "what": "9cd80dfc422c7b452673823e09389e383b652bbb502506e78061cb41d9ed8364",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45"
+       }
+      },
+      "signature": "3308af7025c8b9b3f3efe32f2536cabca896cb677282b09408367c7424e1a18538e4458dfdbe45c768d2f12aa72e6d87c237c3bff6ad244c3e6c6fd17d24c300"
+     },
+     {
+      "name": "the loaf received",
+      "hash": "7a73bcf174493a2e9bd7d59c1ca526047c48c7e2e080119a99b861655b0650fb",
+      "signer": "vic",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:46.000Z",
+        "audience": "public",
+        "seq": 2
+       },
+       "refs": {
+        "answers": "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "ca77dccd664f3157dbe76e7fbe044e475a692fdc8747da47d7e383e759da8bd1",
+        "after": [
+         "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716"
+        ]
+       }
+      },
+      "signature": "018b7cc1eb2af266913131b89d7f940caf10fb8bdebe4f8e31afde92b1982e2677f3a16437ba75c9be7fd809c6b709e7e5d4d75a4b51a9ce26d0c46121356206"
+     },
+     {
+      "name": "500 pounds: another currency",
+      "hash": "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176",
+      "signer": "vic",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "money": {
+         "minor": 500,
+         "currency": "GBP"
+        },
+        "at": "2026-10-15T12:06:47.000Z",
+        "audience": "public",
+        "seq": 3
+       },
+       "refs": {
+        "to_owner": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "7a73bcf174493a2e9bd7d59c1ca526047c48c7e2e080119a99b861655b0650fb"
+       }
+      },
+      "signature": "9c05e2e9494fbd6d4f2865df4fc8c41497e521d5ceb8974937af7155d84c05f86529dc1c50bba567dec7891ef8a2e652d14420cdaa444dad30b8f038e7061909"
+     },
+     {
+      "name": "500 pounds: another currency: received",
+      "hash": "ac1873a3d0a130563ca6f2a1783c7cee681e710dcd8f53e844d6c109578ad957",
+      "signer": "uri",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:48.000Z",
+        "audience": "public",
+        "seq": 5
+       },
+       "refs": {
+        "answers": "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "4da74755013903d25fa50f60561cdc94919e84a9b503f0b635db0a993f84a716",
+        "after": [
+         "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176"
+        ]
+       }
+      },
+      "signature": "a2a6ff6e06121b83c8d9f5e876513438e504f7f014b9b3db919ebab9273eba03f7ce468a0500f99bb8c68d5937cca969e823787b055f39f12e342ee97c5ed703"
+     },
+     {
+      "name": "500 bread credits",
+      "hash": "7424655ceba31747ef022aab733db190e0d0ebcd5442f1680afda18871f83a65",
+      "signer": "vic",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "money": {
+         "minor": 500,
+         "currency": {
+          "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+          "unit": "bread credit",
+          "decimals": 0
+         }
+        },
+        "at": "2026-10-15T12:06:49.000Z",
+        "audience": "public",
+        "seq": 4
+       },
+       "refs": {
+        "to_owner": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "c4ac6e30f659e0ecf8395b67d47063f53f2a8771ac949ab829dfc949b6b49124",
+        "prev": "362049e7409cc81c9159015d0c35e6cf4c5af1221069e14fe39650c5fa818176"
+       }
+      },
+      "signature": "59810fdeab68ca2c90009daad4990930b6f972e436eb8b09043509a004852daa588d7bcb8bbc7493e04f256e06113b399daac6893c050811c321d69c758f4707"
+     },
+     {
+      "name": "500 bread credits: received",
+      "hash": "5b0c80944a447240d3666742e562f03afcb910bd9e2ba596a5bd1db1f634f234",
+      "signer": "uri",
+      "block": {
+       "type": "transfer",
+       "state": {
+        "status": "accepted",
+        "at": "2026-10-15T12:06:50.000Z",
+        "audience": "public",
+        "seq": 6
+       },
+       "refs": {
+        "answers": "7424655ceba31747ef022aab733db190e0d0ebcd5442f1680afda18871f83a65",
+        "for": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+        "author": "4930666a693628448ee6f27919246600183291e553491b061c01c8adc4faf80d",
+        "prev": "ac1873a3d0a130563ca6f2a1783c7cee681e710dcd8f53e844d6c109578ad957",
+        "after": [
+         "7424655ceba31747ef022aab733db190e0d0ebcd5442f1680afda18871f83a65"
+        ]
+       }
+      },
+      "signature": "a97f4f485826ac2dc83828f1c5cfea32bcf5d6175f96d795005b9242d14214a13c9a02b6de78ef0f5c138fa48835a77c30bbf96bb41eb23d2da8fd288b01de00"
+     }
+    ],
+    "first": "538844509500e2c36038c317e41e8bde6688289134fa2c01709400b82c496d45",
+    "expected": {
+     "stage": "done",
+     "paid": {
+      "minor": 500,
+      "currency": {
+       "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+       "unit": "bread credit",
+       "decimals": 0
+      }
+     },
+     "total": {
+      "minor": 500,
+      "currency": {
+       "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+       "unit": "bread credit",
+       "decimals": 0
+      }
+     }
+    }
    }
   ],
   "circles": [
@@ -9911,7 +10338,7 @@
      },
      {
       "name": "lee removes mia",
-      "hash": "776bc7a7fdc9ed0d75dcbb2eb6689fb62cc635544333e4323cab9e1be88240d5",
+      "hash": "a12da6931a6d886fe866d0901d63b042aac12ccf3de3d9b31aff701d0e040a1f",
       "signer": "abe",
       "block": {
        "type": "grant",
@@ -9919,7 +10346,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "ecdf6b8cdc04432ac7005877b7c179005aaac33a3062fc0068d5d83c52ecbd85",
+        "counted_to": "ecdf6b8cdc04432ac7005877b7c179005aaac33a3062fc0068d5d83c52ecbd85",
         "at": "2026-10-15T12:00:36.000Z",
         "audience": "public",
         "seq": 2
@@ -9936,11 +10363,11 @@
         ]
        }
       },
-      "signature": "dbc1f80fe4f0cfbd7fb658915cf31bb398b00403b9b2103b9bb0708bcfb75618e2cf0962fa6f205d2e73220a7a860cb7468ba9741cce7f98a13789d7c30d5d08"
+      "signature": "85778cd45892ad76ed2d46dcd95cd40710813beff5869622e62778a985b943fb9383ea981449abf9c6604b3e461acdbb6daff0d77ba528403a105229067f5e04"
      },
      {
       "name": "mia removes lee",
-      "hash": "8565494d3e104eaa5c0cd5f5271e917f76cd6a09a5ea442f5b0c89d417a9b143",
+      "hash": "280d1538c84794a7501cf04c4a030b6869b24a5156ba939aa6422904663f9b32",
       "signer": "bea",
       "block": {
        "type": "grant",
@@ -9948,7 +10375,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "cdeadffb76e3407cd789558da32206c3d762c9754d5eeebb94c05c9f5fd56225",
+        "counted_to": "cdeadffb76e3407cd789558da32206c3d762c9754d5eeebb94c05c9f5fd56225",
         "at": "2026-10-15T12:00:37.000Z",
         "audience": "public",
         "seq": 2
@@ -9965,7 +10392,7 @@
         ]
        }
       },
-      "signature": "5692a979fa000d8decc3fc46be82d5c6b450244fe3314a4625e15a56c3c9580d9979797f66323caafb7c1456d1805e8562c6b72d1b92603da3afb0ece994f203"
+      "signature": "b6f36c142fcf40e1f8e86db95cca5529361f63d107e86935285c538b78bb808ab182c874aa253d8420b24e69e709a61c29d819241e69b28e43e48b37139d5800"
      },
      {
       "name": "kim leaves",
@@ -9991,8 +10418,8 @@
       "signature": "e7b1c5a6437a708d02d9124aa0506bfcee406940ff1628d1159c4ffece599426c7ddf9a1a747c14dca63dcedc5fd1af1a6d4d9830cf11e54f58ebeedfd9b870e"
      },
      {
-      "name": "hal is removed, his last counted block named",
-      "hash": "36f1d313c188fe9fb5fc6a754bf389e5d654ab1a33d27f8751e2c26a3ad9c8d4",
+      "name": "hal is removed, his counted_to block named",
+      "hash": "617b7a9c080c2a36e768a23c1366cd12aa4206f36d17feb183e80ccc69a6546f",
       "signer": "wes",
       "block": {
        "type": "grant",
@@ -10000,7 +10427,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "fe5ad7b304bc15ff91df51e0915f4ae5e99b0360072e43e5b5ff2b660aa3e9e0",
+        "counted_to": "fe5ad7b304bc15ff91df51e0915f4ae5e99b0360072e43e5b5ff2b660aa3e9e0",
         "at": "2026-10-15T12:00:39.000Z",
         "audience": "public",
         "seq": 10
@@ -10013,7 +10440,7 @@
         "prev": "a15c3a874d8997e215f4ca98b9992fe0a96e0184402d8be3d3a0b1f67a07e27b"
        }
       },
-      "signature": "e4f8eda8e59057384a2b73b4682070019ff7ca44460f7fd7190e90a85f8cdf1bd07d054ae26c17ebab59a1886bbb12e29121a8e83630effff2dcbed621b5980e"
+      "signature": "9201bbe7512ca33922bf1a17ab21eb196d81e63433ee61adf86e897dda9c96206968b8660491fb044822b31e0cd51d85c1819f62bbad9733868c4579bb26e504"
      }
     ],
     "circle": "ca4ed597a77fa45500c54fd3a449d1958bc8bc2c9c49cfc1cdd9a48d70b767fb",
@@ -10478,7 +10905,7 @@
      },
      {
       "name": "ned_a removes pip",
-      "hash": "f5614e3c6d173e80f1ce669312e49a643c2a0435041ea3babd1c4a0e28ea4552",
+      "hash": "3facd79327b453092894dddb9bfbf336c3195f57cb12caaee4da6f381ac3f609",
       "signer": "ned_a",
       "block": {
        "type": "grant",
@@ -10486,7 +10913,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "866183d0a400229c6c0a1ab5227b769444a8dceaa00130abf75c791a081af11d",
+        "counted_to": "866183d0a400229c6c0a1ab5227b769444a8dceaa00130abf75c791a081af11d",
         "at": "2026-10-15T12:00:59.000Z",
         "audience": "public",
         "seq": 2
@@ -10503,7 +10930,7 @@
         ]
        }
       },
-      "signature": "aa716380f0c112567d094cc73c346c3ce3d958e84f5c040cd7c378f45233ee16ed4bb21035167cec4a6c83f2f825e145f2bb659e3d75548e58e3c78302052b07"
+      "signature": "81035d4ed2949e7af2f94adc8cecee0e50424f0ecc77c20c08bf61fa3de25fa17401fcfd14248b4cc69a73facde0d76c47595d6224f5712ac64d157bbea7f900"
      }
     ],
     "circle": "83f8ffed121577cee66ddfad0236c96711d48aa99a65f6f0a8d32810aac37b37",
@@ -10967,7 +11394,7 @@
      },
      {
       "name": "ned_a removes pip",
-      "hash": "f5614e3c6d173e80f1ce669312e49a643c2a0435041ea3babd1c4a0e28ea4552",
+      "hash": "3facd79327b453092894dddb9bfbf336c3195f57cb12caaee4da6f381ac3f609",
       "signer": "ned_a",
       "block": {
        "type": "grant",
@@ -10975,7 +11402,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "866183d0a400229c6c0a1ab5227b769444a8dceaa00130abf75c791a081af11d",
+        "counted_to": "866183d0a400229c6c0a1ab5227b769444a8dceaa00130abf75c791a081af11d",
         "at": "2026-10-15T12:00:59.000Z",
         "audience": "public",
         "seq": 2
@@ -10992,11 +11419,11 @@
         ]
        }
       },
-      "signature": "aa716380f0c112567d094cc73c346c3ce3d958e84f5c040cd7c378f45233ee16ed4bb21035167cec4a6c83f2f825e145f2bb659e3d75548e58e3c78302052b07"
+      "signature": "81035d4ed2949e7af2f94adc8cecee0e50424f0ecc77c20c08bf61fa3de25fa17401fcfd14248b4cc69a73facde0d76c47595d6224f5712ac64d157bbea7f900"
      },
      {
       "name": "oak agrees",
-      "hash": "7ce71159dd148a8f24efae8cea532a81baaaf018c58de937e76b9cd8c4809e3b",
+      "hash": "50aa43b9fea97a17a7fcbf5ae80c47c1c2df7745d779933d7278e402e55b85eb",
       "signer": "oak",
       "block": {
        "type": "grant",
@@ -11004,7 +11431,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "866183d0a400229c6c0a1ab5227b769444a8dceaa00130abf75c791a081af11d",
+        "counted_to": "866183d0a400229c6c0a1ab5227b769444a8dceaa00130abf75c791a081af11d",
         "at": "2026-10-15T12:01:00.000Z",
         "audience": "public",
         "seq": 2
@@ -11021,7 +11448,7 @@
         ]
        }
       },
-      "signature": "6e0e4cfee5ee1b9cb1df304a12e05b022f935e951f9e46abc1e1b8d0878c17c6270a42b201fdb51a281543d9c8083304942fa2e39377594e196c3b98b0bc3507"
+      "signature": "4ceb6445a66ea315f4742f4d39f2d621c8d62194afa7fc6f0a69df86a044112576bb4ffd096a8c835f655c48a2fad190e6aff4a1a8654f1a4da895089a3b7b0c"
      }
     ],
     "circle": "83f8ffed121577cee66ddfad0236c96711d48aa99a65f6f0a8d32810aac37b37",
@@ -11511,7 +11938,7 @@
      },
      {
       "name": "joe removed",
-      "hash": "9747eafe42c6027e62d64243e96f0e17a0df5cce89ae8f08a35a1228e73ce81d",
+      "hash": "ddc4bb656881f37c63a63d29a92b78dcd2e11119feccb6c54ae4587c05e01d1c",
       "signer": "ola",
       "block": {
        "type": "grant",
@@ -11519,7 +11946,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "de0c7c45853a8614d54ac3c5215f55e89612abf533a1550779635d59595debd5",
+        "counted_to": "de0c7c45853a8614d54ac3c5215f55e89612abf533a1550779635d59595debd5",
         "at": "2026-10-15T12:05:36.000Z",
         "audience": "public",
         "seq": 3
@@ -11535,11 +11962,11 @@
         ]
        }
       },
-      "signature": "befade395ed413c726db04c33f1f636d321f356377f73a369c9e4325b6e3578c9577e57b6cbe6250e45310f585c9a8bcd5178ced9c49eec1e4519e5896337e0f"
+      "signature": "06335cfcc820d62370316a4ce567ff3b292f32563eca9a95bb2e9895d33cce37c6a1ff92a70ce1629ce0423b68dda9170b2fb479ed8a83d9d981d3c36ae53f0c"
      },
      {
       "name": "joe invited again",
-      "hash": "657ca658d8fce8b7268e4036e8c7112af8fd36c117874c49c2edf42e5fc9bae8",
+      "hash": "2e939c8751bf133af7f081867a45626adb18f83459c7b048e9956b17f47f7f65",
       "signer": "ola",
       "block": {
        "type": "grant",
@@ -11557,17 +11984,17 @@
         "as": "7a78842faf0535976f7579e3a022f69dc7e45d0f21667b0339106c4ef5ac2163",
         "to": "b157845414edc5c5a6d2de4f0ee31a02723e81369ebc7b31ee45183c1df0a7da",
         "author": "77c9c531462f2e4851f786f0a4ac96cfb30b512ab465892dcba230992895c93d",
-        "prev": "9747eafe42c6027e62d64243e96f0e17a0df5cce89ae8f08a35a1228e73ce81d",
+        "prev": "ddc4bb656881f37c63a63d29a92b78dcd2e11119feccb6c54ae4587c05e01d1c",
         "after": [
-         "9747eafe42c6027e62d64243e96f0e17a0df5cce89ae8f08a35a1228e73ce81d"
+         "ddc4bb656881f37c63a63d29a92b78dcd2e11119feccb6c54ae4587c05e01d1c"
         ]
        }
       },
-      "signature": "110c1d2b2116417db25da963590131a416878523b9ba1914e3c2411c647a102074c01ea130ad1e401785771b43ffe6f8df927902406edba20a9c2e69c7ed4008"
+      "signature": "0d5c08e0d384dedbd3faec85c343e83b0c9bdbf4b0d1b64d48108860ba7960dc48e5c58b20db49d0ae522d17808da1732a272f5bbbfd2cd83d3d34e927a2bc0a"
      },
      {
       "name": "joe says yes again",
-      "hash": "c4a5ca97aa132fbaf222ed8eb898f76c76ed40c3772ed546f6a52cf77b336535",
+      "hash": "1db4f61f477bf6d933df47852db14d39ec2d1afb0ef33921d8d824f0cbc4027b",
       "signer": "pia_m",
       "block": {
        "type": "grant",
@@ -11579,16 +12006,16 @@
         "seq": 2
        },
        "refs": {
-        "answers": "657ca658d8fce8b7268e4036e8c7112af8fd36c117874c49c2edf42e5fc9bae8",
+        "answers": "2e939c8751bf133af7f081867a45626adb18f83459c7b048e9956b17f47f7f65",
         "subject": "7a78842faf0535976f7579e3a022f69dc7e45d0f21667b0339106c4ef5ac2163",
         "author": "b157845414edc5c5a6d2de4f0ee31a02723e81369ebc7b31ee45183c1df0a7da",
         "prev": "de0c7c45853a8614d54ac3c5215f55e89612abf533a1550779635d59595debd5",
         "after": [
-         "657ca658d8fce8b7268e4036e8c7112af8fd36c117874c49c2edf42e5fc9bae8"
+         "2e939c8751bf133af7f081867a45626adb18f83459c7b048e9956b17f47f7f65"
         ]
        }
       },
-      "signature": "d6f748d319c3539fc6150fb59551d9662a3c3cc0ca70251473d408836bac91dbc77ca23c6411e220a4286e508ca7022125303824a490883c5b3ca75497457a09"
+      "signature": "c8063d6e306a61525e3b7f5f3209448ba9b6355d6bf6c3fbd40e179883d56c6f8dc0a79ceba12e4b8261b76507dea136ec434a2f2c40e59e47ff0b9d55888508"
      }
     ],
     "circle": "7a78842faf0535976f7579e3a022f69dc7e45d0f21667b0339106c4ef5ac2163",
@@ -11602,6 +12029,133 @@
       ]
      },
      "removed": []
+    }
+   },
+   {
+    "name": "an older removal names last_counted: the fold returns it as counted_to",
+    "blocks": [
+     {
+      "name": "yan: an older genesis (no recovery)",
+      "hash": "1e94047ecb3fd7e6ef5ddd0ccca741528abac9e888ea6d99e7a9256cda04cf91",
+      "signer": "yan",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "person",
+        "public_key_sign": "302a300506032b6570032100af11273096f43a67408c37f7b6d03542e4a578d13b64854556f96fbed01fdbc5",
+        "at": "2026-03-01T00:00:00.000Z",
+        "audience": "public"
+       },
+       "refs": {}
+      },
+      "signature": "bd0b929c53b64725f29cbc3219bc820504334dc3070e72e5a3dd1eb59d1f5799e422d145f7c10c33921ecfe7303cad08c566740dccaf0b7e29694d6a7036d606"
+     },
+     {
+      "name": "zed: an older genesis (no recovery)",
+      "hash": "ee2143ea21ecea1f007510b01b717dee214763104e5d6c556061f248c76997e9",
+      "signer": "zed",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "person",
+        "public_key_sign": "302a300506032b65700321005cb1db5ac4454b52e88d14c4aee1618769110e3747fe8cfdbb1660dd0d3eba44",
+        "at": "2026-03-02T00:00:00.000Z",
+        "audience": "public"
+       },
+       "refs": {}
+      },
+      "signature": "37b53ed9b67d93a5f3881083c5069524788f15243ea3e75bf4e59965f5e4ae866c374ab6b24a06b176dbe710cd7cdbedec182053ffea4990b000db8c5b4cf800"
+     },
+     {
+      "name": "the circle, before 1.6",
+      "hash": "3f0333ad31bc54c82be4e30d0eef5d0edb13827596a3526f7d6013c31c11b962",
+      "signer": "yan",
+      "block": {
+       "type": "actor",
+       "state": {
+        "kind": "circle",
+        "name": "Old co-op",
+        "at": "2026-03-03T00:00:00.000Z"
+       },
+       "refs": {
+        "author": "1e94047ecb3fd7e6ef5ddd0ccca741528abac9e888ea6d99e7a9256cda04cf91"
+       }
+      },
+      "signature": "4c1b17e2b08b97ed71f3930a6407f176cbc212379c315a6dcbf4538e777019d38a6b5128c8d6407693e9e4bfa9275231787cafd1157839c61016f4c6731a090c"
+     },
+     {
+      "name": "zed invited, in the old words",
+      "hash": "ec3c018b8e54e6aefd7ec142b7572774248dc5a7b726be9ce45cde336796823c",
+      "signer": "yan",
+      "block": {
+       "type": "grant",
+       "state": {
+        "kind": "member",
+        "roles": [
+         "orders"
+        ],
+        "at": "2026-03-04T00:00:00.000Z"
+       },
+       "refs": {
+        "author": "1e94047ecb3fd7e6ef5ddd0ccca741528abac9e888ea6d99e7a9256cda04cf91",
+        "group": "3f0333ad31bc54c82be4e30d0eef5d0edb13827596a3526f7d6013c31c11b962",
+        "member": "ee2143ea21ecea1f007510b01b717dee214763104e5d6c556061f248c76997e9"
+       }
+      },
+      "signature": "b90a9fb38fca332acdd2426483363877dbd397f4c017a8133040763665d93b73c52b7d28f7ab4765ba59fe9d61a73bf46b6f6711dbc7c21903be3fe1c93a4f02"
+     },
+     {
+      "name": "zed joins, in the old words",
+      "hash": "acc8b2bb0e4eec7c10d27d2577289373b0bc1f15d6681316d3e3e4bac05511ab",
+      "signer": "zed",
+      "block": {
+       "type": "grant",
+       "state": {
+        "kind": "member",
+        "at": "2026-03-05T00:00:00.000Z"
+       },
+       "refs": {
+        "author": "ee2143ea21ecea1f007510b01b717dee214763104e5d6c556061f248c76997e9",
+        "group": "3f0333ad31bc54c82be4e30d0eef5d0edb13827596a3526f7d6013c31c11b962",
+        "confirms": "ec3c018b8e54e6aefd7ec142b7572774248dc5a7b726be9ce45cde336796823c"
+       }
+      },
+      "signature": "6d42957075c2d2260dd573d5fd08642ba4ac212eb332ab580aebcfed9e1f1191beffff65ffa3796397d68f2bda93b26a218464d737a63ca2ab7ed33d18fec802"
+     },
+     {
+      "name": "zed is removed, in the old words, his last_counted block named",
+      "hash": "f80ba663653ae2208e69ec51bd7fa65bbc2d322b96fb056d728e969847bc4464",
+      "signer": "yan",
+      "block": {
+       "type": "grant",
+       "state": {
+        "kind": "member",
+        "status": "stopped",
+        "stop": "onward",
+        "last_counted": "acc8b2bb0e4eec7c10d27d2577289373b0bc1f15d6681316d3e3e4bac05511ab",
+        "at": "2026-03-06T00:00:00.000Z"
+       },
+       "refs": {
+        "author": "1e94047ecb3fd7e6ef5ddd0ccca741528abac9e888ea6d99e7a9256cda04cf91",
+        "updates": "ec3c018b8e54e6aefd7ec142b7572774248dc5a7b726be9ce45cde336796823c",
+        "subject": "3f0333ad31bc54c82be4e30d0eef5d0edb13827596a3526f7d6013c31c11b962",
+        "as": "3f0333ad31bc54c82be4e30d0eef5d0edb13827596a3526f7d6013c31c11b962"
+       }
+      },
+      "signature": "0859ccbc0af11e3d059594b62a294aae429779598ab3ad26a11926a405cd5ca4da9a10f03109dce876b711200ab55f34a160ae45d25c83ccfff1c9e35f37f108"
+     }
+    ],
+    "circle": "3f0333ad31bc54c82be4e30d0eef5d0edb13827596a3526f7d6013c31c11b962",
+    "expected": {
+     "members": [
+      "1e94047ecb3fd7e6ef5ddd0ccca741528abac9e888ea6d99e7a9256cda04cf91"
+     ],
+     "removed": [
+      "ee2143ea21ecea1f007510b01b717dee214763104e5d6c556061f248c76997e9"
+     ],
+     "counted_to": {
+      "ee2143ea21ecea1f007510b01b717dee214763104e5d6c556061f248c76997e9": "acc8b2bb0e4eec7c10d27d2577289373b0bc1f15d6681316d3e3e4bac05511ab"
+     }
     }
    }
   ],
@@ -12179,7 +12733,7 @@
      },
      {
       "name": "lee removes mia",
-      "hash": "776bc7a7fdc9ed0d75dcbb2eb6689fb62cc635544333e4323cab9e1be88240d5",
+      "hash": "a12da6931a6d886fe866d0901d63b042aac12ccf3de3d9b31aff701d0e040a1f",
       "signer": "abe",
       "block": {
        "type": "grant",
@@ -12187,7 +12741,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "ecdf6b8cdc04432ac7005877b7c179005aaac33a3062fc0068d5d83c52ecbd85",
+        "counted_to": "ecdf6b8cdc04432ac7005877b7c179005aaac33a3062fc0068d5d83c52ecbd85",
         "at": "2026-10-15T12:00:36.000Z",
         "audience": "public",
         "seq": 2
@@ -12204,11 +12758,11 @@
         ]
        }
       },
-      "signature": "dbc1f80fe4f0cfbd7fb658915cf31bb398b00403b9b2103b9bb0708bcfb75618e2cf0962fa6f205d2e73220a7a860cb7468ba9741cce7f98a13789d7c30d5d08"
+      "signature": "85778cd45892ad76ed2d46dcd95cd40710813beff5869622e62778a985b943fb9383ea981449abf9c6604b3e461acdbb6daff0d77ba528403a105229067f5e04"
      },
      {
       "name": "mia removes lee",
-      "hash": "8565494d3e104eaa5c0cd5f5271e917f76cd6a09a5ea442f5b0c89d417a9b143",
+      "hash": "280d1538c84794a7501cf04c4a030b6869b24a5156ba939aa6422904663f9b32",
       "signer": "bea",
       "block": {
        "type": "grant",
@@ -12216,7 +12770,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "cdeadffb76e3407cd789558da32206c3d762c9754d5eeebb94c05c9f5fd56225",
+        "counted_to": "cdeadffb76e3407cd789558da32206c3d762c9754d5eeebb94c05c9f5fd56225",
         "at": "2026-10-15T12:00:37.000Z",
         "audience": "public",
         "seq": 2
@@ -12233,7 +12787,7 @@
         ]
        }
       },
-      "signature": "5692a979fa000d8decc3fc46be82d5c6b450244fe3314a4625e15a56c3c9580d9979797f66323caafb7c1456d1805e8562c6b72d1b92603da3afb0ece994f203"
+      "signature": "b6f36c142fcf40e1f8e86db95cca5529361f63d107e86935285c538b78bb808ab182c874aa253d8420b24e69e709a61c29d819241e69b28e43e48b37139d5800"
      },
      {
       "name": "kim leaves",
@@ -12259,8 +12813,8 @@
       "signature": "e7b1c5a6437a708d02d9124aa0506bfcee406940ff1628d1159c4ffece599426c7ddf9a1a747c14dca63dcedc5fd1af1a6d4d9830cf11e54f58ebeedfd9b870e"
      },
      {
-      "name": "hal is removed, his last counted block named",
-      "hash": "36f1d313c188fe9fb5fc6a754bf389e5d654ab1a33d27f8751e2c26a3ad9c8d4",
+      "name": "hal is removed, his counted_to block named",
+      "hash": "617b7a9c080c2a36e768a23c1366cd12aa4206f36d17feb183e80ccc69a6546f",
       "signer": "wes",
       "block": {
        "type": "grant",
@@ -12268,7 +12822,7 @@
         "kind": "member",
         "status": "stopped",
         "stop": "onward",
-        "last_counted": "fe5ad7b304bc15ff91df51e0915f4ae5e99b0360072e43e5b5ff2b660aa3e9e0",
+        "counted_to": "fe5ad7b304bc15ff91df51e0915f4ae5e99b0360072e43e5b5ff2b660aa3e9e0",
         "at": "2026-10-15T12:00:39.000Z",
         "audience": "public",
         "seq": 10
@@ -12281,7 +12835,7 @@
         "prev": "a15c3a874d8997e215f4ca98b9992fe0a96e0184402d8be3d3a0b1f67a07e27b"
        }
       },
-      "signature": "e4f8eda8e59057384a2b73b4682070019ff7ca44460f7fd7190e90a85f8cdf1bd07d054ae26c17ebab59a1886bbb12e29121a8e83630effff2dcbed621b5980e"
+      "signature": "9201bbe7512ca33922bf1a17ab21eb196d81e63433ee61adf86e897dda9c96206968b8660491fb044822b31e0cd51d85c1819f62bbad9733868c4579bb26e504"
      }
     ],
     "salts": {
@@ -14449,6 +15003,107 @@
      }
     },
     "signature": "cd364b0f41d363c4db62820db2fff76552a19f1c23cc0e39724e17a556f1eb04c58051a806daa2805c1bd5fce4fefdc0020fe14c021880514e021527cbbb6a06"
+   },
+   {
+    "name": "tal: genesis",
+    "hash": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+    "signer": "tal",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "machine",
+      "at": "2026-10-15T12:06:37.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "recovery_key_hash": "97704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6",
+      "recovery_reach": "P30D"
+     },
+     "refs": {}
+    },
+    "signature": "f76c37d64dd6e1eb7cacca56cc88c0f1a3df391ae936d9bef3f4434372f62a4599138164b90eafcf8c47a93b6dea15089fa67a56b9045066019b7d1f4dfa1305"
+   },
+   {
+    "name": "tal: the kind eggs",
+    "hash": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+    "signer": "tal",
+    "block": {
+     "type": "thing",
+     "state": {
+      "kind": "eggs",
+      "at": "2026-10-15T12:06:38.000Z",
+      "audience": "public",
+      "seq": 1
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "signature": "69b811ec0b84dff47d36ace7f6ae366ca71bf4c91d44e680c501204edb492d9d92a4b339727649def637295864d8f47b650b790bdf024edba2f2a261dfbca50c"
+   },
+   {
+    "name": "a micro reading with no clock: an observe may leave out at",
+    "hash": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322",
+    "signer": "tal",
+    "block": {
+     "type": "observe",
+     "state": {
+      "kind": "reading",
+      "amount": {
+       "value": "3.9",
+       "unit": "Cel"
+      },
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+     }
+    },
+    "signature": "bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d"
+   },
+   {
+    "name": "a micro transform with no clock",
+    "hash": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5",
+    "signer": "tal",
+    "block": {
+     "type": "transform",
+     "state": {
+      "kind": "make",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "derives_from": [
+       "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+      ],
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+     }
+    },
+    "signature": "2384968645e2cb25647f718d068b92e366d7fb1d5353d72e0c858135c333ec98e744ac1f9f101e3d4f5f33d246eae5979bfbee57ada6c9265250549aa1f6c707"
+   },
+   {
+    "name": "a micro transfer with no clock",
+    "hash": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+    "signer": "tal",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "what": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
+     }
+    },
+    "signature": "0429ff7950e51289b7a67f5cdab5e6e9cc70ae68350953d98f19adc55cf5df655612113273b1c976a25976ed468e9204ebc22ed4942efafd50698f01ddca7f01"
    }
   ],
   "cases": [
@@ -15446,6 +16101,442 @@
     "codes": [
      "grammar"
     ]
+   },
+   {
+    "name": "observe: no at on a micro with no clock is accepted",
+    "by": "check",
+    "block": {
+     "type": "observe",
+     "state": {
+      "kind": "reading",
+      "amount": {
+       "value": "3.9",
+       "unit": "Cel"
+      },
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "transform: no at on a micro with no clock is accepted",
+    "by": "check",
+    "block": {
+     "type": "transform",
+     "state": {
+      "kind": "make",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "derives_from": [
+       "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+      ],
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "transfer: no at on a micro with no clock is accepted",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "what": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "a thing with no at: only an observe, transform or transfer may leave it out",
+    "by": "check",
+    "block": {
+     "type": "thing",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "kind": "eggs"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e"
+     }
+    },
+    "codes": [
+     "at_missing"
+    ]
+   },
+   {
+    "name": "a promise with no at",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "terms": {
+       "price": {
+        "minor": 100,
+        "currency": "GBP"
+       },
+       "expires": "2026-10-20T00:00:00.000Z"
+      }
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "from": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "to": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "at_missing"
+    ]
+   },
+   {
+    "name": "a grant with no at",
+    "by": "check",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "kind": "operator"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "to": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "at_missing"
+    ]
+   },
+   {
+    "name": "at is earlier than a block named in after, both carrying at",
+    "by": "check",
+    "block": {
+     "type": "observe",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "at": "2000-01-01T00:00:00.000Z",
+      "kind": "note",
+      "text": "old"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "after": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+     }
+    },
+    "held": [
+     "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+    ],
+    "codes": [
+     "at_before_after"
+    ]
+   },
+   {
+    "name": "at is compared with after only when both are present: no at, no check",
+    "by": "check",
+    "block": {
+     "type": "observe",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "kind": "note",
+      "text": "no clock"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "after": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+     }
+    },
+    "held": [
+     "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+    ],
+    "codes": []
+   },
+   {
+    "name": "money in an issuer unit { issuer, unit, decimals } is accepted",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "at": "2026-10-15T12:30:00.000Z",
+      "money": {
+       "minor": 3,
+       "currency": {
+        "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+        "unit": "bread credit",
+        "decimals": 0
+       }
+      }
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "money: a currency that is neither an ISO code nor an issuer unit",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "at": "2026-10-15T12:30:00.000Z",
+      "money": {
+       "minor": 3,
+       "currency": "gbp"
+      }
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "shape"
+    ]
+   },
+   {
+    "name": "money: an issuer unit needs its decimals",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "at": "2026-10-15T12:30:00.000Z",
+      "money": {
+       "minor": 3,
+       "currency": {
+        "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+        "unit": "bread credit"
+       }
+      }
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "shape"
+    ]
+   },
+   {
+    "name": "money: an issuer unit names its issuer by an id",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "at": "2026-10-15T12:30:00.000Z",
+      "money": {
+       "minor": 3,
+       "currency": {
+        "issuer": "the bakery",
+        "unit": "bread credit",
+        "decimals": 0
+       }
+      }
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "shape"
+    ]
+   },
+   {
+    "name": "money: decimals above the limit",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 5,
+      "audience": "public",
+      "at": "2026-10-15T12:30:00.000Z",
+      "money": {
+       "minor": 3,
+       "currency": {
+        "issuer": "6868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+        "unit": "bread credit",
+        "decimals": 19
+       }
+      }
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "shape"
+    ]
+   },
+   {
+    "name": "a genesis names the default algorithms: accepted",
+    "by": "check",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "machine",
+      "at": "2026-10-15T12:00:00.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "recovery_key_hash": "97704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6",
+      "recovery_reach": "P30D",
+      "alg_sign": "ed25519",
+      "alg_encrypt": "x25519",
+      "alg_recovery": "ed25519"
+     },
+     "refs": {}
+    },
+    "codes": []
+   },
+   {
+    "name": "a genesis names a signing algorithm the reader does not know",
+    "by": "check",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "machine",
+      "at": "2026-10-15T12:00:00.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "recovery_key_hash": "97704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6",
+      "recovery_reach": "P30D",
+      "alg_sign": "ml-dsa-44"
+     },
+     "refs": {}
+    },
+    "codes": [
+     "unknown_alg"
+    ]
+   },
+   {
+    "name": "a genesis names an encryption algorithm the reader does not know",
+    "by": "check",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "machine",
+      "at": "2026-10-15T12:00:00.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "recovery_key_hash": "97704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6",
+      "recovery_reach": "P30D",
+      "alg_encrypt": "kyber768"
+     },
+     "refs": {}
+    },
+    "codes": [
+     "unknown_alg"
+    ]
+   },
+   {
+    "name": "a genesis names a recovery algorithm the reader does not know",
+    "by": "check",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "machine",
+      "at": "2026-10-15T12:00:00.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "recovery_key_hash": "97704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6",
+      "recovery_reach": "P30D",
+      "alg_recovery": "rsa"
+     },
+     "refs": {}
+    },
+    "codes": [
+     "unknown_alg"
+    ]
+   },
+   {
+    "name": "a key grant names a signing algorithm the reader does not know",
+    "by": "check",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 6,
+      "at": "2026-10-15T12:40:00.000Z",
+      "audience": "public",
+      "kind": "key",
+      "public_key_sign": "302a300506032b6570032100ff5214dd381e30eaf44d681e7168e6cb5465c71a40d27461085af9f24d5a0a76",
+      "alg_sign": "ml-dsa-44"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "unknown_alg"
+    ]
+   },
+   {
+    "name": "a key grant moves an encryption key to an algorithm the reader does not know",
+    "by": "check",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 6,
+      "at": "2026-10-15T12:40:00.000Z",
+      "audience": "public",
+      "kind": "key",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "alg_encrypt": "kyber768"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88"
+     }
+    },
+    "codes": [
+     "unknown_alg"
+    ]
    }
   ]
  },
@@ -15569,50 +16660,6 @@
     }
    },
    {
-    "name": "promise: not_true reads as stopped onward",
-    "block": {
-     "type": "promise",
-     "state": {
-      "status": "not_true"
-     },
-     "refs": {
-      "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "status": "stopped",
-      "stop": "onward"
-     },
-     "refs": {
-      "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
-    "name": "promise: revoked reads as stopped onward",
-    "block": {
-     "type": "promise",
-     "state": {
-      "status": "revoked"
-     },
-     "refs": {
-      "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "status": "stopped",
-      "stop": "onward"
-     },
-     "refs": {
-      "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
     "name": "promise: delivered marks what it settles",
     "block": {
      "type": "promise",
@@ -15639,308 +16686,6 @@
     }
    },
    {
-    "name": "promise: state.delivered marks what it settles",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 3,
-      "delivered": {
-       "value": "1",
-       "unit": "{tray}"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 3,
-      "delivered": {
-       "value": "1",
-       "unit": "{tray}"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     },
-     "settles": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-    }
-   },
-   {
-    "name": "promise: offered reads as no status (read from who signed)",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "offered"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "promise: asked reads as no status",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "asked"
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "promise: withdrawn reads as stopped before",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "withdrawn"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "stopped",
-      "stop": "before"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    }
-   },
-   {
-    "name": "promise: ended reads as stopped onward",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "ended"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "stopped",
-      "stop": "onward"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    }
-   },
-   {
-    "name": "promise: paused reads as stopped occurrences",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "paused",
-      "occurrences": [
-       "2026-10-23T09:00:00.000Z"
-      ]
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "answers": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "stopped",
-      "stop": {
-       "occurrences": [
-        "2026-10-23T09:00:00.000Z"
-       ]
-      }
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "answers": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    }
-   },
-   {
-    "name": "promise: a top-level condition reads as terms.condition",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "condition": {
-       "collect": "Saturday"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "terms": {
-       "condition": {
-        "collect": "Saturday"
-       }
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
-    "name": "promise: counterparty beside from reads as to",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "counterparty": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "promise: counterparty beside to reads as from",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "counterparty": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "from": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
-    "name": "every type: refs.deal reads as for",
-    "block": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "accepted"
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "answers": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "deal": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "seq": 2,
-      "status": "accepted"
-     },
-     "refs": {
-      "author": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
-      "answers": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "for": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    }
-   },
-   {
-    "name": "every type: state.rule reads as refs.under",
-    "block": {
-     "type": "observe",
-     "state": {
-      "seq": 2,
-      "kind": "vote",
-      "rule": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "observe",
-     "state": {
-      "seq": 2,
-      "kind": "vote"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "under": "18ac3e7343f016890c510e93f935261169d9e3f565436429830faf0934f4f8e4"
-     }
-    }
-   },
-   {
     "name": "transfer: order reads as for",
     "block": {
      "type": "transfer",
@@ -15958,164 +16703,6 @@
      },
      "refs": {
       "for": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    }
-   },
-   {
-    "name": "observe.want and observe.intent read as an ask",
-    "block": {
-     "type": "observe.intent",
-     "state": {
-      "product_name": "cream"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "promise",
-     "state": {
-      "kind": "want",
-      "product_name": "cream"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
-    "name": "grant: revoked reads as stopped onward",
-    "block": {
-     "type": "grant",
-     "state": {
-      "kind": "agent",
-      "status": "revoked"
-     },
-     "refs": {
-      "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "kind": "agent",
-      "status": "stopped",
-      "stop": "onward"
-     },
-     "refs": {
-      "updates": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
-    "name": "grant: live reads as no status",
-    "block": {
-     "type": "grant",
-     "state": {
-      "seq": 6,
-      "kind": "agent",
-      "status": "live"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "agent": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "seq": 6,
-      "kind": "agent"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "grant: withdrawn reads as stopped onward",
-    "block": {
-     "type": "grant",
-     "state": {
-      "seq": 7,
-      "kind": "agent",
-      "status": "withdrawn"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "seq": 7,
-      "kind": "agent",
-      "status": "stopped",
-      "stop": "onward"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "updates": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
-     }
-    }
-   },
-   {
-    "name": "grant: refs.agent reads as to",
-    "block": {
-     "type": "grant",
-     "state": {
-      "seq": 6,
-      "kind": "agent"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "agent": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "seq": 6,
-      "kind": "agent"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "grant: scope.parties \"any\" reads as left out (everyone)",
-    "block": {
-     "type": "grant",
-     "state": {
-      "seq": 6,
-      "kind": "agent",
-      "scope": {
-       "parties": "any",
-       "until": "2026-12-31T00:00:00.000Z"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "seq": 6,
-      "kind": "agent",
-      "scope": {
-       "until": "2026-12-31T00:00:00.000Z"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
      }
     }
    },
@@ -16139,9 +16726,9 @@
      },
      "refs": {
       "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
+      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
       "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+      "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
      }
     }
    },
@@ -16210,7 +16797,7 @@
      "refs": {
       "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
       "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "agent": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
      }
     },
     "reads_as": {
@@ -16222,8 +16809,8 @@
      "refs": {
       "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
       "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+      "as": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
      }
     }
    },
@@ -16247,8 +16834,8 @@
      },
      "refs": {
       "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
+      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+      "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
      }
     }
    },
@@ -16272,122 +16859,8 @@
      },
      "refs": {
       "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "grant.body: refs.member reads as to",
-    "block": {
-     "type": "grant",
-     "state": {
-      "seq": 2,
-      "kind": "body"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "subject": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "member": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "seq": 2,
-      "kind": "body"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "subject": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "grant.successor: sealed reads as keys",
-    "block": {
-     "type": "grant",
-     "state": {
-      "seq": 2,
-      "kind": "successor",
-      "sealed": {
-       "alg": "x"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    },
-    "reads_as": {
-     "type": "grant",
-     "state": {
-      "seq": 2,
-      "kind": "successor",
-      "keys": {
-       "alg": "x"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d"
-     }
-    }
-   },
-   {
-    "name": "actor: an agent's operator is named only by its grant",
-    "block": {
-     "type": "actor",
-     "state": {
-      "seq": 2,
-      "kind": "agent",
-      "operator": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb",
-      "operator": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "actor",
-     "state": {
-      "seq": 2,
-      "kind": "agent"
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    }
-   },
-   {
-    "name": "schema: the type schema reads as a thing of kind schema, its kind into its target",
-    "block": {
-     "type": "schema",
-     "state": {
-      "seq": 9,
-      "target": "thing",
-      "kind": "eggs",
-      "fields": {
-       "lot": "text"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
-     }
-    },
-    "reads_as": {
-     "type": "thing",
-     "state": {
-      "seq": 9,
-      "target": "thing.eggs",
-      "kind": "schema",
-      "fields": {
-       "lot": "text"
-      }
-     },
-     "refs": {
-      "author": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+      "to": "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d",
+      "subject": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
      }
     }
    },
@@ -16758,504 +17231,72 @@
      },
      "refs": {}
     }
-   }
-  ],
-  "groups": [
-   {
-    "name": "draft words: a per-unit price with a quantity range; the accept names the quantity chosen",
-    "blocks": [
-     {
-      "name": "genesis",
-      "hash": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-      "block": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100c8c22517cffabc04c4f79b326d856008035c16d5312bd369167b6f0db49d068b",
-        "public_key_encrypt": "871cb12d148705a8be8e8a559eab6e82f41674d924bb29f70d8198ed13c32e13",
-        "recovery_key_hash": "d8331284356ef2e248c6a4684f128993c332224e9bc610282e7d3d6c199f3c27",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:20.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      },
-      "signer": "eve",
-      "signature": "7cdd38e574cd7583d5bd4241494d7aa420a3e32308ac07d564cccbe3337a466a550629475063289d6334198e25adb1bf690aa6949a867b5464988c0957671a0d",
-      "reads_as": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100c8c22517cffabc04c4f79b326d856008035c16d5312bd369167b6f0db49d068b",
-        "public_key_encrypt": "871cb12d148705a8be8e8a559eab6e82f41674d924bb29f70d8198ed13c32e13",
-        "recovery_key_hash": "d8331284356ef2e248c6a4684f128993c332224e9bc610282e7d3d6c199f3c27",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:20.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      }
-     },
-     {
-      "name": "genesis",
-      "hash": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-      "block": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100c847bbfa5b5b1a7a5e96613a468f0a4d448baadc4659e09082af427562ff954e",
-        "public_key_encrypt": "772d9b796d7cdf7a5b1335bc0c0536e446a541815a1000d44b291d7018eb1d63",
-        "recovery_key_hash": "56ef6fd7f1fc040c01d432133b974957f5e12598c6ccbd1b9a3e533284cc9451",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:21.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      },
-      "signer": "fay",
-      "signature": "2626cf7980ffd009039604272a2777846cd7058aca20d0923180ced6d459b69776734992b9953bc92a4f981d07bed7b52823d339c0fdbbcf090427a2fc5f1d05",
-      "reads_as": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100c847bbfa5b5b1a7a5e96613a468f0a4d448baadc4659e09082af427562ff954e",
-        "public_key_encrypt": "772d9b796d7cdf7a5b1335bc0c0536e446a541815a1000d44b291d7018eb1d63",
-        "recovery_key_hash": "56ef6fd7f1fc040c01d432133b974957f5e12598c6ccbd1b9a3e533284cc9451",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:21.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      }
-     },
-     {
-      "name": "the kind",
-      "hash": "d69485b4b67a0bee51739e3cfff5cf38257aec8de427e8ad861ca937a05f1312",
-      "block": {
-       "type": "thing",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:22.000Z",
-        "audience": "public",
-        "kind": "eggs",
-        "name": "Eggs"
-       },
-       "refs": {
-        "author": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "prev": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7"
-       }
-      },
-      "signer": "eve",
-      "signature": "052306bc31c9cdb7656b3a6151775047f109896512a5b87ba7b6ba4b0fa0cb054564de809f5171ddb97f8e8d2099dc894816d672da37649fdfcd8ea5f36c6705",
-      "reads_as": {
-       "type": "thing",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:22.000Z",
-        "audience": "public",
-        "kind": "eggs",
-        "name": "Eggs"
-       },
-       "refs": {
-        "author": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "prev": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7"
-       }
-      }
-     },
-     {
-      "name": "the offer: 3 GBP a dozen, 12 to 120",
-      "hash": "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a",
-      "block": {
-       "type": "promise",
-       "state": {
-        "seq": 2,
-        "at": "2026-10-15T10:00:23.000Z",
-        "audience": "public",
-        "status": "offered",
-        "terms": {
-         "price": {
-          "money": {
-           "minor": 300,
-           "currency": "GBP"
-          },
-          "per": {
-           "value": "12",
-           "unit": "{egg}"
-          }
-         },
-         "quantity": {
-          "min": {
-           "value": "12",
-           "unit": "{egg}"
-          },
-          "max": {
-           "value": "120",
-           "unit": "{egg}"
-          }
-         },
-         "expires": "2026-10-16T10:00:00.000Z"
-        }
-       },
-       "refs": {
-        "author": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "prev": "d69485b4b67a0bee51739e3cfff5cf38257aec8de427e8ad861ca937a05f1312",
-        "from": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "what": "d69485b4b67a0bee51739e3cfff5cf38257aec8de427e8ad861ca937a05f1312"
-       }
-      },
-      "signer": "eve",
-      "signature": "3a892d99f92b7b02558a2d34520417b8fffc022dc4cd68ff6b020f215775988c371101340be09f975e1373402503996ae766455ad0de66e997f91c89b3ff1b07",
-      "reads_as": {
-       "type": "promise",
-       "state": {
-        "seq": 2,
-        "at": "2026-10-15T10:00:23.000Z",
-        "audience": "public",
-        "terms": {
-         "price": {
-          "money": {
-           "minor": 300,
-           "currency": "GBP"
-          },
-          "per": {
-           "value": "12",
-           "unit": "{egg}"
-          }
-         },
-         "quantity": {
-          "min": {
-           "value": "12",
-           "unit": "{egg}"
-          },
-          "max": {
-           "value": "120",
-           "unit": "{egg}"
-          }
-         },
-         "expires": "2026-10-16T10:00:00.000Z"
-        }
-       },
-       "refs": {
-        "author": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "prev": "d69485b4b67a0bee51739e3cfff5cf38257aec8de427e8ad861ca937a05f1312",
-        "from": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "what": "d69485b4b67a0bee51739e3cfff5cf38257aec8de427e8ad861ca937a05f1312"
-       }
-      }
-     },
-     {
-      "name": "the accept: 36",
-      "hash": "b391d2d45adf7bf1bfa40ea5ac8c395a96c6df9c20e31bbf2d14d9fa1d71f87f",
-      "block": {
-       "type": "promise",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:24.000Z",
-        "audience": "public",
-        "status": "accepted",
-        "terms": {
-         "quantity": {
-          "value": "36",
-          "unit": "{egg}"
-         }
-        }
-       },
-       "refs": {
-        "author": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-        "prev": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-        "answers": "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a",
-        "deal": "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a",
-        "from": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "to": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-        "after": [
-         "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a"
-        ]
-       }
-      },
-      "signer": "fay",
-      "signature": "20997cbe5241bc6b1c03b18ed11d7b8589d73de32e0b711c1a9a5ce6fda8eae5bde46083f20b982688893bc1513f37306096d42eacbad1a1a2031e677f4eed08",
-      "reads_as": {
-       "type": "promise",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:24.000Z",
-        "audience": "public",
-        "status": "accepted",
-        "terms": {
-         "quantity": {
-          "value": "36",
-          "unit": "{egg}"
-         }
-        }
-       },
-       "refs": {
-        "author": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-        "prev": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-        "answers": "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a",
-        "from": "f0a0a4d694ee17aa9ac0294dab79fac68157842a4b95dd6cdd5fe271a40176e7",
-        "to": "5d2ccceaa9124ec03e7c95869af62323d413a06de84a91116d3a03e70c20e2d3",
-        "after": [
-         "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a"
-        ],
-        "for": "7c5aebe482450c3b4d40115feba58212ac6490fa12c515566b4c8a762927108a"
-       }
-      }
-     }
-    ]
    },
    {
-    "name": "draft words: a membership: invitation, answer, and its end by an updates with status withdrawn",
-    "blocks": [
-     {
-      "name": "genesis",
-      "hash": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-      "block": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100dae1fe4ba35050c7397f7af8a0ae2adf43c23a26efefcd486307479355aaf736",
-        "public_key_encrypt": "22c881ea33e025d7fd1135fc25cbf8af7fb933708dff37b0f1a40d4e15c3e054",
-        "recovery_key_hash": "65fff1694e902e406dc27f753749ab82cac3ead15f6e75e21643b981ae1f8fc2",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:30.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      },
-      "signer": "gus",
-      "signature": "44e8acbd40a948c396abb50d23a0d2e53d9bd1aabc74e555e0faae5b5b6b3f4a4ee4dc3ce72e19b8008722348b8b7bd309046e09ff2b617e22f4445af3d2a40f",
-      "reads_as": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100dae1fe4ba35050c7397f7af8a0ae2adf43c23a26efefcd486307479355aaf736",
-        "public_key_encrypt": "22c881ea33e025d7fd1135fc25cbf8af7fb933708dff37b0f1a40d4e15c3e054",
-        "recovery_key_hash": "65fff1694e902e406dc27f753749ab82cac3ead15f6e75e21643b981ae1f8fc2",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:30.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      }
+    "name": "grant: a rotation names its last_good block reads as counted_to",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 2,
+      "kind": "key",
+      "public_key_sign": "302a300506032b6570032100ff5214dd381e30eaf44d681e7168e6cb5465c71a40d27461085af9f24d5a0a76",
+      "replaces": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "last_good": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
      },
-     {
-      "name": "genesis",
-      "hash": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee",
-      "block": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100baa5e7812a9aea75722db2d77ac9ba85d73456be557768e8407c3cdb1d9faf3f",
-        "public_key_encrypt": "b94f8863879e164fde03de39e3b2a7fe47de9f614777e0db4ddc323c6c91b366",
-        "recovery_key_hash": "fdae88708813882c693cb76761d5bf5dfd9f6272be09ce1f801b78a2fa3ae612",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:31.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      },
-      "signer": "hal",
-      "signature": "d26c6a0347cb73d0f08fd3130ff163b8a48755d02c248dc02767f12a34a54f992fcb22430952b3f35a245b645cad919aeacf068090c9cb33117099a8e5f0a105",
-      "reads_as": {
-       "type": "actor",
-       "state": {
-        "kind": "person",
-        "public_key_sign": "302a300506032b6570032100baa5e7812a9aea75722db2d77ac9ba85d73456be557768e8407c3cdb1d9faf3f",
-        "public_key_encrypt": "b94f8863879e164fde03de39e3b2a7fe47de9f614777e0db4ddc323c6c91b366",
-        "recovery_key_hash": "fdae88708813882c693cb76761d5bf5dfd9f6272be09ce1f801b78a2fa3ae612",
-        "recovery_reach": "P30D",
-        "at": "2026-10-15T10:00:31.000Z",
-        "audience": "public"
-       },
-       "refs": {}
-      }
-     },
-     {
-      "name": "the circle",
-      "hash": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-      "block": {
-       "type": "actor",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:32.000Z",
-        "audience": "public",
-        "kind": "circle",
-        "name": "Elm St co-op",
-        "public_key_encrypt": "04b0818c64cc25d5b15a5b8ad62c5ab1c5422290169be423bc2df053d974bb3a"
-       },
-       "refs": {
-        "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-        "prev": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df"
-       }
-      },
-      "signer": "gus",
-      "signature": "0e0e6884f279aa422c0f06d98d60287657686a53d8cbeb28e09f2c1ec352b6cb26126042dc45ce0e5a96b8131b48ed4b24239b0c15352c9932771a1c1fcdb005",
-      "reads_as": {
-       "type": "actor",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:32.000Z",
-        "audience": "public",
-        "kind": "circle",
-        "name": "Elm St co-op",
-        "public_key_encrypt": "04b0818c64cc25d5b15a5b8ad62c5ab1c5422290169be423bc2df053d974bb3a"
-       },
-       "refs": {
-        "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-        "prev": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df"
-       }
-      }
-     },
-     {
-      "name": "the invitation",
-      "hash": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-      "block": {
-       "type": "grant",
-       "state": {
-        "seq": 2,
-        "at": "2026-10-15T10:00:33.000Z",
-        "audience": "public",
-        "kind": "member",
-        "status": "live"
-       },
-       "refs": {
-        "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-        "prev": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "as": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "subject": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "agent": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee"
-       }
-      },
-      "signer": "gus",
-      "signature": "607f9e17f8f096d1d07434bfcbd80c2b2130e2e169bbf01fff0a35062a8d07a9aa72271601b977c73c6f878ee0369b86c21572255529f52a8afc7fc7dc4dcd0b",
-      "reads_as": {
-       "type": "grant",
-       "state": {
-        "seq": 2,
-        "at": "2026-10-15T10:00:33.000Z",
-        "audience": "public",
-        "kind": "member"
-       },
-       "refs": {
-        "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-        "prev": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "as": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "subject": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "to": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee"
-       }
-      }
-     },
-     {
-      "name": "the answer",
-      "hash": "a997637a618b86126fabc3dc1acf29b287140895b0664be442be839b980557a7",
-      "block": {
-       "type": "grant",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:34.000Z",
-        "audience": "public",
-        "kind": "member",
-        "status": "accepted"
-       },
-       "refs": {
-        "author": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee",
-        "prev": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee",
-        "answers": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-        "subject": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "after": [
-         "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649"
-        ]
-       }
-      },
-      "signer": "hal",
-      "signature": "4be63530227378d9bbd4d03b29e1e9ae2fda18d2b8b3cffb0ca02e92de27965878cfc5a5f61f174d6873178acdac74ebc828fec78ee1d820ea67c76597efea04",
-      "reads_as": {
-       "type": "grant",
-       "state": {
-        "seq": 1,
-        "at": "2026-10-15T10:00:34.000Z",
-        "audience": "public",
-        "kind": "member",
-        "status": "accepted"
-       },
-       "refs": {
-        "author": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee",
-        "prev": "566fd8b4f0aa003ee0b177497f6b7c03a1eecbd5a631531feebbb4e3f482b5ee",
-        "answers": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-        "subject": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "after": [
-         "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649"
-        ]
-       }
-      }
-     },
-     {
-      "name": "the end",
-      "hash": "ae0c2500920971cd6f68f62c81741e3ab6652414ecb63ccd811cd0037bc8d03c",
-      "block": {
-       "type": "grant",
-       "state": {
-        "seq": 3,
-        "at": "2026-10-15T10:00:35.000Z",
-        "audience": "public",
-        "kind": "member",
-        "status": "withdrawn"
-       },
-       "refs": {
-        "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-        "prev": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-        "as": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "updates": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-        "subject": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "after": [
-         "a997637a618b86126fabc3dc1acf29b287140895b0664be442be839b980557a7"
-        ]
-       }
-      },
-      "signer": "gus",
-      "signature": "5ed75daa9ca06a68f511a22345bbc402d46bb750e58c0e3065488df63d437a0bc7676239627399f7c8051cc01ee48eb0074973607a0eed3b1390021f29d36105",
-      "reads_as": {
-       "type": "grant",
-       "state": {
-        "seq": 3,
-        "at": "2026-10-15T10:00:35.000Z",
-        "audience": "public",
-        "kind": "member",
-        "status": "stopped",
-        "stop": "onward"
-       },
-       "refs": {
-        "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-        "prev": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-        "as": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "updates": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649",
-        "subject": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-        "after": [
-         "a997637a618b86126fabc3dc1acf29b287140895b0664be442be839b980557a7"
-        ]
-       }
-      }
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
      }
-    ],
-    "older_end": {
-     "block": {
-      "type": "grant",
-      "state": {
-       "kind": "member",
-       "at": "2026-10-15T10:00:35.000Z",
-       "audience": "public"
-      },
-      "refs": {
-       "author": "06f7d97bac1f847ab2f3ab7c293fa3697cbd65037eb97ebacb3b7c09fc64f4df",
-       "group": "53a3bb7e73712bc121b943a5b4d2b845c137b0b8daa72156a0262bc5477af851",
-       "defeats": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649"
-      }
+    },
+    "reads_as": {
+     "type": "grant",
+     "state": {
+      "seq": 2,
+      "kind": "key",
+      "public_key_sign": "302a300506032b6570032100ff5214dd381e30eaf44d681e7168e6cb5465c71a40d27461085af9f24d5a0a76",
+      "replaces": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "counted_to": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
      },
-     "reads_as": {
-      "type": "grant",
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+     }
+    }
+   },
+   {
+    "name": "grant: a removal names its last_counted block reads as counted_to",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 3,
+      "kind": "member",
       "status": "stopped",
       "stop": "onward",
-      "updates": "40a5b004b7d14eb8089aadcffa589c400eba855f1abf6b006e1e7ae88bf8a649"
+      "last_counted": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "subject": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "as": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "updates": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
+     }
+    },
+    "reads_as": {
+     "type": "grant",
+     "state": {
+      "seq": 3,
+      "kind": "member",
+      "status": "stopped",
+      "stop": "onward",
+      "counted_to": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+     },
+     "refs": {
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "subject": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "as": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "updates": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
      }
     }
    }
@@ -17643,11 +17684,11 @@
     "filter": {
      "author": "004966da350cdeb78321c0f54927b2bd43a131122c32ab9300cac94960f0d86e"
     },
-    "asker": "bed6293e7aeb545947c0921860530e391e56ff8d88e3fe343eec5cef47c1735d",
+    "signer": "bed6293e7aeb545947c0921860530e391e56ff8d88e3fe343eec5cef47c1735d",
     "node": "2d8e2f17ad7a4120edb86ad3255ed6650f6b114052a5fcbc397af79233599eca",
     "nonce": "ede17285524a6b9e78071641cc70cd72",
     "at": "2026-10-15T12:59:00.000Z",
-    "signature": "e2dca46c6b5a49b951e2c2729bc38a20ab5e990734761a532bea74002db95682849bdf8e03629212f9376a0c1a1ec7a5f2c90c53b4fb1a52e462ad449a6a9e09"
+    "signature": "b381bbad6c3cba4169ad8ca2901294c42e87bb70d8ed1f3fd7a2607a340927a26bba8d8b384aad1560075d20338419b2dd275abcc28da7dd3f09e36b0b59f60c"
    },
    "signer": "jem",
    "now": "2026-10-15T13:00:00.000Z"
@@ -17655,7 +17696,7 @@
   "pull_answer": {
    "message": {
     "node": "2d8e2f17ad7a4120edb86ad3255ed6650f6b114052a5fcbc397af79233599eca",
-    "request": "2589d1f578a5287a68167a75bdfca757a5a4fea741d4be1991d7b53b7ba478ed",
+    "request": "955ee5c83cec1a725e263bd3ad4ec1350604b131f1aaee4c793ff86867fefd3b",
     "blocks": [
      {
       "n": 5,
@@ -17683,7 +17724,7 @@
      }
     ],
     "next": 5,
-    "signature": "ba817eb53fa0a7339dea8163af4094038852e33ab71fb84cfe53fa4d94ca4a8b00db6e5282dcf780fc4a01ad3fa986cd94f2ed1eb7521ccfcc2bf89cabc56a0e"
+    "signature": "b0d02f664323e95c241609fdd4b4bae2668e14569a5d8b628472dd4779e0bfe30c695afe51c90e90f094742da40793b3073b45b8d3e36f11286849f7c1aa2c0d"
    },
    "matches": 1
   },
@@ -17780,6 +17821,284 @@
      "e0d2341302c397b6c6269b499c9dd244c8015b9e745eb5f009d11a9ffd7d3f1a"
     ]
    }
+  },
+  "older": {
+   "signed_pull": {
+    "message": {
+     "since": 0,
+     "limit": 10,
+     "filter": {},
+     "asker": "3ddedebc99f2629a24df475d8b8aad8004f733eec68f9d024d88a0f2da044573",
+     "node": "2d8e2f17ad7a4120edb86ad3255ed6650f6b114052a5fcbc397af79233599eca",
+     "nonce": "780e687e50c5b2772cc60b6dc76ac2c1",
+     "at": "2026-10-15T13:00:00.000Z",
+     "signature": "5710734d148f4e085daeff8575986b9d70e76b1f71abf6f5127b1c93ef7d8e2175578c7ebb9357ef0e62201ad59a90dd73e4708bc62e24d85322f5020529d406"
+    },
+    "signer": "jem",
+    "now": "2026-10-15T13:00:00.000Z"
+   },
+   "signed_push": {
+    "message": {
+     "messages": [],
+     "pusher": "3ddedebc99f2629a24df475d8b8aad8004f733eec68f9d024d88a0f2da044573",
+     "node": "2d8e2f17ad7a4120edb86ad3255ed6650f6b114052a5fcbc397af79233599eca",
+     "nonce": "ad723736159295794a67e17fff7adb5d",
+     "at": "2026-10-15T13:00:00.000Z",
+     "signature": "b5010e8167f0f93948ef261b9f7cbc3bdf423acc8faf2622e5762d934dfad705c73927a12b8138dda03d32702c09b5de70323559d4f56be9e65ffdd78f839902"
+    },
+    "signer": "jem",
+    "now": "2026-10-15T13:00:00.000Z"
+   }
   }
+ },
+ "cbor": {
+  "$comment": "The compact form (spec/modules/encoding.md): a public block as CBOR. `cbor` writes text keys, `cbor_short` the key table (t = 1); each decodes back to the block, whose id is the hash of its canonical JSON. `loose` is another well-formed encoding of the first case, accepted. `refused` are inputs a reader must refuse.",
+  "cases": [
+   {
+    "name": "a micro observe with no at, three refs",
+    "signer": "tal",
+    "block": {
+     "type": "observe",
+     "state": {
+      "kind": "reading",
+      "amount": {
+       "value": "3.9",
+       "unit": "Cel"
+      },
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "subject": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304"
+     }
+    },
+    "signature": "bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d",
+    "hash": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322",
+    "canonical_bytes": 347,
+    "cbor": "8300a36472656673a364707265765820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630466617574686f72582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88677375626a656374582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a886474797065676f627365727665657374617465a46373657102646b696e646772656164696e6766616d6f756e74a264756e69746343656c6576616c756563332e396861756469656e6365667075626c69635840bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d",
+    "cbor_short": "8301a3000201a40402076772656164696e6708667075626c696311a2186563332e3918666343656c02a303582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88055820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630409582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a885840bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d"
+   },
+   {
+    "name": "a genesis: keys, the recovery hash",
+    "signer": "tal",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "machine",
+      "at": "2026-10-15T12:06:37.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b65700321006868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982",
+      "public_key_encrypt": "47117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445",
+      "recovery_key_hash": "97704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6",
+      "recovery_reach": "P30D"
+     },
+     "refs": {}
+    },
+    "signature": "f76c37d64dd6e1eb7cacca56cc88c0f1a3df391ae936d9bef3f4434372f62a4599138164b90eafcf8c47a93b6dea15089fa67a56b9045066019b7d1f4dfa1305",
+    "hash": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+    "canonical_bytes": 413,
+    "cbor": "8300a36472656673a06474797065656163746f72657374617465a76261741b000001a13f7508c8646b696e64676d616368696e656861756469656e6365667075626c69636e7265636f766572795f726561636864503330446f7075626c69635f6b65795f7369676e58206868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982717265636f766572795f6b65795f68617368582097704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad6727075626c69635f6b65795f656e6372797074582047117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e4455840f76c37d64dd6e1eb7cacca56cc88c0f1a3df391ae936d9bef3f4434372f62a4599138164b90eafcf8c47a93b6dea15089fa67a56b9045066019b7d1f4dfa1305",
+    "cbor_short": "8301a3000001a7061b000001a13f7508c807676d616368696e6508667075626c6963182d58206868e6071d3a4184ba01d03fdc15a38d1465c810b2ef7cccc2769e5896ba7982182e582047117f83322ed30755e35dce5d8d35efdc0e7c5aa3eaf9d6202d2db99d64e445182f582097704c2b7cb6c39768d83444091c072ad650b5255fe11d48f07cebbf2199bad61830645033304402a05840f76c37d64dd6e1eb7cacca56cc88c0f1a3df391ae936d9bef3f4434372f62a4599138164b90eafcf8c47a93b6dea15089fa67a56b9045066019b7d1f4dfa1305"
+   },
+   {
+    "name": "a micro transfer with no at",
+    "signer": "tal",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "to_owner": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "what": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+      "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+      "prev": "cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a5"
+     }
+    },
+    "signature": "0429ff7950e51289b7a67f5cdab5e6e9cc70ae68350953d98f19adc55cf5df655612113273b1c976a25976ed468e9204ebc22ed4942efafd50698f01ddca7f01",
+    "hash": "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e",
+    "canonical_bytes": 368,
+    "cbor": "8300a36472656673a464707265765820cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a564776861745820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630466617574686f72582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a8868746f5f6f776e6572582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a886474797065687472616e73666572657374617465a263736571046861756469656e6365667075626c696358400429ff7950e51289b7a67f5cdab5e6e9cc70ae68350953d98f19adc55cf5df655612113273b1c976a25976ed468e9204ebc22ed4942efafd50698f01ddca7f01",
+    "cbor_short": "8301a3000401a2040408667075626c696302a403582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88055820cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a50c5820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b63041819582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a8858400429ff7950e51289b7a67f5cdab5e6e9cc70ae68350953d98f19adc55cf5df655612113273b1c976a25976ed468e9204ebc22ed4942efafd50698f01ddca7f01"
+   },
+   {
+    "name": "a promise: money, times as milliseconds, a standing when",
+    "signer": "tia",
+    "block": {
+     "type": "promise",
+     "state": {
+      "when": {
+       "from": "2026-10-16T09:00:00.000Z",
+       "to": "2026-10-16T10:00:00.000Z"
+      },
+      "terms": {
+       "price": {
+        "minor": 1500,
+        "currency": "GBP"
+       },
+       "quantity": {
+        "value": "1",
+        "unit": "{box}"
+       },
+       "repeat": "FREQ=WEEKLY;BYDAY=FR",
+       "expires": "2026-10-16T00:00:00.000Z"
+      },
+      "at": "2026-10-15T12:03:03.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "c903440e4878e5b643445acdb537882d004bc8b84641a5974a3c7579088c4729",
+      "to": "f92f0ebaba969efeef13b6c0c8198fd1e4b339b8919db571ba91c9fc0252ea39",
+      "what": "83f3f77e00109f4705d26323c9d0a15cd8a253082c9676879b5bdeb3da539010",
+      "author": "c903440e4878e5b643445acdb537882d004bc8b84641a5974a3c7579088c4729",
+      "prev": "83f3f77e00109f4705d26323c9d0a15cd8a253082c9676879b5bdeb3da539010"
+     }
+    },
+    "signature": "a45b8a825453c63646bf4a1e9c6059e2d9fcedd524be93ad5057c48c37b63f9b4b7dd398b8ac4069a913f5c30bad8857acde1684b999c583bff983c498398302",
+    "hash": "dd135cdca37298ade5da104e00eddb06b6a67d8f71ae8bf35e6f8e7324b79921",
+    "canonical_bytes": 701,
+    "cbor": "8300a36472656673a562746f5820f92f0ebaba969efeef13b6c0c8198fd1e4b339b8919db571ba91c9fc0252ea396466726f6d5820c903440e4878e5b643445acdb537882d004bc8b84641a5974a3c7579088c47296470726576582083f3f77e00109f4705d26323c9d0a15cd8a253082c9676879b5bdeb3da5390106477686174582083f3f77e00109f4705d26323c9d0a15cd8a253082c9676879b5bdeb3da53901066617574686f725820c903440e4878e5b643445acdb537882d004bc8b84641a5974a3c7579088c472964747970656770726f6d697365657374617465a56261741b000001a13f71c4d86373657102647768656ea262746f1b000001a1442779006466726f6d1b000001a143f08a80657465726d73a4657072696365a2656d696e6f721905dc6863757272656e6379634742506672657065617474465245513d5745454b4c593b42594441593d465267657870697265731b000001a142022800687175616e74697479a264756e6974657b626f787d6576616c756561316861756469656e6365667075626c69635840a45b8a825453c63646bf4a1e9c6059e2d9fcedd524be93ad5057c48c37b63f9b4b7dd398b8ac4069a913f5c30bad8857acde1684b999c583bff983c498398302",
+    "cbor_short": "8301a3000501a50402061b000001a13f71c4d808667075626c696312a41854a218671905dc1868634742501855a2186561311866657b626f787d185a74465245513d5745454b4c593b42594441593d4652185c1b000001a1420228001823a20a1b000001a143f08a800b1b000001a14427790002a5035820c903440e4878e5b643445acdb537882d004bc8b84641a5974a3c7579088c472905582083f3f77e00109f4705d26323c9d0a15cd8a253082c9676879b5bdeb3da5390100a5820c903440e4878e5b643445acdb537882d004bc8b84641a5974a3c7579088c47290b5820f92f0ebaba969efeef13b6c0c8198fd1e4b339b8919db571ba91c9fc0252ea390c582083f3f77e00109f4705d26323c9d0a15cd8a253082c9676879b5bdeb3da5390105840a45b8a825453c63646bf4a1e9c6059e2d9fcedd524be93ad5057c48c37b63f9b4b7dd398b8ac4069a913f5c30bad8857acde1684b999c583bff983c498398302"
+   },
+   {
+    "name": "a key grant: the rotated key, counted_to as bytes",
+    "signer": "cat",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 3,
+      "at": "2026-10-15T10:00:03.000Z",
+      "audience": "public",
+      "kind": "key",
+      "public_key_sign": "302a300506032b65700321006b5490ac60db280750d8334347f44a114af28b21c44f103271aa6269b6dfe33b",
+      "replaces": "302a300506032b65700321002fa5adbf3b0b450874350d65f57a617b560eb21d0363b760b87e79302df8a369",
+      "counted_to": "a8485810784054f65887c11a8a2c901677cb13f4ac175e89a024551eb6377911"
+     },
+     "refs": {
+      "author": "24842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5",
+      "prev": "0a18c55f0ff6778b265a238416e39e42073f1b072c39a4ea425221bede480ffa",
+      "subject": "24842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5"
+     }
+    },
+    "signature": "bc204b0010377fcf7680a04d7a2e93906e1e20177c840abbd1edb69406e8f0b2318fe78c449c9a1adb70c0db5e9f5ac47c764caef18adea8d100ad395691f00b",
+    "hash": "5a3f15386060d70bd19cb3c0298d4689db6b0dde1ac29dbc9e30ec28a1dcb6ea",
+    "canonical_bytes": 626,
+    "cbor": "8300a36472656673a3647072657658200a18c55f0ff6778b265a238416e39e42073f1b072c39a4ea425221bede480ffa66617574686f72582024842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae5677375626a656374582024842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae56474797065656772616e74657374617465a76261741b000001a13f0128b86373657103646b696e64636b65796861756469656e6365667075626c6963687265706c6163657358202fa5adbf3b0b450874350d65f57a617b560eb21d0363b760b87e79302df8a3696a636f756e7465645f746f5820a8485810784054f65887c11a8a2c901677cb13f4ac175e89a024551eb63779116f7075626c69635f6b65795f7369676e58206b5490ac60db280750d8334347f44a114af28b21c44f103271aa6269b6dfe33b5840bc204b0010377fcf7680a04d7a2e93906e1e20177c840abbd1edb69406e8f0b2318fe78c449c9a1adb70c0db5e9f5ac47c764caef18adea8d100ad395691f00b",
+    "cbor_short": "8301a3000601a70403061b000001a13f0128b807636b657908667075626c6963182d58206b5490ac60db280750d8334347f44a114af28b21c44f103271aa6269b6dfe33b184c58202fa5adbf3b0b450874350d65f57a617b560eb21d0363b760b87e79302df8a369184d5820a8485810784054f65887c11a8a2c901677cb13f4ac175e89a024551eb637791102a303582024842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae50558200a18c55f0ff6778b265a238416e39e42073f1b072c39a4ea425221bede480ffa09582024842c03a7b8dd7f9dd6143bad293e592c5fa29c67df111a5ce66309c1ec8ae55840bc204b0010377fcf7680a04d7a2e93906e1e20177c840abbd1edb69406e8f0b2318fe78c449c9a1adb70c0db5e9f5ac47c764caef18adea8d100ad395691f00b"
+   }
+  ],
+  "push": {
+   "name": "a push of two messages",
+   "hashes": [
+    "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322",
+    "5b6be05508b41b274dc1025bec9c3af7e41ce51ae6e2a88235741389a7205f8e"
+   ],
+   "cbor": "828300a36472656673a364707265765820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630466617574686f72582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88677375626a656374582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a886474797065676f627365727665657374617465a46373657102646b696e646772656164696e6766616d6f756e74a264756e69746343656c6576616c756563332e396861756469656e6365667075626c69635840bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d8300a36472656673a464707265765820cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a564776861745820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630466617574686f72582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a8868746f5f6f776e6572582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a886474797065687472616e73666572657374617465a263736571046861756469656e6365667075626c696358400429ff7950e51289b7a67f5cdab5e6e9cc70ae68350953d98f19adc55cf5df655612113273b1c976a25976ed468e9204ebc22ed4942efafd50698f01ddca7f01",
+   "cbor_short": "828301a3000201a40402076772656164696e6708667075626c696311a2186563332e3918666343656c02a303582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88055820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630409582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a885840bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d8301a3000401a2040408667075626c696302a403582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88055820cd4bd08e7b24bb6aa8a7bae3ec45ee236c1e3870cb3854eb7fe36559e45b44a50c5820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b63041819582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a8858400429ff7950e51289b7a67f5cdab5e6e9cc70ae68350953d98f19adc55cf5df655612113273b1c976a25976ed468e9204ebc22ed4942efafd50698f01ddca7f01"
+  },
+  "headers": [
+   {
+    "name": "a chain header",
+    "header": {
+     "author": "27c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+     "seq": 2,
+     "prev": "e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b6304",
+     "hash": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+    },
+    "cbor": "a4637365710264686173685820090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa332264707265765820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630466617574686f72582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88",
+    "cbor_short": "a403582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a880402055820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630464686173685820090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+   }
+  ],
+  "loose": {
+   "name": "any well-formed encoding of the same content is accepted: keys out of order, a longer integer",
+   "cbor": "8300a36472656673a3677375626a656374582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a8864707265765820e8c50cb0590d6cb71475f72d5936b82f81f737949a4e6d178e10ed6e781b630466617574686f72582027c806ef09d5e7e3707fbc81dcd53a1681f9cfd78964d4d711bb4603be807a88657374617465a463736571190002646b696e646772656164696e676861756469656e6365667075626c696366616d6f756e74a264756e69746343656c6576616c756563332e396474797065676f6273657276655840bab226cdde27044310ad7c0d7faff75e168dab96e450c905d645ad1e5e38795030923fb8f39a38d3add160ef1d2ce7881d727a3b7defcfbb082d9f5703d7d60d",
+   "hash": "090b147367fa91f1d5e34f8e1ddd3ea1823c7e26ceba7ed81970e9ad75fa3322"
+  },
+  "refused": [
+   {
+    "name": "a float (64-bit)",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178fb3ff80000000000006472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a float (16-bit)",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178f93e006472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a tag",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178c1016472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "null",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178f66472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "undefined",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178f76472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a simple value other than true and false",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178f8206472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "an indefinite-length map",
+    "cbor": "8300a36474797065676f627365727665657374617465bf646b696e64646e6f7465ff6472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "an indefinite-length text string",
+    "cbor": "8300a36474797065676f627365727665657374617465a161787f6161ff6472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "an indefinite-length array",
+    "cbor": "8300a36474797065676f627365727665657374617465a161789f01ff6472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a duplicate key",
+    "cbor": "8300a36474797065676f627365727665657374617465a2646b696e64646e6f7465646b696e64646e6f74656472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a duplicate key, once as text and once as its table position (short keys)",
+    "cbor": "8301a400026474797065676f62736572766501a1646b696e64646e6f746502a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "an integer above 2^53 - 1",
+    "cbor": "8300a36474797065676f627365727665657374617465a161781b00200000000000006472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "an integer below -(2^53 - 1)",
+    "cbor": "8300a36474797065676f627365727665657374617465a161783b001fffffffffffff6472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a byte string where the protocol has none",
+    "cbor": "8300a36474797065676f627365727665657374617465a16178430102036472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a hash that is not 32 bytes",
+    "cbor": "8300a36474797065676f627365727665657374617465a1646b696e64646e6f74656472656673a1677375626a656374581f02020202020202020202020202020202020202020202020202020202020202584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a key position outside the table",
+    "cbor": "8301a3000201a119270f0102a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a key table the reader does not have (t = 2)",
+    "cbor": "8302a36474797065676f627365727665657374617465a1646b696e64646e6f74656472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "a signature that is not 64 bytes",
+    "cbor": "8300a36474797065676f627365727665657374617465a1646b696e64646e6f74656472656673a0583f010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   },
+   {
+    "name": "bytes after the message",
+    "cbor": "8300a36474797065676f627365727665657374617465a1646b696e64646e6f74656472656673a058400101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010100"
+   },
+   {
+    "name": "a message that stops short",
+    "cbor": "8300a36474797065676f627365727665657374617465a1646b696e64646e6f74656472656673a0584001010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101"
+   }
+  ]
  }
 }

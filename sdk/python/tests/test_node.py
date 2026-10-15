@@ -92,7 +92,7 @@ class BetweenNodes(unittest.TestCase):
     def test_signed_pull_and_signed_answers(self):
         ann, node = person(), person()
         note = say(ann, "observe", {"kind": "note", "text": "hello"})
-        request = fb.sync.sign_pull({"since": 0}, asker=ann["id"], node=node["id"], private_key=ann["keys"]["private_key"], at=AT)
+        request = fb.sync.sign_pull({"since": 0}, signer=ann["id"], node=node["id"], private_key=ann["keys"]["private_key"], at=AT)
         self.assertEqual(fb.sync.pull_errors(request, node=node["id"], now=AT, keys=[ann["keys"]["public_key_sign"]]), [])
         self.assertTrue(fb.sync.pull_errors(request, node=node["id"], now="2026-10-15T10:00:00.000Z", keys=[ann["keys"]["public_key_sign"]]))
         log = [{"n": i + 1, "block": b} for i, b in enumerate(ann["held"])]

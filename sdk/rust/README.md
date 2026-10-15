@@ -65,6 +65,13 @@ The smallest program is `examples/micro.rs`:
 cargo run --example micro --profile micro --no-default-features --features std,micro
 ```
 
+## WebAssembly (the JavaScript SDK)
+
+`sdk/javascript` is a thin layer over this crate built for the browser and Node:
+`node sdk/javascript/scripts/build-wasm.cjs` runs `cargo rustc --profile wasm --target wasm32-unknown-unknown --features wasm`
+and ships the result as `sdk/javascript/core/foodblock.wasm`. It exports the same JSON door (`src/wasm.rs`: `fb_call`,
+`fb_alloc`, `fb_dealloc`, `fb_out_len`); the host gives it `fb_random` and `fb_now_ms`.
+
 ## C
 
 Build the static library with the C ABI, then include `include/foodblock.h`:
@@ -154,5 +161,16 @@ circles, audience, things, successors, ballots, rekeys), refusals (their codes, 
 and the messages between nodes. A section a profile leaves out prints that it was left out. `tests/api.rs` writes
 a sensor's chain end to end.
 
-The draft-1.6 bridge of the JavaScript SDK is not ported: it is being deleted. Its blocks are still read through
-aliases.json, and refused by the strict check with exactly the codes the vectors expect.
+## The compact form, algorithms and money
+
+`cbor::encode_message` / `decode_message` (and the push and header forms) write a signed public block as CBOR
+(`application/foodblock+cbor`, RFC 8949): deterministic bytes, ids and keys as byte strings, times as milliseconds,
+and the short-key table when asked. The id is always the hash of the canonical JSON the receiver rebuilds. Readers
+refuse floats, tags, null, indefinite lengths and duplicate keys. Door ops: `cbor_encode`, `cbor_decode`,
+`cbor_encode_push`, `cbor_decode_push`, `cbor_encode_header`, `cbor_decode_header`.
+
+A key names its algorithms (`alg_sign`, `alg_encrypt`, `alg_recovery`; defaults ed25519 and x25519, from
+protocol.json `algs`); an unknown one is refused (`unknown_alg`). Money is `{ minor, currency }` with an ISO 4217 code
+or an issuer's `{ issuer, unit, decimals }`, and the folds count only the price's own currency. A micro with no clock
+sets `ComposeOptions::clockless` and leaves out `at` on an observe, transform or transfer; any other type needs it
+(`at_missing`). Older field names (`last_good`, `last_counted`, `asker`, `pusher`) are read through aliases.json.

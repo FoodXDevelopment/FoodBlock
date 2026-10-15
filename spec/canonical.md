@@ -20,7 +20,7 @@ Build `{ "type": type, "state": state, "refs": refs }` and write it with these r
 
 1. **Key order.** Every object's keys are sorted at every depth, by UTF-16 code units, as JavaScript's default sort compares strings. This differs from code-point order only outside the Basic Multilingual Plane, and every implementation must follow it. The same order sorts the string arrays of Rule 5.
 2. **No whitespace.** Compact JSON: `{"a":1,"b":2}`.
-3. **Numbers.** No trailing decimal zeros (`1`, not `1.0`), no leading zeros, no `+` sign. Negative zero is `0`. `Infinity` and `NaN` are an error. Writers refuse floats (protocol.md, Encoding); this rule only keeps old hashes valid (Inherited quirks).
+3. **Numbers.** No trailing decimal zeros (`1`, not `1.0`), no leading zeros, no `+` sign. Negative zero is `0`. `Infinity` and `NaN` are an error. Writers refuse floats (modules/encoding.md, Numbers); this rule only keeps old hashes valid (Inherited quirks).
 4. **Strings are Unicode NFC.** Values are normalised before encoding. Writers write keys already in NFC and refuse a block with a key that is not; readers hash the keys as sent (sort, then serialise). Escaping follows RFC 8259.
 5. **Sets in `refs`.** A string array under a key named `refs` is sorted (Inherited quirks). An array holding anything but strings keeps its order.
 6. **Sequences in `state`.** Every other array keeps its declared order.
@@ -78,12 +78,16 @@ Two conforming implementations produce identical hashes for identical inputs. Ve
 When a block is signed, the signature covers the same canonical string:
 
 ```
-signature = Ed25519_sign(private_key, utf8_bytes(canonical(type, state, refs)))
+signature = Sign_alg(private_key, utf8_bytes(canonical(type, state, refs)))   (Ed25519 by default)
 ```
 
 Verification:
 ```
-valid = Ed25519_verify(public_key, utf8_bytes(canonical(type, state, refs)), signature)
+valid = Verify_alg(public_key, utf8_bytes(canonical(type, state, refs)), signature)
 ```
 
-The signing key is one of the author's live keys: the genesis's `state.public_key_sign`, or a key brought in by a `grant` of kind key (protocol.md, Who someone is). The reader tries each live key.
+The signing key is one of the author's live keys: the genesis's `state.public_key_sign`, or a key brought in by a `grant` of kind key (modules/identity.md). The reader tries each live key with that key's own algorithm (`alg_sign`, default ed25519; `algs` in `protocol.json`).
+
+## Compact form
+
+A block sent as CBOR (modules/encoding.md) is still hashed and signed as the canonical JSON above. A receiver rebuilds the JSON first. The hash never covers CBOR bytes.

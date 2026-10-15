@@ -47,8 +47,8 @@ public enum Identity {
         }
     }
 
-    /// A key grant, signed: brings `newPublicKey` into the id. A rotation also names the key it `replaces` and that key's `lastGood` block.
-    public static func keyGrant(_ id: String, _ newPublicKey: String?, _ signer: Signer, replaces: String? = nil, lastGood: String? = nil, at: String? = nil,
+    /// A key grant, signed: brings `newPublicKey` into the id. A rotation also names the key it `replaces` and that key's `countedTo` block (`lastGood` is the older name).
+    public static func keyGrant(_ id: String, _ newPublicKey: String?, _ signer: Signer, replaces: String? = nil, countedTo: String? = nil, lastGood: String? = nil, at: String? = nil,
                                 after: [String] = [], encrypt: String? = nil, recovery: (key: String, reach: String)? = nil, custodian: String? = nil) throws -> JSON {
         var s: JSON = ["private_key": signer.privateKey]
         if let l = signer.last { s["last"] = l }
@@ -56,7 +56,7 @@ public enum Identity {
         if let r = signer.recoveryKey { s["recovery_key"] = r }
         var o: JSON = ["after": after]
         if let r = replaces { o["replaces"] = r }
-        if let g = lastGood { o["last_good"] = g }
+        if let g = countedTo ?? lastGood { o["counted_to"] = g }
         if let a = at { o["at"] = a }
         if let e = encrypt { o["encrypt"] = e }
         if let c = custodian { o["custodian"] = c }

@@ -73,21 +73,35 @@ impl<'a> Checker<'a> {
             )
         }
     }
+    // Money is { minor, currency }: `minor` whole minor units; `currency` an ISO 4217 code (grammar.currency) or an
+    // issuer's own unit { issuer, unit, decimals } (protocol.json shapes.currency_unit). Never summed across currencies.
     fn money_shape(&self, value: Option<&Value>, name: &str) -> W {
         let Some(v) = value else { return vec![] };
-        let currency = text(v.get("currency"));
         let ok = is_obj(Some(v))
             && keys_within(v, &self.list("shapes.money"))
             && int(v.get("minor")).is_some()
-            && currency.len() == 3
-            && currency.bytes().all(|b| b.is_ascii_uppercase());
+            && self.currency_ok(v.get("currency"));
         if ok {
             vec![]
         } else {
             s(
                 "shape",
-                format!("{name} is money: {{ minor (whole minor units), currency (ISO 4217) }}"),
+                format!("{name} is money: {{ minor (whole minor units), currency (an ISO 4217 code, or an issuer's {{ issuer, unit, decimals }}) }}"),
             )
+        }
+    }
+    fn currency_ok(&self, currency: Option<&Value>) -> bool {
+        match currency {
+            Some(Value::String(c)) => self.spec.is("currency", c),
+            Some(c @ Value::Object(_)) => {
+                keys_within(c, &self.list("shapes.currency_unit"))
+                    && self.list("shapes.currency_unit").iter().all(|k| c.get(k).is_some())
+                    && self.is("hash", c.get("issuer"))
+                    && c.get("unit").and_then(Value::as_str).is_some_and(|u| !u.trim().is_empty())
+                    && int(c.get("decimals"))
+                        .is_some_and(|d| d >= 0.0 && d <= self.spec.decimals_max as f64)
+            }
+            _ => false,
         }
     }
     // A time or date in the right shape that is not a real calendar instant is `calendar`; any other, `time`.
@@ -629,6 +643,45 @@ impl<'a> Checker<'a> {
     // The genesis (§2): the one block with no author, prev, after or seq; public, naming its own keys and its recovery.
     // An encryption key is optional (genesis_optional): a micro that only signs leaves it out and adds one by a key grant.
     // What is missing or extra is `bad_genesis`; what is there but malformed is its grammar's code.
+    // Keys and the algorithms they name (identity.md, Algorithms; protocol.json `algs`). A key is checked against its
+    // algorithm's grammar: `grammar` when the algorithm is the default and unnamed, `unknown_alg` when the block names
+    // an algorithm the reader does not know, or a key outside the grammar of the algorithm it names.
+    fn key_checks(&self, state: &Value) -> W {
+        let g = |k: &str| state.get(k);
+        let mut w: W = vec![];
+        let named = |k: &str| g(k).is_some();
+        // alg_sign / public_key_sign
+        let alg = g("alg_sign").map(|a| text_or_empty(Some(a))).unwrap_or_else(|| self.spec.sign_default.clone());
+        let rule = self.spec.sign_key_rule(&alg);
+        if named("alg_sign") && rule.is_none() {
+            w.push(f("unknown_alg", format!("state.alg_sign names {alg}, which this reader does not know ({})", self.spec.sign_algs.join(", "))));
+        } else if let (Some(key), Some(rule)) = (g("public_key_sign"), rule) {
+            if !self.is(rule, Some(key)) {
+                let code = if named("alg_sign") { "unknown_alg" } else { "grammar" };
+                w.push(f(code, format!("state.public_key_sign is a {alg} key ({rule})")));
+            }
+        }
+        // alg_encrypt / public_key_encrypt
+        let alg = g("alg_encrypt").map(|a| text_or_empty(Some(a))).unwrap_or_else(|| self.spec.encrypt_default.clone());
+        let rule = self.spec.encrypt_key_rule(&alg);
+        if named("alg_encrypt") && rule.is_none() {
+            w.push(f("unknown_alg", format!("state.alg_encrypt names {alg}, which this reader does not know ({})", self.spec.encrypt_algs.join(", "))));
+        } else if let (Some(key), Some(rule)) = (g("public_key_encrypt"), rule) {
+            if !self.is(rule, Some(key)) {
+                let code = if named("alg_encrypt") { "unknown_alg" } else { "grammar" };
+                w.push(f(code, format!("state.public_key_encrypt is a {alg} key ({rule})")));
+            }
+        }
+        // alg_recovery: the recovery key's signing algorithm
+        if let Some(a) = g("alg_recovery") {
+            let alg = text_or_empty(Some(a));
+            if self.spec.sign_key_rule(&alg).is_none() {
+                w.push(f("unknown_alg", format!("state.alg_recovery names {alg}, which this reader does not know ({})", self.spec.sign_algs.join(", "))));
+            }
+        }
+        w
+    }
+
     fn genesis_errors(&self, state: &Value, refs: &Value) -> W {
         let genesis = &self.spec.genesis;
         let optional = &self.spec.genesis_optional;
@@ -669,21 +722,8 @@ impl<'a> Checker<'a> {
                 "bad_genesis",
                 "state.public_key_sign names its signing key",
             ));
-        } else if !self.test("sign_key", state.get("public_key_sign")) {
-            w.push(f(
-                "grammar",
-                "state.public_key_sign is an Ed25519 key, SPKI DER hex",
-            ));
         }
-        if !state
-            .get("public_key_encrypt")
-            .is_none_or(|x| self.is("encrypt_key", Some(x)))
-        {
-            w.push(f(
-                "grammar",
-                "state.public_key_encrypt is an X25519 key, 32 bytes hex",
-            ));
-        }
+        w.extend(self.key_checks(state));
         if state.get("recovery_key_hash").is_none() {
             w.push(f(
                 "bad_genesis",
@@ -802,12 +842,7 @@ impl<'a> Checker<'a> {
                 }) {
                     w.push(f("shape", "state.removal is { needed: N }, how many other admins must agree to remove an admin"));
                 }
-                if !g("public_key_encrypt").is_none_or(|x| self.is("encrypt_key", Some(x))) {
-                    w.push(f(
-                        "grammar",
-                        "state.public_key_encrypt is an X25519 key, 32 bytes hex",
-                    ));
-                }
+                w.extend(self.key_checks(state));
             }
             "thing" => {
                 if !(truthy(g("kind")) || truthy(r("kind"))) {
@@ -975,7 +1010,7 @@ impl<'a> Checker<'a> {
                         _ => {}
                     }
                 }
-                w.extend(self.hash_shape(g("last_counted"), "state.last_counted"));
+                w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
             }
             _ => return None,
         }
@@ -1000,28 +1035,17 @@ impl<'a> Checker<'a> {
                 "a key grant names the new key (state.public_key_sign or public_key_encrypt)",
             ));
         }
-        if !g("public_key_sign").is_none_or(|x| self.is("sign_key", Some(x))) {
-            w.push(f(
-                "grammar",
-                "state.public_key_sign is an Ed25519 key, SPKI DER hex",
-            ));
-        }
-        if !g("public_key_encrypt").is_none_or(|x| self.is("encrypt_key", Some(x))) {
-            w.push(f(
-                "grammar",
-                "state.public_key_encrypt is an X25519 key, 32 bytes hex",
-            ));
-        }
-        if g("replaces").is_none() != g("last_good").is_none() {
+        w.extend(self.key_checks(state));
+        if g("replaces").is_none() != g("counted_to").is_none() {
             w.push(f(
                 "shape",
-                "a rotation names both the key it replaces and that key's last good block",
+                "a rotation names both the key it replaces and that key's counted_to block",
             ));
         }
         if !g("replaces").is_none_or(|x| self.is("sign_key", Some(x))) {
             w.push(f("grammar", "state.replaces is the key it replaces"));
         }
-        w.extend(self.hash_shape(g("last_good"), "state.last_good"));
+        w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
         w.extend(self.hash_shape(g("custodian"), "state.custodian"));
         if !g("recovery_key").is_none_or(|x| self.is("sign_key", Some(x))) {
             w.push(f(
@@ -1263,8 +1287,13 @@ impl<'a> Checker<'a> {
                 "refs.prev names the key's previous block (or the block that brought the key in)",
             ));
         }
-        if g("at").is_none() {
-            w.push(f("time", "state.at is when it was said"));
+        // `at` may be left out only by a micro with no clock, and only on an observe, transform or transfer
+        // (protocol.json profiles.micro_clockless); every other block says when.
+        if g("at").is_none() && !matches!(type_name, "observe" | "transform" | "transfer") {
+            w.push(f(
+                "at_missing",
+                "state.at is when it was said (only an observe, transform or transfer may leave it out, with no clock)",
+            ));
         }
         w.extend(self.times_in(Some(state), "state"));
         w.extend(self.audience_shape(state));

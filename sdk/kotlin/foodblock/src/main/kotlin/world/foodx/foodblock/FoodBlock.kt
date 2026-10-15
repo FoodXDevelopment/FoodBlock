@@ -179,6 +179,10 @@ object FoodBlock {
     fun money(minor: Long, currency: String): JsonObject =
         Native.invoke("money", JsonPrimitive(minor), JsonPrimitive(currency)).obj()
 
+    /** Money in an issuer's own unit: `currency` is `{ issuer, unit, decimals }`. */
+    fun money(minor: Long, currency: JsonObject): JsonObject =
+        Native.invoke("money", JsonPrimitive(minor), currency).obj()
+
     fun confidence(value: String): String = Native.invoke("confidence", JsonPrimitive(value)).string()
     fun terms(given: JsonObject): JsonObject = Native.invoke("terms", given).obj()
 

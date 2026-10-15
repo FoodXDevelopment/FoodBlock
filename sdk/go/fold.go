@@ -6,8 +6,8 @@ import "sort"
 
 // MoneyTotal is an amount of money in minor units.
 type MoneyTotal struct {
-	Minor    int64  `json:"minor"`
-	Currency string `json:"currency"`
+	Minor    int64 `json:"minor"`
+	Currency any   `json:"currency"`
 }
 
 // Taker is one taker of an offer open to many: who, their request, the offerer's allocation, the quantity.
@@ -64,12 +64,12 @@ func PromiseStage(firstBlock Block, blocks []Block, options ...StageOptions) Sta
 	return must[Stage]("promise_stage", firstBlock, plural(blocks), given)
 }
 
-// Member is one member of a circle: the roles they hold, the grant that made them a member, and last_counted (null
+// Member is one member of a circle: the roles they hold, the grant that made them a member, and counted_to (null
 // for a current member).
 type Member struct {
-	Roles       []string `json:"roles"`
-	Grant       string   `json:"grant"`
-	LastCounted any      `json:"last_counted"`
+	Roles     []string `json:"roles"`
+	Grant     string   `json:"grant"`
+	CountedTo any      `json:"counted_to"`
 }
 
 // CircleState is a circle's members and roles: its founder, its members, and who was removed (each with their last

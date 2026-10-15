@@ -10,14 +10,19 @@ func PullRequest(request map[string]any) map[string]any {
 	return must[map[string]any]("pull_request", orEmpty(request))
 }
 
-// SignPullOptions: who asks, which node it is for, the asker's private key; Nonce and At default to fresh values.
+// SignPullOptions: who signs (Signer; Asker is the older name for it), which node it is for, the signer's private key;
+// Nonce and At default to fresh values.
 type SignPullOptions struct {
-	Asker, Node, PrivateKey, Nonce, At string
+	Signer, Asker, Node, PrivateKey, Nonce, At string
 }
 
-// SignPull is a signed pull: the request, plus asker, node, a fresh nonce and at, signed by one of the asker's keys.
+// SignPull is a signed pull: the request, plus signer, node, a fresh nonce and at, signed by one of the signer's keys.
 func SignPull(request map[string]any, o SignPullOptions) (map[string]any, error) {
-	given := map[string]any{"who": o.Asker, "node": o.Node, "private_key": o.PrivateKey}
+	who := o.Signer
+	if who == "" {
+		who = o.Asker
+	}
+	given := map[string]any{"who": who, "node": o.Node, "private_key": o.PrivateKey}
 	if o.Nonce != "" {
 		given["nonce"] = o.Nonce
 	}
@@ -84,12 +89,12 @@ type Arrival struct {
 	HeaderSignature string
 }
 
-// AnswerOptions: the node's id and private key (the answer is unsigned without one); Asker (default the request's);
+// AnswerOptions: the node's id and private key (the answer is unsigned without one); Signer (default the request's; Asker is the older name);
 // Cap, the node's own limit (default 500).
 type AnswerOptions struct {
-	Node, PrivateKey, Asker string
-	Cap                     int64
-	Held                    []Block
+	Node, PrivateKey, Signer, Asker string
+	Cap                             int64
+	Held                            []Block
 }
 
 // AnswerPull answers a pull from a node's arrival log. A public block travels whole; a sealed one as its header, or,
@@ -108,8 +113,10 @@ func AnswerPull(log []Arrival, request map[string]any, o AnswerOptions) (map[str
 		entries = append(entries, entry)
 	}
 	request = cloneMap(request)
-	if o.Asker != "" {
-		request["asker"] = o.Asker
+	if o.Signer != "" {
+		request["signer"] = o.Signer
+	} else if o.Asker != "" {
+		request["signer"] = o.Asker
 	}
 	cap := o.Cap
 	if cap == 0 {

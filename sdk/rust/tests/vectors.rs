@@ -193,7 +193,8 @@ fn hashes_write_check_and_reads() {
                 && foodblock::hash(s(&b["type"]), &b["state"], &b["refs"]) == s(&c["hash"]),
             format!("hash: {name}"),
         );
-        if c.get("draft_words").is_none() {
+        // A block in an earlier shape hashes like any other; the strict check refuses it with the codes named.
+        if c.get("refused").is_none() {
             let wrong = strict(b);
             r.why(
                 wrong.is_empty(),
@@ -204,22 +205,11 @@ fn hashes_write_check_and_reads() {
         }
         let got = codes(b, Default::default());
         r.why(
-            got == c["draft_words"],
-            format!("strict check refuses the draft words, with its codes: {name}"),
-            got.to_string(),
-        );
-        // The draft bridge (JS bridge.cjs) is not ported: it is being deleted. Only its strict refusal and 1.6 reading run.
-        let mut with_hash = b.clone();
-        with_hash["hash"] = c["hash"].clone();
-        let read = foodblock::read_as(&with_hash);
-        let got = json!({ "type": read["type"], "state": read["state"], "refs": read["refs"] });
-        r.why(
-            deep_eq(&got, &c["reads_as"]),
-            format!("reads as 1.6: {name}"),
+            got == c["refused"],
+            format!("strict check refuses it, with its codes: {name}"),
             got.to_string(),
         );
     }
-    println!("hashes: the draft-1.6 bridge's lenient check is not ported (the JS bridge is being deleted)");
     r.done();
 }
 
@@ -318,7 +308,6 @@ fn stories() -> Vec<(String, String, Value)> {
         "stories".into(),
         v["sealed"]["blocks"].clone(),
     ));
-    add(&mut out, "draft words", &v["reads"]["groups"]);
     out
 }
 
@@ -349,7 +338,7 @@ fn stories_hash_verify_and_check() {
             if !foodblock::verify(block, s(&b["signature"]), &public(s(&b["signer"]))) {
                 wrong.push(format!("{}: signature", s(&b["name"])));
             }
-            if group != "draft words" && block["state"].get("seq").is_some() {
+            if block["state"].get("seq").is_some() {
                 let w = strict(block);
                 if !w.is_empty() {
                     wrong.push(format!("{}: {}", s(&b["name"]), w.join("; ")));
@@ -671,6 +660,9 @@ mod folds {
             r.why(
                 deep_eq(&members, &c["expected"]["members"])
                     && json!(removed) == c["expected"]["removed"]
+                    && c["expected"].get("counted_to").is_none_or(|want| {
+                        want.as_object().unwrap().iter().all(|(who, h)| state.removed.get(who).and_then(|x| x.as_deref()) == h.as_str())
+                    })
                     && may_act,
                 s(&c["name"]),
                 state.to_json().to_string(),
@@ -887,30 +879,6 @@ fn alias_reads() {
             got.to_string(),
         );
     }
-    for g in arr(&v()["reads"]["groups"]) {
-        for b in arr(&g["blocks"]) {
-            let mut block = b["block"].clone();
-            block["hash"] = b["hash"].clone();
-            let read = foodblock::read_as(&block);
-            let got = json!({ "type": read["type"], "state": read["state"], "refs": read["refs"] });
-            r.why(
-                deep_eq(&got, &b["reads_as"]) && read["hash"] == b["hash"],
-                format!("{}: {}", s(&g["name"]), s(&b["name"])),
-                got.to_string(),
-            );
-        }
-        if let Some(end) = g.get("older_end") {
-            let read = foodblock::read_as(&end["block"]);
-            let want = &end["reads_as"];
-            r.ok(
-                read["type"] == want["type"]
-                    && read["state"]["status"] == want["status"]
-                    && read["state"]["stop"] == want["stop"]
-                    && read["refs"]["updates"] == want["updates"],
-                "an older end (defeats) reads as an updates with status stopped",
-            );
-        }
-    }
     r.done();
 }
 
@@ -940,7 +908,7 @@ fn messages() {
     let always = |_: &str| true;
     r.ok(
         fresh(&never, node, &pull["message"]).is_empty(),
-        "a signed pull names the node, a fresh nonce and at, and is signed by its asker",
+        "a signed pull names the node, a fresh nonce and at, and is signed by its signer",
     );
     r.ok(
         !fresh(&always, node, &pull["message"]).is_empty(),
@@ -1018,4 +986,76 @@ fn messages() {
 #[test]
 fn messages() {
     println!("messages (pull, push, discovery): excluded by this build's profile (edge: --features sync)");
+}
+
+/// The compact form: block <-> CBOR bytes in both key forms, the loose encodings a reader accepts, and what it refuses.
+#[test]
+fn cbor_compact_form() {
+    use foodblock::cbor;
+    let mut r = Report::new("cbor");
+    let c = &v()["cbor"];
+    let hex = |b: &[u8]| foodblock::block::hex(b);
+    let bytes = |t: &Value| foodblock::block::unhex(s(t)).unwrap();
+    let signed = |case: &Value| {
+        let mut b = case["block"].clone();
+        b["hash"] = case["hash"].clone();
+        b["signature"] = case["signature"].clone();
+        b
+    };
+    for case in arr(&c["cases"]) {
+        let b = signed(case);
+        let text = cbor::encode_message(&b, false).unwrap();
+        let short = cbor::encode_message(&b, true).unwrap();
+        r.why(
+            hex(&text) == s(&case["cbor"]) && hex(&short) == s(&case["cbor_short"]),
+            format!("writes deterministic bytes: {}", s(&case["name"])),
+            hex(&short),
+        );
+        let back_text = cbor::decode_message(&bytes(&case["cbor"])).unwrap();
+        let back_short = cbor::decode_message(&bytes(&case["cbor_short"])).unwrap();
+        r.ok(
+            back_text == b && back_short == b && back_text["hash"] == case["hash"],
+            format!("reads back to the block, id the hash of its canonical JSON: {}", s(&case["name"])),
+        );
+    }
+    let loose = cbor::decode_message(&bytes(&c["loose"]["cbor"])).unwrap();
+    r.ok(loose["hash"] == c["loose"]["hash"], "any well-formed encoding of the same content is accepted");
+    let pushed: Vec<Value> = arr(&c["push"]["hashes"])
+        .iter()
+        .map(|h| signed(arr(&c["cases"]).iter().find(|x| x["hash"] == *h).unwrap()))
+        .collect();
+    r.ok(
+        hex(&cbor::encode_push_with(foodblock::spec(), &pushed, false).unwrap()) == s(&c["push"]["cbor"])
+            && cbor::decode_push_with(foodblock::spec(), &bytes(&c["push"]["cbor_short"])).unwrap() == pushed,
+        "a push of several blocks is an array of messages",
+    );
+    for h in arr(&c["headers"]) {
+        r.ok(
+            hex(&cbor::encode_header_with(foodblock::spec(), &h["header"], false).unwrap()) == s(&h["cbor"])
+                && cbor::decode_header_with(foodblock::spec(), &bytes(&h["cbor_short"])).unwrap() == h["header"],
+            format!("a chain header: {}", s(&h["name"])),
+        );
+    }
+    for x in arr(&c["refused"]) {
+        r.ok(cbor::decode_message(&bytes(&x["cbor"])).is_err(), format!("refused: {}", s(&x["name"])));
+    }
+    r.done();
+}
+
+/// A signed pull's `asker` and a signed push's `pusher` read as `signer` (aliases.json `messages`).
+#[cfg(feature = "sync")]
+#[test]
+fn older_message_words() {
+    use foodblock::sync;
+    let mut r = Report::new("older messages");
+    let m = &v()["messages"];
+    for (kind, check) in [("signed_pull", true), ("signed_push", false)] {
+        let o = &m["older"][kind];
+        let keys = vec![public(s(&o["signer"]))];
+        let never = |_: &str| false;
+        let f = sync::Freshness { node: s(&m["node"]), now: s(&o["now"]), keys: &keys, seen: &never, window_ms: sync::signed_window_ms() };
+        let found = if check { sync::pull_refusals(&o["message"], &f) } else { sync::push_refusals(&o["message"], &f) };
+        r.ok(found.is_empty(), format!("an older {kind} reads as signer"));
+    }
+    r.done();
 }

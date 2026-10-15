@@ -16,6 +16,7 @@ const grant = require('./grant.cjs')
 const fold = require('./fold.cjs')
 const sync = require('./sync.cjs')
 const keystore = require('./keystore.cjs')
+const cbor = require('./cbor.cjs')
 
 module.exports = {
   // The protocol, as data
@@ -38,6 +39,9 @@ module.exports = {
   PUBLIC: write.PUBLIC, compose: write.compose, write: write.write, check: protocol.check, refusals: protocol.refusals, CODES: protocol.CODES,
   amount: protocol.amount, money: protocol.money, confidence: protocol.confidence, terms: protocol.terms, isTime: protocol.isTime, isDate: protocol.isDate,
   wrap: write.wrap, unwrap: write.unwrap, header: write.header, sealCopy: write.sealCopy, openCopy: write.openCopy, headerSignedBy: write.headerSignedBy,
+
+  // The compact form: a public block as CBOR for small links (the id is still the hash of the canonical JSON)
+  cbor,
 
   // Reading every earlier shape as 1.6
   readAs, isA,

@@ -20,12 +20,6 @@ test('a promise moves through its stages by signed answers and counted transfers
   assert.equal(stage('an accept to an open offer').stage, 'offered', 'only the offerer\'s allocation binds an open offer')
 })
 
-test('the draft-1.6 deal folds the same once read: its accept to an open offer is a request', () => {
-  const group = vectors.reads.groups[0], blocks = group.blocks.map((b) => ({ hash: b.hash, ...b.block }))
-  const offer = blocks.find((b) => b.type === 'promise' && !b.refs.answers)
-  assert.equal(fb.promiseStage(offer, blocks).stage, 'offered')
-})
-
 test('circles, audiences, places and owners', () => {
   const circle = vectors.folds.circles[0], state = fb.circleState(circle.circle, held(circle))
   assert.deepEqual(Object.keys(state.members).sort(), Object.keys(circle.expected.members).sort())

@@ -20,8 +20,9 @@ def pull_request(since=0, limit=None, filter=None, heads=None) -> dict:  # noqa:
     return call("pull_request", _trim({"since": since, "limit": limit, "filter": filter, "heads": heads}))
 
 
-def sign_pull(request, asker, node, private_key, nonce=None, at=None) -> dict:
-    return call("sign_pull", request or {}, _trim({"who": asker, "node": node, "private_key": private_key, "nonce": nonce, "at": at}))
+def sign_pull(request, signer=None, node=None, private_key=None, nonce=None, at=None, asker=None) -> dict:
+    """A signed pull: the request, plus signer, node, a fresh nonce and at. `asker` is the older name for `signer`."""
+    return call("sign_pull", request or {}, _trim({"who": signer or asker, "node": node, "private_key": private_key, "nonce": nonce, "at": at}))
 
 
 def pull_refusals(message, node=None, now=None, keys=(), seen=None, window=None) -> list:
@@ -48,9 +49,9 @@ def heads_of(blocks) -> list:
     return call("heads_of", list(blocks))
 
 
-def answer_pull(log, request=None, node=None, private_key=None, asker=None, cap=500, held=None) -> dict:
+def answer_pull(log, request=None, node=None, private_key=None, signer=None, cap=500, held=None, asker=None) -> dict:
     """Answer a pull from a node's arrival log [{ n, block, copies?, header?, header_signature? }]."""
-    request = {**(request or {}), **({"asker": asker} if asker else {})}
+    request = {**(request or {}), **({"signer": signer or asker} if (signer or asker) else {})}
     return call("answer_pull", list(log), request, node, private_key, cap)
 
 

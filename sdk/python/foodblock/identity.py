@@ -32,13 +32,13 @@ def genesis_opens(block) -> bool:
     return call("genesis_opens", block)
 
 
-def key_grant(id_, new_public_key, signer, replaces=None, last_good=None, at=None, after=(), encrypt=None, recovery=None, custodian=None) -> dict:
+def key_grant(id_, new_public_key, signer, replaces=None, counted_to=None, at=None, after=(), encrypt=None, recovery=None, custodian=None, last_good=None) -> dict:
     """A key grant, signed: brings `new_public_key` into the id. `signer` is { private_key, last, brought_in } (a key the
     id holds and its place in that key's chain), or { private_key, recovery_key } for the recovery key. A rotation also
-    names the key it `replaces` and that key's `last_good` block. `recovery` ({ key, reach }) adds recovery to an older
+    names the key it `replaces` and that key's `counted_to` block (`last_good` is the older name). `recovery` ({ key, reach }) adds recovery to an older
     genesis. `custodian` names who holds the key; to take your keys, rotate the custodian's key out
-    (`replaces`, `last_good`) with no custodian."""
-    options = {"replaces": replaces, "last_good": last_good, "at": at, "after": list(after or []), "encrypt": encrypt, "recovery": recovery, "custodian": custodian}
+    (`replaces`, `counted_to`) with no custodian."""
+    options = {"replaces": replaces, "counted_to": counted_to or last_good, "at": at, "after": list(after or []), "encrypt": encrypt, "recovery": recovery, "custodian": custodian}
     return call("key_grant", id_, new_public_key, signer, {k: v for k, v in options.items() if v is not None})
 
 

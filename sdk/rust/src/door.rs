@@ -63,6 +63,22 @@ fn chain_json(c: &crate::Chain) -> Value {
             "broken": c.broken, "ok": c.ok })
 }
 
+fn key_json(k: &crate::identity::KeyEntry) -> Value {
+    json!({ "key": k.key, "by": k.by, "signer": k.signer, "void": k.void, "frozen": k.frozen, "alg": k.alg })
+}
+fn fixed_of(v: &Value) -> Option<crate::envelope::Fixed> {
+    if !v.is_object() {
+        return None;
+    }
+    let f = |k: &str| v.get(k).and_then(Value::as_str).map(String::from);
+    Some(crate::envelope::Fixed {
+        ephemeral: f("ephemeral"),
+        content_key: f("contentKey"),
+        nonce: f("nonce"),
+        key_nonces: strings_of(v.get("keyNonces").unwrap_or(&Value::Null)),
+    })
+}
+
 /// The arrival log as data: `{ hash: at }`, or null when the reader keeps none.
 macro_rules! arrived {
     ($map:expr, $lookup:ident, $arrived:ident) => {
@@ -72,6 +88,13 @@ macro_rules! arrived {
     };
 }
 
+fn truthy_arg(v: &Value) -> bool {
+    v.as_bool().unwrap_or(false) || v.get("short").and_then(Value::as_bool).unwrap_or(false)
+}
+fn cbor_bytes(hex: &str) -> core::result::Result<Vec<u8>, Fail> {
+    crate::block::unhex(hex).ok_or_else(|| Fail::Argument("CBOR bytes are lowercase hex".into()))
+}
+
 fn dispatch(op: &str, a: &Args) -> Out {
     Ok(match op {
         "version" => json!(crate::VERSION),
@@ -79,9 +102,20 @@ fn dispatch(op: &str, a: &Args) -> Out {
         // A block: its canonical form and its id.
         "canonical" => json!(crate::canonical(a.s(0)?, a.v(1), a.v(2))),
         "canonical_json" => json!(crate::canonical_json(a.v(0))),
+        // The compact form (encoding.md): a signed public block as CBOR hex, and back. `short` uses the key table.
+        // The id of a decoded block is the hash of its canonical JSON, never of the bytes.
+        "cbor_encode" => json!(crate::block::hex(&crate::cbor::encode_message(a.v(0), truthy_arg(a.v(1)))?)),
+        "cbor_decode" => crate::cbor::decode_message(&cbor_bytes(a.s(0)?)?)?,
+        "cbor_encode_push" => json!(crate::block::hex(&crate::cbor::encode_push_with(crate::spec(), &a.list(0), truthy_arg(a.v(1)))?)),
+        "cbor_decode_push" => Value::Array(crate::cbor::decode_push_with(crate::spec(), &cbor_bytes(a.s(0)?)?)?),
+        "cbor_encode_header" => json!(crate::block::hex(&crate::cbor::encode_header_with(crate::spec(), a.v(0), truthy_arg(a.v(1)))?)),
+        "cbor_decode_header" => crate::cbor::decode_header_with(crate::spec(), &cbor_bytes(a.s(0)?)?)?,
         "hash" => json!(crate::hash(a.s(0)?, a.v(1), a.v(2))),
         "hash_hex" => json!(crate::hash_hex(a.s(0)?)),
-        "create" => crate::create(a.s(0)?, a.v(1), a.v(2))?,
+        "create" => {
+            let name = a.opt(0).filter(|t| !t.is_empty());
+            crate::create(name.ok_or_else(|| Error::new("FoodBlock: type is required and must be a string"))?, a.v(1), a.v(2))?
+        }
         // Signing.
         "keypair" => match a.opt(0) {
             Some(seed) => crate::keypair_from_seed(seed)?.to_json(),
@@ -131,10 +165,15 @@ fn dispatch(op: &str, a: &Args) -> Out {
             Value::Array(crate::refusals(a.s(0)?, a.v(1), a.v(2), options).iter().map(|r| r.to_json()).collect())
         }
         "amount" => crate::amount(a.s(0)?, a.s(1)?),
-        "money" => crate::money(
-            a.v(0).as_i64().ok_or_else(|| Fail::Argument("minor is a whole number".into()))?,
-            a.s(1)?,
-        ),
+        // currency: an ISO 4217 code, or an issuer's own unit { issuer, unit, decimals }
+        "money" => {
+            let minor = a.v(0).as_i64().ok_or_else(|| Fail::Argument("minor is a whole number".into()))?;
+            match a.v(1) {
+                Value::String(code) => crate::money(minor, code),
+                unit @ Value::Object(_) => json!({ "minor": minor, "currency": unit }),
+                _ => return Err(Fail::Argument("argument 1 is a currency code or an issuer unit".into())),
+            }
+        }
         "confidence" => json!(crate::confidence(a.s(0)?)?),
         "terms" => crate::terms(a.v(0)),
         // Reading every earlier shape as 1.6.
@@ -146,6 +185,52 @@ fn dispatch(op: &str, a: &Args) -> Out {
             crate::next_link(if last.is_null() { None } else { Some(last) }, a.opt(1))?.to_json()
         }
         "check_chain" => chain_json(&crate::check_chain(&a.list(0), a.s(1)?)),
+        "causes_of" => json!(crate::order::causes_of(a.v(0))),
+        "past_of" => json!(crate::past_of(a.v(0), &a.list(1))),
+        "heads_among" => Value::Array(crate::order::heads_among(&a.list(0))),
+        "is_time" => json!(crate::time::is_time(Some(a.v(0)))),
+        "is_date" => json!(crate::time::is_date(Some(a.v(0)))),
+        "parse_duration" => match a.opt(0).and_then(crate::time::parse_duration) {
+            Some(d) => json!({ "years": d.years, "months": d.months, "days": d.days, "ms": d.ms }),
+            None => Value::Null,
+        },
+        "identity_of" => {
+            arrived!(a.v(2), lookup, at);
+            let i = crate::identity::identity_of(a.s(0)?, &a.list(1), at);
+            json!({
+                "keys": i.keys.iter().map(key_json).collect::<Vec<_>>(),
+                "rotations": i.rotations.iter().map(|(k, r)| json!([k, { "by": r.by, "all": r.all, "countedTo": r.counted_to,
+                    "recovery": r.recovery, "floor": r.floor }])).collect::<Vec<_>>(),
+                "recovery": i.recovery,
+                "ended": i.ended,
+            })
+        }
+        "signer_of" => {
+            let keys: Vec<crate::identity::KeyEntry> = a
+                .list(1)
+                .iter()
+                .map(|k| crate::identity::KeyEntry {
+                    key: text_or_empty(k.get("key")),
+                    by: text_or_empty(k.get("by")),
+                    signer: None,
+                    void: false,
+                    frozen: false,
+                    alg: k.get("alg").and_then(Value::as_str).map(String::from).unwrap_or_else(|| crate::spec().sign_default.clone()),
+                })
+                .collect();
+            json!(crate::identity::signer_of(a.v(0), &keys))
+        }
+        "chains_of" => Value::Array(
+            crate::identity::chains_of(a.s(0)?, &a.list(1))
+                .iter()
+                .map(|k| {
+                    let mut c = chain_json(&k.chain);
+                    c["key"] = json!(k.key);
+                    c["by"] = json!(k.by);
+                    c
+                })
+                .collect(),
+        ),
         "causal_order" => json!(crate::causal_order(&a.list(0))),
         "sees" => json!(crate::sees(a.v(0), a.v(1), &a.list(2))),
         // The one way to write, and the wire.
@@ -163,11 +248,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "key_timeline" => {
             arrived!(a.v(2), lookup, at);
             let keys = crate::identity::key_timeline(a.s(0)?, &a.list(1), at);
-            Value::Array(
-                keys.iter()
-                    .map(|k| json!({ "key": k.key, "by": k.by, "signer": k.signer, "void": k.void, "frozen": k.frozen }))
-                    .collect(),
-            )
+            Value::Array(keys.iter().map(key_json).collect())
         }
         "signed_by_author" => {
             arrived!(a.v(2), lookup, at);
@@ -184,7 +265,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "is_16_genesis" => json!(crate::identity::is_16_genesis(a.v(0))),
         "genesis_opens" => json!(crate::identity::genesis_opens(if a.v(0).is_null() { None } else { Some(a.v(0)) })),
         // key_grant(id, new_key, signer { private_key, last, brought_in, recovery_key },
-        //           { replaces, last_good, at, after, encrypt, recovery: { key, reach }, custodian })
+        //           { replaces, counted_to, at, after, encrypt, recovery: { key, reach }, custodian })
         "key_grant" => {
             let (signer, o) = (a.v(2), a.v(3));
             let field = |v: &Value, k: &str| v.get(k).and_then(Value::as_str).map(String::from);
@@ -193,17 +274,20 @@ fn dispatch(op: &str, a: &Args) -> Out {
             let place = crate::next_link(last, Some(&brought_in))?;
             let after = strings_of(o.get("after").unwrap_or(&Value::Null));
             let after: Vec<&str> = after.iter().map(String::as_str).collect();
-            let (replaces, last_good, encrypt) = (field(o, "replaces"), field(o, "last_good"), field(o, "encrypt"));
+            let (replaces, counted_to, encrypt) = (field(o, "replaces"), field(o, "counted_to"), field(o, "encrypt"));
             let custodian = field(o, "custodian");
+            let (alg_sign, alg_encrypt) = (field(o, "alg_sign"), field(o, "alg_encrypt"));
             let recovery = o.get("recovery").filter(|r| r.is_object());
             let recovery = recovery.map(|r| (text_or_empty(r.get("key")), text_or_empty(r.get("reach"))));
             let extras = crate::identity::KeyGrantExtras {
                 replaces: replaces.as_deref(),
-                last_good: last_good.as_deref(),
+                counted_to: counted_to.as_deref(),
                 after: &after,
                 encrypt: encrypt.as_deref(),
                 recovery: recovery.as_ref().map(|(k, r)| (k.as_str(), r.as_str())),
                 custodian: custodian.as_deref(),
+                alg_sign: alg_sign.as_deref(),
+                alg_encrypt: alg_encrypt.as_deref(),
             };
             let at = field(o, "at").unwrap_or_else(crate::time::now);
             crate::identity::key_grant_with(
@@ -264,9 +348,9 @@ fn envelope(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
     let keys = a.strings(1);
     let refs: Vec<&str> = keys.iter().map(String::as_str).collect();
     Ok(Some(match op {
-        "seal" => crate::envelope::seal_with(a.v(0), &refs, a.opt(2).unwrap_or(crate::ALG), None)?,
+        "seal" => crate::envelope::seal_with(a.v(0), &refs, a.opt(2).unwrap_or(crate::ALG), fixed_of(a.v(3)).as_ref())?,
         "open" => crate::open(a.v(0), a.s(1)?)?,
-        "seal_copy" => crate::seal_copy(a.v(0), &refs, a.v(2), a.s(3)?, None)?,
+        "seal_copy" => crate::seal_copy(a.v(0), &refs, a.v(2), a.s(3)?, fixed_of(a.v(4)).as_ref())?,
         "open_copy" => crate::open_copy(a.v(0), a.s(1)?)?,
         "encryption_keypair" => crate::generate_encryption_keypair()?,
         "encryption_key_of" => json!(crate::encryption_key_of(a.s(0)?)?),
@@ -299,6 +383,8 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             let o = fold::ownership(a.v(0), &a.list(1));
             json!({ "owner": o.owner, "transfers": o.transfers, "conflict": o.conflict })
         }
+        "receiver_of" => json!(fold::receiver_of(a.v(0), &a.list(1))),
+        "sequencer_of" => fold::sequencer_of(a.v(0)),
         "owner_of" => json!(fold::owner_of(a.v(0), &a.list(1))),
         "successor_state" => {
             arrived!(a.v(3), lookup, at);
@@ -342,6 +428,21 @@ fn sync(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             };
             if op == "sign_pull" { sync::sign_pull(a.v(0), &signer)? } else { sync::sign_push(a.v(0), &signer)? }
         }
+        "message_refusals" => {
+            let o = a.v(2);
+            let keys = strings_of(o.get("keys").unwrap_or(&Value::Null));
+            let seen = strings_of(o.get("seen").unwrap_or(&Value::Null));
+            let seen_fn = |n: &str| seen.iter().any(|s| s == n);
+            let now = o.get("now").and_then(Value::as_str).map(String::from).unwrap_or_else(crate::time::now);
+            let f = sync::Freshness {
+                node: o.get("node").and_then(Value::as_str).unwrap_or(""),
+                now: &now,
+                keys: &keys,
+                seen: &seen_fn,
+                window_ms: o.get("window_ms").and_then(Value::as_i64).unwrap_or_else(sync::signed_window_ms),
+            };
+            Value::Array(sync::message_refusals(a.v(0), a.s(1)?, &f).iter().map(|r| r.to_json()).collect())
+        }
         "pull_refusals" | "push_refusals" => {
             let o = a.v(1);
             let keys = strings_of(o.get("keys").unwrap_or(&Value::Null));
@@ -374,13 +475,16 @@ fn sync(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                         .unwrap_or_default(),
                 })
                 .collect();
-            sync::answer_pull(&log, a.v(1), a.s(2)?, a.opt(3), a.v(4).as_u64().unwrap_or(500))?
+            let held = if a.v(6).is_array() { Some(index_of(a.list(6).iter())) } else { None };
+            sync::answer_pull(&log, a.v(1), a.s(2)?, a.opt(3), a.v(4).as_u64().unwrap_or(500), a.opt(5), held.as_ref())?
         }
         "push_answer" => sync::push_answer_of(a.v(0), a.s(1)?, a.s(2)?)?,
         "well_known" => {
             let admission = a.opt(3);
             sync::well_known(a.s(0)?, &a.strings(1), &a.strings(2), admission, a.v(4))
         }
+        // A message of an older shape, its field names read as today's (asker and pusher as signer).
+        "read_message" => crate::read::read_message(a.s(0)?, a.v(1)),
         "signed_window_ms" => json!(sync::signed_window_ms()),
         "waited_too_long" => json!(sync::waited_too_long(a.s(0)?, a.s(1)?, a.v(2).as_i64().unwrap_or(0))),
         "matches" => {
@@ -414,6 +518,7 @@ fn compose_options(o: &Value) -> crate::ComposeOptions {
         audience: strings_of(o.get("audience").unwrap_or(&Value::Null)),
         after: strings_of(o.get("after").unwrap_or(&Value::Null)),
         at: o.get("at").and_then(Value::as_str).map(String::from),
+        clockless: o.get("clockless").and_then(Value::as_bool).unwrap_or(false),
         link,
         salts: o.get("salts").cloned().unwrap_or(Value::Null),
         nonce: o.get("nonce").and_then(Value::as_str).map(String::from),
@@ -455,6 +560,9 @@ fn genesis(a: &Args) -> Out {
             recovery_key: field("recovery_key").unwrap_or(""),
             reach: field("reach").unwrap_or("P30D"),
             custodian: field("custodian").unwrap_or(""),
+            alg_sign: field("alg_sign").unwrap_or(""),
+            alg_encrypt: field("alg_encrypt").unwrap_or(""),
+            alg_recovery: field("alg_recovery").unwrap_or(""),
         },
     )?)
 }

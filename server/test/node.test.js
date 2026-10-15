@@ -174,15 +174,15 @@ describe('pull', () => {
     assert.deepEqual(pushed.taken.sort(), [ann.id, bo.id, secret.hash].sort())
     const open = (await pull({ filter: { hash: secret.hash } })).body.blocks[0].message
     assert.deepEqual(Object.keys(open).sort(), ['header', 'header_signature', 'version'])
-    const ask = fb.sync.signPull({ filter: { hash: secret.hash } }, { asker: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key })
+    const ask = fb.sync.signPull({ filter: { hash: secret.hash } }, { signer: bo.id, node: owner.holder.id, privateKey: bo.keys.private_key })
     const mine = (await pull(ask)).body
     assert.equal(signedByNode(mine), true)
     const read = fb.openCopy(mine.blocks[0].message, bo.encryption.x25519_private)
     assert.deepEqual([read.hash, read.state.text, fb.findsSelf(read, bo.id, read.reveals[0].salt)], [secret.hash, 'for Bo', true])
     assert.match((await pull(ask)).body.error, /replay/, 'a nonce is answered once')
-    const elsewhere = fb.sync.signPull({}, { asker: bo.id, node: 'c'.repeat(64), privateKey: bo.keys.private_key })
+    const elsewhere = fb.sync.signPull({}, { signer: bo.id, node: 'c'.repeat(64), privateKey: bo.keys.private_key })
     assert.match((await pull(elsewhere)).body.error, /another node/)
-    const stranger = fb.sync.signPull({}, { asker: bo.id, node: owner.holder.id, privateKey: fb.generateKeypair().private_key })
+    const stranger = fb.sync.signPull({}, { signer: bo.id, node: owner.holder.id, privateKey: fb.generateKeypair().private_key })
     assert.match((await pull(stranger)).body.error, /not signed/)
   })
 })

@@ -34,7 +34,7 @@ author; its identity is the SHA-256 of its canonical form. Seven types (`actor`,
 Every closed list is in `spec/protocol.json`, which code loads. Three profiles of peer (micro, edge, node); only
 people and machines hold nodes, and a business is a circle of them.
 
-`spec/protocol.md` is normative: where anything else disagrees, it governs. `spec/whitepaper.md` is the published
+`spec/core.md` and `spec/modules/` are normative (`spec/protocol.md` is their index): where anything else disagrees, they govern. `spec/whitepaper.md` is the published
 v1.5 paper, kept as the paper; where it and the spec differ, the spec is current.
 
 ## Principles
@@ -53,7 +53,7 @@ v1.5 paper, kept as the paper; where it and the spec differ, the spec is current
 ## Layout
 
 ```
-spec/protocol.md        the protocol (1.6, normative); protocol.json (every list), canonical.md, transport.md,
+spec/core.md, modules/  the protocol (1.6, normative; protocol.md is the index); protocol.json (every list), canonical.md, transport.md,
                         aliases.json, vectors.json beside it
 spec/run-vectors.cjs    the conformance runner
 spec/whitepaper.md      the published v1.5 paper (and .pdf)

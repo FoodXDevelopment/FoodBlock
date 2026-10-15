@@ -454,19 +454,6 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         })
         .collect();
     let accepted_work: Vec<&&Value> = work.iter().filter(|b| counted(b, &to_side)).collect();
-    let money_for = |b: &Value| -> f64 {
-        match st(b, "split").filter(|s| truthy(Some(s))) {
-            Some(Value::Array(parts)) => parts
-                .iter()
-                .filter(|p| p.get("for").and_then(Value::as_str) == Some(&first_hash))
-                .map(|p| number_of(get(p, "money.minor")))
-                .sum(),
-            Some(_) => 0.0,
-            None => number_of(get(b, "state.money.minor")),
-        }
-    };
-    let paid: f64 = pays.iter().map(|b| money_for(b)).sum();
-    let back: f64 = refunds.iter().map(|b| money_for(b)).sum();
     // Each line (or the whole) is covered when counted transfers move at least its quantity of `what` to the `to` side.
     let lines: Vec<Value> = match terms.get("lines").filter(|l| truthy(Some(l))) {
         Some(Value::Array(l)) => l.clone(),
@@ -518,8 +505,43 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let total: Option<(f64, Value)> = if priced.is_empty() {
         None
     } else {
-        Some((priced.iter().map(|p| p.0).sum(), priced[0].1.clone()))
+        // Money in different currencies is never added: the price's own currency is the first line's.
+        let own = &priced[0].1;
+        Some((priced.iter().filter(|p| &p.1 == own).map(|p| p.0).sum(), own.clone()))
     };
+    // The currency the promise is paid in: the price's, else the first payment's. Only that currency is counted.
+    let currency_of = |b: &Value| -> Value {
+        match st(b, "split").filter(|s| truthy(Some(s))) {
+            Some(Value::Array(parts)) => parts
+                .iter()
+                .find(|p| p.get("for").and_then(Value::as_str) == Some(&first_hash))
+                .and_then(|p| get(p, "money.currency").cloned())
+                .unwrap_or(Value::Null),
+            _ => get(b, "state.money.currency").cloned().unwrap_or(Value::Null),
+        }
+    };
+    let own_currency: Value = total
+        .as_ref()
+        .map(|(_, c)| c.clone())
+        .filter(|c| truthy(Some(c)))
+        .or_else(|| pays.first().map(|b| currency_of(b)))
+        .unwrap_or(Value::Null);
+    // Only money in the price's own currency counts, as paid or as paid back.
+    let money_for = |b: &Value| -> f64 {
+        match st(b, "split").filter(|s| truthy(Some(s))) {
+            Some(Value::Array(parts)) => parts
+                .iter()
+                .filter(|p| p.get("for").and_then(Value::as_str) == Some(&first_hash))
+                .filter(|p| get(p, "money.currency").unwrap_or(&Value::Null) == &own_currency)
+                .map(|p| number_of(get(p, "money.minor")))
+                .sum(),
+            Some(_) => 0.0,
+            None if currency_of(b) == own_currency => number_of(get(b, "state.money.minor")),
+            None => 0.0,
+        }
+    };
+    let paid: f64 = pays.iter().map(|b| money_for(b)).sum();
+    let back: f64 = refunds.iter().map(|b| money_for(b)).sum();
     let goods_done = lines.iter().zip(&line_state).all(|(line, ls)| {
         !truthy(line.get("what"))
             || match ls.needed {
@@ -553,16 +575,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     }
     let occurrences = sorted_set(occurrences);
     // `paid` carries a currency even with no total: the first payment's.
-    let currency = total
-        .as_ref()
-        .map(|(_, c)| c.clone())
-        .filter(|c| truthy(Some(c)))
-        .or_else(|| {
-            pays.first()
-                .and_then(|b| get(b, "state.money.currency"))
-                .cloned()
-        })
-        .unwrap_or(Value::Null);
+    let currency = own_currency.clone();
     let paid_json = if total.is_some() || paid != 0.0 {
         json!({ "minor": num(paid), "currency": currency })
     } else {
@@ -607,8 +620,8 @@ pub struct Member {
     pub grant: Option<String>,
 }
 
-/// A circle's members and roles: `{ founder, members: { id: { roles, grant, last_counted } }, removed: { id:
-/// last_counted } }` (last_counted is null for a current member).
+/// A circle's members and roles: `{ founder, members: { id: { roles, grant, counted_to } }, removed: { id:
+/// counted_to } }` (counted_to is null for a current member).
 #[derive(Debug, Clone, PartialEq)]
 pub struct CircleState {
     pub founder: String,
@@ -620,7 +633,7 @@ impl CircleState {
     pub fn to_json(&self) -> Value {
         json!({
             "founder": self.founder,
-            "members": Value::Object(self.members.iter().map(|(k, m)| (k.clone(), json!({ "roles": m.roles, "grant": m.grant, "last_counted": null }))).collect()),
+            "members": Value::Object(self.members.iter().map(|(k, m)| (k.clone(), json!({ "roles": m.roles, "grant": m.grant, "counted_to": null }))).collect()),
             "removed": Value::Object(self.removed.iter().map(|(k, v)| (k.clone(), json!(v))).collect()),
         })
     }
@@ -729,8 +742,8 @@ impl<'a> Circle<'a> {
             }
         };
         let stops: Vec<&Value> = set.iter().filter(|b| is_stop(b) && admin(b)).collect();
-        let last_counted = |b: &Value| {
-            ss(b, "last_counted")
+        let counted_to = |b: &Value| {
+            ss(b, "counted_to")
                 .filter(|s| !s.is_empty())
                 .map(String::from)
         };
@@ -805,7 +818,7 @@ impl<'a> Circle<'a> {
                         .is_some_and(|m| m.grant.as_deref() == Some(of.as_str()))
                     {
                         ended.push(of);
-                        state.removed.insert(who.clone(), last_counted(&block));
+                        state.removed.insert(who.clone(), counted_to(&block));
                         state.members.shift_remove(&who);
                     }
                 }
@@ -869,7 +882,7 @@ impl<'a> Circle<'a> {
                         continue;
                     }
                     ended.push(grant);
-                    state.removed.insert(who.clone(), last_counted(&block));
+                    state.removed.insert(who.clone(), counted_to(&block));
                     state.members.shift_remove(&who);
                 } else if let (Some(Value::Array(after)), Some(who)) = (st(&block, "roles"), who) {
                     if let Some(member) = state.members.get_mut(&who) {

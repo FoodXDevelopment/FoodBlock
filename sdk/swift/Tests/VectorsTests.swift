@@ -69,16 +69,13 @@ final class VectorsTests: XCTestCase {
         XCTAssertEqual(try FoodBlock.hash("t.a", state, refs), "7ae546cb1398d598d07c4e7873a9547775b5fb7eb53ea7b3e739215a32bb630f")
     }
 
-    // ---- Hashes and the write check; a block in the draft-1.6 words is refused and reads as its 1.6 form ----
+    // ---- Hashes and the write check; a block in an earlier shape hashes like any other, and the strict check refuses it ----
     func testHashes() throws {
         for v in section("hashes") {
             let b = v["block"] as! JSON, name = v["name"] as! String
             expect(try FoodBlock.canonical(b["type"] as! String, b["state"] as! JSON, b["refs"] as! JSON) == v["canonical"] as! String && FoodBlock.hash(of: b) == v["hash"] as! String, "hash: \(name)")
-            if !truthy(v["draft_words"]) { let wrong = strict(b); expect(wrong.isEmpty, "write check: \(name): \(wrong)"); continue }
-            expect(sameJSON(codes(b), v["draft_words"]), "strict check refuses the draft words, with its codes: \(name) (got \(codes(b)))")
-            var held = b; held["hash"] = v["hash"]
-            let read = FoodBlock.readAs(held)
-            expect(sameJSON(["type": read["type"]!, "state": read["state"]!, "refs": read["refs"]!] as JSON, v["reads_as"]), "reads as 1.6: \(name)")
+            if !truthy(v["refused"]) { let wrong = strict(b); expect(wrong.isEmpty, "write check: \(name): \(wrong)"); continue }
+            expect(sameJSON(codes(b), v["refused"]), "strict check refuses it, with its codes: \(name) (got \(codes(b)))")
         }
     }
 
@@ -120,7 +117,6 @@ final class VectorsTests: XCTestCase {
         out.append(("refusal", "stories", arr(refusals["blocks"])))
         for c in arr(refusals["cases"]) where c["blocks"] != nil { out.append(("refusal", c["name"] as? String ?? "", arr(c["blocks"]))) }
         out.append(("sealed", "stories", arr(dig(V, "sealed.blocks"))))
-        out += named("draft words", "reads.groups")
         return out
     }
     static func byHash() -> [String: JSON] {
@@ -222,7 +218,8 @@ final class VectorsTests: XCTestCase {
             let members: Any = want["members"] is [Any] ? sortedJS(Array(state.members.keys)) as Any
                 : state.members.mapValues { sortedJS($0.roles) } as Any
             let mayAct = (v["may_act"] as? JSON ?? [:]).allSatisfy { h, ok in Fold.mayActAs(find(held, h), circle, held) == truthy(ok) }
-            expect(sameJSON(members, want["members"]) && sameJSON(sortedJS(Array(state.removed.keys)), want["removed"]) && mayAct, "circle fold: \(v["name"]!)")
+            expect(sameJSON(members, want["members"]) && sameJSON(sortedJS(Array(state.removed.keys)), want["removed"]) && mayAct
+                   && (want["counted_to"] as? JSON ?? [:]).allSatisfy { who, h in state.removed[who] as? String == h as? String }, "circle fold: \(v["name"]!)")
         }
     }
 
@@ -310,25 +307,13 @@ final class VectorsTests: XCTestCase {
             let read = FoodBlock.readAs(try FoodBlock.create(b["type"] as! String, b["state"] as? JSON ?? [:], b["refs"] as? JSON ?? [:]))
             expect(sameJSON(marks(read), v["reads_as"]), "reads: \(v["name"]!) (got \(stableJSON(marks(read))))")
         }
-        for g in section("reads.groups") {
-            for b in arr(g["blocks"]) {
-                var held = b["block"] as! JSON; held["hash"] = b["hash"]
-                let read = FoodBlock.readAs(held)
-                expect(sameJSON(["type": read["type"]!, "state": read["state"]!, "refs": read["refs"]!] as JSON, b["reads_as"]) && read["hash"] as? String == b["hash"] as? String, "reads: \(g["name"]!): \(b["name"]!)")
-            }
-            if let end = g["older_end"] as? JSON {
-                let read = FoodBlock.readAs(end["block"] as! JSON), want = end["reads_as"] as! JSON
-                expect(read["type"] as? String == want["type"] as? String && sameJSON(dig(read, "state.status"), want["status"]) && sameJSON(dig(read, "state.stop"), want["stop"])
-                       && sameJSON(dig(read, "refs.updates"), want["updates"]), "reads: an older end (defeats) reads as an updates with status stopped")
-            }
-        }
     }
 
     // Messages between nodes: every answer signed by the node.
     func testMessages() {
         let M = V["messages"] as! JSON, node = M["node"] as! String, nodeKey = pub(M["node_signer"])
         let sp = M["signed_pull"] as! JSON, msg = sp["message"] as! JSON, now = sp["now"] as! String, keys = [pub(sp["signer"])]
-        expect(Sync.pullErrors(msg, node: node, now: now, keys: keys).isEmpty, "message: a signed pull names the node, a fresh nonce and at, and is signed by its asker")
+        expect(Sync.pullErrors(msg, node: node, now: now, keys: keys).isEmpty, "message: a signed pull names the node, a fresh nonce and at, and is signed by its signer")
         expect(!Sync.pullErrors(msg, node: node, now: now, keys: keys, seen: { _ in true }).isEmpty, "message: a signed pull replayed is refused")
         var other = msg; other["node"] = String(repeating: "0", count: 64)
         expect(!Sync.pullErrors(other, node: node, now: now, keys: keys).isEmpty, "message: a signed pull for another node is refused")
@@ -359,7 +344,7 @@ final class VectorsTests: XCTestCase {
     // Every section of spec/vectors.json is one this runner reads: a new section cannot pass unseen.
     func testEverySectionIsRun() {
         let read: Set<String> = ["$comment", "comment", "keys", "hashes", "canonical", "audience", "signatures", "bad_signatures", "envelopes", "identities", "deals", "circles",
-                                 "folds", "refusals", "reads", "sealed", "headers", "messages"]
+                                 "folds", "refusals", "reads", "sealed", "headers", "messages", "cbor"]
         XCTAssertEqual(Set(V.keys).subtracting(read), [], "sections in spec/vectors.json this runner does not run")
         XCTAssertEqual(Set((V["folds"] as! JSON).keys).subtracting(["promises", "circles", "audience", "things", "successors", "rekeys", "ballots"]), [])
     }
@@ -380,6 +365,27 @@ final class VectorsTests: XCTestCase {
     func testCoreCarriesTheSpec() throws {
         for (name, mine) in [("protocol", FoodBlock.spec), ("aliases", FoodBlock.aliases)] {
             XCTAssertTrue(sameJSON(mine, loadJSON("spec", "\(name).json")), "the core's built-in \(name).json differs from spec/")
+        }
+    }
+
+    // The compact form: block <-> CBOR bytes in both key forms, loose encodings accepted, malformed ones refused.
+    func testCbor() throws {
+        let C = V["cbor"] as! JSON
+        func signed(_ c: JSON) -> JSON { var b = c["block"] as! JSON; b["hash"] = c["hash"]; b["signature"] = c["signature"]; return b }
+        for c in arr(C["cases"]) {
+            let b = signed(c), name = c["name"] as! String
+            expect(try Cbor.hex(Cbor.encode(b)) == c["cbor"] as! String && Cbor.hex(Cbor.encode(b, short: true)) == c["cbor_short"] as! String, "cbor writes deterministic bytes: \(name)")
+            expect(try sameJSON(Cbor.decode(Cbor.bytes(c["cbor"] as! String)), b) && sameJSON(Cbor.decode(Cbor.bytes(c["cbor_short"] as! String)), b), "cbor reads back to the block: \(name)")
+        }
+        let loose = C["loose"] as! JSON
+        expect(try Cbor.decode(Cbor.bytes(loose["cbor"] as! String))["hash"] as? String == loose["hash"] as? String, "cbor: any well-formed encoding of the same content is accepted")
+        for r in arr(C["refused"]) { expect((try? Cbor.decode(Cbor.bytes(r["cbor"] as! String))) == nil, "cbor refused: \(r["name"]!)") }
+        let M = V["messages"] as! JSON
+        for (kind, push) in [("signed_pull", false), ("signed_push", true)] {
+            let o = dig(M, "older.\(kind)") as! JSON, keys = [pub(o["signer"])]
+            let found = push ? Sync.pushRefusals(o["message"] as? JSON, node: M["node"] as! String, now: o["now"] as? String, keys: keys)
+                             : Sync.pullRefusals(o["message"] as? JSON, node: M["node"] as! String, now: o["now"] as? String, keys: keys)
+            expect(found.isEmpty, "an older \(kind) (asker, pusher) reads as signer")
         }
     }
 }

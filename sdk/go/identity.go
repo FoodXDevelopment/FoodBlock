@@ -58,12 +58,13 @@ type KeySigner struct {
 	Last                               *Block
 }
 
-// KeyGrantOptions: a rotation names the key it Replaces and that key's LastGood block; Encrypt brings in an encryption
-// key; Recovery adds recovery to an older genesis (once); Custodian names who holds the key for the person.
+// KeyGrantOptions: a rotation names the key it Replaces and that key's CountedTo block (LastGood is the older name);
+// Encrypt brings in an encryption key; Recovery adds recovery to an older genesis (once); Custodian names who holds the
+// key for the person.
 type KeyGrantOptions struct {
-	Replaces, LastGood, At, Encrypt, Custodian string
-	After                                      []string
-	Recovery                                   *struct{ Key, Reach string }
+	Replaces, CountedTo, LastGood, At, Encrypt, Custodian string
+	After                                                 []string
+	Recovery                                              *struct{ Key, Reach string }
 }
 
 // KeyGrant is a key grant, signed: brings newPublicKey into the id.
@@ -79,7 +80,10 @@ func KeyGrant(id, newPublicKey string, signer KeySigner, o KeyGrantOptions) (Blo
 		s["recovery_key"] = signer.RecoveryKey
 	}
 	opts := map[string]any{"after": plural(o.After)}
-	for k, v := range map[string]string{"replaces": o.Replaces, "last_good": o.LastGood, "at": o.At, "encrypt": o.Encrypt, "custodian": o.Custodian} {
+	if o.CountedTo == "" {
+		o.CountedTo = o.LastGood
+	}
+	for k, v := range map[string]string{"replaces": o.Replaces, "counted_to": o.CountedTo, "at": o.At, "encrypt": o.Encrypt, "custodian": o.Custodian} {
 		if v != "" {
 			opts[k] = v
 		}

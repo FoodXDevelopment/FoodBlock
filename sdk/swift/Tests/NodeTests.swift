@@ -93,7 +93,7 @@ final class NodeTests: XCTestCase {
         var ann = try person()
         let node = try person()
         let note = try say(&ann, "observe", ["kind": "note", "text": "hello"])
-        let pull = try Sync.signPull(Sync.pullRequest(filter: ["author": ann.id], heads: true), asker: ann.id, node: node.id, privateKey: ann.keys.privateKey, at: nowISO())
+        let pull = try Sync.signPull(Sync.pullRequest(filter: ["author": ann.id], heads: true), signer: ann.id, node: node.id, privateKey: ann.keys.privateKey, at: nowISO())
         XCTAssertEqual(Sync.pullErrors(pull, node: node.id, keys: [ann.keys.publicKeySign]), [])
         let log = [Sync.Arrival(n: 1, block: ann.me), Sync.Arrival(n: 2, block: note)]
         let answer = try Sync.answerPull(log, pull, node: node.id, privateKey: node.keys.privateKey)

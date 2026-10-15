@@ -23,15 +23,13 @@ for (const v of adversarial) {
 }
 for (const v of V.canonical) report(fb.canonical(v.block.type, v.block.state, v.block.refs) === v.canonical && fb.hash(v.block.type, v.block.state, v.block.refs) === v.hash, `canonical: ${v.name}`)
 
-// Hashes and the write check. A block written in the draft-1.6 words is refused by the strict check, and reads as its
-// 1.6 form.
+// Hashes and the write check. A block in an earlier shape (a status on a promise that answers nothing, refs.deal, the
+// type schema) hashes like any other, and the strict check refuses it with the codes the vector names.
 for (const v of V.hashes) {
   const { type, state, refs } = v.block
   report(fb.canonical(type, state, refs) === v.canonical && fb.hash(type, state, refs) === v.hash, `hash: ${v.name}`)
-  if (!v.draft_words) { const wrong = strict(v.block); report(!wrong.length, `write check: ${v.name}`, wrong.join('; ')); continue }
-  report(same(codes(v.block), v.draft_words), `strict check refuses the draft words, with its codes: ${v.name}`)
-  const read = fb.readAs({ hash: v.hash, ...v.block })
-  report(same({ type: read.type, state: read.state, refs: read.refs }, v.reads_as), `reads as 1.6: ${v.name}`)
+  if (!v.refused) { const wrong = strict(v.block); report(!wrong.length, `write check: ${v.name}`, wrong.join('; ')); continue }
+  report(same(codes(v.block), v.refused), `strict check refuses it, with its codes: ${v.name}`)
 }
 // Each author's blocks form one key chain: seq 1, 2, 3, each prev the block before, the first after the genesis.
 for (const id of new Set(V.hashes.map((v) => v.block.refs.author).filter(Boolean))) {
@@ -47,7 +45,7 @@ const stories = [
   ...V.identities.map((v) => ['identity', v.name, v.blocks]), ...V.deals.map((v) => ['deal', v.name, v.blocks]), ...V.circles.map((v) => ['circle', v.name, v.blocks]),
   ...V.folds.promises.map((v) => ['promise fold', v.name, v.blocks]), ...V.folds.circles.map((v) => ['circle fold', v.name, v.blocks]), ...V.folds.audience.map((v) => ['audience fold', v.name, v.blocks]),
   ...V.folds.things.map((v) => ['thing fold', v.name, v.blocks]), ...V.folds.successors.map((v) => ['successor fold', v.name, v.blocks]), ...V.folds.rekeys.map((v) => ['rekey fold', v.name, v.blocks]), ...V.folds.ballots.map((v) => ['ballot fold', v.name, v.blocks]), ['refusal', 'stories', V.refusals.blocks], ...V.refusals.cases.filter((c) => c.blocks).map((c) => ['refusal', c.name, c.blocks]),
-  ['sealed', 'stories', V.sealed.blocks], ...V.reads.groups.map((g) => ['draft words', g.name, g.blocks])
+  ['sealed', 'stories', V.sealed.blocks]
 ]
 for (const [group, name, list] of stories) {
   const wrong = []
@@ -56,7 +54,7 @@ for (const [group, name, list] of stories) {
     if (fb.hash(b.block.type, b.block.state, b.block.refs) !== b.hash) wrong.push(`${b.name}: hash`)
     if (!fb.verify(b.block, b.signature, pub(b.signer))) wrong.push(`${b.name}: signature`)
     const is16 = b.block.state.seq !== undefined || fb.identity.is16Genesis(b.block)
-    if (group !== 'draft words' && is16 && strict(b.block).length) wrong.push(`${b.name}: ${strict(b.block).join('; ')}`)
+    if (is16 && strict(b.block).length) wrong.push(`${b.name}: ${strict(b.block).join('; ')}`)
   }
   report(!wrong.length, `${group}: ${name}: ${list.length} blocks hash, verify and pass the write check`, wrong.join(' | '))
 }
@@ -104,7 +102,7 @@ for (const v of [...V.circles, ...V.folds.circles]) attempt(`circle fold: ${v.na
   const state = fb.circleState(v.circle, blocksOf(v.blocks))
   const members = Array.isArray(v.expected.members) ? Object.keys(state.members).sort() : Object.fromEntries(Object.entries(state.members).map(([who, m]) => [who, [...m.roles].sort()]))
   const held = blocksOf(v.blocks)
-  return same(members, v.expected.members) && same(Object.keys(state.removed).sort(), v.expected.removed)
+  return same(members, v.expected.members) && same(Object.keys(state.removed).sort(), v.expected.removed) && (!v.expected.counted_to || same(state.removed, v.expected.counted_to))
     && Object.entries(v.may_act || {}).every(([hash, ok]) => fb.fold.mayActAs(held.find((b) => b.hash === hash), v.circle, held) === ok)
 })
 for (const v of V.folds.audience) for (const c of v.cases) attempt(`audience fold: ${c.name}`, () => { const held = blocksOf(v.blocks); return same(fb.membersThen(held.find((b) => b.hash === c.block), c.recipient, held), c.members) })
@@ -134,17 +132,13 @@ for (const c of V.refusals.cases) attempt(`refused (${c.by}): ${c.name}`, () => 
   return false
 })
 
-// Alias reads: one per row, and the earlier deal and circle written in the draft words.
+// Alias reads: one per row of aliases.json.
 const marks = (read) => ({ type: read.type, state: read.state, refs: read.refs, ...(read.settles ? { settles: read.settles } : {}), ...(read.outside ? { outside: read.outside } : {}), ...(read.retired ? { retired: true } : {}) })
 for (const v of V.reads.cases) report(same(marks(fb.readAs(fb.create(v.block.type, v.block.state, v.block.refs))), v.reads_as), `reads: ${v.name}`)
-for (const g of V.reads.groups) {
-  for (const b of g.blocks) { const read = fb.readAs({ hash: b.hash, ...b.block }); report(same({ type: read.type, state: read.state, refs: read.refs }, b.reads_as) && read.hash === b.hash, `reads: ${g.name}: ${b.name}`) }
-  if (g.older_end) { const read = fb.readAs(g.older_end.block), want = g.older_end.reads_as; report(read.type === want.type && read.state.status === want.status && read.state.stop === want.stop && read.refs.updates === want.updates, `reads: an older end (defeats) reads as an updates with status stopped`) }
-}
 
 // Messages between nodes: every answer signed by the node.
 const M = V.messages, nodeKey = pub(M.node_signer)
-report(!fb.sync.pullErrors(M.signed_pull.message, { node: M.node, now: M.signed_pull.now, keys: [pub(M.signed_pull.signer)] }).length, 'message: a signed pull names the node, a fresh nonce and at, and is signed by its asker')
+report(!fb.sync.pullErrors(M.signed_pull.message, { node: M.node, now: M.signed_pull.now, keys: [pub(M.signed_pull.signer)] }).length, 'message: a signed pull names the node, a fresh nonce and at, and is signed by its signer')
 report(fb.sync.pullErrors(M.signed_pull.message, { node: M.node, now: M.signed_pull.now, keys: [pub(M.signed_pull.signer)], seen: () => true }).length > 0, 'message: a signed pull replayed is refused')
 report(fb.sync.pullErrors({ ...M.signed_pull.message, node: '0'.repeat(64) }, { node: M.node, now: M.signed_pull.now, keys: [pub(M.signed_pull.signer)] }).length > 0, 'message: a signed pull for another node is refused')
 report(fb.identity.keysOf(M.node, blocksOf(V.sealed.blocks)).includes(nodeKey), 'message: the node key is a key of its holder, brought in by a key grant')
@@ -166,6 +160,29 @@ report(fb.sync.answerSignedBy(M.push_answer.message, nodeKey), 'message: a push 
 }
 report(!fb.sync.answerSignedBy({ ...M.push_answer.message, taken: [] }, nodeKey), 'message: a changed answer no longer verifies')
 report(!fb.sync.wellKnownErrors(M.discovery).length && same(M.announcement, fb.sync.announcement(M.discovery)), 'message: discovery and its local announcement')
+
+// The older words: a signed pull's asker and a signed push's pusher read as signer.
+for (const [kind, check] of [['signed_pull', fb.sync.pullErrors], ['signed_push', fb.sync.pushRefusals]]) {
+  const v = M.older[kind], options = { node: M.node, now: v.now, keys: [pub(v.signer)] }
+  report(!check(v.message, options).length && check(v.message, { ...options, node: '0'.repeat(64) }).length > 0, `message: an older ${kind} (asker, pusher) reads as signer`)
+}
+
+// The compact form: block <-> CBOR bytes, text keys and the key table; the id is the hash of the canonical JSON.
+const fromHex = (hex) => Uint8Array.from(Buffer.from(hex, 'hex'))
+for (const c of V.cbor.cases) attempt(`cbor: ${c.name}`, () => {
+  const block = { hash: c.hash, ...c.block, signature: c.signature }
+  const text = fb.cbor.encode(block), short = fb.cbor.encode(block, { short: true })
+  return Buffer.from(text).toString('hex') === c.cbor && Buffer.from(short).toString('hex') === c.cbor_short
+    && same(fb.cbor.decode(fromHex(c.cbor)), block) && same(fb.cbor.decode(fromHex(c.cbor_short)), block) && fb.hash(c.block.type, c.block.state, c.block.refs) === c.hash
+    && Buffer.byteLength(fb.canonical(c.block.type, c.block.state, c.block.refs)) === c.canonical_bytes
+})
+attempt(`cbor: ${V.cbor.loose.name}`, () => fb.cbor.decode(fromHex(V.cbor.loose.cbor)).hash === V.cbor.loose.hash)
+attempt(`cbor: ${V.cbor.push.name}`, () => {
+  const blocks = V.cbor.push.hashes.map((h) => V.cbor.cases.find((c) => c.hash === h)).map((c) => ({ hash: c.hash, ...c.block, signature: c.signature }))
+  return Buffer.from(fb.cbor.encodePush(blocks)).toString('hex') === V.cbor.push.cbor && same(fb.cbor.decodePush(fromHex(V.cbor.push.cbor_short)), blocks)
+})
+for (const h of V.cbor.headers) attempt(`cbor: ${h.name}`, () => Buffer.from(fb.cbor.encodeHeader(h.header)).toString('hex') === h.cbor && same(fb.cbor.decodeHeader(fromHex(h.cbor_short)), h.header))
+for (const r of V.cbor.refused) attempt(`cbor refused: ${r.name}`, () => { try { fb.cbor.decode(fromHex(r.cbor)); return false } catch { return true } })
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

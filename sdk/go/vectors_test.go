@@ -1,6 +1,7 @@
 package foodblock
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -177,21 +178,19 @@ func TestVectors(t *testing.T) {
 		r.report(cs == str(c["canonical"]) && h == str(c["hash"]), "canonical: "+str(c["name"]))
 	}
 
-	// Hashes and the write check. A block written in the draft words is refused by the check and reads as its 1.6 form.
+	// Hashes and the write check. A block in an earlier shape hashes like any other; the strict check refuses it with the codes named.
 	ran["hashes"] = true
 	for _, c := range items(v["hashes"]) {
 		b := blockOf(c)
 		cs, _ := Canonical(b.Type, b.State, b.Refs)
 		h, _ := Hash(b.Type, b.State, b.Refs)
 		r.report(cs == str(c["canonical"]) && h == str(c["hash"]), "hash: "+str(c["name"]))
-		if c["draft_words"] == nil {
+		if c["refused"] == nil {
 			wrong := strict(b, nil)
 			r.report(len(wrong) == 0, "write check: "+str(c["name"]), wrong...)
 			continue
 		}
-		r.report(eq(codes(b, nil), c["draft_words"]), "strict check refuses the draft words, with its codes: "+str(c["name"]), strings.Join(codes(b, nil), ","))
-		read := ReadAs(b)
-		r.report(eq(map[string]any{"type": read.Type, "state": read.State, "refs": read.Refs}, c["reads_as"]), "reads as 1.6: "+str(c["name"]))
+		r.report(eq(codes(b, nil), c["refused"]), "strict check refuses it, with its codes: "+str(c["name"]), strings.Join(codes(b, nil), ","))
 	}
 	// Each author's blocks form one key chain.
 	authors := []string{}
@@ -248,7 +247,6 @@ func TestVectors(t *testing.T) {
 		}
 	}
 	stories = append(stories, story{"sealed", "stories", sealed["blocks"]})
-	add("draft words", reads["groups"])
 	for _, s := range stories {
 		wrong := []string{}
 		for _, c := range items(s.blocks) {
@@ -260,7 +258,7 @@ func TestVectors(t *testing.T) {
 			if !Verify(b, b.Signature, pub(t, c["signer"])) {
 				wrong = append(wrong, str(c["name"])+": signature")
 			}
-			if s.group != "draft words" && b.State["seq"] != nil {
+			if b.State["seq"] != nil {
 				if w := strict(b, nil); len(w) > 0 {
 					wrong = append(wrong, str(c["name"])+": "+strings.Join(w, "; "))
 				}
@@ -381,6 +379,9 @@ func TestVectors(t *testing.T) {
 				removed = append(removed, who)
 			}
 			ok := eq(members, want["members"]) && eq(sorted(removed), want["removed"])
+			for who, h := range obj(want["counted_to"]) {
+				ok = ok && same(state.Removed[who], h)
+			}
 			for h, may := range obj(c["may_act"]) {
 				ok = ok && MayActAs(find(held, h), str(c["circle"]), held, "") == may
 			}
@@ -492,7 +493,7 @@ func TestVectors(t *testing.T) {
 		})
 	}
 
-	// Alias reads: one per row, and the earlier deal and circle written in the draft words.
+	// Alias reads: one per row of aliases.json.
 	marks := func(read Block) map[string]any {
 		out := map[string]any{"type": read.Type, "state": read.State, "refs": read.Refs}
 		if read.Settles != nil {
@@ -511,27 +512,16 @@ func TestVectors(t *testing.T) {
 		b, _ := Create(str(inner["type"]), obj(inner["state"]), obj(inner["refs"]))
 		r.report(eq(marks(ReadAs(b)), c["reads_as"]), "reads: "+str(c["name"]))
 	}
-	for _, g := range items(reads["groups"]) {
-		for _, c := range items(g["blocks"]) {
-			b := blockOf(c)
-			read := ReadAs(b)
-			r.report(eq(map[string]any{"type": read.Type, "state": read.State, "refs": read.Refs}, c["reads_as"]) && read.Hash == b.Hash, fmt.Sprintf("reads: %s: %s", g["name"], c["name"]))
-		}
-		if end := obj(g["older_end"]); end != nil {
-			read, want := ReadAs(blockOf(end)), obj(end["reads_as"])
-			r.report(read.Type == str(want["type"]) && same(read.State["status"], want["status"]) && same(read.State["stop"], want["stop"]) && same(read.Refs["updates"], want["updates"]),
-				"reads: an older end (defeats) reads as an updates with status stopped")
-		}
-	}
 
 	// Messages between nodes: every answer signed by the node.
 	ran["messages"] = true
+	ran["cbor"] = true
 	M := obj(v["messages"])
 	node, nodeKey := str(M["node"]), pub(t, M["node_signer"])
 	sp := obj(M["signed_pull"])
 	pullMessage := obj(sp["message"])
 	check := PullCheck{Node: node, Now: str(sp["now"]), Keys: []string{pub(t, sp["signer"])}}
-	r.report(len(PullErrors(pullMessage, check)) == 0, "message: a signed pull names the node, a fresh nonce and at, and is signed by its asker")
+	r.report(len(PullErrors(pullMessage, check)) == 0, "message: a signed pull names the node, a fresh nonce and at, and is signed by its signer")
 	replay := check
 	replay.Seen = func(string) bool { return true }
 	r.report(len(PullErrors(pullMessage, replay)) > 0, "message: a signed pull replayed is refused")
@@ -658,4 +648,37 @@ func TestCoreCarriesTheSpec(t *testing.T) {
 			t.Errorf("the core's built-in %s differs from spec/%s", name, name)
 		}
 	}
+}
+
+func TestCborAndOlderWords(t *testing.T) {
+	v := vectors(t)
+	r := &runner{t: t}
+	C := obj(v["cbor"])
+	signed := func(c map[string]any) Block {
+		b := blockOf(c)
+		b.Hash, b.Signature = str(c["hash"]), str(c["signature"])
+		return b
+	}
+	unhex := func(h any) []byte { b, _ := hex.DecodeString(str(h)); return b }
+	for _, c := range items(C["cases"]) {
+		b := signed(c)
+		text, _ := CborEncode(b, false)
+		short, _ := CborEncode(b, true)
+		r.report(hex.EncodeToString(text) == str(c["cbor"]) && hex.EncodeToString(short) == str(c["cbor_short"]), "cbor writes deterministic bytes: "+str(c["name"]))
+		back, err := CborDecode(unhex(c["cbor_short"]))
+		r.report(err == nil && back.Hash == b.Hash && eq(back.State, b.State) && eq(back.Refs, b.Refs), "cbor reads back to the block: "+str(c["name"]))
+	}
+	loose, err := CborDecode(unhex(obj(C["loose"])["cbor"]))
+	r.report(err == nil && loose.Hash == str(obj(C["loose"])["hash"]), "cbor: any well-formed encoding of the same content is accepted")
+	for _, c := range items(C["refused"]) {
+		_, err := CborDecode(unhex(c["cbor"]))
+		r.report(err != nil, "cbor refused: "+str(c["name"]))
+	}
+	M := obj(v["messages"])
+	for kind, check := range map[string]func(map[string]any, PullCheck) []string{"signed_pull": PullErrors} {
+		o := obj(obj(M["older"])[kind])
+		pc := PullCheck{Node: str(M["node"]), Now: str(o["now"]), Keys: []string{pub(t, o["signer"])}}
+		r.report(len(check(obj(o["message"]), pc)) == 0, "an older "+kind+" (asker) reads as signer")
+	}
+
 }

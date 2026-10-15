@@ -21,6 +21,7 @@ fn sensor() -> (foodblock::Keypair, Value) {
             recovery_key: &recovery.public_key_sign,
             reach: "P30D",
             custodian: "",
+            ..Default::default()
         },
     )
     .unwrap();

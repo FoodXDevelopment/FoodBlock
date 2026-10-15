@@ -9,8 +9,12 @@ public enum Sync {
         if let h = heads { r["heads"] = h }
         return (try? Core.json("pull_request", r)) ?? r
     }
+    /// A signed pull: the request, plus signer, node, a fresh nonce and at. (`asker` was the older name for `signer`.)
     public static func signPull(_ request: JSON, asker: String, node: String, privateKey: String, nonce: String? = nil, at: String? = nil) throws -> JSON {
-        var o: JSON = ["who": asker, "node": node, "private_key": privateKey]
+        try signPull(request, signer: asker, node: node, privateKey: privateKey, nonce: nonce, at: at)
+    }
+    public static func signPull(_ request: JSON, signer: String, node: String, privateKey: String, nonce: String? = nil, at: String? = nil) throws -> JSON {
+        var o: JSON = ["who": signer, "node": node, "private_key": privateKey]
         if let n = nonce { o["nonce"] = n }
         if let a = at { o["at"] = a }
         return try Core.json("sign_pull", request, o)

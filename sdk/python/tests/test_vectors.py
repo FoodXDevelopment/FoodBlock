@@ -25,7 +25,7 @@ READS = V.get("reads", {})
 SEALED = V.get("sealed", {})
 
 # The sections this suite runs (every top-level key of vectors.json but `keys`, the key material, and `$comment`).
-RUN = {"hashes", "canonical", "audience", "signatures", "bad_signatures", "envelopes", "identities", "deals", "circles",
+RUN = {"cbor", "hashes", "canonical", "audience", "signatures", "bad_signatures", "envelopes", "identities", "deals", "circles",
        "folds", "refusals", "reads", "sealed", "headers", "messages"}
 RUN_FOLDS = {"promises", "circles", "audience", "things", "successors", "rekeys", "ballots"}
 
@@ -68,7 +68,6 @@ def stories():
     out.append(("refusal", "stories", REFUSALS.get("blocks", [])))
     out += [("refusal", c["name"], c["blocks"]) for c in REFUSALS.get("cases", []) if c.get("blocks")]
     out.append(("sealed", "stories", SEALED.get("blocks", [])))
-    out += [("draft words", g["name"], g["blocks"]) for g in READS.get("groups", [])]
     return out
 
 
@@ -118,18 +117,16 @@ class Canonical(unittest.TestCase):
 
 class Hashes(unittest.TestCase):
     def test_hash_and_write_check(self):
-        """A block written in the draft-1.6 words is refused by the check and reads as its 1.6 form."""
+        """A block in an earlier shape hashes like any other; the strict check refuses it with the codes named."""
         for v in V["hashes"]:
             with self.subTest(v["name"]):
                 b = v["block"]
                 self.assertEqual(fb.canonical(b["type"], b["state"], b["refs"]), v["canonical"])
                 self.assertEqual(fb.hash(b["type"], b["state"], b["refs"]), v["hash"])
-                if not v.get("draft_words"):
+                if not v.get("refused"):
                     self.assertEqual(fb.check(b["type"], b["state"], b["refs"]), [])
                     continue
-                self.assertEqual(codes(b), v["draft_words"])
-                read = fb.read_as({"hash": v["hash"], **b})
-                self.assertEqual({"type": read["type"], "state": read["state"], "refs": read["refs"]}, v["reads_as"])
+                self.assertEqual(codes(b), v["refused"])
 
     def test_each_author_one_chain(self):
         authors = dict.fromkeys(v["block"]["refs"]["author"] for v in V["hashes"] if v["block"]["refs"].get("author"))
@@ -152,7 +149,7 @@ class Stories(unittest.TestCase):
                     blk = b["block"]
                     self.assertEqual(fb.hash(blk["type"], blk["state"], blk["refs"]), b["hash"], b["name"])
                     self.assertTrue(fb.verify(blk, b["signature"], pub(b["signer"])), b["name"])
-                    if group != "draft words" and "seq" in blk["state"]:
+                    if "seq" in blk["state"]:
                         self.assertEqual(fb.check(blk["type"], blk["state"], blk["refs"]), [], b["name"])
 
 
@@ -259,6 +256,8 @@ class Folds(unittest.TestCase):
                 members = sorted(state["members"]) if isinstance(want, list) else {who: sorted(m["roles"]) for who, m in state["members"].items()}
                 self.assertEqual(members, want)
                 self.assertEqual(sorted(state["removed"]), v["expected"]["removed"])
+                for who, h in v["expected"].get("counted_to", {}).items():
+                    self.assertEqual(state["removed"][who], h)
                 for h, ok in (v.get("may_act") or {}).items():
                     self.assertEqual(fb.fold.may_act_as(find(held, h), v["circle"], held), ok)
 
@@ -348,29 +347,16 @@ class Reads(unittest.TestCase):
                 b = v["block"]
                 self.assertEqual(marks(fb.read_as(fb.create(b["type"], b["state"], b["refs"]))), v["reads_as"])
 
-    def test_groups(self):
-        for g in READS.get("groups", []):
-            for b in g["blocks"]:
-                with self.subTest(f"{g['name']}: {b['name']}"):
-                    read = fb.read_as({"hash": b["hash"], **b["block"]})
-                    self.assertEqual({"type": read["type"], "state": read["state"], "refs": read["refs"]}, b["reads_as"])
-                    self.assertEqual(read["hash"], b["hash"])
-            if g.get("older_end"):
-                with self.subTest(f"{g['name']}: an older end (defeats) reads as an updates with status stopped"):
-                    read, want = fb.read_as(g["older_end"]["block"]), g["older_end"]["reads_as"]
-                    self.assertEqual([read["type"], read["state"].get("status"), read["state"].get("stop"), read["refs"].get("updates")],
-                                     [want["type"], want.get("status"), want.get("stop"), want.get("updates")])
-
 
 class Messages(unittest.TestCase):
     def test_messages(self):
         M = V["messages"]
         node_key = pub(M["node_signer"])
         pull = M["signed_pull"]
-        asker = [pub(pull["signer"])]
-        self.assertEqual(fb.sync.pull_errors(pull["message"], node=M["node"], now=pull["now"], keys=asker), [])
-        self.assertTrue(fb.sync.pull_errors(pull["message"], node=M["node"], now=pull["now"], keys=asker, seen=lambda n: True))
-        self.assertTrue(fb.sync.pull_errors({**pull["message"], "node": "0" * 64}, node=M["node"], now=pull["now"], keys=asker))
+        signer = [pub(pull["signer"])]
+        self.assertEqual(fb.sync.pull_errors(pull["message"], node=M["node"], now=pull["now"], keys=signer), [])
+        self.assertTrue(fb.sync.pull_errors(pull["message"], node=M["node"], now=pull["now"], keys=signer, seen=lambda n: True))
+        self.assertTrue(fb.sync.pull_errors({**pull["message"], "node": "0" * 64}, node=M["node"], now=pull["now"], keys=signer))
         self.assertIn(node_key, fb.identity.keys_of(M["node"], blocks_of(SEALED["blocks"])))
         self.assertTrue(fb.sync.answer_signed_by(M["pull_answer"]["message"], node_key))
         self.assertEqual(len(M["pull_answer"]["message"]["blocks"]), M["pull_answer"]["matches"])
@@ -414,5 +400,69 @@ class Package(unittest.TestCase):
         self.assertTrue(line.split('"')[1].startswith(fb.VERSION + "."))
 
 
+class Older(unittest.TestCase):
+    """test/vectors.json: the older cross-language vectors. Same canonical form and hash; a legacy-read shape is refused
+    on write."""
+
+    def test_older(self):
+        self.assertGreater(len(OLDER), 0)
+        for v in OLDER:
+            with self.subTest(v["name"]):
+                self.assertEqual(fb.canonical(v["type"], v["state"], v["refs"]), v["expected_canonical"])
+                self.assertEqual(fb.hash(v["type"], v["state"], v["refs"]), v["expected_hash"])
+                if v.get("section") == "legacy-read":
+                    self.assertTrue(fb.check(v["type"], v["state"], v["refs"]))
+
+
+class Package(unittest.TestCase):
+    def test_core_carries_the_spec(self):
+        """The Rust core carries protocol.json and aliases.json; they equal the repository's spec/ files."""
+        for name, mine in (("protocol.json", fb.PROTOCOL), ("aliases.json", fb.ALIASES)):
+            self.assertEqual(mine, load("spec", name), f"{name}: the core's built-in copy differs from spec/")
+
+    def test_version(self):
+        with open(os.path.join(os.path.dirname(__file__), "..", "pyproject.toml"), encoding="utf-8") as f:
+            line = next(line for line in f if line.startswith("version"))
+        self.assertTrue(line.split('"')[1].startswith(fb.VERSION + "."))
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class Older(unittest.TestCase):
+    def test_older_message_words(self):
+        """A signed pull's asker and a signed push's pusher read as signer."""
+        M = V["messages"]
+        for kind, check in (("signed_pull", fb.sync.pull_errors), ("signed_push", fb.sync.push_errors)):
+            o = M["older"][kind]
+            self.assertEqual(check(o["message"], node=M["node"], now=o["now"], keys=[pub(o["signer"])]), [])
+            self.assertTrue(check(o["message"], node="0" * 64, now=o["now"], keys=[pub(o["signer"])]))
+
+
+class Cbor(unittest.TestCase):
+    def test_compact_form(self):
+        C = V["cbor"]
+        signed = lambda c: {"hash": c["hash"], **c["block"], "signature": c["signature"]}
+        for c in C["cases"]:
+            with self.subTest(c["name"]):
+                b = signed(c)
+                self.assertEqual(fb.cbor.encode(b).hex(), c["cbor"])
+                self.assertEqual(fb.cbor.encode(b, short=True).hex(), c["cbor_short"])
+                self.assertEqual(fb.cbor.decode(bytes.fromhex(c["cbor"])), b)
+                self.assertEqual(fb.cbor.decode(bytes.fromhex(c["cbor_short"])), b)
+        self.assertEqual(fb.cbor.decode(bytes.fromhex(C["loose"]["cbor"]))["hash"], C["loose"]["hash"])
+        blocks = [signed(next(c for c in C["cases"] if c["hash"] == h)) for h in C["push"]["hashes"]]
+        self.assertEqual(fb.cbor.encode_push(blocks).hex(), C["push"]["cbor"])
+        self.assertEqual(fb.cbor.decode_push(bytes.fromhex(C["push"]["cbor_short"])), blocks)
+        for h in C["headers"]:
+            self.assertEqual(fb.cbor.encode_header(h["header"]).hex(), h["cbor"])
+            self.assertEqual(fb.cbor.decode_header(bytes.fromhex(h["cbor_short"])), h["header"])
+        for r in C["refused"]:
+            with self.subTest(r["name"]):
+                with self.assertRaises(fb.FoodBlockError):
+                    fb.cbor.decode(bytes.fromhex(r["cbor"]))
+
+
+
+

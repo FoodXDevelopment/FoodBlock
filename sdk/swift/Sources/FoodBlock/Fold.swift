@@ -8,12 +8,12 @@ public enum Fold {
         return (try? Core.json("promise_stage", firstBlock, blocks, o)) ?? [:]
     }
 
-    /// A member, as the spec names it: { roles, grant, last_counted } (last_counted nil for a current member).
+    /// A member, as the spec names it: { roles, grant, counted_to } (counted_to nil for a current member).
     public final class Member {
         public internal(set) var roles: [String]
         public let grant: String?
-        public internal(set) var last_counted: String?
-        init(_ j: JSON) { roles = j["roles"] as? [String] ?? []; grant = j["grant"] as? String; last_counted = j["last_counted"] as? String }
+        public internal(set) var counted_to: String?
+        init(_ j: JSON) { roles = j["roles"] as? [String] ?? []; grant = j["grant"] as? String; counted_to = j["counted_to"] as? String }
     }
     /// A circle's members and roles: { founder, members: id → Member, removed: id → last counted block (or nil) }.
     public final class CircleState {

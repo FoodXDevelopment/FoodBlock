@@ -135,3 +135,16 @@ pub fn verify_message(part: &Value, public_key: &str) -> bool {
         public_key,
     )
 }
+
+/// Whether a signature is this key's over exactly this block, by the key's own algorithm (`algs.sign` in
+/// protocol.json). An algorithm this build does not know opens nothing.
+pub fn verify_alg(alg: &str, block: &Value, signature: &str, public_key: &str) -> bool {
+    match alg {
+        "ed25519" => verify(block, signature, public_key),
+        _ => false,
+    }
+}
+/// Whether this build can verify signatures of an algorithm.
+pub fn knows_sign_alg(alg: &str) -> bool {
+    crate::spec().sign_algs.iter().any(|a| a == alg) && alg == "ed25519"
+}

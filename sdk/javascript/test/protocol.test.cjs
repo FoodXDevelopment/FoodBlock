@@ -112,7 +112,7 @@ test('grants: receiver refs.to (or open), the three kinds the protocol reads, an
   assert.match(strict('grant', { ...base, kind: 'successor', witnesses: ['c'.repeat(64)], needed: 2, wait: 'P30D', public_key_sign: vector('actor: genesis').state.public_key_sign }, { ...refs, to: tom }).join(), /needed.*|never signing keys/)
   assert.match(strict('grant', { ...base, kind: 'member', roles: ['admin'] }, { ...refs, subject: 'c'.repeat(64), to: tom }).join(), /signed as the circle/)
   assert.deepEqual(strict('grant', { ...base, kind: 'key', public_key_encrypt: 'f'.repeat(64) }, { ...refs, subject: jo }), [], 'an encryption-only key grant')
-  assert.match(strict('grant', { ...base, kind: 'key', public_key_sign: vector('actor: genesis').state.public_key_sign, replaces: vector('actor: genesis').state.public_key_sign }, { ...refs, subject: jo }).join(), /last good/)
+  assert.match(strict('grant', { ...base, kind: 'key', public_key_sign: vector('actor: genesis').state.public_key_sign, replaces: vector('actor: genesis').state.public_key_sign }, { ...refs, subject: jo }).join(), /counted_to/)
   const parent = { hash: 'c'.repeat(64), type: 'grant', state: { ...base, kind: 'shop', depth: 1, scope: { acts: ['accept'], limit: fb.money(500, 'GBP'), until: '2026-12-01T00:00:00.000Z' } }, refs: { ...refs, to: tom } }
   const child = (scope, depth) => strict('grant', { ...base, kind: 'shop', ...(depth === undefined ? {} : { depth }), scope }, { author: tom, prev: genesisOfJo, parent: parent.hash, to: 'd'.repeat(64) }, { held: new Map([[parent.hash, parent]]) })
   assert.deepEqual(child({ acts: ['accept'], limit: fb.money(100, 'GBP'), until: '2026-11-01T00:00:00.000Z' }), [])
@@ -142,16 +142,12 @@ test("a schema's fields and roles are declared: a reader holding the schema acce
   assert.match(strict('thing', eggs, { author: jo, prev: genesisOfJo, farm: tom }).join(), /refs.farm is not declared/)
 })
 
-test('older blocks are read as 1.6 through one table, unchanged; draft-1.6 words with seq read too', () => {
+test('older blocks are read as 1.6 through one table, unchanged', () => {
   const old = fb.create('transfer.order', { status: 'accepted', what: 'eggs', due: '2026-10-20T00:00:00.000Z' }, { author: tom, seller: jo, buyer: tom, order: 'e'.repeat(64) })
   const read = fb.readAs(old)
   assert.deepEqual([read.type, read.state.kind, read.refs.from, read.refs.to, read.refs.answers, read.state.terms.deliver_by, read.readFrom, read.hash],
     ['promise', 'order', jo, tom, 'e'.repeat(64), '2026-10-20T00:00:00.000Z', 'transfer.order', old.hash])
   assert.equal(fb.isA(fb.create('place.venue', { name: 'Hill Bakery' }, {}), 'thing', 'venue'), true)
-  const offer = { hash: 'f'.repeat(64), ...vector('promise: an offer') }
-  assert.equal(fb.readAs(offer).state.status, undefined, 'a draft offer reads with no status')
-  const schema = fb.readAs({ hash: 'f'.repeat(64), ...vector('schema:') })
-  assert.deepEqual([schema.type, schema.state.kind, schema.state.target], ['thing', 'schema', 'thing.eggs'])
   const thing = vector('thing: an instance')
   assert.equal(fb.readAs(thing), thing, 'a 1.6 block reads as itself')
 })

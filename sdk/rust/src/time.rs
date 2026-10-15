@@ -159,13 +159,19 @@ pub fn iso(ms: i64) -> String {
 }
 
 /// Now, on this device's clock (std only).
-#[cfg(feature = "std")]
+#[cfg(all(feature = "std", not(all(feature = "wasm", target_arch = "wasm32"))))]
 pub fn now() -> String {
     let ms = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as i64)
         .unwrap_or(0);
     iso(ms)
+}
+
+/// Now, on the host's clock (the WebAssembly build has none of its own).
+#[cfg(all(feature = "std", feature = "wasm", target_arch = "wasm32"))]
+pub fn now() -> String {
+    iso(crate::wasm::now_ms())
 }
 
 /// The parts of an ISO 8601 duration: years, months, days (weeks as 7), and the time part in ms.

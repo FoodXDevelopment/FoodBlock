@@ -125,7 +125,7 @@ object Fold {
         Native.invoke("circle_key", JsonPrimitive(circle), JsonArray(blocks)).obj()
 }
 
-/** How a node judges a signed pull or push: this node, its clock, the asker's keys, the nonces it has seen. */
+/** How a node judges a signed pull or push: this node, its clock, the signer's keys, the nonces it has seen. */
 data class Freshness(
     val node: String,
     val now: String,

@@ -1,5 +1,5 @@
 // A FoodBlock 1.6 node over HTTP (spec/protocol.md §10): two messages, and how to find it.
-//   POST /pull   a pull { since, limit, filter, heads }, or a signed pull (adds asker, node, nonce, at, signature)
+//   POST /pull   a pull { since, limit, filter, heads }, or a signed pull (adds signer, node, nonce, at, signature)
 //                -> { node, request, blocks: [{ n, message }], next, signature }
 //   POST /push   { messages, for }  ->  { node, taken, waiting, refused: [{ hash, code, detail }], equivocations: [[hash, hash]], signature }
 //   GET  /.well-known/foodblock     { protocol, version, node, holds, speaks_for, admission, endpoints }
@@ -102,26 +102,26 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
       endpoints: url ? { pull: `${url}/pull`, push: `${url}/push` } : {} })
   }
 
-  // Pull: every match the asker may see since an arrival number, oldest first, unranked. A signed pull also gets the
-  // copies sealed to its asker; anyone else gets a sealed block's public header.
+  // Pull: every match the signer may see since an arrival number, oldest first, unranked. A signed pull also gets the
+  // copies sealed to its signer; anyone else gets a sealed block's public header.
   async function pull(request = {}) {
     const signed = request.signature !== undefined
     if (!signed && !Object.keys(request).every((name) => fb.PROTOCOL.messages.pull.includes(name))) throw refuse(`a pull is { ${fb.PROTOCOL.messages.pull.join(', ')} }, or a signed pull`)
     const since = Number(request.since || 0)
     if (!Number.isInteger(since) || since < 0) throw refuse('since is an arrival number')
+    const who = signed ? fb.sync.readMessage('signed_pull', request).signer : null // an older pull names its asker
     if (signed) {
-      const keys = fb.identity.keysOf(request.asker, (await db.byAuthor(request.asker)).map((entry) => entry.block))
+      const keys = fb.identity.keysOf(who, (await db.byAuthor(who)).map((entry) => entry.block))
       const replay = typeof request.nonce === 'string' && await db.seen(request.nonce)
       const wrong = fb.sync.pullErrors(request, { node: holder, keys, seen: () => replay, ...(window ? { window } : {}) })
       if (wrong.length) throw refuse(wrong.join('; '))
       await db.see(request.nonce)
     }
-    const asker = signed ? request.asker : null
-    const copies = new Map((await db.copiesFor(asker)).map((row) => [row.hash, row.message]))
+    const copies = new Map((await db.copiesFor(who)).map((row) => [row.hash, row.message]))
     const log = (await db.since(since)).map(({ n, message, block }) => ({ n, block, ...(isSealed(message) ? { header: message.header, header_signature: message.header_signature } : {}),
-      ...(copies.has(block.hash) ? { copies: { [asker]: copies.get(block.hash) } } : {}) }))
+      ...(copies.has(block.hash) ? { copies: { [who]: copies.get(block.hash) } } : {}) }))
     const held = request.filter?.record ? (await db.all()).map((entry) => entry.block) : undefined
-    return fb.sync.answerPull(log, request, { node: holder, privateKey: key.private_key, asker, cap, held })
+    return fb.sync.answerPull(log, request, { node: holder, privateKey: key.private_key, signer: who, cap, held })
   }
 
   // Push: the SDK decides what is well formed, signed by a live key of its author, in its chain and not history out of

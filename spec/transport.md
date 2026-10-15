@@ -27,5 +27,9 @@ proves the author. So email carries the letter; it is never the record.
 
 ## Every other envelope
 WhatsApp, SMS, USSD, a voice call, a QR code, a link: the body for humans, the block for machines. A person with held
-keys (protocol.md, Held keys) acts by any of them: their custodian signs on their word, naming the channel and the
+keys (modules/identity.md, Held keys) acts by any of them: their custodian signs on their word, naming the channel and the
 raw message's hash. Words from anyone else are read as in Receiving.
+
+## Constrained links (CBOR)
+
+Over a radio, a tag or any link too small for JSON, a public block travels in the compact CBOR form, media type `application/foodblock+cbor` (modules/encoding.md). It is a transport only. The receiver rebuilds the canonical JSON, hashes it and checks the signature; the id is the same as for JSON. A micro with no clock sends blocks with no `at`; the edge that receives them stamps the arrival in its own `receipt` observe (modules/blocks.md, No clock).

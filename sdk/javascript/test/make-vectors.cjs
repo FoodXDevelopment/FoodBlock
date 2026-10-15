@@ -10,13 +10,27 @@ const fb = require('../src/index.cjs')
 const { recoveryKeyHash, genesis, keyGrant, signedByAuthor, identityOf } = fb.identity
 
 const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const old = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const old = JSON.parse(fs.readFileSync(process.env.VECTORS_FROM || FILE, 'utf8')) // VECTORS_FROM: start from another file (the earlier sections are read from it)
 // The sections written before this generator, as they were: on a second run they come back from where it put them.
-const EARLIER = old.reads ? {
-  identities: old.identities.slice(0, 2),
-  deals: [old.reads.groups[0]].map((g) => ({ name: g.name.replace(/^draft words: /, ''), blocks: g.blocks.map(({ reads_as: _r, ...b }) => b) })),
-  circles: [old.reads.groups[1]].map((g) => ({ name: g.name.replace(/^draft words: /, ''), blocks: g.blocks.map(({ reads_as: _r, ...b }) => b), older_end: g.older_end }))
-} : { identities: old.identities, deals: old.deals, circles: old.circles }
+// The identity vectors written before this generator, as they were (their hashes never change).
+// Their rotation named `last_good`, now `counted_to`: the blocks are written again in the merged name (their hashes
+// change from the rotation on, and each later block's prev is mapped), signed by the same keys.
+const migrate = (story) => {
+  const renamed = new Map()
+  const blocks = story.blocks.map((b) => {
+    const state = { ...b.block.state }
+    if ('last_good' in state) { state.counted_to = state.last_good; delete state.last_good }
+    const refs = Object.fromEntries(Object.entries(b.block.refs).map(([k, v]) => [k, Array.isArray(v) ? v.map((h) => renamed.get(h) || h) : renamed.get(v) || v]))
+    const block = fb.create(b.block.type, state, refs)
+    if (block.hash === b.hash) return b
+    const key = old.keys[b.signer]
+    renamed.set(b.hash, block.hash)
+    return { ...b, hash: block.hash, block: { type: block.type, state: block.state, refs: block.refs }, signature: fb.sign(block, key.private_key) }
+  })
+  const again = (map) => map && Object.fromEntries(Object.entries(map).map(([h, v]) => [renamed.get(h) || h, v]))
+  return { ...story, id: renamed.get(story.id) || story.id, blocks, ...(story.signed_by_author ? { signed_by_author: again(story.signed_by_author) } : {}), ...(story.arrivals ? { arrivals: again(story.arrivals) } : {}) }
+}
+const EARLIER = { identities: old.identities.slice(0, 2).map(migrate) }
 const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex')
 const keys = { ...old.keys }
 const keyOf = (name) => {
@@ -41,8 +55,8 @@ function story() {
     keep(`${name}: genesis`, g, name)
     return { name, id: g.hash, key, recovery, g }
   }
-  const say = (who, label, type, state, refs = {}, { key = who.name, audience = 'public', after, salts, link } = {}) => {
-    const block = fb.write(type, state, refs, { author: who.id, key: keyOf(key), held, at: at(), audience, after, salts, link })
+  const say = (who, label, type, state, refs = {}, { key = who.name, audience = 'public', after, salts, link, clockless } = {}) => {
+    const block = fb.write(type, state, refs, { author: who.id, key: keyOf(key), held, at: clockless ? undefined : at(), clockless, audience, after, salts, link })
     const { salts: _salts, ...signed } = block
     return keep(label, signed, key)
   }
@@ -70,7 +84,7 @@ function circleVector() {
   const circle = s.say(rae, 'the circle', 'actor', { kind: 'circle', name: 'Elm St co-op', public_key_encrypt: keyOf('circle').public_key_encrypt })
   const invitation = s.say(rae, 'the invitation', 'grant', { kind: 'member', roles: ['orders'] }, { subject: circle.hash, as: circle.hash, to: sol.id })
   const answer = s.say(sol, 'the answer', 'grant', { kind: 'member', status: 'accepted' }, { answers: invitation.hash, subject: circle.hash }, { after: [invitation.hash] })
-  s.say(rae, 'the end: an updates with status stopped', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: answer.hash }, { updates: invitation.hash, subject: circle.hash, as: circle.hash }, { after: [answer.hash] })
+  s.say(rae, 'the end: an updates with status stopped', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: answer.hash }, { updates: invitation.hash, subject: circle.hash, as: circle.hash }, { after: [answer.hash] })
   return { name: 'a membership: invitation, answer, and its end by an updates with status stopped', blocks: blocksOf(s), circle: circle.hash, expected: { members: [rae.id], removed: [sol.id] } }
 }
 
@@ -232,10 +246,10 @@ function circleFolds() {
   const leeInvite = invite(gus, lee, ['admin'], 'lee invited as admin by the founder'); const leeYes = yes(lee, leeInvite, 'lee says yes')
   const miaInvite = invite(jon, mia, ['admin'], 'mia invited as admin by jon', [jonYes.hash]); const miaYes = yes(mia, miaInvite, 'mia says yes')
   // lee and mia remove each other; neither's admin grant is earlier in causal order, so both removals stand.
-  s.say(lee, 'lee removes mia', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: miaYes.hash }, { updates: miaInvite.hash, subject: C.hash, as: C.hash }, { after: [leeYes.hash, miaYes.hash] })
-  s.say(mia, 'mia removes lee', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: leeYes.hash }, { updates: leeInvite.hash, subject: C.hash, as: C.hash }, { after: [leeYes.hash, miaYes.hash] })
+  s.say(lee, 'lee removes mia', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: miaYes.hash }, { updates: miaInvite.hash, subject: C.hash, as: C.hash }, { after: [leeYes.hash, miaYes.hash] })
+  s.say(mia, 'mia removes lee', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: leeYes.hash }, { updates: leeInvite.hash, subject: C.hash, as: C.hash }, { after: [leeYes.hash, miaYes.hash] })
   s.say(kim, 'kim leaves', 'grant', { kind: 'member', status: 'stopped', stop: 'onward' }, { answers: kimInvite.hash, subject: C.hash })
-  s.say(gus, 'hal is removed, his last counted block named', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: halYes.hash }, { updates: halInvite.hash, subject: C.hash, as: C.hash })
+  s.say(gus, 'hal is removed, his counted_to block named', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: halYes.hash }, { updates: halInvite.hash, subject: C.hash, as: C.hash })
   const state = fb.circleState(C, s.held)
   const members = Object.fromEntries(Object.entries(state.members).map(([who, member]) => [who, [...member.roles].sort()]))
   const expected = { members: { [gus.id]: ['admin'], [jon.id]: ['admin'] }, removed: [hal.id, kim.id, lee.id, mia.id].sort() }
@@ -249,7 +263,7 @@ function circleFolds() {
     const j1 = join(a1, ['admin']), j2 = join(a2, ['admin']), j3 = join(a3, ['admin']), jm = join(m, ['orders']), jq = join(q, ['speak'])
     const asM = t.say(m, 'rio signs as the circle (orders may)', 'observe', { kind: 'note', text: 'flour ordered' }, { as: K.hash }, { after: [jm.y.hash] })
     const asQ = t.say(q, 'sam signs as the circle (speak may not)', 'observe', { kind: 'note', text: 'hello' }, { as: K.hash }, { after: [jq.y.hash] })
-    const remove = (by, j, label) => t.say(by, label, 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: j3.y.hash }, { updates: j3.g.hash, subject: K.hash, as: K.hash }, { after: [j.y.hash, j3.y.hash] })
+    const remove = (by, j, label) => t.say(by, label, 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: j3.y.hash }, { updates: j3.g.hash, subject: K.hash, as: K.hash }, { after: [j.y.hash, j3.y.hash] })
     remove(a1, j1, 'ned_a removes pip')
     const one = blocksOf(t).slice()
     remove(a2, j2, 'oak agrees')
@@ -396,7 +410,7 @@ function identityVectors() {
     s.say(hub, 'hub builds on it', 'observe', { kind: 'confirm', confidence: '0.9' }, { confirms: used.hash })
     const late = s.say(gil, 'after the last good, arrived within the reach: void', 'observe', { kind: 'note', text: 'pay the thief' })
     const fresh = keyOf('gil_new')
-    const rotation = s.keep('the recovery rotation', keyGrant(gil.id, fresh.public_key_sign, { private_key: gil.recovery.private_key, recoveryKey: gil.recovery.public_key_sign, last: null }, { replaces: gil.key.public_key_sign, lastGood: early.hash, at: at() }), 'gil_recovery')
+    const rotation = s.keep('the recovery rotation', keyGrant(gil.id, fresh.public_key_sign, { private_key: gil.recovery.private_key, recoveryKey: gil.recovery.public_key_sign, last: null }, { replaces: gil.key.public_key_sign, countedTo: early.hash, at: at() }), 'gil_recovery')
     const arrivals = Object.fromEntries(s.held.map((block) => [block.hash, '2026-09-01T00:00:00.000Z']))
     arrivals[late.hash] = '2026-11-20T00:00:00.000Z'; arrivals[rotation.hash] = '2026-12-01T00:00:00.000Z'
     const options = { arrivedAt: (hash) => arrivals[hash] }
@@ -410,9 +424,9 @@ function identityVectors() {
     const device = s.keep('a device key', keyGrant(hal.id, laptop.public_key_sign, { private_key: hal.key.private_key, last: null, broughtIn: hal.id }, { at: at() }), 'ida')
     const one = s.say(hal, 'last good', 'observe', { kind: 'note', text: 'mine' })
     const a = keyOf('ida_a'), b = keyOf('ida_b')
-    const rotA = s.keep('a rotation to key a', keyGrant(hal.id, a.public_key_sign, { private_key: hal.key.private_key, last: one }, { replaces: hal.key.public_key_sign, lastGood: one.hash, at: at() }), 'ida')
+    const rotA = s.keep('a rotation to key a', keyGrant(hal.id, a.public_key_sign, { private_key: hal.key.private_key, last: one }, { replaces: hal.key.public_key_sign, countedTo: one.hash, at: at() }), 'ida')
     // The same key signs a rival rotation from the same place in its chain: it does not see the first.
-    const rotB = s.keep('a rival rotation to key b, not seeing it', keyGrant(hal.id, b.public_key_sign, { private_key: hal.key.private_key, last: one }, { replaces: hal.key.public_key_sign, lastGood: one.hash, at: at() }), 'ida')
+    const rotB = s.keep('a rival rotation to key b, not seeing it', keyGrant(hal.id, b.public_key_sign, { private_key: hal.key.private_key, last: one }, { replaces: hal.key.public_key_sign, countedTo: one.hash, at: at() }), 'ida')
     const fromA = s.say(hal, 'key a speaks: frozen', 'observe', { kind: 'note', text: 'a' }, {}, { key: 'ida_a', link: { seq: 1, prev: rotA.hash } })
     const fromLaptop = s.say(hal, 'the laptop key keeps speaking', 'observe', { kind: 'note', text: 'laptop' }, {}, { key: 'ida_laptop' })
     const got = record('two rotations of one key that do not see each other freeze only the keys they bring in', s, hal.id, { frozen: [a.public_key_sign, b.public_key_sign].sort() })
@@ -428,7 +442,7 @@ function identityVectors() {
     const broughtOn = s.keep('the thief key brings in another', keyGrant(jo.id, second.public_key_sign, { private_key: thief.private_key, last: null, broughtIn: brought.hash }, { at: at() }), 'jud_thief')
     const fromSecond = s.say(jo, 'the second thief key speaks: void', 'observe', { kind: 'note', text: 'pay me' }, {}, { key: 'jud_thief2', link: { seq: 1, prev: broughtOn.hash } })
     const fresh = keyOf('jud_new')
-    s.keep('the rotation by the key itself, naming its last good block', keyGrant(jo.id, fresh.public_key_sign, { private_key: jo.key.private_key, last: brought }, { replaces: jo.key.public_key_sign, lastGood: good.hash, at: at() }), 'jud')
+    s.keep('the rotation by the key itself, naming its counted_to block', keyGrant(jo.id, fresh.public_key_sign, { private_key: jo.key.private_key, last: brought }, { replaces: jo.key.public_key_sign, countedTo: good.hash, at: at() }), 'jud')
     const got = record('a key brought in by a void block is void, and so is every key it brought in', s, jo.id)
     assert.deepEqual([got[brought.hash], got[broughtOn.hash], got[fromSecond.hash]], [false, false, false])
   }
@@ -437,7 +451,7 @@ function identityVectors() {
     const s = story(), kit = s.person('kit')
     const laptop = keyOf('kit_laptop')
     const device = s.keep('a device key', keyGrant(kit.id, laptop.public_key_sign, { private_key: kit.key.private_key, last: null, broughtIn: kit.id }, { at: at() }), 'kit')
-    const rogue = s.keep('the laptop key tries to rotate the genesis key: not counted', keyGrant(kit.id, keyOf('kit_rogue').public_key_sign, { private_key: laptop.private_key, last: null, broughtIn: device.hash }, { replaces: kit.key.public_key_sign, lastGood: device.hash, at: at() }), 'kit_laptop')
+    const rogue = s.keep('the laptop key tries to rotate the genesis key: not counted', keyGrant(kit.id, keyOf('kit_rogue').public_key_sign, { private_key: laptop.private_key, last: null, broughtIn: device.hash }, { replaces: kit.key.public_key_sign, countedTo: device.hash, at: at() }), 'kit_laptop')
     const still = s.say(kit, 'the genesis key still speaks', 'observe', { kind: 'note', text: 'still me' })
     const got = record('a rotation by another of the id\'s keys is not counted: its key never comes in', s, kit.id)
     assert.deepEqual([got[rogue.hash], got[still.hash]], [true, true])
@@ -555,7 +569,7 @@ function refusals() {
   return { blocks: blocksOf(s), cases: out }
 }
 
-// ---- Alias reads: one per row ----
+// ---- Alias reads: one per row of aliases.json ----
 function reads() {
   const A = sha('a'), B = sha('b'), C = sha('c'), D = sha('d')
   const cases = [
@@ -565,37 +579,14 @@ function reads() {
     ['types: a retired type', { type: 'observe.checkout_error', state: {}, refs: {} }],
     ['types: fields renamed (a preference\'s kind is what it says)', { type: 'observe.preference', state: { kind: 'vegan' }, refs: {} }],
     ['promise: seller, buyer and need; due', { type: 'transfer.order', state: { status: 'accepted', due: '2026-10-20T00:00:00.000Z' }, refs: { seller: A, buyer: B, need: C } }],
-    ['promise: not_true reads as stopped onward', { type: 'promise', state: { status: 'not_true' }, refs: { updates: A } }],
-    ['promise: revoked reads as stopped onward', { type: 'promise', state: { status: 'revoked' }, refs: { updates: A } }],
     ['promise: delivered marks what it settles', { type: 'promise', state: { status: 'delivered' }, refs: { seller: A, buyer: B, updates: C } }],
-    ['promise: state.delivered marks what it settles', { type: 'promise', state: { seq: 3, delivered: { value: '1', unit: '{tray}' } }, refs: { author: A, updates: C } }],
-    ['promise: offered reads as no status (read from who signed)', { type: 'promise', state: { seq: 2, status: 'offered' }, refs: { author: A, from: A, to: B } }],
-    ['promise: asked reads as no status', { type: 'promise', state: { seq: 2, status: 'asked' }, refs: { author: B, from: A, to: B } }],
-    ['promise: withdrawn reads as stopped before', { type: 'promise', state: { seq: 2, status: 'withdrawn' }, refs: { author: A, updates: C } }],
-    ['promise: ended reads as stopped onward', { type: 'promise', state: { seq: 2, status: 'ended' }, refs: { author: A, updates: C } }],
-    ['promise: paused reads as stopped occurrences', { type: 'promise', state: { seq: 2, status: 'paused', occurrences: ['2026-10-23T09:00:00.000Z'] }, refs: { author: B, answers: C } }],
-    ['promise: a top-level condition reads as terms.condition', { type: 'promise', state: { seq: 2, condition: { collect: 'Saturday' } }, refs: { author: A, from: A } }],
-    ['promise: counterparty beside from reads as to', { type: 'promise', state: { seq: 2 }, refs: { author: A, from: A, counterparty: B } }],
-    ['promise: counterparty beside to reads as from', { type: 'promise', state: { seq: 2 }, refs: { author: B, to: B, counterparty: A } }],
-    ['every type: refs.deal reads as for', { type: 'promise', state: { seq: 2, status: 'accepted' }, refs: { author: B, answers: C, deal: C } }],
-    ['every type: state.rule reads as refs.under', { type: 'observe', state: { seq: 2, kind: 'vote', rule: D }, refs: { author: A } }],
     ['transfer: order reads as for', { type: 'transfer', state: { kind: 'payment' }, refs: { order: C } }],
-    ['observe.want and observe.intent read as an ask', { type: 'observe.intent', state: { product_name: 'cream' }, refs: { author: A } }],
-    ['grant: revoked reads as stopped onward', { type: 'grant', state: { kind: 'agent', status: 'revoked' }, refs: { updates: A } }],
-    ['grant: live reads as no status', { type: 'grant', state: { seq: 6, kind: 'agent', status: 'live' }, refs: { author: A, agent: B } }],
-    ['grant: withdrawn reads as stopped onward', { type: 'grant', state: { seq: 7, kind: 'agent', status: 'withdrawn' }, refs: { author: A, updates: C } }],
-    ['grant: refs.agent reads as to', { type: 'grant', state: { seq: 6, kind: 'agent' }, refs: { author: A, agent: B } }],
-    ['grant: scope.parties "any" reads as left out (everyone)', { type: 'grant', state: { seq: 6, kind: 'agent', scope: { parties: 'any', until: '2026-12-31T00:00:00.000Z' } }, refs: { author: A, to: B } }],
     ['grant.member: member and group', { type: 'grant', state: { kind: 'member' }, refs: { author: A, group: C, member: B } }],
     ['grant.member: a join by confirms reads as an accepted answer', { type: 'grant', state: { kind: 'member' }, refs: { author: B, group: C, confirms: D } }],
     ['grant.member: an end by defeats reads as an update with status stopped', { type: 'grant', state: { kind: 'member' }, refs: { author: A, group: C, defeats: D } }],
-    ['grant.member: an invitation without as reads as signed as the circle', { type: 'grant', state: { seq: 2, kind: 'member' }, refs: { author: A, subject: C, agent: B } }],
+    ['grant.member: an invitation without as reads as signed as the circle', { type: 'grant', state: { seq: 2, kind: 'member' }, refs: { author: A, subject: C, to: B } }],
     ['grant.holder: member and group', { type: 'grant', state: { kind: 'holder' }, refs: { author: A, group: C, member: B } }],
     ['grant.voice: member and group', { type: 'grant', state: { kind: 'voice' }, refs: { author: A, group: C, member: B } }],
-    ['grant.body: refs.member reads as to', { type: 'grant', state: { seq: 2, kind: 'body' }, refs: { author: A, subject: A, member: B } }],
-    ['grant.successor: sealed reads as keys', { type: 'grant', state: { seq: 2, kind: 'successor', sealed: { alg: 'x' } }, refs: { author: A, to: B } }],
-    ['actor: an agent\'s operator is named only by its grant', { type: 'actor', state: { seq: 2, kind: 'agent', operator: A }, refs: { author: A, operator: A } }],
-    ['schema: the type schema reads as a thing of kind schema, its kind into its target', { type: 'schema', state: { seq: 9, target: 'thing', kind: 'eggs', fields: { lot: 'text' } }, refs: { author: A } }],
     ['observe.received: confirms marks what it settles', { type: 'observe', state: { kind: 'received' }, refs: { confirms: C } }],
     ['observe.attestation: received marks what it settles', { type: 'observe.attestation', state: { received: true }, refs: { confirms: C } }],
     ['observe.attestation: accepted reads as a member\'s answer', { type: 'observe.attestation', state: { accepted: true }, refs: { author: B, group: C, confirms: D } }],
@@ -608,8 +599,7 @@ function reads() {
     const reads_as = { type: read.type, state: read.state, refs: read.refs, ...(read.settles ? { settles: read.settles } : {}), ...(read.outside ? { outside: read.outside } : {}), ...(read.retired ? { retired: true } : {}) }
     return { name, block, reads_as }
   })
-  const draftRead = (name, group) => ({ name, blocks: group.blocks.map((b) => ({ name: b.name, hash: b.hash, block: b.block, signer: b.signer, signature: b.signature, reads_as: (({ type, state, refs }) => ({ type, state, refs }))(fb.readAs({ hash: b.hash, ...b.block })) })) })
-  return { cases: out, groups: [draftRead(`draft words: ${EARLIER.deals[0].name}`, EARLIER.deals[0]), { ...draftRead(`draft words: ${EARLIER.circles[0].name}`, EARLIER.circles[0]), older_end: (({ block }) => { const read = fb.readAs(fb.create(block.type, block.state, block.refs)); return { block, reads_as: { type: read.type, status: read.state.status, stop: read.state.stop, updates: read.refs.updates } } })(EARLIER.circles[0].older_end) }] }
+  return { cases: out }
 }
 
 // ---- Sealed copies, headers and node messages ----
@@ -626,7 +616,7 @@ function messages() {
   assert.equal(opened.hash, note.hash)
   const sealed = [{ name: 'a private block sealed to one recipient, its reveal inside, its header signed', recipient: 'jem', signer: 'ivo', message, opens_to: { hash: note.hash, signature: note.signature, reveals: [fb.revealFor(salts, jon.id)] } }]
   const headers = s.out.filter((b) => b.block.state.seq !== undefined).map((b) => ({ name: b.name, hash: b.hash, header: fb.header({ hash: b.hash, ...b.block }), signer: b.signer, header_signature: fb.signMessage(fb.header({ hash: b.hash, ...b.block }), keyOf(b.signer).private_key).signature }))
-  const pull = fb.sync.signPull({ since: 0, limit: 10, filter: { author: ivy.id } }, { asker: jon.id, node: node.id, privateKey: jon.key.private_key, nonce: sha('pull nonce').slice(0, 32), at: '2026-10-15T12:59:00.000Z' })
+  const pull = fb.sync.signPull({ since: 0, limit: 10, filter: { author: ivy.id } }, { signer: jon.id, node: node.id, privateKey: jon.key.private_key, nonce: sha('pull nonce').slice(0, 32), at: '2026-10-15T12:59:00.000Z' })
   assert.deepEqual(fb.sync.pullErrors(pull, { node: node.id, now: '2026-10-15T13:00:00.000Z', keys: [jon.key.public_key_sign] }), [])
   const log = s.held.map((block, i) => ({ n: i + 1, block, ...(block.hash === note.hash ? { copies: { [jon.id]: message }, header_signature: message.header_signature } : {}) }))
   const answer = fb.sync.answerPull(log, pull, { node: node.id, privateKey: node.key.private_key })
@@ -637,14 +627,13 @@ function messages() {
     push_answer: { message: push }, discovery, announcement: fb.sync.announcement(discovery) } }
 }
 
-// ---- Hashes: the earlier vectors, those in draft words marked ----
+// ---- Hashes: the earlier vectors, byte for byte. A block in an earlier shape (a status on a promise that answers
+// nothing, refs.deal, the type schema) is no longer read by any rule; the strict check refuses it, with these codes. ----
 function markHashes() {
   return old.hashes.map((v) => {
-    const { draft_words: _d, reads_as: _r, ...rest } = v
+    const { draft_words: earlier, refused: _f, reads_as: _r, ...rest } = v
     const strict = codesOf(fb.refusals(v.block.type, v.block.state, v.block.refs))
-    if (!strict.length) return rest
-    const read = fb.readAs({ hash: v.hash, ...v.block })
-    return { ...rest, draft_words: strict, reads_as: { type: read.type, state: read.state, refs: read.refs } }
+    return strict.length ? { ...rest, refused: strict } : rest
   })
 }
 
@@ -696,7 +685,7 @@ function finalVectors(vectors) {
     const C = s.say(ida, 'the circle', 'actor', { kind: 'circle', name: 'Night market' })
     const one = s.say(ida, 'joe invited', 'grant', { kind: 'member', roles: ['orders'] }, { subject: C.hash, as: C.hash, to: joe.id })
     const yes = s.say(joe, 'joe says yes', 'grant', { kind: 'member', status: 'accepted' }, { answers: one.hash, subject: C.hash }, { after: [one.hash] })
-    const out = s.say(ida, 'joe removed', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: yes.hash }, { updates: one.hash, subject: C.hash, as: C.hash }, { after: [yes.hash] })
+    const out = s.say(ida, 'joe removed', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: yes.hash }, { updates: one.hash, subject: C.hash, as: C.hash }, { after: [yes.hash] })
     const two = s.say(ida, 'joe invited again', 'grant', { kind: 'member', roles: ['orders'] }, { subject: C.hash, as: C.hash, to: joe.id }, { after: [out.hash] })
     s.say(joe, 'joe says yes again', 'grant', { kind: 'member', status: 'accepted' }, { answers: two.hash, subject: C.hash }, { after: [two.hash] })
     const expected = { members: { [ida.id]: ['admin'], [joe.id]: ['orders'] }, removed: [] }
@@ -778,7 +767,7 @@ function codesVectors(vectors) {
     assert.deepEqual(codesOf(pushed.refused), ['void_key'])
     vectors.identities.push({ name: 'two key grants at one seq freeze the keys they bring in, whether or not they rotate', id: p.id, blocks: before, signed_by_author: state.signed_by_author, keys: state.keys, frozen: state.frozen, history: state.history })
     vectors.refusals.cases.push({ name: 'a block signed by a frozen key: a key of its author that does not speak', by: 'accept', incoming: [fromA.hash], held: before.filter((b) => b.hash !== fromA.hash).map((b) => b.hash), codes: ['void_key'] })
-    s.keep('the recovery key rotates the forked key, having seen key a\'s grant', keyGrant(p.id, keyOf('xena_new').public_key_sign, { private_key: p.recovery.private_key, recoveryKey: p.recovery.public_key_sign, last: null }, { replaces: p.key.public_key_sign, lastGood: gA.hash, after: [gA.hash], at: at() }), 'xena_recovery')
+    s.keep('the recovery key rotates the forked key, having seen key a\'s grant', keyGrant(p.id, keyOf('xena_new').public_key_sign, { private_key: p.recovery.private_key, recoveryKey: p.recovery.public_key_sign, last: null }, { replaces: p.key.public_key_sign, countedTo: gA.hash, after: [gA.hash], at: at() }), 'xena_recovery')
     state = fb.identityState(p.id, s.held)
     assert.deepEqual([state.frozen, state.signed_by_author[fromA.hash]], [[b.public_key_sign], true])
     vectors.identities.push({ name: 'a recovery rotation settles a key-grant pair: the key in its causal past speaks, the other stays frozen', id: p.id, blocks: blocksOf(s), signed_by_author: state.signed_by_author, keys: state.keys, frozen: state.frozen, history: state.history })
@@ -830,7 +819,7 @@ function codesVectors(vectors) {
     const raw = sha('sms from +234 800 000 0000: 2 trays of eggs for Saturday')
     const said = s.say(ama, 'the co-op signs on her word, by SMS: the channel and the raw message named', 'observe', { kind: 'note', text: '2 trays of eggs for Saturday', channel: 'sms' }, { derives_from: raw })
     const phone = keyOf('ama_phone')
-    const moved = s.keep('ama takes her key: a key grant to her own phone rotates the held key out', fb.identity.takeKeys(ama.id, phone.public_key_sign, { private_key: key.private_key, last: said }, { heldKey: key.public_key_sign, lastGood: said.hash, at: at() }), 'ama')
+    const moved = s.keep('ama takes her key: a key grant to her own phone rotates the held key out', fb.identity.takeKeys(ama.id, phone.public_key_sign, { private_key: key.private_key, last: said }, { heldKey: key.public_key_sign, countedTo: said.hash, at: at() }), 'ama')
     const own = s.say(ama, 'ama speaks from her own phone', 'observe', { kind: 'note', text: 'eggs collected' }, {}, { key: 'ama_phone' })
     const state = fb.identityState(ama.id, s.held)
     assert.deepEqual([state.signed_by_author[said.hash], state.signed_by_author[moved.hash], state.signed_by_author[own.hash], state.keys], [true, true, true, [key.public_key_sign, phone.public_key_sign].sort()])
@@ -858,7 +847,7 @@ function custodyVectors(vectors) {
     assert.equal(grant.state.custodian, coop.id)
     assert.deepEqual(fb.refusals(grant.type, grant.state, grant.refs), [], 'a custodial key grant passes the write check')
     const said = s.say(mimi, 'the co-op signs on her word, by voice: the channel and the raw message named', 'observe', { kind: 'note', text: 'a dozen eggs for Friday', channel: 'voice' }, { derives_from: sha('voice message from +234 800 000 0001') }, { key: 'mimi_sim', link: { seq: 1, prev: grant.hash } })
-    const taken = s.keep('mimi takes her keys: her recovery key rotates the held key out for her own device key', fb.identity.takeKeys(mimi.id, own.public_key_sign, { private_key: mimi.recovery.private_key, recoveryKey: mimi.recovery.public_key_sign, last: null }, { heldKey: held.public_key_sign, lastGood: said.hash, at: at() }), 'mimi_recovery')
+    const taken = s.keep('mimi takes her keys: her recovery key rotates the held key out for her own device key', fb.identity.takeKeys(mimi.id, own.public_key_sign, { private_key: mimi.recovery.private_key, recoveryKey: mimi.recovery.public_key_sign, last: null }, { heldKey: held.public_key_sign, countedTo: said.hash, at: at() }), 'mimi_recovery')
     assert.equal(taken.state.custodian, undefined)
     const mine = s.say(mimi, 'mimi speaks from her own device', 'observe', { kind: 'note', text: 'eggs collected' }, {}, { key: 'mimi_own', link: { seq: 1, prev: taken.hash } })
     const state = standing(mimi.id, s)
@@ -935,6 +924,187 @@ function custodyVectors(vectors) {
   }
 }
 
+
+// ---- The rules of the redesigned spec: no clock, currencies, algorithms, counted_to and signer in older words, the compact form ----
+// A deliberately small CBOR writer, independent of the core, to build the malformed inputs a reader must refuse.
+const cbor = (() => {
+  const head = (major, n) => n < 24 ? [major << 5 | n] : n < 256 ? [major << 5 | 24, n] : n < 65536 ? [major << 5 | 25, n >> 8, n & 255] : [major << 5 | 26, ...[24, 16, 8, 0].map((sh) => (n >>> sh) & 255)]
+  const text = (t) => { const b = [...Buffer.from(t, 'utf8')]; return [...head(3, b.length), ...b] }
+  const bytes = (b) => [...head(2, b.length), ...b]
+  const uint = (n) => head(0, n)
+  const map = (pairs) => [...head(5, pairs.length), ...pairs.flat(2)]
+  const array = (items) => [...head(4, items.length), ...items.flat()]
+  return { head, text, bytes, uint, map, array, hex: (a) => Buffer.from(a).toString('hex') }
+})()
+
+function rulesVectors(vectors) {
+  const R = vectors.refusals
+  const heldIn = (list) => list.map((b) => ({ hash: b.hash, ...b.block, signature: b.signature }))
+  // A: a micro with no clock leaves out `at` on an observe, a transform and a transfer; every other type says when.
+  const s = story(), dev = s.person('tal', { kind: 'machine' })
+  const eggs = s.say(dev, 'tal: the kind eggs', 'thing', { kind: 'eggs' })
+  const reading = s.say(dev, 'a micro reading with no clock: an observe may leave out at', 'observe', { kind: 'reading', amount: fb.amount('3.9', 'Cel') }, { subject: dev.id }, { clockless: true })
+  const make = s.say(dev, 'a micro transform with no clock', 'transform', { kind: 'make' }, { derives_from: [eggs.hash] }, { clockless: true })
+  const moved = s.say(dev, 'a micro transfer with no clock', 'transfer', {}, { to_owner: dev.id, what: eggs.hash }, { clockless: true })
+  for (const b of [reading, make, moved]) assert.equal(b.state.at, undefined)
+  const check = (name, type, state, refs, codes, extra = {}) => {
+    assert.deepEqual(codesOf(fb.refusals(type, state, refs, extra.held ? { held: new Map(extra.held.map((b) => [b.hash, b])) } : undefined)), codes, name)
+    R.cases.push({ name, by: 'check', block: { type, state, refs }, ...(extra.held ? { held: extra.held.map((b) => b.hash) } : {}), codes })
+  }
+  R.blocks.push(...blocksOf(s))
+  for (const b of [reading, make, moved]) check(`${b.type}: no at on a micro with no clock is accepted`, b.type, b.state, b.refs, [])
+  const base = { seq: 5, audience: 'public' }, refs = { author: dev.id, prev: moved.hash }
+  check('a thing with no at: only an observe, transform or transfer may leave it out', 'thing', { ...base, kind: 'eggs' }, refs, ['at_missing'])
+  check('a promise with no at', 'promise', { ...base, terms: { price: fb.money(100, 'GBP'), expires: '2026-10-20T00:00:00.000Z' } }, { ...refs, from: dev.id, to: dev.id }, ['at_missing'])
+  check('a grant with no at', 'grant', { ...base, kind: 'operator' }, { ...refs, to: dev.id }, ['at_missing'])
+  // at and after are compared only when both carry at
+  const named = s.byName('tal: the kind eggs')
+  check('at is earlier than a block named in after, both carrying at', 'observe', { ...base, at: '2000-01-01T00:00:00.000Z', kind: 'note', text: 'old' }, { ...refs, after: eggs.hash }, ['at_before_after'], { held: [eggs] })
+  check('at is compared with after only when both are present: no at, no check', 'observe', { ...base, kind: 'note', text: 'no clock' }, { ...refs, after: eggs.hash }, [], { held: [eggs] })
+  assert.ok(named)
+
+  // B: money. A currency is an ISO code or an issuer's own unit; the protocol never adds or compares across currencies.
+  const bread = { issuer: keyOf('tal').public_key_sign.slice(-64), unit: 'bread credit', decimals: 0 }
+  const note = (money) => ({ ...base, at: '2026-10-15T12:30:00.000Z', kind: 'note', price: money })
+  check('money in an issuer unit { issuer, unit, decimals } is accepted', 'transfer', { ...base, at: '2026-10-15T12:30:00.000Z', money: { minor: 3, currency: bread } }, { ...refs, to_owner: dev.id }, [])
+  check('money: a currency that is neither an ISO code nor an issuer unit', 'transfer', { ...base, at: '2026-10-15T12:30:00.000Z', money: { minor: 3, currency: 'gbp' } }, { ...refs, to_owner: dev.id }, ['shape'])
+  check('money: an issuer unit needs its decimals', 'transfer', { ...base, at: '2026-10-15T12:30:00.000Z', money: { minor: 3, currency: { issuer: bread.issuer, unit: 'bread credit' } } }, { ...refs, to_owner: dev.id }, ['shape'])
+  check('money: an issuer unit names its issuer by an id', 'transfer', { ...base, at: '2026-10-15T12:30:00.000Z', money: { minor: 3, currency: { ...bread, issuer: 'the bakery' } } }, { ...refs, to_owner: dev.id }, ['shape'])
+  check('money: decimals above the limit', 'transfer', { ...base, at: '2026-10-15T12:30:00.000Z', money: { minor: 3, currency: { ...bread, decimals: 19 } } }, { ...refs, to_owner: dev.id }, ['shape'])
+  void note
+  {
+    const t = story(), ann = t.person('uri'), bob = t.person('vic')
+    const kind = t.say(ann, 'the kind: loaves', 'thing', { kind: 'loaves' })
+    const tray = t.say(ann, 'an instance: a loaf', 'thing', { lot: 'L1', pack: fb.amount('1', '{loaf}') }, { kind: kind.hash })
+    const price = (currency) => ({ minor: 500, currency })
+    const offer = t.say(ann, 'the offer: a loaf for 500 bread credits', 'promise', { terms: { price: price(bread), quantity: fb.amount('1', '{loaf}'), expires: '2026-10-20T00:00:00.000Z' } }, { from: ann.id, to: bob.id, what: kind.hash })
+    t.say(bob, 'the accept', 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash }, { after: [offer.hash] })
+    const stage = () => fb.promiseStage(t.held.find((b) => b.hash === offer.hash), t.held)
+    const loaf = t.say(ann, 'the loaf', 'transfer', { amount: fb.amount('1', '{loaf}') }, { to_owner: bob.id, what: tray.hash, for: offer.hash })
+    t.say(bob, 'the loaf received', 'transfer', { status: 'accepted' }, { answers: loaf.hash, for: offer.hash }, { after: [loaf.hash] })
+    const pay = (label, money) => { const p = t.say(bob, label, 'transfer', { money }, { to_owner: ann.id, for: offer.hash }); t.say(ann, `${label}: received`, 'transfer', { status: 'accepted' }, { answers: p.hash, for: offer.hash }, { after: [p.hash] }) }
+    pay('500 pounds: another currency', fb.money(500, 'GBP'))
+    const before = stage()
+    assert.deepEqual([before.stage, before.paid.minor], ['underway', 0], 'money in another currency is not counted')
+    vectors.folds.promises.push({ name: 'money: a payment in another currency than the price counts for nothing', blocks: blocksOf(t).slice(), first: offer.hash, expected: { stage: 'underway', paid: { minor: 0, currency: bread }, total: price(bread) } })
+    pay('500 bread credits', price(bread))
+    assert.equal(stage().stage, 'done')
+    vectors.folds.promises.push({ name: 'money: the price in an issuer unit is paid in that unit', blocks: blocksOf(t), first: offer.hash, expected: { stage: 'done', paid: price(bread), total: price(bread) } })
+  }
+
+  // C: algorithms. A key names its algorithms; an unknown one is refused.
+  const key = keyOf('tal'), recovery = keyOf('tal_recovery')
+  const genesisState = { kind: 'machine', at: '2026-10-15T12:00:00.000Z', audience: 'public', public_key_sign: key.public_key_sign, public_key_encrypt: key.public_key_encrypt, recovery_key_hash: recoveryKeyHash(recovery.public_key_sign), recovery_reach: 'P30D' }
+  check('a genesis names the default algorithms: accepted', 'actor', { ...genesisState, alg_sign: 'ed25519', alg_encrypt: 'x25519', alg_recovery: 'ed25519' }, {}, [])
+  check('a genesis names a signing algorithm the reader does not know', 'actor', { ...genesisState, alg_sign: 'ml-dsa-44' }, {}, ['unknown_alg'])
+  check('a genesis names an encryption algorithm the reader does not know', 'actor', { ...genesisState, alg_encrypt: 'kyber768' }, {}, ['unknown_alg'])
+  check('a genesis names a recovery algorithm the reader does not know', 'actor', { ...genesisState, alg_recovery: 'rsa' }, {}, ['unknown_alg'])
+  const grantState = { seq: 6, at: '2026-10-15T12:40:00.000Z', audience: 'public', kind: 'key', public_key_sign: keyOf('tal_new').public_key_sign }
+  check('a key grant names a signing algorithm the reader does not know', 'grant', { ...grantState, alg_sign: 'ml-dsa-44' }, { author: dev.id, prev: moved.hash, subject: dev.id }, ['unknown_alg'])
+  check('a key grant moves an encryption key to an algorithm the reader does not know', 'grant', { seq: 6, at: grantState.at, audience: 'public', kind: 'key', public_key_encrypt: key.public_key_encrypt, alg_encrypt: 'kyber768' }, { author: dev.id, prev: moved.hash, subject: dev.id }, ['unknown_alg'])
+
+  // D: counted_to and signer, read from older words
+  const G = (state, refsOf) => ({ author: 'a'.repeat(64), ...refsOf, ...(state ? {} : {}) })
+  void G
+  vectors.reads.cases.push(
+    ...[['last_good', 'a rotation names its last_good block'], ['last_counted', 'a removal names its last_counted block']].map(([from, name]) => {
+      const block = from === 'last_good'
+        ? { type: 'grant', state: { seq: 2, kind: 'key', public_key_sign: keyOf('tal_new').public_key_sign, replaces: key.public_key_sign, last_good: reading.hash }, refs: { author: dev.id, subject: dev.id, prev: eggs.hash } }
+        : { type: 'grant', state: { seq: 3, kind: 'member', status: 'stopped', stop: 'onward', last_counted: reading.hash }, refs: { author: dev.id, subject: eggs.hash, as: eggs.hash, updates: make.hash } }
+      const read = fb.readAs(fb.create(block.type, block.state, block.refs))
+      assert.equal(read.state.counted_to, reading.hash)
+      assert.equal(read.state[from], undefined)
+      return { name: `grant: ${name} reads as counted_to`, block, reads_as: { type: read.type, state: read.state, refs: read.refs } }
+    }))
+  {
+    // An older identity: its history is in the old words, a removal names last_counted; the fold returns counted_to.
+    const t = story(), older = (name, time) => { const k = keyOf(name), g = fb.create('actor', { kind: 'person', public_key_sign: k.public_key_sign, at: time, audience: 'public' }, {}); g.signature = fb.sign(g, k.private_key); t.keep(`${name}: an older genesis (no recovery)`, g, name); return { name, id: g.hash, key: k } }
+    const hist = (who, label, type, state, rf) => { const b = fb.create(type, state, { author: who.id, ...rf }); b.signature = fb.sign(b, who.key.private_key); return t.keep(label, b, who.name) }
+    const yan = older('yan', '2026-03-01T00:00:00.000Z'), zed = older('zed', '2026-03-02T00:00:00.000Z')
+    const C = hist(yan, 'the circle, before 1.6', 'actor', { kind: 'circle', name: 'Old co-op', at: '2026-03-03T00:00:00.000Z' }, {})
+    const invite = hist(yan, 'zed invited, in the old words', 'grant', { kind: 'member', roles: ['orders'], at: '2026-03-04T00:00:00.000Z' }, { group: C.hash, member: zed.id })
+    const join = hist(zed, 'zed joins, in the old words', 'grant', { kind: 'member', at: '2026-03-05T00:00:00.000Z' }, { group: C.hash, confirms: invite.hash })
+    hist(yan, 'zed is removed, in the old words, his last_counted block named', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', last_counted: join.hash, at: '2026-03-06T00:00:00.000Z' }, { updates: invite.hash, subject: C.hash, as: C.hash })
+    const state = fb.circleState(C.hash, t.held)
+    assert.deepEqual([Object.keys(state.members), state.removed], [[yan.id], { [zed.id]: join.hash }])
+    vectors.folds.circles.push({ name: 'an older removal names last_counted: the fold returns it as counted_to', blocks: blocksOf(t), circle: C.hash, expected: { members: [yan.id], removed: [zed.id], counted_to: { [zed.id]: join.hash } } })
+  }
+  {
+    // A signed pull and push in the older words: asker and pusher read as signer.
+    const node = vectors.messages.node, jon = keyOf('jem')
+    const fresh = (nonce, extra) => ({ node, nonce: sha(nonce).slice(0, 32), at: '2026-10-15T13:00:00.000Z', ...extra })
+    const pull = fb.signMessage({ since: 0, limit: 10, filter: {}, asker: sha('jem id'), ...fresh('asker nonce') }, jon.private_key)
+    const push = fb.signMessage({ messages: [], pusher: sha('jem id'), ...fresh('pusher nonce') }, jon.private_key)
+    const options = { node, now: '2026-10-15T13:00:00.000Z', keys: [jon.public_key_sign] }
+    assert.deepEqual(fb.sync.pullErrors(pull, options), [])
+    assert.deepEqual(fb.sync.pushRefusals(push, options), [])
+    vectors.messages.older = { signed_pull: { message: pull, signer: 'jem', now: options.now }, signed_push: { message: push, signer: 'jem', now: options.now } }
+  }
+  void heldIn
+  cborVectors(vectors, s, { reading, make, moved, eggs, dev })
+}
+
+// ---- The compact form (CBOR): block <-> bytes, the sizes, the loose encodings a reader accepts, and what it refuses ----
+function cborVectors(vectors, s, { reading, moved, dev }) {
+  const sig = (b) => b.signature
+  const find = (list, name) => list.find((b) => b.name.startsWith(name))
+  const veg = find(vectors.folds.promises.flatMap((v) => v.blocks), 'a weekly veg box')
+  const rotation = vectors.identities.flatMap((v) => v.blocks).find((b) => b.block.state.counted_to)
+  const genesisBlock = s.byName('tal: genesis')
+  const entries = [[`a micro observe with no at, three refs`, reading.hash, reading.signer || 'tal', reading], ['a genesis: keys, the recovery hash', genesisBlock.hash, 'tal', genesisBlock], ['a micro transfer with no at', moved.hash, 'tal', moved],
+    ['a promise: money, times as milliseconds, a standing when', veg.hash, veg.signer, veg], ['a key grant: the rotated key, counted_to as bytes', rotation.hash, rotation.signer, rotation]]
+  const cases = entries.map(([name, hash, signer, b]) => {
+    const block = b.block || { type: b.type, state: b.state, refs: b.refs }
+    const signed = { hash, ...block, signature: b.signature }
+    const text = fb.cbor.encode(signed), short = fb.cbor.encode(signed, { short: true })
+    for (const bytes of [text, short]) { const back = fb.cbor.decode(bytes); assert.deepEqual(back, signed); assert.equal(fb.hash(back.type, back.state, back.refs), hash) }
+    assert.deepEqual(Buffer.from(fb.cbor.encode(signed)), Buffer.from(text), 'writing is deterministic')
+    return { name, signer, block, signature: b.signature, hash, canonical_bytes: Buffer.byteLength(fb.canonical(block.type, block.state, block.refs)), cbor: Buffer.from(text).toString('hex'), cbor_short: Buffer.from(short).toString('hex') }
+  })
+  const members = [reading, moved].map((b) => ({ hash: b.hash, type: b.type, state: b.state, refs: b.refs, signature: b.signature }))
+  const push = { name: 'a push of two messages', hashes: members.map((b) => b.hash), cbor: Buffer.from(fb.cbor.encodePush(members)).toString('hex'), cbor_short: Buffer.from(fb.cbor.encodePush(members, { short: true })).toString('hex') }
+  assert.deepEqual(fb.cbor.decodePush(fb.cbor.encodePush(members, { short: true })), members)
+  const header = { author: dev.id, seq: reading.state.seq, prev: reading.refs.prev, hash: reading.hash }
+  const headers = [{ name: 'a chain header', header, cbor: Buffer.from(fb.cbor.encodeHeader(header)).toString('hex'), cbor_short: Buffer.from(fb.cbor.encodeHeader(header, { short: true })).toString('hex') }]
+  assert.deepEqual(fb.cbor.decodeHeader(fb.cbor.encodeHeader(header, { short: true })), header)
+
+  // A reader accepts any well-formed encoding of the same content: keys out of order, integers longer than they need to be.
+  const h = (hex) => [...Buffer.from(hex, 'hex')], T = cbor.text, B = cbor.bytes
+  const looseReading = cbor.array([cbor.uint(0), cbor.map([[T('refs'), cbor.map([[T('subject'), B(h(reading.refs.subject))], [T('prev'), B(h(reading.refs.prev))], [T('author'), B(h(reading.refs.author))]])],
+    [T('state'), cbor.map([[T('seq'), [0x19, 0, reading.state.seq]], [T('kind'), T('reading')], [T('audience'), T('public')], [T('amount'), cbor.map([[T('unit'), T('Cel')], [T('value'), T('3.9')]])]])], [T('type'), T('observe')]]), B(h(reading.signature))])
+  const loose = { name: 'any well-formed encoding of the same content is accepted: keys out of order, a longer integer', cbor: cbor.hex(looseReading), hash: reading.hash }
+  assert.equal(fb.cbor.decode(Uint8Array.from(looseReading)).hash, reading.hash)
+
+  // What a reader refuses.
+  const empty = (state, t = 0, extra = {}) => cbor.array([cbor.uint(t), cbor.map([[T('type'), T('observe')], [T('state'), state], [T('refs'), cbor.map([])]]), B(new Array(64).fill(1))])
+  const ok = cbor.map([[T('kind'), T('note')]])
+  const x = (value) => cbor.map([[T('x'), value]])
+  const refused = [
+    ['a float (64-bit)', empty(x([0xfb, 0x3f, 0xf8, 0, 0, 0, 0, 0, 0]))],
+    ['a float (16-bit)', empty(x([0xf9, 0x3e, 0x00]))],
+    ['a tag', empty(x([0xc1, ...cbor.uint(1)]))],
+    ['null', empty(x([0xf6]))],
+    ['undefined', empty(x([0xf7]))],
+    ['a simple value other than true and false', empty(x([0xf8, 0x20]))],
+    ['an indefinite-length map', empty([0xbf, ...T('kind'), ...T('note'), 0xff])],
+    ['an indefinite-length text string', empty(x([0x7f, ...T('a'), 0xff]))],
+    ['an indefinite-length array', empty(x([0x9f, 0x01, 0xff]))],
+    ['a duplicate key', empty(cbor.map([[T('kind'), T('note')], [T('kind'), T('note')]]))],
+    ['a duplicate key, once as text and once as its table position (short keys)', cbor.array([cbor.uint(1), cbor.map([[cbor.uint(0), cbor.uint(2)], [T('type'), T('observe')], [cbor.uint(1), ok], [cbor.uint(2), cbor.map([])]]), B(new Array(64).fill(1))])],
+    ['an integer above 2^53 - 1', empty(x([0x1b, 0, 0x20, 0, 0, 0, 0, 0, 0]))],
+    ['an integer below -(2^53 - 1)', empty(x([0x3b, 0, 0x1f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]))],
+    ['a byte string where the protocol has none', empty(x(B([1, 2, 3])))],
+    ['a hash that is not 32 bytes', cbor.array([cbor.uint(0), cbor.map([[T('type'), T('observe')], [T('state'), ok], [T('refs'), cbor.map([[T('subject'), B(new Array(31).fill(2))]])]]), B(new Array(64).fill(1))])],
+    ['a key position outside the table', cbor.array([cbor.uint(1), cbor.map([[cbor.uint(0), cbor.uint(2)], [cbor.uint(1), cbor.map([[cbor.uint(9999), cbor.uint(1)]])], [cbor.uint(2), cbor.map([])]]), B(new Array(64).fill(1))])],
+    ['a key table the reader does not have (t = 2)', empty(ok, 2)],
+    ['a signature that is not 64 bytes', cbor.array([cbor.uint(0), cbor.map([[T('type'), T('observe')], [T('state'), ok], [T('refs'), cbor.map([])]]), B(new Array(63).fill(1))])],
+    ['bytes after the message', [...empty(ok), 0x00]],
+    ['a message that stops short', empty(ok).slice(0, -3)]
+  ].map(([name, bytes]) => ({ name, cbor: cbor.hex(bytes) }))
+  for (const r of refused) assert.throws(() => fb.cbor.decode(Uint8Array.from(Buffer.from(r.cbor, 'hex'))), undefined, r.name)
+  vectors.cbor = { $comment: 'The compact form (spec/modules/encoding.md): a public block as CBOR. `cbor` writes text keys, `cbor_short` the key table (t = 1); each decodes back to the block, whose id is the hash of its canonical JSON. `loose` is another well-formed encoding of the first case, accepted. `refused` are inputs a reader must refuse.', cases, push, headers, loose, refused }
+}
+
 const deals = [dealVector()]
 const circles = [circleVector()]
 { const got = fb.promiseStage(deals[0].blocks.find((b) => b.hash === deals[0].first) && { hash: deals[0].first, ...deals[0].blocks.find((b) => b.hash === deals[0].first).block }, deals[0].blocks.map((b) => ({ hash: b.hash, ...b.block }))); assert.equal(got.stage, 'accepted') }
@@ -960,5 +1130,6 @@ const vectors = {
 finalVectors(vectors)
 codesVectors(vectors)
 custodyVectors(vectors)
+rulesVectors(vectors)
 fs.writeFileSync(FILE, JSON.stringify(vectors, null, 1) + '\n')
 console.log(`wrote ${FILE}`)

@@ -1,7 +1,7 @@
 //! Who someone is (protocol.md §2). Their genesis is the one block with no author: a public `actor` naming its own
 //! signing key, its encryption key, the hash of an offline recovery key and how far back that key may reach, signed by
-//! its own key. Its hash is their id. A key comes in by a `grant` of kind key. A rotation (`replaces` and `last_good`)
-//! voids the old key's blocks after its last good block, and is signed only by that key or by the recovery key
+//! its own key. Its hash is their id. A key comes in by a `grant` of kind key. A rotation (`replaces` and `counted_to`)
+//! voids the old key's blocks after its counted_to block, and is signed only by that key or by the recovery key
 //! (invariant 8). A key brought in by a void block is void, and so is every key it brought in. Two rotations of one
 //! key that do not see each other freeze the keys they bring in, until the recovery key settles it; two recovery
 //! rotations that do not see each other end the identity. Recovery reach is read from arrival on the reader's node
@@ -26,6 +26,23 @@ pub fn opens(block: &Value, public_key: &str) -> bool {
     }
 }
 
+/// Whether a public key opens a block's signature, by the key's own algorithm.
+pub fn opens_as(block: &Value, public_key: &str, alg: &str) -> bool {
+    match block.get("signature").and_then(Value::as_str) {
+        Some(sig) if !sig.is_empty() && !public_key.is_empty() => {
+            crate::sign::verify_alg(alg, block, sig, public_key)
+        }
+        _ => false,
+    }
+}
+
+/// The signing algorithm a genesis or key grant names (`alg_sign`), the default when it names none.
+pub fn alg_of(block: &Value) -> String {
+    ss(block, "alg_sign")
+        .map(String::from)
+        .unwrap_or_else(|| crate::spec().sign_default.clone())
+}
+
 /// The recovery key's hash, as a genesis names it: SHA-256 of its SPKI hex, as UTF-8 text.
 pub fn recovery_key_hash(public_key: &str) -> String {
     hash_hex(public_key)
@@ -42,7 +59,7 @@ fn signed(block: Value, private_key: &str) -> Result<Value> {
 }
 
 /// What a new genesis names beside its signing key.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct GenesisOptions<'a> {
     pub kind: &'a str,
     pub at: String,
@@ -56,6 +73,11 @@ pub struct GenesisOptions<'a> {
     /// The id of the custodian who holds the key for the person (empty when they hold it themselves): written as
     /// `state.custodian`, so every reader sees the key is held by someone else (§2 Held keys).
     pub custodian: &'a str,
+    /// The algorithms of the keys (`alg_sign`, `alg_encrypt`, `alg_recovery`); empty leaves them out, which means the
+    /// defaults in protocol.json `algs` (ed25519, x25519). One the reader does not know is refused (`unknown_alg`).
+    pub alg_sign: &'a str,
+    pub alg_encrypt: &'a str,
+    pub alg_recovery: &'a str,
 }
 
 /// A new person, agent, machine or circle that signs: their genesis, signed.
@@ -65,15 +87,35 @@ pub fn genesis(keys: &crate::sign::Keypair, options: &GenesisOptions) -> Result<
     }
     let mut state = json!({
         "kind": options.kind, "at": options.at, "audience": "public", "public_key_sign": keys.public_key_sign,
-        "recovery_key_hash": recovery_key_hash(options.recovery_key), "recovery_reach": options.reach,
     });
+    let m = state.as_object_mut().unwrap();
     if !options.encryption_key.is_empty() {
-        state["public_key_encrypt"] = json!(options.encryption_key);
+        m.insert("public_key_encrypt".into(), json!(options.encryption_key));
     }
     if !options.custodian.is_empty() {
-        state["custodian"] = json!(options.custodian);
+        m.insert("custodian".into(), json!(options.custodian));
     }
+    for (name, alg) in [("alg_sign", options.alg_sign), ("alg_encrypt", options.alg_encrypt), ("alg_recovery", options.alg_recovery)] {
+        if !alg.is_empty() {
+            m.insert(name.into(), json!(alg));
+        }
+    }
+    m.insert("recovery_key_hash".into(), json!(recovery_key_hash(options.recovery_key)));
+    m.insert("recovery_reach".into(), json!(options.reach));
+    refuse_algs(&state, "actor")?;
     signed(create("actor", &state, &json!({}))?, &keys.private_key)
+}
+
+/// A block that names an algorithm the reader does not know is refused (`unknown_alg`) before it is signed.
+fn refuse_algs(state: &Value, type_name: &str) -> Result<()> {
+    if !["alg_sign", "alg_encrypt", "alg_recovery"].iter().any(|k| state.get(*k).is_some()) {
+        return Ok(());
+    }
+    let found: Vec<crate::Refusal> = crate::refusals(type_name, state, &json!({}), crate::CheckOptions::default())
+        .into_iter()
+        .filter(|r| r.code == "unknown_alg")
+        .collect();
+    if found.is_empty() { Ok(()) } else { Err(Error::refused(found)) }
 }
 
 pub fn is_genesis(block: &Value) -> bool {
@@ -95,7 +137,7 @@ pub fn genesis_opens(block: Option<&Value>) -> bool {
 
 /// A key grant, signed: brings `new_key` into the id. `signer_private` signs at `place` in its own chain (a key's
 /// next link, or for the recovery key `next_link(None, id)`). A rotation also names the key it `replaces` and that
-/// key's `last_good` block; a recovery-key rotation names `recovery_key`.
+/// key's `counted_to` block; a recovery-key rotation names `recovery_key`.
 pub fn key_grant(
     id: &str,
     new_key: Option<&str>,
@@ -108,28 +150,31 @@ pub fn key_grant(
 ) -> Result<Value> {
     let extras = KeyGrantExtras {
         replaces: replaces.map(|r| r.0),
-        last_good: replaces.map(|r| r.1),
+        counted_to: replaces.map(|r| r.1),
         after,
         ..KeyGrantExtras::default()
     };
     key_grant_with(id, new_key, signer_private, place, at, recovery_key, &extras)
 }
 
-/// What a key grant may also carry: the key it `replaces` and that key's `last_good` block (a rotation), blocks seen
+/// What a key grant may also carry: the key it `replaces` and that key's `counted_to` block (a rotation), blocks seen
 /// (`after`), a new `encrypt` key, and `recovery` (key, reach) that adds recovery to an older genesis.
 #[derive(Default)]
 pub struct KeyGrantExtras<'a> {
     pub replaces: Option<&'a str>,
-    pub last_good: Option<&'a str>,
+    pub counted_to: Option<&'a str>,
     pub after: &'a [&'a str],
     pub encrypt: Option<&'a str>,
     pub recovery: Option<(&'a str, &'a str)>,
     /// The custodian who holds the key (written as `state.custodian`).
     pub custodian: Option<&'a str>,
+    /// The new key's algorithms (`alg_sign`, `alg_encrypt`); left out, the defaults.
+    pub alg_sign: Option<&'a str>,
+    pub alg_encrypt: Option<&'a str>,
 }
 
 /// Take your keys (§2 Held keys): a key grant to a key on the person's own device that rotates the custodian's key
-/// out. It is `key_grant_with` with `replaces` and `last_good` set and no `custodian`, so the keys are the person's
+/// out. It is `key_grant_with` with `replaces` and `counted_to` set and no `custodian`, so the keys are the person's
 /// own and their record stays one chain.
 pub fn take_keys(
     id: &str,
@@ -138,9 +183,9 @@ pub fn take_keys(
     place: &Link,
     at: &str,
     held_key: &str,
-    last_good: &str,
+    counted_to: &str,
 ) -> Result<Value> {
-    let extras = KeyGrantExtras { replaces: Some(held_key), last_good: Some(last_good), ..KeyGrantExtras::default() };
+    let extras = KeyGrantExtras { replaces: Some(held_key), counted_to: Some(counted_to), ..KeyGrantExtras::default() };
     key_grant_with(id, Some(own_key), signer_private, place, at, None, &extras)
 }
 
@@ -166,9 +211,15 @@ pub fn key_grant_with(
     if let Some(c) = x.custodian.filter(|c| !c.is_empty()) {
         m.insert("custodian".into(), json!(c));
     }
+    if let Some(a) = x.alg_sign.filter(|a| !a.is_empty()) {
+        m.insert("alg_sign".into(), json!(a));
+    }
+    if let Some(a) = x.alg_encrypt.filter(|a| !a.is_empty()) {
+        m.insert("alg_encrypt".into(), json!(a));
+    }
     if let Some(old) = x.replaces.filter(|r| !r.is_empty()) {
         m.insert("replaces".into(), json!(old));
-        m.insert("last_good".into(), x.last_good.map(|g| json!(g)).unwrap_or(Value::Null));
+        m.insert("counted_to".into(), x.counted_to.map(|g| json!(g)).unwrap_or(Value::Null));
     }
     if let Some(r) = recovery_key.filter(|r| !r.is_empty()) {
         m.insert("recovery_key".into(), json!(r));
@@ -182,6 +233,7 @@ pub fn key_grant_with(
     if !seen.is_empty() {
         refs["after"] = json!(seen);
     }
+    refuse_algs(&state, "grant")?;
     signed(create("grant", &state, &refs)?, signer_private)
 }
 
@@ -336,6 +388,8 @@ pub struct KeyEntry {
     pub signer: Option<String>,
     pub void: bool,
     pub frozen: bool,
+    /// The key's signing algorithm (`alg_sign` of the block that brought it in; the default when unnamed).
+    pub alg: String,
 }
 
 /// A rotated key: who rotated it and from where it is void.
@@ -343,7 +397,7 @@ pub struct KeyEntry {
 pub struct Rotation {
     pub by: String,
     pub all: Vec<String>,
-    pub last_good: Option<String>,
+    pub counted_to: Option<String>,
     pub recovery: bool,
     pub floor: Option<String>,
 }
@@ -442,7 +496,12 @@ fn read_keys(
         signer: None,
         void: false,
         frozen: false,
+        alg: alg_of(root),
     }];
+    // The recovery key signs with the default algorithm unless the genesis names `alg_recovery`.
+    let recovery_alg = ss(root, "alg_recovery")
+        .map(String::from)
+        .unwrap_or_else(|| crate::spec().sign_default.clone());
     let mut recovery: Vec<String> = Vec::new();
     let mut self_rotations: Vec<(String, Vec<&Value>)> = Vec::new();
     let mut recovery_rotations: Vec<(String, Vec<&Value>)> = Vec::new();
@@ -456,13 +515,14 @@ fn read_keys(
     };
     for grant in grants {
         let recovery_key = ss(grant, "recovery_key");
-        let by_recovery = recovery_key
-            .is_some_and(|r| recovery_hashes.contains(&recovery_key_hash(r)) && opens(grant, r));
+        let by_recovery = recovery_key.is_some_and(|r| {
+            recovery_hashes.contains(&recovery_key_hash(r)) && opens_as(grant, r, &recovery_alg)
+        });
         let signer = if by_recovery {
             None
         } else {
             keys.iter().position(|e| {
-                !e.void && !e.frozen && opens(grant, &e.key) && speaks(e, grant, &context)
+                !e.void && !e.frozen && opens_as(grant, &e.key, &e.alg) && speaks(e, grant, &context)
             })
         };
         if !by_recovery && signer.is_none() {
@@ -507,6 +567,7 @@ fn read_keys(
                 }),
                 void: false,
                 frozen: false,
+                alg: alg_of(grant),
             });
         }
         if let Some(i) = signer {
@@ -580,7 +641,7 @@ fn read_keys(
                 Rotation {
                     by: hash_of(rule).to_string(),
                     all,
-                    last_good: ss(rule, "last_good").map(String::from),
+                    counted_to: counted_to_of(rule),
                     recovery: true,
                     floor,
                 },
@@ -598,7 +659,7 @@ fn read_keys(
         }
         let mut goods: Vec<&Value> = by_self
             .iter()
-            .filter_map(|g| ss(g, "last_good").and_then(|h| index.get(h)))
+            .filter_map(|g| counted_to_of(g).and_then(|h| index.get(&h)))
             .collect();
         goods.sort_by(|a, b| {
             crate::js::number_of(st(a, "seq"))
@@ -607,22 +668,21 @@ fn read_keys(
         });
         let mut hashes: Vec<String> = by_self.iter().map(|g| hash_of(g).to_string()).collect();
         hashes.sort();
-        let last_good = goods
+        let counted_to = goods
             .first()
             .map(|g| hash_of(g).to_string())
             .filter(|h| !h.is_empty())
             .or_else(|| {
                 by_self
                     .first()
-                    .and_then(|g| ss(g, "last_good"))
-                    .map(String::from)
+                    .and_then(|g| counted_to_of(g))
             });
         next.push((
             old.clone(),
             Rotation {
                 by: hashes.join(","),
                 all: hashes,
-                last_good,
+                counted_to,
                 recovery: false,
                 floor: None,
             },
@@ -679,6 +739,12 @@ fn read_keys(
     }
 }
 
+/// The block a rotation or removal says the subject's chain counts up to, read through aliases (`last_good` and
+/// `last_counted` are older names for it).
+fn counted_to_of(grant: &Value) -> Option<String> {
+    ss(&crate::read::read_as(grant), "counted_to").map(String::from)
+}
+
 fn recovery_reach_of(id: &str, index: &Index) -> Option<String> {
     index
         .values()
@@ -689,7 +755,7 @@ fn recovery_reach_of(id: &str, index: &Index) -> Option<String> {
         .map(String::from)
 }
 
-// Whether a key speaks for a block: never rotated, or the block is at or before its last good block (or is the
+// Whether a key speaks for a block: never rotated, or the block is at or before its counted_to block (or is the
 // rotation itself), or a recovery rotation cannot reach it.
 fn speaks(entry: &KeyEntry, block: &Value, cx: &Context) -> bool {
     if entry.void || entry.frozen {
@@ -708,10 +774,10 @@ fn speaks(entry: &KeyEntry, block: &Value, cx: &Context) -> bool {
             other != h && cx.index.contains_key(other) && sees_in(block, other, cx.index)
         });
     }
-    if rotation.last_good.as_deref() == Some(h) {
+    if rotation.counted_to.as_deref() == Some(h) {
         return true;
     }
-    let good = rotation.last_good.as_deref().and_then(|g| cx.index.get(g));
+    let good = rotation.counted_to.as_deref().and_then(|g| cx.index.get(g));
     if let Some(good_seq) = good.and_then(|g| int(st(g, "seq"))) {
         if crate::js::number_of(st(block, "seq")) <= good_seq {
             return true;
@@ -883,7 +949,7 @@ pub fn identity_state(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> Iden
 /// Which of an id's keys signed a block (its public key), or None.
 pub fn signer_of(block: &Value, keys: &[KeyEntry]) -> Option<String> {
     keys.iter()
-        .find(|e| opens(block, &e.key))
+        .find(|e| opens_as(block, &e.key, &e.alg))
         .map(|e| e.key.clone())
 }
 

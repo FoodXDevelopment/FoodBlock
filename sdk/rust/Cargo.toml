@@ -26,6 +26,9 @@ sync = []
 envelope = ["dep:x25519-dalek", "dep:aes-gcm", "dep:hkdf"]
 # The C ABI (include/foodblock.h), JSON in and JSON out.
 ffi = ["std", "node"]
+# The WebAssembly door for the JavaScript SDK (sdk/javascript/core): the JSON door as plain exports; the host gives
+# randomness and the clock. Build: node sdk/javascript/scripts/build-wasm.cjs
+wasm = ["std", "node", "getrandom/custom"]
 # The JNI door for Kotlin (sdk/kotlin): one native call, JSON in and out. Pick the profile beside it.
 jni = ["std", "dep:jni"]
 
@@ -54,5 +57,12 @@ codegen-units = 1
 [profile.micro]
 inherits = "release"
 opt-level = "z"
+panic = "abort"
+strip = true
+
+# The WebAssembly build shipped in sdk/javascript/core: small, and a trap rather than unwinding.
+[profile.wasm]
+inherits = "release"
+opt-level = "s"
 panic = "abort"
 strip = true

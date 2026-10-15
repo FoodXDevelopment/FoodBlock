@@ -5,6 +5,18 @@ The JavaScript reference SDK for the FoodBlock protocol, version 1.6 (`spec/prot
 list (types, verbs, ref keys, answers, terms, grammar, limits, profiles) is read from `spec/protocol.json`; every
 older shape is read through `spec/aliases.json`. Nothing is copied into code.
 
+## One core
+
+This SDK holds no protocol logic. The rules live once, in the Rust core (`sdk/rust`), compiled to WebAssembly and
+shipped as `core/foodblock.wasm` (about 1 MB, no Rust needed to install or use). `src/core.cjs` loads it and gives it
+the JSON door every other language uses (`call(op, ...args)`); each module in `src/` only names ops and gives the
+answers the shapes JavaScript callers know. In Node it loads synchronously when you `require` the SDK. In a browser,
+await `core.init(url)` once (a URL, a `fetch` response or the bytes) before the first call.
+
+`node scripts/build-wasm.cjs` rebuilds the core (needs `rustup target add wasm32-unknown-unknown`) and records the
+Rust source hash in `core/BUILD.json`; `npm test` fails if the Rust source has moved on since. An independent
+implementation written only from the spec (`spec/oracle`) must also agree with every vector.
+
 ## Install
 
 ```bash
@@ -49,19 +61,21 @@ fb.readAs(oldBlock)                                // any earlier shape, read as
 - The commitment: `newSalt`, `saltedHash`, `commit`, `findsSelf`, `revealFor`.
 - Writing: `compose`, `write`, `check` (the write check), `amount`, `money`, `confidence`, `terms`.
 - The wire: `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy`.
+- The compact form: `cbor.encode(block, { short })`, `cbor.decode(bytes)`, `encodePush`, `decodePush`, `encodeHeader`, `decodeHeader`
+  (a signed public block as CBOR; the id is still the hash of the canonical JSON).
 - Reading: `readAs`, `isA`.
 - Chains and order: `nextLink`, `checkChain`, `causalOrder`, `pastOf`, `sees`.
 - Identity: `identity.genesis`, `keyGrant`, `identityOf`, `keyTimeline`, `keysOf`, `signedByAuthor`, `chainsOf`,
-  `nextLinkFor`, `recoveryKeyHash`, `historyCounts`.
+  `nextLinkFor`, `recoveryKeyHash`, `historyCounts`. A rotation names `countedTo` (`lastGood` is the older name).
 - Authority: `grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration`.
 - Folds: `fold.promiseStage`, `circleState`, `holdersOf`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`,
   `receiverOf`, `whereNow`, `successorState`, `circleKey`, `sequencerOf`.
-- Between nodes: `sync.pullRequest`, `signPull`, `pullErrors`, `matches`, `answerPull`, `answerSignedBy`, `accept`,
+- Between nodes: `sync.pullRequest`, `signPull`/`signPush` (`signer`; `asker` and `pusher` are older names), `readMessage`, `pullErrors`, `matches`, `answerPull`, `answerSignedBy`, `accept`,
   `pushAnswer`, `waitedTooLong`, `wellKnown`, `announcement`, `wellKnownErrors`.
 
 ## Tests
 
-`npm test` runs the conformance vectors (`spec/run-vectors.cjs`) and the unit tests. `node test/make-vectors.cjs`
+`npm test` runs the conformance vectors (`spec/run-vectors.cjs`), the spec-only oracle (`spec/oracle`) and the unit tests. `node test/make-vectors.cjs`
 rebuilds `spec/vectors.json`, keeping every earlier vector byte for byte.
 
 ## License
