@@ -34,7 +34,7 @@ body{font:17px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg);max
 .card{border:1px solid var(--line);border-radius:12px;padding:1rem 1.25rem;margin:1rem 0}.mut{color:var(--mut);font-size:15px}.bad{color:var(--bad)}
 button,.btn,input{font:inherit}button,.btn{display:inline-block;background:var(--ac);color:var(--acfg);border:0;border-radius:10px;padding:.6rem 1.1rem;text-decoration:none;cursor:pointer}button.quiet{background:transparent;color:var(--fg);border:1px solid var(--line)}
 input[type=text],input[type=password]{width:100%;box-sizing:border-box;padding:.55rem .7rem;border:1px solid var(--line);border-radius:8px;background:transparent;color:inherit}label{display:block;margin:.4rem 0}`;
-const page = (title, body, status = 200) => ({ status, html: `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><link rel="icon" href="/icon.svg" type="image/svg+xml"><style>${STYLE}</style><body>${body}<p class="mut"><a href="https://foodx.network/privacy">Privacy</a> · <a href="https://foodx.network/terms">Terms</a> · <a href="mailto:hello@foodx.network">Support</a></p></body></html>` });
+const page = (title, body, status = 200) => ({ status, html: `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><link rel="icon" href="/icon.svg" type="image/svg+xml"><style>${STYLE}</style><body>${body}<p class="mut"><a href="https://foodx.network/privacy">Privacy</a> · <a href="https://foodx.network/terms">Terms</a> · <a href="mailto:hello@foodx.network">Support</a></p><p class="mut" style="font-size:13px">Built on the open FoodBlock protocol.</p></body></html>` });
 
 /** A fixed-window limiter: allow(key, max, windowMs) -> { ok, retry } . In memory: a restart only forgives, it never blocks. */
 function limiter(now) {
@@ -58,7 +58,9 @@ const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").spl
  * @param reviewer    { passphrase }: enables reviewer sign-in as reviewer-<name>   openaiChallenge  token for /.well-known/openai-apps-challenge
  * @param extend      (api) => void: more pages for the signed-in person on this same app and session (api: app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson)
  */
-export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null, draftsFor = null }) {
+// `chat` (optional) is the person's own agent on every chat door, from the FoodOS host: { custody(personId) -> { keys, encryption, genesis } | null (people who first wrote from a chat
+// are held by FoodX as custodian, and sign in here with a code sent to a chat they use), signin: { start(phone), check(phone, code) -> personId | null }, talk(personId, words) -> the agent's answer }.
+export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null, draftsFor = null, chat = null }) {
   const state = durableState(stateFile), seal = sealer(master), allow = limiter(now);
   const secure = publicUrl.startsWith("https:");
   const resourceUrl = new URL("/mcp", publicUrl).href;
@@ -90,11 +92,13 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     if (!held) {
       held = (async () => {
         const sealed = state.identities.get(personId);
-        if (!sealed) throw new Error("no such person here");
-        const saved = seal.open(sealed), person = { ...saved, id: saved.genesis.hash, chain: [saved.genesis] };
+        const held = sealed ? seal.open(sealed) : chat?.custody(personId);
+        if (!held) throw new Error("no such person here");
+        const saved = held, person = { ...saved, id: saved.genesis.hash, chain: [saved.genesis] };
         const { base, token } = await provision({ id: person.id, genesis: person.genesis });
         const door = createDoor({ node: remoteNode({ base, token }), person, code: randomBytes(10).toString("hex").toUpperCase(), drafts: draftsFor?.(person.id) });
         if (index) door.index = index;
+        if (chat?.talk) door.talk = (words) => chat.talk(personId, words);
         door.base = publicUrl.replace(/\/$/, "");
         return door;
       })();
@@ -114,10 +118,14 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   const accountOfPerson = (personId) => state.accounts.entries().find(([, a]) => a.person === personId)?.[1];
 
   // ---- the sign-in page and its two ways in ----
-  const signInPage = (id, why, note = "") => page("Sign in to FoodBlock", `<h2>Sign in to FoodBlock</h2><p>${esc(why)}</p>${note ? `<p class="bad">${esc(note)}</p>` : ""}
+  const signInPage = (id, why, note = "") => page("Sign in to FoodX", `<h2>Sign in to FoodX</h2><p>${esc(why)}</p>${note ? `<p class="bad">${esc(note)}</p>` : ""}
     ${google ? `<p><a class="btn" href="/signin/google?request=${esc(id)}">Sign in with Google</a></p><p class="mut">We read only your name and email address, to know which node is yours.</p>` : ""}
+    ${chat?.signin ? `<form class="card" method="post" action="/signin/code"><b>A code in your chat</b><p class="mut">Already talk to FoodX on Telegram, WhatsApp or SMS? Enter the phone number you shared there and we send a code to a chat you use.</p><input type="hidden" name="request" value="${esc(id)}">
+      <label>Phone number <input type="tel" name="phone" placeholder="+254700000000" autocomplete="tel"></label><button>Send me a code</button></form>` : ""}
     ${reviewer ? `<form class="card" method="post" action="/signin/reviewer"><b>Reviewer sign-in</b><p class="mut">For directory reviewers: a demo person, no codes.</p><input type="hidden" name="request" value="${esc(id)}">
       <label>Name <input type="text" name="name" placeholder="reviewer-one" autocomplete="username"></label><label>Passphrase <input type="password" name="passphrase" autocomplete="current-password"></label><button>Sign in</button></form>` : ""}`);
+  const codePage = (id, phone, note = "") => page("Enter your code", `<h2>Enter your code</h2><p class="mut">If that number talks to FoodX, a code is on its way to a chat it uses. It lasts 10 minutes.</p>${note ? `<p class="bad">${esc(note)}</p>` : ""}
+    <form method="post" action="/signin/code"><input type="hidden" name="request" value="${esc(id)}"><input type="hidden" name="phone" value="${esc(phone)}"><label>Code <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code"></label><button>Sign in</button></form>`);
   const ask = (res, what, why) => { const id = secret(); pending.set(id, { ...what, expires: now() + PENDING_MS }); send(res, signInPage(id, why)); };
   const afterSignIn = (res, id) => res.redirect(302, `/oauth/continue?request=${encodeURIComponent(id)}`);
 
@@ -136,7 +144,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     return { url: url.href, cookie: `fb_state=${stateValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=900${secure ? "; Secure" : ""}` };
   }
   /** The keys of a person this hub holds (hosted custody), opened for the host that signs for them. */
-  const custodyOf = (personId) => { const sealed = state.identities.get(personId); if (!sealed) throw new Error("no such person here"); const { keys, encryption } = seal.open(sealed); return { keys, encryption }; };
+  const custodyOf = (personId) => { const sealed = state.identities.get(personId); const held = sealed ? seal.open(sealed) : chat?.custody(personId); if (!held) throw new Error("no such person here"); const { keys, encryption } = held; return { keys, encryption }; };
 
   async function signedIn(res, id, key, profile) {
     const account = accountFor(key, profile);
@@ -149,7 +157,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     const { client, params } = held, who = accountOfPerson(session.person);
     return page("Connect an assistant", `<h2>Connect ${esc(client.client_name || "an assistant")}?</h2>
       <p class="mut">Signed in as ${esc(who?.email || who?.name || "you")}. <a href="/account">Your connections</a></p>
-      <p>This assistant would reach <b>only your own FoodBlock node</b>. It cannot send or bind anything for you: what it drafts waits for your tap, and binding for you needs a separate grant you sign.</p>
+      <p>This assistant would reach <b>only your own FoodX node</b>. It cannot send or bind anything for you: what it drafts waits for your tap, and binding for you needs a separate grant you sign.</p>
       <form method="post" action="/oauth/consent"><input type="hidden" name="request" value="${esc(id)}"><input type="hidden" name="csrf" value="${esc(session.csrf)}">
       <label><input type="checkbox" checked disabled> Find and read</label>
       <label><input type="checkbox" name="draft" value="1" ${params.scopes.includes("foodblock:draft") ? "checked" : ""}> Draft asks and pair itself (you still tap to send)</label>
@@ -189,7 +197,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
       const id = secret(); pending.set(id, held);
       const session = sessionOf(res.req);
       if (session) return send(res, consentPage(held, id, session));
-      send(res, signInPage(id, `${client.client_name || "An assistant"} wants to connect to your FoodBlock node. Sign in first.`));
+      send(res, signInPage(id, `${client.client_name || "An assistant"} wants to connect to your FoodX node. Sign in first.`));
     },
     async challengeForAuthorizationCode(client, code) {
       const held = codes.get(keyOf(code));
@@ -222,7 +230,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   const guarded = (name, max, windowMs, json = true) => (req, res, next) => { const r = allow(`${name}:${ip(req)}`, max, windowMs); r.ok ? next() : tooMany(res, r, json); };
   app.use((req, res, next) => { res.set({ "x-content-type-options": "nosniff", "referrer-policy": "no-referrer" }); next(); });
 
-  app.get("/", (req, res) => send(res, page("FoodBlock", `<h1>FoodBlock</h1><p>The door that lets your assistant find food offers and people, and draft asks and promises that you approve with one tap. Each person who signs in gets a node of their own; an assistant reaches only its person's node.</p>
+  app.get("/", (req, res) => send(res, page("FoodX", `<h1>FoodX</h1><p>Talk to your own FoodX agent from any assistant, and let it find food offers and people and draft asks and promises that you approve with one tap. Each person who signs in gets a node of their own; an assistant reaches only its person's node.</p>
     <div class="card"><b>Connect an assistant</b><p class="mut">Add <code>${esc(resourceUrl)}</code> as a remote MCP server (Streamable HTTP, OAuth). You sign in when it asks.</p></div>
     <p><a href="/account">Your connections</a> · <a href="https://foodx.network/docs/mcp">Docs</a></p>`)));
   app.get("/icon.svg", (req, res) => res.type("image/svg+xml").set("cache-control", "public, max-age=86400").send(ICON_SVG));
@@ -287,13 +295,26 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
       if (!ok) return send(res, page("Not signed in", "<p>Google's answer did not check out. Try again.</p>", 403));
       if (held.kind === "link") {
         const key = `google:${claims.sub}`, had = state.accounts.get(key);
-        if (had && had.person !== held.person) return send(res, page("Already in use", "<p>That Google account already belongs to another FoodBlock person. Choose a different one.</p>", 409));
+        if (had && had.person !== held.person) return send(res, page("Already in use", "<p>That Google account already belongs to another FoodX person. Choose a different one.</p>", 409));
         if (!had) state.accounts.set(key, { person: held.person, email: claims.email_verified === false ? null : claims.email || null, name: claims.name || null, created: new Date(now()).toISOString(), linked: true });
         startSession(res, held.person);
         return res.redirect(302, "/account");
       }
       await signedIn(res, held.id, `google:${claims.sub}`, { email: claims.email_verified === false ? null : claims.email, name: claims.name });
     } catch { send(res, page("Not signed in", "<p>Sign-in failed. Try again in a moment.</p>", 502)); }
+  });
+  app.post("/signin/code", guarded("code", limits.code ?? 8, 600e3, false), form, async (req, res) => {
+    const id = String(req.body?.request || ""), held = pending.get(id);
+    if (!chat?.signin || !held || held.expires < now()) return send(res, page("Expired", "<p>This request has expired. Start again.</p>", 400));
+    const phone = String(req.body.phone || "").slice(0, 32);
+    if (req.body.code) {   // the second step: the code she was sent
+      const person = await chat.signin.check(phone, String(req.body.code).slice(0, 12)).catch(() => null);
+      if (!person) return send(res, { ...codePage(id, phone, "That code did not match or has run out."), status: 403 });
+      startSession(res, person);
+      return afterSignIn(res, id);
+    }
+    await chat.signin.start(phone).catch(() => {});
+    send(res, codePage(id, phone));   // the same page whether or not that number has an account: nothing says who is here
   });
   app.post("/signin/reviewer", guarded("reviewer", limits.reviewer ?? 10, 600e3, false), form, (req, res) => {
     const id = String(req.body?.request || ""), held = pending.get(id);
@@ -328,7 +349,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     const mine = new Map();
     for (const [, t] of [...state.refresh.entries(), ...state.access.entries()]) if (t.person === session.person) mine.set(t.clientId, [...new Set([...(mine.get(t.clientId) || []), ...t.scopes])]);
     const who = accountOfPerson(session.person);
-    send(res, page("Your FoodBlock connections", `<h2>Your connections</h2><p class="mut">Signed in as ${esc(who?.email || who?.name || "you")}. Your node is <code>${esc(session.person.slice(0, 12))}</code>.</p>
+    send(res, page("Your FoodX connections", `<h2>Your connections</h2><p class="mut">Signed in as ${esc(who?.email || who?.name || "you")}. Your node is <code>${esc(session.person.slice(0, 12))}</code>.</p>
       ${[...mine].map(([cid, sc]) => `<form class="card" method="post" action="/account/revoke"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><input type="hidden" name="client" value="${esc(cid)}"><b>${esc(state.clients.get(cid)?.client_name || "An assistant")}</b><div class="mut">${esc(sc.map((s) => s.replace("foodblock:", "")).join(", "))}</div><button class="quiet">Disconnect</button></form>`).join("") || "<p>No assistants are connected.</p>"}
       <form method="post" action="/account/signout"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><button class="quiet">Sign out</button></form>`));
   });
@@ -372,7 +393,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   app.use("/register", guarded("register", cap.register, 3600e3));
   app.use("/token", guarded("token", cap.token, 60e3));
   app.use("/authorize", guarded("signin", cap.signin, 600e3, false));
-  app.use(mcpAuthRouter({ provider, issuerUrl: url, baseUrl: url, scopesSupported: SCOPES, resourceName: "FoodBlock", resourceServerUrl: new URL(resourceUrl), serviceDocumentationUrl: new URL("https://foodx.network/docs/mcp"),
+  app.use(mcpAuthRouter({ provider, issuerUrl: url, baseUrl: url, scopesSupported: SCOPES, resourceName: "FoodX", resourceServerUrl: new URL(resourceUrl), serviceDocumentationUrl: new URL("https://foodx.network/docs/mcp"),
     authorizationOptions: off, tokenOptions: off, clientRegistrationOptions: off, revocationOptions: off }));
 
   // ---- the MCP endpoint: bearer -> that person's door ----

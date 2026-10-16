@@ -101,7 +101,7 @@ describe('the many-person door', { skip: !have && 'no Backend checkout (set FOOD
           assert.equal(r.status, 302); html = await (await web.go(new URL(r.headers.get('location'), base))).text()
         }
       }
-      assert.match(html, /Connect /); assert.match(html, /only your own FoodBlock node/)
+      assert.match(html, /Connect /); assert.match(html, /only your own FoodX node/); assert.match(html, /Built on the open FoodBlock protocol/)
       const csrf = /name="csrf" value="([^"]+)"/.exec(html)[1]; request = /name="request" value="([^"]+)"/.exec(html)[1]
       const yes = await web.go(`${base}/oauth/consent`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ request, csrf, do: 'allow', ...(drawing ? { draft: '1' } : {}) }) })
       assert.equal(yes.status, 302)

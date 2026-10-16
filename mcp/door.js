@@ -306,7 +306,7 @@ function describeGrant(name, scope) {
 
 // ---- The approval page (the person's tap) ----
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const page = (body) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FoodBlock approval</title><body style="font:18px system-ui;max-width:32rem;margin:2rem auto;padding:0 1rem">${body}</body>`;
+const page = (body) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FoodX approval</title><body style="font:18px system-ui;max-width:32rem;margin:2rem auto;padding:0 1rem">${body}<p style="font-size:13px;color:#777">Built on the open FoodBlock protocol.</p></body>`;
 
 /** Serve /approve/<draft>: GET shows exactly what would be signed; POST with the approval code signs or discards. */
 export function approvalHandler(door) {

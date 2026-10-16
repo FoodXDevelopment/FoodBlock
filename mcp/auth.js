@@ -20,7 +20,7 @@ const secret = () => randomBytes(32).toString("base64url");
 const keyOf = (value) => createHash("sha256").update(String(value)).digest("hex"); // tokens are kept only as hashes
 const same = (a, b) => { const x = Buffer.from(String(a || "").trim().toUpperCase()), y = Buffer.from(String(b)); return x.length === y.length && timingSafeEqual(x, y); };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const page = (body) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FoodBlock: connect an assistant</title><body style="font:18px system-ui;max-width:32rem;margin:2rem auto;padding:0 1rem">${body}</body>`;
+const page = (body) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FoodX: connect an assistant</title><body style="font:18px system-ui;max-width:32rem;margin:2rem auto;padding:0 1rem">${body}</body>`;
 
 /** The OAuth provider for one door. `approvalCode` is the person's, as door.approvalCode. */
 export function doorProvider({ approvalCode, now = () => Date.now() }) {
@@ -39,7 +39,7 @@ export function doorProvider({ approvalCode, now = () => Date.now() }) {
   const consentPage = (request, note = "") => {
     const { client, params } = pending.get(request);
     return page(`<h2>Connect ${esc(client.client_name || "an assistant")}?</h2>
-      <p>It would be able to <b>${params.scopes.includes("foodblock:read") ? "find and read" : ""}${params.scopes.includes("foodblock:draft") ? " and draft" : ""}</b> on your FoodBlock node.
+      <p>It would be able to <b>${params.scopes.includes("foodblock:read") ? "find and read" : ""}${params.scopes.includes("foodblock:draft") ? " and draft" : ""}</b> on your FoodX node.
       It cannot send or bind anything for you. Anything it drafts waits for your tap, and binding for you needs a separate grant you sign.</p>
       <p style="color:#555">It will return to ${esc(new URL(params.redirectUri).host)}.</p>${note ? `<p style="color:#a00">${esc(note)}</p>` : ""}
       <form method="post" action="/oauth/consent"><input type="hidden" name="request" value="${esc(request)}">
@@ -116,7 +116,7 @@ export function authorizedApp({ door, mcp, approve, provider }) {
       const metadata = getOAuthProtectedResourceMetadataUrl(resource);
       bearer = requireBearerAuth({ verifier, requiredScopes: [SCOPES[0]], resourceMetadataUrl: metadata });
       const inner = express.Router();
-      inner.use(mcpAuthRouter({ provider, issuerUrl: url, baseUrl: url, scopesSupported: SCOPES, resourceName: "FoodBlock door", resourceServerUrl: resource }));
+      inner.use(mcpAuthRouter({ provider, issuerUrl: url, baseUrl: url, scopesSupported: SCOPES, resourceName: "FoodX", resourceServerUrl: resource }));
       inner.post("/oauth/consent", express.urlencoded({ extended: false, limit: "8kb" }), (req, res) => provider.consent(req, res));
       inner.use(async (req, res, next) => { try { if (await approve(req, res)) return; next(); } catch (error) { next(error); } });
       inner.all("/mcp", (req, res, next) => bearer(req, res, next), express.json({ limit: "4mb" }), async (req, res) => {
