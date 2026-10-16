@@ -97,3 +97,7 @@ both transports, then against a real host with OAuth (`test/hosted.test.js`).
 
 ## License
 MIT
+
+## Hosted, for many people (`hosted.js`)
+
+`createHub` is the door for a public service such as https://mcp.foodx.network. Each person who signs in (Sign in with Google, `openid email profile` only) gets, or reconnects to, a node of their own on a FoodOS host (`provision(genesis) -> { base, token }`). OAuth follows the MCP authorization spec; clients, tokens (hashed), sessions and accounts live in one durable file; people's signing keys are sealed under the operator's master secret (hosted custody, so the door can sign on their tap). Every token belongs to one person and one assistant, carries `foodblock:read` / `foodblock:draft` scopes, and is revoked from `/account` or RFC 7009 `/revoke`. A draft is approved on `/approve/<id>` by the signed-in owner only. Requests are rate limited per person and per address. Tests: `test/multiuser.test.js` (two people, three assistants, restart, revoke).

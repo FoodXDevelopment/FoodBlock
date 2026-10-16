@@ -158,7 +158,7 @@ describe('the hosted door', { skip: !have && 'no Backend checkout (set FOODOS_BA
     assert.equal((await use(narrow, 'foodblock_ask', { offer: offer.hash })).error, true, 'read-only token cannot draft')
     host.revoke(token)
     const gone = await use(claude, 'foodblock_find', { what: 'flour' })
-    assert.equal(gone.error, true); assert.match(gone.value, /credential|401/)
+    assert.equal(gone.error, true); assert.match(gone.value.error.message, /credential|401/)
     await claude.close(); await narrow.close()
   })
 })

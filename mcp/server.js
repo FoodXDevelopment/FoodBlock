@@ -26,7 +26,12 @@ import { remoteNode, remoteIndex } from "./remote.js";
 import { doorProvider, authorizedApp } from "./auth.js";
 
 const text = (value) => ({ content: [{ type: "text", text: JSON.stringify(value, null, 2) }] });
-const failure = (error) => ({ isError: true, content: [{ type: "text", text: error.message }] });
+// Error shape: isError plus one JSON object { error: { code, message, retryable } }; codes: insufficient_scope, not_found, stopped, refused, failed.
+export const failure = (error) => {
+  const message = error?.message || String(error), wrong = error?.wrong;
+  const code = wrong?.includes?.("stopped") ? "stopped" : /lacks the .* scope/.test(message) ? "insufficient_scope" : /^No such|no such/.test(message) ? "not_found" : wrong ? "refused" : "failed";
+  return { isError: true, content: [{ type: "text", text: JSON.stringify({ error: { code, message, retryable: code === "failed" && /did not take|HTTP 5|unavailable/.test(message) } }) }] };
+};
 
 const amount = z.object({ value: z.string(), unit: z.string() }).describe('an amount: { value: "2", unit: "kg" } (a decimal string, never a float)');
 const money = z.object({ minor: z.number().int(), currency: z.string() }).describe("money: whole minor units, e.g. { minor: 450, currency: \"GBP\" }");
@@ -35,40 +40,45 @@ const terms = {
   deliver_by: z.string().optional().describe("UTC time YYYY-MM-DDTHH:MM:SS.sssZ"), expires: z.string().optional().describe("when this lapses if unanswered; default 7 days"),
 };
 
-/** One assistant's view of the door: its own agent identity, six tools. */
+/** One assistant's view of the door: its own agent identity, six tools (each with a title and honest annotations). */
 export function createServer({ door, name = "assistant" } = {}) {
   door ||= createDoor();
   const index = door.index || null; // the open index, when one is set: find asks it; read, ask and promise stay on the host
   const assistant = door.agent(name);
-  const server = new McpServer({ name: "foodblock", version: fb.VERSION });
+  const server = new McpServer({ name: "foodblock", title: "FoodBlock", version: fb.VERSION, websiteUrl: "https://foodx.network",
+    icons: [{ src: "https://mcp.foodx.network/icon.svg", mimeType: "image/svg+xml", sizes: ["any"] }] },
+  { instructions: "FoodBlock lets you find food offers and people and DRAFT asks for the person you serve. You never send or bind anything yourself: give the person the approval link a draft returns. There is no tool to move money." });
   // Every call: read the node's truth first (a remote node pulls), do the work, send what was signed. Behind OAuth the token must carry the tool's scope.
   const guard = (run, scope) => async (input, extra) => {
     const scopes = extra?.authInfo?.scopes;
     if (scopes && !scopes.includes(scope)) return failure(new Error(`this connection lacks the ${scope} scope`));
     try { await door.sync(); const value = await run(input); await door.flush(); return text(value); } catch (error) { return failure(error); }
   };
+  const tool = (id, title, description, inputSchema, annotations, run, scope) =>
+    server.registerTool(id, { title, description, inputSchema, annotations: { title, readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false, ...annotations } }, guard(run, scope));
 
-  server.tool("foodblock_find", "Find what is on offer: offers, things or peers, by what (a word) and near (a place hash or name). Read-only.",
+  tool("foodblock_find", "Find food offers and people", "Find what is on offer: offers, things or peers, by what (a word) and near (a place hash or name). Read-only.",
     { kind: z.enum(["offers", "things", "peers"]).default("offers"), what: z.string().optional(), near: z.string().optional(), limit: z.number().int().min(1).max(100).default(20) },
-    guard(async (input) => (index && (input.kind ?? "offers") === "offers" ? index.offers(input) : door.find(input)), "foodblock:read"));
+    { readOnlyHint: true, idempotentHint: true, openWorldHint: true },
+    async (input) => (index && (input.kind ?? "offers") === "offers" ? index.offers(input) : door.find(input)), "foodblock:read");
 
-  server.tool("foodblock_read", "Read a block (with its refusals and signature check), a thing (its state now, where it is, who owns it), a promise (its stage: asked, offered, accepted, underway, done...) or a draft (pending, sent, discarded).",
-    { hash: z.string().min(6) }, guard(async ({ hash }) => door.read(hash), "foodblock:read"));
+  tool("foodblock_read", "Read a block, promise or draft", "Read a block (with its refusals and signature check), a thing (its state now, where it is, who owns it), a promise (its stage: asked, offered, accepted, underway, done...) or a draft (pending, sent, discarded). Read-only.",
+    { hash: z.string().min(6) }, { readOnlyHint: true, idempotentHint: true }, async ({ hash }) => door.read(hash), "foodblock:read");
 
-  server.tool("foodblock_ask", "Draft an ask or quote request for the PERSON to send (from an offer, or for a thing from someone). Nothing is sent: it returns a draft, a receipt code and an approval link for the person to open and tap. An unanswered ask binds no one. Give the link to the person; never try to open it yourself.",
+  tool("foodblock_ask", "Draft an ask for the person to send", "Draft an ask or quote request for the PERSON to send (from an offer, or for a thing from someone). Nothing is sent: it returns a draft, a receipt code and an approval link for the person to open and tap. An unanswered ask binds no one. Give the link to the person; never open it yourself.",
     { offer: z.string().optional().describe("an offer's hash from foodblock_find"), from: z.string().optional().describe("the seller's id, if no offer"), what: z.string().optional().describe("a thing's hash, if no offer"), ...terms, days: z.number().int().min(1).max(60).optional() },
-    guard(async (input) => door.ask(input), "foodblock:draft"));
+    {}, async (input) => door.ask(input), "foodblock:draft");
 
-  server.tool("foodblock_promise", "Make a firm promise for the person (a binding ask to someone who has dealt with them before). Binds ONLY if the person has connected you with a grant that names `promise` and the other side is not a stranger; otherwise it returns a draft for the person to approve.",
+  tool("foodblock_promise", "Make a promise under a grant, or draft one", "Make a firm promise for the person (a binding ask to someone who has dealt with them before). Binds ONLY if the person has connected you with a grant that names `promise` and the other side is not a stranger; otherwise it returns a draft for the person to approve. Moves no money.",
     { to: z.string().describe("the other side's id"), what: z.string().describe("a thing's hash"), ...terms },
-    guard(async (input) => door.promise(assistant, input), "foodblock:draft"));
+    { openWorldHint: true }, async (input) => door.promise(assistant, input), "foodblock:draft");
 
-  server.tool("foodblock_accept", "Accept an offer or counter-offer for the person. Binds ONLY under a live grant that names `promise`; otherwise it returns a draft for the person to approve.",
-    { promise: z.string().describe("the offer's hash"), quantity: amount.optional() }, guard(async (input) => door.accept(assistant, input), "foodblock:draft"));
+  tool("foodblock_accept", "Accept an offer under a grant, or draft it", "Accept an offer or counter-offer for the person. Binds ONLY under a live grant that names `promise`; otherwise it returns a draft for the person to approve. Moves no money.",
+    { promise: z.string().describe("the offer's hash"), quantity: amount.optional() }, { openWorldHint: true }, async (input) => door.accept(assistant, input), "foodblock:draft");
 
-  server.tool("foodblock_connect", "Pair this assistant to the person's node. Returns a grant draft and an approval link for the person. With no acts you may only find, read and draft. Ask for `promise` only if the person wants you to bind for them.",
+  tool("foodblock_connect", "Pair this assistant with a grant draft", "Pair this assistant to the person's node. Returns a grant draft and an approval link for the person. With no acts you may only find, read and draft. Ask for `promise` only if the person wants you to bind for them.",
     { acts: z.array(z.string()).default([]).describe("block types or type.kind names you may sign, e.g. [\"promise\"]; default none"), days: z.number().int().min(1).max(365).default(30), limit: money.optional().describe("the most money one act may involve") },
-    guard(async (input) => door.connect(assistant, input), "foodblock:draft"));
+    {}, async (input) => door.connect(assistant, input), "foodblock:draft");
 
   return server;
 }
@@ -106,20 +116,22 @@ function seed({ node }) {
 }
 
 // ---- Transports ----
-/** One MCP request: a session per assistant (a new one on initialize). Behind OAuth a session belongs to the client that opened it. */
-function mcpEndpoint(door) {
+/** One MCP request: a session per assistant (a new one on initialize). Behind OAuth a session belongs to the client AND the person that opened it. */
+export function mcpEndpoint(door) {
   const sessions = new Map();
-  return async (req, res, body, auth) => {
-    const id = req.headers["mcp-session-id"];
+  const sweep = setInterval(() => { for (const [id, s] of sessions) if (Date.now() - s.seen > 3600e3) { s.transport.close?.(); sessions.delete(id); } }, 300e3); sweep.unref();
+  return async (req, res, body, auth, perRequestDoor, person) => {
+    const id = req.headers["mcp-session-id"], theDoor = perRequestDoor || door;
     let held = id && sessions.get(id);
-    if (held && auth && held.clientId !== auth.clientId) { res.writeHead(403).end("this session belongs to another client"); return; }
+    if (held && ((auth && held.clientId !== auth.clientId) || held.person !== person)) { res.writeHead(403, { "content-type": "application/json" }).end(JSON.stringify({ error: "forbidden", error_description: "this session belongs to another connection" })); return; }
     if (!held) {
+      if (id) { res.writeHead(404, { "content-type": "application/json" }).end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32001, message: "Session not found: start a new session" }, id: null })); return; } // the spec: an unknown session is 404, so the client initializes again
       if (req.method !== "POST") { res.writeHead(400).end("no session"); return; }
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => sessions.set(sid, { transport, clientId: auth?.clientId }) });
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => sessions.set(sid, { transport, clientId: auth?.clientId, person, seen: Date.now() }) });
       transport.onclose = () => transport.sessionId && sessions.delete(transport.sessionId);
-      await createServer({ door }).connect(transport);
+      await createServer({ door: theDoor }).connect(transport);
       held = { transport };
-    }
+    } else held.seen = Date.now();
     await held.transport.handleRequest(req, res, body);
   };
 }
