@@ -250,6 +250,15 @@ fn one(node: &Node, s: &[char], i: usize, k: &dyn Fn(usize) -> bool) -> bool {
         Node::End => i == s.len() && k(i),
         Node::Group(branches) => alt(branches, s, i, k),
         Node::Ahead(branches) => alt(branches, s, i, &|_| true) && k(i),
+        // A run of one character (a class, a literal, `.`) is counted in a loop, not by recursion: the matcher below recurses once
+        // per repetition, and a long text (a 70 KB "id") overflowed the stack and aborted the process (found by the fuzzer).
+        Node::Repeat(inner, min, max) if matches!(**inner, Node::Char(_) | Node::Any | Node::Class(..)) => {
+            let mut n = 0;
+            while max.is_none_or(|m| n < m) && one(inner, s, i + n, &|_| true) {
+                n += 1;
+            }
+            (*min..=n).rev().any(|c| k(i + c))
+        }
         Node::Repeat(inner, min, max) => repeat(inner, *min, *max, 0, s, i, k),
     }
 }

@@ -1,0 +1,16 @@
+[package]
+name = "fbsim"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "A deterministic world simulator for the FoodBlock Rust core: seeded peers, nodes, a lossy network, attackers, a market day and a recall, with the spec's invariants asserted after every run."
+
+[workspace]
+
+[dependencies]
+foodblock = { path = "../../sdk/rust" }
+serde_json = { version = "1.0.120", features = ["preserve_order", "float_roundtrip"] }
+
+[profile.release]
+debug-assertions = true
+overflow-checks = true

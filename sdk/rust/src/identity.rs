@@ -11,7 +11,7 @@ use crate::block::{create_in, hash_in};
 use crate::chain::{check_chain, next_link, Chain, Link};
 use crate::error::{Error, Result};
 use crate::js::{hash_of, index_of, int, rf, rs, ss, st, truthy, type_of, Index};
-use crate::order::{causal_order_in, past_in, sees_in};
+use crate::order::{causal_order_among, past_in, sees_in};
 use crate::prelude::*;
 use crate::sign::{sign_in, verify_in};
 use crate::time::add_duration;
@@ -281,6 +281,14 @@ pub fn fork_pairs_in(index: &Index) -> Vec<[String; 2]> {
 /// member in its `prev` ancestry). The identity fold ignores the marks.
 pub fn mark_forks(index: &mut Index) {
     let pairs = fork_pairs_in(index);
+    // Every block is marked, `true` or `false`: a block that says `false` has been looked at, so `forked_in` never has to
+    // find the pairs again for each block it is asked about (that made every fold quadratic, with a signature check
+    // per block each time; found by the simulator, tools/sim).
+    for b in index.values_mut() {
+        if b.is_object() {
+            b["_fork"] = json!(false);
+        }
+    }
     if pairs.is_empty() {
         return;
     }
@@ -316,12 +324,12 @@ pub fn mark_forks(index: &mut Index) {
 /// Whether a block is one of a pair of one key that name one `prev`, or a later block of that key: proof of a lie,
 /// counted for nothing in every fold but the identity fold (folds.md, Equivocations).
 pub fn forked_in(block: &Value, index: &Index) -> bool {
-    if block.get("_fork").is_some() {
-        return true;
+    if let Some(mark) = block.get("_fork") {
+        return mark == &Value::Bool(true);
     }
     let mut copy = index.clone();
     mark_forks(&mut copy);
-    copy.get(hash_of(block)).is_some_and(|b| b.get("_fork").is_some())
+    copy.get(hash_of(block)).is_some_and(|b| b.get("_fork") == Some(&Value::Bool(true)))
 }
 
 pub fn forked(block: &Value, blocks: &[Value]) -> bool {
@@ -410,7 +418,12 @@ fn key_grants_of(id: &str, index: &Index, operators: &[(String, Vec<(String, Str
         })
         .map(|(h, b)| (h.clone(), b.clone()))
         .collect();
-    causal_order_in(&mine)
+    // In causal order among the blocks of the whole record, not among the grants alone: one grant may follow another only
+    // through blocks that are not grants (a new key's chain: a note, a thing, then a second grant), and ordering the grants
+    // by themselves loses that. A block that sees another has a strictly larger causal past, so past size orders them.
+    let mut ordered: Vec<(usize, String, Value)> = mine.iter().map(|(h, b)| (past_in(b, index).len(), h.clone(), b.clone())).collect();
+    ordered.sort_by(|a, b| (a.0, &a.1).cmp(&(b.0, &b.1)));
+    ordered.into_iter().map(|(_, _, b)| b).collect()
 }
 
 // The earliest of a set of blocks: those whose causal past holds no other of them.
@@ -513,7 +526,16 @@ fn read_keys(
         rotations,
         arrived_at,
     };
-    for grant in grants {
+    // A grant is read once the key that signed it is known. Which comes first is not always settled by causal order (the recovery
+    // key's first block names the genesis, not the grant that added the recovery hash), so a grant whose signer is not yet known
+    // is put back and tried again after the others, until a pass reads none.
+    let mut queue: Vec<&Value> = grants.iter().collect();
+    let mut rounds = 0;
+    while !queue.is_empty() && rounds <= grants.len() {
+    rounds += 1;
+    let mut deferred: Vec<&Value> = Vec::new();
+    let read_before = queue.len();
+    for grant in queue.drain(..) {
         let recovery_key = ss(grant, "recovery_key");
         let by_recovery = recovery_key.is_some_and(|r| {
             recovery_hashes.contains(&recovery_key_hash_in(&identity_suite, r)) && opens_as(grant, r, &recovery_alg)
@@ -532,6 +554,7 @@ fn read_keys(
                 rs(grant, "author") == Some(o.as_str()) && ks.iter().any(|(k, suite)| opens_as(grant, k, suite))
             });
         if !by_recovery && signer.is_none() && !by_operator {
+            deferred.push(grant);
             continue;
         }
         if by_recovery {
@@ -587,6 +610,11 @@ fn read_keys(
             }
         }
     }
+    if deferred.len() == read_before {
+        break;
+    }
+    queue = deferred;
+    }
     // Each rotated key: the recovery's rotation rules; two that do not see each other freeze (self) or end (recovery).
     let mut next: Vec<(String, Rotation)> = Vec::new();
     let all_recovery: Vec<&Value> = recovery_rotations
@@ -619,7 +647,7 @@ fn read_keys(
         let by_recovery = earliest(&rec_refs, index);
         let by_self = earliest(&self_refs, index);
         if !by_recovery.is_empty() {
-            let chain = causal_order_in(&index_of(recs.iter()));
+            let chain = causal_order_among(&index_of(recs.iter()), index);
             let rule = chain.last().unwrap();
             for grant in &selfs {
                 if !sees_in(rule, hash_of(grant), index) {
@@ -704,7 +732,7 @@ fn read_keys(
             .find(|(k, _)| k == signer)
             .map(|(_, v)| v.iter().map(|b| (*b).clone()).collect())
             .unwrap_or_default();
-        let chain = causal_order_in(&index_of(settle.iter()));
+        let chain = causal_order_among(&index_of(settle.iter()), index);
         let rule = chain.last();
         for grant in pair {
             if rule.is_none_or(|r| !sees_in(r, hash_of(grant), index)) {
@@ -786,6 +814,13 @@ fn speaks(entry: &KeyEntry, block: &Value, cx: &Context) -> bool {
         return true;
     }
     let good = rotation.counted_to.as_deref().and_then(|g| cx.index.get(g));
+    // A rotation names the last block of the old key that counts. Until that block is held, a block of the old key cannot be
+    // shown to come after it, so the key speaks on. A chain is taken oldest first: to hold `counted_to` a node must first take
+    // the blocks before it, and those are the old key's. Voiding them for want of `counted_to` would refuse them for good
+    // (a refused block is not asked for again) and deadlock the chain; when `counted_to` arrives the fold voids what follows it.
+    if rotation.counted_to.is_some() && good.is_none() {
+        return true;
+    }
     if let Some(good_seq) = good.and_then(|g| int(st(g, "seq"))) {
         if crate::js::number_of(st(block, "seq")) <= good_seq {
             return true;

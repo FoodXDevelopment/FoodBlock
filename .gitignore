@@ -44,3 +44,6 @@ sdk/rust/target/
 sdk/kotlin/.gradle/
 sdk/kotlin/**/build/
 sdk/kotlin/local.properties
+
+# Fuzzer and simulator builds
+tools/*/target/

@@ -98,3 +98,7 @@ required-features = ["door", "legacy", "successor", "ballots", "rekeys", "deposi
 [[test]]
 name = "legacy"
 required-features = ["legacy"]
+
+[[test]]
+name = "fuzz_vectors"
+required-features = ["door", "legacy", "node"]

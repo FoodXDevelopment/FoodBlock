@@ -307,6 +307,8 @@ function shapeFindings(v, out, key) {
   else if (has(v, 'from', 'share')) { if (!isStr(v.share) || !RX.decimal.test(v.share)) bad('decimal'); bad(idProblem(v.from) && 'grammar'); }
   if (has(v, 'lat', 'lon')) { for (const k of ['lat', 'lon']) if (!isStr(v[k]) || !RX.decimal.test(v[k])) bad('shape'); if ('radius' in v && !(isObj(v.radius) && has(v.radius, 'value', 'unit'))) bad('shape'); }
   if (has(v, 'min', 'max')) { /* a range: its ends are amounts or decimals, read by the schema */ }
+  // protocol.json shape: an amount, money, price or range without its keys. These fields hold such an object, never a bare value.
+  for (const k of ['money', 'price', 'amount', 'quantity', 'where', 'when', 'pack']) if (k in v && !isObj(v[k])) bad('shape');
   for (const [k, x] of Object.entries(v)) shapeFindings(x, out, k);
 }
 
@@ -318,7 +320,6 @@ function contentFindings(b, ctx) {
   // ---- stage 1: exactly {type,state,refs}, strict writing
   if (!isObj(b) || !whole || Object.keys(b).some(k => !['type', 'state', 'refs'].includes(k))) { add(1, 'not_canonical', 'not exactly type, state and refs'); return out; }
   const { type, state, refs } = b;
-  if (!isStr(type)) add(1, 'not_canonical', 'type is not text');
   if (!isObj(state)) add(1, 'not_canonical', 'state is not an object');
   if (!isObj(refs)) add(1, 'not_canonical', 'refs is not an object');
   if (out.length) return out;
@@ -339,7 +340,8 @@ function contentFindings(b, ctx) {
   };
   walk(state, ['state']); walk(refs, ['refs']);
   // ---- stage 2: values
-  if (!RX.type_name.test(type)) add(2, 'type_name', type);
+  if (!isStr(type) || !RX.type_name.test(type)) add(2, 'type_name', String(type)); // core.md section 1: a type is a word matching grammar.type_name
+  for (const k of ['prev', 'author']) if (isObj(refs) && Array.isArray(refs[k])) add(2, 'grammar', 'refs.' + k + ' is one id'); // core.md section 5: author is the identity's id, prev names the key's previous block
   for (const [k, v] of Object.entries(refs)) for (const id of asList(v)) { const p = idProblem(id); if (p) add(2, p, 'refs.' + k); }
   const timeAt = (o, where) => {
     if (!isObj(o)) return;
@@ -348,10 +350,10 @@ function contentFindings(b, ctx) {
       if (f === 'when' && isObj(v)) {
         if (has(v, 'after')) { const p = idProblem(v.after); if (p) add(2, p, 'when.after'); if ('wait' in v) { const q = durationProblem(v.wait); if (q) add(2, q, 'when.wait'); } }
         for (const e of ['from', 'to']) if (e in v) { const q = timeProblem(v[e]); if (q) add(2, q, 'when.' + e); }
-      } else if (!isObj(v)) { const q = timeProblem(v); if (q) add(2, q, where + '.' + f); }
+      } else { const q = timeProblem(v); if (q) add(2, q, where + '.' + f); }
     }
     for (const f of P.date_fields) if (f in o) { const q = dateProblem(o[f]); if (q) add(2, q, where + '.' + f); }
-    for (const f of P.duration_fields) if (f in o && !isObj(o[f])) { const q = durationProblem(o[f]); if (q) add(2, q, where + '.' + f); }
+    for (const f of P.duration_fields) if (f in o && !(f === 'per' && isObj(o[f]))) { const q = durationProblem(o[f]); if (q) add(2, q, where + '.' + f); }
   };
   timeAt(state, 'state'); timeAt(state.terms, 'terms'); timeAt(state.scope, 'scope');
   if (isObj(state.when)) timeAt({ when: state.when }, 'state');
@@ -369,6 +371,8 @@ function contentFindings(b, ctx) {
   for (const f of ['replaces', 'recovery_key', 'orderer']) if (f in state && suiteOfKey(state[f]) === null) add(2, 'unknown_suite', f);
   if ('public_key_encrypt' in state && !(isStr(state.public_key_encrypt) && encGrammar(ks).test(state.public_key_encrypt))) add(2, 'unknown_suite', 'public_key_encrypt');
   { const found = []; shapeFindings(state, found, 'state'); found.forEach(x => add(2, x.code, x.detail)); }
+  // the codes of one check come in the order protocol.json lists them (core.md section 8)
+  { const ord = Object.keys(P.refusals.codes.block); out.sort((x, y) => x.stage - y.stage || ord.indexOf(x.code) - ord.indexOf(y.code)); }
   if (out.some(o => o.stage <= 2)) return out;
   // ---- stage 3: size
   if (Buffer.byteLength(canonical(type, state, refs), 'utf8') > P.limits.block_bytes) add(3, 'size_limit', 'over ' + P.limits.block_bytes);
@@ -453,6 +457,10 @@ function closedFindings(b, ctx, add) {
     const ok = Array.isArray(roles) && roles.length > 0 && roles.every(r => isObj(r) && isStr(r.name) && r.name && Array.isArray(r.powers) && r.powers.every(p => POWERS.has(p)));
     if (!ok) add(A, 'bad_roles', 'a circle lists roles [{ name, powers }] and the founder holds the first');
   }
+  if ((type === 'grant' || type === 'transfer') && state.status !== undefined) { // protocol.json: bad_status is a status not in statuses, or stopped without a stop from stop
+    const stopOk = x => x === 'before' || x === 'onward' || (isObj(x) && Array.isArray(x.occurrences));
+    if (!STATUSES.has(state.status) || (state.status === 'stopped' && !stopOk(state.stop))) add(A, 'bad_status', String(state.status));
+  }
   if (type === 'promise') {
     if (state.status !== undefined) {
       if (!answer && refs.updates === undefined) add(A, 'status_not_answer', 'status on a block that neither answers nor updates');
@@ -469,17 +477,17 @@ function closedFindings(b, ctx, add) {
     // sides
     if (update) {
       const target = held.get(refs.updates);
-      if (target && target.type === 'promise' && refs.under === undefined && ![target.refs.from, target.refs.to].includes(refs.author)) add(A, 'not_a_side', 'signed by neither side');
+      if (target && target.type === 'promise' && refs.under === undefined && ![target.refs.from, target.refs.to].some(x => x !== undefined && (x === refs.author || x === refs.as))) add(A, 'not_a_side', 'signed by neither side');
     } else if (!answer) {
       const sides = [refs.from, refs.to];
-      if (!sides.includes(refs.author) && refs.under === undefined) add(A, 'not_a_side', 'signed by neither side');
+      if (!sides.some(x => x !== undefined && (x === refs.author || x === refs.as)) && refs.under === undefined) add(A, 'not_a_side', 'signed by neither side');
       const ask = refs.to !== undefined && refs.to === refs.author && refs.from !== refs.author;
       if (ask && !(isObj(state.terms) && state.terms.expires !== undefined)) add(A, 'ask_without_expires', 'every ask carries terms.expires');
     } else {
       const target = held.get(refs.answers);
       if (target && target.type === 'promise' && refs.under === undefined) {
         const sides = [target.refs.from, target.refs.to];
-        if (sides.every(x => x !== undefined) && !sides.includes(refs.author)) add(A, 'not_a_side', 'signed by neither side of the deal');
+        if (sides.every(x => x !== undefined) && !sides.some(x => x === refs.author || x === refs.as)) add(A, 'not_a_side', 'signed by neither side of the deal');
       }
     }
     const terms = isObj(state.terms) ? state.terms : {};
@@ -617,7 +625,7 @@ class Pool {
   sees(a, b) { return this.past(a).has(b); } // b is in a's causal past
 }
 const poolOf = x => x instanceof Pool ? x : new Pool(x);
-const blockOnly = b => ({ type: b.type, state: b.state, refs: b.refs });
+const blockOnly = b => { const o = {}; for (const k of ['type', 'state', 'refs']) if (k in b) o[k] = b[k]; return o; };
 
 // ================================================================ the identity fold (identity.md)
 // Output: signed_by_author { hash: bool }, keys, frozen (sorted), operators, plus the working data valid() needs.
@@ -660,7 +668,10 @@ function computeIdentity(id, pool, visiting) {
   const countedPos = (R, ct) => {
     if (ct === id) return 0;
     const c = pool.get(ct), ci = c && info.get(c.hash);
-    return c && ci && ci.key === R ? posOf(c) : 0;
+    // GUESS (the text does not say): a counted_to block not yet held leaves the old key speaking. A chain is taken oldest first, so that block
+    // can arrive only after the blocks before it, which are the old key's; voiding them for want of it would refuse them for good.
+    if (!c) return Infinity;
+    return ci && ci.key === R ? posOf(c) : 0;
   };
   const isAgentLike = ['agent', 'machine'].includes(g.state.kind);
   const opAuthorized = b => {
@@ -800,13 +811,15 @@ function validStages(block, poolIn) {
   if (early.length) { const stage = Math.min(...early.map(f => f.stage)); return { stage, findings: early.filter(f => f.stage === stage) }; }
   const fail = (stage, code, detail) => ({ stage, findings: [{ code, detail }] });
   const sig = block.signature;
+  // core.md section 8 lists `bad_hash` before the key and signature codes: an id that is no suite's hash of the bytes is refused first
+  if (block.hash !== undefined && !['std', 'p256', 'sm'].some(x => hashOfBlock(b, x) === block.hash)) return fail(5, 'bad_hash', 'the id is not the hash of the canonical bytes');
   if (block.suite !== undefined && !['std', 'p256', 'sm'].includes(block.suite)) return fail(5, 'unknown_suite', block.suite);
   const type = b.type, st = b.state, refs = b.refs;
   const genesis = type === 'actor' && refs.author === undefined;
   let signerKey, signerSuite, role = 'key', idf = null;
   if (genesis) {
     signerKey = st.public_key_sign;
-    if (!isStr(sig) || !verifyBlock(b, sig, signerKey)) return fail(5, 'bad_signature', 'a genesis is signed by its own key');
+    if (!isStr(sig) || !verifyBlock(b, sig, signerKey)) return fail(4, 'bad_genesis', 'a genesis is signed by its own key'); // protocol.json: bad_genesis includes "not signed by its own key"
     signerSuite = suiteOfKey(signerKey) || 'std';
   } else {
     const id = refs.author;
@@ -1101,7 +1114,8 @@ function chainFold(blocksIn, id) {
   }
   let last = 0;
   for (const b of bySeq) {
-    if (b.state.seq > last + 1 && !b.state.skip) for (let n = last + 1; n < b.state.seq; n++) gaps.push(n);
+    // GUESS: the text lists "the seq numbers missing" with no bound, but a block may say seq 2^53 - 1; the first 10000 are listed (as the Rust core does)
+    if (b.state.seq > last + 1 && !b.state.skip) for (let n = last + 1; n < b.state.seq && gaps.length < 10000; n++) gaps.push(n);
     last = Math.max(last, b.state.seq);
   }
   const have = new Set([id, ...mine.map(b => b.hash)]);
@@ -1150,6 +1164,9 @@ function accept(incomingIn, heldIn) {
     let progressed = false;
     const rest = [];
     for (const b of pending) {
+      // checks 1 to 3 of valid() need no context: a block whose own bytes or values are wrong is refused now, not made to wait for its prev
+      const early = contentFindings(blockOnly(b), { held: pool.m, noClosed: true }).filter(f => f.stage <= 3);
+      if (early.length) { const st = Math.min(...early.map(f => f.stage)); for (const f of early.filter(f => f.stage === st)) refused.push({ hash: b.hash, code: f.code, detail: f.detail }); progressed = true; continue; }
       const prev = b.refs && b.refs.prev;
       if (prev !== undefined && !pool.get(prev)) { rest.push(b); continue; }
       progressed = true;
@@ -1157,7 +1174,7 @@ function accept(incomingIn, heldIn) {
       // an equivocation: another block of this key already names this prev
       const key = b.refs.author !== undefined ? signerKeyOf(b, pool) : null;
       const twin = key && pool.all().find(x => x.refs.author === b.refs.author && x.refs.prev === b.refs.prev && x.hash !== b.hash && signerKeyOf(x, pool) === key);
-      if (twin) { equivocations.push([twin.hash, b.hash].sort()); continue; }
+      if (twin) { equivocations.push([twin.hash, b.hash].sort()); pool.m.set(b.hash, b); continue; } // nodes.md, Equivocation: a node keeps both, so a block that names the second as its prev finds it held
       const why = valid(b, pool);
       if (why.length) { for (const r of why) refused.push({ hash: b.hash, code: r.code, detail: r.detail }); continue; }
       taken.push(b); pool.m.set(b.hash, b);

@@ -25,6 +25,10 @@ pub fn next_link(last: Option<&Value>, brought_in: Option<&str>) -> Result<Link>
         let seq = int(st(last, "seq")).ok_or_else(|| {
             Error::new("chain: the last block has no seq; a key whose blocks have no seq starts again from the block that brought it in")
         })?;
+        // seq is an integer to 2^53 - 1 (core.md, section 3): past it there is no next place, and `as i64 + 1` would overflow.
+        if !(0.0..9_007_199_254_740_991.0).contains(&seq) {
+            return Err(Error::new("chain: the last seq is the largest a block may carry; this key's chain cannot go on"));
+        }
         return Ok(Link {
             seq: seq as i64 + 1,
             prev: hash_of(last).to_string(),
@@ -58,6 +62,9 @@ pub struct Chain {
     pub broken: Vec<String>,
     pub ok: bool,
 }
+
+/// The most missing seq numbers `check_chain` lists.
+pub const GAPS_MAX: i64 = 10_000;
 
 /// Check one key's chain: blocks it signed (each with state.seq and refs.prev) and the block that brought it in.
 pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
@@ -108,8 +115,12 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
     let mut last_seq = 0i64;
     for (seq, here) in &by_seq {
         let explained = here.iter().all(|b| is_skip(b));
-        if *seq > last_seq + 1 && !explained {
-            gaps.extend(last_seq + 1..*seq);
+        if *seq > last_seq.saturating_add(1) && !explained {
+            // A block may name any seq up to 2^53 - 1: listing every number missing before it would be a list that long (a hostile
+            // block made the core ask for 72 PB; found by the fuzzer). The first GAPS_MAX numbers are listed; `ok` is false either way.
+            let room = GAPS_MAX.saturating_sub(gaps.len() as i64).max(0);
+            let end = (last_seq + 1).saturating_add(room).min(*seq);
+            gaps.extend(last_seq + 1..end);
         }
         for b in here {
             let want: Option<Vec<&str>> = match &before {

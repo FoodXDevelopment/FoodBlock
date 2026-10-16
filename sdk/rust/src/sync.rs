@@ -415,7 +415,9 @@ pub fn accept(
 ) -> Accepted {
     let mut known = index_of(held.iter());
     let mut out = Accepted::default();
-    let mut slots: Vec<(String, String)> = Vec::new();
+    // Which blocks name which `prev`, by author: the candidates for a pair. The key that signed a block is found only for those
+    // few, never for every block held (that made each push as dear as reading the whole record, signatures and all).
+    let mut by_prev: alloc::collections::BTreeMap<(String, String), Vec<String>> = Default::default();
     let slot = |block: &Value, known: &Index| -> Option<String> {
         let author = rs(block, "author")?;
         let prev = rs(block, "prev")?;
@@ -423,14 +425,16 @@ pub fn accept(
         Some(format!("{author} {key} {prev}"))
     };
     for block in held {
-        if truthy(rf(block, "author")) && rs(block, "prev").is_some() {
-            if let Some(at) = slot(block, &known) {
-                slots.push((at, hash_of(block).to_string()));
-            }
+        if let (true, Some(author), Some(prev)) = (truthy(rf(block, "author")), rs(block, "author"), rs(block, "prev")) {
+            by_prev.entry((author.to_string(), prev.to_string())).or_default().push(hash_of(block).to_string());
         }
     }
     for block in causal_order(incoming) {
         let h = hash_of(&block).to_string();
+        // a block the node already holds is nothing new (a replay changes nothing)
+        if known.contains_key(&h) {
+            continue;
+        }
         let refuse = |out: &mut Accepted, code: &str, detail: &str| {
             out.refused.push(Refused { hash: h.clone(), code: code.to_string(), detail: detail.to_string() })
         };
@@ -461,17 +465,22 @@ pub fn accept(
         }
         let at = slot(&block, &known);
         if let Some(at) = &at {
-            if let Some((_, other)) = slots.iter().find(|(s, _)| s == at) {
-                if *other != h {
-                    // The second of a pair: neither taken nor refused, listed with the first.
-                    let mut pair = [other.clone(), h.clone()];
-                    pair.sort();
-                    out.equivocations.push(pair);
-                    known.insert(h.clone(), block.clone());
-                    continue;
-                }
+            let place = (rs(&block, "author").unwrap_or("").to_string(), rs(&block, "prev").unwrap_or("").to_string());
+            let other = by_prev.get(&place).and_then(|candidates| {
+                candidates
+                    .iter()
+                    .find(|c| **c != h && known.get(*c).and_then(|held| slot(held, &known)).as_ref() == Some(at))
+                    .cloned()
+            });
+            if let Some(other) = other {
+                // The second of a pair: neither taken nor refused, listed with the first.
+                let mut pair = [other, h.clone()];
+                pair.sort();
+                out.equivocations.push(pair);
+                known.insert(h.clone(), block.clone());
+                continue;
             }
-            slots.push((at.clone(), h.clone()));
+            by_prev.entry(place).or_default().push(h.clone());
         }
         known.insert(h.clone(), block.clone());
         out.taken.push(block);

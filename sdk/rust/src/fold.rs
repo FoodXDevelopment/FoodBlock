@@ -8,7 +8,7 @@ use crate::js::{
     cmp16, get, hash_of, index_of, int, list, num, number_of, rf, rs, sorted_set, ss, st,
     strict_eq, text, truthy, type_of, unique, Index,
 };
-use crate::order::{causal_order_in, heads_among, past_in, sees_in};
+use crate::order::{causal_order_among, heads_among, past_in, sees_in};
 use crate::prelude::*;
 use core::cell::RefCell;
 
@@ -164,7 +164,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let by_offerer = |b: &Value| speaks_as(b, offerer, &index, now);
     // 1. Only blocks a side signed (an open side is anyone, until an accept binds).
     let deal_blocks: Vec<&Value> = deal.iter().map(|h| &index[h.as_str()]).collect();
-    let in_deal: Vec<Value> = causal_order_in(&sub_index(&deal_blocks))
+    let in_deal: Vec<Value> = causal_order_among(&sub_index(&deal_blocks), &index)
         .into_iter()
         .filter(|b| hash_of(b) != first_hash && (side_of(b).is_some() || (open && !by_offerer(b))))
         .collect();
@@ -201,9 +201,11 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         }
     }
     // An author's stop before acceptance. An accept binds unless that stop is in its causal past (promises.md).
+    // On an open offer anyone may answer (an accept is a request), but only the author ends the offer (promises.md, Who may
+    // bind): a stop by anyone else stops nothing.
     let before_stops: Vec<&Value> = in_deal
         .iter()
-        .filter(|b| status(b, "stopped") && ss(b, "stop") == Some("before"))
+        .filter(|b| status(b, "stopped") && ss(b, "stop") == Some("before") && (!open || by_offerer(b)))
         .collect();
     // An agent's ask is a quote request unless its grant names the act: no accept of it binds. The grantor's own
     // `accepted` answer to it, or a grant that lists `promise` in scope.acts, makes it bind (promises.md, invariant 22).
@@ -282,7 +284,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         // The orderer's allocations form one chain, each seeing the one before. Two that do not see each other
         // prove a lie: neither counts, nor anything after them; only what came before the pair binds.
         let mut allocated = 0.0;
-        for allocation in causal_order_in(&sub_index(&allocations)) {
+        for allocation in causal_order_among(&sub_index(&allocations), &index) {
             let crossed = takers.iter().position(|t| {
                 !sees_in(&allocation, crate::js::str_of(t.get("allocation")), &index)
             });
@@ -347,7 +349,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         out
     };
 
-    let stops: Vec<&Value> = in_deal.iter().filter(|b| status(b, "stopped")).collect();
+    let stops: Vec<&Value> = in_deal.iter().filter(|b| status(b, "stopped") && (!open || by_offerer(b))).collect();
     // No binding accept: stopped before (the author withdrew it and no accept binds over the stop), declined by the
     // other side, or still offered or asked. The fold reads no clock: expired is the view's (views.rs).
     let Some(accept_block) = accept else {
@@ -778,7 +780,7 @@ impl<'a> Circle<'a> {
                 .map(String::from)
         };
         let refs: Vec<&Value> = set.iter().collect();
-        for block in causal_order_in(&sub_index(&refs)) {
+        for block in causal_order_among(&sub_index(&refs), self.index) {
             let answered = list(rf(&block, "answers"));
             let updated = list(rf(&block, "updates"));
             let status = ss(&block, "status");

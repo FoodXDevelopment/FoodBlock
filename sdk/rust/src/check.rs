@@ -24,6 +24,11 @@ pub struct CheckOptions<'a> {
 
 type W = Vec<Refusal>;
 
+/// A label (core.md section 7: `state.kind`, "a label"): a non-empty string. Not JavaScript truthiness, which lets `true`, `1`, an array or an object through.
+fn is_label(v: Option<&Value>) -> bool {
+    matches!(v, Some(Value::String(s)) if !s.is_empty())
+}
+
 struct Checker<'a> {
     spec: &'a Spec,
 }
@@ -403,6 +408,10 @@ impl<'a> Checker<'a> {
                     vec![]
                 };
                 for (k, v) in map {
+                    // Money, a price, an amount or a quantity is an object with its keys, never a bare value (protocol.json, shape).
+                    if matches!(k.as_str(), "money" | "price" | "amount" | "quantity" | "pack") && !v.is_object() {
+                        w.push(f("shape", format!("{path}.{k} is an object with its keys")));
+                    }
                     w.extend(self.shapes_in(v, &format!("{path}.{k}")));
                 }
                 w
@@ -725,7 +734,7 @@ impl<'a> Checker<'a> {
                 w.push(f("bad_genesis", format!("a genesis names state.{k}")));
             }
         }
-        if state.get("kind").is_some() && !truthy(state.get("kind")) {
+        if state.get("kind").is_some() && !is_label(state.get("kind")) {
             w.push(f("bad_genesis", "state.kind says what they are"));
         }
         if state.get("audience").is_some() && state.get("audience").and_then(Value::as_str) != Some("public") {
@@ -854,7 +863,7 @@ impl<'a> Checker<'a> {
         let answering = truthy(r("answers")) || (truthy(r("updates")) && g("status").is_some());
         match type_name {
             "actor" => {
-                if !truthy(g("kind")) {
+                if !is_label(g("kind")) {
                     w.push(f("required", "state.kind says what it is: a person, an agent, a circle, a contact"));
                 }
                 for key in ["public_key_sign", "recovery_key_hash", "recovery_reach", "recovery_suite", "suite"] {
@@ -955,7 +964,7 @@ impl<'a> Checker<'a> {
                 w.extend(self.terms_shape(g("terms"), refs, state));
             }
             "grant" => {
-                if !answering && !truthy(g("kind")) {
+                if !answering && !is_label(g("kind")) {
                     w.push(f("required", "state.kind says what authority it gives"));
                 }
                 w.extend(self.status_shape(state, refs));
@@ -1147,8 +1156,8 @@ impl<'a> Checker<'a> {
                 Value::Array(a) => a.iter().collect(),
                 other => vec![other],
             };
-            if key == "prev" && value.is_array() {
-                w.push(f("grammar", "refs.prev is one id"));
+            if (key == "prev" || key == "author") && value.is_array() {
+                w.push(f("grammar", format!("refs.{key} is one id")));
                 continue;
             }
             if items.is_empty() || !items.iter().all(|h| self.is("id", Some(h))) {
@@ -1260,7 +1269,8 @@ impl<'a> Checker<'a> {
         }
         let g = |k: &str| state.get(k);
         // A genesis names its own signing key. (Only a genesis does; core.md section 4.)
-        if type_name == "actor" && g("public_key_sign").is_some() {
+        // core.md section 4: a genesis is the one actor with no author. An actor with no author and no key is a malformed genesis.
+        if type_name == "actor" && (g("public_key_sign").is_some() || !truthy(refs.get("author"))) {
             w.extend(self.genesis_errors(state, refs));
             w.extend(self.values(state, refs, true));
             return w;
@@ -1318,6 +1328,20 @@ impl<'a> Checker<'a> {
             }
         }
         w.extend(self.rules(type_name, state, refs));
+        // A deal block (an answer or the author's stop) is signed by a side of the deal: the first promise's `from` or `to`, as it,
+        // or an agent under its grant (protocol.json, not_a_side). Read from the promise it answers or updates, when held.
+        if let (Some(held), "promise") = (options.held, type_name) {
+            let target = refs.get("answers").or(refs.get("updates")).and_then(Value::as_str).and_then(|h| held.get(h));
+            if let Some(t) = target.filter(|t| crate::js::type_of(t) == "promise" && !truthy(refs.get("under"))) {
+                let (from, to) = (crate::js::rf(t, "from"), crate::js::rf(t, "to"));
+                let is_side = |side: Option<&Value>| strict_eq(refs.get("author"), side) || strict_eq(refs.get("as"), side);
+                // An answer is judged once both sides are named; an `updates` (a stop) is the author's, whatever the sides.
+                let judged = (from.is_some() && to.is_some()) || (refs.get("answers").is_none() && refs.get("updates").is_some());
+                if judged && !(from.is_some() && is_side(from)) && !(to.is_some() && is_side(to)) {
+                    w.push(f("not_a_side", "a deal block is signed by a side of the deal, as it, or under its grant"));
+                }
+            }
+        }
         w
     }
 }

@@ -15,7 +15,12 @@
   ],
   "scripts": {
     "test": "node ../../spec/run-vectors.cjs && node ../../spec/oracle/run.cjs && node --test test/*.test.cjs",
-    "build:wasm": "node scripts/build-wasm.cjs"
+    "build:wasm": "node scripts/build-wasm.cjs",
+    "fuzz:build": "cargo build --release --manifest-path ../../tools/fuzz/Cargo.toml",
+    "fuzz:vectors": "node ../../tools/fuzz/run-vectors.cjs",
+    "fuzz:diff": "node ../../tools/fuzz/diff.cjs --seeds 1-25 --baseline ../../tools/fuzz/known.json",
+    "fuzz:smoke": "npm run fuzz:build && ../../tools/fuzz/target/release/fbfuzz run 1 60 && npm run fuzz:vectors && npm run fuzz:diff",
+    "sim": "cargo run --release --manifest-path ../../tools/sim/Cargo.toml -- run --seeds 1-30 --peers 12 --steps 20 --jobs 4"
   },
   "keywords": [
     "food",

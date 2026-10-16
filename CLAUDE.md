@@ -65,7 +65,7 @@ sdk/python, go, swift,  the same protocol in other languages, thin layers over t
 kotlin                  section
 server/                 a node: node.js (store + signed pull / push / .well-known), index.js (runs it)
 sql/schema.sql          the node's store: append-only, each block kept exactly as it arrived
-mcp/                    the MCP server: eight tools, writes as one identity through the SDK's `write`
+mcp/                    the MCP door: six tools (find, read, ask, promise, accept, connect); the agent drafts, the person signs
 cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
 test/vectors.json       cross-language canonical vectors (they hash the same under 1.6)
 test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript packages (and legacy/aliases-0.x.json into the Rust crate); --check proves they match

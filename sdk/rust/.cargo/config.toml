@@ -1,0 +1,5 @@
+# cargo fuzz-smoke / cargo sim: the fuzzer and the world simulator (tools/), run from sdk/rust.
+[alias]
+fuzz-build = "build --release --manifest-path ../../tools/fuzz/Cargo.toml"
+fuzz-smoke = "run --release --manifest-path ../../tools/fuzz/Cargo.toml -- run 1 60"
+sim = "run --release --manifest-path ../../tools/sim/Cargo.toml -- run --seeds 1-30 --peers 12 --steps 20 --jobs 4"

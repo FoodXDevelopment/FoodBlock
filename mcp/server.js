@@ -1,127 +1,132 @@
 #!/usr/bin/env node
-// The FoodBlock MCP server (spec/core.md): any AI agent can read and write FoodBlocks through it. It writes as one
-// identity: their genesis (an `actor` naming their signing key, and their encryption and recovery keys if they have
-// them), and every block they say, through the SDK's one write path (`write`: compose, check, sign, the next place in
-// their key chain). There is no earlier version in the protocol: it writes and reads 1.6 only. Eight tools, each one
-// thing the protocol is: info, create, get, query, history, check, valid, verify.
+// The FoodBlock MCP server: the door (door.js) behind two transports. Any assistant can find, read, ask and promise on
+// FoodBlock. The assistant drafts; the person decides, with one tap on an approval page. Six tools:
+//   foodblock_find, foodblock_read, foodblock_ask, foodblock_promise, foodblock_accept, foodblock_connect
 //
-// FOODBLOCK_IDENTITY  a file holding this identity's keys, genesis and every block it signs here (the CLI's format:
-//                     `fb init` makes one), made on first run (kept 0600), so its key chain carries on across runs;
-//                     without it, a new identity each run. FOODBLOCK_SEED=off starts empty instead of with a small story.
+//   node server.js                 stdio (Claude Desktop, Claude Code, Cursor, Gemini CLI)
+//   node server.js --http [port]   Streamable HTTP at /mcp (ChatGPT, remote clients), default port 7420
+//
+// FOODBLOCK_IDENTITY  a file holding the person's keys, genesis and chain (the CLI's format: `fb init` makes one), made on
+//                     first run (kept 0600); without it, a new person each run. The approval code lives beside it in
+//                     <file>.approval.
+// FOODBLOCK_SEED=off  start with an empty node instead of a small story to find.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import fb from "@foodxdev/foodblock";
+import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-
-// Someone who signs: their keys, their genesis and everything they have signed, so each block takes its place. A new
-// identity's recovery key is named by its hash in the genesis and never kept beside the other keys: with
-// FOODBLOCK_IDENTITY it goes to <file>.recovery.json (as `fb init` does), to be kept offline; without it, it is dropped.
-function person(saved) {
-  if (saved) return { ...saved, id: saved.genesis.hash };
-  const keys = fb.generateKeypair(), encryption = fb.generateEncryptionKeypair(), recovery = fb.generateKeypair();
-  const genesis = fb.identity.genesis(keys, { encryptionKey: encryption.public_key_encrypt, recoveryKey: recovery.public_key_sign, reach: "P30D" });
-  return { keys, encryption, genesis, chain: [genesis], id: genesis.hash, recovery };
-}
-const identityFile = process.env.FOODBLOCK_IDENTITY;
-const isNew = identityFile && !existsSync(identityFile);
-const saveIdentity = (me) => { if (identityFile) { const { keys, encryption, genesis, chain } = me; writeFileSync(identityFile, JSON.stringify({ keys, encryption, genesis, chain }, null, 2), { mode: 0o600 }); } };
-
-const blocks = new Map(); // hash -> signed block, as signed
-const keep = (signed) => { blocks.set(signed.hash, signed); return signed; };
-const all = () => [...blocks.values()];
-
-// Write as an identity: the SDK's write (compose, check, sign, chain). A private audience is written as commitments;
-// the salts come back beside the block.
-function say(author, { type, kind, state = {}, refs = {}, audience = "public" }) {
-  const signed = fb.write(type, { ...(kind ? { kind } : {}), ...state }, refs, { author: author.id, key: author.keys, held: author.chain, audience });
-  const { salts, ...block } = signed;
-  keep(block);
-  author.chain.push(block);
-  if (author === self) saveIdentity(self);
-  return signed;
-}
-
-const self = identityFile && existsSync(identityFile) ? person(JSON.parse(readFileSync(identityFile, "utf8"))) : person();
-if (isNew) writeFileSync(`${identityFile}.recovery.json`, JSON.stringify({ id: self.id, recovery: self.recovery }, null, 2), { mode: 0o600 });
-saveIdentity(self);
-self.chain.forEach(keep);
-
-// A small story to read on each start, by people other than this server's: a mill, its flour, an offer of it to a
-// bakery, and someone's review of the bakery.
-if (process.env.FOODBLOCK_SEED !== "off") {
-  const mill = person(), bakery = person(), eater = person();
-  [mill, bakery, eater].forEach((one) => keep(one.genesis));
-  const flour = say(mill, { type: "thing", kind: "flour", state: { name: "Strong white flour", marks: [{ scheme: "lot", value: "HM-2210" }] } });
-  say(mill, { type: "promise", state: { terms: { price: fb.money(2400, "GBP"), quantity: fb.amount("16", "kg"),
-    deliver_by: "2026-10-09T09:00:00.000Z", expires: "2026-10-08T18:00:00.000Z" } },
-    refs: { from: mill.id, to: bakery.id, what: flour.hash } });
-  say(eater, { type: "observe", kind: "review", state: { text: "The sourdough is excellent.", confidence: "0.9" }, refs: { subject: bakery.id } });
-}
+import { createDoor, approvalHandler, memoryNode, newPerson } from "./door.js";
 
 const text = (value) => ({ content: [{ type: "text", text: JSON.stringify(value, null, 2) }] });
 const failure = (error) => ({ isError: true, content: [{ type: "text", text: error.message }] });
-const held = (hash) => blocks.get(hash) || all().find((block) => block.hash.startsWith(hash)) || null;
-// A type is a word (core.md): seven are known, any other is open. Four carry authority and are closed.
-const typeName = z.string().regex(new RegExp(fb.PROTOCOL.grammar.type_name));
+const guard = (run) => async (input) => { try { return text(await run(input)); } catch (error) { return failure(error); } };
 
-export function createServer() {
+const amount = z.object({ value: z.string(), unit: z.string() }).describe('an amount: { value: "2", unit: "kg" } (a decimal string, never a float)');
+const money = z.object({ minor: z.number().int(), currency: z.string() }).describe("money: whole minor units, e.g. { minor: 450, currency: \"GBP\" }");
+const terms = {
+  quantity: amount.optional(), price: z.any().optional().describe("money, or { money, per } for a unit price; leave out to ask for a quote"),
+  deliver_by: z.string().optional().describe("UTC time YYYY-MM-DDTHH:MM:SS.sssZ"), expires: z.string().optional().describe("when this lapses if unanswered; default 7 days"),
+};
+
+/** One assistant's view of the door: its own agent identity, six tools. */
+export function createServer({ door, name = "assistant" } = {}) {
+  door ||= createDoor();
+  const assistant = door.agent(name);
   const server = new McpServer({ name: "foodblock", version: fb.VERSION });
 
-  // Every list here is the SDK's, read from protocol.json: nothing is retyped.
-  const P = fb.PROTOCOL;
-  server.tool("foodblock_info", "What FoodBlock is: its seven known types (four closed), seven verbs, shared refs, shapes, terms, statuses and scope, and who this server writes as.", {},
-    async () => text({ protocol: fb.VERSION, types: fb.TYPES, verbs: fb.VERBS, refs: fb.REF_KEYS, author: self.id, blocks: blocks.size,
-      closed_types: P.closed_types, statuses: P.statuses, stop: P.stop, grant_kinds: P.grant_kinds, powers: P.powers, suites: fb.SUITES, shapes: P.shapes,
-      terms: P.terms, line: P.line, scope: P.scope, time_fields: P.time_fields, grammar: P.grammar, peers: P.peers, optional_profiles: Object.keys(P.optional_profiles).filter((name) => name !== "about") }));
+  server.tool("foodblock_find", "Find what is on offer: offers, things or peers, by what (a word) and near (a place hash or name). Read-only.",
+    { kind: z.enum(["offers", "things", "peers"]).default("offers"), what: z.string().optional(), near: z.string().optional(), limit: z.number().int().min(1).max(100).default(20) },
+    guard(async (input) => door.find(input)));
 
-  server.tool("foodblock_create", "Write a FoodBlock block as this server's identity: placed in their key chain, checked, signed, kept. Every place is a thing; a schema is a thing of kind schema. A private audience (a list of ids) is written as commitments; the salts come back beside the block.",
-    { type: typeName, kind: z.string().optional(), state: z.record(z.any()).default({}), refs: z.record(z.any()).default({}),
-      audience: z.union([z.literal("public"), z.array(z.string())]).default("public") },
-    async (input) => { try { return text(say(self, input)); } catch (error) { return failure(error); } });
+  server.tool("foodblock_read", "Read a block (with its refusals and signature check), a thing (its state now, where it is, who owns it), a promise (its stage: asked, offered, accepted, underway, done...) or a draft (pending, sent, discarded).",
+    { hash: z.string().min(6) }, guard(async ({ hash }) => door.read(hash)));
 
-  server.tool("foodblock_get", "Read one FoodBlock by its hash (or the start of it), exactly as signed.", { hash: z.string().min(6) },
-    async ({ hash }) => { const block = held(hash); return block ? text(block) : failure(new Error("No such block here.")); });
+  server.tool("foodblock_ask", "Draft an ask or quote request for the PERSON to send (from an offer, or for a thing from someone). Nothing is sent: it returns a draft, a receipt code and an approval link for the person to open and tap. An unanswered ask binds no one. Give the link to the person; never try to open it yourself.",
+    { offer: z.string().optional().describe("an offer's hash from foodblock_find"), from: z.string().optional().describe("the seller's id, if no offer"), what: z.string().optional().describe("a thing's hash, if no offer"), ...terms, days: z.number().int().min(1).max(60).optional() },
+    guard(async (input) => door.ask(input)));
 
-  server.tool("foodblock_query", "Find FoodBlocks by type and kind, or by a ref. The SDK's pull filter.",
-    { type: typeName.optional(), kind: z.string().optional(), ref_role: z.string().optional(), ref_value: z.string().optional(), limit: z.number().int().min(1).max(200).default(50) },
-    async ({ type, kind, ref_role, ref_value, limit }) => {
-      const filter = { ...(type ? { type } : {}), ...(kind ? { kind } : {}), ...(ref_role ? { refs: { [ref_role]: ref_value } } : {}) };
-      return text(all().filter((block) => fb.sync.matches(block, filter, all())).slice(0, limit));
-    });
+  server.tool("foodblock_promise", "Make a firm promise for the person (a binding ask to someone who has dealt with them before). Binds ONLY if the person has connected you with a grant that names `promise` and the other side is not a stranger; otherwise it returns a draft for the person to approve.",
+    { to: z.string().describe("the other side's id"), what: z.string().describe("a thing's hash"), ...terms },
+    guard(async (input) => door.promise(assistant, input)));
 
-  server.tool("foodblock_history", "Every version of a record, oldest first: a record is named by its first version, and updated only by its author.", { hash: z.string().min(6) },
-    async ({ hash }) => {
-      const start = held(hash);
-      if (!start) return failure(new Error("No such block here."));
-      let first = start;
-      for (let back; first.refs?.updates && (back = blocks.get(first.refs.updates));) first = back;
-      const versions = fb.causalOrder(all().filter((block) => fb.sync.matches(block, { record: first.hash }, all()) && block.refs?.author === first.refs?.author));
-      return text({ identity: first.hash, versions });
-    });
+  server.tool("foodblock_accept", "Accept an offer or counter-offer for the person. Binds ONLY under a live grant that names `promise`; otherwise it returns a draft for the person to approve.",
+    { promise: z.string().describe("the offer's hash"), quantity: amount.optional() }, guard(async (input) => door.accept(assistant, input)));
 
-  server.tool("foodblock_check", "Check a block as a writer must (its chain fields, refs, fields, shapes, no floats) without writing it: what is wrong, in plain words.",
-    { type: z.string(), state: z.record(z.any()).default({}), refs: z.record(z.any()).default({}) },
-    async ({ type, state, refs }) => text({ errors: fb.check(type, state, refs) }));
-
-  server.tool("foodblock_valid", "valid(block, context): every refusal of a held block against the blocks held here, in the order of core.md section 8: [] when the bytes are sound, its signing key speaks for its author and it fits its key's chain.",
-    { hash: z.string().min(6) },
-    async ({ hash }) => {
-      const block = held(hash);
-      if (!block) return failure(new Error("No such block here."));
-      return text({ hash: block.hash, refusals: fb.valid(block, all().filter((other) => other.hash !== block.hash)) });
-    });
-
-  server.tool("foodblock_verify", "Check that a held block was signed by its author, with a key their identity still holds for it.",
-    { hash: z.string().min(6) },
-    async ({ hash }) => {
-      const block = held(hash);
-      if (!block) return failure(new Error("No such block here."));
-      return text({ hash: block.hash, signedByItsAuthor: fb.identity.signedByAuthor(block, all()) });
-    });
+  server.tool("foodblock_connect", "Pair this assistant to the person's node. Returns a grant draft and an approval link for the person. With no acts you may only find, read and draft. Ask for `promise` only if the person wants you to bind for them.",
+    { acts: z.array(z.string()).default([]).describe("block types or type.kind names you may sign, e.g. [\"promise\"]; default none"), days: z.number().int().min(1).max(365).default(30), limit: money.optional().describe("the most money one act may involve") },
+    guard(async (input) => door.connect(assistant, input)));
 
   return server;
 }
 
+// ---- The person and the node this process runs ----
+function build() {
+  const file = process.env.FOODBLOCK_IDENTITY;
+  const fresh = file && !existsSync(file);
+  const saved = file && !fresh ? JSON.parse(readFileSync(file, "utf8")) : null;
+  const person = saved ? { ...saved, id: saved.genesis.hash } : newPerson();
+  const persist = ({ keys, encryption, genesis, chain }) => { if (file) writeFileSync(file, JSON.stringify({ keys, encryption, genesis, chain }, null, 2), { mode: 0o600 }); };
+  if (fresh) writeFileSync(`${file}.recovery.json`, JSON.stringify({ id: person.id, recovery: person.recovery }, null, 2), { mode: 0o600 });
+  let code = file && existsSync(`${file}.approval`) ? readFileSync(`${file}.approval`, "utf8").trim() : undefined;
+  const door = createDoor({ node: memoryNode(), person, code, persist });
+  if (file && !code) writeFileSync(`${file}.approval`, door.approvalCode, { mode: 0o600 });
+  persist(person);
+  if (process.env.FOODBLOCK_SEED !== "off") seed(door);
+  return door;
+}
+
+// A small story to find: a mill, its flour, an open offer of it, and the place it is in.
+function seed({ node }) {
+  const mill = newPerson(), say = (type, state, refs) => { const s = fb.write(type, state, refs, { author: mill.id, key: mill.keys, held: mill.chain }); mill.chain.push(s); node.push(s); return s; };
+  node.push(mill.genesis);
+  const place = say("thing", { kind: "place", name: "Hartley Mill" }, {});
+  const flour = say("thing", { kind: "flour", name: "Strong white flour" }, { place: place.hash });
+  say("promise", { terms: { price: { money: fb.money(150, "GBP"), per: fb.amount("1", "kg") }, quantity: fb.amount("100", "kg"),
+    expires: new Date(Date.now() + 30 * 864e5).toISOString() } }, { from: mill.id, what: flour.hash, place: place.hash });
+}
+
+// ---- Transports ----
+async function serveHttp(door, port) {
+  const sessions = new Map(), approve = approvalHandler(door);
+  const server = http.createServer(async (req, res) => {
+    try {
+      if (await approve(req, res)) return;
+      if (!req.url.startsWith("/mcp")) { res.writeHead(404).end(); return; }
+      const id = req.headers["mcp-session-id"];
+      let transport = id && sessions.get(id);
+      if (!transport) {
+        if (req.method !== "POST") { res.writeHead(400).end("no session"); return; }
+        transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => sessions.set(sid, transport) });
+        transport.onclose = () => transport.sessionId && sessions.delete(transport.sessionId);
+        await createServer({ door }).connect(transport);
+      }
+      let body; if (req.method === "POST") { let raw = ""; for await (const chunk of req) raw += chunk; try { body = JSON.parse(raw); } catch { res.writeHead(400).end("bad json"); return; } }
+      await transport.handleRequest(req, res, body);
+    } catch (error) { if (!res.headersSent) res.writeHead(500); res.end(String(error.message)); }
+  });
+  await new Promise((done) => server.listen(port, process.env.FOODBLOCK_HOST || "127.0.0.1", done));
+  door.base = `http://${process.env.FOODBLOCK_HOST || "127.0.0.1"}:${server.address().port}`;
+  return server;
+}
+
 const isDirectRun = process.argv[1] && import.meta.url.endsWith(process.argv[1].split("/").pop());
-if (isDirectRun) await createServer().connect(new StdioServerTransport());
+if (isDirectRun) {
+  const door = build();
+  const flag = process.argv.indexOf("--http");
+  if (flag > -1) {
+    const server = await serveHttp(door, Number(process.argv[flag + 1]) || Number(process.env.PORT) || 7420);
+    console.error(`FoodBlock MCP on ${door.base}/mcp\nApproval code (keep it to yourself): ${door.approvalCode}`);
+  } else {
+    // stdio carries the protocol, so the approval page gets its own local port.
+    const handle = approvalHandler(door);
+    const approval = http.createServer(async (req, res) => { if (!(await handle(req, res))) res.writeHead(404).end(); });
+    await new Promise((done) => approval.listen(Number(process.env.FOODBLOCK_APPROVE_PORT) || 0, "127.0.0.1", done));
+    door.base = `http://127.0.0.1:${approval.address().port}`;
+    console.error(`FoodBlock approval page: ${door.base}\nApproval code (keep it to yourself): ${door.approvalCode}`);
+    await createServer({ door }).connect(new StdioServerTransport());
+  }
+}
+export { seed, createDoor, memoryNode, newPerson, approvalHandler, serveHttp };

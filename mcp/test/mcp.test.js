@@ -1,91 +1,61 @@
-import { describe, it, before, after } from 'node:test'
+import { describe, it, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFileSync } from 'node:fs'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import fb from '@foodxdev/foodblock'
+import { createDoor, serveHttp, createServer, seed } from '../server.js'
 
-// The MCP server speaks FoodBlock: its tools, a write placed in the author's key chain, checked and signed by the SDK's
-// one write path, a query that reads older types too, a record's history, and a signature anyone can verify.
-const SERVER = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'server.js')
-let proc, buffer = '', next = 1
-const waiting = new Map()
-const call = (method, params = {}) => new Promise((done, fail) => {
-  const id = next++
-  waiting.set(id, done)
-  setTimeout(() => fail(new Error(`no answer to ${method}`)), 8000).unref()
-  proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n')
-})
-const tool = async (name, args = {}) => {
-  const reply = await call('tools/call', { name, arguments: args })
-  const body = reply.result?.content?.[0]?.text
-  return { error: reply.result?.isError === true, value: (() => { try { return JSON.parse(body) } catch { return body } })() }
+// Both transports serve the same six tools; an assistant can find the seeded offer and draft an ask over each.
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const TOOLS = ['foodblock_accept', 'foodblock_ask', 'foodblock_connect', 'foodblock_find', 'foodblock_promise', 'foodblock_read']
+const use = async (client, name, args = {}) => {
+  const reply = await client.callTool({ name, arguments: args })
+  const body = reply.content[0].text
+  return { error: reply.isError === true, value: (() => { try { return JSON.parse(body) } catch { return body } })() }
+}
+const flow = async (client) => {
+  assert.deepEqual((await client.listTools()).tools.map((t) => t.name).sort(), TOOLS)
+  const offers = (await use(client, 'foodblock_find', { what: 'flour', near: 'Hartley' })).value
+  assert.equal(offers.length, 1)
+  const draft = (await use(client, 'foodblock_ask', { offer: offers[0].offer, quantity: { value: '5', unit: 'kg' } })).value
+  assert.deepEqual([draft.status, draft.bound], ['pending', false])
+  assert.equal((await use(client, 'foodblock_read', { hash: draft.draft })).value.status, 'pending')
+  const bound = (await use(client, 'foodblock_accept', { promise: offers[0].offer })).value
+  assert.equal(bound.bound, false, 'an unconnected assistant never binds')
+  assert.equal((await use(client, 'foodblock_ask', { offer: offers[0].offer, quantity: { value: 5, unit: 'kg' } })).error, true, 'a float is refused')
+  return draft
 }
 
-describe('FoodBlock MCP', () => {
-  before(async () => {
-    proc = spawn(process.execPath, [SERVER], { stdio: ['pipe', 'pipe', 'inherit'] })
-    proc.stdout.on('data', (chunk) => {
-      buffer += chunk
-      const lines = buffer.split('\n'); buffer = lines.pop()
-      for (const line of lines) { try { const msg = JSON.parse(line); waiting.get(msg.id)?.(msg); waiting.delete(msg.id) } catch {} }
-    })
-    await call('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'test', version: '1' } })
-    proc.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n')
+describe('FoodBlock MCP transports', () => {
+  it('stdio', async () => {
+    const client = new Client({ name: 'test', version: '1' })
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(ROOT, 'server.js')], stderr: 'pipe' }))
+    const draft = await flow(client)
+    assert.match(draft.approve_at, /^http:\/\/127\.0\.0\.1:\d+\/approve\/[0-9a-f]{64}$/)
+    assert.equal((await fetch(draft.approve_at)).status, 200, 'the approval page is served')
+    await client.close()
   })
-  after(() => proc.kill())
-
-  it('offers the eight tools', async () => {
-    const names = (await call('tools/list')).result.tools.map((item) => item.name).sort()
-    assert.deepEqual(names, ['foodblock_check', 'foodblock_create', 'foodblock_get', 'foodblock_history', 'foodblock_info', 'foodblock_query', 'foodblock_valid', 'foodblock_verify'])
-  })
-  it('says what the protocol is, from protocol.json: seven known types (four closed), seven verbs', async () => {
-    const info = (await tool('foodblock_info')).value
-    assert.deepEqual([info.protocol, info.types, info.verbs, info.terms], [fb.VERSION, fb.TYPES, fb.VERBS, fb.PROTOCOL.terms])
-    assert.deepEqual([info.types.length, info.types.includes('place'), info.closed_types], [7, false, ['actor', 'promise', 'transfer', 'grant']])
-  })
-  it('writes a block in its key chain, checked and signed, and refuses a malformed one', async () => {
-    const made = (await tool('foodblock_create', { type: 'thing', kind: 'oats', state: { name: 'Oats' } })).value
-    assert.ok(made.state.at && made.state.audience === 'public' && made.refs.author && made.refs.prev && made.state.seq >= 1)
-    const next = (await tool('foodblock_create', { type: 'thing', kind: 'rye', state: { name: 'Rye' } })).value
-    assert.deepEqual([next.state.seq, next.refs.prev], [made.state.seq + 1, made.hash])
-    assert.equal((await tool('foodblock_verify', { hash: made.hash })).value.signedByItsAuthor, true)
-    const floaty = await tool('foodblock_create', { type: 'thing', kind: 'flour', state: { amount: { value: 1.5, unit: 'kg' } } })
-    assert.equal(floaty.error, true)
-    assert.match(String(floaty.value), /float/)
-    const dotted = await tool('foodblock_create', { type: 'place.venue', kind: 'kitchen' })
-    assert.equal(dotted.error, true, 'a dotted old type is not a type name')
-    const open = await tool('foodblock_create', { type: 'weather', state: { wind: 'north' } })
-    assert.equal(open.error, false, 'any other word is an open type')
-  })
-  it('writes a private block as audience commitments, with the salts beside it', async () => {
-    const someone = 'a'.repeat(64)
-    const made = (await tool('foodblock_create', { type: 'observe', kind: 'note', state: { text: 'for you' }, audience: [someone] })).value
-    assert.equal(made.state.audience.length, 1)
-    assert.notEqual(made.state.audience[0], someone)
-    assert.ok(made.salts[someone] && made.state.nonce)
-  })
-  it('finds the seeded offer by type, and checks a held block with valid', async () => {
-    const offers = (await tool('foodblock_query', { type: 'promise' })).value
-    assert.deepEqual([offers[0].state.terms.price.minor, offers[0].state.status, Boolean(offers[0].refs.from && offers[0].refs.to && offers[0].refs.what)], [2400, undefined, true])
-    assert.deepEqual(fb.check(offers[0].type, offers[0].state, offers[0].refs), [], 'an offer carries no status: offered is read from who signed it')
-    const mine = (await tool('foodblock_create', { type: 'thing', kind: 'rye2' })).value
-    assert.deepEqual((await tool('foodblock_valid', { hash: mine.hash })).value.refusals, [])
-  })
-  it('checks a block without writing it', async () => {
-    const { errors } = (await tool('foodblock_check', { type: 'thing', state: { kind: 'eggs' }, refs: {} })).value
-    assert.ok(errors.some((error) => /refs.author/.test(error)) && errors.some((error) => /seq/.test(error)))
+  it('streamable http, one assistant per session', async () => {
+    const door = createDoor()
+    seed(door)
+    const server = await serveHttp(door, 0)
+    after(() => server.close())
+    const open = async () => { const c = new Client({ name: 'test', version: '1' }); await c.connect(new StreamableHTTPClientTransport(new URL(`${door.base}/mcp`))); return c }
+    const a = await open(), b = await open()
+    const draft = await flow(a)
+    assert.equal((await use(b, 'foodblock_connect', { acts: ['promise'] })).value.status, 'pending')
+    assert.equal((await fetch(draft.approve_at)).status, 200)
+    assert.equal(door.pending().length, 3)
+    await a.close(); await b.close()
   })
   it('the package names the protocol version it speaks', () => {
-    const pkg = JSON.parse(readFileSync(resolve(dirname(SERVER), 'package.json'), 'utf8'))
-    const registry = JSON.parse(readFileSync(resolve(dirname(SERVER), 'server.json'), 'utf8'))
-    assert.ok([pkg.version, registry.version, registry.packages[0].version].every((version) => version.startsWith(`${fb.VERSION}.`)))
-  })
-  it('keeps a record\'s identity across versions', async () => {
-    const first = (await tool('foodblock_create', { type: 'thing', kind: 'bread', state: { name: 'Rye loaf' } })).value
-    const second = (await tool('foodblock_create', { type: 'thing', kind: 'bread', state: { name: 'Dark rye loaf' }, refs: { updates: first.hash } })).value
-    const history = (await tool('foodblock_history', { hash: second.hash })).value
-    assert.deepEqual([history.identity, history.versions.map((block) => block.state.name)], [first.hash, ['Rye loaf', 'Dark rye loaf']])
+    const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'))
+    const registry = JSON.parse(readFileSync(resolve(ROOT, 'server.json'), 'utf8'))
+    assert.ok([pkg.version, registry.version, registry.packages[0].version].every((v) => v.startsWith(`${fb.VERSION}.`)))
+    assert.ok(createServer)
   })
 })

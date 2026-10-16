@@ -55,6 +55,11 @@ pub fn valid(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: A
     let spec = crate::spec();
     let (t, state, refs) = (type_of(block), block.get("state").unwrap_or(&Value::Null), block.get("refs").unwrap_or(&Value::Null));
     let mut w = findings_with(spec, t, state, refs, CheckOptions { schemas, held: Some(held) });
+    // core.md section 8, check 1: a block is exactly { type, state, refs }. A block with no `type` is not canonical (a `type`
+    // that is not a word is `type_name`, found above).
+    if block.get("type").is_none() {
+        w.push(f("not_canonical", "a block is exactly { type, state, refs }: this one has no type"));
+    }
     let content_ok = state.is_object() && refs.is_object();
     if !content_ok {
         return ordered(w, "block");

@@ -203,6 +203,11 @@ fn dispatch(op: &str, a: &Args) -> Out {
             Err(e) => json!([{ "code": "not_canonical", "detail": e }]),
             Ok(block) => {
                 let none = Value::Null;
+                // core.md section 8, check 1: exactly type, state and refs, nothing else and nothing missing.
+                let whole = block.as_object().is_some_and(|o| o.len() == 3 && ["type", "state", "refs"].iter().all(|k| o.contains_key(*k)));
+                if !whole {
+                    return Ok(json!([{ "code": "not_canonical", "detail": "a block is exactly { type, state, refs }" }]));
+                }
                 let findings = crate::check::refusals(
                     crate::js::type_of(&block),
                     block.get("state").unwrap_or(&none),

@@ -1,0 +1,242 @@
+#!/usr/bin/env node
+'use strict';
+// Differential fuzzing: the Rust core (through its JSON door, `fbfuzz serve`) against the spec-only oracle
+// (spec/oracle/fb.cjs), on generated worlds and mutated blocks.
+//   node tools/fuzz/diff.cjs [--seeds A-B] [--seconds N] [--size N] [--save DIR] [--replay FILE]
+// Any disagreement prints the seed and a minimal reproducer; the same seed replays exactly.
+const fs = require('fs'), path = require('path');
+const { spawnSync } = require('child_process');
+const fb = require('../../spec/oracle/fb.cjs');
+const { rng, mutate, makeWorld } = require('./world.cjs');
+
+const BIN = path.join(__dirname, 'target/release/fbfuzz');
+const arg = (k, d) => { const i = process.argv.indexOf('--' + k); return i > 0 ? process.argv[i + 1] : d; };
+
+const codes = l => { const o = []; for (const x of l) { const c = typeof x === 'string' ? x : x.code; if (!o.includes(c)) o.push(c); } return o; };
+const hashes = l => (l || []).map(x => (typeof x === 'string' ? x : x.hash)).sort();
+const pick = (o, keys) => Object.fromEntries(keys.map(k => [k, o == null ? undefined : o[k]]));
+const members = s => s && Object.fromEntries(Object.entries(s.members || {}).map(([k, m]) => [k, [...(m.roles || [])].sort()]));
+// Each op: how to call the oracle, and how to project both answers to what the spec decides.
+const ORDER = Object.keys(require('../../spec/protocol.json').refusals.codes.block);
+const VALUES = ['not_canonical', 'float', 'integer_range', 'decimal', 'grammar', 'time', 'calendar', 'shape', 'type_name'];
+const ORDER_ONLY = new Map();
+const OPS = {
+  valid: { oracle: (b, held) => fb.valid(b, held), proj: l => codes(l).slice(0, 1) }, // core.md section 8: the first failure is the refusal
+  strict_text: { oracle: t => fb.strictText(t), proj: l => codes(l).filter(c => VALUES.includes(c)).slice(0, 1) }, // strict_text is the bytes-and-values stages only; the first refusal decides
+  check_chain: { oracle: (blocks, id) => fb.chainFold(blocks, id), proj: c => ({ ...pick(c, ['ok', 'gaps', 'skips']), equivocations: (c.equivocations || []).map(p => [...p].sort()).sort() }) },
+  fork_pairs: { oracle: blocks => fb.forkPairs(blocks), proj: l => l.map(p => [...p].sort()).sort() },
+  key_timeline: { oracle: (id, held) => fb.identityFold(id, held).timeline, proj: l => l.map(k => ({ ...pick(k, ['key', 'suite', 'frozen']), void: !!k.void })).sort((a, b) => (a.key < b.key ? -1 : 1)) },
+  promise_stage: { oracle: (b, held, o) => fb.promiseStage(b, held), proj: s => pick(s, ['stage', 'sides', 'stop', 'forks']) }, // which of several live counters is `offer`, and so which accept binds, is unsettled in the text
+  promise_view: { oracle: (b, held, o) => fb.promiseView(b, held, o), proj: s => pick(s, ['stage']) },
+  consent: { oracle: (p, s, held) => fb.consentFold(p, s, held), proj: c => pick(c, ['word', 'block']) },
+  circle_state: { oracle: (id, held) => fb.circleState(id, held), proj: s => s && s.founder && { founder: s.founder, members: members(s) } }, // `removed` for a stop with no counted_to is unsettled in the text
+  may_act_as: { oracle: (b, id, held) => fb.mayActAs(b, id, held), proj: x => !!x },
+  ownership: { oracle: (t, held) => fb.ownershipFold(t, held), proj: o => ({ owner: (o && o.owner) || null, conflict: (o && o.conflict) || null }) },
+  where_now: { oracle: (t, held) => fb.whereNow(t, held), proj: l => [...l].sort() },
+  accept: { oracle: (inc, held) => fb.accept(inc, held), proj: a => ({ taken: hashes(a.taken).filter(h => !(a.equivocations || []).flat().includes(h)), // which of a pair that arrives together is `taken` and which is listed is not settled by the text
+    equivocations: (a.equivocations || []).map(p => [...p].sort()).sort() }) },
+  admission_refusals: { oracle: (...a) => fb.admissionRefusals(...a), proj: codes },
+  refusals: { oracle: (t, s, r) => fb.refusals(t, s, r), proj: codes },
+  hash: { oracle: (t, s, r) => fb.hashOfBlock({ type: t, state: s, refs: r }, 'std'), proj: x => x },
+  cbor_encode: { oracle: (b, short) => fb.cborEncode(b, short).toString('hex'), proj: x => x },
+  cbor_decode: { oracle: h => fb.cborDecode(h), proj: b => b && pick(b, ['hash', 'type', 'state', 'refs', 'signature', 'suite']) },
+  unwrap: { oracle: m => fb.unwrap(m), proj: b => b && pick(b, ['hash', 'suite']) },
+};
+// The shapes of the Rust answers differ in a few places (the oracle returns blocks where the core returns ids).
+const RUST_FIX = {
+  accept: a => a,
+  where_now: a => a,
+};
+
+function runRust(reqs) {
+  const input = reqs.map(r => JSON.stringify({ op: r.op, args: r.args })).join('\n') + '\n';
+  const res = spawnSync(BIN, ['serve'], { input, encoding: 'utf8', maxBuffer: 1 << 30, timeout: 120000 });
+  if (res.error || res.status !== 0) return { crash: res.error ? String(res.error) : `exit ${res.status} ${res.signal || ''} ${String(res.stderr).slice(0, 500)}` };
+  const lines = res.stdout.split('\n').filter(Boolean);
+  if (lines.length !== reqs.length) return { crash: `rust answered ${lines.length} of ${reqs.length}: ${String(res.stderr).slice(0, 500)}` };
+  return { answers: lines.map(l => JSON.parse(l)) };
+}
+const canon = x => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map(k2 => [k2, v[k2]])) : v));
+function oracleRun(req) {
+  const spec = OPS[req.op];
+  try { return { v: spec.proj(spec.oracle(...JSON.parse(JSON.stringify(req.args)))) }; } catch (e) { return { err: e && e.code ? e.code : String(e && e.message).split('\n')[0], thrown: !(e && (e.code || e.kind)) }; }
+}
+function compare(req, ans) {
+  const o = oracleRun(req), spec = OPS[req.op];
+  if (req.op === 'hash' && ans.error === 'argument') return null; // the oracle hashes any value; the door wants text
+  if (req.op === 'valid' && ans.ok) { const order = ORDER, got = codes(ans.ok).map(c => order.indexOf(c)); if (got.some((x, i) => x < 0 || (i && got[i - 1] > x))) return { kind: 'ORDER', detail: 'rust codes not in the protocol.json order: ' + codes(ans.ok).join(',') }; }
+  if (ans.error === 'internal') return { kind: 'PANIC', detail: ans.message };
+  const rustErr = ans.error !== undefined;
+  if (rustErr || o.err !== undefined) {
+    if (rustErr && o.err !== undefined) return null; // both refuse: the ops give errors for bad arguments; the message is not spec text
+    return { kind: 'ERROR', detail: `rust ${rustErr ? ans.error + ' ' + (ans.code || ans.message) : 'ok ' + canon(ans.ok).slice(0, 200)} | oracle ${o.err !== undefined ? (o.thrown ? 'THROWS ' : '') + o.err : 'ok ' + canon(o.v).slice(0, 200)}` };
+  }
+  let r;
+  try { r = spec.proj(RUST_FIX[req.op] ? RUST_FIX[req.op](ans.ok) : ans.ok); } catch (e) { return { kind: 'SHAPE', detail: String(e.message) }; }
+  if (req.op === 'valid') {
+    // validity must agree; the oracle's refusal must be among the core's; which one comes first when a block breaks several
+    // rules is counted apart (core.md section 8 lists the order; the two stop at different points)
+    const all = codes(ans.ok);
+    if (!r.length && !all.length) return null;
+    if (!r.length || !all.length) return { kind: 'DIFF', detail: `rust ${canon(all)} | oracle ${canon(o.v)}` };
+    if (!all.includes(o.v[0])) return { kind: 'DIFF', detail: `rust ${canon(all)} | oracle ${canon(o.v)}` };
+    if (all[0] !== o.v[0]) ORDER_ONLY.set(`${all[0]} before ${o.v[0]}`, (ORDER_ONLY.get(`${all[0]} before ${o.v[0]}`) || 0) + 1);
+    return null;
+  }
+  if (canon(r) !== canon(o.v)) return { kind: 'DIFF', detail: `rust ${canon(r).slice(0, 400)} | oracle ${canon(o.v).slice(0, 400)}` };
+  return null;
+}
+
+// a block set closed under prev (and the author's genesis), as a node's store always is
+function closure(list, all) {
+  const by = new Map(all.map(b => [b.hash, b])), out = new Map();
+  const add = b => { if (!b || out.has(b.hash)) return; out.set(b.hash, b); if (b.refs) { add(by.get(b.refs.prev)); add(by.get(b.refs.author)); } };
+  list.forEach(add);
+  return [...out.values()];
+}
+// ---- the cases of one world
+function casesOf(seed, size) {
+  const g = makeWorld(seed, size), { w, r } = g;
+  const everything = w.blocks;
+  const all = everything.filter(b => !fb.valid(b, everything.filter(x => x !== b)).length); // a fold reads blocks that passed valid()
+  const cases = [];
+  // a node's store is closed under prev and author: a fold is never handed a block whose ancestors went missing
+  const heldFor = b => r.shuffle(closure(all.filter(x => x !== b && r.coin(0.9)), all).filter(x => x !== b));
+  const heldAny = b => r.shuffle(everything.filter(x => x !== b && r.coin(0.93)));
+  for (const b of r.shuffle(everything).slice(0, 40)) {
+    cases.push({ op: 'valid', args: [b, heldAny(b)], world: seed });
+    if (r.coin(0.3)) cases.push({ op: 'valid', args: [b, r.shuffle(everything.filter(x => x !== b))], world: seed });
+    // mutated and re-signed: reaches the module checks beyond the id and the signature
+    for (let k = 0; k < 2; k++) {
+      const body = mutate(r, { type: b.type, state: b.state, refs: b.refs }, everything.map(x => x.hash));
+      const signer = w.actors.find(a => a.id === (b.refs && b.refs.author)) || w.actors.find(a => a.id === b.hash);
+      if (signer) { try { const s = w.seal(body, signer); cases.push({ op: 'valid', args: [s, heldAny(s)], world: seed }); } catch { /* an unsignable body */ } }
+      cases.push({ op: 'valid', args: [{ ...b, ...body }, heldAny(b)], world: seed });
+    }
+    cases.push({ op: 'strict_text', args: [r.coin(0.5) ? fb.canonOf({ type: b.type, state: b.state, refs: b.refs }) : JSON.stringify(mutate(r, { type: b.type, state: b.state, refs: b.refs }, []))], world: seed });
+    cases.push({ op: 'hash', args: [b.type, b.state, b.refs], world: seed });
+  }
+  for (const a of w.actors) {
+    cases.push({ op: 'check_chain', args: [r.shuffle(all).filter(x => x.refs && x.refs.author === a.id), a.id], world: seed });
+    cases.push({ op: 'key_timeline', args: [a.id, heldFor(null)], world: seed });
+    for (const s of w.actors) if (r.coin(0.3)) cases.push({ op: 'consent', args: [a.id, s.id, heldFor(null)], world: seed });
+  }
+  // the compact form: the same bytes from both, and the same verdict on bytes that were bent
+  for (const b of r.shuffle(all).slice(0, 12)) {
+    const short = r.coin(0.5);
+    cases.push({ op: 'cbor_encode', args: [b, short], world: seed });
+    try {
+      const bytes = fb.cborEncode(b, short);
+      cases.push({ op: 'cbor_decode', args: [bytes.toString('hex')], world: seed });
+      const bent = Buffer.from(bytes);
+      for (let k = 0; k < 1 + r.int(3); k++) bent[r.int(bent.length)] = r.int(256);
+      cases.push({ op: 'cbor_decode', args: [(r.coin(0.3) ? bent.subarray(0, r.int(bent.length)) : bent).toString('hex')], world: seed });
+    } catch { /* an unencodable block */ }
+  }
+  cases.push({ op: 'fork_pairs', args: [r.shuffle(all)], world: seed });
+  for (const p of [...g.promises, ...r.shuffle(all.filter(b => b.type === 'promise')).slice(0, 4)].filter(b => b && b.type === 'promise' && b.state && b.refs && !b.refs.answers && !b.refs.updates && !fb.valid(b, all.filter(x => x !== b)).length)) {
+    const held = heldFor(p);
+    cases.push({ op: 'promise_stage', args: [p, [p, ...held], {}], world: seed });
+    cases.push({ op: 'promise_stage', args: [p, r.shuffle([p, ...held]), {}], world: seed });
+    cases.push({ op: 'promise_view', args: [p, [p, ...held], { now: r.pick(['2026-10-15T10:00:00.000Z', '2026-10-17T10:00:00.000Z', '2026-11-30T00:00:00.000Z']) }], world: seed });
+  }
+  cases.push({ op: 'circle_state', args: [g.circle.hash, heldFor(null)], world: seed });
+  for (const b of r.shuffle(all).slice(0, 8)) { const blk = { ...b, refs: { ...b.refs, as: g.circle.hash } }; cases.push({ op: 'may_act_as', args: [blk, g.circle.hash, [blk, ...heldFor(b)]], world: seed }); }
+  for (const t of g.things.filter(t => !fb.valid(t, all.filter(x => x !== t)).length).slice(0, 6)) { cases.push({ op: 'ownership', args: [t, [t, ...heldFor(t)]], world: seed }); cases.push({ op: 'where_now', args: [t, [t, ...heldFor(t)]], world: seed }); }
+  for (let k = 0; k < 4; k++) {
+    const inc = r.shuffle(all).filter(() => r.coin(0.6)), held = r.shuffle(closure(all.filter(() => r.coin(0.3)), all));
+    const has = new Set(held.map(x => x.hash));
+    const seen = new Set(); cases.push({ op: 'accept', args: [[...inc, ...g.incoming].filter(x => !has.has(x.hash) && !seen.has(x.hash) && seen.add(x.hash)), held], world: seed });
+  }
+  // The door takes JSON text, and JSON text has no lone surrogate (an escape like \\ud83c alone is not JSON). Those never reach the core.
+  return cases.filter(c => !/\\ud[89a-f][0-9a-f]{2}/i.test(JSON.stringify(c)));
+}
+
+// ---- shrinking: drop blocks from the lists in the arguments while the disagreement stays
+// a fold is never handed a store with a hole in it: every prev and author named by a held block is held (or is the block itself)
+function closedArgs(req) {
+  if (req.op === 'valid' || req.op === 'strict_text' || req.op === 'hash' || req.op === 'accept') return true;
+  const lists = req.args.filter(Array.isArray).flat().filter(b => b && b.hash);
+  const have = new Set(lists.map(b => b.hash));
+  for (const a of req.args) if (a && a.hash) have.add(a.hash);
+  return lists.every(b => !b.refs || [b.refs.prev, b.refs.author].every(h => h === undefined || have.has(h)));
+}
+function shrink(req, key, check) {
+  let cur = JSON.parse(JSON.stringify(req));
+  for (let pass = 0; pass < 3; pass++) {
+    for (let ai = 0; ai < cur.args.length; ai++) {
+      if (!Array.isArray(cur.args[ai])) continue;
+      for (let i = cur.args[ai].length - 1; i >= 0; i--) {
+        const t = JSON.parse(JSON.stringify(cur)); t.args[ai].splice(i, 1);
+        const bad = check(t);
+        if (bad && sigOf(t, bad) === key) cur = t;
+      }
+    }
+  }
+  // then delete keys of the first argument (the block) while the disagreement stays
+  if (cur.op === 'valid' && cur.args[0] && typeof cur.args[0] === 'object' && !Array.isArray(cur.args[0])) {
+    const { nodes, at } = require('./world.cjs');
+    for (let pass = 0; pass < 2; pass++) for (const p of nodes(cur.args[0]).reverse()) {
+      if (!p.length || (p.length === 1 && ['type', 'state', 'refs', 'signature', 'hash'].includes(p[0]) && p[0] in cur.args[0])) continue;
+      const t = JSON.parse(JSON.stringify(cur)); const parent = at(t.args[0], p.slice(0, -1));
+      if (Array.isArray(parent)) parent.splice(p[p.length - 1], 1); else delete parent[p[p.length - 1]];
+      const bad = checkOne(t);
+      if (bad && sigOf(t, bad) === key) cur = t;
+    }
+  }
+  return cur;
+}
+const sigOf = (c, bad) => `${c.op}|${bad.kind}|${bad.detail.replace(/[0-9a-f]{40,}/g, 'H').replace(/\d+/g, 'N').slice(0, 200)}`;
+const checkOne = req => { const x = runRust([req]); if (x.crash) return { kind: 'CRASH', detail: x.crash }; return compare(req, x.answers[0]); };
+
+const short = r => JSON.stringify(r.args, (k, v) => (typeof v === 'string' && /^[0-9a-f]{40,}$/.test(v) ? v.slice(0, 4) + (v.length > 70 ? '..' : '') : k === 'signature' ? undefined : v));
+function main() {
+  const [a, b] = String(arg('seeds', '1-20')).split('-').map(Number), last = b || a;
+  const seconds = Number(arg('seconds', 0)), size = Number(arg('size', 30));
+  const save = arg('save', null);
+  const t0 = Date.now();
+  let total = 0, worlds = 0; const found = new Map(); const opCount = {}; const codeSeen = new Set();
+  for (let seed = a; seed <= last || seconds; seed++) {
+    if (seconds && Date.now() - t0 > seconds * 1000) break;
+    if (!seconds && seed > last) break;
+    const cases = casesOf(seed, size);
+    const res = runRust(cases);
+    worlds++;
+    if (res.crash) { console.log(`CRASH seed ${seed}: ${res.crash}`); found.set('crash:' + seed, { seed, kind: 'CRASH', detail: res.crash }); continue; }
+    cases.forEach((c, i) => {
+      total++; opCount[c.op] = (opCount[c.op] || 0) + 1;
+      const ans = res.answers[i];
+      if (c.op === 'valid' && ans.ok) for (const x of ans.ok) codeSeen.add(x.code);
+      const bad = compare(c, ans);
+      if (!bad) return;
+      const sig = sigOf(c, bad);
+      if (found.has(sig)) { found.get(sig).count++; return; }
+      const small = shrink(c, sig, checkOne);
+      const again = checkOne(small) || bad;
+      found.set(sig, { seed, kind: bad.kind, op: c.op, detail: again.detail, count: 1, repro: small });
+    });
+  }
+  const list = [...found.values()];
+  const baselineFile = arg('baseline', null);
+  const baseline = baselineFile && fs.existsSync(baselineFile) ? JSON.parse(fs.readFileSync(baselineFile, 'utf8')) : {};
+  if (process.argv.includes('--update-baseline') && baselineFile) {
+    const next = {};
+    for (const [sig, f] of found) if (sig.indexOf('crash:') !== 0) next[sig] = baseline[sig] || { note: '', example: f.repro ? short(f.repro).slice(0, 300) : '' };
+    fs.writeFileSync(baselineFile, JSON.stringify(next, null, 1));
+    console.log(`baseline written: ${Object.keys(next).length} known disagreements`);
+    process.exit(0);
+  }
+  const fresh = [...found.entries()].filter(([sig]) => !(sig in baseline)).map(([, f]) => f);
+  if (baselineFile) console.log(`known disagreements (in ${path.basename(baselineFile)}): ${list.length - fresh.length}; new: ${fresh.length}`);
+  console.log(`worlds ${worlds}, cases ${total}, ops ${JSON.stringify(opCount)}`);
+  console.log(`refusal codes reached by valid(): ${codeSeen.size}`);
+  console.log(`first-code order differences (same verdict, both codes present): ${JSON.stringify([...ORDER_ONLY])}`);
+  console.log(`disagreements (distinct): ${list.length}`);
+  (baselineFile ? fresh : list).forEach((f, i) => {
+    console.log(`\n#${i} [${f.kind}] ${f.op || ''} seed ${f.seed} x${f.count}\n  ${f.detail.slice(0, 300)}`);
+    if (process.argv.includes('--show') && f.repro) console.log('  ' + short(f.repro).slice(0, 500));
+    if (save && f.repro) { fs.mkdirSync(save, { recursive: true }); fs.writeFileSync(path.join(save, `repro-${f.op}-${f.seed}-${i}.json`), JSON.stringify(f.repro, null, 1)); }
+  });
+  process.exit((baselineFile ? fresh : list).length ? 1 : 0);
+}
+if (require.main === module) main(); else module.exports = { oracleRun, OPS, casesOf, runRust, compare };

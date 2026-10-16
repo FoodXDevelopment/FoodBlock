@@ -168,3 +168,29 @@ jobs:
         working-directory: sdk/kotlin
       - run: ./gradlew :foodblock:test -Pfoodblock.profile=micro
         working-directory: sdk/kotlin
+
+  fuzz-smoke:
+    name: Differential fuzz smoke (Rust core against the spec-only oracle)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@stable
+      # the core on random and adversarial input: no panic, no hang, canonical round trips (about a minute)
+      - run: cargo build --release --manifest-path tools/fuzz/Cargo.toml
+      - run: tools/fuzz/target/release/fbfuzz run 1 60
+      # the minimal reproducers of what fuzzing found, in the core and in the oracle
+      - run: node tools/fuzz/run-vectors.cjs
+      # generated worlds through the core and through the oracle; any disagreement not listed in tools/fuzz/known.json fails
+      - run: node tools/fuzz/diff.cjs --seeds 1-25 --baseline tools/fuzz/known.json
+
+  simulator:
+    name: World simulator (fixed seeds)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # peers, businesses, custodians, machines and attackers; offline nodes, a lossy network, clock skew; the invariants asserted after each run
+      - run: cargo run --release --manifest-path tools/sim/Cargo.toml -- run --seeds 1-40 --peers 12 --steps 20 --jobs 4

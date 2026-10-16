@@ -9,12 +9,13 @@
   },
   "files": [
     "server.js",
+    "door.js",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/mcp.test.js"
+    "test": "node --test test/*.test.js"
   },
   "keywords": [
     "mcp",

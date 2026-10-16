@@ -214,7 +214,40 @@ pub fn sign_bytes(bytes: &[u8], private_key: &str) -> Result<String> {
 }
 
 /// Whether a signature (hex) is this key's over these bytes, in a suite. Never fails: anything malformed is false.
+///
+/// The folds ask the same question again and again (an identity fold reads every key grant of an author each time any
+/// block of hers is asked about), and a signature check is the dearest step, so a verdict is remembered for the thread
+/// (the answer is a pure function of the four arguments). Without it a fold over a few hundred blocks took seconds
+/// (found by the simulator, tools/sim). `no_std` builds do not remember and are as before.
 pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &str) -> bool {
+    #[cfg(feature = "std")]
+    {
+        use sha2::Digest;
+        use std::cell::RefCell;
+        use std::collections::HashMap;
+        std::thread_local! {
+            static VERDICTS: RefCell<HashMap<(String, String, String, [u8; 32]), bool>> = RefCell::new(HashMap::new());
+        }
+        let digest: [u8; 32] = sha2::Sha256::digest(bytes).into();
+        let key = (suite.to_string(), public_key.to_string(), signature.to_string(), digest);
+        if let Some(v) = VERDICTS.with(|m| m.borrow().get(&key).copied()) {
+            return v;
+        }
+        let verdict = verify_bytes_uncached(suite, bytes, signature, public_key);
+        VERDICTS.with(|m| {
+            let mut m = m.borrow_mut();
+            if m.len() > 200_000 {
+                m.clear();
+            }
+            m.insert(key, verdict);
+        });
+        return verdict;
+    }
+    #[cfg(not(feature = "std"))]
+    verify_bytes_uncached(suite, bytes, signature, public_key)
+}
+
+fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key: &str) -> bool {
     let Some(sig_bytes) = unhex(signature) else {
         return false;
     };

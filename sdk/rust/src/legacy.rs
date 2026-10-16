@@ -701,7 +701,7 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
         .iter()
         .map(|b| {
             let mut b = b.clone();
-            if hash_of(&b).is_empty() {
+            if b.is_object() && hash_of(&b).is_empty() {
                 let h = old_hash(&b);
                 b["hash"] = json!(h);
             }

@@ -1,0 +1,16 @@
+[package]
+name = "fbfuzz"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Fuzzing the FoodBlock Rust core: a mutation fuzzer for crashes, hangs and round trips, and the line server the differential driver (diff.cjs) talks to."
+
+[workspace]
+
+[dependencies]
+foodblock = { path = "../../sdk/rust", features = ["ffi"] }
+serde_json = { version = "1.0.120", features = ["preserve_order", "float_roundtrip"] }
+
+[profile.release]
+debug-assertions = true
+overflow-checks = true
