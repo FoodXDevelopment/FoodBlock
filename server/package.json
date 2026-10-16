@@ -11,14 +11,14 @@
     "provenance"
   ],
   "author": "FoodX <developers@foodx.com>",
-  "homepage": "https://www.foodx.world/developers",
+  "homepage": "https://www.foodx.network/developers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FoodXDevelopment/foodblock.git",
+    "url": "git+https://github.com/FoodXDevelopment/FoodBlock.git",
     "directory": "server"
   },
   "bugs": {
-    "url": "https://github.com/FoodXDevelopment/foodblock/issues"
+    "url": "https://github.com/FoodXDevelopment/FoodBlock/issues"
   },
   "type": "module",
   "main": "node.js",

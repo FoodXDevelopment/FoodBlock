@@ -34,17 +34,17 @@
   ],
   "license": "MIT",
   "author": "FoodX <developers@foodx.com>",
-  "homepage": "https://www.foodx.world/developers",
+  "homepage": "https://www.foodx.network/developers",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FoodXDevelopment/foodblock.git",
+    "url": "git+https://github.com/FoodXDevelopment/FoodBlock.git",
     "directory": "sdk/javascript"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "bugs": {
-    "url": "https://github.com/FoodXDevelopment/foodblock/issues"
+    "url": "https://github.com/FoodXDevelopment/FoodBlock/issues"
   },
   "publishConfig": {
     "access": "public"

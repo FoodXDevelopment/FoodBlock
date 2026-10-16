@@ -19,12 +19,12 @@ publishing {
             pom {
                 name.set("FoodBlock")
                 description.set("FoodBlock 1.6 for the JVM: a thin layer over the one Rust core.")
-                url.set("https://www.foodx.world/developers")
+                url.set("https://www.foodx.network/developers")
                 licenses { license { name.set("MIT License"); url.set("https://opensource.org/licenses/MIT") } }
                 developers { developer { id.set("foodx"); name.set("FoodX"); email.set("developers@foodx.com") } }
                 scm {
-                    url.set("https://github.com/FoodXDevelopment/foodblock")
-                    connection.set("scm:git:https://github.com/FoodXDevelopment/foodblock.git")
+                    url.set("https://github.com/FoodXDevelopment/FoodBlock")
+                    connection.set("scm:git:https://github.com/FoodXDevelopment/FoodBlock.git")
                 }
             }
         }

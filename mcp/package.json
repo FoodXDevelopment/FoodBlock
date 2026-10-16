@@ -36,11 +36,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/FoodXDevelopment/foodblock.git",
+    "url": "git+https://github.com/FoodXDevelopment/FoodBlock.git",
     "directory": "mcp"
   },
   "mcpName": "io.github.FoodXDevelopment/foodblock-mcp",
-  "homepage": "https://foodx.world",
+  "homepage": "https://foodx.network",
   "author": "FoodX <developers@foodx.com>",
   "dependencies": {
     "@foodxdev/foodblock": "file:../sdk/javascript",
@@ -53,7 +53,7 @@
   },
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/FoodXDevelopment/foodblock/issues"
+    "url": "https://github.com/FoodXDevelopment/FoodBlock/issues"
   },
   "publishConfig": {
     "access": "public"
