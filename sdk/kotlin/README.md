@@ -125,3 +125,10 @@ protocol.json codes), the messages between nodes, the compact form, and the gene
 the core: `expect` is a subset match, `exact` deep equality, `codes` the refusal codes, `error` a failure). A section the
 build's peer leaves out prints that it was left out. The Kotlin library reads the spec through the core (op `spec`); it
 keeps no copy of `protocol.json`. `ApiTest` writes a sensor's chain end to end, a refusal, a sealed value, and every suite.
+
+## The window (`:window`, `:window-android`)
+
+The phone as a window onto its hosted node, with the person's passkey as their FoodBlock key. `:window` is the JVM library (`FoodBlockWindow`: register, sign in
+by passkey assertion, read, write, an offline SQLite queue and `sync()`; every protocol check is the bundled core's). `:window-android` adds
+`CredentialManagerPasskeys` (Credential Manager) and `AndroidWindowStore`; the app needs the host's `assetlinks.json` entry (`get_login_creds`). Tests (JDK 17):
+`./gradlew :window:test` (end to end against a local host from the Backend checkout, `FOODOS_BACKEND`; skipped without it).

@@ -254,6 +254,24 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     res.redirect(302, `${held.next}${held.next.includes("?") ? "&" : "?"}google=ok`);
   }
 
+  /**
+   * Link Google to a person who signs in with a passkey: the phone (signed in by its passkey) asks the host for a single-use link, opens it, and the Google
+   * account then reaches the SAME person. A Google account already tied to someone else is refused, never moved.
+   */
+  const linkCodes = new Map();
+  const linkGoogle = (personId) => { const code = secret(); linkCodes.set(keyOf(code), { person: personId, expires: now() + PENDING_MS }); return `${publicUrl.replace(/\/$/, "")}/link/google?code=${code}`; };
+  app.get("/link/google", guarded("signin", cap.signin, 600e3, false), (req, res) => {
+    const code = keyOf(String(req.query.code || "")), held = google && linkCodes.get(code);
+    linkCodes.delete(code);
+    if (!held || held.expires < now()) return send(res, page("Expired", "<p>This link has expired. Start again from the app.</p>", 400));
+    const stateValue = secret(), nonce = secret();
+    googleStates.set(keyOf(stateValue), { kind: "link", person: held.person, nonce, expires: now() + PENDING_MS });
+    const url = new URL(google.authUrl || "https://accounts.google.com/o/oauth2/v2/auth");
+    Object.entries({ client_id: google.clientId, redirect_uri: google.redirectUri, response_type: "code", scope: "openid email profile", state: stateValue, nonce, prompt: "select_account" }).forEach(([k, v]) => url.searchParams.set(k, v));
+    res.append("set-cookie", `fb_state=${stateValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=900${secure ? "; Secure" : ""}`);
+    res.redirect(302, url.href);
+  });
+
   app.get("/oauth/google/callback", guarded("signin", cap.signin, 600e3, false), async (req, res) => {
     try {
       const sv = String(req.query.state || ""), held = googleStates.get(keyOf(sv));
@@ -267,6 +285,13 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
       const claims = answer.id_token && JSON.parse(Buffer.from(answer.id_token.split(".")[1], "base64url").toString("utf8")); // straight from Google over TLS: the OpenID Connect rule for the code flow
       const ok = claims && ["accounts.google.com", "https://accounts.google.com"].includes(claims.iss) && claims.aud === google.clientId && claims.exp * 1000 > now() && claims.nonce === held.nonce && claims.sub;
       if (!ok) return send(res, page("Not signed in", "<p>Google's answer did not check out. Try again.</p>", 403));
+      if (held.kind === "link") {
+        const key = `google:${claims.sub}`, had = state.accounts.get(key);
+        if (had && had.person !== held.person) return send(res, page("Already in use", "<p>That Google account already belongs to another FoodBlock person. Choose a different one.</p>", 409));
+        if (!had) state.accounts.set(key, { person: held.person, email: claims.email_verified === false ? null : claims.email || null, name: claims.name || null, created: new Date(now()).toISOString(), linked: true });
+        startSession(res, held.person);
+        return res.redirect(302, "/account");
+      }
       await signedIn(res, held.id, `google:${claims.sub}`, { email: claims.email_verified === false ? null : claims.email, name: claims.name });
     } catch { send(res, page("Not signed in", "<p>Sign-in failed. Try again in a moment.</p>", 502)); }
   });
@@ -361,5 +386,5 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   if (extend) extend({ app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson, form, allow, ip });
   app.use((req, res) => res.status(404).end());
 
-  return { app, state, doorFor, provider, accountFor, doors, custodyOf, requestGrant };
+  return { app, state, doorFor, provider, accountFor, doors, custodyOf, requestGrant, linkGoogle };
 }

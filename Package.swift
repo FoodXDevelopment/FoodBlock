@@ -22,11 +22,15 @@ let package = Package(
     platforms: [.iOS(.v16), .macOS(.v13)],
     products: [
         .library(name: "FoodBlock", targets: ["FoodBlock"]),
+        .library(name: "FoodBlockWindow", targets: ["FoodBlockWindow"]),
     ],
     targets: [
         core,
         .target(name: "FoodBlock", dependencies: ["CFoodBlock"], path: "sdk/swift/Sources/FoodBlock",
                 linkerSettings: [.linkedFramework("Security"), .linkedFramework("CoreFoundation")]),
+        .target(name: "FoodBlockWindow", dependencies: ["FoodBlock"], path: "sdk/swift/Sources/FoodBlockWindow",
+                linkerSettings: [.linkedLibrary("sqlite3")]),
+        .testTarget(name: "FoodBlockWindowTests", dependencies: ["FoodBlockWindow", "FoodBlock"], path: "sdk/swift/WindowTests"),
         .testTarget(name: "FoodBlockTests", dependencies: ["FoodBlock"], path: "sdk/swift/Tests"),
     ]
 )

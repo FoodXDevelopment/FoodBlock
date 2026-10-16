@@ -14,6 +14,7 @@ dependencyResolutionManagement {
 }
 rootProject.name = "foodblock-kotlin"
 include(":foodblock")
+include(":window")
 
 val androidSdk = listOfNotNull(
     System.getenv("ANDROID_HOME"),
@@ -21,4 +22,4 @@ val androidSdk = listOfNotNull(
     file("local.properties").takeIf { it.exists() }?.readLines()
         ?.firstOrNull { it.startsWith("sdk.dir=") }?.substringAfter("="),
 ).firstOrNull { it.isNotBlank() }
-if (androidSdk != null && file(androidSdk).isDirectory) include(":android")
+if (androidSdk != null && file(androidSdk).isDirectory) { include(":android"); include(":window-android") }
