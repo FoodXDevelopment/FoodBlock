@@ -19,6 +19,7 @@ A node asks for the blocks it may see since a point.
 - `heads: true` returns only the heads among the matches: those no other match names by `prev` or `updates`.
 - `limit` is the asker's wish; the responder caps it.
 - The answer is the matches in arrival order, each with its arrival number, and `next`, where to go on.
+- **Lies travel with their proof.** A node that holds proof that a key equivocated (a pair of blocks, or of public headers, of one key naming one `prev`; Equivocation below) includes both blocks of the pair in any answer that includes either, whether or not the other matches the filter, falls past `limit`, or has an arrival number at or below `since`. The pair is in addition to `limit`. `next` is the arrival number of the last match, so a proof beyond it is sent again then. A sealed block of a pair goes as the asker may see it (its header, or the copy sealed to a signed asker). A recovery rotation and the first key's block are not a pair.
 - An unsigned pull gets public blocks and the public headers of sealed ones. A signed pull also gets the copies sealed to the asker.
 
 ## Push
@@ -42,7 +43,7 @@ A node publishes `.well-known/foodblock`: `{ protocol: "foodblock", version, nod
 
 ## Equivocation
 
-Two blocks with one signing key and one `prev` (core.md, invariant 3). The same holds for a sealed block known by its public header alone: a header and a whole block, or two headers, naming one `prev` for one key are a pair (privacy.md). Also two binding blocks of one record that do not see each other (an offer's allocations, an instance's ownership transfers), and two recovery rotations that cross. A node keeps both and serves them with the chain, so anyone may publish the proof. What a fold does with a pair is in folds.md.
+Two blocks with one signing key and one `prev` (core.md, invariant 3). The key is the signer, so the recovery key is a signer of its own: its first block naming the genesis is not a pair with the first key's first block (identity.md). The same holds for a sealed block known by its public header alone: a header and a whole block, or two headers, naming one `prev` for one key are a pair (privacy.md). Also two binding blocks of one record that do not see each other (an offer's allocations, an instance's ownership transfers), and two recovery rotations that cross. A node keeps both and serves them with the chain, so anyone may publish the proof. What a fold does with a pair is in folds.md.
 
 ## Finding
 

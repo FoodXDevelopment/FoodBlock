@@ -98,12 +98,12 @@ fn a_passkey_signs_a_block() {
         sign::passkey_signature(&block::hex(&auth), &block::hex(cdj.as_bytes()), &block::hex(sig.to_der().as_bytes())).unwrap()
     };
     let opens = |s: &str| verify_in("p256", &block, s, &k.public_key_sign);
-    assert!(opens(&answer(0x05, "foodx.world", "webauthn.get", &challenge)));
+    assert!(opens(&answer(0x05, "foodx.network", "webauthn.get", &challenge)));
     assert!(opens(&answer(0x01, "elsewhere.example", "webauthn.get", &challenge)), "rpId and UV are not read");
-    assert!(!opens(&answer(0x04, "foodx.world", "webauthn.get", &challenge)), "UP unset");
-    assert!(!opens(&answer(0x05, "foodx.world", "webauthn.create", &challenge)), "wrong type");
-    assert!(!opens(&answer(0x05, "foodx.world", "webauthn.get", "AAAA")), "wrong challenge");
-    let good = answer(0x05, "foodx.world", "webauthn.get", &challenge);
+    assert!(!opens(&answer(0x04, "foodx.network", "webauthn.get", &challenge)), "UP unset");
+    assert!(!opens(&answer(0x05, "foodx.network", "webauthn.create", &challenge)), "wrong type");
+    assert!(!opens(&answer(0x05, "foodx.network", "webauthn.get", "AAAA")), "wrong challenge");
+    let good = answer(0x05, "foodx.network", "webauthn.get", &challenge);
     assert!(opens(&good) && !opens(&format!("{}00", good)) && !opens(&good[..good.len() - 2]));
 }
 fn unhex_32(h: &str) -> [u8; 32] {

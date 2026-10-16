@@ -994,6 +994,22 @@ pub fn signer_of(block: &Value, keys: &[KeyEntry]) -> Option<String> {
         .map(|e| e.key.clone())
 }
 
+/// The recovery key that signed a block of this id, when one did (a key of the id's own never does): the recovery keys
+/// the id's key grants prove, or the one the block itself names and the genesis hashes.
+pub fn recovery_signer_of(block: &Value, id: &str, index: &Index) -> Option<String> {
+    let named = ss(block, "recovery_key").filter(|r| {
+        let Some((hash, rsuite)) = crate::valid::recovery_hash_of(id, index) else { return false };
+        index.get(id).is_some_and(|root| recovery_key_hash_in(&suite_named(root), r) == hash) && opens_as(block, r, &rsuite)
+    });
+    // the recovery key's other act, the defeats of a successor's trigger, carries no key: the keys its grants proved
+    named.map(String::from).or_else(|| {
+        if !truthy(rf(block, "defeats")) {
+            return None;
+        }
+        identity_in(id, index, None).recovery.into_iter().find(|r| opens(block, r))
+    })
+}
+
 /// One key's chain for an id.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KeyChain {

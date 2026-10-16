@@ -1216,6 +1216,8 @@ function signerKeyOf(b, pool) {
   if (i) return i.key;
   // not yet known to the fold (e.g. a block outside the pool): try the keys the identity names
   for (const k of idf.keyMap.keys()) if (verifyBlock(b, b.signature, k)) return k;
+  // the recovery key is a signer of its own (identity.md): its first block names the genesis as the first key's does, and the two are not a pair
+  if (b.state && idf.recoveryOk && idf.recoveryOk(b.state.recovery_key) && verifyBlock(b, b.signature, b.state.recovery_key)) return b.state.recovery_key;
   return null;
 }
 function forkPairs(blocksIn) {
@@ -1454,9 +1456,12 @@ function whyNotUnder(b, poolIn) {
   const fail = d => [{ code: 'not_live', detail: d }];
   const g = pool.get(b.refs.under);
   if (!g || g.type !== 'grant') return fail('the grant is not held');
-  if (g.refs.to !== undefined && g.refs.to !== b.refs.author) return fail('the signer is not the receiver of the grant');
+  // a witness's trigger is the witness's own word under a successor grant, which is for the successor (profiles/successor.md)
+  const trigger = b.type === 'observe' && b.state.kind === 'trigger' && g.state.kind === 'successor';
+  if (trigger && !asList(g.state.witnesses).includes(b.refs.author)) return fail('the signer is not a witness of the successor grant');
+  if (!trigger && g.refs.to !== undefined && g.refs.to !== b.refs.author) return fail('the signer is not the receiver of the grant');
   if (!grantLive(g, pool)) return fail('the grant is not live');
-  const sc = isObj(g.state.scope) ? g.state.scope : {};
+  const sc = !trigger && isObj(g.state.scope) ? g.state.scope : {};
   const names = actNames(b);
   if (sc.acts !== undefined && !names.some(n => asList(sc.acts).includes(n))) return fail('the act is outside the grant\'s scope');
   if (undoNever(b, pool)) {
@@ -1931,8 +1936,8 @@ function successorView(grant, blocks, o) {
   const pool = poolOf(blocks);
   const arrivals = (o && o.arrivals) || {}, now = o && o.now;
   const witnesses = asList(grant.state.witnesses), needed = grant.state.needed || witnesses.length || 1, wait = grant.state.wait;
-  // GUESS: a witness observe is any observe of a listed witness naming the grant in refs.under (the text says kind trigger; the vectors say event)
-  let events = pool.all().filter(b => b.type === 'observe' && b.refs.under === grant.hash && witnesses.includes(b.refs.author) && arrivals[b.hash] !== undefined && counts(b, pool));
+  // a witness's trigger is an observe of kind trigger by a listed witness, naming the grant in refs.under (profiles/successor.md)
+  let events = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'trigger' && b.refs.under === grant.hash && witnesses.includes(b.refs.author) && arrivals[b.hash] !== undefined && counts(b, pool));
   const seenW = new Set(); events = events.filter(b => seenW.has(b.refs.author) ? false : (seenW.add(b.refs.author), true));
   const defeats = pool.all().filter(b => b.refs.defeats !== undefined && b.refs.author === grant.refs.author && arrivals[b.hash] !== undefined);
   const cancelled = new Set();
@@ -2062,6 +2067,41 @@ function openCopy(msg, privHex) {
 }
 const headerSignedBy = (msg, pubHex) => verifyBytes(Buffer.from(jcs(msg.header), 'utf8'), msg.header_signature, pubHex);
 // wrap / unwrap (core.md section 6): a public block as a message
+// ---- answering a pull (nodes.md, Pull): the matches in arrival order, each with its arrival number; a lie travels with its proof
+function answerPull(log, request, node, privateKey, cap, asker, heldIn, suite) {
+  const since = Number(request.since) || 0;
+  const limit = request.limit > 0 ? Math.min(request.limit, cap) : cap;
+  asker = asker || request.signer;
+  const held = Array.isArray(heldIn) ? poolOf(heldIn) : poolOf(log.map(e => e.block));
+  let found = log.filter(e => e.n > since && matches(e.block, request.filter, held)).sort((a, b) => a.n - b.n);
+  if (request.heads) {
+    const named = new Set(found.flatMap(e => [...asList(e.block.refs.prev), ...asList(e.block.refs.updates)]));
+    found = found.filter(e => !named.has(e.block.hash));
+  }
+  found = found.slice(0, limit);
+  const next = found.length ? found[found.length - 1].n : since;
+  // a block of a pair (one key, one prev) is never answered without the other, matched or not, before since or after
+  const have = new Set(found.map(e => e.block.hash)), proofs = [];
+  for (const e of found) {
+    const at = placeOf(e.block, held);
+    if (!at) continue;
+    for (const o of log) {
+      if (have.has(o.block.hash) || o.block.refs.author !== at.author || o.block.refs.prev !== at.prev) continue;
+      const p = placeOf(o.block, held);
+      if (p && samePlace(p, at)) { have.add(o.block.hash); proofs.push(o); }
+    }
+  }
+  found = found.concat(proofs).sort((a, b) => a.n - b.n);
+  const messageOf = e => {
+    const a = e.block.state.audience;
+    if (a === 'public' || !Array.isArray(a)) return wrap(e.block);
+    const copy = asker && e.copies && e.copies[asker];
+    if (copy) return copy;
+    return { version: P.version, header: e.header || header(e.block), header_signature: e.header_signature === undefined ? null : e.header_signature };
+  };
+  const answer = { node, request: hashStr('std', jcs(request)), blocks: found.map(e => ({ n: e.n, message: messageOf(e) })), next };
+  return answer;
+}
 const wrap = b => { const m = { version: P.version, block: blockOnly(b), signature: b.signature }; if (b.suite && b.suite !== 'std') m.suite = b.suite; return m; };
 function unwrap(m) {
   const suite = suiteOf(m.suite);
@@ -2087,6 +2127,8 @@ function door(op, ...a) {
     case 'spec': return { protocol: P };
     case 'accept_sealed': { const r = acceptSealed(a[0], a[1]); return { ...r, taken: r.taken.map(b => b.hash) }; }
     case 'matches': return matches(a[0], a[1], a[2]);
+    case 'successor_view': return successorView(a[0], a[1], { now: a[2], arrivals: a[3] });
+    case 'answer_pull': return answerPull(a[0], a[1], a[2], a[3], a[4] === undefined || a[4] === null ? 500 : a[4], a[5], a[6], a[7]);
     case 'keypair': return keypair(a[0], a[1]);
     case 'sign': return signBlock(a[0], a[1], a[2]);
     case 'verify': return verifyBlock(a[0], a[1], a[2]);

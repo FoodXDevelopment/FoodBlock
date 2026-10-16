@@ -631,8 +631,8 @@ function successorFolds() {
   for (const cancel of [false, true]) {
     const s = story(), pam = s.person('gia'), heir = s.person('hal_heir'), w1 = s.person('ina'), w2 = s.person('jax')
     const grant = s.say(pam, 'gia names her successor: two witnesses, a week\'s wait', 'grant', { kind: 'successor', witnesses: [w1.id, w2.id].sort(), needed: 2, wait: 'P7D', keys: { sealed_to: heir.id, envelope: 'opaque' } }, { to: heir.id })
-    const e1 = s.say(w1, 'the first witness records the event', 'observe', { kind: 'event', text: 'closed' }, { under: grant.hash, subject: pam.id })
-    const e2 = s.say(w2, 'the second witness records it', 'observe', { kind: 'event', text: 'closed' }, { under: grant.hash, subject: pam.id })
+    const e1 = s.say(w1, 'the first witness records the event', 'observe', { kind: 'trigger', text: 'closed' }, { under: grant.hash, subject: pam.id })
+    const e2 = s.say(w2, 'the second witness records it', 'observe', { kind: 'trigger', text: 'closed' }, { under: grant.hash, subject: pam.id })
     const arrivals = { [e1.hash]: '2026-10-01T00:00:00.000Z', [e2.hash]: '2026-10-02T00:00:00.000Z' }
     if (cancel) { const no = s.say(pam, 'gia defeats it: she is here', 'observe', { kind: 'event', text: 'not so' }, { defeats: e2.hash }); arrivals[no.hash] = '2026-10-05T00:00:00.000Z' }
     const now = '2026-10-10T00:00:00.000Z'

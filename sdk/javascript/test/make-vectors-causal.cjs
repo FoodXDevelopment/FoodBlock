@@ -18,7 +18,7 @@ const keyOf = (name, suite = 'std') => {
   if (keys[name]) return keys[name]
   const seed = sha(`foodblock 1.6 causal vectors: ${name}`), x = sha(`foodblock 1.6 causal vectors x25519: ${name}`)
   const kp = fb.keypairFromSeed(seed, suite)
-  keys[name] = { seed, private_key: kp.private_key, public_key_sign: kp.public_key_sign, public_key_encrypt: fb.encryptionKeyOf(x, suite) }
+  keys[name] = { seed, x25519_private: x, private_key: kp.private_key, public_key_sign: kp.public_key_sign, public_key_encrypt: fb.encryptionKeyOf(x, suite) }
   if (name.endsWith('_recovery')) keys[name].hash = recoveryKeyHash(kp.public_key_sign, suite)
   return keys[name]
 }
@@ -269,6 +269,80 @@ const sorted = (list) => [...list].sort()
   check('an amount\'s unit is text, not empty', { type: 'promise', state: { ...common, terms: { expires: DAY, quantity: { value: '2', unit: '' } }, what: 'x' }, refs: { ...refs, from: A } }, ['shape'])
   check('a price that is none of money, money per unit or a share is refused', { type: 'promise', state: { ...common, terms: { expires: DAY, price: { minor: 5, currency: 'GBP', place: 'x' } }, what: 'x' }, refs: { ...refs, from: A } }, ['shape'])
   check('an id field holds an id wherever it is written: counted_to', { type: 'observe', state: { ...common, kind: 'note', counted_to: 'nope' }, refs }, ['grammar'])
+}
+
+// ---- 10. A recovery rotation is a different signer, never a fork (identity.md, nodes.md Equivocation) ----
+{
+  const s = story(), rx = s.person('crx'), rz = s.person('crz')
+  const first = s.say(rx, 'observe', { kind: 'note', text: 'the first key signs first' })
+  const fresh = keyOf('crx_new')
+  // the recovery key's first block names the genesis, as the first key's first block does: the same prev, a different signer
+  const rot = s.keep(keyGrant(rx.id, fresh.public_key_sign, { private_key: rx.recovery.private_key, recoveryKey: rx.recovery.public_key_sign, last: null }, { replaces: rx.key.public_key_sign, countedTo: first.hash, at: at() }))
+  assert.equal(rot.refs.prev, first.refs.prev)
+  const heldRx = s.held.filter((b) => b.refs?.author === rx.id || b.hash === rx.id)
+  door('accept: a recovery rotation naming the same prev as the first key\'s first block is not a fork', 'accept', [[rot], heldRx.filter((b) => b !== rot), null, null], { expect: { taken: [rot.hash], waiting: [], refused: [], equivocations: [] }, exact: false })
+  door('accept: and the first key\'s block arriving after the recovery rotation is not a fork either', 'accept', [[first], heldRx.filter((b) => b !== first), null, null], { expect: { taken: [first.hash], waiting: [], refused: [], equivocations: [] } })
+  door('accept: both in one push are taken and no pair is listed', 'accept', [[rot, first], heldRx.filter((b) => b !== first && b !== rot), null, null], { expect: { taken: [first.hash, rot.hash], waiting: [], refused: [], equivocations: [] } })
+  // the same key with the same prev is still a lie
+  const twin = fb.write('observe', { kind: 'note', text: 'a second story' }, {}, { author: rx.id, key: keyOf('crx'), held: s.held.filter((b) => b !== first && b !== rot && (b.refs?.author === rx.id || b.hash === rx.id)), at: at(), audience: 'public' })
+  assert.equal(twin.refs.prev, first.refs.prev)
+  const pair = [first.hash, twin.hash].sort()
+  door('accept: the first key twice naming one prev is an equivocation, recovery rotation or not', 'accept', [[twin], heldRx, null, null], { expect: { taken: [], waiting: [], refused: [], equivocations: [pair] } })
+}
+
+// ---- 11. A witness's trigger is under the successor grant (profiles/successor.md) ----
+{
+  const s = story(), pam = s.person('cpam'), heir = s.person('cheir'), w1 = s.person('cw1'), w2 = s.person('cw2'), out = s.person('cout')
+  const grant = s.say(pam, 'grant', { kind: 'successor', witnesses: [w1.id, w2.id].sort(), needed: 2, wait: 'P7D', keys: { sealed_to: heir.id, envelope: 'opaque' } }, { to: heir.id })
+  const t1 = s.say(w1, 'observe', { kind: 'trigger', text: 'closed' }, { under: grant.hash, subject: pam.id })
+  const t2 = s.say(w2, 'observe', { kind: 'trigger', text: 'closed' }, { under: grant.hash, subject: pam.id })
+  const stranger = s.say(out, 'observe', { kind: 'trigger', text: 'closed' }, { under: grant.hash, subject: pam.id })
+  const close = s.say(heir, 'observe', { kind: 'close' }, { under: grant.hash, subject: pam.id })
+  const notTrigger = s.say(w1, 'observe', { kind: 'note', text: 'a witness acting for her' }, { under: grant.hash, subject: pam.id })
+  const wrong = (b) => call('why_not_under', JSON.parse(JSON.stringify(b)), JSON.parse(JSON.stringify(s.held)), null)
+  assert.equal(wrong(t1).length, 0, JSON.stringify(wrong(t1)))
+  assert.equal(wrong(t2).length, 0)
+  assert.ok(wrong(stranger).length > 0, 'a trigger by one who is not a listed witness is not under the grant')
+  assert.equal(wrong(close).length, 0, 'the successor signs under the grant as the grant\'s receiver')
+  assert.ok(wrong(notTrigger).length > 0, 'a witness is covered for the trigger alone')
+  const people = [pam, heir, w1, w2, out]
+  for (const p of people) V.keys[p.name] = { seed: p.key.seed, x25519_private: p.key.x25519_private, private_key: p.key.private_key, public_key_sign: p.key.public_key_sign, public_key_encrypt: p.key.public_key_encrypt }
+  for (const p of people) if (p.recovery) V.keys[p.name + '_recovery'] = { seed: p.recovery.seed, x25519_private: p.recovery.x25519_private, private_key: p.recovery.private_key, public_key_sign: p.recovery.public_key_sign, public_key_encrypt: p.recovery.public_key_encrypt, hash: p.recovery.hash }
+  const signerOf = (b) => people.find((p) => p.id === b.hash || p.id === b.refs?.author).name
+  const fullOf = (b) => ({ name: b.type + (b.state.kind ? '.' + b.state.kind : ''), hash: b.hash, signer: signerOf(b), block: { type: b.type, state: b.state, refs: b.refs }, signature: b.signature })
+  const NAME = 'a witness\'s trigger is under the successor grant: the listed witness, not a stranger; the successor\'s own close, not a witness\'s note'
+  V.identities = V.identities.filter((x) => x.name !== NAME)
+  V.identities.push({
+    name: NAME, id: pam.id, blocks: s.held.map(fullOf),
+    signed_by_author: Object.fromEntries(s.held.filter((b) => b.refs?.author === pam.id || b.hash === pam.id).map((b) => [b.hash, true])),
+    keys: [pam.key.public_key_sign],
+    under: { [t1.hash]: true, [t2.hash]: true, [stranger.hash]: false, [close.hash]: true, [notTrigger.hash]: false }
+  })
+  made.add(NAME)
+  const view = call('successor_view', JSON.parse(JSON.stringify(grant)), JSON.parse(JSON.stringify(s.held)), '2026-10-30T00:00:00.000Z', { [t1.hash]: '2026-10-01T00:00:00.000Z', [t2.hash]: '2026-10-02T00:00:00.000Z', [stranger.hash]: '2026-10-01T00:00:00.000Z' })
+  assert.deepEqual(view.events, sorted([t1.hash, t2.hash]))
+  door('successor_view: only a witness\'s trigger counts: a note by a witness and a trigger by a stranger do not', 'successor_view', [grant, s.held, '2026-10-30T00:00:00.000Z', { [t1.hash]: '2026-10-01T00:00:00.000Z', [t2.hash]: '2026-10-02T00:00:00.000Z', [stranger.hash]: '2026-10-01T00:00:00.000Z', [notTrigger.hash]: '2026-10-01T00:00:00.000Z' }], { expect: { events: sorted([t1.hash, t2.hash]), fired: true } })
+}
+
+// ---- 12. Lies travel with their proof (nodes.md, Pull) ----
+{
+  const s = story(), pf = s.person('cpf'), other = s.person('cpo')
+  const first = s.say(pf, 'observe', { kind: 'note', text: 'one story' })
+  const mid = s.say(other, 'observe', { kind: 'note', text: 'unrelated' })
+  const twin = fb.write('observe', { kind: 'note', text: 'another story' }, {}, { author: pf.id, key: keyOf('cpf'), held: s.held.filter((b) => b !== mid && b !== first && (b.refs?.author === pf.id || b.hash === pf.id)), at: at(), audience: 'public' })
+  assert.equal(twin.refs.prev, first.refs.prev)
+  const later = s.say(other, 'observe', { kind: 'note', text: 'unrelated, later' })
+  const fresh = keyOf('cpf_new')
+  const rot = keyGrant(pf.id, fresh.public_key_sign, { private_key: pf.recovery.private_key, recoveryKey: pf.recovery.public_key_sign, last: null }, { replaces: pf.key.public_key_sign, countedTo: first.hash, at: at() })
+  const log = [pf.g, other.g, first, mid, twin, later, rot].map((block, i) => ({ n: i + 1, block }))
+  const nOf = (b) => log.find((e) => e.block.hash === b.hash).n
+  const pull = (name, request, want, next, cap = 500) => door(name, 'answer_pull', [log, request, pf.id, null, cap, null, s.held, 'std'], { expect: { blocks: want.map((b) => ({ n: nOf(b) })), next } })
+  pull('answer_pull: a block of a pair is answered with the other, though only one matches', { since: 0, filter: { hash: first.hash } }, [first, twin], nOf(first))
+  pull('answer_pull: the proof comes even when its partner is before since', { since: nOf(first), filter: { hash: twin.hash } }, [first, twin], nOf(twin))
+  pull('answer_pull: and when the limit cuts the partner off', { since: 0, limit: 1, filter: { author: pf.id } }, [first, twin], nOf(first))
+  pull('answer_pull: a block that is no part of a pair travels alone', { since: 0, filter: { hash: mid.hash } }, [mid], nOf(mid))
+  pull('answer_pull: a recovery rotation is not the first key\'s pair', { since: 0, filter: { hash: rot.hash } }, [rot], nOf(rot))
+  pull('answer_pull: heads only: both ends of a pair are heads, and both come', { since: 0, heads: true, filter: { hash: twin.hash } }, [first, twin], nOf(twin))
 }
 
 // ---- 9. A protocol constant ----

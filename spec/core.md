@@ -134,7 +134,7 @@ Core keeps three. Every other invariant is in the module that owns it, still num
 
 1. A block's identity is the hash of its canonical bytes; nothing else names it.
 2. A block never changes; a change is a new block.
-3. A key's blocks form one chain: no two of its blocks name the same `prev`. Two that do prove a lie. Both are kept, and neither binds anyone else.
+3. A key's blocks form one chain: no two of its blocks name the same `prev`. Two that do prove a lie. Both are kept, and neither binds anyone else. A lie is the same key with the same `prev`, and only that: two blocks naming one `prev` that different keys signed, such as the recovery key's first block and the first key's, are two chains, not a fork (identity.md).
 25. Authority depends on blocks, and they are causal dependencies: a block waits until it holds every block it needs (core.md, check 5), and is then judged once. No node holds a block that another would have judged otherwise for want of what it lacked.
 
 ## 10. What core leaves out

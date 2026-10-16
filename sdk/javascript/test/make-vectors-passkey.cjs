@@ -27,11 +27,11 @@ const otherAuthenticator = (() => {
 
 // ---- the authenticator ----
 const UP = 0x01, UV = 0x04, BE = 0x08, BS = 0x10
-function authData({ rp = 'foodx.world', flags = UP | UV, counter = 0, tail } = {}) {
+function authData({ rp = 'foodx.network', flags = UP | UV, counter = 0, tail } = {}) {
   const n = Buffer.alloc(4); n.writeUInt32BE(counter)
   return Buffer.concat([sha(rp), Buffer.from([flags]), n, ...(tail ? [tail] : [])])
 }
-const clientData = (challenge, { type = 'webauthn.get', origin = 'https://foodx.world' } = {}) =>
+const clientData = (challenge, { type = 'webauthn.get', origin = 'https://foodx.network' } = {}) =>
   Buffer.from(`{"type":"${type}","challenge":"${challenge}","origin":"${origin}","crossOrigin":false}`, 'utf8')
 // What navigator.credentials.get({ publicKey: { challenge } }) gives back for a challenge, from this authenticator.
 function assert_(challenge, { priv = authenticator, auth = authData(), cdj = clientData(challenge) } = {}) {
@@ -109,9 +109,9 @@ for (const [what, auth] of [
   door(P + 'rpIdHash is not checked: another relying party\'s hash opens (the key is the authority, not the origin)', 'verify', [g0, s.signature, key.public_key_sign], { expect: true })
   const o = sign(g0, { cdj: clientData(challengeOf(g0), { origin: 'https://evil.example' }) })
   door(P + 'origin is not checked either', 'verify', [g0, o.signature, key.public_key_sign], { expect: true })
-  const x = sign(g0, { cdj: Buffer.from(`{"type":"webauthn.get","challenge":"${challengeOf(g0)}","origin":"https://foodx.world","crossOrigin":true,"other_keys_can_be_added_here":"do not compare clientDataJSON against a template. See https://goo.gl/yabPex"}`) })
+  const x = sign(g0, { cdj: Buffer.from(`{"type":"webauthn.get","challenge":"${challengeOf(g0)}","origin":"https://foodx.network","crossOrigin":true,"other_keys_can_be_added_here":"do not compare clientDataJSON against a template. See https://goo.gl/yabPex"}`) })
   door(P + 'members of clientDataJSON beyond type and challenge are ignored', 'verify', [g0, x.signature, key.public_key_sign], { expect: true })
-  const r = sign(g0, { cdj: Buffer.from(`{ "origin" : "https://foodx.world" , "challenge" : "${challengeOf(g0)}" , "type" : "webauthn.get" }`) })
+  const r = sign(g0, { cdj: Buffer.from(`{ "origin" : "https://foodx.network" , "challenge" : "${challengeOf(g0)}" , "type" : "webauthn.get" }`) })
   door(P + 'clientDataJSON is read as JSON: member order and spaces do not matter', 'verify', [g0, r.signature, key.public_key_sign], { expect: true })
 }
 
@@ -133,7 +133,7 @@ for (const [what, auth] of [
   door(P + 'user presence not set (UP unset) does not open, though the signature is true', 'verify', [g0, noUP.signature, key.public_key_sign], { expect: false })
   const create = sign(g0, { cdj: clientData(challengeOf(g0), { type: 'webauthn.create' }) })
   door(P + 'clientDataJSON of type webauthn.create does not open', 'verify', [g0, create.signature, key.public_key_sign], { expect: false })
-  const dup = sign(g0, { cdj: Buffer.from(`{"type":"webauthn.get","challenge":"AAAA","challenge":"${challengeOf(g0)}","origin":"https://foodx.world"}`) })
+  const dup = sign(g0, { cdj: Buffer.from(`{"type":"webauthn.get","challenge":"AAAA","challenge":"${challengeOf(g0)}","origin":"https://foodx.network"}`) })
   door(P + 'a repeated key in clientDataJSON does not open', 'verify', [g0, dup.signature, key.public_key_sign], { expect: false })
   const notJson = sign(g0, { cdj: Buffer.from('not json') })
   door(P + 'clientDataJSON that is not JSON does not open', 'verify', [g0, notJson.signature, key.public_key_sign], { expect: false })

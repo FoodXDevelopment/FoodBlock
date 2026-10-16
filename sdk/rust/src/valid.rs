@@ -22,7 +22,7 @@ fn f(code: &str, detail: impl Into<String>) -> Refusal {
 }
 
 /// The recovery hash the identity names: its genesis's, else the one a key grant added.
-fn recovery_hash_of(id: &str, held: &Index) -> Option<(String, String)> {
+pub(crate) fn recovery_hash_of(id: &str, held: &Index) -> Option<(String, String)> {
     let root = held.get(id)?;
     let suite = suite_named(root);
     let named = ss(root, "recovery_key_hash")

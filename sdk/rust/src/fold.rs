@@ -1446,7 +1446,7 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
 }
 
 // ---- A successor's trigger (profiles/successor.md) ----
-/// Where a successor grant's trigger stands: the needed witnesses' event observes, less those the person defeats
+/// Where a successor grant's trigger stands: the needed witnesses' trigger observes, less those the person defeats
 /// before it fires. It fires `wait` after the needed-th event arrived on this node (`arrived_at`), on the reader's own
 /// clock (`now`). Returns `{ events, cancelled, since, fires, fired }`.
 #[cfg(feature = "successor")]
@@ -1466,6 +1466,7 @@ pub fn successor_state(
         .values()
         .filter(|b| {
             type_of(b) == "observe"
+                && ss(b, "kind") == Some("trigger")
                 && rs(b, "under") == Some(gh)
                 && rs(b, "author").is_some_and(|a| witnesses.contains(&a))
                 && crate::identity::counts_in(b, &index)

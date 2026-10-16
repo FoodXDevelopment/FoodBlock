@@ -221,10 +221,16 @@ pub fn why_not_under_in(block: &Value, index: &Index, now: Option<&str>) -> Vec<
         return vec!["refs.under names no grant this reader holds".into()];
     };
     let mut wrong = Vec::new();
-    if truthy(rf(grant, "to")) && !strict_eq(rf(grant, "to"), rf(block, "author")) {
+    // A witness's trigger (profiles/successor.md) is the witness's own word, signed under the successor grant, which is
+    // for the successor: the witnesses the grant lists are the ones it covers, and it has no scope.
+    let trigger = is_trigger(block, grant);
+    if trigger == Some(false) {
+        wrong.push("the signer is not a witness the successor grant names".into());
+    }
+    if trigger.is_none() && truthy(rf(grant, "to")) && !strict_eq(rf(grant, "to"), rf(block, "author")) {
         wrong.push("the grant is for someone else".into());
     }
-    if let Some(acts) = get(grant, "state.scope.acts").filter(|v| truthy(Some(v))) {
+    if let Some(acts) = get(grant, "state.scope.acts").filter(|v| trigger.is_none() && truthy(Some(v))) {
         let t = crate::js::type_of(block);
         let kind = text(st(block, "kind"));
         let typed = format!("{t}.{kind}");
@@ -244,6 +250,18 @@ pub fn why_not_under_in(block: &Value, index: &Index, now: Option<&str>) -> Vec<
     wrong.extend(why_not_live_in(Some(grant), index, now));
     wrong.extend(why_not_live_undo(block, index));
     wrong
+}
+
+/// Whether a block is a trigger under a successor grant: `None` when it is not one (an `observe` of kind `trigger` under
+/// a grant of kind `successor`); `Some(true)` when its author is a witness the grant lists, `Some(false)` when not.
+#[cfg(feature = "successor")]
+fn is_trigger(block: &Value, grant: &Value) -> Option<bool> {
+    (crate::js::type_of(block) == "observe" && ss(block, "kind") == Some("trigger") && ss(grant, "kind") == Some("successor"))
+        .then(|| rs(block, "author").is_some_and(|a| list(st(grant, "witnesses")).contains(&a)))
+}
+#[cfg(not(feature = "successor"))]
+fn is_trigger(_block: &Value, _grant: &Value) -> Option<bool> {
+    None
 }
 
 /// The act a block is, named as `type.kind` (or `type` with no kind).

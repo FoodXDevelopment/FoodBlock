@@ -48,6 +48,17 @@ jobs:
       - uses: actions/checkout@v4
       - run: python3 tools/tla/check.py
 
+  protocol-model-tlc:
+    name: Protocol model in TLC (the same machine, written in TLA+; each deliberate bug is caught)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: python3 tools/tla/run-tlc.py
+
   wasm-core:
     name: JS core (Rust built to WebAssembly) is current
     runs-on: ubuntu-latest

@@ -10,8 +10,8 @@ const point = Buffer.from(key.public_key_sign.slice(-130), 'hex')
 const device = crypto.createPrivateKey({ key: { kty: 'EC', crv: 'P-256', d: Buffer.from(key.private_key, 'hex').toString('base64url'), x: point.subarray(1, 33).toString('base64url'), y: point.subarray(33).toString('base64url') }, format: 'jwk' })
 // What the browser hands back for a challenge.
 function assertion(challenge, flags = 0x05) {
-  const auth = Buffer.concat([sha('foodx.world'), Buffer.from([flags, 0, 0, 0, 1])])
-  const cdj = Buffer.from(JSON.stringify({ type: 'webauthn.get', challenge, origin: 'https://foodx.world', crossOrigin: false }))
+  const auth = Buffer.concat([sha('foodx.network'), Buffer.from([flags, 0, 0, 0, 1])])
+  const cdj = Buffer.from(JSON.stringify({ type: 'webauthn.get', challenge, origin: 'https://foodx.network', crossOrigin: false }))
   const der = crypto.sign('sha256', Buffer.concat([auth, sha(cdj)]), { key: device, dsaEncoding: 'der' })
   return fb.passkeySignature(auth.toString('hex'), cdj.toString('hex'), der.toString('hex'))
 }

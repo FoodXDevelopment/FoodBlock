@@ -290,6 +290,36 @@ pub fn answer_pull(
         found.retain(|e| heads.iter().any(|h| h == hash_of(&e.block)));
     }
     found.truncate(limit as usize);
+    // The next number is where the matches end; the proofs below may sit beyond it and are sent again then.
+    let next = found.last().map(|e| e.n).unwrap_or(since);
+    // Lies travel with their proof (nodes.md, Pull): a block of a pair that one key signed naming one `prev` is never
+    // answered without the other, whether or not the other matches, was asked for, or came before `since`.
+    let mut proofs: Vec<&Arrival> = Vec::new();
+    for e in &found {
+        // cheap first: only blocks of the same author naming the same prev can be a pair
+        let rivals: Vec<&Arrival> = log
+            .iter()
+            .filter(|o| {
+                hash_of(&o.block) != hash_of(&e.block)
+                    && rs(&o.block, "author").is_some()
+                    && rs(&o.block, "author") == rs(&e.block, "author")
+                    && rs(&o.block, "prev").is_some()
+                    && rs(&o.block, "prev") == rs(&e.block, "prev")
+                    && !found.iter().chain(proofs.iter()).any(|x| hash_of(&x.block) == hash_of(&o.block))
+            })
+            .collect();
+        if rivals.is_empty() {
+            continue;
+        }
+        let Some(at) = place_of(&e.block, held) else { continue };
+        for other in rivals {
+            if place_of(&other.block, held).is_some_and(|p| same_place(&p, &at)) {
+                proofs.push(other);
+            }
+        }
+    }
+    found.extend(proofs);
+    found.sort_by_key(|e| e.n);
     let message_of = |e: &Arrival| -> Value {
         let public = st(&e.block, "audience").and_then(Value::as_str) == Some("public")
             || !st(&e.block, "audience").is_some_and(Value::is_array);
@@ -312,7 +342,7 @@ pub fn answer_pull(
         "node": node,
         "request": crate::block::hash_hex(&canonical_json(request)),
         "blocks": found.iter().map(|e| json!({ "n": e.n, "message": message_of(e) })).collect::<Vec<_>>(),
-        "next": found.last().map(|e| e.n).unwrap_or(since),
+        "next": next,
     });
     match private_key {
         Some(k) => sign_message_in(suite, &answer, k),
@@ -409,7 +439,9 @@ fn signing_key(block: &Value, known: &Index) -> Option<String> {
     let author = rs(block, "author")?;
     let keys = key_timeline_in(author, known, None);
     if block.get("type").is_some() {
-        return signer_of(block, &keys);
+        // The recovery key is a signer of its own (identity.md): its first block names the genesis, as the first key's
+        // does, and the two are not a pair. Only the same key with the same `prev` is.
+        return signer_of(block, &keys).or_else(|| crate::identity::recovery_signer_of(block, author, known));
     }
     let message = json!({ "header": crate::write::header(block), "header_signature": block.get("header_signature").cloned().unwrap_or(Value::Null) });
     keys.iter().find(|e| crate::write::header_signed_by(&message, &e.key)).map(|e| e.key.clone())
