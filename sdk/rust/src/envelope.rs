@@ -224,7 +224,7 @@ pub fn seal_with(
         sealed.extend_from_slice(&key_nonce);
         recipients.push(json!({ "encrypted_key": base64_encode(&sealed) }));
     }
-    let plaintext = serde_json::to_string(value)?;
+    let plaintext = crate::canonical::canonical_json(value);
     Ok(json!({
         "alg": info.envelope, "ephemeral_key": hex(&ephemeral_public), "nonce": base64_encode(&nonce),
         "ciphertext": base64_encode(&gcm(suite, &content_key, &nonce, plaintext.as_bytes())?), "recipients": recipients,

@@ -195,10 +195,11 @@ impl<'a> Checker<'a> {
         }
         let mut allowed = self.list("shapes.when");
         allowed.extend(self.list("shapes.when_after"));
-        allowed.extend(["not_before".to_string(), "not_after".to_string(), "takes".to_string()]);
+        let window = self.list("shapes.when_window");
+        allowed.extend(window.iter().cloned());
         let range = v.get("from").is_some() && v.get("to").is_some();
         let relative = v.get("after").is_some() && v.get("wait").is_some();
-        let windowed = ["not_before", "not_after", "takes"].iter().any(|k| v.get(*k).is_some());
+        let windowed = window.iter().any(|k| v.get(k.as_str()).is_some());
         if !(is_obj(Some(v)) && keys_within(v, &allowed) && (range || relative || windowed)) {
             return s("shape", format!("{name} is a time, a range {{ from, to }}, or relative {{ after, wait }}"));
         }
@@ -1224,7 +1225,7 @@ impl<'a> Checker<'a> {
                 Value::Array(a) => a.iter().collect(),
                 other => vec![other],
             };
-            if (key == "prev" || key == "author") && value.is_array() {
+            if value.is_array() && self.spec.list("refs_single").iter().any(|k| k == key) {
                 w.push(f("grammar", format!("refs.{key} is one id")));
                 continue;
             }

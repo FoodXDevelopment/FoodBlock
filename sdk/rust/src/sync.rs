@@ -477,6 +477,8 @@ fn take_in(mut pending: Vec<Value>, known: &mut Index, judge: &dyn Fn(&Value, &I
         }
         // every block of the round is judged against the store as it stood when the round began
         let mut good: Vec<(Value, Option<Place>)> = Vec::new();
+        let mut ready = ready;
+        ready.sort_by(|a, b| hash_of(a).cmp(hash_of(b)));
         for block in ready {
             let wrong = judge(&block, known);
             for one in &wrong {
@@ -516,6 +518,7 @@ fn take_in(mut pending: Vec<Value>, known: &mut Index, judge: &dyn Fn(&Value, &I
             }
         }
     }
+    pending.sort_by(|a, b| hash_of(a).cmp(hash_of(b)));
     for block in pending {
         out.waiting.push((hash_of(&block).to_string(), crate::js::unmet_in(&block, known)));
     }
@@ -669,6 +672,8 @@ pub fn accept_sealed(incoming: &[Value], held: &[Value], arrived_at: ArrivedAt) 
         }
     }
     let mut out = take_in(pending, &mut known, &|entry, known| judge_header(entry, known, arrived_at));
+    out_early.taken.sort_by(|a, b| hash_of(a).cmp(hash_of(b)));
+    out_early.refused.sort_by(|a, b| a.hash.cmp(&b.hash));
     out.taken.splice(0..0, out_early.taken);
     out.refused.splice(0..0, out_early.refused);
     out

@@ -28,7 +28,7 @@ What the types hold, in detail. The types and verbs are in core.md.
 ## Transfers
 - A transfer names what changed: `refs.to_owner`, `refs.to_holder`, `refs.to_place` (any subset), and `refs.what`. Selling moves the owner; lending moves the holder; moving stock moves the place.
 - **Open receivers.** A transfer to someone unnamed leaves `to_owner` out and says how many received (`state.count`).
-- **Money** moves by transfer like anything else: `refs.to_owner`, `refs.for`, `state.money`, and `state.marks` (the payment rail's reference, profiles/payment-proof.md). A refund is the same, the other way. A payment `for` several promises says how much goes to each (`state.split`: `[{ for, line, money }]`). A payment names no thing, so it needs no `refs.what` (core.md, section 7). A failed attempt (a declined card) is an `observe`, never a transfer. The protocol never holds money.
+- **Money** moves by transfer like anything else: `refs.to_owner`, `refs.for`, `state.money`, and `state.marks` (the payment rail's reference, profiles/payment-proof.md). A refund is the same, the other way. A payment `for` several promises says how much goes to each (`state.split`: `[{ for, line, money }]`). A payment names no thing, so it needs no `refs.what` (core.md, section 7). A transfer that names both a thing and money (`refs.what`, `state.money`, `refs.to_owner`) is a **sale**: it moves ownership like any transfer of that thing, once the receiver accepts it, and the money counts toward the promise it is `for`. A failed attempt (a declined card) is an `observe`, never a transfer. The protocol never holds money.
 
 ## Truth
 

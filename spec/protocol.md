@@ -151,7 +151,7 @@ One line for each word a reader may trip on.
 
 ## Conformance
 
-A node conforms when it reproduces, exactly, the vectors in `spec/vectors.json` for what it does: canonical strings, ids, signatures, commitments, envelopes, and how identities, deals and circles read. The vectors include folds (with expected results), refusals (with the codes a strict check finds), views, and CBOR. Every block in a vector's stories, outside the refusal cases, passes `valid`. A node finds a block's signing key from the identity fold, never from a vector's signer name. This spec, `protocol.json` and the vectors are enough to build a node. Each invariant is tested by at least one vector.
+A node conforms when it reproduces, exactly, the vectors in `spec/vectors.json` for what it does: canonical strings, ids, signatures, commitments, envelopes, and how identities, deals and circles read. The vectors include folds (with expected results), refusals (with the codes the strict check `check` finds, core.md section 8), views, and CBOR. The **door** section of the vectors tests the core's ops one by one: every op, its positional arguments and its result are written in `protocol.json` (`door`), so a node that reads the text alone knows what to build and what a case asks of it. Signatures are compared byte for byte (core.md section 2 fixes the nonce); the order of every list in an answer is fixed by the text. Every block in a vector's stories, outside the refusal cases, passes `valid`. A node finds a block's signing key from the identity fold, never from a vector's signer name. This spec, `protocol.json` and the vectors are enough to build a node. Each invariant is tested by at least one vector.
 
 ## Open questions
 

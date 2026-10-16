@@ -18,7 +18,7 @@ const pick = (o, keys) => Object.fromEntries(keys.map(k => [k, o == null ? undef
 // What a push gives, as the spec decides it: what is taken, what waits (and for what), the codes each refused block got, the pairs.
 const byHash = (a, b) => (a.hash < b.hash ? -1 : 1);
 const acceptProj = a => ({
-  taken: hashes(a.taken).sort(),
+  taken: (a.taken || []).map(x => (typeof x === 'string' ? x : x.hash)), // the order is part of the answer: round order, ascending by hash inside a round (nodes.md, Push)
   waiting: (a.waiting || []).map(w => ({ hash: typeof w === 'string' ? w : w.hash, needs: [...(w.needs || [])].sort() })).sort(byHash),
   refused: Object.entries((a.refused || []).reduce((m, r) => { (m[r.hash] = m[r.hash] || new Set()).add(r.code); return m; }, {})).map(([hash, c]) => ({ hash, codes: [...c].sort() })).sort(byHash),
   equivocations: (a.equivocations || []).map(p => [...p].sort()).sort(),

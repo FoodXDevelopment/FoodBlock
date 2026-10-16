@@ -10,7 +10,7 @@ Optional. For people whose only link is a feature phone. A block is too large fo
 3. The person's reply to the echo is the decision. The custodian signs the block only on that reply. The block's `state.channel` names the link (`sms`, `ussd`, `voice`) and `derives_from` is the hash of the raw reply (strangers.md, section 4).
 4. The custodian sends back the receipt code and a short result.
 
-**The receipt code.** Take the first 5 bytes (40 bits) of the block's id, write them in Crockford Base32 (a base-32 alphabet with no easily confused letters), and show them as `XXXX-XXXX`. A label before it ("TOM-4821") is the custodian's own and not part of the code. The code is a lookup key inside one custodian, not an id and not an authority. If two of its blocks ever share a code, the custodian uses 10 characters. The custodian can show the whole block, signature and all, whenever the person asks.
+**The receipt code.** Take the first 5 bytes (40 bits) of the block's id (the 32 digest bytes; a hash name and colon in front, as in `sm3:`, is not part of them), write them in Crockford Base32 (a base-32 alphabet with no easily confused letters), and show them as `XXXX-XXXX`. A label before it ("TOM-4821") is the custodian's own and not part of the code. The code is a lookup key inside one custodian, not an id and not an authority. If two of its blocks ever share a code, the custodian uses 10 characters. The custodian can show the whole block, signature and all, whenever the person asks.
 
 **Voice.** The recording is kept by its hash. A transcript is a reading with a confidence (strangers.md, section 4). A spoken yes to the echoed terms is the decision.
 

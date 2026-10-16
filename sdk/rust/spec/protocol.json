@@ -39,7 +39,10 @@
   ],
   "grant": [
    "refs.parent",
-   "state.counted_to"
+   "state.counted_to",
+   "refs.answers",
+   "refs.updates",
+   "refs.under"
   ],
   "promise": [
    "refs.under",
@@ -74,6 +77,8 @@
   ],
   "note": "Shared ref keys are these lists plus the verbs and the causal keys. refs.of names the kind an instance belongs to; state.kind is a label."
  },
+ "refs_single": ["author", "prev"],
+ "refs_single_note": "These two links hold exactly one id; an array there is `grammar` (core.md, section 1).",
  "statuses": [
   "accepted",
   "declined",
@@ -102,6 +107,7 @@
   "removal_default": {
    "needed": 1
   },
+  "removal_rule": "Removing a holder of admit or remove takes at least `needed` different holders of remove, the remover among them, each stopping that same member grant. The member removed never counts among them.",
   "roles_shape": "state.roles: [{ name, powers }]; the founder holds the first role; powers are from `powers` and from profile powers"
  },
  "genesis": {
@@ -119,7 +125,8 @@
    "recovery_suite",
    "custodian"
   ],
-  "recovery_note": "recovery_key_hash and recovery_reach come together or not at all"
+  "recovery_note": "recovery_key_hash and recovery_reach come together or not at all",
+  "recognised": "An actor is judged as a genesis when it has state.public_key_sign or has no refs.author; it is then held to this list alone (bad_genesis), and its signature must open with its own public_key_sign (bad_genesis, never bad_signature)."
  },
  "common": [
   "author",
@@ -377,6 +384,8 @@
    "after",
    "wait"
   ],
+  "when_window": ["not_before", "not_after", "takes"],
+  "when_window_note": "Any of these, at least one, alone or beside the keys of a range or a relative form; not_before and not_after are times, takes a duration (blocks.md, profiles/tasks.md).",
   "places": {
    "containers": [
     "terms",
@@ -454,6 +463,7 @@
   "decimals_max": 15,
   "gaps_max": 10000
  },
+ "hashes_note": "A hash name a reader knows is the bare SHA-256 and every `prefix` of a hash that a suite in `suites` (not `future`) uses: sm3. sha3-256 is listed for the future suite and is unknown until that suite is fixed in vectors.",
  "hashes": {
   "sha256": {
    "prefix": null,
@@ -644,6 +654,8 @@
    "equivocations",
    "signature"
   ],
+  "push_answer_order": "taken: round order, ascending by hash inside a round (blocks arriving as the other half of a sealed block held count as the first round). refused: the same, a block's codes in the order of refusals.codes.block. waiting: ascending by hash, each needs ascending. equivocations: each pair sorted, the list sorted.",
+  "signature_note": "A node signs an answer, and a signer a request, over the UTF-8 canonical JSON of the object without its `signature` key. A pull answer's `request` is the bare SHA-256 hex of the canonical JSON of the whole signed request, `signature` included. header_signature signs the canonical JSON of `header`. An envelope plaintext is the canonical JSON of the plaintext object.",
   "filter": [
    "type",
    "kind",
@@ -1238,6 +1250,7 @@
    }
   },
   "chain": {
+   "input": "the blocks of one signing key, and the id of the block that brought that key in",
    "head": "hash of the latest block",
    "length": "the key's blocks that count: both blocks of an equivocation pair and every later block of the key are left out",
    "gaps": "seq numbers missing that no skip block explains: the lowest first, at most limits.gaps_max",
@@ -1251,7 +1264,7 @@
    "prev": "the hash of the key's previous block, or of the block that brought the key in"
   },
   "consent": {
-   "input": "a person and a sender (or none), and the blocks held",
+   "input": "a person, a sender (or none), optionally the hash of the grant the sender's block acts under (refs.under), and the blocks held",
    "output": {
     "word": "yes, stop, keep or move, or null",
     "block": "the consent block that decides (the lowest hash of tied blocks that agree), or null"
@@ -1285,6 +1298,407 @@
    "clock": "the performer's own, from the anchor's arrival on its node",
    "input": "a promise with a relative when, the performer's arrivals and clock",
    "output": "the instant it falls due, or null while the anchor has not arrived"
+  }
+ },
+ "door": {
+  "about": "The door is the one call every implementation answers: an op name and positional arguments (JSON), and a result (JSON). spec/vectors.json `door` holds one or more cases per op below: `args`, then `expect` (a subset match: every key given must match, extra keys in a result do not matter; a list or text must match exactly when the case says `exact`, and lists are compared in order), or `codes` (the refusal codes, in order), or `error`. An implementation conforms when it answers every case. An op outside this table is outside the protocol.",
+  "conventions": {
+   "block": "{ type, state, refs }: a block as written (core.md, section 1).",
+   "full_block": "a block with its `hash` (its id), its `signature` (hex) and, when its key's suite is not std, `suite`: { hash, type, state, refs, signature, suite? }. This is what an op that takes blocks held, a story or a store reads. Order in a list of held blocks never matters.",
+   "id": "a hash: 64 lowercase hex (or a hash name and colon first). `time`: the text of core.md, section 3. `arrivals`: an object { hash: time } of when this reader's node took each block in; null or a missing hash means unknown. `clock` or `now`: a time.",
+   "refusals": "a list of { code, detail }. A case with `codes` compares the codes only, in the order of protocol.json refusals.codes. Details are free text.",
+   "keys": "public keys and signatures are hex as in core.md, section 2; a private key is the seed hex for p256 and sm, and for std the seed, which `keypair` also writes as PKCS#8 DER hex (`302e020100300506032b657004220420` then the 32 seed bytes).",
+   "suite_arg": "an optional suite name, default std"
+  },
+  "ops": {
+   "keypair": {
+    "args": [
+     "seed: 64 hex (the 32-byte seed of core.md, section 2)",
+     "suite?"
+    ],
+    "result": "{ suite, public_key_sign, private_key }"
+   },
+   "public_key_of": {
+    "args": [
+     "private_key",
+     "suite?"
+    ],
+    "result": "the public signing key (SPKI hex)"
+   },
+   "suite_of_key": {
+    "args": [
+     "public_key"
+    ],
+    "result": "the suite whose SPKI prefix the key starts with, else null"
+   },
+   "sign": {
+    "args": [
+     "block",
+     "private_key",
+     "suite?"
+    ],
+    "result": "signature hex over the canonical bytes of the block (core.md, section 2: deterministic)"
+   },
+   "verify": {
+    "args": [
+     "block",
+     "signature",
+     "public_key"
+    ],
+    "result": "true when the signature opens (a passkey signature included); the suite is the key's"
+   },
+   "hash": {
+    "args": [
+     "type",
+     "state",
+     "refs",
+     "suite?"
+    ],
+    "result": "the id of that block in that suite"
+   },
+   "valid": {
+    "args": [
+     "full_block",
+     "held: [full_block]",
+     "schemas?: [full_block] or null",
+     "arrivals?"
+    ],
+    "result": "refusals (core.md, section 8); empty when valid. `held` is the context"
+   },
+   "strict_text": {
+    "args": [
+     "text: the block as JSON text"
+    ],
+    "result": "what the bytes alone say, with no context: `not_canonical` for text that breaks canonical.md (a repeated key, a lone surrogate) or is not exactly { type, state, refs }, else the refusal of the first of checks 2, 3 and 4, else of check 8 (core.md, section 8)"
+   },
+   "refusals": {
+    "args": [
+     "type",
+     "state",
+     "refs",
+     "held: [full_block]",
+     "schemas: [full_block] or null"
+    ],
+    "result": "refusals of `check` (core.md, section 8): checks 1 to 4 and 8, all codes found"
+   },
+   "needs": {
+    "args": [
+     "full_block",
+     "held?: [full_block]"
+    ],
+    "result": "the ids the block rests on (protocol.json needs), sorted ascending; with `held`, only those not held"
+   },
+   "recovery_key_hash": {
+    "args": [
+     "recovery_public_key",
+     "suite?"
+    ],
+    "result": "identity.md: the suite's hash of the key's SPKI hex as UTF-8 text"
+   },
+   "salted_hash": {
+    "args": [
+     "salt",
+     "value",
+     "suite?"
+    ],
+    "result": "the commitment of privacy.md"
+   },
+   "wrap": {
+    "args": [
+     "full_block"
+    ],
+    "result": "the message { version, block, signature, suite? } (core.md, section 6)"
+   },
+   "unwrap": {
+    "args": [
+     "message"
+    ],
+    "result": "the full block { hash, type, state, refs, signature, suite? }; the id is recomputed"
+   },
+   "header": {
+    "args": [
+     "full_block"
+    ],
+    "result": "the public header { author, seq, prev, hash } with `withheld` or `skip` when the block says so (privacy.md)"
+   },
+   "seal": {
+    "args": [
+     "plaintext: any JSON",
+     "recipient_encryption_keys: [hex]",
+     "suite?",
+     "fixed?: { ephemeral, contentKey, nonce, keyNonces }"
+    ],
+    "result": "the envelope (privacy.md); `fixed` gives the random values (hex, the ephemeral private key, content key, content nonce, one key nonce per recipient) so a case is exact; with none the values are random"
+   },
+   "open": {
+    "args": [
+     "envelope",
+     "encryption_private_key"
+    ],
+    "result": "the plaintext JSON; a recipient it is not for is an error"
+   },
+   "cbor_encode": {
+    "args": [
+     "full_block",
+     "short: bool"
+    ],
+    "result": "lowercase hex of the CBOR message [t, block, signature, suite?] (encoding.md); `short` uses key table 1 and t = 1"
+   },
+   "cbor_decode": {
+    "args": [
+     "hex"
+    ],
+    "result": "the full block; the id is recomputed from the canonical JSON"
+   },
+   "passkey_challenge": {
+    "args": [
+     "full_block"
+    ],
+    "result": "the WebAuthn challenge for the block: base64url, no padding, of the 32 bytes of SHA-256 of its canonical bytes, which is its id for a std or p256 key (passkeys.md)"
+   },
+   "passkey_signature": {
+    "args": [
+     "authenticator_data hex",
+     "client_data_json hex",
+     "signature: r then s, hex"
+    ],
+    "result": "the passkey-form signature (passkeys.md)"
+   },
+   "verify_message": {
+    "args": [
+     "signed request or answer",
+     "public_key"
+    ],
+    "result": "true when `signature` opens over the canonical JSON of the object without `signature` (nodes.md)"
+   },
+   "key_timeline": {
+    "args": [
+     "id",
+     "held: [full_block]",
+     "arrivals?"
+    ],
+    "result": "[{ key, by, signer, void, frozen, suite }]: every key the identity fold knows (identity.md), `by` the block that brought it in"
+   },
+   "recovery_reach": {
+    "args": [
+     "recovery rotation",
+     "held: [full_block]",
+     "arrivals"
+    ],
+    "result": "the voided blocks the reach protects (identity.md), sorted"
+   },
+   "next_link": {
+    "args": [
+     "last: full_block of the key's chain, or null",
+     "brought_in: id"
+    ],
+    "result": "{ seq, prev }: the next place in the key's chain (core.md, section 5)"
+   },
+   "check_chain": {
+    "args": [
+     "the key's blocks: [full_block]",
+     "brought_in: id of the block that brought the key in"
+    ],
+    "result": "{ head, length, gaps, skips, equivocations, broken, ok } (folds.md, chain)"
+   },
+   "fork_pairs": {
+    "args": [
+     "held: [full_block]"
+    ],
+    "result": "the equivocating pairs, each sorted, the list sorted (nodes.md)"
+   },
+   "past_of": {
+    "args": [
+     "full_block",
+     "held: [full_block]"
+    ],
+    "result": "the ids in its causal past (blocks.md), sorted"
+   },
+   "sees": {
+    "args": [
+     "later: full_block",
+     "earlier: full_block",
+     "held: [full_block]"
+    ],
+    "result": "true when `earlier` is in the causal past of `later`"
+   },
+   "matches": {
+    "args": [
+     "full_block",
+     "filter",
+     "held: [full_block]"
+    ],
+    "result": "true when the block matches the pull filter (nodes.md, Pull)"
+   },
+   "due": {
+    "args": [
+     "promise with a relative when",
+     "arrivals"
+    ],
+    "result": "the instant it falls due (the anchor's arrival plus `wait`), or null while the anchor has not arrived"
+   },
+   "promise_stage": {
+    "args": [
+     "first promise: full_block",
+     "held: [full_block]",
+     "{ confirmers? }"
+    ],
+    "result": "the promise_stage answer of protocol.json folds (folds.md)"
+   },
+   "promise_view": {
+    "args": [
+     "first promise",
+     "held",
+     "{ now, confirmers? }"
+    ],
+    "result": "the same answer, with stage `expired` as folds.md says"
+   },
+   "live_grant": {
+    "args": [
+     "act block (unused)",
+     "grants: [{ state: { scope: { until } } }]",
+     "clock"
+    ],
+    "result": "true when every grant's scope.until is later than the clock"
+   },
+   "withdrawal_seen": {
+    "args": [
+     "withdrawal",
+     "counterparty block",
+     "held",
+     "arrivals"
+    ],
+    "result": "authority.md, Withdrawal"
+   },
+   "may_act_as": {
+    "args": [
+     "full_block",
+     "circle id",
+     "held",
+     "role?"
+    ],
+    "result": "true or false (folds.md); no code is returned"
+   },
+   "circle_state": {
+    "args": [
+     "circle id",
+     "held",
+     "within?: a block, to read the circle as of its causal past"
+    ],
+    "result": "{ founder, members, removed } or null when the circle is not held (folds.md)"
+   },
+   "consent": {
+    "args": [
+     "person id",
+     "sender id or null",
+     "held",
+     "under?: grant id the sender's block acts under"
+    ],
+    "result": "{ word, block } (strangers.md)"
+   },
+   "admission_refusals": {
+    "args": [
+     "full_block",
+     "receiver id",
+     "held",
+     "admission: { parties?, per_stranger?, order_channel? }",
+     "strangers_today: integer, blocks this node took today from senders not in parties"
+    ],
+    "result": "refusals with the codes `not_admitted` and `not_human`"
+   },
+   "receipt_code": {
+    "args": [
+     "id"
+    ],
+    "result": "the code of profiles/short-form.md"
+   },
+   "residency_refusals": {
+    "args": [
+     "full_block",
+     "holds_in: [region]"
+    ],
+    "result": "refusals: `residency` or none (profiles/residency.md)"
+   },
+   "deposit_shape_ok": {
+    "args": [
+     "deposit: { money, holder }"
+    ],
+    "result": "true when it has exactly those keys, money a money shape and holder an id"
+   },
+   "deposit_paid": {
+    "args": [
+     "promise",
+     "deposit",
+     "held"
+    ],
+    "result": "profiles/deposits.md"
+   },
+   "reading_is_persons_claim": {
+    "args": [
+     "reading",
+     "person id",
+     "held"
+    ],
+    "result": "strangers.md, section 4"
+   },
+   "reading_condition_holds": {
+    "args": [
+     "condition",
+     "observes: [full_block]",
+     "now"
+    ],
+    "result": "profiles/tasks.md, Sensor conditions"
+   },
+   "successor_view": {
+    "args": [
+     "successor grant",
+     "held",
+     "now",
+     "arrivals"
+    ],
+    "result": "{ events, cancelled, since, fires, fired } (profiles/successor.md)"
+   },
+   "accept": {
+    "args": [
+     "incoming: [full_block]",
+     "held: [full_block]",
+     "arrivals?",
+     "schemas?"
+    ],
+    "result": "{ taken: [id], waiting: [{ hash, needs: [id] }], refused: [{ hash, code, detail }], equivocations: [[id, id]] } in the order nodes.md, Push, fixes"
+   },
+   "accept_sealed": {
+    "args": [
+     "incoming: [sealed message { version, header, header_signature, envelope? }]",
+     "held: [full_block, or sealed message]",
+     "arrivals?"
+    ],
+    "result": "the same shape as `accept`, judged from the public headers (privacy.md)"
+   },
+   "answer_pull": {
+    "args": [
+     "log: [{ n, block, header?, header_signature?, copies? }]",
+     "request: a pull",
+     "node id",
+     "private_key or null",
+     "cap: integer",
+     "asker id or null",
+     "held: [full_block] or null",
+     "suite?"
+    ],
+    "result": "{ node, request, blocks: [{ n, message }], next, signature } (nodes.md, Pull); `signature` only when a private key is given"
+   },
+   "spec": {
+    "args": [],
+    "result": "{ protocol }: the contents of protocol.json"
+   },
+   "convert": {
+    "args": [
+     "old blocks",
+     "options"
+    ],
+    "result": "outside the protocol (legacy/converter.md); a case carries `oracle: false`"
+   }
   }
  },
  "cbor": {
@@ -1446,7 +1860,9 @@
   "message": {
    "plain": 0,
    "array": "[t, block, signature]",
-   "header": "{ author, seq, prev, hash }"
+   "header": "{ author, seq, prev, hash }",
+   "header_bytes": ["author", "prev", "hash"],
+   "header_note": "A chain header has exactly the four keys. seq is an integer; the three ids are 32-byte byte strings when bare, text when they carry a hash prefix."
   }
  }
 }

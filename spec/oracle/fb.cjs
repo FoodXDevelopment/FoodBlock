@@ -745,7 +745,7 @@ function needsOf(b) {
     const v = b[side] && b[side][key];
     for (const x of asList(v)) if (isStr(x) && x !== '' && !out.includes(x)) out.push(x);
   }
-  return out;
+  return out.sort(); // nodes.md, Push: needs ascending
 }
 const unmetIn = (b, m) => needsOf(b).filter(h => !m.has(h));
 function closeMap(m) {
@@ -1330,7 +1330,7 @@ function accept(incomingIn, heldIn) {
   let pending = incomingIn.filter(b => b && !(pool.get(b.hash) && pool.get(b.hash).type !== undefined));
   const taken = [], refused = [], waiting = [], pairs = new Map();
   for (;;) {
-    const ready = pending.filter(b => !unmetIn(b, pool.m).length);
+    const ready = pending.filter(b => !unmetIn(b, pool.m).length).sort((x, y) => (x.hash < y.hash ? -1 : x.hash > y.hash ? 1 : 0)); // inside a round, ascending by hash
     if (!ready.length) break;
     pending = pending.filter(b => unmetIn(b, pool.m).length);
     pool.folds = new Map(); pool.memo = new Map(); pool._eq = null;
@@ -1349,7 +1349,7 @@ function accept(incomingIn, heldIn) {
     }
     for (const g of good) { pool.m.set(g.b.hash, g.b); if (!forked.has(g.b.hash)) taken.push(g.b); }
   }
-  for (const b of pending) waiting.push({ hash: b.hash, needs: unmetIn(b, pool.m) });
+  for (const b of [...pending].sort((x, y) => (x.hash < y.hash ? -1 : x.hash > y.hash ? 1 : 0))) waiting.push({ hash: b.hash, needs: unmetIn(b, pool.m) });
   return { taken, waiting, refused, equivocations: [...pairs.values()].sort((a, b) => (a.join() < b.join() ? -1 : 1)) };
 }
 
@@ -1386,6 +1386,7 @@ function acceptSealed(incomingIn, heldIn) {
       else refused.push({ hash: e.hash, code: 'bad_hash', detail: 'the header does not describe the block held under this hash' });
     } else if (!held) pending.push(e);
   }
+  taken.sort((x, y) => (x.hash < y.hash ? -1 : x.hash > y.hash ? 1 : 0)); refused.sort((x, y) => (x.hash < y.hash ? -1 : x.hash > y.hash ? 1 : 0)); // the first round: the other halves of blocks held
   const keyOf = b => keyOfEntry(b, pool), place = b => placeOf(b, pool), same = samePlace;
   const judge = e => {
     const st = e.state, refs = e.refs;
@@ -1409,7 +1410,7 @@ function acceptSealed(incomingIn, heldIn) {
     return [];
   };
   for (;;) {
-    const ready = pending.filter(b => !unmetIn(b, pool.m).length);
+    const ready = pending.filter(b => !unmetIn(b, pool.m).length).sort((x, y) => (x.hash < y.hash ? -1 : x.hash > y.hash ? 1 : 0));
     if (!ready.length) break;
     pending = pending.filter(b => unmetIn(b, pool.m).length);
     pool.folds = new Map(); pool.memo = new Map(); pool._eq = null;
@@ -1428,7 +1429,7 @@ function acceptSealed(incomingIn, heldIn) {
     }
     for (const g of good) { pool.m.set(g.e.hash, g.e); if (!forked.has(g.e.hash)) taken.push(g.e); }
   }
-  for (const b of pending) waiting.push({ hash: b.hash, needs: unmetIn(b, pool.m) });
+  for (const b of [...pending].sort((x, y) => (x.hash < y.hash ? -1 : x.hash > y.hash ? 1 : 0))) waiting.push({ hash: b.hash, needs: unmetIn(b, pool.m) });
   return { taken, waiting, refused, equivocations: [...pairs.values()].sort((a, b) => (a.join() < b.join() ? -1 : 1)) };
 }
 
@@ -2111,6 +2112,29 @@ function unwrap(m) {
   return out;
 }
 
+
+// profiles/tasks.md, Sensor conditions: the readings are the observes of the condition's kind that name the sensor in refs.from, with an
+// amount in the condition's unit and an at not later than `now`. The window runs from `now` less `over` to `now`. It holds when a reading at or
+// before the start exists (it gives the state at the start) and it, and every reading inside the window, keeps to the rule.
+function decCmp(x, y) { // decimal strings (core.md section 3), compared exactly
+  const parts = t => { const neg = t.startsWith('-'); const [i, f = ''] = t.replace('-', '').split('.'); return { neg, i, f }; };
+  const a = parts(x), b = parts(y), w = Math.max(a.f.length, b.f.length);
+  const n = p => (p.neg ? -1n : 1n) * BigInt(p.i + p.f.padEnd(w, '0'));
+  const d = n(a) - n(b);
+  return d < 0n ? -1 : d > 0n ? 1 : 0;
+}
+function readingConditionHolds(c, blocks, now) {
+  if (!c || !isStr(c.reading) || !isStr(c.kind) || !isStr(c.op) || !isStr(c.over) || !c.value || !isStr(c.value.value)) return false;
+  const start = addDur(now, c.over, -1);
+  const rs = (blocks || []).filter(b => b.type === 'observe' && b.state.kind === c.kind && [].concat(b.refs.from || []).includes(c.reading)
+    && b.state.amount && b.state.amount.unit === c.value.unit && isStr(b.state.amount.value) && isStr(b.state.at) && b.state.at <= now)
+    .sort((x, y) => (x.state.at < y.state.at ? -1 : x.state.at > y.state.at ? 1 : 0));
+  const keeps = r => { const k = decCmp(r.state.amount.value, c.value.value); return { lt: k < 0, le: k <= 0, gt: k > 0, ge: k >= 0, eq: k === 0 }[c.op] === true; };
+  const before = rs.filter(r => r.state.at <= start);
+  if (!before.length) return false;
+  return keeps(before[before.length - 1]) && rs.filter(r => r.state.at > start).every(keeps);
+}
+
 // ================================================================ the door: one case per rule
 function door(op, ...a) {
   switch (op) {
@@ -2162,6 +2186,7 @@ function door(op, ...a) {
     case 'deposit_shape_ok': return depositShapeOk(a[0]);
     case 'deposit_paid': return depositPaid(a[0], a[1], a[2]);
     case 'reading_is_persons_claim': return readingIsPersonsClaim(a[0], a[1], a[2]);
+    case 'reading_condition_holds': return readingConditionHolds(a[0], a[1], a[2]);
     default: throw new Error('the oracle has no op ' + op);
   }
 }

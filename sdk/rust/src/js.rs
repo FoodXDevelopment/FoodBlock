@@ -70,6 +70,7 @@ pub fn needs_of(block: &Value) -> Vec<String> {
             out.push(h.to_string());
         }
     });
+    out.sort();
     out
 }
 
@@ -81,6 +82,7 @@ pub fn unmet_in(block: &Value, index: &Index) -> Vec<String> {
             out.push(h.to_string());
         }
     });
+    out.sort();
     out
 }
 
