@@ -381,9 +381,17 @@ pub fn check(w: &mut World) -> Vec<String> {
         if !full.contains_key(stop) {
             continue;
         }
+        // Consent decides what binds, not what exists: the block sent despite the STOP is valid, no node refuses it, and
+        // the sender's next block on its chain is not left waiting on it (strangers.md, invariant 29).
         let r = foodblock::strangers::admission_refusals(first, person, &u, &json!({}), 0);
-        if !r.iter().any(|x| x.code == "stopped") {
-            v.push(format!("a node holding the STOP of {} does not refuse the sender: {:?}", name(person), r.iter().map(|x| x.code.clone()).collect::<Vec<_>>()));
+        if r.iter().any(|x| x.code == "stopped") {
+            v.push(format!("a node refused a block for the STOP of {}: it must be kept and read as stopped", name(person)));
+        }
+        let mut held = full.clone();
+        held.shift_remove(&World::hash(first));
+        let bad = foodblock::valid(first, &held, None, None);
+        if bad.iter().any(|x| x.code == "unmet" || x.code == "chain") {
+            v.push(format!("the block sent despite the STOP of {} is not judged on itself and what it rests on: {:?}", name(person), bad.iter().map(|x| x.code.clone()).collect::<Vec<_>>()));
         }
     }
     // 11. Spam within the rule: a stranger gets in at most K first blocks, whatever the order they come.
@@ -391,12 +399,11 @@ pub fn check(w: &mut World) -> Vec<String> {
         let mut taken = 0u64;
         for b in flood {
             let r = foodblock::strangers::admission_refusals(b, receiver, &u, &json!({ "per_stranger": k }), taken);
-            if !r.iter().any(|x| x.code == "not_admitted") && !r.iter().any(|x| x.code == "stopped") {
+            if !r.iter().any(|x| x.code == "not_admitted") {
                 taken += 1;
             }
         }
-        let stopped = flood.iter().any(|b| foodblock::strangers::consent(receiver, b["refs"]["author"].as_str(), &u, None)["word"] == json!("stop"));
-        if !stopped && taken != *k {
+        if taken != *k {
             v.push(format!("admission let {} strangers in where the rule says {}", taken, k));
         }
     }

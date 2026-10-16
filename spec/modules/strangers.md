@@ -34,7 +34,9 @@ A person's answer to contact is an `observe` of kind `consent`. It carries `stat
 
 **The live word.** The `consent` fold reads the blocks the caller holds, for a person and a sender: the latest word that names the sender (or its operator), else the latest that names no one, in causal order. A recorder's blocks are ordered by the recorder's own chain, so the fold works when the person has no keys. A `stop` wins any tie. A tie between other words leaves no live word. A tie of the same word stands, and the fold names the block with the lowest hash (only to name one; no authority).
 
-**There is no public STOP list.** A hashed phone number can be reversed, so nothing about a STOP is published. A STOP lives with whoever recorded it and with the person's custodian. A sender asks privately, of the custodian or its own record, before it contacts her. A node that holds a live STOP naming a sender refuses that sender's message to her (`stopped`). A node that holds none cannot know.
+**There is no public STOP list.** A hashed phone number can be reversed, so nothing about a STOP is published. A STOP lives with whoever recorded it and with the person's custodian. A sender asks privately, of the custodian or its own record, before it contacts her.
+
+**Consent decides what binds, not what exists.** A block sent despite a live STOP is **valid and kept**: it is judged on the block alone and what it rests on (core.md, check 5), so the sender's chain goes on. The fold reads it as **stopped**: it binds no one (a stopped ask is read as `declined` in advance, folds.md), and a node delivers it to no one. A node may decline to relay its body to the stopped party, and keeps it with the sender's chain. Her own `accepted` answer still binds, because `answers` is the only consent to a deal. A node that holds none cannot know, and delivers as usual. So an honest sender's chain never stalls because of anyone else's consent.
 
 ## 3. The receipt is the invitation
 
@@ -53,5 +55,6 @@ Where words must bind (an SMS, a voice call), the custodian echoes the exact ter
 
 16. Every message to a stranger has a human author, or goes through the receiver's own published order channel.
 20. Consent is a block, and it follows the principal. Anyone may record a STOP, binding their own side; only the person lifts it; there is no public list.
+29. Validity is about the block alone and what it rests on; consent decides what binds, not what exists. A block sent despite a STOP is kept in the chain and read as stopped, so an honest sender's chain never stalls because of anyone else's consent.
 21. The ask is ordinary and never pitches; the receipt, sent by the asker or her custodian in the same thread, is the door into an app.
 24. A model's reading is never the person's claim until she puts that fact to someone else in her own step; sharing it claims nothing.

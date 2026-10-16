@@ -1858,6 +1858,8 @@ function promiseStage(firstIn, poolIn) {
   else if (accept) out.stage = 'accepted';
   else if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
   else if (!open && lives.some(o => declines.some(d => d.refs.answers === o.hash && isSide(who(d)) && who(d) !== who(o)))) out.stage = 'declined';
+  // a block sent despite a live STOP is kept; consent decides what binds: the ask is read as declined in advance (strangers.md)
+  else if (!open && consentFold(who(P) === from ? to : from, P.refs.author, pool, P.refs.under).word === 'stop') out.stage = 'declined';
   else out.stage = who(P) === to && who(P) !== from ? 'asked' : 'offered';
   return out;
 }
@@ -1993,7 +1995,6 @@ function admissionRefusals(block, recipient, held, rule, today) {
   const out = [];
   const author = block.refs.author;
   const consent = consentFold(recipient, author, pool, block.refs.under);
-  if (consent.word === 'stop') out.push({ code: 'stopped', detail: 'the person has a live STOP naming the author or its operator' });
   const authorGenesis = pool.get(author);
   const isAgent = (authorGenesis && ['agent', 'machine'].includes(authorGenesis.state.kind)) || block.refs.under !== undefined;
   const answered = pool.all().some(b => b.refs.author === recipient && asList(b.refs.answers).some(h => { const t = pool.get(h); return t && t.refs.author === author; }));

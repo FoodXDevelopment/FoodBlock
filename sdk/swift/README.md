@@ -9,20 +9,29 @@ once, and Swift calls it through the core's single JSON door (`fb_call`, in the 
 A block is `{ type, state, refs }`, signed by its author. Its id is the SHA-256 of its canonical form. Here a block is
 a plain JSON dictionary (`JSON`, `[String: Any]`): `{ hash, type, state, refs, signature }`.
 
-## Build
+## Install
 
-The Swift target links the Rust static library, so build that first (needs a Rust toolchain):
+SwiftPM reads `Package.swift` at the **repository root** (not in this folder):
 
-```bash
-(cd ../rust && cargo rustc --release --features ffi --crate-type staticlib)    # target/release/libfoodblock.a
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build
+```swift
+.package(url: "https://github.com/FoodXDevelopment/foodblock", from: "1.6.0")
 ```
 
-`Sources/CFoodBlock` is a SwiftPM system-library target: a module map over `include/foodblock.h` (a symlink).
-`Package.swift` links `../rust/target/release/libfoodblock.a` directly (so a dynamic copy beside it is never picked
-up) plus `Security` and `CoreFoundation`. After rebuilding the core, touch a Swift file or delete `.build` so SwiftPM
-relinks. For an app, build the same static library for each target triple (`aarch64-apple-ios`, `aarch64-apple-ios-sim`,
-`aarch64-apple-darwin`), wrap them in an XCFramework, and point the target at that.
+The Rust core comes as a binary target, `CFoodBlock.xcframework` (iOS device, iOS simulator, macOS; static libraries,
+so the app links one file and nothing is loaded at run time). A release uploads the zip; the manifest names its URL
+and checksum. There are no `unsafeFlags`, so this package can itself be a dependency of other packages.
+
+## Build from this repository
+
+```bash
+sdk/swift/scripts/build-xcframework.sh          # all slices, zips it, prints the SwiftPM checksum (about 2 minutes)
+sdk/swift/scripts/build-xcframework.sh --macos  # macOS only: enough for `swift test`
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift build    # at the repository root
+```
+
+The script needs Rust with the Apple targets (`rustup target add aarch64-apple-ios aarch64-apple-ios-sim
+x86_64-apple-ios aarch64-apple-darwin x86_64-apple-darwin`) and Xcode. When `sdk/swift/CFoodBlock.xcframework`
+exists the root manifest uses it; otherwise it uses the release download.
 
 ## Profile
 
@@ -64,7 +73,7 @@ let message = FoodBlock.wrap(eggs)   // { version, block, signature }
 ## Test
 
 ```bash
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test    # at the repository root
 ```
 
 `Tests/VectorsTests.swift` runs every section of `spec/vectors.json` (and `spec/canonical-vectors.json`) the way

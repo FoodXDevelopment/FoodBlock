@@ -380,6 +380,17 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         {
             return result("declined", json!({}));
         }
+        // A block sent despite a live STOP is valid and kept; consent decides what binds (strangers.md). The person
+        // told the sender she wants no contact, so the fold reads that ask as declined in advance. Her own accept
+        // (above) would still bind: `answers` is the only consent to a deal.
+        if !open {
+            if let (Some(person), Some(sender)) = (other.filter(|s| !s.is_empty()), rs(&first, "author")) {
+                let held: Vec<Value> = index.values().cloned().collect();
+                if crate::strangers::consent(person, Some(sender), &held, rs(&first, "under")).get("word").and_then(Value::as_str) == Some("stop") {
+                    return result("declined", json!({}));
+                }
+            }
+        }
         return result(if offerer_is_from { "offered" } else { "asked" }, json!({}));
     };
     // 7, 8. Settling.

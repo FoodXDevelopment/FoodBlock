@@ -76,13 +76,15 @@ jobs:
         working-directory: sdk/python
 
   go-sdk:
-    name: Go SDK (over the Rust core)
-    runs-on: ubuntu-latest
+    name: Go SDK (the Rust core as WebAssembly in wazero, pure Go, no cgo)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: '0'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo rustc --release --features ffi --crate-type staticlib
-        working-directory: sdk/rust
       - uses: actions/setup-go@v5
         with:
           go-version-file: sdk/go/go.mod
@@ -93,16 +95,15 @@ jobs:
         working-directory: sdk/go
 
   swift-sdk:
-    name: Swift SDK (over the Rust core)
-    # A thin layer over the Rust core (sdk/rust), linked as a static library.
+    name: Swift SDK (the Rust core as an XCFramework)
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo rustc --release --features ffi --crate-type staticlib
-        working-directory: sdk/rust
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - run: sdk/swift/scripts/build-xcframework.sh --macos
       - run: swift test
-        working-directory: sdk/swift
 
   node:
     name: Node (server)
@@ -191,6 +192,11 @@ jobs:
       - run: ./gradlew :foodblock:test
         working-directory: sdk/kotlin
       - run: ./gradlew :foodblock:test -Pfoodblock.profile=micro
+        working-directory: sdk/kotlin
+      # the jar as a user gets it: the bundled library for this platform, no -Dfoodblock.library
+      - run: scripts/build-natives.sh jvm
+        working-directory: sdk/kotlin
+      - run: ./gradlew :foodblock:testBundled
         working-directory: sdk/kotlin
 
   fuzz-smoke:

@@ -199,7 +199,7 @@ const sorted = (list) => [...list].sort()
   const stop = s.say(sal, 'observe', { kind: 'consent', word: 'stop' }, { subject: pat.id })
   door('consent: a STOP naming the person binds her agent acting under her grant', 'consent', [sal.id, ag.id, s.held, grant.hash], { expect: { word: 'stop', block: stop.hash } })
   const post = fb.write('promise', { terms: { expires: DAY } }, { from: pat.id, to: sal.id, what: grant.hash, under: grant.hash }, { author: ag.id, key: keyOf('cag'), held: s.held, at: at(), audience: 'public' })
-  door('admission_refusals: the agent\'s first block to a person who has stopped its principal is refused: stopped', 'admission_refusals', [post, sal.id, s.held, {}, 0], { codes: ['not_human', 'stopped'] })
+  door('admission_refusals: the agent\'s first block to a person who has stopped its principal is refused: not_human only (the STOP is read by the fold, not refused)', 'admission_refusals', [post, sal.id, s.held, {}, 0], { codes: ['not_human'] })
 }
 
 // ---- 6. The sealed blocks of a push: the core checks the public header; a header and a body are two halves of one block ----

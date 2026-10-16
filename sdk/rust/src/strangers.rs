@@ -170,8 +170,9 @@ pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], under: Option
 
 /// The message refusals a node's admission and strangers rules give (protocol.json `refusals.codes.message`):
 /// `not_admitted` (the sender is not among the rule's `parties` and the node already took `per_stranger` blocks today
-/// from others), `not_human` (a first block to a stranger an agent signed, outside the receiver's `order_channel`) and
-/// `stopped` (a live STOP naming the sender, its operator, or any agent under that operator). `admission` is the
+/// from others) and `not_human` (a first block to a stranger an agent signed, outside the receiver's `order_channel`).
+/// Not `stopped`: a block sent despite a live STOP is valid and kept, and the fold reads it as stopped (`consent`,
+/// `promise_stage`): consent decides what binds, not what exists. `admission` is the
 /// admission observe's state `{ parties, per_stranger, order_channel }` (null for none); `receiver` is the person the
 /// block is for; `strangers_today` is how many blocks the node took today from non-parties.
 pub fn admission_refusals(
@@ -193,9 +194,6 @@ pub fn admission_refusals(
         }
     }
     let under = rs(block, "under");
-    if consent(receiver, Some(sender), blocks, under).get("word").and_then(Value::as_str) == Some("stop") {
-        w.push(Refusal::new("stopped", "the person has a live STOP naming this sender or its operator"));
-    }
     if is_agents(block, &index) && is_stranger(receiver, sender, blocks, under) {
         let t = type_of(block);
         let typed = format!("{}.{}", t, st(block, "kind").and_then(Value::as_str).unwrap_or(""));

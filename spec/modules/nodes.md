@@ -34,7 +34,7 @@ A node sends signed blocks. A sealed copy may say which of the receiving node's 
 ## Admission
 
 Each node admits by its owner's published rule, an `observe` of kind `admission` whose hash discovery names, with state `{ parties, per_stranger, order_channel }`: the ids always admitted, how many blocks a day from anyone else, and the acts an agent may send first (strangers.md); each optional. A rule may also say where the node stores blocks (profiles/residency.md) and take a deposit (profiles/deposits.md). A node may refuse any push. No platform decides.
-- A node refuses an ask to a person who has a live STOP naming the ask's author or its operator, and a first ask to a stranger that an agent signed (strangers.md).
+- A node refuses a first ask to a stranger that an agent signed (strangers.md). It never refuses a block for a STOP: the block is kept and the fold reads it as stopped, so the sender's chain never stalls on someone else's consent. A node may decline to relay its body to the stopped party.
 
 ## Discovery
 

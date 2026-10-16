@@ -4,7 +4,7 @@
    One honest node per element of Nodes. A node is pushed small batches of blocks, in any order.
    It models, for the three independent parts of the protocol that carry authority:
      - identity   : key chains, equivocation, rotation, conflict, recovery rotation   (identity.md, nodes.md)
-     - consent    : YES / STOP, consent follows the principal, STOP binds from arrival (strangers.md)
+     - consent    : YES / STOP, consent follows the principal; a block sent despite a STOP is kept and read as stopped (strangers.md)
      - allocation : an open offer, bound only by the orderer's own allocation          (promises.md, folds.md)
    and, for all of them, authority dependencies that wait like `prev` (core.md check 5; `needs`).
 
@@ -12,7 +12,8 @@
    same universe the exhaustive Python checker explores. Check one part at a time by setting Active in
    the .cfg (the parts share no block, so the whole is their interleaving).
 
-   Not run with TLC here (no Java on the machine that wrote it); check.py explores the same machine. *)
+   Not run with TLC here (no Java on the machine that wrote it); check.py explores the same machine.
+   `check.py --mutate refuse_stop` restores the old rule (a stopped ask is refused); NoConsentStall then fails. *)
 EXTENDS Naturals, FiniteSets
 
 CONSTANTS Nodes,    \* honest nodes
@@ -38,12 +39,14 @@ T == [
   "Zg" |-> [comp |-> "consent", author |-> "Z", key |-> "kZ", kind |-> "genesis", prev |-> "none", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "GR" |-> [comp |-> "consent", author |-> "Q", key |-> "kQ", kind |-> "grant", prev |-> "Qg", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "ASK" |-> [comp |-> "consent", author |-> "A", key |-> "kA", kind |-> "ask", prev |-> "Ag", counted_to |-> "none", under |-> "GR", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
+  "ASK2" |-> [comp |-> "consent", author |-> "A", key |-> "kA", kind |-> "ask", prev |-> "ASK", counted_to |-> "none", under |-> "GR", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "ASK0" |-> [comp |-> "consent", author |-> "Q", key |-> "kQ", kind |-> "ask", prev |-> "YESq", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "YESq" |-> [comp |-> "consent", author |-> "Q", key |-> "kQ", kind |-> "consent", prev |-> "GR", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "yes", subject |-> "Q", person |-> "P", q |-> "none", recovery |-> FALSE],
   "STOP" |-> [comp |-> "consent", author |-> "P", key |-> "kP", kind |-> "consent", prev |-> "Pg", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "stop", subject |-> "Q", person |-> "none", q |-> "none", recovery |-> FALSE],
   "YES" |-> [comp |-> "consent", author |-> "P", key |-> "kP", kind |-> "consent", prev |-> "STOP", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "yes", subject |-> "Q", person |-> "none", q |-> "none", recovery |-> FALSE],
   "STOPR" |-> [comp |-> "consent", author |-> "R", key |-> "kR", kind |-> "consent", prev |-> "Rg", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "stop", subject |-> "R", person |-> "P", q |-> "none", recovery |-> FALSE],
   "ASKR" |-> [comp |-> "consent", author |-> "R", key |-> "kR", kind |-> "ask", prev |-> "STOPR", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
+  "ASKR2" |-> [comp |-> "consent", author |-> "R", key |-> "kR", kind |-> "plain", prev |-> "ASKR", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "ASKZ" |-> [comp |-> "consent", author |-> "Z", key |-> "kZ", kind |-> "ask", prev |-> "Zg", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "Sg" |-> [comp |-> "allocation", author |-> "S", key |-> "kS", kind |-> "genesis", prev |-> "none", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
   "B1g" |-> [comp |-> "allocation", author |-> "B1", key |-> "kB1", kind |-> "genesis", prev |-> "none", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE],
@@ -127,7 +130,7 @@ LiveStop(a, S) ==
 ConsentFold(S) == {<<a, LiveStop(a, S)>> : a \in {x \in S : T[x].kind = "ask"}}
 
 \* What the spec says, written by hand for this universe (the oracle the invariants compare with).
-Oracle(a, S) == IF a \in {"ASK", "ASK0"} THEN "STOP" \in S /\ "YES" \notin S
+Oracle(a, S) == IF a \in {"ASK", "ASK0", "ASK2"} THEN "STOP" \in S /\ "YES" \notin S
                 ELSE IF a = "ASKR" THEN "STOPR" \in S
                 ELSE FALSE
 
@@ -151,41 +154,30 @@ Fold(S) == <<IdFold(S), ConsentFold(S), Bound(S)>>
 
 \* One push is judged in rounds (nodes.md, Push): each round takes every waiting block whose needs are
 \* all held, judged against the same store, so the result never depends on the order inside a push.
-RECURSIVE Rounds(_, _, _, _, _, _)
-Rounds(st, W, rf, rs, v, o) ==
-  LET R     == {b \in W : Needs(b) \subseteq st}
-      bad   == {b \in R : Judge(b, st) # "ok"}
-      ok0   == R \ bad
-      stopd == {b \in ok0 : T[b].kind = "ask" /\ T[b].comp = "consent" /\ LiveStop(b, st \cup ok0)}   \* STOP binds from arrival
-      ok    == ok0 \ stopd
-      over  == \E b \in stopd : ~Oracle(b, st \cup ok0)
-      viol  == \E b \in ok : T[b].kind = "ask" /\ T[b].comp = "consent" /\ Oracle(b, st \cup ok0)
-  IN IF R = {} THEN [store |-> st, wait |-> W, ref |-> rf, rst |-> rs, viol |-> v, over |-> o]
-     ELSE Rounds(st \cup ok, W \ R, rf \cup bad, rs \cup stopd, v \/ viol, o \/ over)
+RECURSIVE Rounds(_, _, _)
+Rounds(st, W, rf) ==
+  LET R   == {b \in W : Needs(b) \subseteq st}
+      bad == {b \in R : Judge(b, st) # "ok"}      \* consent is never a reason: validity is the block and what it rests on
+  IN IF R = {} THEN [store |-> st, wait |-> W, ref |-> rf]
+     ELSE Rounds(st \cup (R \ bad), W \ R, rf \cup bad)
 
 \* ---------------------------------------------------------------- the machine
-VARIABLES store, waiting, refused, stopped, seen, viol, over
-vars == <<store, waiting, refused, stopped, seen, viol, over>>
+VARIABLES store, waiting, refused, seen
+vars == <<store, waiting, refused, seen>>
 
 Init == /\ store   = [n \in Nodes |-> Geneses]            \* every node holds the (public) geneses
         /\ waiting = [n \in Nodes |-> {}]
         /\ refused = [n \in Nodes |-> {}]
-        /\ stopped = [n \in Nodes |-> {}]
         /\ seen    = [n \in Nodes |-> {}]
-        /\ viol    = [n \in Nodes |-> FALSE]
-        /\ over    = [n \in Nodes |-> FALSE]
 
 Receive(n, batch) ==
   LET new == batch \ seen[n]
-      r   == Rounds(store[n], waiting[n] \cup new, refused[n], stopped[n], viol[n], over[n])
+      r   == Rounds(store[n], waiting[n] \cup new, refused[n])
   IN /\ new # {}
      /\ store'   = [store   EXCEPT ![n] = r.store]
      /\ waiting' = [waiting EXCEPT ![n] = r.wait]
      /\ refused' = [refused EXCEPT ![n] = r.ref]
-     /\ stopped' = [stopped EXCEPT ![n] = r.rst]
      /\ seen'    = [seen    EXCEPT ![n] = seen[n] \cup new]
-     /\ viol'    = [viol    EXCEPT ![n] = r.viol]
-     /\ over'    = [over    EXCEPT ![n] = r.over]
 
 Next == \E n \in Nodes, batch \in SUBSET Active : Cardinality(batch) \in 1..2 /\ Receive(n, batch)
 Spec == Init /\ [][Next]_vars
@@ -194,14 +186,18 @@ Spec == Init /\ [][Next]_vars
 TypeOK == \A n \in Nodes : store[n] \subseteq DOMAIN T /\ waiting[n] \subseteq Active /\ refused[n] \subseteq Active
 
 \* A refused block is never stored, and never counts as a need that was met.
-RefusedNeverStored == \A n \in Nodes : (refused[n] \cup stopped[n]) \cap store[n] = {}
+RefusedNeverStored == \A n \in Nodes : refused[n] \cap store[n] = {}
 \* Inv 25/26: nothing is stored, or folded, unless everything it rests on is held; nothing waits that could be judged.
 WholeInput == \A n \in Nodes : /\ \A b \in store[n] : Needs(b) \subseteq store[n]
                                /\ \A b \in waiting[n] : ~(Needs(b) \subseteq store[n]) /\ b \notin refused[n]
 \* Equivocation: nothing seen and judged is lost; both blocks of a pair are kept.
-NothingLost == \A n \in Nodes : \A b \in seen[n] : b \in waiting[n] \cup refused[n] \cup stopped[n] \cup store[n]
-\* STOP binds from arrival, follows the principal, and only the person lifts it.
-StopFromArrival == \A n \in Nodes : ~viol[n] /\ ~over[n]
+NothingLost == \A n \in Nodes : \A b \in seen[n] : b \in waiting[n] \cup refused[n] \cup store[n]
+\* The fold reads an ask as stopped exactly when the spec says: a live STOP naming its side, lifted only by the person.
+StopReadByFold == \A n \in Nodes : \A a \in {b \in store[n] : T[b].kind = "ask"} : LiveStop(a, store[n]) = Oracle(a, store[n])
+\* An honest sender's chain never stalls because of anyone else's consent: once a consent-part block has every block
+\* it rests on, it is stored, whatever STOP was held.
+NoConsentStall == \A n \in Nodes : \A b \in seen[n] :
+  (T[b].comp = "consent" /\ (Past(b) \ Geneses) \subseteq seen[n]) => b \in store[n]
 \* No binding without the right signer.
 RightSigner == \A n \in Nodes :
   LET c == Counted(store[n]) \cap {b \in Active : T[b].comp = "identity"} IN
@@ -213,15 +209,13 @@ AllocationSafe == \A n \in Nodes :
   /\ \A i \in Bound(store[n]) : T[i].key = T["O"].key
   /\ (IF "O" \in store[n] THEN LET s == Bound(store[n]) IN \A i \in s : T[i].q <= Cap ELSE TRUE)
 \* Two honest nodes that were given the same blocks hold the same blocks, refuse the same, and fold the same.
-\* (An ask refused for a STOP is the one arrival-dependent outcome: a view, not a fold.)
-NonAsk(S) == {b \in S : T[b].kind # "ask"}
 Converge == \A m, n \in Nodes : seen[m] = seen[n] =>
-              /\ NonAsk(store[m]) = NonAsk(store[n])
-              /\ store[m] \cup stopped[m] = store[n] \cup stopped[n]
+              /\ store[m] = store[n]
               /\ refused[m] = refused[n] /\ waiting[m] = waiting[n]
-              /\ IdFold(NonAsk(store[m])) = IdFold(NonAsk(store[n]))
+              /\ IdFold(store[m]) = IdFold(store[n])
+              /\ ConsentFold(store[m]) = ConsentFold(store[n])
               /\ Bound(store[m]) = Bound(store[n])
 
-Inv == TypeOK /\ RefusedNeverStored /\ WholeInput /\ NothingLost /\ StopFromArrival /\ RightSigner
+Inv == TypeOK /\ RefusedNeverStored /\ WholeInput /\ NothingLost /\ StopReadByFold /\ NoConsentStall /\ RightSigner
        /\ FrozenSilent /\ NoForgeStored /\ AllocationSafe /\ Converge
 =============================================================================

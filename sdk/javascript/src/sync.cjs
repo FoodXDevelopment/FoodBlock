@@ -42,7 +42,7 @@ function acceptSealed(incoming, held = [], { arrivedAt } = {}) {
   const byHash = new Map(messages.map((message) => [message.header?.hash, message]))
   return { ...answer, taken: answer.taken.map((hash) => byHash.get(hash)) }
 }
-/** What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human, stopped. */
+/** What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human. */
 const admissionRefusals = (block, receiver, blocks, admission = {}, strangersToday = 0) => call('admission_refusals', block, receiver, list(blocks), admission || {}, strangersToday)
 /** Residency (profiles/residency.md): a block that stays in regions its node does not hold in. */
 const residencyRefusals = (block, holdsIn) => call('residency_refusals', block, holdsIn || [])

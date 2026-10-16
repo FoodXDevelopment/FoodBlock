@@ -1,24 +1,31 @@
 # foodblock (Go)
 
-FoodBlock 1.6 for Go. The protocol is [`spec/protocol.md`](../../spec/protocol.md). This package is a thin cgo layer
+FoodBlock 1.6 for Go. The protocol is [`spec/protocol.md`](../../spec/protocol.md). This package is a thin layer
 over the one Rust core ([`../rust`](../rust)): every rule (canonical form, hashing, Ed25519, the write check, chains,
-identities, envelopes, folds, messages between nodes, and protocol.json itself) lives there once,
-and Go calls it through the core's single JSON door (`fb_call`, in the C ABI `include/foodblock.h`). The Go types
-(`Block`, `Stage`, `Chain`, ...) are only the shapes the answers decode into.
+identities, envelopes, folds, messages between nodes, and protocol.json itself) lives there once. The core is compiled
+to WebAssembly (the very file the JavaScript SDK carries), embedded in the package with `go:embed` (`foodblock.wasm`)
+and run by [wazero](https://wazero.io), a pure Go runtime. So **there is no cgo, no C compiler and no native library**:
+`go get` and build, for any `GOOS/GOARCH`, with one artifact everywhere. Go calls the core through its single JSON door
+(`wasm.go`); the Go types (`Block`, `Stage`, `Chain`, ...) are only the shapes the answers decode into.
 
-## Build
-
-cgo links the Rust static library, so build that first (needs a Rust toolchain and a C compiler):
+## Use
 
 ```bash
-(cd ../rust && cargo rustc --release --features ffi --crate-type staticlib)    # target/release/libfoodblock.a
-go test ./...
+go get github.com/FoodXDevelopment/foodblock/sdk/go
 ```
 
-`core.go` names the header and the library by `${SRCDIR}/../rust/...`, so the module is used from this repository
-(or a vendored copy that keeps the `rust/` folder beside it). Elsewhere, set `CGO_CFLAGS=-I<dir with foodblock.h>` and
-`CGO_LDFLAGS=<path to libfoodblock.a>` and remove the `#cgo` lines. There is no Go dependency beyond the standard
-library.
+The first call compiles the core (about a second); after that a call costs microseconds. Calls are safe from many
+goroutines (they take turns on one instance).
+
+## Test
+
+```bash
+CGO_ENABLED=0 go test ./...
+```
+
+`foodblock.wasm` here must equal `sdk/javascript/core/foodblock.wasm` (`TestWasmIsTheSharedCore`). After changing the
+Rust core: `cd sdk/javascript && node scripts/build-wasm.cjs`, then `node tools/version-sync.cjs --write` copies it here.
+The only dependency is wazero.
 
 ## Peer
 

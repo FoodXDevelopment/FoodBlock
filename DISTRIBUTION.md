@@ -25,7 +25,10 @@ Every package is at `1.6.0`, and the protocol version each one reports is read f
    `file:../sdk/javascript`. npm does not rewrite that on publish, so at release it becomes `"^1.6.0"`, once the SDK
    is on npm.
 3. Then npm (SDK, MCP, CLI), the MCP Registry (`mcp/server.json`), PyPI (`sdk/python`), a Go module tag
-   (`sdk/go/v1.6.0`), and the Swift package (SwiftPM needs `Package.swift` at the root of the repository it fetches,
-   so the Swift SDK publishes from its own repository or a root manifest).
+   (`sdk/go/v1.6.0`; pure Go, the core is the embedded `foodblock.wasm`, so nothing else is built), and the Swift package
+   (the root `Package.swift` is the manifest SwiftPM fetches; a release uploads `CFoodBlock.xcframework.zip`, built by
+   `sdk/swift/scripts/build-xcframework.sh`, and sets `checksum` in `Package.swift` to the one it prints). Kotlin:
+   the jar (natives for five platforms) and the Android AAR are built by `.github/workflows/packages.yml`; a person
+   downloads its artifacts and publishes. `node tools/version-sync.cjs --pack` dry-runs all of it where the tools exist.
 
 The node (`server/`) is not a package: run it from this repository or with its Dockerfile.

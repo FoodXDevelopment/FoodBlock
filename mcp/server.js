@@ -9,6 +9,7 @@
 // FOODBLOCK_IDENTITY  a file holding the person's keys, genesis and chain (the CLI's format: `fb init` makes one), made on
 //                     first run (kept 0600); without it, a new person each run. The approval code lives beside it in
 //                     <file>.approval.
+// FOODBLOCK_INDEX_URL[, FOODBLOCK_INDEX_KEY]   find asks this open index (answer verified) instead of the host's blocks.
 // FOODBLOCK_NODE_URL, FOODBLOCK_NODE_TOKEN   reach the person's node on a FoodOS host over HTTP instead of in memory (see README).
 // FOODBLOCK_AUTH=oauth, FOODBLOCK_PUBLIC_URL  with --http: require the MCP authorization flow on /mcp; the address clients reach the door by.
 // FOODBLOCK_SEED=off  start with an empty node instead of a small story to find.
@@ -21,7 +22,7 @@ import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createDoor, approvalHandler, memoryNode, newPerson } from "./door.js";
-import { remoteNode } from "./remote.js";
+import { remoteNode, remoteIndex } from "./remote.js";
 import { doorProvider, authorizedApp } from "./auth.js";
 
 const text = (value) => ({ content: [{ type: "text", text: JSON.stringify(value, null, 2) }] });
@@ -37,6 +38,7 @@ const terms = {
 /** One assistant's view of the door: its own agent identity, six tools. */
 export function createServer({ door, name = "assistant" } = {}) {
   door ||= createDoor();
+  const index = door.index || null; // the open index, when one is set: find asks it; read, ask and promise stay on the host
   const assistant = door.agent(name);
   const server = new McpServer({ name: "foodblock", version: fb.VERSION });
   // Every call: read the node's truth first (a remote node pulls), do the work, send what was signed. Behind OAuth the token must carry the tool's scope.
@@ -48,7 +50,7 @@ export function createServer({ door, name = "assistant" } = {}) {
 
   server.tool("foodblock_find", "Find what is on offer: offers, things or peers, by what (a word) and near (a place hash or name). Read-only.",
     { kind: z.enum(["offers", "things", "peers"]).default("offers"), what: z.string().optional(), near: z.string().optional(), limit: z.number().int().min(1).max(100).default(20) },
-    guard(async (input) => door.find(input), "foodblock:read"));
+    guard(async (input) => (index && (input.kind ?? "offers") === "offers" ? index.offers(input) : door.find(input)), "foodblock:read"));
 
   server.tool("foodblock_read", "Read a block (with its refusals and signature check), a thing (its state now, where it is, who owns it), a promise (its stage: asked, offered, accepted, underway, done...) or a draft (pending, sent, discarded).",
     { hash: z.string().min(6) }, guard(async ({ hash }) => door.read(hash), "foodblock:read"));
@@ -85,6 +87,8 @@ function build() {
   const hosted = process.env.FOODBLOCK_NODE_URL;
   const node = hosted ? remoteNode({ base: `${hosted.replace(/\/$/, "")}/${person.id}`, token: process.env.FOODBLOCK_NODE_TOKEN }) : memoryNode();
   const door = createDoor({ node, person, code, persist });
+  // FOODBLOCK_INDEX_URL: an open index (kernel/index/http.js); find goes there and its signed answer is verified. FOODBLOCK_INDEX_KEY pins its key.
+  if (process.env.FOODBLOCK_INDEX_URL) door.index = remoteIndex({ base: process.env.FOODBLOCK_INDEX_URL, key: process.env.FOODBLOCK_INDEX_KEY });
   if (file && !code) writeFileSync(`${file}.approval`, door.approvalCode, { mode: 0o600 });
   persist(person);
   if (process.env.FOODBLOCK_SEED !== "off") seed(door);
@@ -170,4 +174,4 @@ if (isDirectRun) {
     await createServer({ door }).connect(new StdioServerTransport());
   }
 }
-export { seed, createDoor, memoryNode, remoteNode, newPerson, approvalHandler, serveHttp, build };
+export { seed, createDoor, memoryNode, remoteNode, remoteIndex, newPerson, approvalHandler, serveHttp, build };

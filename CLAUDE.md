@@ -61,8 +61,8 @@ sdk/rust/               the one core (every rule, once): crate, C library, WebAs
 spec/run-vectors.cjs    the conformance runner
 spec/whitepaper.md      the published v1.5 paper (and .pdf)
 sdk/javascript/         the reference SDK (src/index.cjs is its whole API)
-sdk/python, go, swift,  the same protocol in other languages, thin layers over the Rust core; each runs every vector
-kotlin                  section
+sdk/python, go, swift,  the same protocol in other languages, thin layers over the Rust core (Go runs its WebAssembly in
+kotlin                  wazero; Swift links an XCFramework; Kotlin bundles JNI natives); each runs every vector section
 server/                 a node: node.js (store + signed pull / push / .well-known), index.js (runs it)
 sql/schema.sql          the node's store: append-only, each block kept exactly as it arrived
 mcp/                    the MCP door: six tools (find, read, ask, promise, accept, connect); the agent drafts, the person signs
@@ -77,8 +77,8 @@ test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript p
 |---|---|
 | Anything in the SDK or hashing | `node spec/run-vectors.cjs` and `cd sdk/javascript && npm test` |
 | spec/protocol.json | `node test/sync-spec.cjs`, then every SDK's tests |
-| The Rust core | `cd sdk/rust && cargo test`, rebuild WebAssembly (`cd sdk/javascript && node scripts/build-wasm.cjs`), then every SDK's tests |
-| Python / Go / Swift / Kotlin SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && go test ./...` / `cd sdk/swift && swift test` / `cd sdk/kotlin && ./gradlew :foodblock:test` |
+| The Rust core | `cd sdk/rust && cargo test`, rebuild WebAssembly (`cd sdk/javascript && node scripts/build-wasm.cjs`; Go embeds the same file: `node tools/version-sync.cjs --write`), rebuild the Python library (`cargo rustc --release --features ffi --crate-type cdylib`), the Swift XCFramework, then every SDK's tests |
+| Python / Go / Swift / Kotlin SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && CGO_ENABLED=0 go test ./...` / `sdk/swift/scripts/build-xcframework.sh --macos && swift test` (at the root, with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`) / `cd sdk/kotlin && ./gradlew :foodblock:test` |
 | The oracle | `node spec/oracle/run.cjs` |
 | The EPCIS / FSMA 204 profile | `node spec/profiles/epcis/run.cjs` (regenerate: `make-vectors.cjs`) |
 | The node | `cd server && npm test` (in-memory Postgres, no setup; `TEST_DATABASE_URL=postgresql://... npm test` for a real one) |

@@ -231,7 +231,7 @@ object Sync {
     fun pushRefusals(message: JsonObject, freshness: Freshness): List<Refusal> =
         Native.invoke("push_refusals", message, freshness.toJson()).jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
 
-    /** What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human, stopped. */
+    /** What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human. */
     fun admissionRefusals(
         block: JsonObject, receiver: String, blocks: List<JsonObject>, admission: JsonObject = JsonObject(emptyMap()), strangersToday: Long = 0,
     ): List<Refusal> = Native.invoke("admission_refusals", block, JsonPrimitive(receiver), JsonArray(blocks), admission, JsonPrimitive(strangersToday))

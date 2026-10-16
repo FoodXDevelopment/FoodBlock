@@ -8,6 +8,11 @@ is the interleaving of independent machines; counts are reported per component a
 
   python3 tools/tla/check.py            # check all three components
   python3 tools/tla/check.py --mutate N # run with a deliberate bug; the checker must fail
+
+Consent (strangers.md, invariant 29): validity is about the block and what it rests on; consent decides what binds, not
+what exists. A block sent despite a STOP is stored (the sender's chain goes on) and the fold reads it as stopped.
+`--mutate refuse_stop` restores the old rule (a stopped ask is refused and never stored): its sender's later blocks wait
+forever, and the checker finds it (NoConsentStall).
 """
 import sys, itertools
 from collections import defaultdict, deque
@@ -46,12 +51,14 @@ def consent_universe():
     bl = [
       B('GR',   author='Q', key='kQ', kind='grant', prev='Qg'),                       # Q lets A act
       B('ASK',  author='A', key='kA', kind='ask', prev='Ag', under='GR'),            # A asks P under Q's grant
+      B('ASK2', author='A', key='kA', kind='ask', prev='ASK', under='GR'),           # A's next block, chained on the ask a STOP may cover
       B('ASK0', author='Q', key='kQ', kind='ask', prev='YESq'),                        # Q asks P itself
       B('YESq', author='Q', key='kQ', kind='consent', word='yes', subject='Q', person='P', prev='GR'),  # not P's word
       B('STOP', author='P', key='kP', kind='consent', word='stop', subject='Q', prev='Pg'),
       B('YES',  author='P', key='kP', kind='consent', word='yes', subject='Q', prev='STOP'),
       B('STOPR',author='R', key='kR', kind='consent', word='stop', subject='R', person='P', prev='Rg'),   # recorder's STOP
       B('ASKR', author='R', key='kR', kind='ask', prev='STOPR'),
+      B('ASKR2',author='R', key='kR', kind='plain', prev='ASKR'),                    # R's next block, chained on a stopped ask
       B('ASKZ', author='Z', key='kZ', kind='ask', prev='Zg'),                        # unrelated sender
     ]
     return pre, bl
@@ -222,7 +229,7 @@ def simple_judge(b, S, byid):
 
 def consent_oracle(a, T):
     """What the spec says, written by hand for this universe: is this ask stopped, given the set T?"""
-    if a in ('ASK', 'ASK0'): return 'STOP' in T and 'YES' not in T
+    if a in ('ASK', 'ASK0', 'ASK2'): return 'STOP' in T and 'YES' not in T
     if a == 'ASKR': return 'STOPR' in T
     return False
 
@@ -254,7 +261,7 @@ class Comp:
         s.ids = [b['id'] for b in bl]
 
 def push(c, st, batch):
-    store, waiting, refused, rstop, seen, viol, over = st
+    store, waiting, refused, rstop, seen = st
     byid = c.byid
     new = [b for b in batch if b not in seen]
     if not new: return None
@@ -270,35 +277,35 @@ def push(c, st, batch):
             W.discard(i)
             if code: refused.add(i)
             else: okset.append(i)
-        if c.name == 'consent':
-            inround = store | set(okset) if MUT != 'stop_ignores_round' else set(store)
+        if c.name == 'consent' and MUT == 'refuse_stop':       # the old rule: a stopped ask is not stored (its chain stalls)
             for i in list(okset):
-                if byid[i]['kind'] != 'ask': continue
-                stopped = live_stop(byid[i], inround, byid)
-                truth = consent_oracle(i, store | set(okset))
-                if stopped and not truth: over = True
-                if stopped:
+                if byid[i]['kind'] == 'ask' and live_stop(byid[i], store | set(okset), byid):
                     okset.remove(i); rstop.add(i)
-                elif truth: viol = True      # taken while a STOP that had arrived was live
         # equivocation: a pair is kept and not taken; here both are simply stored as the pair (nodes.md)
         store |= set(okset)
         if not okset and not R: break
         if not okset: continue
-    return (frozenset(store), frozenset(W), frozenset(refused), frozenset(rstop), frozenset(seen), viol, over)
+    return (frozenset(store), frozenset(W), frozenset(refused), frozenset(rstop), frozenset(seen))
 
 def invariants(c, st):
-    store, waiting, refused, rstop, seen, viol, over = st
+    store, waiting, refused, rstop, seen = st
     byid = c.byid; errs = []
     S = store
     if refused & store: errs.append('refused block stored')
-    if rstop & store: errs.append('stopped ask stored')
     for i in store:
         if not needs(byid[i]) <= store: errs.append('stored block %s lacks a need' % i)
     for i in waiting:
         if needs(byid[i]) <= store: errs.append('waiting block %s has all it needs' % i)
         if i in refused: errs.append('waiting and refused')
-    if viol: errs.append('ask taken after a live STOP arrived')
-    if over: errs.append('ask stopped with no live STOP for its side')
+    if c.name == 'consent':
+        # the fold reads an ask as stopped exactly when the spec says
+        for i in store:
+            if byid[i]['kind'] == 'ask' and live_stop(byid[i], store, byid) != consent_oracle(i, store):
+                errs.append('the fold reads %s as %sstopped, the spec says otherwise' % (i, '' if live_stop(byid[i], store, byid) else 'not '))
+        # an honest sender's chain never stalls because of anyone else's consent: a block with everything it rests on is stored
+        for i in seen:
+            if i not in store and past(byid[i], store, byid) <= seen | c.pre and byid[i]['id'] not in refused:
+                errs.append('honest chain stalled by consent: %s has everything it rests on and is not stored' % i)
     # equivocation kept: both members of a pair that were not refused are stored
     for pr in pairs(store, byid):
         pass
@@ -330,14 +337,11 @@ def invariants(c, st):
     return errs
 
 def stable(c, st):
-    store, waiting, refused, rstop, seen, _, _ = st
-    byid = c.byid
-    nonask = lambda X: frozenset(i for i in X if byid[i]['kind'] != 'ask')
-    return (nonask(store), frozenset(store | rstop), waiting, refused, c.fold(nonask(store) if c.name == 'consent' else store, byid)
-            if c.name != 'consent' else c.fold(frozenset(), byid) and None)
+    store, waiting, refused, rstop, seen = st
+    return (store, waiting, refused, c.fold(store, c.byid))
 
 def run(c):
-    init = (c.pre, frozenset(), frozenset(), frozenset(), frozenset(), False, False)
+    init = (c.pre, frozenset(), frozenset(), frozenset(), frozenset())
     seenst = {init}; q = deque([init]); trans = 0; groups = defaultdict(set); fails = []
     while q:
         st = q.popleft()

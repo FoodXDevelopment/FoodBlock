@@ -81,7 +81,7 @@ public enum Strangers {
     /// Deposits profile: the shape of an admission's deposit, and whether an ask's deposit is paid.
     public static func depositShapeOk(_ deposit: Any?) -> Bool { Core.bool("deposit_shape_ok", deposit) }
     public static func depositPaid(_ ask: JSON, _ deposit: JSON, _ blocks: [JSON]) -> Bool { Core.bool("deposit_paid", ask, deposit, blocks) }
-    /// What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human, stopped.
+    /// What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human.
     public static func admissionRefusals(_ block: JSON, receiver: String, _ blocks: [JSON], admission: JSON = [:], strangersToday: Int = 0) -> [FoodBlock.Finding] {
         FoodBlock.findings(Core.maybe("admission_refusals", block, receiver, blocks, admission, strangersToday))
     }

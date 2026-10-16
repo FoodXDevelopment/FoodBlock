@@ -138,10 +138,10 @@ Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 | The SDKs carry the spec exactly | `node test/sync-spec.cjs --check` |
 | JS SDK | `cd sdk/javascript && npm test` |
 | Python SDK | `cd sdk/python && python3 -m unittest discover -s tests` |
-| Go SDK | `cd sdk/go && go test ./...` |
-| Swift SDK | `cd sdk/swift && swift test` |
+| Go SDK | `cd sdk/go && CGO_ENABLED=0 go test ./...` |
+| Swift SDK | `sdk/swift/scripts/build-xcframework.sh --macos && swift test` (at the root) |
 | Rust core | `cd sdk/rust && cargo test` |
-| Kotlin SDK | `cd sdk/kotlin && ./gradlew :foodblock:test` |
+| Kotlin SDK | `cd sdk/kotlin && ./gradlew :foodblock:test` (needs a JDK 17); the bundled-library check: `scripts/build-natives.sh jvm && ./gradlew :foodblock:testBundled` |
 | The oracle (written from the spec text alone) | `node spec/oracle/run.cjs` |
 | Node | `cd server && npm test` (in-memory Postgres; set `TEST_DATABASE_URL` for a real one) |
 | MCP server | `cd mcp && npm test` |

@@ -14,13 +14,55 @@ import kotlinx.serialization.json.jsonPrimitive
  * `{ ok }` or `{ error, message, reasons }` comes out, all as UTF-8 bytes. Every function of this library is a call
  * through it, so there is one implementation of the protocol, not a copy.
  *
- * The library loads `libfoodblock` once: from the path in the system property `foodblock.library` if set (tests,
- * desktop JVMs), else by name (Android finds it in the AAR's jniLibs).
+ * The library loads `libfoodblock` once, from the first of these that applies:
+ *  1. the path in the system property `foodblock.library` (tests, a build of your own);
+ *  2. Android: `System.loadLibrary("foodblock")` (the AAR carries arm64-v8a, armeabi-v7a and x86_64);
+ *  3. the JVM jar: the copy bundled for this computer at `/native/<id>/`, extracted to a temporary file (ids:
+ *     macos-arm64, macos-x64, linux-x64, linux-arm64, windows-x64);
+ *  4. `System.loadLibrary("foodblock")` on `java.library.path` (a platform the jar does not bundle).
  */
 internal object Native {
-    init {
-        val path = System.getProperty("foodblock.library")
-        if (path != null) System.load(path) else System.loadLibrary("foodblock")
+    /** Where the library came from: `property`, `android`, `bundled:<id>` or `system`. */
+    val loadedFrom: String = load()
+
+    private fun load(): String {
+        System.getProperty("foodblock.library")?.let { System.load(it); return "property" }
+        if (isAndroid()) { System.loadLibrary("foodblock"); return "android" }
+        val id = platformId()
+        val file = libraryFile()
+        val bundled = Native::class.java.getResourceAsStream("/native/$id/$file")
+        if (bundled != null) {
+            val dir = java.nio.file.Files.createTempDirectory("foodblock-").toFile().apply { deleteOnExit() }
+            val out = java.io.File(dir, file).apply { deleteOnExit() }
+            bundled.use { input -> out.outputStream().use { input.copyTo(it) } }
+            System.load(out.absolutePath)
+            return "bundled:$id"
+        }
+        try { System.loadLibrary("foodblock") } catch (e: UnsatisfiedLinkError) {
+            throw UnsatisfiedLinkError("foodblock: no native library for $id (os.name=${System.getProperty("os.name")}, " +
+                "os.arch=${System.getProperty("os.arch")}); the jar bundles macos-arm64, macos-x64, linux-x64, linux-arm64 and windows-x64. " +
+                "Build sdk/rust with --features jni and set -Dfoodblock.library=<path>.")
+        }
+        return "system"
+    }
+
+    private fun isAndroid(): Boolean =
+        System.getProperty("java.vendor")?.contains("Android", ignoreCase = true) == true ||
+            System.getProperty("java.vm.name")?.contains("Dalvik", ignoreCase = true) == true
+
+    /** `<os>-<arch>` as the jar names its bundled copies. */
+    internal fun platformId(osName: String = System.getProperty("os.name"), osArch: String = System.getProperty("os.arch")): String {
+        val os = osName.lowercase()
+        val arch = osArch.lowercase()
+        val o = when { os.contains("mac") || os.contains("darwin") -> "macos"; os.contains("win") -> "windows"; else -> "linux" }
+        val a = when (arch) { "aarch64", "arm64" -> "arm64"; "amd64", "x86_64", "x64" -> "x64"; else -> arch }
+        return "$o-$a"
+    }
+
+    private fun libraryFile(): String = when (platformId().substringBefore('-')) {
+        "macos" -> "libfoodblock.dylib"
+        "windows" -> "foodblock.dll"
+        else -> "libfoodblock.so"
     }
 
     @JvmStatic

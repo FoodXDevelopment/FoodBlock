@@ -101,7 +101,7 @@ def waited_too_long(since, now, ttl) -> bool:
 
 
 def admission_refusals(block, receiver, blocks, admission=None, strangers_today=0) -> list:
-    """What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human, stopped."""
+    """What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human."""
     return call("admission_refusals", block, receiver, list(blocks), admission or {}, strangers_today)
 
 

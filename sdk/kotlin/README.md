@@ -28,6 +28,20 @@ wire share. uniffi would still pass JSON as strings, and it adds a code generato
 keep in step. One JNI function needs none of that: the Rust side is a name table, the Kotlin side is plain typed
 functions. Bytes cross (not Java strings) so text stays exact UTF-8.
 
+## Install and packaging
+
+- **JVM (desktop, server):** one jar, `world.foodx:foodblock`. It bundles the native core for macOS (arm64, x64),
+  Linux (x64, arm64) and Windows (x64) under `native/<id>/`. At first use the loader picks the copy for the computer
+  (`os.name` + `os.arch`), extracts it to a temporary file and loads it. Another platform: build `sdk/rust` with
+  `--features jni` and run with `-Dfoodblock.library=<path>`, or put `libfoodblock` on `java.library.path`.
+- **Android:** an AAR with `libfoodblock.so` for arm64-v8a, armeabi-v7a and x86_64 (minSdk 24).
+
+Both are packaged from `sdk/kotlin/natives/`, which `scripts/build-natives.sh [jvm|android|all]` fills with what this
+computer can build (cargo-ndk if installed, otherwise the NDK's clang). A Mac builds macOS and Android; Linux and
+Windows copies come from their own runners (`.github/workflows/packages.yml`, which then builds the jar with
+`-Pfoodblock.allNatives=true` so a release cannot miss one). `./gradlew :foodblock:testBundled` loads the jar's own copy
+with no `foodblock.library` set.
+
 ## Use it
 
 ```kotlin

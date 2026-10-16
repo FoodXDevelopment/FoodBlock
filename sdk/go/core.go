@@ -1,23 +1,13 @@
 package foodblock
 
-/*
-#cgo CFLAGS: -I${SRCDIR}/../rust/include
-#cgo LDFLAGS: ${SRCDIR}/../rust/target/release/libfoodblock.a
-#cgo darwin LDFLAGS: -framework Security -framework CoreFoundation
-#cgo linux LDFLAGS: -lpthread -ldl -lm
-#include <stdlib.h>
-#include "foodblock.h"
-*/
-import "C"
-
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
-	"unsafe"
 )
 
-// The one door into the Rust core (sdk/rust, src/door.rs) through its C ABI (fb_call). An op's name and its arguments
+// The one door into the Rust core (sdk/rust, src/door.rs). The core is the same WebAssembly file every other SDK
+// carries (sdk/javascript/core/foodblock.wasm, embedded here as foodblock.wasm) and runs in wazero, a pure Go runtime:
+// no cgo, no C compiler, no native library, one artifact on every platform (wasm.go). An op's name and its arguments
 // as a JSON array go in; { "ok": value } or { "error": kind, "message", "code", "reasons", "refusals" } comes out.
 // Every function of this package is a call through ask, so the protocol has one implementation, not a copy.
 
@@ -56,15 +46,9 @@ func raw(op string, args ...any) (json.RawMessage, error) {
 	if err := enc.Encode(args); err != nil {
 		return nil, err
 	}
-	cop, cargs := C.CString(op), C.CString(in.String())
-	defer C.free(unsafe.Pointer(cop))
-	defer C.free(unsafe.Pointer(cargs))
-	var out *C.char
-	status := C.fb_call(cop, cargs, &out)
-	defer C.fb_free(out)
-	text := C.GoString(out)
-	if status != C.FB_OK {
-		return nil, errors.New(text)
+	text, err := callCore(op, bytes.TrimSpace(in.Bytes()))
+	if err != nil {
+		return nil, err
 	}
 	var answer struct {
 		Ok       json.RawMessage `json:"ok"`
@@ -73,7 +57,7 @@ func raw(op string, args ...any) (json.RawMessage, error) {
 		Code     string          `json:"code"`
 		Refusals []Finding       `json:"refusals"`
 	}
-	if err := json.Unmarshal([]byte(text), &answer); err != nil {
+	if err := json.Unmarshal(text, &answer); err != nil {
 		return nil, err
 	}
 	switch {

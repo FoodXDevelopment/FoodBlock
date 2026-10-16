@@ -1121,8 +1121,7 @@
     "wrong_node": "it names another node",
     "replay": "its counter is not above the highest seen, or its challenge was not issued or was used",
     "not_admitted": "the node's admission rule does not admit it",
-    "not_human": "a first block to a stranger signed by an agent, outside the receiver's order channel",
-    "stopped": "a message to a person with a live STOP naming its author or operator"
+    "not_human": "a first block to a stranger signed by an agent, outside the receiver's order channel"
    }
   },
   "checks": [

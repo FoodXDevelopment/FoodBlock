@@ -1,0 +1,85 @@
+name: Packages
+
+# Builds what users install without this repository: the Kotlin jar (native libraries for macOS arm64/x64, Linux
+# x64/arm64, Windows x64) and the Android AAR (arm64-v8a, armeabi-v7a, x86_64), and the Swift XCFramework (iOS device,
+# iOS simulator, macOS). Go needs no build: its core is one embedded WebAssembly file. Nothing is published: the
+# jobs upload artifacts, and a person publishes (DISTRIBUTION.md).
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['*']
+
+permissions:
+  contents: read
+
+jobs:
+  natives:
+    name: Kotlin natives (${{ matrix.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: 'macos arm64 x64 android', os: macos-latest, what: all }
+          - { name: linux-x64, os: ubuntu-latest, what: jvm }
+          - { name: linux-arm64, os: ubuntu-24.04-arm, what: jvm }
+          - { name: windows-x64, os: windows-latest, what: jvm }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin,aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android' || '' }}
+      - name: Android NDK path
+        if: matrix.os == 'macos-latest'
+        run: echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - run: scripts/build-natives.sh ${{ matrix.what }}
+        shell: bash
+        working-directory: sdk/kotlin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.os }}
+          path: sdk/kotlin/natives/
+          if-no-files-found: error
+
+  kotlin:
+    name: Kotlin jar (all five natives) and Android AAR
+    needs: natives
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: natives-*
+          merge-multiple: true
+          path: sdk/kotlin/natives/
+      - run: ./gradlew :foodblock:test :foodblock:jar :android:assembleRelease -Pfoodblock.allNatives=true
+        working-directory: sdk/kotlin
+      - run: unzip -l foodblock/build/libs/foodblock-*.jar | grep native/
+        working-directory: sdk/kotlin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kotlin-packages
+          path: |
+            sdk/kotlin/foodblock/build/libs/*.jar
+            sdk/kotlin/android/build/outputs/aar/*.aar
+
+  swift:
+    name: Swift XCFramework (iOS, iOS simulator, macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios,aarch64-apple-darwin,x86_64-apple-darwin
+      - run: sdk/swift/scripts/build-xcframework.sh
+      - run: swift test
+      - run: xcodebuild -scheme FoodBlock -destination 'generic/platform=iOS Simulator' build
+      - run: xcodebuild -scheme FoodBlock -destination 'generic/platform=iOS' build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CFoodBlock.xcframework
+          path: sdk/swift/CFoodBlock.xcframework.zip

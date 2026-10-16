@@ -70,6 +70,7 @@ The door can reach a person's node on a FoodOS host over HTTP, and an assistant 
 
 | Variable | What it does |
 |---|---|
+| `FOODBLOCK_INDEX_URL` | An open index (the Backend's `kernel/index/http.js`). `foodblock_find` for offers asks it and verifies its signed answer; `FOODBLOCK_INDEX_KEY` pins the index's public key (else read once from its well-known). Read, ask and promise stay on the host |
 | `FOODBLOCK_NODE_URL` | A FoodOS host (the Backend's `kernel/node/host.js` `handler`). The door uses the person's window at `{url}/{personId}` |
 | `FOODBLOCK_NODE_TOKEN` | The person's window credential (`host.credential(personId, { scopes: ['read','write'] })`), sent as `Authorization: Bearer`, never in a URL |
 | `FOODBLOCK_AUTH=oauth` | With `--http`: `/mcp` answers 401 until the assistant has a bearer token from the OAuth flow |

@@ -8,7 +8,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import fb from '@foodxdev/foodblock'
-import { createDoor, newPerson, remoteNode, serveHttp } from '../server.js'
+import { createDoor, newPerson, remoteNode, remoteIndex, serveHttp } from '../server.js'
 
 // The hosted door, end to end and local: a FoodOS host (Backend kernel/node/host.js) and a public index behind one HTTP server, the door
 // reaching the person's node there through the host's window, and an assistant reaching the door over Streamable HTTP with OAuth.
@@ -46,10 +46,30 @@ describe('the hosted door', { skip: !have && 'no Backend checkout (set FOODOS_BA
     after(() => served.close())
 
     // The door holds the person's key (it signs on the person's tap) and reaches the node through the window credential.
+    // The seller also publishes to the open index (public blocks); the door's find asks it, over HTTP, and verifies the signed answer.
+    const merchant = newPerson() // another seller, public on the index (the host's seller chain holds private blocks the index never takes)
+    const pub = (type, state, refs) => { const s = fb.write(type, { ...state, audience: 'public' }, refs, { author: merchant.id, key: merchant.keys, held: merchant.chain }); merchant.chain.push(s); return s }
+    const pPlace = pub('thing', { kind: 'place', name: 'Hartley Mill', fields: { lat: '51.5010', lon: '-0.1250' } }, {})
+    const pFlour = pub('thing', { kind: 'flour', name: 'flour' }, { place: pPlace.hash })
+    const pOffer = pub('promise', { what: 'flour', terms: { price: { money: fb.money(150, 'GBP'), per: fb.amount('1', 'kg') }, expires: '2099-01-01T00:00:00.000Z' } }, { from: merchant.id, what: pFlour.hash, place: pPlace.hash })
+    const taken = await index.take([merchant.genesis, pPlace, pFlour, pOffer])
+    assert.deepEqual(taken.refused, [], JSON.stringify(taken.refused))
+    const openIndex = remoteIndex({ base: `${served.url}/index` })
+    const hits = await openIndex.offers({ what: 'flour', near: { lat: 51.5, lon: -0.12, radius_m: 5000 } })
+    assert.deepEqual(hits.map((h) => h.offer), [pOffer.hash], 'find reaches the index and its signed answer verifies')
+    assert.equal(hits[0].what.name, 'flour')
+    assert.deepEqual((await openIndex.offers({ what: 'flour', near: 'nowhere' })), [], 'a near name no carried place matches')
+    // A lying index: a tampered answer, or one signed by another key, is refused.
+    const lies = (change) => remoteIndex({ base: `${served.url}/index`, fetch: async (url, opts) => { const r = await fetch(url, opts); const b = await r.json(); if (url.endsWith('/find')) change(b); return { ok: r.ok, status: r.status, json: async () => b } } })
+    await assert.rejects(() => lies((a) => { a.blocks.find((b) => b.hash === pOffer.hash).state.what = 'free gold' }).offers({ what: 'flour' }), /does not hold/)
+    await assert.rejects(() => lies((a) => { a.results.reverse(); a.query.what = 'fish' }).offers({ what: 'flour' }), /does not hold/)
+    await assert.rejects(() => remoteIndex({ base: `${served.url}/index`, key: newPerson().keys.public_key_sign }).offers({ what: 'flour' }), /did not sign/)
+
     const token = host.credential(person.id, { scopes: ['read', 'write'] })
     const node = remoteNode({ base: `${served.url}/${person.id}`, token })
     await assert.rejects(() => remoteNode({ base: `${served.url}/${person.id}`, token: 'wrong' }).refresh(), /window needs its credential|HTTP 401/)
     const door = createDoor({ node, person, code: CODE })
+    door.index = openIndex
     const server = await serveHttp(door, 0, { oauth: true })
     after(() => server.close())
     const base = door.base
@@ -95,7 +115,8 @@ describe('the hosted door', { skip: !have && 'no Backend checkout (set FOODOS_BA
     await assert.rejects(() => open('not-a-token'))
     const claude = await open(refreshed.access_token)
     const found = (await use(claude, 'foodblock_find', { what: 'flour', near: 'Hartley' })).value
-    assert.deepEqual(found.map((o) => o.offer), [offer.hash], 'it reads the offers the host holds')
+    assert.deepEqual(found.map((o) => o.offer), [pOffer.hash], 'find goes to the open index, not the host')
+    assert.deepEqual((await use(claude, 'foodblock_find', { kind: 'things', what: 'flour' })).value.length > 0, true, 'things and peers still read the host')
 
     // 4. Ask is a draft; the person's tap (approval page) signs with their key and the block lands on the HOST.
     const draft = (await use(claude, 'foodblock_ask', { offer: offer.hash, quantity: { value: '5', unit: 'kg' } })).value

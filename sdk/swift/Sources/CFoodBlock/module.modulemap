@@ -1,4 +1,0 @@
-module CFoodBlock {
-    header "foodblock.h"
-    export *
-}

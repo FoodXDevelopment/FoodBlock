@@ -124,6 +124,8 @@ The fields each closed type may carry are in `protocol.json` (`fields`). A close
 7. `prev` and `seq` fit the key's chain, or the block is a skip (`chain`).
 8. If the type is closed, it has its required fields and no undeclared ones (`required`, `undeclared_ref`, `undeclared_field`), and its module's checks pass (the codes in `protocol.json`, in the order of the list).
 
+**Validity is about the block alone and what it rests on.** Consent never enters `valid`: a block sent despite a STOP is valid, is kept, and the next block of its chain is judged as usual. Consent decides what binds, not what exists (modules/strangers.md, invariant 29).
+
 Checks 1 to 4 read the bytes alone, so a block that fails one is refused at once, whatever it lacks. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
 
 ## 9. The invariants

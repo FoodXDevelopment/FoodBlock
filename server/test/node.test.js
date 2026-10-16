@@ -136,7 +136,7 @@ describe('push', () => {
     assert.equal(body.refused[0].code, 'chain')
   })
 
-  it('a first block to a person this node speaks for: an agent may not write first, a live STOP is honoured', async () => {
+  it('a first block to a person this node speaks for: an agent may not write first, a live STOP refuses nothing but binds no one', async () => {
     const me = person(), agent = person('agent'), human = person()
     await node({ owners: [me.id] })
     await push(me.me, agent.me, human.me)
@@ -147,7 +147,11 @@ describe('push', () => {
     assert.deepEqual((await push(hi)).body.taken, [hi.hash])
     await push(me.say('observe', { kind: 'consent', word: 'stop' }, { subject: human.id }))
     const again = human.say('observe', { kind: 'offer', text: 'hello again' }, { subject: me.id })
-    assert.deepEqual((await push(again)).body.refused.map((one) => one.code), ['stopped'])
+    const answer = (await push(again)).body
+    assert.deepEqual(answer.refused, [])
+    assert.deepEqual(answer.taken, [again.hash])
+    const next = human.say('observe', { kind: 'offer', text: 'and again' }, { subject: me.id })
+    assert.deepEqual((await push(next)).body.taken, [next.hash])
   })
 })
 

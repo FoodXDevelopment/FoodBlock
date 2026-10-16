@@ -40,8 +40,13 @@ function story() {
     keep(`${name}: genesis`, g, name)
     return { name, id: g.hash, key, recovery, g, suite }
   }
-  const say = (who, label, type, state, refs = {}, { key = who.name, audience = 'public', after, salts, link, clockless, skip, nonce, time } = {}) => {
-    const block = fb.write(type, state, refs, { author: who.id, key: keyOf(key), held, at: clockless ? undefined : (time || at()), clockless, audience, after, salts, link, skip, nonce })
+  // `unchecked`: a refusal case. The block is composed, chained and signed without the write check (write refuses it).
+  const say = (who, label, type, state, refs = {}, { key = who.name, audience = 'public', after, salts, link, clockless, skip, nonce, time, unchecked } = {}) => {
+    const mine = held.filter((b) => b.refs && b.refs.author === who.id)
+    const chain = unchecked && !link ? { seq: (mine.length ? mine[mine.length - 1].state.seq : 0) + 1, prev: mine.length ? mine[mine.length - 1].hash : who.id } : link
+    const block = unchecked
+      ? (() => { const c = fb.compose(type, state, refs, { author: who.id, at: time || at(), audience, after, link: chain }); return { ...c, signature: fb.sign(c, keyOf(key).private_key) } })()
+      : fb.write(type, state, refs, { author: who.id, key: keyOf(key), held, at: clockless ? undefined : (time || at()), clockless, audience, after, salts, link, skip, nonce })
     const { salts: _salts, ...signed } = block
     return keep(label, signed, key)
   }
@@ -720,6 +725,18 @@ V.folds.ballots.push(...ballotFolds())
     V.folds.promises.push({ name: 'first input: a promise with no answers is not in the deal even if it names the first promise in for', blocks: blocksOf(s), first: offer.hash, expected: { stage: 'offered', accept: null } })
   }
   {
+    // Consent decides what binds, not what exists: an ask sent despite a live STOP is valid and kept, and reads as declined.
+    const s = story(), ann = s.person('tia4'), bob = s.person('uma4'), eggs = s.say(ann, 'the kind: eggs', 'thing', { kind: 'eggs' })
+    const stop = s.say(bob, 'bob tells ann he wants no contact', 'observe', { kind: 'consent', word: 'stop' }, { subject: ann.id })
+    const ask = s.say(ann, 'ann asks bob for a tray anyway', 'promise', { terms: { price: M(450), expires: DAY } }, { from: bob.id, to: ann.id, what: eggs.hash })
+    assert.equal(fb.promiseStage(ask, s.held).stage, 'declined')
+    V.folds.promises.push({ name: 'consent: an ask sent despite a live STOP is kept and reads as declined: it binds no one', blocks: blocksOf(s), first: ask.hash, expected: { stage: 'declined', accept: null } })
+    s.say(bob, 'bob answers it accepted himself: answers is the only consent to a deal', 'promise', { status: 'accepted' }, { answers: ask.hash, for: ask.hash }, { after: [ask.hash] })
+    assert.equal(fb.promiseStage(ask, s.held).stage, 'accepted')
+    V.folds.promises.push({ name: 'consent: his own accept of that ask still binds', blocks: blocksOf(s), first: ask.hash, expected: { stage: 'accepted' } })
+    void stop
+  }
+  {
     // A quote request: an agent's ask whose grant does not name the act binds no one until the principal answers it.
     const mk = (acts) => {
       const s = story(), ann = s.person('tia3'), bob = s.person('uma3'), bot = s.person('uma3_agent', { kind: 'agent' })
@@ -924,7 +941,7 @@ function refusals() {
     const d = story(), tia = d.person('ora'), uma = d.person('pam'), eve = d.person('rex')
     const eggs = d.say(tia, 'the kind', 'thing', { kind: 'eggs' })
     const offer = d.say(tia, 'a one-to-one offer', 'promise', { terms: { price: M(450), expires: DAY } }, { from: tia.id, to: uma.id, what: eggs.hash })
-    d.say(eve, 'a stranger answers it accepted', 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash })
+    d.say(eve, 'a stranger answers it accepted', 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash }, { unchecked: true })
     assert.equal(fb.promiseStage(offer, d.held).stage, 'offered')
     R.cases.push({ name: 'a deal block signed by a non-side does not count', by: 'fold', blocks: blocksOf(d), first: offer.hash, expected: { stage: 'offered' }, codes: ['not_a_side'] })
   }
@@ -1318,8 +1335,10 @@ function doorVectors() {
     door('not_admitted: the node took its per_stranger blocks for the day', 'admission_refusals', [human, lme.id, lonely.held, { parties: [], per_stranger: 3 }, 3], { codes: ['not_admitted'] })
     door('a listed party is always admitted', 'admission_refusals', [human, lme.id, lonely.held, { parties: [lp.id], per_stranger: 0 }, 9], { codes: [] })
     const noone = lonely.say(lme, 'lp_me says STOP to the sender', 'observe', { kind: 'consent', word: 'stop' }, { subject: lp.id })
-    door('stopped: a message to a person with a live STOP naming its author', 'admission_refusals', [human, lme.id, lonely.held, { parties: [] }, 0], { codes: ['stopped'] })
-    void noone
+    door('a block sent despite a live STOP is not refused: it is valid and kept, and the fold reads it as stopped', 'admission_refusals', [human, lme.id, lonely.held, { parties: [] }, 0], { codes: [] })
+    door('consent: the same STOP is the live word the fold reads', 'consent', [lme.id, lp.id, lonely.held, null], { expect: { word: 'stop', block: noone.hash } })
+    const after = lonely.say(lp, 'the sender\'s next block, chained on the one sent despite the STOP: not stalled', 'observe', { kind: 'note', text: 'second' }, { subject: lme.id })
+    door('a stopped sender\'s chain goes on: the next block is judged on its own and what it rests on', 'admission_refusals', [after, lme.id, lonely.held, { parties: [] }, 0], { codes: [] })
   }
   {
     // The receipt code: the first 5 bytes (40 bits) of the id, in Crockford Base32, XXXX-XXXX.

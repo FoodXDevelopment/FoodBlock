@@ -106,7 +106,7 @@ The surface: `fb_version`, `fb_canonical`, `fb_hash`, `fb_keypair`, `fb_genesis`
 `fb_call(op, args_json, &out)` is every operation in one function, the same call Kotlin makes through JNI
 (`src/door.rs` is the one op table; `src/jni.rs` and `fb_call` are two doors onto it). `op` is a name (`"hash"`,
 `"write"`, `"promise_stage"`, ...), `args_json` a JSON array, and `*out` is `{"ok": value}` or `{"error": kind,
-"message", "code", "reasons", "refusals"}`. Python (`ctypes`), Swift (a SwiftPM system library) and Go (`cgo`) are thin
+"message", "code", "reasons", "refusals"}`. Python (`ctypes`), Swift (an XCFramework binary target), Go (the WebAssembly build in wazero, no cgo) and Kotlin (JNI) are thin
 layers over this one function, so every rule lives here once. Build the shared library for Python with
 `cargo rustc --release --features ffi --crate-type cdylib`.
 

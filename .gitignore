@@ -1,5 +1,7 @@
 # Swift
 sdk/swift/.build/
+sdk/swift/CFoodBlock.xcframework/
+sdk/swift/CFoodBlock.xcframework.zip
 sdk/swift/*.o
 sdk/swift/*.d
 sdk/swift/*.swiftdeps
@@ -44,6 +46,10 @@ sdk/rust/target/
 sdk/kotlin/.gradle/
 sdk/kotlin/**/build/
 sdk/kotlin/local.properties
+sdk/kotlin/natives/
 
 # Fuzzer and simulator builds
 tools/*/target/
+
+# SwiftPM at the repository root
+/.build/
