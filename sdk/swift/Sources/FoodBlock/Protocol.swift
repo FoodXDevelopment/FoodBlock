@@ -71,6 +71,10 @@ extension FoodBlock {
     public static func sign(_ block: JSON, privateKey hex: String, suite: String = "std") throws -> String { try Core.string("sign", block, hex, suite) }
     /// The suite a signing key (SPKI hex) belongs to, or nil.
     public static func suiteOfKey(_ publicKey: String) -> String? { Core.maybe("suite_of_key", publicKey) as? String }
+    /// The challenge to ask a passkey to sign: base64url of the SHA-256 of the signed bytes (for a block, its id).
+    public static func passkeyChallenge(_ blockOrPart: JSON) throws -> String { try Core.string("passkey_challenge", blockOrPart) }
+    /// A passkey's WebAuthn answer (each part as hex; the signature may be DER) as a FoodBlock signature, hex.
+    public static func passkeySignature(authenticatorData: String, clientDataJSON: String, signature: String) throws -> String { try Core.string("passkey_signature", authenticatorData, clientDataJSON, signature) }
     public static func verify(_ block: JSON, _ signature: Any?, _ publicKeySign: String?) -> Bool { Core.bool("verify", block, signature, publicKeySign) }
     public static func signMessage(_ part: JSON, privateKey hex: String, suite: String = "std") throws -> JSON { try Core.json("sign_message", part, hex, suite) }
     public static func verifyMessage(_ part: JSON?, _ publicKeySign: String?) -> Bool { Core.bool("verify_message", part, publicKeySign) }

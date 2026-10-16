@@ -1,6 +1,34 @@
 plugins {
     kotlin("jvm")
     `java-library`
+    `maven-publish`
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+// Maven coordinates: world.foodx:foodblock:<protocol version>.0 (group and version are set in the root build file).
+// Publishing is done by the release process, never by a build: `./gradlew :foodblock:publishToMavenLocal` is the dry run.
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+            artifactId = "foodblock"
+            pom {
+                name.set("FoodBlock")
+                description.set("FoodBlock 1.6 for the JVM: a thin layer over the one Rust core.")
+                url.set("https://www.foodx.world/developers")
+                licenses { license { name.set("MIT License"); url.set("https://opensource.org/licenses/MIT") } }
+                developers { developer { id.set("foodx"); name.set("FoodX"); email.set("developers@foodx.com") } }
+                scm {
+                    url.set("https://github.com/FoodXDevelopment/foodblock")
+                    connection.set("scm:git:https://github.com/FoodXDevelopment/foodblock.git")
+                }
+            }
+        }
+    }
 }
 
 kotlin { jvmToolchain(17) }

@@ -149,6 +149,14 @@ object FoodBlock {
     fun suiteOfKey(publicKey: String): String? =
         (Native.invoke("suite_of_key", JsonPrimitive(publicKey)) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
+    /** The challenge to ask a passkey to sign: base64url of the SHA-256 of the signed bytes (for a block, its id). */
+    fun passkeyChallenge(blockOrPart: JsonObject): String =
+        Native.invoke("passkey_challenge", blockOrPart).string()
+
+    /** A passkey's WebAuthn answer (each part as hex; the signature may be DER) as a FoodBlock signature, hex. */
+    fun passkeySignature(authenticatorDataHex: String, clientDataJsonHex: String, signatureHex: String): String =
+        Native.invoke("passkey_signature", JsonPrimitive(authenticatorDataHex), JsonPrimitive(clientDataJsonHex), JsonPrimitive(signatureHex)).string()
+
     fun verify(block: JsonObject, signature: String, publicKey: String): Boolean =
         Native.invoke("verify", block, JsonPrimitive(signature), JsonPrimitive(publicKey)).bool()
 

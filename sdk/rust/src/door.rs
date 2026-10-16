@@ -89,6 +89,34 @@ macro_rules! arrived {
     };
 }
 
+/// The challenge for a block (`{ type, state, refs }`: its canonical bytes) or a signed message part (its canonical
+/// JSON without `signature`).
+fn passkey_challenge(v: &Value) -> String {
+    let is_block = v.get("type").is_some_and(Value::is_string) && v.get("state").is_some_and(Value::is_object) && v.get("refs").is_some_and(Value::is_object);
+    let bytes = if is_block {
+        let (t, s, r) = crate::block::parts(v);
+        crate::canonical(t, s, r)
+    } else {
+        let mut rest = v.clone();
+        if let Value::Object(map) = &mut rest {
+            map.shift_remove("signature");
+        }
+        crate::canonical_json(&rest)
+    };
+    crate::sign::passkey_challenge_of(bytes.as_bytes())
+}
+fn passkey_signature(auth: &str, cdj: &str, sig: &str) -> core::result::Result<String, Fail> {
+    #[cfg(feature = "suites")]
+    {
+        Ok(crate::sign::passkey_signature(auth, cdj, sig)?)
+    }
+    #[cfg(not(feature = "suites"))]
+    {
+        let _ = (auth, cdj, sig);
+        Err(Fail::Profile("passkey_signature needs the suites feature".into()))
+    }
+}
+
 fn truthy_arg(v: &Value) -> bool {
     v.as_bool().unwrap_or(false) || v.get("short").and_then(Value::as_bool).unwrap_or(false)
 }
@@ -134,6 +162,10 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "verify" => json!(crate::verify_in(&suite_of_key_arg(a.s(2)?), a.v(0), a.s(1)?, a.s(2)?)),
         "sign_message" => crate::sign::sign_message_in(a.opt(2).unwrap_or("std"), a.v(0), a.s(1)?)?,
         "verify_message" => json!(crate::sign::verify_message_in(&suite_of_key_arg(a.s(1)?), a.v(0), a.s(1)?)),
+        // A passkey (modules/passkeys.md): the challenge to ask it to sign for a block (or a message part), and its
+        // answer written as a FoodBlock signature, which `verify` and `valid` then open like any other.
+        "passkey_challenge" => json!(passkey_challenge(a.v(0))),
+        "passkey_signature" => json!(passkey_signature(a.s(0)?, a.s(1)?, a.s(2)?)?),
         "suite_of_key" => json!(crate::sign::suite_of_key(a.s(0)?)),
         "knows_suite" => json!(crate::sign::knows_suite(a.s(0)?)),
         // The commitment.

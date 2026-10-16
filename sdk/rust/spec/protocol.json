@@ -507,7 +507,17 @@
    "signature": {
     "grammar": "^[0-9a-f]{128}$",
     "bytes": 64,
-    "form": "r then s, 32 bytes each"
+    "form": "r then s, 32 bytes each",
+    "passkey": {
+     "grammar": "^[0-9a-f]{128}[0-9a-f]{4}(?:[0-9a-f]{2})+$",
+     "form": "r then s (64 bytes), the length of authenticatorData (2 bytes, big-endian), authenticatorData, clientDataJSON",
+     "min_authenticator_data_bytes": 37,
+     "signed": "authenticatorData then SHA-256(clientDataJSON)",
+     "challenge": "base64url, no padding, of SHA-256 of the signed bytes (for a block, its id)",
+     "client_data_type": "webauthn.get",
+     "up_flag": 1,
+     "not_checked": ["rpIdHash", "origin", "counter", "uv"]
+    }
    },
    "encrypt_key": {
     "grammar": "^04[0-9a-f]{128}$",
@@ -814,6 +824,7 @@
  "modules": [
   "blocks",
   "identity",
+  "passkeys",
   "things",
   "promises",
   "authority",

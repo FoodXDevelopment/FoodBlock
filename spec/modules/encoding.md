@@ -7,7 +7,7 @@ Bytes, shapes, limits and the compact CBOR form. Numbers, time and text rules ar
 Patterns are in `protocol.json` (`grammar`). Beyond them:
 - A hash is lowercase hex. A bare 64-hex id is SHA-256; any other hash has its name and a colon in front (core.md, Suites). Every hash in a row of `suites` is 32 bytes.
 - A salt is 16 random bytes in hex. A nonce is 16 random bytes in hex.
-- Signing keys, signatures and encryption keys follow the suite (core.md, Suites). Their patterns are in the suite's row in `protocol.json`.
+- Signing keys, signatures and encryption keys follow the suite (core.md, Suites). Their patterns are in the suite's row in `protocol.json`. A `p256` signature is 64 bytes, or a passkey's longer form (passkeys.md); in CBOR it is a byte string of either length.
 - `recovery_key_hash` is the identity's suite hash of the recovery key's SPKI hex, as UTF-8 text.
 
 ## Shapes
@@ -30,7 +30,7 @@ For links where JSON is too heavy (a radio, a tag, a sensor) a **public block** 
 **Message.** A CBOR array `[t, block, signature]`:
 - `t`: `0` when map keys are text; else the version of the key table in use (below).
 - `block`: a map `{ type, state, refs }`.
-- `signature`: a byte string, the suite's signature bytes.
+- `signature`: a byte string, the suite's signature bytes (a `p256` passkey's form is longer than 64).
 A chain header is a map `{ author, seq, prev, hash }`. A push of several blocks is an array of messages. A suite other than `std` is named by a text entry `suite` after the signature. Sealed blocks, envelopes and signed requests stay JSON.
 
 **Mapping.** Each JSON value becomes one CBOR value, and back:

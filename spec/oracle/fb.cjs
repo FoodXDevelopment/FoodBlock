@@ -135,6 +135,7 @@ const SPKI_PREFIX = { std: P.suites.std.sign_key.spki_prefix, p256: P.suites.p25
 const keyGrammar = s => new RegExp(P.suites[s].sign_key.grammar);
 const encGrammar = s => new RegExp(P.suites[s].encrypt_key.grammar);
 const sigGrammar = s => new RegExp(P.suites[s].signature.grammar);
+const passkeyGrammar = () => new RegExp(P.suites.p256.signature.passkey.grammar);
 // The suite a signing key (SPKI hex) belongs to, by its grammar. null when none.
 function suiteOfKey(spki) { for (const s of ['std', 'p256', 'sm']) if (typeof spki === 'string' && keyGrammar(s).test(spki)) return s; return null; }
 const rawPoint = spki => spki.slice(SPKI_PREFIX.p256.length);
@@ -162,13 +163,71 @@ function signBytes(bytes, privHex, suite) {
 function verifyBytes(bytes, sigHex, pubSpkiHex, suite) {
   try {
     const s = suite ? suiteOf(suite) : suiteOfKey(pubSpkiHex);
-    if (!s || !keyGrammar(s).test(pubSpkiHex) || !sigGrammar(s).test(sigHex)) return false;
+    if (!s || !keyGrammar(s).test(pubSpkiHex)) return false;
+    if (s === 'p256' && passkeyGrammar().test(sigHex)) return passkeyVerify(bytes, Buffer.from(sigHex, 'hex'), pubSpkiHex);
+    if (!sigGrammar(s).test(sigHex)) return false;
     const sig = Buffer.from(sigHex, 'hex');
     if (s === 'std') return crypto.verify(null, bytes, crypto.createPublicKey({ key: Buffer.from(pubSpkiHex, 'hex'), format: 'der', type: 'spki' }), sig);
     if (s === 'p256') return crypto.verify('sha256', bytes, { key: crypto.createPublicKey({ key: Buffer.from(pubSpkiHex, 'hex'), format: 'der', type: 'spki' }), dsaEncoding: 'ieee-p1363' }, sig);
     return sm2Verify(bytes, rawPoint(pubSpkiHex), sigHex);
   } catch { return false; }
 }
+// ---- passkeys (modules/passkeys.md): a WebAuthn assertion as a p256 signature
+// The challenge for signed bytes: base64url, no padding, of their SHA-256.
+const passkeyChallenge = bytes => crypto.createHash('sha256').update(bytes).digest('base64url');
+// Any repeated key, at any depth, in JSON text that already parsed.
+function hasRepeatedKey(text) {
+  let i = 0;
+  const ws = () => { while (' \t\n\r'.includes(text[i])) i++; };
+  const str = () => { let j = i + 1; while (text[j] !== '"') { if (text[j] === '\\') j++; j++; } const v = JSON.parse(text.slice(i, j + 1)); i = j + 1; return v; };
+  function value() {
+    ws();
+    if (text[i] === '{') {
+      i++; const seen = new Set(); ws();
+      if (text[i] === '}') { i++; return false; }
+      for (;;) {
+        ws(); const k = str(); if (seen.has(k)) return true; seen.add(k); ws(); i++; if (value()) return true; ws();
+        if (text[i++] === '}') return false;
+      }
+    }
+    if (text[i] === '[') {
+      i++; ws(); if (text[i] === ']') { i++; return false; }
+      for (;;) { if (value()) return true; ws(); if (text[i++] === ']') return false; }
+    }
+    if (text[i] === '"') { str(); return false; }
+    while (i < text.length && !',]} \t\n\r'.includes(text[i])) i++;
+    return false;
+  }
+  return value();
+}
+// sig: r||s (64) | length of authenticatorData (2, big-endian) | authenticatorData | clientDataJSON
+function passkeyVerify(bytes, sig, pubSpkiHex) {
+  const n = sig.readUInt16BE(64), auth = sig.subarray(66, 66 + n), cdj = sig.subarray(66 + n);
+  if (auth.length !== n || n < P.suites.p256.signature.passkey.min_authenticator_data_bytes || cdj.length === 0 || (auth[32] & 1) === 0) return false;
+  let text, data;
+  try { text = new TextDecoder('utf-8', { fatal: true }).decode(cdj); data = JSON.parse(text); } catch { return false; }
+  if (data === null || typeof data !== 'object' || Array.isArray(data) || hasRepeatedKey(text)) return false;
+  if (data.type !== 'webauthn.get' || data.challenge !== passkeyChallenge(bytes)) return false;
+  const signed = Buffer.concat([auth, crypto.createHash('sha256').update(cdj).digest()]);
+  return crypto.verify('sha256', signed, { key: crypto.createPublicKey({ key: Buffer.from(pubSpkiHex, 'hex'), format: 'der', type: 'spki' }), dsaEncoding: 'ieee-p1363' }, sig.subarray(0, 64));
+}
+// The WebAuthn signature may be DER; the passkey signature is r||s.
+function derToRs(der) {
+  let i = 2; if (der[1] & 0x80) i += der[1] & 0x7f;
+  const out = Buffer.alloc(64);
+  for (const at of [0, 32]) { const len = der[i + 1]; let v = der.subarray(i + 2, i + 2 + len); while (v.length > 32 && v[0] === 0) v = v.subarray(1); v.copy(out, at + 32 - v.length); i += 2 + len; }
+  return out;
+}
+function passkeySignature(authHex, cdjHex, sigHex) {
+  const sig = Buffer.from(sigHex, 'hex'), rs = sig.length === 64 ? sig : derToRs(sig), auth = Buffer.from(authHex, 'hex');
+  const len = Buffer.alloc(2); len.writeUInt16BE(auth.length);
+  return Buffer.concat([rs, len, auth, Buffer.from(cdjHex, 'hex')]).toString('hex');
+}
+const passkeyChallengeOf = v => {
+  const isBlock = isObj(v) && isStr(v.type) && isObj(v.state) && isObj(v.refs);
+  const { signature, ...rest } = isObj(v) ? v : {};
+  return passkeyChallenge(Buffer.from(isBlock ? canonOf(v) : jcs(rest), 'utf8'));
+};
 const signBlock = (b, privHex, suite) => signBytes(Buffer.from(canonOf(b), 'utf8'), privHex, suite);
 // The key's own suite decides the algorithm (its SPKI prefix names it).
 const verifyBlock = (b, sigHex, pubHex) => verifyBytes(Buffer.from(canonOf(b), 'utf8'), sigHex, pubHex);
@@ -1106,7 +1165,7 @@ function cborDecode(input) {
   if (t !== 0 && t !== CB.table) throw new Error('cbor: a key table this reader does not have');
   if (m.array.length === 4 && !('text' in m.array[3])) throw new Error('cbor: the suite is text');
   const suite = m.array.length === 4 ? m.array[3].text : 'std';
-  if (m.array[2].bytes.length !== 64) throw new Error('cbor: a signature is 64 bytes');
+  if (m.array[2].bytes.length !== 64 && !(suite === 'p256' && m.array[2].bytes.length > 64)) throw new Error('cbor: a signature is 64 bytes');
   const b = cbIn(m.array[1], []);
   if (Object.keys(b).sort().join() !== 'refs,state,type' || !isObj(b.state) || !isObj(b.refs) || !isStr(b.type) || b.type === '') throw new Error('cbor: a block is { type, state, refs }');
   const out = { hash: hashOfBlock(b, suite), ...b, signature: m.array[2].bytes.toString('hex') };
@@ -2040,6 +2099,9 @@ function door(op, ...a) {
     case 'open': return open(a[0], a[1]);
     case 'cbor_encode': return cborEncode(a[0], a[1]).toString('hex');
     case 'cbor_decode': return cborDecode(a[0]);
+    case 'verify_message': return verifyMessage(a[0], a[1]);
+    case 'passkey_challenge': return passkeyChallengeOf(a[0]);
+    case 'passkey_signature': return passkeySignature(a[0], a[1], a[2]);
     case 'suite_of_key': return suiteOfKey(a[0]);
     case 'key_timeline': return identityFold(a[0], a[1]).timeline;
     case 'strict_text': return strictText(a[0]);

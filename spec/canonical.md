@@ -77,7 +77,7 @@ signature = Sign_alg( private_key, JCS(block) )
 valid     = Verify_alg( public_key, JCS(block), signature )
 ```
 
-The key is one of the author's live keys: the genesis `state.public_key_sign`, or a key brought in by a key grant (modules/identity.md). The reader tries each live key with that key's suite. The algorithms, key bytes and signature bytes are in core.md.
+The key is one of the author's live keys: the genesis `state.public_key_sign`, or a key brought in by a key grant (modules/identity.md). The reader tries each live key with that key's suite. The algorithms, key bytes and signature bytes are in core.md. A `p256` signature may be a passkey's (modules/passkeys.md): then the signature is over `authenticatorData || SHA-256(clientDataJSON)`, and `clientDataJSON` holds the challenge `base64url(SHA-256(JCS(block)))`, which is the id.
 
 ## The compact form
 

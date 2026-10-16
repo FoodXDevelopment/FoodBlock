@@ -7,7 +7,7 @@ from ._core import FoodBlockError, Refused
 from .protocol import (
     PUBLIC, ALG, check, refusals, valid, strict_text, amount, money, confidence, terms, is_time, is_date,
     canonical, canonical_json, create, hash,
-    generate_keypair, keypair_from_seed, sign, verify, sign_message, verify_message, suite_of_key,
+    generate_keypair, keypair_from_seed, sign, verify, sign_message, verify_message, suite_of_key, passkey_challenge, passkey_signature,
     seal, open, generate_encryption_keypair, encryption_key_of,
     new_salt, salted_hash, commit, finds_self, reveal_for,
     compose, write, wrap, unwrap, header, seal_copy, open_copy, header_signed_by,
@@ -22,7 +22,7 @@ __all__ = [
     "VERSION", "PROTOCOL", "TYPES", "VERBS", "REF_KEYS", "FIELDS", "SUITES", "PEERS", "STATUSES", "POWERS", "CODES",
     "FoodBlockError", "Refused",
     "create", "hash", "canonical", "canonical_json",
-    "generate_keypair", "keypair_from_seed", "sign", "verify", "sign_message", "verify_message", "suite_of_key",
+    "generate_keypair", "keypair_from_seed", "sign", "verify", "sign_message", "verify_message", "suite_of_key", "passkey_challenge", "passkey_signature",
     "generate_encryption_keypair", "encryption_key_of", "seal", "open", "ALG",
     "new_salt", "salted_hash", "commit", "finds_self", "reveal_for",
     "PUBLIC", "compose", "write", "check", "refusals", "valid", "strict_text", "amount", "money", "confidence", "terms", "is_time", "is_date",

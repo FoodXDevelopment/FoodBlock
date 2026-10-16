@@ -30,7 +30,7 @@ module.exports = {
 
   // Signing and encryption, by suite (std: Ed25519 and X25519; p256; sm)
   generateKeypair: sign.generateKeypair, keypairFromSeed: sign.keypairFromSeed, sign: sign.sign, verify: sign.verify,
-  signMessage: sign.signMessage, verifyMessage: sign.verifyMessage, suiteOfKey: sign.suiteOfKey,
+  signMessage: sign.signMessage, verifyMessage: sign.verifyMessage, suiteOfKey: sign.suiteOfKey, passkeyChallenge: sign.passkeyChallenge, passkeySignature: sign.passkeySignature,
   generateEncryptionKeypair: envelope.generateEncryptionKeypair, encryptionKeyOf: envelope.encryptionKeyOf,
   seal: envelope.seal, open: envelope.open, ALG: envelope.ALG,
 

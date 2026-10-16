@@ -275,13 +275,22 @@ fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key:
         return match suite {
             "p256" => {
                 use p256::ecdsa::signature::Verifier as _;
-                let (Ok(key), Ok(sig)) = (
-                    p256::ecdsa::VerifyingKey::from_sec1_bytes(&point),
-                    p256::ecdsa::Signature::from_slice(&sig_bytes),
-                ) else {
+                let Ok(key) = p256::ecdsa::VerifyingKey::from_sec1_bytes(&point) else {
                     return false;
                 };
-                key.verify(bytes, &sig).is_ok()
+                // 64 bytes: the key signed the bytes. More: a passkey signed them (passkey_message).
+                let (message, rs) = if sig_bytes.len() == 64 {
+                    (bytes.to_vec(), &sig_bytes[..])
+                } else {
+                    match passkey_message(bytes, &sig_bytes) {
+                        Some(m) => m,
+                        None => return false,
+                    }
+                };
+                let Ok(sig) = p256::ecdsa::Signature::from_slice(rs) else {
+                    return false;
+                };
+                key.verify(&message, &sig).is_ok()
             }
             "sm" => {
                 use sm2::dsa::signature::Verifier as _;
@@ -298,6 +307,74 @@ fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key:
     }
     #[cfg(not(feature = "suites"))]
     false
+}
+
+/// base64url without padding (RFC 4648 section 5): how a WebAuthn challenge is written in `clientDataJSON`.
+fn base64url(bytes: &[u8]) -> String {
+    const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    let mut out = String::new();
+    for chunk in bytes.chunks(3) {
+        let n = chunk.iter().enumerate().fold(0u32, |n, (i, b)| n | (u32::from(*b) << (16 - 8 * i)));
+        for i in 0..=chunk.len() {
+            out.push(A[((n >> (18 - 6 * i)) & 63) as usize] as char);
+        }
+    }
+    out
+}
+
+/// The challenge a passkey must be asked to sign for these signed bytes (a block's canonical bytes, or a message
+/// part's): base64url, no padding, of their SHA-256 (spec/modules/passkeys.md). For a block it is its id.
+pub fn passkey_challenge_of(bytes: &[u8]) -> String {
+    use sha2::Digest;
+    base64url(&sha2::Sha256::digest(bytes))
+}
+
+/// A passkey's signature as FoodBlock writes it, hex: `r || s` (64 bytes), the length of the authenticator data (two
+/// bytes, big-endian), the authenticator data, then `clientDataJSON`. The WebAuthn signature may be DER (as an
+/// authenticator gives it) or already `r || s`; `authenticator_data` and `client_data_json` are the bytes in hex.
+#[cfg(feature = "suites")]
+pub fn passkey_signature(authenticator_data: &str, client_data_json: &str, signature: &str) -> Result<String> {
+    let bad = || Error::new("passkey: authenticator data, clientDataJSON and the signature are hex");
+    let (auth, cdj, sig) = (
+        unhex(authenticator_data).ok_or_else(bad)?,
+        unhex(client_data_json).ok_or_else(bad)?,
+        unhex(signature).ok_or_else(bad)?,
+    );
+    let rs = if sig.len() == 64 {
+        p256::ecdsa::Signature::from_slice(&sig)
+    } else {
+        p256::ecdsa::Signature::from_der(&sig)
+    }
+    .map_err(|_| Error::new("passkey: the signature is DER or r then s"))?;
+    let len = u16::try_from(auth.len()).map_err(|_| Error::new("passkey: authenticator data is too long"))?;
+    let mut out = rs.to_bytes().to_vec();
+    out.extend_from_slice(&len.to_be_bytes());
+    out.extend_from_slice(&auth);
+    out.extend_from_slice(&cdj);
+    Ok(hex(&out))
+}
+
+/// What a passkey signature (more than 64 bytes) really signed, and `r || s`: `authenticatorData || SHA-256(clientDataJSON)`.
+/// None unless the user was present (authenticator data flag `UP`), `clientDataJSON` is a JSON object with no repeated
+/// key whose `type` is `webauthn.get` and whose `challenge` is the challenge of `bytes`. Nothing else is read: not
+/// `rpIdHash`, not `origin`, not the counter (spec/modules/passkeys.md).
+#[cfg(feature = "suites")]
+fn passkey_message<'a>(bytes: &[u8], sig: &'a [u8]) -> Option<(Vec<u8>, &'a [u8])> {
+    use sha2::Digest;
+    let n = usize::from(u16::from_be_bytes([*sig.get(64)?, *sig.get(65)?]));
+    let auth = sig.get(66..66 + n)?;
+    let cdj = sig.get(66 + n..)?;
+    if auth.len() < 37 || cdj.is_empty() || auth[32] & 1 == 0 {
+        return None;
+    }
+    let data = crate::canonical::parse_strict(core::str::from_utf8(cdj).ok()?).ok()?;
+    let ok = |k: &str, want: &str| data.get(k).and_then(Value::as_str) == Some(want);
+    if !data.is_object() || !ok("type", "webauthn.get") || !ok("challenge", &passkey_challenge_of(bytes)) {
+        return None;
+    }
+    let mut message = auth.to_vec();
+    message.extend_from_slice(&sha2::Sha256::digest(cdj));
+    Some((message, &sig[..64]))
 }
 
 /// Whether a `std` signature is this key's over these bytes.

@@ -8,7 +8,9 @@
     "foodblock-cli": "./bin/fb.js"
   },
   "files": [
-    "bin/"
+    "bin/",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node --test test/cli.test.js"
@@ -28,9 +30,17 @@
   "author": "FoodX <developers@foodx.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FoodXDevelopment/foodblock"
+    "url": "git+https://github.com/FoodXDevelopment/foodblock.git",
+    "directory": "cli"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "homepage": "https://www.foodx.world/developers",
+  "bugs": {
+    "url": "https://github.com/FoodXDevelopment/foodblock/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

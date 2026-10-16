@@ -90,6 +90,16 @@ func Sign(b Block, privateKeyHex string, suite ...string) (string, error) {
 // SuiteOfKey is the suite a signing key (SPKI hex) belongs to, or "".
 func SuiteOfKey(publicKeySign string) string { return must[string]("suite_of_key", publicKeySign) }
 
+// PasskeyChallenge is the challenge to ask a passkey to sign: base64url of the SHA-256 of the signed bytes (for a block,
+// its id). It takes a block, or a message part.
+func PasskeyChallenge(blockOrPart any) (string, error) { return ask[string]("passkey_challenge", blockOrPart) }
+
+// PasskeySignature is a passkey's WebAuthn answer (authenticatorData, clientDataJSON and the signature, each as hex; the
+// signature may be DER) written as a FoodBlock signature, hex. Verify and Valid open it.
+func PasskeySignature(authenticatorDataHex, clientDataJSONHex, signatureHex string) (string, error) {
+	return ask[string]("passkey_signature", authenticatorDataHex, clientDataJSONHex, signatureHex)
+}
+
 // Verify is whether a signature is this key's over exactly this block.
 func Verify(b Block, signature, publicKeySign string) bool {
 	return must[bool]("verify", b, signature, publicKeySign)

@@ -96,6 +96,20 @@ func TestSealedCopyRoundTrip(t *testing.T) {
 	}
 }
 
+func TestPasskeyChallengeIsTheBlocksID(t *testing.T) {
+	block, err := Create("thing", map[string]any{"kind": "eggs"}, map[string]any{}, "p256")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := PasskeyChallenge(block)
+	if err != nil || len(got) != 43 || strings.ContainsAny(got, "+/=") {
+		t.Fatalf("challenge %q %v", got, err)
+	}
+	if _, err := PasskeySignature("zz", "00", "00"); err == nil {
+		t.Fatal("hex is required")
+	}
+}
+
 func TestEverySuiteSignsSealsAndHashes(t *testing.T) {
 	for _, suite := range Suites {
 		keys, err := GenerateKeypair(suite)

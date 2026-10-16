@@ -46,6 +46,14 @@ class ApiTest {
         assertEquals(first["hash"], FoodBlock.unwrap(wire)["hash"])
     }
 
+    @Test fun aPasskeyChallengeIsTheBlocksId() {
+        val block = FoodBlock.create("thing", buildJsonObject { put("kind", "eggs") }, buildJsonObject {}, "p256")
+        val challenge = FoodBlock.passkeyChallenge(block)
+        assertEquals(43, challenge.length)
+        assertTrue(challenge.none { it == '=' || it == '+' || it == '/' })
+        assertFailsWith<FoodBlockException> { FoodBlock.passkeySignature("zz", "00", "00") }
+    }
+
     @Test fun aBrokenBlockIsRefusedWithEveryReason() {
         val e = assertFailsWith<RefusedException> {
             FoodBlock.write("observe", buildJsonObject { put("amount", 3.9) }, buildJsonObject {},

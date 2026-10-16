@@ -52,6 +52,16 @@ def suite_of_key(public_key_hex):
     return call("suite_of_key", str(public_key_hex))
 
 
+def passkey_challenge(block_or_part) -> str:
+    """The challenge to ask a passkey to sign: base64url of the SHA-256 of the signed bytes (for a block, its id)."""
+    return call("passkey_challenge", block_or_part)
+
+
+def passkey_signature(authenticator_data_hex, client_data_json_hex, signature_hex) -> str:
+    """A passkey's WebAuthn answer (each part as hex; the signature may be DER) as a FoodBlock signature, hex."""
+    return call("passkey_signature", str(authenticator_data_hex), str(client_data_json_hex), str(signature_hex))
+
+
 def verify(block, signature_hex, public_key_sign) -> bool:
     return call("verify", block, signature_hex, public_key_sign)
 

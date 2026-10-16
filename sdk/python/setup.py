@@ -6,7 +6,7 @@ import shutil
 import subprocess
 import sys
 
-from setuptools import setup
+from setuptools import Distribution, setup
 from setuptools.command.build_py import build_py
 
 CORE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "rust")
@@ -22,4 +22,11 @@ class BuildWithCore(build_py):
         super().run()
 
 
-setup(cmdclass={"build_py": BuildWithCore})
+class BinaryDistribution(Distribution):
+    """The wheel carries a native library, so it is a platform wheel (never tagged py3-none-any)."""
+
+    def has_ext_modules(self):
+        return True
+
+
+setup(cmdclass={"build_py": BuildWithCore}, distclass=BinaryDistribution)

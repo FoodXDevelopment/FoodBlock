@@ -24,6 +24,30 @@ jobs:
       - run: npm test
         working-directory: sdk/javascript
 
+  packaging:
+    name: One version everywhere; every package packs (nothing is published)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: sdk/go/go.mod
+          cache: false
+      - run: cargo rustc --release --features ffi --crate-type staticlib
+        working-directory: sdk/rust
+      - run: node tools/version-sync.cjs --pack
+
+  protocol-model:
+    name: Protocol model (exhaustive check of consent, allocation, equivocation, rotation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/tla/check.py
+
   wasm-core:
     name: JS core (Rust built to WebAssembly) is current
     runs-on: ubuntu-latest

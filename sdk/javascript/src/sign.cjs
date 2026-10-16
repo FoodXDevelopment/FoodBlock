@@ -16,7 +16,18 @@ const signMessage = (part, privateKeyHex, suite = 'std') => call('sign_message',
 /** Whether a signed message part's `signature` is this key's. Never throws. */
 const verifyMessage = (part, publicKeyHex) => call('verify_message', part || {}, String(publicKeyHex))
 
+/**
+ * The challenge to ask a passkey to sign (navigator.credentials.get({ publicKey: { challenge } })): base64url of the
+ * SHA-256 of the signed bytes, which for a block is its id. Takes a block, or a message part (modules/passkeys.md).
+ */
+const passkeyChallenge = (blockOrPart) => call('passkey_challenge', blockOrPart)
+/**
+ * A passkey's answer as a FoodBlock signature (hex): `authenticatorData`, `clientDataJSON` and the signature are the bytes
+ * of the WebAuthn response, each as hex. The signature may be DER, as the authenticator gives it. `verify` and `valid` open it.
+ */
+const passkeySignature = (authenticatorDataHex, clientDataJsonHex, signatureHex) => call('passkey_signature', String(authenticatorDataHex), String(clientDataJsonHex), String(signatureHex))
+
 /** The suite a signing key (SPKI hex) belongs to, or null. */
 const suiteOfKey = (publicKeyHex) => call('suite_of_key', String(publicKeyHex))
 
-module.exports = { suiteOfKey, generateKeypair, keypairFromSeed, sign, verify, signMessage, verifyMessage }
+module.exports = { passkeyChallenge, passkeySignature, suiteOfKey, generateKeypair, keypairFromSeed, sign, verify, signMessage, verifyMessage }

@@ -590,8 +590,10 @@ fn message_to_c(spec: &Spec, codec: &Codec, block: &Value) -> Result<C> {
         .get("signature")
         .and_then(Value::as_str)
         .ok_or_else(|| fail("a message carries the block's signature"))?;
-    if !(sig.len() == 128 && unhex(sig).is_some()) {
-        return Err(fail("the signature is 64 bytes, in hex"));
+    // 64 bytes, or for a p256 key a passkey's longer form (modules/passkeys.md): the suite's own check says which opens.
+    let wide = block.get("suite").and_then(Value::as_str) == Some("p256") && sig.len() > 128;
+    if !((sig.len() == 128 || wide) && sig.len() % 2 == 0 && unhex(sig).is_some()) {
+        return Err(fail("the signature is 64 bytes, in hex (a passkey's, longer)"));
     }
     let mut parts = vec![
         C::Int(table_of(spec, codec.short)),
@@ -624,8 +626,8 @@ fn message_from_c(spec: &Spec, c: &C) -> Result<Value> {
             "t {t} is neither 0 nor a key table this reader has ({table})"
         )));
     }
-    if sig.len() != 64 {
-        return Err(fail("the signature is 64 bytes"));
+    if sig.len() != 64 && !(suite == "p256" && sig.len() > 64) {
+        return Err(fail("the signature is 64 bytes (a p256 passkey's, longer)"));
     }
     let codec = Codec::new(spec, *t != 0);
     let body = codec.from_c(body, &mut Vec::new())?;

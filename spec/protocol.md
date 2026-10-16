@@ -10,6 +10,7 @@ This is the index. The spec is one short core, twelve modules, and a folder of o
 - `canonical.md`: the one exact byte form of a block (RFC 8785 plus strict writing).
 - `modules/blocks.md`: the other fields a block carries, causal order, no clock, records, refusals.
 - `modules/identity.md`: keys, rotation, recovery, custody, contacts.
+- `modules/passkeys.md`: a passkey (WebAuthn) as a p256 key; the one signature form.
 - `modules/things.md`: things, transforms, transfers, schemas, truth.
 - `modules/promises.md`: sides, terms, relative time, answers, settling, claims, disputes.
 - `modules/authority.md`: grants, scope, the limit, withdrawal, acts that cannot be undone.
@@ -77,6 +78,7 @@ Core has 1 to 3 and 25. The rest are in the module that owns them, with the same
 | 6, 7, 9, 10, 23 | authority.md |
 | 27 | circles.md |
 | 8, 19 | identity.md |
+| 28 | passkeys.md |
 | 11, 12, 13, 14, 15, 22 | promises.md |
 | 16, 20, 21, 24 | strangers.md |
 | 17 | privacy.md |
@@ -127,6 +129,7 @@ One line for each word a reader may trip on.
 - **Open type:** any type but the four closed ones. Stored and passed on; it grants no authority.
 - **Operator:** the author of an agent's or machine's operator grant. It answers for it.
 - **Orderer:** the one key that orders a record's binding blocks (folds.md).
+- **Passkey:** a key kept in a phone or computer and used with a fingerprint or face; its signature is the p256 passkey form (passkeys.md).
 - **Profile (optional):** an extra rule set in `profiles/`. **Peer:** micro, edge or node.
 - **Record:** a block and every version after it.
 - **Recovery key:** an offline key that outranks the others in its identity.

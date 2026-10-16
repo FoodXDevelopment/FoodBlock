@@ -1,7 +1,7 @@
 {
   "name": "@foodxdev/foodblock",
   "version": "1.6.0",
-  "description": "SDK for the FoodBlock protocol \u2014 a content-addressable primitive for universal food data",
+  "description": "SDK for the FoodBlock protocol — a content-addressable primitive for universal food data",
   "main": "src/index.cjs",
   "exports": {
     ".": "./src/index.cjs"
@@ -37,9 +37,16 @@
   "homepage": "https://www.foodx.world/developers",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FoodXDevelopment/foodblock"
+    "url": "git+https://github.com/FoodXDevelopment/foodblock.git",
+    "directory": "sdk/javascript"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/FoodXDevelopment/foodblock/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

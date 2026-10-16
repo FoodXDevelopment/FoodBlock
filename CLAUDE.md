@@ -80,6 +80,7 @@ test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript p
 | The Rust core | `cd sdk/rust && cargo test`, rebuild WebAssembly (`cd sdk/javascript && node scripts/build-wasm.cjs`), then every SDK's tests |
 | Python / Go / Swift / Kotlin SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && go test ./...` / `cd sdk/swift && swift test` / `cd sdk/kotlin && ./gradlew :foodblock:test` |
 | The oracle | `node spec/oracle/run.cjs` |
+| The EPCIS / FSMA 204 profile | `node spec/profiles/epcis/run.cjs` (regenerate: `make-vectors.cjs`) |
 | The node | `cd server && npm test` (in-memory Postgres, no setup; `TEST_DATABASE_URL=postgresql://... npm test` for a real one) |
 | The MCP server | `cd mcp && npm test` (starts the server and calls its tools over stdio) |
 | The CLI | `cd cli && npm test` (makes an identity, writes valid blocks, refuses invalid ones) |

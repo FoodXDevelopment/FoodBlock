@@ -15,6 +15,14 @@ final class NodeTests: XCTestCase {
         return b
     }
 
+    func testAPasskeyChallengeIsTheBlocksID() throws {
+        let block = try FoodBlock.create("thing", ["kind": "eggs"], [:], suite: "p256")
+        let challenge = try FoodBlock.passkeyChallenge(block)
+        XCTAssertEqual(challenge.count, 43)
+        XCTAssertFalse(challenge.contains("=") || challenge.contains("+") || challenge.contains("/"))
+        XCTAssertThrowsError(try FoodBlock.passkeySignature(authenticatorData: "zz", clientDataJSON: "00", signature: "00"))
+    }
+
     func testAGenesisNamesItsKeysAndRecovery() throws {
         let ann = try person()
         XCTAssertEqual(FoodBlock.check("actor", ann.me["state"] as! JSON, [:]), [])

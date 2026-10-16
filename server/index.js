@@ -1,4 +1,5 @@
-// Run a FoodBlock 1.6 node: Postgres for the blocks (sql/schema.sql), HTTP for pull, push and discovery.
+#!/usr/bin/env node
+// Run a FoodBlock 1.6 node: Postgres for the blocks (schema.sql, a copy of sql/schema.sql), HTTP for pull, push and discovery.
 //   NODE_KEY      a file made by `fb key`: { holder, key, blocks }: the holder's id, the key that signs this node's
 //                 answers (brought in by a key grant), and the blocks that prove it (taken in on start)
 //   DATABASE_URL  Postgres (default postgresql://localhost:5432/foodblock)
@@ -15,7 +16,7 @@ import { createNode } from './node.js'
 if (!process.env.NODE_KEY) { process.stderr.write('NODE_KEY names the node\'s key file: make one with `fb key node-key.json --identity me.json`\n'); process.exit(1) }
 const { holder, key, blocks = [] } = JSON.parse(readFileSync(process.env.NODE_KEY, 'utf8'))
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL || 'postgresql://localhost:5432/foodblock' })
-await pool.query(readFileSync(new URL('../sql/schema.sql', import.meta.url), 'utf8'))
+await pool.query(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'))
 
 const port = Number(process.env.PORT || 3111)
 const owners = (process.env.SPEAKS_FOR || holder).split(',').map((id) => id.trim()).filter(Boolean)

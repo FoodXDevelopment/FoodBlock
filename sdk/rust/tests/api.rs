@@ -76,3 +76,36 @@ fn the_receipt_code_is_five_bytes_in_crockford() {
     assert_eq!(strangers::receipt_code(&"00".repeat(32)).unwrap(), "0000-0000");
     assert_eq!(strangers::receipt_code(&"ff".repeat(32)).unwrap(), "ZZZZ-ZZZZ");
 }
+
+// A passkey (spec/modules/passkeys.md): a real-shaped WebAuthn assertion from a test P-256 key opens a block, and the
+// parts the protocol deliberately does not read (rpIdHash, origin, counter) change nothing.
+#[test]
+fn a_passkey_signs_a_block() {
+    use p256::ecdsa::signature::Signer as _;
+    use sha2::Digest;
+    let k = keypair_from_seed_in("p256", &"22".repeat(32)).unwrap();
+    let device = p256::ecdsa::SigningKey::from_slice(&unhex_32(&k.private_key)).unwrap();
+    let block = json!({ "type": "observe", "state": { "kind": "note", "text": "hi" }, "refs": {} });
+    let challenge = sign::passkey_challenge_of(canonical("observe", &block["state"], &block["refs"]).as_bytes());
+    assert_eq!(challenge.len(), 43);
+    let answer = |flags: u8, rp: &str, type_: &str, challenge: &str| {
+        let mut auth = sha2::Sha256::digest(rp.as_bytes()).to_vec();
+        auth.extend_from_slice(&[flags, 0, 0, 0, 9]);
+        let cdj = format!(r#"{{"type":"{type_}","challenge":"{challenge}","origin":"https://{rp}","crossOrigin":false}}"#);
+        let mut signed = auth.clone();
+        signed.extend_from_slice(&sha2::Sha256::digest(cdj.as_bytes()));
+        let sig: p256::ecdsa::Signature = device.sign(&signed);
+        sign::passkey_signature(&block::hex(&auth), &block::hex(cdj.as_bytes()), &block::hex(sig.to_der().as_bytes())).unwrap()
+    };
+    let opens = |s: &str| verify_in("p256", &block, s, &k.public_key_sign);
+    assert!(opens(&answer(0x05, "foodx.world", "webauthn.get", &challenge)));
+    assert!(opens(&answer(0x01, "elsewhere.example", "webauthn.get", &challenge)), "rpId and UV are not read");
+    assert!(!opens(&answer(0x04, "foodx.world", "webauthn.get", &challenge)), "UP unset");
+    assert!(!opens(&answer(0x05, "foodx.world", "webauthn.create", &challenge)), "wrong type");
+    assert!(!opens(&answer(0x05, "foodx.world", "webauthn.get", "AAAA")), "wrong challenge");
+    let good = answer(0x05, "foodx.world", "webauthn.get", &challenge);
+    assert!(opens(&good) && !opens(&format!("{}00", good)) && !opens(&good[..good.len() - 2]));
+}
+fn unhex_32(h: &str) -> [u8; 32] {
+    block::unhex(h).unwrap().try_into().unwrap()
+}

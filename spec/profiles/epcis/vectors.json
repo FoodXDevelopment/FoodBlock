@@ -1,0 +1,3731 @@
+{
+ "$comment": "FoodBlock 1.6 profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event's own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event's block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator's grant and the pulls it allows. Test keys: never use them for anything real.",
+ "context": "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
+ "keys": {
+  "fieldhouse": {
+   "seed": "368eee75683efeaeb8d53c4998d2727e4dccbe3126c2e610a4b826ed38a31457",
+   "private_key": "302e020100300506032b657004220420368eee75683efeaeb8d53c4998d2727e4dccbe3126c2e610a4b826ed38a31457",
+   "public_key_sign": "302a300506032b65700321006278b67daaabbe694076d996bda81e9eb460dc7d3fdcf6cf290ab0e9859ac81c"
+  },
+  "greenacres": {
+   "seed": "b7ac29b2dafff21f645d965da82bcd7398c88c9fbacb82654f001ab6bb215814",
+   "private_key": "302e020100300506032b657004220420b7ac29b2dafff21f645d965da82bcd7398c88c9fbacb82654f001ab6bb215814",
+   "public_key_sign": "302a300506032b6570032100bc0f71f7431726ce4af7695befb045cecd47d4f6c1d7a549c0e17f2c662d4d1e"
+  },
+  "metrofresh": {
+   "seed": "12a4a570ff3f789c611017ea2d7c57c31d9a6aec1367bac53575dcb3208791be",
+   "private_key": "302e020100300506032b65700422042012a4a570ff3f789c611017ea2d7c57c31d9a6aec1367bac53575dcb3208791be",
+   "public_key_sign": "302a300506032b6570032100b505220ca7891b5c0a87a078e2e06f45ab2790ead03a9ffcc2251067daf9dbab"
+  },
+  "cornermarket": {
+   "seed": "de6997f4d031110746c12ad75a989100161c471c4989128cc0f2f1410a166fd0",
+   "private_key": "302e020100300506032b657004220420de6997f4d031110746c12ad75a989100161c471c4989128cc0f2f1410a166fd0",
+   "public_key_sign": "302a300506032b6570032100ccab4bd7e2ab3339f1c3bb0ae616414509165084df9327d733cd4e5381d0baad"
+  },
+  "haulltd": {
+   "seed": "365147caad0b8b9181c06050b7fa813b65c4efa15c4b2266e218aa8f1cf17e25",
+   "private_key": "302e020100300506032b657004220420365147caad0b8b9181c06050b7fa813b65c4efa15c4b2266e218aa8f1cf17e25",
+   "public_key_sign": "302a300506032b657003210077965a11168f06315d170c261eb8ea834662c05db412092ea111cf5442a3ce79"
+  },
+  "seabird": {
+   "seed": "1bc76b711a3a2cc7302c21542aca40f5e162b12b9f4f2f7b01ee58cb46b8a248",
+   "private_key": "302e020100300506032b6570042204201bc76b711a3a2cc7302c21542aca40f5e162b12b9f4f2f7b01ee58cb46b8a248",
+   "public_key_sign": "302a300506032b6570032100e5d6c7fc5630ef34fa152129682777b96d0b91cfcd2818ee8b1e68a979e82910"
+  },
+  "harbourfish": {
+   "seed": "ceb5005e2925d8a749d231eda102975a5531f8a1a0e64fb182a5ee499259df3b",
+   "private_key": "302e020100300506032b657004220420ceb5005e2925d8a749d231eda102975a5531f8a1a0e64fb182a5ee499259df3b",
+   "public_key_sign": "302a300506032b65700321003524fbe1b6bf0e9ec69f0a9626011406d5014f7aef1d2307e317040c084e181f"
+  },
+  "profile": {
+   "seed": "bc39776d98debea8a1ffe0940bd33f56d400d8fe2248f860cd016f8271ea3b00",
+   "private_key": "302e020100300506032b657004220420bc39776d98debea8a1ffe0940bd33f56d400d8fe2248f860cd016f8271ea3b00",
+   "public_key_sign": "302a300506032b6570032100b11bc939cfe876a4428c39248af1f92107949ea438d88ed05d3267e90f9a622c"
+  },
+  "regulator": {
+   "seed": "9a2a746a1c705c410685bfe2dea0cf8889726abe1c1df501e9dc96b9010bd91e",
+   "private_key": "302e020100300506032b6570042204209a2a746a1c705c410685bfe2dea0cf8889726abe1c1df501e9dc96b9010bd91e",
+   "public_key_sign": "302a300506032b65700321004c4ca25a4d73e058b31cebcbc650b9ada62b08a0b0b40b47778e759776e9d69f"
+  }
+ },
+ "parties": {
+  "urn:epc:id:pgln:0614141.00000": {
+   "signer": "fieldhouse",
+   "id": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620"
+  },
+  "urn:epc:id:pgln:0614155.00000": {
+   "signer": "greenacres",
+   "id": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59"
+  },
+  "urn:epc:id:pgln:0614160.00000": {
+   "signer": "metrofresh",
+   "id": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca"
+  },
+  "urn:epc:id:pgln:0614190.00000": {
+   "signer": "cornermarket",
+   "id": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913"
+  },
+  "urn:epc:id:pgln:0614195.00000": {
+   "signer": "haulltd",
+   "id": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50"
+  },
+  "urn:epc:id:pgln:0614170.00000": {
+   "signer": "seabird",
+   "id": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293"
+  },
+  "urn:epc:id:pgln:0614175.00000": {
+   "signer": "harbourfish",
+   "id": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c"
+  },
+  "urn:epc:id:pgln:0000000.00000": {
+   "signer": "profile",
+   "id": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723"
+  },
+  "urn:epc:id:pgln:0000001.00000": {
+   "signer": "regulator",
+   "id": "84420e82bfc71db94e5ca8c1042fbf3a5093d5bf4e165d004ed2d460079ff6cb"
+  }
+ },
+ "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+ "blocks": [
+  {
+   "name": "fieldhouse: genesis",
+   "signer": "fieldhouse",
+   "hash": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:00.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b65700321006278b67daaabbe694076d996bda81e9eb460dc7d3fdcf6cf290ab0e9859ac81c"
+    },
+    "refs": {}
+   },
+   "signature": "f81660424cdf46c6b288d9590f6d9cecf06afa972e200d3caeb06aabde12ebad4039768a9d39b68efb67aadf9a63464a47a4e95747cb6820577c98b9259f6708"
+  },
+  {
+   "name": "greenacres: genesis",
+   "signer": "greenacres",
+   "hash": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:01.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100bc0f71f7431726ce4af7695befb045cecd47d4f6c1d7a549c0e17f2c662d4d1e"
+    },
+    "refs": {}
+   },
+   "signature": "7fec32221581ee21b2a3720c762699e498bc2f3648718d4aa2d498b134abb260674971e9623b9b15dee9224cb9c0b0b890464ffe5f88a68ac56a23b5ab0cbf01"
+  },
+  {
+   "name": "metrofresh: genesis",
+   "signer": "metrofresh",
+   "hash": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:02.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100b505220ca7891b5c0a87a078e2e06f45ab2790ead03a9ffcc2251067daf9dbab"
+    },
+    "refs": {}
+   },
+   "signature": "cb3339b54681c8df8bbf617c6aa5b2a9c7f9041844972759c327d26d2e22d3a8e025f3fb044baa1b6182f7cb8636f3f9fa1e1901a71871cae3d5d07588063c05"
+  },
+  {
+   "name": "cornermarket: genesis",
+   "signer": "cornermarket",
+   "hash": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:03.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100ccab4bd7e2ab3339f1c3bb0ae616414509165084df9327d733cd4e5381d0baad"
+    },
+    "refs": {}
+   },
+   "signature": "01d2a39ed04f08e698874f20e1a741dfa9dd9960d238cb5d1a7a89f12d48ebef3fff33e45a4c74386b20b9f68a1ddebf9c60a502e28b27ffabc3be0e0ad0070c"
+  },
+  {
+   "name": "haulltd: genesis",
+   "signer": "haulltd",
+   "hash": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:04.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b657003210077965a11168f06315d170c261eb8ea834662c05db412092ea111cf5442a3ce79"
+    },
+    "refs": {}
+   },
+   "signature": "1e2671ec940bb7c8aabdd488705a22efd4586d9a8a6e081836da14db1ce44cbbd5a3adeade17114ed2c21e56f5e24dec087771fe10418253bcef34711db6480a"
+  },
+  {
+   "name": "seabird: genesis",
+   "signer": "seabird",
+   "hash": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:05.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100e5d6c7fc5630ef34fa152129682777b96d0b91cfcd2818ee8b1e68a979e82910"
+    },
+    "refs": {}
+   },
+   "signature": "9660c711e73e0268218e695c0ae73c40fff635681175d42b673f0c9c985871fddb471fa37e088b7a6564a85af240986ba7724cb345e4af96c552d44bbe747a04"
+  },
+  {
+   "name": "harbourfish: genesis",
+   "signer": "harbourfish",
+   "hash": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:06.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b65700321003524fbe1b6bf0e9ec69f0a9626011406d5014f7aef1d2307e317040c084e181f"
+    },
+    "refs": {}
+   },
+   "signature": "a20fa005d4bc15ea287f9cb57ee0acdc57c372b54e11de2a5cc55459a12bbe2c71a0e6081f3f6fc947efcbb604af96303f42122263d43f18ec19a54791b9f20b"
+  },
+  {
+   "name": "profile: genesis",
+   "signer": "profile",
+   "hash": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:07.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100b11bc939cfe876a4428c39248af1f92107949ea438d88ed05d3267e90f9a622c"
+    },
+    "refs": {}
+   },
+   "signature": "257d79a402d4a8f8446efe9ef04c0eaf1d97e63ef69c998c841a079e425cfb5dc6eb1d14b5cb6693ed0284ed76006f64c31ba85f43900133c74a92e976b5730b"
+  },
+  {
+   "name": "regulator: genesis",
+   "signer": "regulator",
+   "hash": "84420e82bfc71db94e5ca8c1042fbf3a5093d5bf4e165d004ed2d460079ff6cb",
+   "block": {
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-11T12:00:08.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b65700321004c4ca25a4d73e058b31cebcbc650b9ada62b08a0b0b40b47778e759776e9d69f"
+    },
+    "refs": {}
+   },
+   "signature": "e708deace9515a9980fa7ecd2ad08d61eae934114d3d14e2a32846839a078badf994f8c6ee8b4c4e63c0cd20849ec3a7251fecbc5d9f8713fb0306375fb3a703"
+  },
+  {
+   "name": "site: field_a",
+   "signer": "fieldhouse",
+   "hash": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Fieldhouse Farm, Field A",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614141000012"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614141.00001.0"
+      }
+     ],
+     "where": {
+      "lat": "36.6777",
+      "lon": "-121.6555"
+     },
+     "address": {
+      "line1": "1 Salinas Road",
+      "city": "Salinas",
+      "region": "CA",
+      "postal": "93901",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:09.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620"
+    }
+   },
+   "signature": "08534a7799fd764ca4906edd0b09674b60db2f37c07e21e0b89413451ae4847502fb3333dcdd8d4528f76ce00b329218e14e9812e04642ffff7920dcb590660f"
+  },
+  {
+   "name": "site: ff_packhouse",
+   "signer": "fieldhouse",
+   "hash": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Fieldhouse packhouse and cooler",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614141000029"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614141.00002.0"
+      }
+     ],
+     "where": {
+      "lat": "36.6801",
+      "lon": "-121.6602"
+     },
+     "address": {
+      "line1": "2 Salinas Road",
+      "city": "Salinas",
+      "region": "CA",
+      "postal": "93901",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:10.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07"
+    }
+   },
+   "signature": "64350789f167b53b1ddd4997bb7dad5d372f671f2be4a1f712600a8c8699d160f2cbdc4a342266c927c2bf14eef0a43e97741436fa9d44bad6c91cf194890800"
+  },
+  {
+   "name": "site: ga_field",
+   "signer": "greenacres",
+   "hash": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Green Acres, Field B",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614155000015"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614155.00001.0"
+      }
+     ],
+     "where": {
+      "lat": "36.5502",
+      "lon": "-121.4021"
+     },
+     "address": {
+      "line1": "9 Soledad Lane",
+      "city": "Soledad",
+      "region": "CA",
+      "postal": "93960",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:11.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59"
+    }
+   },
+   "signature": "a70e3d635a79b66bdd7df4d2fb2d02cc34650d4c6fc3e7fb7699927f1ed55b88ccc3ad50c2b493f9e50e142ceaf30a82b4a1bf04f542b83a9fbe333327f65c0f"
+  },
+  {
+   "name": "site: ga_packhouse",
+   "signer": "greenacres",
+   "hash": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Green Acres packhouse",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614155000022"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614155.00002.0"
+      }
+     ],
+     "where": {
+      "lat": "36.5510",
+      "lon": "-121.4050"
+     },
+     "address": {
+      "line1": "11 Soledad Lane",
+      "city": "Soledad",
+      "region": "CA",
+      "postal": "93960",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:12.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f"
+    }
+   },
+   "signature": "9acf862f9f03d97705fc715858fe2ab327b6565c1b804a30f4398d37eaaa9b0a0cd14f9aa9e8ad789761e2e62b8ea8f38d37849598dff7f36dd54001cd713c0c"
+  },
+  {
+   "name": "site: dc",
+   "signer": "metrofresh",
+   "hash": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Metro Fresh distribution centre",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614160000017"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614160.00001.0"
+      }
+     ],
+     "where": {
+      "lat": "37.7749",
+      "lon": "-122.3894"
+     },
+     "address": {
+      "line1": "500 Pier Way",
+      "city": "San Francisco",
+      "region": "CA",
+      "postal": "94124",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:13.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca"
+    }
+   },
+   "signature": "19934b199ae0f04c72635e2e34f2e1ef1bbf3fde1978cedcab2badca30fb84cbf92e22dcf137a1e7ca55be04a1fdad2afef2c926501d80f09305674d2aeb4203"
+  },
+  {
+   "name": "site: store",
+   "signer": "cornermarket",
+   "hash": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Corner Market, receiving dock",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614190000018"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614190.00001.0"
+      }
+     ],
+     "where": {
+      "lat": "37.7599",
+      "lon": "-122.4148"
+     },
+     "address": {
+      "line1": "3 Mission Street",
+      "city": "San Francisco",
+      "region": "CA",
+      "postal": "94110",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:14.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913"
+    }
+   },
+   "signature": "1701380a365de3af2b5f5fce93ec9d621667a4a5e8975329004a297389a97e703774221ed4cc1bd73039405dfa8d0ba36540250bb8308bda03a5e0aaa3d16709"
+  },
+  {
+   "name": "site: backroom",
+   "signer": "cornermarket",
+   "hash": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Corner Market, back room",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614190000025"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614190.00002.0"
+      }
+     ],
+     "where": {
+      "lat": "37.7599",
+      "lon": "-122.4148"
+     },
+     "address": {
+      "line1": "3 Mission Street",
+      "city": "San Francisco",
+      "region": "CA",
+      "postal": "94110",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:15.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d"
+    }
+   },
+   "signature": "86d102d5c0f4b38252dc25d8a5b1302496f45313be492400dc29a0799a6595a82bbfdf2d92f67d7a4082bbebefea99e44d9a128c58de3ed3332c3303fe831307"
+  },
+  {
+   "name": "site: floor",
+   "signer": "cornermarket",
+   "hash": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Corner Market, sales floor",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614190000032"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614190.00003.0"
+      }
+     ],
+     "where": {
+      "lat": "37.7599",
+      "lon": "-122.4148"
+     },
+     "address": {
+      "line1": "3 Mission Street",
+      "city": "San Francisco",
+      "region": "CA",
+      "postal": "94110",
+      "country": "US"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:16.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac"
+    }
+   },
+   "signature": "e32d0f455a5cc6cd5addb9812be16d00404f19c9de69e839a9985ff5d7556cd86a0ca79ea6ec0b34830bcb7eef14dff7031e40add81a6aa46b5ebd7efcbce602"
+  },
+  {
+   "name": "site: sea",
+   "signer": "seabird",
+   "hash": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Fishing ground 27.IVb",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614170000014"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614170.00001.0"
+      }
+     ],
+     "where": {
+      "lat": "54.5",
+      "lon": "2.5"
+     },
+     "address": {
+      "line1": "North Sea",
+      "city": "At sea",
+      "region": "FAO 27",
+      "postal": "00000",
+      "country": "GB"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:17.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
+     "prev": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293"
+    }
+   },
+   "signature": "35a201839dcd8df35c14b131b98a7287d10b5d109ab1b00ea6e3940d37adf7a735cf924eb890aef292d40caf98576268df221d6a7db540dd42c92afc400a0c09"
+  },
+  {
+   "name": "site: dock",
+   "signer": "harbourfish",
+   "hash": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "place",
+     "name": "Harbour Fish landing dock",
+     "marks": [
+      {
+       "scheme": "gln",
+       "value": "0614175000019"
+      },
+      {
+       "scheme": "sgln",
+       "value": "urn:epc:id:sgln:0614175.00001.0"
+      }
+     ],
+     "where": {
+      "lat": "57.1437",
+      "lon": "-2.0981"
+     },
+     "address": {
+      "line1": "4 Fish Quay",
+      "city": "Aberdeen",
+      "region": "Scotland",
+      "postal": "AB11 5HX",
+      "country": "GB"
+     },
+     "phone": "+1 555 0100",
+     "at": "2026-10-11T12:00:18.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+     "prev": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c"
+    }
+   },
+   "signature": "262df95519f2ef3685423504da67c79dd20f58ca028c161ba814608b345dbeded2a4be0fa36f9561483deebbe39861a017c4ec757a7dc8cf34e72ace114a9801"
+  },
+  {
+   "name": "product kind: romaine",
+   "signer": "fieldhouse",
+   "hash": "58e46d7352001c18e64f700c132957ba05749f043c0a4c3daa018fba11d66da6",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Romaine lettuce, field run",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614141073464"
+      }
+     ],
+     "at": "2026-10-11T12:00:19.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a"
+    }
+   },
+   "signature": "cc294d4ec6bc3c3d4106ad44ac008cec060501948af3c35438d12b27b433f47f48e3cfea6234728185eed7da208aa7b4e32aaba5a3b5132be96f69cc50b88805"
+  },
+  {
+   "name": "product kind: romaine_pack",
+   "signer": "fieldhouse",
+   "hash": "74a6c3b578076d9a41382f047bb9e831e3e1fc53197bc801c9a08945284b645b",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Romaine hearts, 3 pack",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614141073532"
+      }
+     ],
+     "at": "2026-10-11T12:00:20.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "58e46d7352001c18e64f700c132957ba05749f043c0a4c3daa018fba11d66da6"
+    }
+   },
+   "signature": "bd865e2a6669a6efe4eabfa95843abbfd98f9cfd36fbfbf5f31bb229a975343567a684c93afd00cc6ed8bedc84f7373611b8765d732973e36ea0195a59d5560e"
+  },
+  {
+   "name": "product kind: romaine_ga",
+   "signer": "greenacres",
+   "hash": "6cc9f99776a8e9a27d4d37c8f8f8e4d523e8070c92f8ebd750f68de77587602b",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Romaine lettuce, field run (Green Acres)",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614155073405"
+      }
+     ],
+     "at": "2026-10-11T12:00:21.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598"
+    }
+   },
+   "signature": "0af9a6d18f045fd4722413d1650ce01b236049eacddff2f81e0bda8de53fafe65b0fa1b2d1cdd71e82b99dec77b3862b9034fb3094becf2c1a5962a97c34e903"
+  },
+  {
+   "name": "product kind: romaine_ga_pack",
+   "signer": "greenacres",
+   "hash": "6b1bcdeac45119042b9aaaffd8c6d443bd6c8f09e49c96bf8ca63fdf618bc46a",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Romaine, trimmed 5 lb",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614155073573"
+      }
+     ],
+     "at": "2026-10-11T12:00:22.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "6cc9f99776a8e9a27d4d37c8f8f8e4d523e8070c92f8ebd750f68de77587602b"
+    }
+   },
+   "signature": "387aad5ee2ad96e239db7195dd429d7f4ee8220a1b07871fe7c3f9548e3509bd1a3bea843d5e747cf68fc324e07fecbe807df5aa91be5a0236a7aaf330de6703"
+  },
+  {
+   "name": "product kind: salad_kit",
+   "signer": "metrofresh",
+   "hash": "c3e39048189d2b802aaa0144a184a0df59684aeb10826cf092a73dd9f280cf50",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Caesar salad kit",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614160000113"
+      }
+     ],
+     "at": "2026-10-11T12:00:23.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8"
+    }
+   },
+   "signature": "14bcfe44ab17c602b28c3c9f28940a3f28d2363630f5e871cb7edf9cb19dddc0ce0339fc93a96030751a382649dc16ad98372c1517f0b875e1beb3c84358a802"
+  },
+  {
+   "name": "product kind: tomatoes",
+   "signer": "cornermarket",
+   "hash": "e8189344300b2c8b90f7fe1e0c5d42899e999278a40b14ceaad63e3f1f326b7a",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Roma tomatoes, 25 lb",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614180000599"
+      }
+     ],
+     "at": "2026-10-11T12:00:24.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d"
+    }
+   },
+   "signature": "31ed82cbffb8b28dce4cdad2bc10d39caa40e360e8e3df0d212a95cdd02581af71fbcbb5b5117b8328c78634b2384090fa1fd79edf1df91172923081dea9b103"
+  },
+  {
+   "name": "product kind: cod_catch",
+   "signer": "seabird",
+   "hash": "b769b6645de5342317707989fa45254666be397acff9e5f9a8c8395000cb8a16",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Cod, whole, landed",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614170000226"
+      }
+     ],
+     "at": "2026-10-11T12:00:25.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
+     "prev": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1"
+    }
+   },
+   "signature": "8ed9e1bfabac8d3556116bfd6d65f9f2b3ac45daaca0dd9da494607764daaa1e8cb9547d5cc60702e87607a7a0fde5dde2040ac6f33abdd2a80a0c865dd4ac0e"
+  },
+  {
+   "name": "product kind: cod_fillet",
+   "signer": "harbourfish",
+   "hash": "b4ae846e030b48af827f8355c28cd3499def6ff16252a47c2546c3f67d1adf0f",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "product",
+     "name": "Cod fillet, fresh",
+     "marks": [
+      {
+       "scheme": "gtin",
+       "value": "10614175000399"
+      }
+     ],
+     "at": "2026-10-11T12:00:26.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+     "prev": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb"
+    }
+   },
+   "signature": "82cbd4cf814f7e39af1ede7e061c54d5e2158954848ba5f797ed10f43e51aa066508d99f38334ea01f9cbb7143bf7888d6451c9196f4c566d5d20d55019a970e"
+  },
+  {
+   "name": "container: a tote",
+   "signer": "cornermarket",
+   "hash": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "container",
+     "name": "Produce tote",
+     "marks": [
+      {
+       "scheme": "sscc",
+       "value": "urn:epc:id:sscc:0614190.1000000017"
+      }
+     ],
+     "at": "2026-10-11T12:00:27.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "place": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "e8189344300b2c8b90f7fe1e0c5d42899e999278a40b14ceaad63e3f1f326b7a"
+    }
+   },
+   "signature": "dfc255f2b42a1447e004e9dcff87e126d138687c86450ae60e62ceb675688620fa159fd92fe31ec525c02f810ddfd9a719eb8da4e6c3911e4207e424ec20e90c"
+  },
+  {
+   "name": "schema: EPCIS transfers",
+   "signer": "profile",
+   "hash": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "schema",
+     "name": "EPCIS transfer fields",
+     "target": "transfer",
+     "fields": {
+      "biz_step": "text",
+      "disposition": "text",
+      "persistent_disposition": "object",
+      "tz": "text",
+      "action": "text",
+      "epcis_id": "text",
+      "biz_transactions": "list",
+      "reference_document": "object"
+     },
+     "at": "2026-10-11T12:00:28.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723",
+     "prev": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723"
+    }
+   },
+   "signature": "2bf9493b1d83be2d2d4759548aa9cb69aaa1d26b869cbe276f2879424ed7a7081a547c7a989e879f8fe7b39621a09a2e842d5ee6b3f6fe1f4773d5d670ef2309"
+  },
+  {
+   "name": "harvesting: Field A",
+   "signer": "fieldhouse",
+   "hash": "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "harvest",
+     "when": "2026-10-12T05:30:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
+     "disposition": "urn:epcglobal:cbv:disp:active",
+     "action": "ADD",
+     "epcis_id": "ni:///sha-256;7c1f2a?ver=CBV2.0",
+     "at": "2026-10-12T05:33:00.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "place": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07",
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "74a6c3b578076d9a41382f047bb9e831e3e1fc53197bc801c9a08945284b645b"
+    }
+   },
+   "signature": "ec61f1393fa77ef92eefe89c7fbdffe12e8a36bf42e26f6fd368ce011804cc122351bb7b9654be59f88d0bd0ba14db3598d7b92f738bfb56760020b83d69360b"
+  },
+  {
+   "name": "harvesting: Field A (out0)",
+   "signer": "fieldhouse",
+   "hash": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "FLD-A-1012",
+     "amount": {
+      "value": "1200",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614141.107346.FLD-A-1012"
+      }
+     ],
+     "commodity": "Romaine lettuce",
+     "variety": "Green Towers",
+     "field_name": "Field A",
+     "at": "2026-10-12T05:33:00.000Z",
+     "audience": "public",
+     "seq": 6
+    },
+    "refs": {
+     "of": "58e46d7352001c18e64f700c132957ba05749f043c0a4c3daa018fba11d66da6",
+     "derives_from": [
+      "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822"
+     ],
+     "place": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07",
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822"
+    }
+   },
+   "signature": "ac7f88d971583ba92057c8b1f88730bd2f94abc9d92de8233a1c274b2aedb81fdac894e5e4440d4be313edc0c0a0d96fed715b4028ecbffa6df02aee527ef80b"
+  },
+  {
+   "name": "cooling: the packhouse cooler",
+   "signer": "fieldhouse",
+   "hash": "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "cool",
+     "when": "2026-10-12T09:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:other",
+     "disposition": "urn:epcglobal:cbv:disp:active",
+     "action": "OBSERVE",
+     "at": "2026-10-12T09:03:00.000Z",
+     "audience": "public",
+     "seq": 7
+    },
+    "refs": {
+     "subject": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
+     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b"
+    }
+   },
+   "signature": "4e516d22f19693005e9e635940b58d0c33ccb28aae4bcf6d210c5c61855546e727692ed1a67108f81a5940ad46108dd22400f557d10d5ab71c399d142af84900"
+  },
+  {
+   "name": "initial packing: romaine hearts",
+   "signer": "fieldhouse",
+   "hash": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "pack",
+     "when": "2026-10-12T14:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:packing",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "at": "2026-10-12T14:03:00.000Z",
+     "audience": "public",
+     "seq": 8
+    },
+    "refs": {
+     "derives_from": [
+      "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b"
+     ],
+     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5"
+    }
+   },
+   "signature": "93e0f897384b7b7d9d1d8752e7427e842b5d1165c19f1ebf2cf52bf5f6e1c0166994695b088f48c06c79e2fc99029f8b537d14276de86b0bf68a499baba3ec05"
+  },
+  {
+   "name": "initial packing: romaine hearts (out0)",
+   "signer": "fieldhouse",
+   "hash": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "F-285-A",
+     "amount": {
+      "value": "1180",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614141.107353.F-285-A"
+      },
+      {
+       "scheme": "tlc",
+       "value": "F-285-A"
+      },
+      {
+       "scheme": "tlc_source",
+       "value": "0614141000029"
+      }
+     ],
+     "use_by": "2026-10-22",
+     "at": "2026-10-12T14:03:00.000Z",
+     "audience": "public",
+     "seq": 9
+    },
+    "refs": {
+     "of": "74a6c3b578076d9a41382f047bb9e831e3e1fc53197bc801c9a08945284b645b",
+     "derives_from": [
+      "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+     ],
+     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+    }
+   },
+   "signature": "86709508ce4fb8e042a48fb2aa69d6b80f1d6739f0d0fc4d3d1fea30ddf7e0a3d353d02c261c9ab728e737634ce0be8b6d6ddfdae565a9dd2cffda8e09ff410f"
+  },
+  {
+   "name": "harvesting: Green Acres Field B",
+   "signer": "greenacres",
+   "hash": "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "harvest",
+     "when": "2026-10-12T06:10:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
+     "disposition": "urn:epcglobal:cbv:disp:active",
+     "action": "ADD",
+     "at": "2026-10-12T06:13:00.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "place": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f",
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "6b1bcdeac45119042b9aaaffd8c6d443bd6c8f09e49c96bf8ca63fdf618bc46a"
+    }
+   },
+   "signature": "7f65e46970b3bd2df63059cdf178fd5b739857076e0090f604fffadd8522fa2af2c1aaded3b4c10609105cf8bf4bd585582d02f4d164586fb0dc84bf9571f408"
+  },
+  {
+   "name": "harvesting: Green Acres Field B (out0)",
+   "signer": "greenacres",
+   "hash": "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "FLD-B-0077",
+     "amount": {
+      "value": "800",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614155.107340.FLD-B-0077"
+      }
+     ],
+     "commodity": "Romaine lettuce",
+     "variety": "Parris Island",
+     "field_name": "Field B",
+     "at": "2026-10-12T06:13:00.000Z",
+     "audience": "public",
+     "seq": 6
+    },
+    "refs": {
+     "of": "6cc9f99776a8e9a27d4d37c8f8f8e4d523e8070c92f8ebd750f68de77587602b",
+     "derives_from": [
+      "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0"
+     ],
+     "place": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f",
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0"
+    }
+   },
+   "signature": "338acb2dfa48d729c91b32ef90b3ac495f5ad8cd052ffbdf60c24dae79d21dc07f653a9179721a4b619cfdea2687387c45afda968079e86bb2da7575714ad608"
+  },
+  {
+   "name": "initial packing: trimmed romaine",
+   "signer": "greenacres",
+   "hash": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "pack",
+     "when": "2026-10-12T13:20:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:packing",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "at": "2026-10-12T13:23:00.000Z",
+     "audience": "public",
+     "seq": 7
+    },
+    "refs": {
+     "derives_from": [
+      "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549"
+     ],
+     "place": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549"
+    }
+   },
+   "signature": "a4c1eb88ee88136b369651a3dca20ee10a631b0c40cde76cdba628242a1540d91375378b9704f7ffe19d1264640b3c0ed65434f04b4dfcad804991d0e6b79f01"
+  },
+  {
+   "name": "initial packing: trimmed romaine (out0)",
+   "signer": "greenacres",
+   "hash": "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "GA-285-B",
+     "amount": {
+      "value": "760",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614155.107357.GA-285-B"
+      },
+      {
+       "scheme": "tlc",
+       "value": "GA-285-B"
+      },
+      {
+       "scheme": "tlc_source",
+       "value": "0614155000022"
+      }
+     ],
+     "at": "2026-10-12T13:23:00.000Z",
+     "audience": "public",
+     "seq": 8
+    },
+    "refs": {
+     "of": "6b1bcdeac45119042b9aaaffd8c6d443bd6c8f09e49c96bf8ca63fdf618bc46a",
+     "derives_from": [
+      "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+     ],
+     "place": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+    }
+   },
+   "signature": "4e156e8ce3d2b260b2016aa3ce63784f1bd313b420c69b4ec36615c143f443959c7c259f03ca38141c031f8cb3229ed9e6500d2069572223d2a5ea92f44d0602"
+  },
+  {
+   "name": "shipping: Fieldhouse to Metro Fresh",
+   "signer": "fieldhouse",
+   "hash": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "ship",
+     "when": "2026-10-13T06:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
+     "disposition": "urn:epcglobal:cbv:disp:in_transit",
+     "action": "OBSERVE",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:bol",
+       "id": "urn:epc:id:gdti:0614141.00007.BOL-5521"
+      }
+     ],
+     "at": "2026-10-13T06:03:00.000Z",
+     "audience": "public",
+     "seq": 10
+    },
+    "refs": {
+     "what": [
+      "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+     ],
+     "to_owner": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "to_holder": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
+     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+    }
+   },
+   "signature": "240564e2486039f6a5f89d3b81c471806170490c736295df104cabf5137f623d86c2f4b5bba86ae562fc9b375617a558e3aa24ef654bdf40b3914dd0d34ab800"
+  },
+  {
+   "name": "shipping: Green Acres to Metro Fresh",
+   "signer": "greenacres",
+   "hash": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "ship",
+     "when": "2026-10-13T05:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
+     "disposition": "urn:epcglobal:cbv:disp:in_transit",
+     "action": "OBSERVE",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:bol",
+       "id": "urn:epc:id:gdti:0614141.00007.BOL-7710"
+      }
+     ],
+     "at": "2026-10-13T05:03:00.000Z",
+     "audience": "public",
+     "seq": 9
+    },
+    "refs": {
+     "what": [
+      "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+     ],
+     "to_owner": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "place": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "to_holder": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
+     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+    }
+   },
+   "signature": "493152886288102443a0d133f90c7bf362ea9d22c24c7b9363dc6b24cd15cc85c94a480d0b07c5608988169d56fe5ad2338a4d6141698eb0b61aa0a3b71fcb00"
+  },
+  {
+   "name": "receiving: Metro Fresh takes the Green Acres lot",
+   "signer": "metrofresh",
+   "hash": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "receive",
+     "status": "accepted",
+     "when": "2026-10-13T08:15:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:receiving",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "action": "OBSERVE",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:bol",
+       "id": "urn:epc:id:gdti:0614141.00007.BOL-7710"
+      }
+     ],
+     "at": "2026-10-13T08:18:00.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "answers": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "c3e39048189d2b802aaa0144a184a0df59684aeb10826cf092a73dd9f280cf50",
+     "after": [
+      "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935"
+     ]
+    }
+   },
+   "signature": "dd1f9e729cb5699461071a93cc366ff6d34deed1bc6e555d47b5746bd26c4308a192b65132f741477fb8be3171a1a46bc3036873c0e6a703ee991d80a8ff7502"
+  },
+  {
+   "name": "receiving: Metro Fresh takes the Green Acres lot (arrive)",
+   "signer": "metrofresh",
+   "hash": "9b68811552581f532740fbd3c42e216efe0fc3a66a8981befbe10f93292f36d9",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "arrive",
+     "when": "2026-10-13T08:15:00.000Z",
+     "tz": "-07:00",
+     "at": "2026-10-13T08:18:00.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "what": [
+      "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+     ],
+     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+     "after": [
+      "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016"
+     ]
+    }
+   },
+   "signature": "64c2d88c0482aba461ccad83b7e01cf41a2dc84eadb44970753544549b91cbcefe0e383abc8d77f86f396c25683402d8a5d97d40138e7b70857c25af95c99905"
+  },
+  {
+   "name": "receiving: Metro Fresh takes the Fieldhouse lot",
+   "signer": "metrofresh",
+   "hash": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "receive",
+     "status": "accepted",
+     "when": "2026-10-13T09:30:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:receiving",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "action": "OBSERVE",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:bol",
+       "id": "urn:epc:id:gdti:0614141.00007.BOL-5521"
+      }
+     ],
+     "at": "2026-10-13T09:33:00.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "answers": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "9b68811552581f532740fbd3c42e216efe0fc3a66a8981befbe10f93292f36d9",
+     "after": [
+      "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21"
+     ]
+    }
+   },
+   "signature": "9765de7c565a081e1954dfbff8cd0972b1a58a9e92906f0b46dd377cd48fc90c85c49389b62f0acf4d4e08d5c98d881d12e7bf40866d7c4284dddb3367982f07"
+  },
+  {
+   "name": "receiving: Metro Fresh takes the Fieldhouse lot (arrive)",
+   "signer": "metrofresh",
+   "hash": "0938a8c0473fccf0d2d83f05d45966a6b0495e6b313dc103fcf6e9cd729116c8",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "arrive",
+     "when": "2026-10-13T09:30:00.000Z",
+     "tz": "-07:00",
+     "at": "2026-10-13T09:33:00.000Z",
+     "audience": "public",
+     "seq": 6
+    },
+    "refs": {
+     "what": [
+      "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+     ],
+     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+     "after": [
+      "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065"
+     ]
+    }
+   },
+   "signature": "f239c891c875bd841a302492aa38858f884e02ba22518c2205771329d7a1af42f13417aab2edc3176be80bb26114fc9fee33fad9f32a7d64789ae94807a3bd08"
+  },
+  {
+   "name": "transformation: salad kits",
+   "signer": "metrofresh",
+   "hash": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "process",
+     "when": "2026-10-13T11:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "at": "2026-10-13T11:03:00.000Z",
+     "audience": "public",
+     "seq": 7
+    },
+    "refs": {
+     "derives_from": [
+      "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+      "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+     ],
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "0938a8c0473fccf0d2d83f05d45966a6b0495e6b313dc103fcf6e9cd729116c8"
+    }
+   },
+   "signature": "79785301d6401d604f463f71ad5dc4bd3d94e514b283e1a63179d9da602ecd73c259e5b6a4dc417d22c6539d6e8f03749a184a0e04434da10cd41cea373a7903"
+  },
+  {
+   "name": "transformation: salad kits (out0)",
+   "signer": "metrofresh",
+   "hash": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "DC-SK-1001",
+     "amount": {
+      "value": "1700",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614160.100011.DC-SK-1001"
+      },
+      {
+       "scheme": "tlc",
+       "value": "DC-SK-1001"
+      },
+      {
+       "scheme": "tlc_source",
+       "value": "0614160000017"
+      }
+     ],
+     "use_by": "2026-10-20",
+     "at": "2026-10-13T11:03:00.000Z",
+     "audience": "public",
+     "seq": 8
+    },
+    "refs": {
+     "of": "c3e39048189d2b802aaa0144a184a0df59684aeb10826cf092a73dd9f280cf50",
+     "derives_from": [
+      "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+     ],
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+    }
+   },
+   "signature": "d314e5bb357a3b8c72b53b840e8bba5e9a8fde55fdf76504197b31201b48f081bf9e34e8679119d1ebc238a4e07f08f90635d4c7ad279fbf050f2aaeed1f9009"
+  },
+  {
+   "name": "shipping: Metro Fresh to Corner Market",
+   "signer": "metrofresh",
+   "hash": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "ship",
+     "when": "2026-10-14T04:30:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:shipping",
+     "disposition": "urn:epcglobal:cbv:disp:in_transit",
+     "action": "OBSERVE",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:bol",
+       "id": "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      }
+     ],
+     "at": "2026-10-14T04:33:00.000Z",
+     "audience": "public",
+     "seq": 9
+    },
+    "refs": {
+     "what": [
+      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+     ],
+     "to_owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "to_holder": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
+     "to_place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+    }
+   },
+   "signature": "9ef2919e0bf4b0b67b7222383297c4a73b99f0e552b0964f3561f4da5c5de878104edbb5e2943e69b5f08b96a07236454ebbf4142e7fb45b6a96f7ae6c56d008"
+  },
+  {
+   "name": "receiving: Corner Market takes the kits",
+   "signer": "cornermarket",
+   "hash": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "receive",
+     "status": "accepted",
+     "when": "2026-10-14T07:45:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:receiving",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "action": "OBSERVE",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:bol",
+       "id": "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      }
+     ],
+     "at": "2026-10-14T07:48:00.000Z",
+     "audience": "public",
+     "seq": 6
+    },
+    "refs": {
+     "answers": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+     "after": [
+      "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+     ]
+    }
+   },
+   "signature": "bea52fc98385a690aef23a96e37374802b821c0695b658698d82105d5e096da727c473f0768b1f2109f124e4a404c2f88a862e0e950853feea36b6fdd159e002"
+  },
+  {
+   "name": "receiving: Corner Market takes the kits (arrive)",
+   "signer": "cornermarket",
+   "hash": "bd6c9fd40e61b9843c6c3e46a0d013f02ef4fe9ecf4515d227df7a8d69b0f178",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "arrive",
+     "when": "2026-10-14T07:45:00.000Z",
+     "tz": "-07:00",
+     "at": "2026-10-14T07:48:00.000Z",
+     "audience": "public",
+     "seq": 7
+    },
+    "refs": {
+     "what": [
+      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+     ],
+     "to_place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+     "after": [
+      "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d"
+     ]
+    }
+   },
+   "signature": "d67cb9bab6cc1b96e907bda2dc5f4ec0e0c6339e70b466618a8dd72865b207838b8df462a0faff804e481653d8c48ed82fba99a2f454403b1537e0ffec7b1c00"
+  },
+  {
+   "name": "aggregation: the kits into a tote",
+   "signer": "cornermarket",
+   "hash": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "aggregate",
+     "when": "2026-10-14T08:20:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:other",
+     "action": "ADD",
+     "at": "2026-10-14T08:23:00.000Z",
+     "audience": "public",
+     "seq": 8
+    },
+    "refs": {
+     "what": [
+      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+     ],
+     "subject": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+     "to_place": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+     "place": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "bd6c9fd40e61b9843c6c3e46a0d013f02ef4fe9ecf4515d227df7a8d69b0f178"
+    }
+   },
+   "signature": "cc7e99af5821004cb58d4d149dad86b6731ccd38ee1bd4e8814ac4df036502c7a5010eaba892dbfb36478e56e72e5f9ce4093dabe0e22acec406dd2a481f2b0f"
+  },
+  {
+   "name": "aggregation: the kits out of the tote",
+   "signer": "cornermarket",
+   "hash": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "aggregate",
+     "when": "2026-10-14T16:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:other",
+     "action": "DELETE",
+     "at": "2026-10-14T16:03:00.000Z",
+     "audience": "public",
+     "seq": 9
+    },
+    "refs": {
+     "what": [
+      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+     ],
+     "subject": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+     "to_place": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d",
+     "place": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+    }
+   },
+   "signature": "5fd783115f70e8e9bedc568cc3e2955297e831c3e059bf04a1301751fcc782fed9f0aa401353eea738f29253e1b7dbb007c88aefe67501662b34fe711ad75200"
+  },
+  {
+   "name": "receiving from an exempt source: the receiver assigns the code",
+   "signer": "cornermarket",
+   "hash": "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "receive",
+     "when": "2026-10-14T09:00:00.000Z",
+     "tz": "-07:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:receiving",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "action": "ADD",
+     "at": "2026-10-14T09:03:00.000Z",
+     "audience": "public",
+     "seq": 10
+    },
+    "refs": {
+     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+    }
+   },
+   "signature": "d428b4510b2713a7830436f4a0011ccc486f47d2ad7af12c7343fa353f590dfe78af90f4fa8b704badbecf9294cf4282f155d32bd44eb01036bc040cd905700c"
+  },
+  {
+   "name": "receiving from an exempt source: the receiver assigns the code (out0)",
+   "signer": "cornermarket",
+   "hash": "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "CM-RX-0001",
+     "amount": {
+      "value": "90",
+      "unit": "[lb_av]"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614180.100059.CM-RX-0001"
+      },
+      {
+       "scheme": "tlc",
+       "value": "CM-RX-0001"
+      },
+      {
+       "scheme": "tlc_source",
+       "value": "0614190000018"
+      }
+     ],
+     "commodity": "Roma tomatoes",
+     "at": "2026-10-14T09:03:00.000Z",
+     "audience": "public",
+     "seq": 11
+    },
+    "refs": {
+     "of": "e8189344300b2c8b90f7fe1e0c5d42899e999278a40b14ceaad63e3f1f326b7a",
+     "derives_from": [
+      "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+     ],
+     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+    }
+   },
+   "signature": "8e885207ba0657bd9785f566970e8ae6fb90910fa9a16830d74351e2e5a3ab85fa7f1d263491756190dfcc5e19175c5a9d8b5c6f9441be8c58f89424008ab40e"
+  },
+  {
+   "name": "harvesting: the catch",
+   "signer": "seabird",
+   "hash": "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "harvest",
+     "when": "2026-10-11T21:00:00.000Z",
+     "tz": "-08:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:commissioning",
+     "disposition": "urn:epcglobal:cbv:disp:active",
+     "action": "ADD",
+     "at": "2026-10-11T21:03:00.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "place": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1",
+     "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
+     "prev": "b769b6645de5342317707989fa45254666be397acff9e5f9a8c8395000cb8a16"
+    }
+   },
+   "signature": "e45d3c250d998c97f58d0da7fd12a87fd69b8ce6ed4db182149106bd09adc0468b57e3583c18c4876e81d5b3d56328f916c84dad94286460e43c4e5d391e4906"
+  },
+  {
+   "name": "harvesting: the catch (out0)",
+   "signer": "seabird",
+   "hash": "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "TRIP-0942",
+     "amount": {
+      "value": "640",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614170.100022.TRIP-0942"
+      }
+     ],
+     "commodity": "Atlantic cod",
+     "variety": "Gadus morhua",
+     "field_name": "FAO 27.IVb",
+     "at": "2026-10-11T21:03:00.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "of": "b769b6645de5342317707989fa45254666be397acff9e5f9a8c8395000cb8a16",
+     "derives_from": [
+      "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72"
+     ],
+     "place": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1",
+     "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
+     "prev": "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72"
+    }
+   },
+   "signature": "53be1a4d8b434d7d1a8900ae2a90dda0baf7395c7ee94599016273e72fa00b2be2565bfd86e7c1c2c31c3e2371fd912fbce6dcb13179184e81a64aa32a02fa09"
+  },
+  {
+   "name": "first land-based receiving: the dock fillets the catch",
+   "signer": "harbourfish",
+   "hash": "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802",
+   "block": {
+    "type": "transform",
+    "state": {
+     "kind": "first_land_receive",
+     "when": "2026-10-12T06:00:00.000Z",
+     "tz": "+01:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:receiving",
+     "disposition": "urn:epcglobal:cbv:disp:in_progress",
+     "at": "2026-10-12T06:03:00.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "derives_from": [
+      "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716"
+     ],
+     "place": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb",
+     "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+     "prev": "b4ae846e030b48af827f8355c28cd3499def6ff16252a47c2546c3f67d1adf0f"
+    }
+   },
+   "signature": "95b518945a63849641fcf5139ca13640f91fbeac1a110b03fea73147f06ec134feb9289bc29837e4bcce356ba61981f8dcce63d6288b43bd905b1939bdc20908"
+  },
+  {
+   "name": "first land-based receiving: the dock fillets the catch (out0)",
+   "signer": "harbourfish",
+   "hash": "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0",
+   "block": {
+    "type": "thing",
+    "state": {
+     "lot": "HF-285-1",
+     "amount": {
+      "value": "410",
+      "unit": "kg"
+     },
+     "marks": [
+      {
+       "scheme": "lgtin",
+       "value": "urn:epc:class:lgtin:0614175.100039.HF-285-1"
+      },
+      {
+       "scheme": "tlc",
+       "value": "HF-285-1"
+      },
+      {
+       "scheme": "tlc_source",
+       "value": "0614175000019"
+      }
+     ],
+     "at": "2026-10-12T06:03:00.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "of": "b4ae846e030b48af827f8355c28cd3499def6ff16252a47c2546c3f67d1adf0f",
+     "derives_from": [
+      "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802"
+     ],
+     "place": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb",
+     "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+     "prev": "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802"
+    }
+   },
+   "signature": "16a3778786f671c13f77758734a2abc12d74461fdc436201e94b7c4db023196de8d007289dd44be7eb3f9754459ac1a35f73c92c6985770cbea914bd68df2600"
+  },
+  {
+   "name": "transaction: the fillets sold on invoice",
+   "signer": "harbourfish",
+   "hash": "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "transaction",
+     "when": "2026-10-12T10:00:00.000Z",
+     "tz": "+01:00",
+     "biz_step": "urn:epcglobal:cbv:bizstep:selling",
+     "action": "ADD",
+     "biz_transactions": [
+      {
+       "type": "urn:epcglobal:cbv:btt:inv",
+       "id": "urn:epc:id:gdti:0614175.00003.INV-3317"
+      }
+     ],
+     "at": "2026-10-12T10:03:00.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "what": [
+      "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0"
+     ],
+     "to_owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+     "prev": "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0"
+    }
+   },
+   "signature": "21a88cf3ebd70ce56247bbfc1d72ae440d77485673898ef981c9615d627b4d8d04ba4ceaefc2bf39928e3c42e56f25f7ef2b33384997df90a2605d83a9a1f209"
+  },
+  {
+   "name": "transaction: Corner Market accepts the fillets",
+   "signer": "cornermarket",
+   "hash": "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682",
+   "block": {
+    "type": "transfer",
+    "state": {
+     "kind": "receive",
+     "status": "accepted",
+     "when": "2026-10-12T10:20:00.000Z",
+     "at": "2026-10-11T12:00:29.000Z",
+     "audience": "public",
+     "seq": 12
+    },
+    "refs": {
+     "answers": "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1"
+    }
+   },
+   "signature": "742f1959f0abaa8c9b82bc0db7b8db967f1e9d3179bcab66779f22e83530da8439495d36626d2ada5f0890a9473d21409e23b67f55f7c063fe3f6ab2f2453d08"
+  },
+  {
+   "name": "escape hatch: storing, which no row maps",
+   "signer": "cornermarket",
+   "hash": "8d9e353fdbe2dc25de2da5a6e838351f1a399aa72fb8ccbdbfcffc9496a81882",
+   "block": {
+    "type": "observe",
+    "state": {
+     "kind": "epcis",
+     "epcis_type": "ObjectEvent",
+     "biz_step": "urn:epcglobal:cbv:bizstep:storing",
+     "when": "2026-10-14T12:00:00.000Z",
+     "raw": "53bdc40afd128342b6584fe8207c22c34f23caf5c3a2cc570c78e3234182ada6",
+     "at": "2026-10-14T12:03:00.000Z",
+     "audience": "public",
+     "seq": 13
+    },
+    "refs": {
+     "place": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+    }
+   },
+   "signature": "5d9936c5156902950283afe0cd025bc48dbe85fc4daa665435f5342de875c989e8c054a36e3765fb79206bb3c2a177260f203c10ad2a97378408f2240951a609"
+  },
+  {
+   "name": "recall grant: Metro Fresh to the regulator",
+   "signer": "metrofresh",
+   "hash": "ad0e7e0e46cb2709ec5e28e643f6a5d17067341a39936f8d20a55a96c5c2886e",
+   "block": {
+    "type": "grant",
+    "state": {
+     "kind": "recall",
+     "answer_within": "PT24H",
+     "marks": [
+      {
+       "scheme": "tlc",
+       "value": "F-285-A"
+      },
+      {
+       "scheme": "tlc",
+       "value": "DC-SK-1001"
+      }
+     ],
+     "at": "2026-10-11T12:00:30.000Z",
+     "audience": "public",
+     "seq": 10
+    },
+    "refs": {
+     "to": "84420e82bfc71db94e5ca8c1042fbf3a5093d5bf4e165d004ed2d460079ff6cb",
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+    }
+   },
+   "signature": "c70581b12c800f106f79370f8f050fae397881e9fbf491d363974137b18d011c0270af4dd527ac8fad9a05ab2af05b6ac3ea7e8254591a4868796873e7d10505"
+  }
+ ],
+ "events": [
+  {
+   "name": "harvesting: Field A",
+   "signer": "fieldhouse",
+   "before": 29,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-12T05:30:00.000Z",
+    "recordTime": "2026-10-12T05:33:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "eventID": "ni:///sha-256;7c1f2a?ver=CBV2.0",
+    "action": "ADD",
+    "bizStep": "urn:epcglobal:cbv:bizstep:commissioning",
+    "fb:cte": "harvest",
+    "disposition": "urn:epcglobal:cbv:disp:active",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614141.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614141.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107346.FLD-A-1012",
+      "quantity": 1200,
+      "uom": "KGM"
+     }
+    ],
+    "ilmd": {
+     "fb:commodity": "Romaine lettuce",
+     "fb:variety": "Green Towers",
+     "fb:fieldName": "Field A"
+    }
+   },
+   "blocks": [
+    "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822",
+    "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "cooling: the packhouse cooler",
+   "signer": "fieldhouse",
+   "before": 31,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-12T09:00:00.000Z",
+    "recordTime": "2026-10-12T09:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:other",
+    "fb:cte": "cool",
+    "disposition": "urn:epcglobal:cbv:disp:active",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614141.00002.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614141.00002.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107346.FLD-A-1012",
+      "quantity": 1200,
+      "uom": "KGM"
+     }
+    ]
+   },
+   "blocks": [
+    "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "initial packing: romaine hearts",
+   "signer": "fieldhouse",
+   "before": 32,
+   "event": {
+    "type": "TransformationEvent",
+    "eventTime": "2026-10-12T14:00:00.000Z",
+    "recordTime": "2026-10-12T14:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "bizStep": "urn:epcglobal:cbv:bizstep:packing",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614141.00002.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614141.00002.0"
+    },
+    "inputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107346.FLD-A-1012",
+      "quantity": 1200,
+      "uom": "KGM"
+     }
+    ],
+    "outputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107353.F-285-A",
+      "quantity": 1180,
+      "uom": "KGM"
+     }
+    ],
+    "ilmd": {
+     "cbvmda:itemExpirationDate": "2026-10-22"
+    }
+   },
+   "blocks": [
+    "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
+    "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "harvesting: Green Acres Field B",
+   "signer": "greenacres",
+   "before": 34,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-12T06:10:00.000Z",
+    "recordTime": "2026-10-12T06:13:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "ADD",
+    "bizStep": "urn:epcglobal:cbv:bizstep:commissioning",
+    "fb:cte": "harvest",
+    "disposition": "urn:epcglobal:cbv:disp:active",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614155.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614155.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614155.107340.FLD-B-0077",
+      "quantity": 800,
+      "uom": "KGM"
+     }
+    ],
+    "ilmd": {
+     "fb:commodity": "Romaine lettuce",
+     "fb:variety": "Parris Island",
+     "fb:fieldName": "Field B"
+    }
+   },
+   "blocks": [
+    "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0",
+    "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "initial packing: trimmed romaine",
+   "signer": "greenacres",
+   "before": 36,
+   "event": {
+    "type": "TransformationEvent",
+    "eventTime": "2026-10-12T13:20:00.000Z",
+    "recordTime": "2026-10-12T13:23:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "bizStep": "urn:epcglobal:cbv:bizstep:packing",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614155.00002.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614155.00002.0"
+    },
+    "inputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614155.107340.FLD-B-0077",
+      "quantity": 800,
+      "uom": "KGM"
+     }
+    ],
+    "outputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614155.107357.GA-285-B",
+      "quantity": 760,
+      "uom": "KGM"
+     }
+    ]
+   },
+   "blocks": [
+    "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
+    "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "shipping: Fieldhouse to Metro Fresh",
+   "signer": "fieldhouse",
+   "before": 38,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-13T06:00:00.000Z",
+    "recordTime": "2026-10-13T06:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:shipping",
+    "disposition": "urn:epcglobal:cbv:disp:in_transit",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614141.00002.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107353.F-285-A",
+      "quantity": 1180,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:bol",
+      "bizTransaction": "urn:epc:id:gdti:0614141.00007.BOL-5521"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614141.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:location",
+      "source": "urn:epc:id:sgln:0614141.00002.0"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614160.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:possessing_party",
+      "destination": "urn:epc:id:pgln:0614195.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:location",
+      "destination": "urn:epc:id:sgln:0614160.00001.0"
+     }
+    ]
+   },
+   "blocks": [
+    "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "shipping: Green Acres to Metro Fresh",
+   "signer": "greenacres",
+   "before": 39,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-13T05:00:00.000Z",
+    "recordTime": "2026-10-13T05:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:shipping",
+    "disposition": "urn:epcglobal:cbv:disp:in_transit",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614155.00002.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614155.107357.GA-285-B",
+      "quantity": 760,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:bol",
+      "bizTransaction": "urn:epc:id:gdti:0614141.00007.BOL-7710"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614155.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:location",
+      "source": "urn:epc:id:sgln:0614155.00002.0"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614160.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:possessing_party",
+      "destination": "urn:epc:id:pgln:0614195.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:location",
+      "destination": "urn:epc:id:sgln:0614160.00001.0"
+     }
+    ]
+   },
+   "blocks": [
+    "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "receiving: Metro Fresh takes the Green Acres lot",
+   "signer": "metrofresh",
+   "before": 40,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-13T08:15:00.000Z",
+    "recordTime": "2026-10-13T08:18:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:receiving",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614155.107357.GA-285-B",
+      "quantity": 760,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:bol",
+      "bizTransaction": "urn:epc:id:gdti:0614141.00007.BOL-7710"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614155.00000"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614160.00000"
+     }
+    ]
+   },
+   "blocks": [
+    "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+    "9b68811552581f532740fbd3c42e216efe0fc3a66a8981befbe10f93292f36d9"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "receiving: Metro Fresh takes the Fieldhouse lot",
+   "signer": "metrofresh",
+   "before": 42,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-13T09:30:00.000Z",
+    "recordTime": "2026-10-13T09:33:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:receiving",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107353.F-285-A",
+      "quantity": 1180,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:bol",
+      "bizTransaction": "urn:epc:id:gdti:0614141.00007.BOL-5521"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614141.00000"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614160.00000"
+     }
+    ]
+   },
+   "blocks": [
+    "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+    "0938a8c0473fccf0d2d83f05d45966a6b0495e6b313dc103fcf6e9cd729116c8"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "transformation: salad kits",
+   "signer": "metrofresh",
+   "before": 44,
+   "event": {
+    "type": "TransformationEvent",
+    "eventTime": "2026-10-13T11:00:00.000Z",
+    "recordTime": "2026-10-13T11:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "bizStep": "urn:epcglobal:cbv:bizstep:commissioning",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "inputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614141.107353.F-285-A",
+      "quantity": 1180,
+      "uom": "KGM"
+     },
+     {
+      "epcClass": "urn:epc:class:lgtin:0614155.107357.GA-285-B",
+      "quantity": 760,
+      "uom": "KGM"
+     }
+    ],
+    "outputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614160.100011.DC-SK-1001",
+      "quantity": 1700,
+      "uom": "KGM"
+     }
+    ],
+    "ilmd": {
+     "cbvmda:itemExpirationDate": "2026-10-20"
+    }
+   },
+   "blocks": [
+    "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
+    "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "shipping: Metro Fresh to Corner Market",
+   "signer": "metrofresh",
+   "before": 46,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-14T04:30:00.000Z",
+    "recordTime": "2026-10-14T04:33:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:shipping",
+    "disposition": "urn:epcglobal:cbv:disp:in_transit",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614160.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614160.100011.DC-SK-1001",
+      "quantity": 1700,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:bol",
+      "bizTransaction": "urn:epc:id:gdti:0614141.00007.BOL-8802"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614160.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:location",
+      "source": "urn:epc:id:sgln:0614160.00001.0"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614190.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:possessing_party",
+      "destination": "urn:epc:id:pgln:0614195.00000"
+     },
+     {
+      "type": "urn:epcglobal:cbv:sdt:location",
+      "destination": "urn:epc:id:sgln:0614190.00001.0"
+     }
+    ]
+   },
+   "blocks": [
+    "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "receiving: Corner Market takes the kits",
+   "signer": "cornermarket",
+   "before": 47,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-14T07:45:00.000Z",
+    "recordTime": "2026-10-14T07:48:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:receiving",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614190.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614190.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614160.100011.DC-SK-1001",
+      "quantity": 1700,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:bol",
+      "bizTransaction": "urn:epc:id:gdti:0614141.00007.BOL-8802"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614160.00000"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614190.00000"
+     }
+    ]
+   },
+   "blocks": [
+    "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+    "bd6c9fd40e61b9843c6c3e46a0d013f02ef4fe9ecf4515d227df7a8d69b0f178"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "aggregation: the kits into a tote",
+   "signer": "cornermarket",
+   "before": 49,
+   "event": {
+    "type": "AggregationEvent",
+    "eventTime": "2026-10-14T08:20:00.000Z",
+    "recordTime": "2026-10-14T08:23:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "ADD",
+    "bizStep": "urn:epcglobal:cbv:bizstep:other",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614190.00002.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614190.00002.0"
+    },
+    "parentID": "urn:epc:id:sscc:0614190.1000000017",
+    "childQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614160.100011.DC-SK-1001",
+      "quantity": 1700,
+      "uom": "KGM"
+     }
+    ]
+   },
+   "blocks": [
+    "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "aggregation: the kits out of the tote",
+   "signer": "cornermarket",
+   "before": 50,
+   "event": {
+    "type": "AggregationEvent",
+    "eventTime": "2026-10-14T16:00:00.000Z",
+    "recordTime": "2026-10-14T16:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "DELETE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:other",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614190.00003.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614190.00003.0"
+    },
+    "parentID": "urn:epc:id:sscc:0614190.1000000017",
+    "childQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614160.100011.DC-SK-1001",
+      "quantity": 1700,
+      "uom": "KGM"
+     }
+    ]
+   },
+   "blocks": [
+    "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "receiving from an exempt source: the receiver assigns the code",
+   "signer": "cornermarket",
+   "before": 51,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-14T09:00:00.000Z",
+    "recordTime": "2026-10-14T09:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "ADD",
+    "bizStep": "urn:epcglobal:cbv:bizstep:receiving",
+    "fb:cte": "receive",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614190.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614190.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614180.100059.CM-RX-0001",
+      "quantity": 90,
+      "uom": "LBR"
+     }
+    ],
+    "ilmd": {
+     "fb:commodity": "Roma tomatoes"
+    }
+   },
+   "blocks": [
+    "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c",
+    "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "harvesting: the catch",
+   "signer": "seabird",
+   "before": 53,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-11T21:00:00.000Z",
+    "recordTime": "2026-10-11T21:03:00.000Z",
+    "eventTimeZoneOffset": "-08:00",
+    "action": "ADD",
+    "bizStep": "urn:epcglobal:cbv:bizstep:commissioning",
+    "fb:cte": "harvest",
+    "disposition": "urn:epcglobal:cbv:disp:active",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614170.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614170.00001.0"
+    },
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614170.100022.TRIP-0942",
+      "quantity": 640,
+      "uom": "KGM"
+     }
+    ],
+    "ilmd": {
+     "fb:commodity": "Atlantic cod",
+     "fb:variety": "Gadus morhua",
+     "fb:fieldName": "FAO 27.IVb"
+    }
+   },
+   "blocks": [
+    "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72",
+    "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "first land-based receiving: the dock fillets the catch",
+   "signer": "harbourfish",
+   "before": 55,
+   "event": {
+    "type": "TransformationEvent",
+    "eventTime": "2026-10-12T06:00:00.000Z",
+    "recordTime": "2026-10-12T06:03:00.000Z",
+    "eventTimeZoneOffset": "+01:00",
+    "fb:cte": "first_land_receive",
+    "bizStep": "urn:epcglobal:cbv:bizstep:receiving",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614175.00001.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614175.00001.0"
+    },
+    "inputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614170.100022.TRIP-0942",
+      "quantity": 640,
+      "uom": "KGM"
+     }
+    ],
+    "outputQuantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614175.100039.HF-285-1",
+      "quantity": 410,
+      "uom": "KGM"
+     }
+    ]
+   },
+   "blocks": [
+    "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802",
+    "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "transaction: the fillets sold on invoice",
+   "signer": "harbourfish",
+   "before": 57,
+   "event": {
+    "type": "TransactionEvent",
+    "eventTime": "2026-10-12T10:00:00.000Z",
+    "recordTime": "2026-10-12T10:03:00.000Z",
+    "eventTimeZoneOffset": "+01:00",
+    "action": "ADD",
+    "bizStep": "urn:epcglobal:cbv:bizstep:selling",
+    "quantityList": [
+     {
+      "epcClass": "urn:epc:class:lgtin:0614175.100039.HF-285-1",
+      "quantity": 410,
+      "uom": "KGM"
+     }
+    ],
+    "bizTransactionList": [
+     {
+      "type": "urn:epcglobal:cbv:btt:inv",
+      "bizTransaction": "urn:epc:id:gdti:0614175.00003.INV-3317"
+     }
+    ],
+    "sourceList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "source": "urn:epc:id:pgln:0614175.00000"
+     }
+    ],
+    "destinationList": [
+     {
+      "type": "urn:epcglobal:cbv:sdt:owning_party",
+      "destination": "urn:epc:id:pgln:0614190.00000"
+     }
+    ]
+   },
+   "blocks": [
+    "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+    "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+   ],
+   "roundtrip": true
+  },
+  {
+   "name": "escape hatch: storing, which no row maps",
+   "signer": "cornermarket",
+   "before": 59,
+   "event": {
+    "type": "ObjectEvent",
+    "eventTime": "2026-10-14T12:00:00.000Z",
+    "recordTime": "2026-10-14T12:03:00.000Z",
+    "eventTimeZoneOffset": "-07:00",
+    "action": "OBSERVE",
+    "bizStep": "urn:epcglobal:cbv:bizstep:storing",
+    "disposition": "urn:epcglobal:cbv:disp:in_progress",
+    "readPoint": {
+     "id": "urn:epc:id:sgln:0614190.00002.0"
+    },
+    "bizLocation": {
+     "id": "urn:epc:id:sgln:0614190.00002.0"
+    },
+    "epcList": [
+     "urn:epc:id:sscc:0614190.1000000017"
+    ]
+   },
+   "blocks": [
+    "8d9e353fdbe2dc25de2da5a6e838351f1a399aa72fb8ccbdbfcffc9496a81882"
+   ],
+   "roundtrip": false,
+   "note": "The raw document is kept by its hash; the way back needs the document."
+  }
+ ],
+ "folds": [
+  {
+   "name": "Metro Fresh owns the Fieldhouse lot once it receives it",
+   "op": "ownership",
+   "thing": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+   "held": "all",
+   "expect": {
+    "owner": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+    "transfers": [
+     "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21"
+    ],
+    "conflict": null
+   }
+  },
+  {
+   "name": "Corner Market owns the kits",
+   "op": "ownership",
+   "thing": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "held": "all",
+   "expect": {
+    "owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+    "transfers": [
+     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+    ],
+    "conflict": null
+   }
+  },
+  {
+   "name": "the fillets belong to Corner Market once the sale is accepted",
+   "op": "ownership",
+   "thing": "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0",
+   "held": "all",
+   "expect": {
+    "owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+    "transfers": [
+     "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641"
+    ],
+    "conflict": null
+   }
+  },
+  {
+   "name": "the harvest stays with the farm that made it",
+   "op": "ownership",
+   "thing": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
+   "held": "all",
+   "expect": {
+    "owner": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+    "transfers": [],
+    "conflict": null
+   }
+  },
+  {
+   "name": "the Fieldhouse lot is at Metro Fresh after it arrives",
+   "op": "where_now",
+   "thing": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+   "held": "all",
+   "expect": [
+    "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8"
+   ]
+  },
+  {
+   "name": "the kits, in the tote, are where the tote is",
+   "op": "where_now",
+   "thing": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "held": "before the unload",
+   "expect": [
+    "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac"
+   ]
+  },
+  {
+   "name": "the kits, taken out onto the sales floor, are on the sales floor",
+   "op": "where_now",
+   "thing": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "held": "all",
+   "expect": [
+    "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d"
+   ]
+  },
+  {
+   "name": "the tomatoes are where they were received",
+   "op": "where_now",
+   "thing": "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1",
+   "held": "all",
+   "expect": [
+    "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d"
+   ]
+  }
+ ],
+ "negatives": [
+  {
+   "name": "a shipping transfer that does not name the profile schema is refused",
+   "block": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+   "without": "refs.schema",
+   "codes": [
+    "undeclared_field"
+   ]
+  }
+ ],
+ "traces": [
+  {
+   "name": "backward from the salad kits",
+   "tlc": "DC-SK-1001",
+   "direction": "backward",
+   "expect": {
+    "lots": [
+     "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549",
+     "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+     "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+     "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
+     "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+    ],
+    "blocks": [
+     "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822",
+     "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0",
+     "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5",
+     "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
+     "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
+     "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+     "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+     "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+     "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+     "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
+     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+     "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+     "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
+     "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+    ],
+    "rows": [
+     {
+      "cte": "harvest",
+      "tlc": [],
+      "tlc_source": [],
+      "product": [
+       "Romaine lettuce, field run"
+      ],
+      "when": "2026-10-12T05:30:00.000Z",
+      "quantity": {
+       "value": "1200",
+       "unit": "kg"
+      },
+      "location": "0614141000012",
+      "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+      "block": "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822"
+     },
+     {
+      "cte": "harvest",
+      "tlc": [],
+      "tlc_source": [],
+      "product": [
+       "Romaine lettuce, field run (Green Acres)"
+      ],
+      "when": "2026-10-12T06:10:00.000Z",
+      "quantity": {
+       "value": "800",
+       "unit": "kg"
+      },
+      "location": "0614155000015",
+      "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+      "block": "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0"
+     },
+     {
+      "cte": "cool",
+      "tlc": [],
+      "tlc_source": [],
+      "product": [
+       "Romaine lettuce, field run"
+      ],
+      "when": "2026-10-12T09:00:00.000Z",
+      "quantity": {
+       "value": "1200",
+       "unit": "kg"
+      },
+      "location": "0614141000029",
+      "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+      "block": "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5"
+     },
+     {
+      "cte": "pack",
+      "tlc": [
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022"
+      ],
+      "product": [
+       "Romaine lettuce, field run (Green Acres)",
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-12T13:20:00.000Z",
+      "location": "0614155000022",
+      "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+      "block": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+     },
+     {
+      "cte": "pack",
+      "tlc": [
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029"
+      ],
+      "product": [
+       "Romaine hearts, 3 pack",
+       "Romaine lettuce, field run"
+      ],
+      "when": "2026-10-12T14:00:00.000Z",
+      "location": "0614141000029",
+      "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+      "block": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022"
+      ],
+      "product": [
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-13T05:00:00.000Z",
+      "quantity": {
+       "value": "760",
+       "unit": "kg"
+      },
+      "location": "0614155000022",
+      "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+      "block": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+      "ship_to": "0614160000017",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-7710"
+      ]
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029"
+      ],
+      "product": [
+       "Romaine hearts, 3 pack"
+      ],
+      "when": "2026-10-13T06:00:00.000Z",
+      "quantity": {
+       "value": "1180",
+       "unit": "kg"
+      },
+      "location": "0614141000029",
+      "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+      "block": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+      "ship_to": "0614160000017",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-5521"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022"
+      ],
+      "product": [
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-13T08:15:00.000Z",
+      "quantity": {
+       "value": "760",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-7710"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029"
+      ],
+      "product": [
+       "Romaine hearts, 3 pack"
+      ],
+      "when": "2026-10-13T09:30:00.000Z",
+      "quantity": {
+       "value": "1180",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-5521"
+      ]
+     },
+     {
+      "cte": "process",
+      "tlc": [
+       "DC-SK-1001",
+       "F-285-A",
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614141000029",
+       "0614155000022",
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit",
+       "Romaine hearts, 3 pack",
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-13T11:00:00.000Z",
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T04:30:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+      "ship_to": "0614190000018",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T07:45:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614190000018",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      ]
+     },
+     {
+      "cte": "aggregate",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T08:20:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614190000025",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+     },
+     {
+      "cte": "aggregate",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T16:00:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614190000032",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+      "ship_to": "0614190000032"
+     }
+    ]
+   },
+   "note": "Every critical tracking event of the kits and of the lots they were made from, back to both harvests."
+  },
+  {
+   "name": "forward from the Fieldhouse lot",
+   "tlc": "F-285-A",
+   "direction": "forward",
+   "expect": {
+    "lots": [
+     "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+     "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+     "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+    ],
+    "blocks": [
+     "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
+     "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+     "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+     "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
+     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+     "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+     "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
+     "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+    ],
+    "rows": [
+     {
+      "cte": "pack",
+      "tlc": [
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029"
+      ],
+      "product": [
+       "Romaine hearts, 3 pack"
+      ],
+      "when": "2026-10-12T14:00:00.000Z",
+      "quantity": {
+       "value": "1180",
+       "unit": "kg"
+      },
+      "location": "0614141000029",
+      "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+      "block": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029"
+      ],
+      "product": [
+       "Romaine hearts, 3 pack"
+      ],
+      "when": "2026-10-13T06:00:00.000Z",
+      "quantity": {
+       "value": "1180",
+       "unit": "kg"
+      },
+      "location": "0614141000029",
+      "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+      "block": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+      "ship_to": "0614160000017",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-5521"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029"
+      ],
+      "product": [
+       "Romaine hearts, 3 pack"
+      ],
+      "when": "2026-10-13T09:30:00.000Z",
+      "quantity": {
+       "value": "1180",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-5521"
+      ]
+     },
+     {
+      "cte": "process",
+      "tlc": [
+       "DC-SK-1001",
+       "F-285-A"
+      ],
+      "tlc_source": [
+       "0614141000029",
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit",
+       "Romaine hearts, 3 pack"
+      ],
+      "when": "2026-10-13T11:00:00.000Z",
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T04:30:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+      "ship_to": "0614190000018",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T07:45:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614190000018",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      ]
+     },
+     {
+      "cte": "aggregate",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T08:20:00.000Z",
+      "location": "0614190000025",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+     },
+     {
+      "cte": "aggregate",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T16:00:00.000Z",
+      "location": "0614190000032",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+      "ship_to": "0614190000032"
+     }
+    ]
+   },
+   "note": "Where the lot went: the kits made from it and their shipment and receiving."
+  },
+  {
+   "name": "forward from the Green Acres lot",
+   "tlc": "GA-285-B",
+   "direction": "forward",
+   "expect": {
+    "lots": [
+     "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+     "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+     "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306"
+    ],
+    "blocks": [
+     "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
+     "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+     "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+     "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
+     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+     "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+     "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
+     "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+    ],
+    "rows": [
+     {
+      "cte": "pack",
+      "tlc": [
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022"
+      ],
+      "product": [
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-12T13:20:00.000Z",
+      "quantity": {
+       "value": "760",
+       "unit": "kg"
+      },
+      "location": "0614155000022",
+      "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+      "block": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022"
+      ],
+      "product": [
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-13T05:00:00.000Z",
+      "quantity": {
+       "value": "760",
+       "unit": "kg"
+      },
+      "location": "0614155000022",
+      "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+      "block": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+      "ship_to": "0614160000017",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-7710"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022"
+      ],
+      "product": [
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-13T08:15:00.000Z",
+      "quantity": {
+       "value": "760",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-7710"
+      ]
+     },
+     {
+      "cte": "process",
+      "tlc": [
+       "DC-SK-1001",
+       "GA-285-B"
+      ],
+      "tlc_source": [
+       "0614155000022",
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit",
+       "Romaine, trimmed 5 lb"
+      ],
+      "when": "2026-10-13T11:00:00.000Z",
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+     },
+     {
+      "cte": "ship",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T04:30:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614160000017",
+      "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+      "block": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+      "ship_to": "0614190000018",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T07:45:00.000Z",
+      "quantity": {
+       "value": "1700",
+       "unit": "kg"
+      },
+      "location": "0614190000018",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+      "reference": [
+       "urn:epc:id:gdti:0614141.00007.BOL-8802"
+      ]
+     },
+     {
+      "cte": "aggregate",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T08:20:00.000Z",
+      "location": "0614190000025",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+     },
+     {
+      "cte": "aggregate",
+      "tlc": [
+       "DC-SK-1001"
+      ],
+      "tlc_source": [
+       "0614160000017"
+      ],
+      "product": [
+       "Caesar salad kit"
+      ],
+      "when": "2026-10-14T16:00:00.000Z",
+      "location": "0614190000032",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+      "ship_to": "0614190000032"
+     }
+    ]
+   }
+  },
+  {
+   "name": "backward from the fillets",
+   "tlc": "HF-285-1",
+   "direction": "backward",
+   "expect": {
+    "lots": [
+     "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0",
+     "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716"
+    ],
+    "blocks": [
+     "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72",
+     "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802",
+     "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+     "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+    ],
+    "rows": [
+     {
+      "cte": "harvest",
+      "tlc": [],
+      "tlc_source": [],
+      "product": [
+       "Cod, whole, landed"
+      ],
+      "when": "2026-10-11T21:00:00.000Z",
+      "quantity": {
+       "value": "640",
+       "unit": "kg"
+      },
+      "location": "0614170000014",
+      "party": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
+      "block": "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72"
+     },
+     {
+      "cte": "first_land_receive",
+      "tlc": [
+       "HF-285-1"
+      ],
+      "tlc_source": [
+       "0614175000019"
+      ],
+      "product": [
+       "Cod fillet, fresh",
+       "Cod, whole, landed"
+      ],
+      "when": "2026-10-12T06:00:00.000Z",
+      "location": "0614175000019",
+      "party": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+      "block": "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802"
+     },
+     {
+      "cte": "transaction",
+      "tlc": [
+       "HF-285-1"
+      ],
+      "tlc_source": [
+       "0614175000019"
+      ],
+      "product": [
+       "Cod fillet, fresh"
+      ],
+      "when": "2026-10-12T10:00:00.000Z",
+      "quantity": {
+       "value": "410",
+       "unit": "kg"
+      },
+      "party": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+      "block": "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+      "reference": [
+       "urn:epc:id:gdti:0614175.00003.INV-3317"
+      ]
+     },
+     {
+      "cte": "receive",
+      "tlc": [
+       "HF-285-1"
+      ],
+      "tlc_source": [
+       "0614175000019"
+      ],
+      "product": [
+       "Cod fillet, fresh"
+      ],
+      "when": "2026-10-12T10:20:00.000Z",
+      "quantity": {
+       "value": "410",
+       "unit": "kg"
+      },
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+     }
+    ]
+   },
+   "note": "The catch, the landing and the sale."
+  },
+  {
+   "name": "forward from the tomatoes",
+   "tlc": "CM-RX-0001",
+   "direction": "forward",
+   "expect": {
+    "lots": [
+     "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1"
+    ],
+    "blocks": [
+     "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+    ],
+    "rows": [
+     {
+      "cte": "receive",
+      "tlc": [
+       "CM-RX-0001"
+      ],
+      "tlc_source": [
+       "0614190000018"
+      ],
+      "product": [
+       "Roma tomatoes, 25 lb"
+      ],
+      "when": "2026-10-14T09:00:00.000Z",
+      "quantity": {
+       "value": "90",
+       "unit": "[lb_av]"
+      },
+      "location": "0614190000018",
+      "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+      "block": "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+     }
+    ]
+   },
+   "note": "A lot received from an exempt source: one row, the receiver's own."
+  }
+ ],
+ "recall": {
+  "grant": "ad0e7e0e46cb2709ec5e28e643f6a5d17067341a39936f8d20a55a96c5c2886e",
+  "filter": {
+   "marks": {
+    "scheme": "tlc",
+    "value": "F-285-A"
+   }
+  },
+  "pulls": [
+   {
+    "name": "a pull by lot code selects the lot",
+    "block": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+    "expect": true
+   },
+   {
+    "name": "and not another farm's lot",
+    "block": "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+    "expect": false
+   },
+   {
+    "name": "and not the kits made from it (they carry their own code)",
+    "block": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+    "expect": false
+   }
+  ],
+  "answer_within": "PT24H"
+ }
+}

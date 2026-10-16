@@ -45,6 +45,8 @@ A **suite** names a hash, a signature algorithm and an envelope (key agreement a
 | `p256` | SHA-256 | ECDSA P-256 with SHA-256 | SPKI DER: `3059301306072a8648ce3d020106082a8648ce3d030107034200` then 65 bytes | `r` then `s`, 32 bytes each | ECDH P-256, 65 bytes (SEC1 uncompressed) | `p256-hkdf-sha256-aes-256-gcm` |
 | `sm` | SM3 | SM2 with SM3, user id `1234567812345678` | SPKI DER: `3059301306072a8648ce3d020106082a811ccf5501822d034200` then 65 bytes | `r` then `s`, 32 bytes each | SM2 curve ECDH, 65 bytes | `sm2-hkdf-sm3-sm4-gcm` |
 
+The `p256` signature has two forms: the 64-byte ECDSA signature, and a longer **passkey** form, a WebAuthn assertion that carries its own challenge (modules/passkeys.md). A reader tells them apart by length.
+
 A post-quantum suite (ML-DSA, ML-KEM, SHA3-256) is one more row. It is noted in `protocol.json` as `future` and is not usable until its sizes are fixed in vectors. A signature is never longer than the block limit allows.
 
 **A bare hash is SHA-256.** Any other hash carries its name as a prefix: `sm3:` then 64 hex characters. An id, a commitment or a manifest entry is written the same way. So a new hash needs no new protocol.

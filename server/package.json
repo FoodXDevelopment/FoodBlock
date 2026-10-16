@@ -2,9 +2,36 @@
   "name": "foodblock-node",
   "version": "1.6.0",
   "description": "A FoodBlock 1.6 node: Postgres for the blocks, HTTP for signed pull, push and .well-known/foodblock",
+  "keywords": [
+    "food",
+    "foodblock",
+    "node",
+    "postgres",
+    "protocol",
+    "provenance"
+  ],
+  "author": "FoodX <developers@foodx.com>",
+  "homepage": "https://www.foodx.world/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FoodXDevelopment/foodblock.git",
+    "directory": "server"
+  },
+  "bugs": {
+    "url": "https://github.com/FoodXDevelopment/foodblock/issues"
+  },
   "type": "module",
   "main": "node.js",
-  "private": true,
+  "bin": {
+    "foodblock-node": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "node.js",
+    "schema.sql",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "start": "node index.js",
     "test": "node --test test/node.test.js"
@@ -18,5 +45,11 @@
     "pg-mem": "^3.0.13",
     "supertest": "^7.2.2"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

@@ -62,6 +62,16 @@ class Writing(unittest.TestCase):
         with self.assertRaises(Exception):
             fb.open_copy(copy, ann["encryption"]["x25519_private"])
 
+    def test_a_passkey_challenge_is_the_blocks_id(self):
+        import base64
+        keys = fb.generate_keypair("p256")
+        block = fb.create("thing", {"kind": "eggs"}, {}, "p256")
+        want = base64.urlsafe_b64encode(bytes.fromhex(block["hash"])).decode().rstrip("=")
+        self.assertEqual(fb.passkey_challenge(block), want)
+        with self.assertRaises(Exception):
+            fb.passkey_signature("zz", "00", "00")
+        self.assertFalse(fb.verify(block, "00" * 64 + "0025" + "00" * 200, keys["public_key_sign"]))
+
     def test_every_suite_signs_seals_and_hashes(self):
         for suite in fb.SUITES:
             with self.subTest(suite):
