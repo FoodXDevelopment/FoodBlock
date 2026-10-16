@@ -2,14 +2,14 @@
   "$schema": "https://glama.ai/mcp/schemas/server.json",
   "maintainer": {
     "name": "FoodX",
-    "email": "dev@foodx.world",
-    "url": "https://foodx.world"
+    "email": "hello@foodx.network",
+    "url": "https://foodx.network"
   },
   "server": {
     "name": "foodblock-mcp",
     "description": "FoodBlock 1.6 for any AI agent: write signed, checked food blocks in one identity's key chain, and read every earlier shape. Eight tools.",
-    "repository": "https://github.com/FoodXDevelopment/foodblock",
-    "homepage": "https://foodx.world",
+    "repository": "https://github.com/FoodXDevelopment/FoodBlock",
+    "homepage": "https://foodx.network",
     "npm": "foodblock-mcp",
     "license": "MIT",
     "runtime": "node",

@@ -33,11 +33,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/FoodXDevelopment/foodblock.git",
+    "url": "https://github.com/FoodXDevelopment/FoodBlock.git",
     "directory": "mcp"
   },
   "mcpName": "io.github.FoodXDevelopment/foodblock-mcp",
-  "homepage": "https://foodx.world",
+  "homepage": "https://foodx.network",
   "author": "FoodX",
   "dependencies": {
     "@foodxdev/foodblock": "file:../sdk/javascript",

@@ -3,7 +3,7 @@
   "name": "io.github.FoodXDevelopment/foodblock-mcp",
   "description": "FoodBlock 1.6 for any AI agent: write signed, checked food blocks and read every earlier shape.",
   "repository": {
-    "url": "https://github.com/FoodXDevelopment/foodblock",
+    "url": "https://github.com/FoodXDevelopment/FoodBlock",
     "source": "github"
   },
   "version": "1.6.0",

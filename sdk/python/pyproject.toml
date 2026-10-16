@@ -22,9 +22,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://www.foodx.world/developers"
-Documentation = "https://www.foodx.world/developers"
-Source = "https://github.com/FoodXDevelopment/foodblock"
+Homepage = "https://www.foodx.network/developers"
+Documentation = "https://www.foodx.network/developers"
+Source = "https://github.com/FoodXDevelopment/FoodBlock"
 
 [tool.setuptools.packages.find]
 include = ["foodblock*"]

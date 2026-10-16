@@ -1,4 +1,4 @@
-module github.com/FoodXDevelopment/foodblock/sdk/go
+module github.com/FoodXDevelopment/FoodBlock/sdk/go
 
 go 1.24
 

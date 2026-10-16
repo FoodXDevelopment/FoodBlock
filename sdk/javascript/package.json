@@ -29,10 +29,10 @@
   ],
   "license": "MIT",
   "author": "FoodX <developers@foodx.com>",
-  "homepage": "https://www.foodx.world/developers",
+  "homepage": "https://www.foodx.network/developers",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FoodXDevelopment/foodblock"
+    "url": "https://github.com/FoodXDevelopment/FoodBlock"
   },
   "engines": {
     "node": ">=18.0.0"
