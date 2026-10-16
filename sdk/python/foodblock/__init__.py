@@ -16,7 +16,7 @@ from .protocol import (
 from . import identity, grant, fold, sync, cbor, strangers, legacy
 from .fold import promise_stage, promise_view, consent, circle_state, members_then, where_now, owner_of
 from .identity import identity_state
-from .strangers import receipt_code
+from .strangers import receipt_code, receipt_code_long, code_matches
 
 __all__ = [
     "VERSION", "PROTOCOL", "TYPES", "VERBS", "REF_KEYS", "FIELDS", "SUITES", "PEERS", "STATUSES", "POWERS", "CODES",
@@ -29,5 +29,5 @@ __all__ = [
     "wrap", "unwrap", "header", "seal_copy", "open_copy", "header_signed_by",
     "next_link", "check_chain", "causal_order", "causes_of", "past_of", "heads_among", "sees",
     "identity", "grant", "fold", "sync", "cbor", "strangers", "legacy",
-    "promise_stage", "promise_view", "consent", "circle_state", "identity_state", "members_then", "where_now", "owner_of", "receipt_code",
+    "promise_stage", "promise_view", "consent", "circle_state", "identity_state", "members_then", "where_now", "owner_of", "receipt_code", "receipt_code_long", "code_matches",
 ]

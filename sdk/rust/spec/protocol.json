@@ -446,7 +446,8 @@
   "currency": "^[A-Z]{3}$",
   "type_name": "^[a-z][a-z0-9_]*$",
   "lang": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
-  "receipt_code": "^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$"
+  "receipt_code": "^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$",
+  "receipt_code_long": "^[0-9A-HJKMNP-TV-Z]{5}-[0-9A-HJKMNP-TV-Z]{5}$"
  },
  "grammar_notes": {
   "duration": "Written without lookahead so every regex engine runs it.",
@@ -935,6 +936,11 @@
     "bits": 40,
     "alphabet": "crockford-base32",
     "group": "XXXX-XXXX"
+   },
+   "receipt_code_long": {
+    "bits": 50,
+    "alphabet": "crockford-base32",
+    "group": "XXXXX-XXXXX"
    }
   },
   "custody": {
@@ -1608,9 +1614,17 @@
    },
    "receipt_code": {
     "args": [
+     "id",
+     "long?: true for the ten-character form"
+    ],
+    "result": "the code of profiles/short-form.md: XXXX-XXXX, or XXXXX-XXXXX when long"
+   },
+   "code_matches": {
+    "args": [
+     "text: a code as a person types it",
      "id"
     ],
-    "result": "the code of profiles/short-form.md"
+    "result": "true when the text names the block: case, spaces and hyphens ignored, O read as 0, I and L as 1; eight characters match the short code, ten the long one"
    },
    "residency_refusals": {
     "args": [

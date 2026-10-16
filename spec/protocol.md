@@ -80,7 +80,7 @@ Core has 1 to 3 and 25. The rest are in the module that owns them, with the same
 | 8, 19 | identity.md |
 | 28 | passkeys.md |
 | 11, 12, 13, 14, 15, 22 | promises.md |
-| 16, 20, 21, 24, 29 | strangers.md |
+| 16, 20, 21, 24, 29, 30 | strangers.md |
 | 17 | privacy.md |
 | 18 | nodes.md |
 

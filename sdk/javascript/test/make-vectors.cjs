@@ -1342,16 +1342,34 @@ function doorVectors() {
   }
   {
     // The receipt code: the first 5 bytes (40 bits) of the id, in Crockford Base32, XXXX-XXXX.
-    const crockford = (hex) => {
+    const crockford = (hex, long = false) => {
       const A32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+      const n = long ? 10 : 8
       let bits = ''
-      for (const byte of Buffer.from(hex.slice(0, 10), 'hex')) bits += byte.toString(2).padStart(8, '0')
-      const chars = bits.match(/.{5}/g).map((b) => A32[parseInt(b, 2)]).join('')
-      return `${chars.slice(0, 4)}-${chars.slice(4)}`
+      for (const byte of Buffer.from(hex.slice(0, 14), 'hex')) bits += byte.toString(2).padStart(8, '0')
+      const chars = bits.slice(0, n * 5).match(/.{5}/g).map((b) => A32[parseInt(b, 2)]).join('')
+      return `${chars.slice(0, n / 2)}-${chars.slice(n / 2)}`
     }
     for (const id of [L.held[0].hash, sha('a deal'), '00' .repeat(32), 'ff'.repeat(32)]) door(`receipt code of ${id.slice(0, 10)}`, 'receipt_code', [id], { expect: crockford(id) })
     door('the receipt code of a prefixed id uses the hash bytes', 'receipt_code', [`sm3:${sha('x')}`], { expect: crockford(sha('x')) })
     assert.ok(PROTOCOL_GRAMMAR_RECEIPT.test(crockford(sha('a deal'))))
+    // The long form (a custodian whose index holds two blocks with one short code): the first 50 bits, XXXXX-XXXXX.
+    for (const id of [sha('a deal'), 'ff'.repeat(32)]) door(`long receipt code of ${id.slice(0, 10)}`, 'receipt_code', [id, true], { expect: crockford(id, true) })
+    assert.ok(new RegExp(PROTOCOL.grammar.receipt_code_long).test(crockford(sha('a deal'), true)))
+    // A typed code names a block the way a person types it: case, spaces and hyphens do not matter; O is 0, I and L are 1; only 8 or 10 characters match.
+    const deal = sha('a deal'), shortCode = crockford(deal), longCode = crockford(deal, true)
+    door('a typed code: exactly as shown', 'code_matches', [shortCode, deal], { expect: true })
+    door('a typed code: lower case', 'code_matches', [shortCode.toLowerCase(), deal], { expect: true })
+    door('a typed code: spaces for the hyphen, and around', 'code_matches', [` ${shortCode.replace('-', ' ')} `, deal], { expect: true })
+    door('a typed code: no hyphen at all', 'code_matches', [shortCode.replace('-', ''), deal], { expect: true })
+    door('a typed code: the long form', 'code_matches', [longCode, deal], { expect: true })
+    door('a typed code: another block\'s code', 'code_matches', [shortCode, sha('another deal')], { expect: false })
+    door('a typed code: seven characters match nothing', 'code_matches', [shortCode.slice(0, 8), deal], { expect: false })
+    door('a typed code: nine characters match nothing', 'code_matches', [shortCode + 'A', deal], { expect: false })
+    door('a typed code: a prefixed id uses the hash bytes', 'code_matches', [shortCode, `sm3:${deal}`], { expect: true })
+    const zeros = '00'.repeat(32)
+    door('a typed code: O is read as zero', 'code_matches', ['OOOO-OOOO', zeros], { expect: true })
+    door('a typed code: I and L are read as one', 'code_matches', ['IL11-lI1i', '0842108421'.padEnd(64, '0')], { expect: true })
   }
 
   // ---- Profiles ----

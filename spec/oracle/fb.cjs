@@ -37,14 +37,21 @@ const sha256 = s => crypto.createHash('sha256').update(s).digest('hex');
 const saltedHash = (salt, value, suite) => hashStr(suite || 'std', salt + (typeof value === 'string' ? value : jcs(value)));
 // recovery_key_hash (encoding.md): the identity's suite hash of the recovery key's SPKI hex as UTF-8.
 const recoveryKeyHash = (spkiHex, suite) => hashStr(suite || 'std', spkiHex);
-// Receipt code (short-form.md): first 5 bytes of the id, Crockford Base32, XXXX-XXXX. A prefixed id uses the hash bytes.
-function receiptCode(id) {
+// Receipt code (short-form.md): first 5 bytes of the id, Crockford Base32, XXXX-XXXX. A prefixed id uses the hash bytes. The long form is the first 50 bits, XXXXX-XXXXX.
+function receiptCode(id, long) {
   const hex = id.replace(/^[a-z0-9-]+:/, '');
-  let n = BigInt('0x' + hex.slice(0, 10));
+  const chars = long ? 10 : 8;
+  let n = BigInt('0x' + hex.slice(0, 14));
   const A = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
   let s = '';
-  for (let i = 0; i < 8; i++) { s = A[Number(n & 31n)] + s; n >>= 5n; }
-  return s.slice(0, 4) + '-' + s.slice(4);
+  for (let i = 0; i < chars; i++) s += A[Number((n >> BigInt(51 - 5 * i)) & 31n)];
+  return s.slice(0, chars / 2) + '-' + s.slice(chars / 2);
+}
+// A typed code names a block (short-form.md): case-insensitive, spaces and hyphens ignored, O is 0, I and L are 1; 8 characters match the short code, 10 the long one.
+function codeMatches(text, id) {
+  const typed = String(text).replace(/[\s-]/g, '').toUpperCase().replace(/O/g, '0').replace(/[IL]/g, '1');
+  if (typed.length !== 8 && typed.length !== 10) return false;
+  return receiptCode(id, typed.length === 10).replace('-', '') === typed;
 }
 
 // ================================================================ SM2 / SM4-GCM built by hand (GM/T 0003, 0004, 0002)
@@ -2181,7 +2188,8 @@ function door(op, ...a) {
     case 'withdrawal_seen': return withdrawalSeen(a[0], a[1], a[2], a[3]);
     case 'consent': return consentFold(a[0], a[1], a[2], a[3]);
     case 'admission_refusals': return admissionRefusals(a[0], a[1], a[2], a[3], a[4]);
-    case 'receipt_code': return receiptCode(a[0]);
+    case 'receipt_code': return receiptCode(a[0], a[1]);
+    case 'code_matches': return codeMatches(a[0], a[1]);
     case 'residency_refusals': return residencyRefusals(a[0], a[1]);
     case 'deposit_shape_ok': return depositShapeOk(a[0]);
     case 'deposit_paid': return depositPaid(a[0], a[1], a[2]);

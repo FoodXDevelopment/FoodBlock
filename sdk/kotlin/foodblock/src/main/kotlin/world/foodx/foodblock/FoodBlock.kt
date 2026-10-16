@@ -242,6 +242,10 @@ object FoodBlock {
 
     /** The short receipt code of a block id: `XXXX-XXXX` (Crockford Base32 of its first 5 bytes). */
     fun receiptCode(id: String): String = Native.invoke("receipt_code", JsonPrimitive(id)).string()
+    /** The ten-character form (first 50 bits, `XXXXX-XXXXX`), for a custodian whose index holds two blocks with one short code. */
+    fun receiptCodeLong(id: String): String = Native.invoke("receipt_code", JsonPrimitive(id), JsonPrimitive(true)).string()
+    /** Whether a typed code names this block: case, spaces and hyphens ignored, O read as 0, I and L as 1; 8 characters match the short code, 10 the long one. */
+    fun codeMatches(text: String, id: String): Boolean = Native.invoke("code_matches", JsonPrimitive(text), JsonPrimitive(id)).bool()
 
     // ---- Chains and causal order ----
 

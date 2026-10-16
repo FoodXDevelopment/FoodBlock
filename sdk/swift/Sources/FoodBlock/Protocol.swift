@@ -115,6 +115,10 @@ extension FoodBlock {
     public static func strictText(_ text: String) -> [Finding] { findings(Core.maybe("strict_text", text)) }
     /// The short receipt code of a block id: `XXXX-XXXX` (Crockford Base32 of its first 5 bytes).
     public static func receiptCode(_ id: String) -> String { (try? Core.string("receipt_code", id)) ?? "" }
+    /// The ten-character form (first 50 bits, `XXXXX-XXXXX`), for a custodian whose index holds two blocks with one short code.
+    public static func receiptCodeLong(_ id: String) -> String { (try? Core.string("receipt_code", id, true)) ?? "" }
+    /// Whether a typed code names this block: case, spaces and hyphens ignored, O read as 0, I and L as 1; 8 characters match the short code, 10 the long one.
+    public static func codeMatches(_ text: String, _ id: String) -> Bool { Core.bool("code_matches", text, id) }
     public static func isTime(_ value: Any?) -> Bool { Core.bool("is_time", value) }
     public static func isDate(_ value: Any?) -> Bool { Core.bool("is_date", value) }
     public static func amount(_ value: String, _ unit: String) -> JSON { (try? Core.json("amount", value, unit)) ?? [:] }

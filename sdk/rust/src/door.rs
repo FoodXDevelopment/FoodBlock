@@ -256,7 +256,8 @@ fn dispatch(op: &str, a: &Args) -> Out {
                 json!(crate::js::needs_of(a.v(0)))
             }
         }
-        "receipt_code" => json!(crate::strangers::receipt_code(a.s(0)?)),
+        "receipt_code" => json!(if truthy_arg(a.v(1)) { crate::strangers::receipt_code_long(a.s(0)?) } else { crate::strangers::receipt_code(a.s(0)?) }),
+        "code_matches" => json!(crate::strangers::code_matches(a.s(0)?, a.s(1)?)),
         "consent" => crate::strangers::consent(a.s(0)?, a.opt(1), &a.list(2), a.opt(3)),
         "admission_refusals" => Value::Array(
             crate::strangers::admission_refusals(a.v(0), a.s(1)?, &a.list(2), a.v(3), a.v(4).as_u64().unwrap_or(0))

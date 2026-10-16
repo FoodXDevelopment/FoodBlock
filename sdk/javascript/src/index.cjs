@@ -46,7 +46,7 @@ module.exports = {
   cbor,
 
   // Strangers, short form, tasks and deposits (the small rules)
-  strangers, receiptCode: strangers.receiptCode,
+  strangers, receiptCode: strangers.receiptCode, codeMatches: strangers.codeMatches,
 
   // The one-time converter for pre-1.6 data (not part of the protocol)
   legacy,

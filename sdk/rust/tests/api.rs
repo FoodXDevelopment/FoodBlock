@@ -75,6 +75,20 @@ fn strict_writing_is_refused_by_create() {
 fn the_receipt_code_is_five_bytes_in_crockford() {
     assert_eq!(strangers::receipt_code(&"00".repeat(32)).unwrap(), "0000-0000");
     assert_eq!(strangers::receipt_code(&"ff".repeat(32)).unwrap(), "ZZZZ-ZZZZ");
+    assert_eq!(strangers::receipt_code_long(&"ff".repeat(32)).unwrap(), "ZZZZZ-ZZZZZ");
+}
+
+#[test]
+fn a_typed_code_names_a_block_the_way_a_person_types_it() {
+    let id = format!("{}{}", "0123456789abcd", "00".repeat(25));
+    let short = strangers::receipt_code(&id).unwrap();
+    assert!(strangers::code_matches(&short, &id));
+    assert!(strangers::code_matches(&short.to_lowercase(), &id), "case does not matter");
+    assert!(strangers::code_matches(&short.replace('-', " "), &id), "a space for the hyphen");
+    assert!(strangers::code_matches(&strangers::receipt_code_long(&id).unwrap(), &id));
+    assert!(strangers::code_matches("OOOO-OOOO", &"00".repeat(32)), "O is read as zero");
+    assert!(!strangers::code_matches(&short[..short.len() - 1], &id), "seven characters match nothing");
+    assert!(!strangers::code_matches("ZZZZ-ZZZZ", &id));
 }
 
 // A passkey (spec/modules/passkeys.md): a real-shaped WebAuthn assertion from a test P-256 key opens a block, and the

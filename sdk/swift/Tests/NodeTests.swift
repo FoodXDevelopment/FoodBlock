@@ -151,5 +151,8 @@ final class NodeTests: XCTestCase {
         XCTAssertEqual(FoodBlock.types.count, 7)
         XCTAssertThrowsError(try Core.ask("read_as", [:]))
         XCTAssertEqual(FoodBlock.receiptCode(String(repeating: "0", count: 64)).count, 9)
+        XCTAssertEqual(FoodBlock.receiptCodeLong(String(repeating: "0", count: 64)).count, 11)
+        XCTAssertTrue(FoodBlock.codeMatches("oooo oooo", String(repeating: "0", count: 64)))
+        XCTAssertFalse(FoodBlock.codeMatches("0000-000", String(repeating: "0", count: 64)))
     }
 }

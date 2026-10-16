@@ -92,6 +92,9 @@ class ApiTest {
     @Test fun thereIsNoOlderShape() {
         assertFailsWith<FoodBlockException> { FoodBlock.call("read_as", buildJsonObject {}) }
         assertEquals(9, FoodBlock.receiptCode("0".repeat(64)).length)
+        assertEquals(11, FoodBlock.receiptCodeLong("0".repeat(64)).length)
+        assertEquals(true, FoodBlock.codeMatches("oooo oooo", "0".repeat(64)))
+        assertEquals(false, FoodBlock.codeMatches("0000-000", "0".repeat(64)))
     }
 
     @Test fun badInputIsAnErrorNotACrash() {

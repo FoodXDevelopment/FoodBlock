@@ -51,10 +51,29 @@ A model that reads a receipt, an email, a voice note or an exported record write
 
 Where words must bind (an SMS, a voice call), the custodian echoes the exact terms back once. Only the person's reply to those exact terms is signed on. That reply is the decision itself, and the block `derives_from` its hash.
 
+## 5. A first ask to someone off the network travels in the asker's own name
+
+A person with no node and no custodian yet is not a block-holder, so the first ask to her is words (section 1), but words with a spine: the asker's signed ask.
+- **The asker signs the ask** (section 1: a human author). The words that go out are built from that signed block.
+- **They go from the asker's own channel**: the asker's own phone, share sheet, SMS or chat app, or an address the asker chose to send from. They are never sent from a number or an account the asker did not choose. A first ask never reaches a stranger from a platform, a custodian or a shared sender.
+- **The words carry the ask code**: the short code of the signed ask (profiles/short-form.md, The ask code). The words say who is asking, what, how much and when, how to reply to the asker, how to STOP, and that she may answer the asker as normal. The code lets anyone check the ask against the signed block. It pitches nothing (section 3).
+- **A normal reply binds nothing.** She may talk to the asker in the thread, as to anyone.
+- **The reply binds only when she sends `YES <code>` to a custodian of her choosing**: a custodian she picks (FoodX first; later her co-op, her M-Pesa agent, her own phone). The custodian resolves the code to the signed ask, echoes the exact terms from that signed block (section 4), and signs her `accepted` answer on her `YES` to the echo, holding her key for her from then (identity.md, Held keys). Her `YES` may come from any number; the custodian holds that number's custody. A code that resolves to nothing, an expired ask or one for a different number signs nothing, and the custodian says so.
+- **The custodian never relays or invents the ask.** It resolves the one the asker signed.
+
+## 6. A custodian speaks only for its own client
+
+A custodian (or any host that sends words on someone's behalf) has a voice only for a person who chose it.
+- It speaks **in the client's name**, never as a platform or in its own name to the outside.
+- It speaks **to people already in that conversation**: her confirmations, receipts and replies, her messages to her own regulars, a laptop or machine she chose to send as, and things people subscribed to.
+- It **never speaks first to a stranger nobody chose to message.** A stranger's first contact is the asker's own message (section 5), and the custodian answers only whoever writes to it.
+- It **never speaks after a STOP** that names its side (section 2). A STOP by the person binds her custodian too.
+
 ## Invariants
 
 16. Every message to a stranger has a human author, or goes through the receiver's own published order channel.
 20. Consent is a block, and it follows the principal. Anyone may record a STOP, binding their own side; only the person lifts it; there is no public list.
+30. A first ask to someone off the network travels in the asker's own name from the asker's own channel and carries the code of the signed ask; the reply binds only when she sends YES with that code to a custodian she chose. A custodian speaks only for its own client, in her name, to people already in that conversation: never first to a stranger nobody chose, never after STOP.
 29. Validity is about the block alone and what it rests on; consent decides what binds, not what exists. A block sent despite a STOP is kept in the chain and read as stopped, so an honest sender's chain never stalls because of anyone else's consent.
 21. The ask is ordinary and never pitches; the receipt, sent by the asker or her custodian in the same thread, is the door into an app.
 24. A model's reading is never the person's claim until she puts that fact to someone else in her own step; sharing it claims nothing.

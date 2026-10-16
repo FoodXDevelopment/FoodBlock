@@ -12,17 +12,49 @@ const CROCKFORD: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 /// The short receipt code of a block (profiles/short-form.md): the first 5 bytes (40 bits) of its id, in Crockford
 /// Base32, shown as `XXXX-XXXX`. A lookup key inside one custodian, not an id and not an authority.
 pub fn receipt_code(id: &str) -> Option<String> {
+    code_of(id, 8)
+}
+
+/// The long form, for the rare custodian whose own index holds two blocks with the same short code: the first 50 bits
+/// of the id, ten characters, shown as `XXXXX-XXXXX`.
+pub fn receipt_code_long(id: &str) -> Option<String> {
+    code_of(id, 10)
+}
+
+fn code_of(id: &str, chars: usize) -> Option<String> {
     let hex_part = id.rsplit(':').next().unwrap_or(id);
-    let bytes = crate::block::unhex(hex_part.get(..10)?)?;
-    let n = bytes.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);
+    let bytes = crate::block::unhex(hex_part.get(..14)?)?;
+    let n = bytes.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);   // 56 bits
     let mut out = String::new();
-    for i in 0..8 {
-        out.push(CROCKFORD[((n >> (35 - 5 * i)) & 31) as usize] as char);
-        if i == 3 {
+    for i in 0..chars {
+        out.push(CROCKFORD[((n >> (51 - 5 * i)) & 31) as usize] as char);
+        if i + 1 == chars / 2 {
             out.push('-');
         }
     }
     Some(out)
+}
+
+/// Does a typed code name this block (profiles/short-form.md)? The code is read the way a person types it: case does
+/// not matter, spaces and hyphens are ignored, and the letters Crockford leaves out are read as the digits they look
+/// like (`O` as 0, `I` and `L` as 1). Eight characters match the short code, ten the long one; any other length
+/// matches nothing.
+pub fn code_matches(text: &str, id: &str) -> bool {
+    let typed: String = text
+        .chars()
+        .filter(|c| !c.is_whitespace() && *c != '-')
+        .map(|c| match c.to_ascii_uppercase() {
+            'O' => '0',
+            'I' | 'L' => '1',
+            other => other,
+        })
+        .collect();
+    let want = match typed.chars().count() {
+        8 => receipt_code(id),
+        10 => receipt_code_long(id),
+        _ => None,
+    };
+    want.map_or(false, |w| w.replace('-', "") == typed)
 }
 
 /// The live operators of an actor: the authors of its live `operator` grants naming it in `refs.to`, sorted.

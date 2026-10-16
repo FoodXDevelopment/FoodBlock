@@ -8,6 +8,16 @@ def receipt_code(id_) -> str:
     return call("receipt_code", str(id_))
 
 
+def receipt_code_long(id_) -> str:
+    """The ten-character form (first 50 bits, XXXXX-XXXXX), for a custodian whose index holds two blocks with one short code."""
+    return call("receipt_code", str(id_), True)
+
+
+def code_matches(text, id_) -> bool:
+    """Whether a typed code names this block: case, spaces and hyphens ignored, O read as 0, I and L as 1; 8 characters match the short code, 10 the long one."""
+    return call("code_matches", str(text), str(id_))
+
+
 def reading_is_persons_claim(reading, person, blocks) -> bool:
     return call("reading_is_persons_claim", reading, person, list(blocks))
 
