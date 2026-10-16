@@ -56,8 +56,9 @@ const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").spl
  * @param publicUrl   https://mcp.example               provision  async ({ id, genesis }) => { base, token }: the person's window on a host
  * @param index       a remoteIndex (find), shared       google  { clientId, clientSecret, redirectUri, authUrl?, tokenUrl? } (openid email profile)
  * @param reviewer    { passphrase }: enables reviewer sign-in as reviewer-<name>   openaiChallenge  token for /.well-known/openai-apps-challenge
+ * @param extend      (api) => void: more pages for the signed-in person on this same app and session (api: app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson)
  */
-export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {} }) {
+export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null }) {
   const state = durableState(stateFile), seal = sealer(master), allow = limiter(now);
   const secure = publicUrl.startsWith("https:");
   const resourceUrl = new URL("/mcp", publicUrl).href;
@@ -119,6 +120,23 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
       <label>Name <input type="text" name="name" placeholder="reviewer-one" autocomplete="username"></label><label>Passphrase <input type="password" name="passphrase" autocomplete="current-password"></label><button>Sign in</button></form>` : ""}`);
   const ask = (res, what, why) => { const id = secret(); pending.set(id, { ...what, expires: now() + PENDING_MS }); send(res, signInPage(id, why)); };
   const afterSignIn = (res, id) => res.redirect(302, `/oauth/continue?request=${encodeURIComponent(id)}`);
+
+  /**
+   * One more thing a signed-in person says yes to at Google (a read of their mail, say), through the same sign-in and the same callback.
+   * Returns { url, cookie } for the page to go to, or null when nobody is signed in or Google is not set up. `done({ tokens, person, email })` runs when
+   * Google sends them back having said yes; `next` is where they land afterwards.
+   */
+  function requestGrant(req, { scopes, done, next = "/account" }) {
+    const session = sessionOf(req), who = session && accountOfPerson(session.person);
+    if (!google || !session) return null;
+    const stateValue = secret();
+    googleStates.set(keyOf(stateValue), { kind: "grant", person: session.person, done, next, expires: now() + PENDING_MS });
+    const url = new URL(google.authUrl || "https://accounts.google.com/o/oauth2/v2/auth");
+    Object.entries({ client_id: google.clientId, redirect_uri: google.redirectUri, response_type: "code", scope: ["openid", "email", ...scopes].join(" "), state: stateValue, access_type: "offline", prompt: "consent", include_granted_scopes: "true", ...(who?.email ? { login_hint: who.email } : {}) }).forEach(([k, v]) => url.searchParams.set(k, v));
+    return { url: url.href, cookie: `fb_state=${stateValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=900${secure ? "; Secure" : ""}` };
+  }
+  /** The keys of a person this hub holds (hosted custody), opened for the host that signs for them. */
+  const custodyOf = (personId) => { const sealed = state.identities.get(personId); if (!sealed) throw new Error("no such person here"); const { keys, encryption } = seal.open(sealed); return { keys, encryption }; };
 
   async function signedIn(res, id, key, profile) {
     const account = accountFor(key, profile);
@@ -221,11 +239,27 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     res.append("set-cookie", `fb_state=${stateValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=900${secure ? "; Secure" : ""}`);
     res.redirect(302, url.href);
   });
+  /** Google sent a signed-in person back from a grant: the same person, the same Google account, then the grant's own work. */
+  async function finishGrant(req, res, held) {
+    const session = sessionOf(req);
+    if (!session || session.person !== held.person) return send(res, page("Sign in again", "<p>Your sign-in is missing or old. Start again.</p>", 403));
+    if (req.query.error || !req.query.code) return res.redirect(302, `${held.next}${held.next.includes("?") ? "&" : "?"}google=denied`);
+    const r = await request(google.tokenUrl || "https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ code: String(req.query.code), client_id: google.clientId, client_secret: google.clientSecret, redirect_uri: google.redirectUri, grant_type: "authorization_code" }) });
+    const tokens = await r.json();
+    const claims = tokens.id_token && JSON.parse(Buffer.from(tokens.id_token.split(".")[1], "base64url").toString("utf8"));
+    const ok = claims && ["accounts.google.com", "https://accounts.google.com"].includes(claims.iss) && claims.aud === google.clientId && claims.exp * 1000 > now() && claims.sub;
+    if (!ok || state.accounts.get(`google:${claims.sub}`)?.person !== held.person) return send(res, page("Not the same account", "<p>That Google account is not the one you signed in with. Start again and choose the same one.</p>", 403));
+    await held.done({ tokens, person: held.person, email: claims.email });
+    res.redirect(302, `${held.next}${held.next.includes("?") ? "&" : "?"}google=ok`);
+  }
+
   app.get("/oauth/google/callback", guarded("signin", cap.signin, 600e3, false), async (req, res) => {
     try {
       const sv = String(req.query.state || ""), held = googleStates.get(keyOf(sv));
       googleStates.delete(keyOf(sv));
       if (!google || !held || held.expires < now() || !same(cookies(req).fb_state, sv)) return send(res, page("Expired", "<p>This sign-in has expired. Start again from your assistant.</p>", 400));
+      if (held.kind === "grant") return await finishGrant(req, res, held);
       if (req.query.error || !req.query.code) return send(res, page("Not signed in", "<p>Google did not sign you in. You can try again from your assistant.</p>", 403));
       const r = await request(google.tokenUrl || "https://oauth2.googleapis.com/token", { method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ code: String(req.query.code), client_id: google.clientId, client_secret: google.clientSecret, redirect_uri: google.redirectUri, grant_type: "authorization_code" }) });
@@ -324,7 +358,8 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     try { const door = await doorFor(person); await mcp(req, res, req.method === "POST" ? req.body : undefined, req.auth, door, person); }
     catch (error) { if (!res.headersSent) res.status(500).json({ error: "server_error", error_description: "the door could not serve this request" }); else res.end(); }
   });
+  if (extend) extend({ app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson, form, allow, ip });
   app.use((req, res) => res.status(404).end());
 
-  return { app, state, doorFor, provider, accountFor, doors };
+  return { app, state, doorFor, provider, accountFor, doors, custodyOf, requestGrant };
 }
