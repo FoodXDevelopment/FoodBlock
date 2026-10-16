@@ -28,11 +28,11 @@
     "foodx"
   ],
   "license": "MIT",
-  "author": "FoodX <developers@foodx.com>",
+  "author": "FoodX <hello@foodx.world>",
   "homepage": "https://www.foodx.world/developers",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FoodXDevelopment/foodblock"
+    "url": "https://github.com/FoodXDevelopment/FoodBlock"
   },
   "engines": {
     "node": ">=18.0.0"

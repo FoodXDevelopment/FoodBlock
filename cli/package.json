@@ -25,10 +25,10 @@
     "supply-chain"
   ],
   "license": "MIT",
-  "author": "FoodX <developers@foodx.com>",
+  "author": "FoodX <hello@foodx.world>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/FoodXDevelopment/foodblock"
+    "url": "https://github.com/FoodXDevelopment/FoodBlock"
   },
   "engines": {
     "node": ">=18.0.0"

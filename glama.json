@@ -8,7 +8,7 @@
   "server": {
     "name": "foodblock-mcp",
     "description": "FoodBlock 1.6 for any AI agent: write signed, checked food blocks in one identity's key chain, and read every earlier shape. Eight tools.",
-    "repository": "https://github.com/FoodXDevelopment/foodblock",
+    "repository": "https://github.com/FoodXDevelopment/FoodBlock",
     "homepage": "https://foodx.world",
     "npm": "foodblock-mcp",
     "license": "MIT",

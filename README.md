@@ -92,8 +92,8 @@ FoodBlock is built for people, agents and machines to use together. An agent can
 - **MCP server**: [`mcp/`](mcp/), for Claude, Cursor, Windsurf, Gemini CLI and any MCP-compatible agent
 - **The spec in one file**: [`spec/protocol.md`](spec/protocol.md), with every list machine-readable in
   [`spec/protocol.json`](spec/protocol.json)
-- **LLM quick reference**: https://foodx.network/llms.txt
-- **About FoodX**: https://foodx.network
+- **LLM quick reference**: https://foodx.world/llms.txt
+- **About FoodX**: https://foodx.world
 
 ## Quick start
 
