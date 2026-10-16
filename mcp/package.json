@@ -10,6 +10,8 @@
   "files": [
     "server.js",
     "door.js",
+    "remote.js",
+    "auth.js",
     "README.md",
     "LICENSE"
   ],
@@ -43,6 +45,7 @@
   "dependencies": {
     "@foodxdev/foodblock": "file:../sdk/javascript",
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "express": "^5.2.1",
     "zod": "^3.24.0"
   },
   "engines": {

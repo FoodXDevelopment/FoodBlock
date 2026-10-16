@@ -62,13 +62,37 @@ assistant may only find, read and draft. A grant never reaches a stranger: the o
 | `FOODBLOCK_APPROVE_PORT` | The approval page port on stdio (default: any free port) |
 | `FOODBLOCK_HOST` | The HTTP bind address (default `127.0.0.1`) |
 
-The node is in memory in this version. Blocks come in through the SDK's `accept`; a remote node is the next step.
+The node is in memory unless you point the door at a FoodOS host (next section). Blocks come in through the SDK's `accept` either way.
+
+## Hosted: a real node, and OAuth
+
+The door can reach a person's node on a FoodOS host over HTTP, and an assistant can reach the door over HTTP with the MCP authorization flow.
+
+| Variable | What it does |
+|---|---|
+| `FOODBLOCK_NODE_URL` | A FoodOS host (the Backend's `kernel/node/host.js` `handler`). The door uses the person's window at `{url}/{personId}` |
+| `FOODBLOCK_NODE_TOKEN` | The person's window credential (`host.credential(personId, { scopes: ['read','write'] })`), sent as `Authorization: Bearer`, never in a URL |
+| `FOODBLOCK_AUTH=oauth` | With `--http`: `/mcp` answers 401 until the assistant has a bearer token from the OAuth flow |
+| `FOODBLOCK_PUBLIC_URL` | The address clients reach the door by (HTTPS in production) |
+
+The door reads the host's blocks before each call (`remote.js`), signs with the person's key only on their tap, and sends the signed
+block to the host, whose SDK judges it. The host never holds the person's key. The host relays an assistant's block only as the
+agent's own genesis or under a grant the person signed.
+
+OAuth follows the MCP authorization spec: protected-resource metadata, authorization-server metadata, dynamic client registration, authorization
+code with PKCE (S256), refresh with rotation. The person's yes on the consent page is their approval code, which the assistant never sees.
+A token only says "this assistant may reach the door" (`foodblock:read`: find and read; `foodblock:draft`: ask, connect, promise, accept).
+**Authority to bind is never an OAuth scope**: it is a grant the person signs after the assistant calls `foodblock_connect`.
+
+Try it locally: in the Backend, `node kernel/testing/helpers/serve-host.mjs 7421` starts a host and index; join a person and issue a
+credential from a script, then `FOODBLOCK_NODE_URL=http://127.0.0.1:7421 FOODBLOCK_NODE_TOKEN=... FOODBLOCK_AUTH=oauth node server.js --http`.
+`test/hosted.test.js` does all of this end to end (set `FOODOS_BACKEND` if the Backend is not at `~/Backend-foodx-computer`).
 
 ## Tests
 
 `npm test` runs the door against a local in-memory node (an assistant finds an offer, drafts an ask, the person
 approves, the seller accepts, the stage reads right; no grant never binds; a STOP'd recipient is never messaged) and
-both transports.
+both transports, then against a real host with OAuth (`test/hosted.test.js`).
 
 ## License
 MIT

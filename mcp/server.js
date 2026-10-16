@@ -9,6 +9,8 @@
 // FOODBLOCK_IDENTITY  a file holding the person's keys, genesis and chain (the CLI's format: `fb init` makes one), made on
 //                     first run (kept 0600); without it, a new person each run. The approval code lives beside it in
 //                     <file>.approval.
+// FOODBLOCK_NODE_URL, FOODBLOCK_NODE_TOKEN   reach the person's node on a FoodOS host over HTTP instead of in memory (see README).
+// FOODBLOCK_AUTH=oauth, FOODBLOCK_PUBLIC_URL  with --http: require the MCP authorization flow on /mcp; the address clients reach the door by.
 // FOODBLOCK_SEED=off  start with an empty node instead of a small story to find.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -19,10 +21,11 @@ import http from "node:http";
 import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createDoor, approvalHandler, memoryNode, newPerson } from "./door.js";
+import { remoteNode } from "./remote.js";
+import { doorProvider, authorizedApp } from "./auth.js";
 
 const text = (value) => ({ content: [{ type: "text", text: JSON.stringify(value, null, 2) }] });
 const failure = (error) => ({ isError: true, content: [{ type: "text", text: error.message }] });
-const guard = (run) => async (input) => { try { return text(await run(input)); } catch (error) { return failure(error); } };
 
 const amount = z.object({ value: z.string(), unit: z.string() }).describe('an amount: { value: "2", unit: "kg" } (a decimal string, never a float)');
 const money = z.object({ minor: z.number().int(), currency: z.string() }).describe("money: whole minor units, e.g. { minor: 450, currency: \"GBP\" }");
@@ -36,28 +39,34 @@ export function createServer({ door, name = "assistant" } = {}) {
   door ||= createDoor();
   const assistant = door.agent(name);
   const server = new McpServer({ name: "foodblock", version: fb.VERSION });
+  // Every call: read the node's truth first (a remote node pulls), do the work, send what was signed. Behind OAuth the token must carry the tool's scope.
+  const guard = (run, scope) => async (input, extra) => {
+    const scopes = extra?.authInfo?.scopes;
+    if (scopes && !scopes.includes(scope)) return failure(new Error(`this connection lacks the ${scope} scope`));
+    try { await door.sync(); const value = await run(input); await door.flush(); return text(value); } catch (error) { return failure(error); }
+  };
 
   server.tool("foodblock_find", "Find what is on offer: offers, things or peers, by what (a word) and near (a place hash or name). Read-only.",
     { kind: z.enum(["offers", "things", "peers"]).default("offers"), what: z.string().optional(), near: z.string().optional(), limit: z.number().int().min(1).max(100).default(20) },
-    guard(async (input) => door.find(input)));
+    guard(async (input) => door.find(input), "foodblock:read"));
 
   server.tool("foodblock_read", "Read a block (with its refusals and signature check), a thing (its state now, where it is, who owns it), a promise (its stage: asked, offered, accepted, underway, done...) or a draft (pending, sent, discarded).",
-    { hash: z.string().min(6) }, guard(async ({ hash }) => door.read(hash)));
+    { hash: z.string().min(6) }, guard(async ({ hash }) => door.read(hash), "foodblock:read"));
 
   server.tool("foodblock_ask", "Draft an ask or quote request for the PERSON to send (from an offer, or for a thing from someone). Nothing is sent: it returns a draft, a receipt code and an approval link for the person to open and tap. An unanswered ask binds no one. Give the link to the person; never try to open it yourself.",
     { offer: z.string().optional().describe("an offer's hash from foodblock_find"), from: z.string().optional().describe("the seller's id, if no offer"), what: z.string().optional().describe("a thing's hash, if no offer"), ...terms, days: z.number().int().min(1).max(60).optional() },
-    guard(async (input) => door.ask(input)));
+    guard(async (input) => door.ask(input), "foodblock:draft"));
 
   server.tool("foodblock_promise", "Make a firm promise for the person (a binding ask to someone who has dealt with them before). Binds ONLY if the person has connected you with a grant that names `promise` and the other side is not a stranger; otherwise it returns a draft for the person to approve.",
     { to: z.string().describe("the other side's id"), what: z.string().describe("a thing's hash"), ...terms },
-    guard(async (input) => door.promise(assistant, input)));
+    guard(async (input) => door.promise(assistant, input), "foodblock:draft"));
 
   server.tool("foodblock_accept", "Accept an offer or counter-offer for the person. Binds ONLY under a live grant that names `promise`; otherwise it returns a draft for the person to approve.",
-    { promise: z.string().describe("the offer's hash"), quantity: amount.optional() }, guard(async (input) => door.accept(assistant, input)));
+    { promise: z.string().describe("the offer's hash"), quantity: amount.optional() }, guard(async (input) => door.accept(assistant, input), "foodblock:draft"));
 
   server.tool("foodblock_connect", "Pair this assistant to the person's node. Returns a grant draft and an approval link for the person. With no acts you may only find, read and draft. Ask for `promise` only if the person wants you to bind for them.",
     { acts: z.array(z.string()).default([]).describe("block types or type.kind names you may sign, e.g. [\"promise\"]; default none"), days: z.number().int().min(1).max(365).default(30), limit: money.optional().describe("the most money one act may involve") },
-    guard(async (input) => door.connect(assistant, input)));
+    guard(async (input) => door.connect(assistant, input), "foodblock:draft"));
 
   return server;
 }
@@ -71,7 +80,11 @@ function build() {
   const persist = ({ keys, encryption, genesis, chain }) => { if (file) writeFileSync(file, JSON.stringify({ keys, encryption, genesis, chain }, null, 2), { mode: 0o600 }); };
   if (fresh) writeFileSync(`${file}.recovery.json`, JSON.stringify({ id: person.id, recovery: person.recovery }, null, 2), { mode: 0o600 });
   let code = file && existsSync(`${file}.approval`) ? readFileSync(`${file}.approval`, "utf8").trim() : undefined;
-  const door = createDoor({ node: memoryNode(), person, code, persist });
+  // FOODBLOCK_NODE_URL: a FoodOS host (its handler, kernel/node/host.js); the door reaches the person's node there, {url}/{personId}, with the
+  // credential FOODBLOCK_NODE_TOKEN in a header. Without it the node is in memory.
+  const hosted = process.env.FOODBLOCK_NODE_URL;
+  const node = hosted ? remoteNode({ base: `${hosted.replace(/\/$/, "")}/${person.id}`, token: process.env.FOODBLOCK_NODE_TOKEN }) : memoryNode();
+  const door = createDoor({ node, person, code, persist });
   if (file && !code) writeFileSync(`${file}.approval`, door.approvalCode, { mode: 0o600 });
   persist(person);
   if (process.env.FOODBLOCK_SEED !== "off") seed(door);
@@ -89,26 +102,54 @@ function seed({ node }) {
 }
 
 // ---- Transports ----
-async function serveHttp(door, port) {
-  const sessions = new Map(), approve = approvalHandler(door);
+/** One MCP request: a session per assistant (a new one on initialize). Behind OAuth a session belongs to the client that opened it. */
+function mcpEndpoint(door) {
+  const sessions = new Map();
+  return async (req, res, body, auth) => {
+    const id = req.headers["mcp-session-id"];
+    let held = id && sessions.get(id);
+    if (held && auth && held.clientId !== auth.clientId) { res.writeHead(403).end("this session belongs to another client"); return; }
+    if (!held) {
+      if (req.method !== "POST") { res.writeHead(400).end("no session"); return; }
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => sessions.set(sid, { transport, clientId: auth?.clientId }) });
+      transport.onclose = () => transport.sessionId && sessions.delete(transport.sessionId);
+      await createServer({ door }).connect(transport);
+      held = { transport };
+    }
+    await held.transport.handleRequest(req, res, body);
+  };
+}
+const readJson = async (req, res) => {
+  if (req.method !== "POST") return { ok: true };
+  let raw = ""; for await (const chunk of req) raw += chunk;
+  try { return { ok: true, body: JSON.parse(raw) }; } catch { res.writeHead(400).end("bad json"); return { ok: false }; }
+};
+
+/**
+ * Streamable HTTP at /mcp. With `oauth: true` the door follows the MCP authorization spec: /mcp answers 401 until the assistant has
+ * a bearer token from the OAuth flow (the person says yes with their approval code); `publicUrl` is the address clients reach it by.
+ */
+async function serveHttp(door, port, { oauth = false, publicUrl = process.env.FOODBLOCK_PUBLIC_URL } = {}) {
+  const approve = approvalHandler(door), mcp = mcpEndpoint(door), bind = process.env.FOODBLOCK_HOST || "127.0.0.1";
+  if (oauth) {
+    const provider = doorProvider({ approvalCode: door.approvalCode });
+    const { app, mount } = authorizedApp({ door, mcp, approve, provider });
+    const server = http.createServer(app);
+    await new Promise((done) => server.listen(port, bind, done));
+    door.base = publicUrl || `http://${bind}:${server.address().port}`;
+    mount(door.base);
+    return server;
+  }
   const server = http.createServer(async (req, res) => {
     try {
       if (await approve(req, res)) return;
       if (!req.url.startsWith("/mcp")) { res.writeHead(404).end(); return; }
-      const id = req.headers["mcp-session-id"];
-      let transport = id && sessions.get(id);
-      if (!transport) {
-        if (req.method !== "POST") { res.writeHead(400).end("no session"); return; }
-        transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => sessions.set(sid, transport) });
-        transport.onclose = () => transport.sessionId && sessions.delete(transport.sessionId);
-        await createServer({ door }).connect(transport);
-      }
-      let body; if (req.method === "POST") { let raw = ""; for await (const chunk of req) raw += chunk; try { body = JSON.parse(raw); } catch { res.writeHead(400).end("bad json"); return; } }
-      await transport.handleRequest(req, res, body);
+      const parsed = await readJson(req, res);
+      if (parsed.ok) await mcp(req, res, parsed.body);
     } catch (error) { if (!res.headersSent) res.writeHead(500); res.end(String(error.message)); }
   });
-  await new Promise((done) => server.listen(port, process.env.FOODBLOCK_HOST || "127.0.0.1", done));
-  door.base = `http://${process.env.FOODBLOCK_HOST || "127.0.0.1"}:${server.address().port}`;
+  await new Promise((done) => server.listen(port, bind, done));
+  door.base = publicUrl || `http://${bind}:${server.address().port}`;
   return server;
 }
 
@@ -117,7 +158,7 @@ if (isDirectRun) {
   const door = build();
   const flag = process.argv.indexOf("--http");
   if (flag > -1) {
-    const server = await serveHttp(door, Number(process.argv[flag + 1]) || Number(process.env.PORT) || 7420);
+    const server = await serveHttp(door, Number(process.argv[flag + 1]) || Number(process.env.PORT) || 7420, { oauth: process.env.FOODBLOCK_AUTH === "oauth" });
     console.error(`FoodBlock MCP on ${door.base}/mcp\nApproval code (keep it to yourself): ${door.approvalCode}`);
   } else {
     // stdio carries the protocol, so the approval page gets its own local port.
@@ -129,4 +170,4 @@ if (isDirectRun) {
     await createServer({ door }).connect(new StdioServerTransport());
   }
 }
-export { seed, createDoor, memoryNode, newPerson, approvalHandler, serveHttp };
+export { seed, createDoor, memoryNode, remoteNode, newPerson, approvalHandler, serveHttp, build };

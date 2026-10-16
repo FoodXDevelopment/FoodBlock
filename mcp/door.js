@@ -5,7 +5,8 @@
 //   2. An unanswered ask binds no one (promises.md).
 //   3. A first message to a stranger has a human author (strangers.md): `ask` is always a draft; an agent-signed block
 //      goes out only when the SDK's admission check says it may.
-//   4. STOP binds: the SDK's `admissionRefusals` is asked before every draft and every send (`stopped`).
+//   4. STOP binds the sender: the `consent` fold is asked before every draft and every send (`stopped`). This is the sender's
+//      own discipline; a node never refuses a block for a STOP (strangers.md, invariant 29).
 //   5. It never holds money: there is no transfer, payment or deposit here, and a grant's money limit is the fence.
 //   6. Open types, closed authority: the assistant writes no raw blocks. Every block is one of two shapes, an ask
 //      (the person's) or a promise or accept under a live grant (the agent's, naming it in refs.under).
@@ -69,8 +70,12 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
     return block;
   };
 
-  // What the SDK says of a block for a receiver: not_admitted, not_human, stopped.
-  const admission = (block, receiver) => fb.sync.admissionRefusals(block, receiver, node.all(), {}, 0).map((r) => r.code);
+  // What the SDK says of a block for a receiver: not_admitted, not_human, and `stopped` when the person's live word is STOP.
+  const admission = (block, receiver) => {
+    const codes = fb.sync.admissionRefusals(block, receiver, node.all(), {}, 0).map((r) => r.code);
+    const word = fb.consent(receiver, block.refs?.author, node.all(), block.refs?.under).word;
+    return word === "stop" ? [...codes, "stopped"] : codes;
+  };
 
   // ---- Drafts ----
   /** Keep a draft for the person to decide. A trial write proves it would sign; the trial is thrown away. */
@@ -268,6 +273,18 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
     return draft(kind, spec, { to: counterparty, summary, why: why.join("; ") });
   }
 
+  // ---- A remote node: read what the host holds before a call, send what was signed after it ----
+  /** Before a call: the node's truth (a remote node pulls), and the person's chain rebuilt from it so the next block takes its place after any the person signed elsewhere. */
+  door.sync = async () => {
+    if (!node.refresh) return;
+    await node.refresh();
+    const mine = node.all().filter((b) => b.hash === person.id || b.refs?.author === person.id);
+    const seq = (b) => (b.hash === person.id ? 0 : b.state?.seq ?? Infinity);
+    person.chain.splice(0, person.chain.length, ...mine.sort((a, b) => seq(a) - seq(b)));
+  };
+  /** After a call: send what the door signed. A refusal from the host throws. */
+  door.flush = async () => { if (node.flush) await node.flush(); };
+
   return Object.assign(door, { agent, connect, find, read, ask, promise, accept, pending: () => [...drafts.values()].filter((d) => d.status === "pending") });
 }
 
@@ -298,7 +315,12 @@ export function approvalHandler(door) {
     if (req.method === "POST") {
       let raw = ""; for await (const chunk of req) { raw += chunk; if (raw.length > 4096) break; }
       const form = new URLSearchParams(raw);
-      const result = form.get("do") === "discard" ? door.discard(id, form.get("code")) : door.approve(id, form.get("code"));
+      let result;
+      try {
+        await door.sync();
+        result = form.get("do") === "discard" ? door.discard(id, form.get("code")) : door.approve(id, form.get("code"));
+        if (result.ok) await door.flush();
+      } catch (error) { result = { ok: false, reason: `the node did not take it: ${error.message}` }; }
       return send(result.ok ? 200 : 403, result.ok ? `<h2>${form.get("do") === "discard" ? "Discarded" : "Sent"}</h2>${result.receipt ? `<p>Receipt <b>${esc(result.receipt)}</b></p>` : ""}` : `<h2>Not done</h2><p>${esc(result.reason || "wrong approval code")}</p>`);
     }
     if (item.status !== "pending") return send(200, `<p>This draft is ${esc(item.status)}.</p>`);
