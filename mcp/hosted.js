@@ -58,7 +58,7 @@ const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").spl
  * @param reviewer    { passphrase }: enables reviewer sign-in as reviewer-<name>   openaiChallenge  token for /.well-known/openai-apps-challenge
  * @param extend      (api) => void: more pages for the signed-in person on this same app and session (api: app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson)
  */
-export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null }) {
+export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null, draftsFor = null }) {
   const state = durableState(stateFile), seal = sealer(master), allow = limiter(now);
   const secure = publicUrl.startsWith("https:");
   const resourceUrl = new URL("/mcp", publicUrl).href;
@@ -93,7 +93,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
         if (!sealed) throw new Error("no such person here");
         const saved = seal.open(sealed), person = { ...saved, id: saved.genesis.hash, chain: [saved.genesis] };
         const { base, token } = await provision({ id: person.id, genesis: person.genesis });
-        const door = createDoor({ node: remoteNode({ base, token }), person, code: randomBytes(10).toString("hex").toUpperCase() });
+        const door = createDoor({ node: remoteNode({ base, token }), person, code: randomBytes(10).toString("hex").toUpperCase(), drafts: draftsFor?.(person.id) });
         if (index) door.index = index;
         door.base = publicUrl.replace(/\/$/, "");
         return door;

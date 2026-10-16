@@ -41,10 +41,10 @@ const terms = {
 };
 
 /** One assistant's view of the door: its own agent identity, six tools (each with a title and honest annotations). */
-export function createServer({ door, name = "assistant" } = {}) {
+export function createServer({ door, name = "assistant", assistant: given } = {}) {
   door ||= createDoor();
   const index = door.index || null; // the open index, when one is set: find asks it; read, ask and promise stay on the host
-  const assistant = door.agent(name);
+  const assistant = given || door.agent(name); // a restored session passes the assistant it had
   const server = new McpServer({ name: "foodblock", title: "FoodBlock", version: fb.VERSION, websiteUrl: "https://foodx.network",
     icons: [{ src: "https://mcp.foodx.network/icon.svg", mimeType: "image/svg+xml", sizes: ["any"] }] },
   { instructions: "FoodBlock lets you find food offers and people and DRAFT asks for the person you serve. You never send or bind anything yourself: give the person the approval link a draft returns. There is no tool to move money." });
@@ -117,23 +117,47 @@ function seed({ node }) {
 
 // ---- Transports ----
 /** One MCP request: a session per assistant (a new one on initialize). Behind OAuth a session belongs to the client AND the person that opened it. */
-export function mcpEndpoint(door) {
+export function mcpEndpoint(door, { store = null, idleMs = 3600e3 } = {}) {
+  // `store` (store.js durableSessions) keeps each session's record so a restart loses none: the next request with that session id is answered
+  // by a transport rebuilt in its initialized state, for the same assistant (its identity and grant), and only for the same client and person.
   const sessions = new Map();
-  const sweep = setInterval(() => { for (const [id, s] of sessions) if (Date.now() - s.seen > 3600e3) { s.transport.close?.(); sessions.delete(id); } }, 300e3); sweep.unref();
-  return async (req, res, body, auth, perRequestDoor, person) => {
+  const sweep = setInterval(() => {
+    for (const [id, s] of sessions) if (Date.now() - s.seen > idleMs) { s.transport.close?.(); sessions.delete(id); }
+    store?.prune(idleMs * 24 * 7);
+  }, 300e3); sweep.unref();
+  const forbidden = (res) => res.writeHead(403, { "content-type": "application/json" }).end(JSON.stringify({ error: "forbidden", error_description: "this session belongs to another connection" }));
+  async function restore(id, record, theDoor) {
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => id });
+    const inner = transport._webStandardTransport || transport; inner.sessionId = id; inner._initialized = true;
+    transport.onclose = () => transport.sessionId && sessions.delete(transport.sessionId);
+    await createServer({ door: theDoor, assistant: record.assistant }).connect(transport);
+    const held = { transport, clientId: record.clientId, person: record.person, seen: Date.now() };
+    sessions.set(id, held);
+    return held;
+  }
+  const endpoint = async (req, res, body, auth, perRequestDoor, person) => {
     const id = req.headers["mcp-session-id"], theDoor = perRequestDoor || door;
     let held = id && sessions.get(id);
-    if (held && ((auth && held.clientId !== auth.clientId) || held.person !== person)) { res.writeHead(403, { "content-type": "application/json" }).end(JSON.stringify({ error: "forbidden", error_description: "this session belongs to another connection" })); return; }
+    if (!held && id && store?.get(id)) {
+      const record = store.get(id);
+      if ((auth && record.clientId !== auth.clientId) || record.person !== person) return forbidden(res);
+      held = await restore(id, record, theDoor);
+    }
+    if (held && ((auth && held.clientId !== auth.clientId) || held.person !== person)) return forbidden(res);
     if (!held) {
       if (id) { res.writeHead(404, { "content-type": "application/json" }).end(JSON.stringify({ jsonrpc: "2.0", error: { code: -32001, message: "Session not found: start a new session" }, id: null })); return; } // the spec: an unknown session is 404, so the client initializes again
       if (req.method !== "POST") { res.writeHead(400).end("no session"); return; }
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => sessions.set(sid, { transport, clientId: auth?.clientId, person, seen: Date.now() }) });
-      transport.onclose = () => transport.sessionId && sessions.delete(transport.sessionId);
-      await createServer({ door: theDoor }).connect(transport);
+      const assistant = theDoor.agent("assistant");
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, onsessioninitialized: (sid) => { sessions.set(sid, { transport, clientId: auth?.clientId, person, seen: Date.now() }); store?.set(sid, { clientId: auth?.clientId, person, assistant, seen: Date.now() }); } });
+      transport.onclose = () => { if (transport.sessionId) { sessions.delete(transport.sessionId); store?.delete(transport.sessionId); } };
+      await createServer({ door: theDoor, assistant }).connect(transport);
       held = { transport };
-    } else held.seen = Date.now();
+    } else { held.seen = Date.now(); store?.touch(id); }
     await held.transport.handleRequest(req, res, body);
   };
+  /** Stop taking sessions and let each close; the records stay on disk (a restart continues them). */
+  endpoint.drain = async () => { clearInterval(sweep); for (const s of sessions.values()) { try { s.transport.onclose = null; await s.transport.close?.(); } catch {} } sessions.clear(); };
+  return endpoint;
 }
 const readJson = async (req, res) => {
   if (req.method !== "POST") return { ok: true };

@@ -49,9 +49,10 @@ const scopeOf = (grant) => grant?.state?.scope || {};
  * @param person  who the person is: { id, keys, chain } (the door signs as them only on their tap)
  * @param options { now, code, base, persist }
  */
-export function createDoor({ node = memoryNode(), person = newPerson(), now = clock, code, persist = () => {} } = {}) {
+export function createDoor({ node = memoryNode(), person = newPerson(), now = clock, code, persist = () => {}, drafts = new Map() } = {}) {
   const approvalCode = code || randomBytes(5).toString("hex").toUpperCase().replace(/(.{5})(.{5})/, "$1-$2");
-  const drafts = new Map(); // id -> draft (pending | sent | discarded)
+  // id -> draft (pending | sent | discarded). A host may pass a durable Map (store.js durableDrafts) with touch(): called after every change, so a restart loses no link.
+  const touch = () => drafts.touch?.();
   const door = { node, person, drafts, approvalCode, base: "", now };
   node.push(person.genesis);
   person.chain.forEach((block) => node.push(block));
@@ -85,7 +86,7 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
     if (stopped.length) throw Object.assign(new Error(`stopped: ${to.slice(0, 8)} asked for no contact; nothing was drafted`), { wrong: ["stopped"] });
     const id = randomBytes(32).toString("hex");
     const item = { id, kind, spec, to: to || null, summary, why: why || null, status: "pending", at: now(), receipt: fb.receiptCode(id) };
-    drafts.set(id, item);
+    drafts.set(id, item); touch();
     return view(item);
   }
   const link = (id) => `${door.base}/approve/${id}`;
@@ -129,7 +130,9 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
   }
 
   const grantOf = (assistant) => {
-    const grant = assistant.grant && node.get(assistant.grant);
+    // the grant is the assistant's own record, or (after a restart) the approved grant draft that names it
+    const hash = assistant.grant || [...drafts.values()].find((d) => d.kind === "grant" && d.assistant?.id === assistant.id && d.block)?.block;
+    const grant = hash && node.get(hash);
     if (!grant) return null;
     const live = fb.grant.isLive(grant, node.all(), { now: now() });
     return live ? grant : null;
@@ -143,7 +146,7 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
     const operator = { type: "grant", state: { kind: "operator", scope: {} }, refs: { to: assistant.id } };
     const item = draft("grant", spec, { summary: describeGrant(assistant.name, scope) });
     const held = drafts.get(item.draft);
-    held.also = operator; held.assistant = assistant;
+    held.also = operator; held.assistant = assistant; touch();
     return item;
   }
   // A grant's approval also signs the operator grant (the person answers for this assistant).
@@ -155,9 +158,10 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
       keep(person, writeAs(person, item.also));
       item.assistant.grant = result.block;
     }
+    touch();
     return result;
   };
-  door.discard = discard;
+  door.discard = (id, given) => { const result = discard(id, given); touch(); return result; };
 
   // ---- Reading the world ----
   const textOf = (block) => [block?.state?.name, block?.state?.kind, block?.state?.what].filter(Boolean).join(" ").toLowerCase();

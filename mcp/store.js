@@ -48,3 +48,43 @@ export function sealer(master) {
     },
   };
 }
+
+/** Write a sealed JSON file whole and rename it into place (a crash leaves the old file or the new one). */
+function writeSealed(file, seal, value) {
+  mkdirSync(dirname(file), { recursive: true, mode: 0o700 });
+  const temp = `${file}.${process.pid}.tmp`;
+  writeFileSync(temp, seal.seal(value), { mode: 0o600 });
+  renameSync(temp, file);
+}
+const readSealed = (file, seal) => { try { return existsSync(file) ? seal.open(readFileSync(file, "utf8")) : null; } catch { return null; } };
+
+/**
+ * Drafts that survive a restart: draftsFor(personId) is a Map of that person's drafts, kept sealed in <dir>/<personId>.json. The door calls
+ * map.touch() after every change; the file is written at once (drafts are rare and small). A draft holds the signed-for spec and, for a
+ * grant, the assistant's keys, so the file is sealed like the identities.
+ */
+export function durableDrafts(dir, seal) {
+  const maps = new Map();
+  return (personId) => {
+    if (maps.has(personId)) return maps.get(personId);
+    const file = `${dir}/${String(personId).replace(/[^a-z0-9]/gi, "")}.json`;
+    const map = new Map(Object.entries(readSealed(file, seal) || {}));
+    map.touch = () => writeSealed(file, seal, Object.fromEntries(map));
+    maps.set(personId, map);
+    return map;
+  };
+}
+
+/** MCP sessions that survive a restart (server.js mcpEndpoint { store }): one sealed file; `seen` is written at most every 10 minutes. */
+export function durableSessions(file, seal) {
+  const data = readSealed(file, seal) || {};
+  const save = () => writeSealed(file, seal, data);
+  return {
+    get: (id) => data[id],
+    set: (id, record) => { data[id] = record; save(); },
+    delete: (id) => { if (id in data) { delete data[id]; save(); } },
+    touch: (id) => { const r = data[id]; if (r && Date.now() - r.seen > 600e3) { r.seen = Date.now(); save(); } },
+    prune: (olderThanMs) => { let n = 0; for (const [id, r] of Object.entries(data)) if (Date.now() - r.seen > olderThanMs) { delete data[id]; n++; } if (n) save(); },
+    size: () => Object.keys(data).length,
+  };
+}
