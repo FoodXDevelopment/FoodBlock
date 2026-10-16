@@ -53,3 +53,4 @@ tools/*/target/
 
 # SwiftPM at the repository root
 /.build/
+tools/tla/.cache/

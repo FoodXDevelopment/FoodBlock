@@ -372,8 +372,8 @@ def emit_tla():
         for b in pre + bl:
             b = dict(b); b['comp'] = name
             if b['recovery'] is None: b['recovery'] = False
-            rows.append('  "%s" |-> [%s]' % (b['id'], ', '.join('%s |-> %s' % (f, ('FALSE' if b[f] is False else q(b[f]))) for f in F)))
-    print('T == [\n' + ',\n'.join(rows) + '\n]')
+            rows.append('  ("%s" :> [%s])' % (b['id'], ', '.join('%s |-> %s' % (f, ('FALSE' if b[f] is False else q(b[f]))) for f in F)))
+    print('T ==\n' + ' @@\n'.join(rows))
 
 def main():
     global MUT
