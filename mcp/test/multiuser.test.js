@@ -80,6 +80,14 @@ describe('the many-person door', { skip: !have && 'no Backend checkout (set FOOD
     const meta = await (await fetch(`${base}/.well-known/oauth-authorization-server`)).json()
     assert.deepEqual(meta.code_challenge_methods_supported, ['S256'])
     assert.equal((await fetch(`${base}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })).status, 401)
+    const unauth = await fetch(`${base}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' })
+    assert.match(unauth.headers.get('www-authenticate'), /^Bearer .*resource_metadata="[^"]*\/\.well-known\/oauth-protected-resource\/mcp"/)
+    const resource = await (await fetch(`${base}/.well-known/oauth-protected-resource/mcp`)).json()
+    for (const [path, want] of [['oauth-protected-resource', resource], ['oauth-protected-resource/mcp', resource], ['oauth-authorization-server', meta], ['openid-configuration', meta]]) {
+      const r = await fetch(`${base}/.well-known/${path}`)
+      assert.equal(r.status, 200, path); assert.deepEqual(await r.json(), want, path)
+    }
+    assert.ok(resource.authorization_servers.length && resource.resource.endsWith('/mcp'))
 
     // connect: a person's assistant, signed in by google (sub/email) or as a reviewer; returns an MCP client + its tokens
     async function connect({ name, as, drawing = true, via = 'google', web = browser() }) {

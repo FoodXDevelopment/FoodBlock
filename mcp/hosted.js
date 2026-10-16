@@ -393,6 +393,15 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   app.use("/register", guarded("register", cap.register, 3600e3));
   app.use("/token", guarded("token", cap.token, 60e3));
   app.use("/authorize", guarded("signin", cap.signin, 600e3, false));
+  // Discovery fallbacks the MCP authorization spec (2025-11-25) has clients try: the root protected-resource URL (after the path-suffixed one the 401 names)
+  // and OpenID Connect discovery for the authorization server. Same documents, so any client finds them.
+  app.use((req, res, next) => {
+    if (req.method === "GET" || req.method === "HEAD") {
+      if (req.path === "/.well-known/oauth-protected-resource") req.url = "/.well-known/oauth-protected-resource/mcp" + req.url.slice(req.path.length);
+      else if (req.path === "/.well-known/openid-configuration" || req.path === "/.well-known/openid-configuration/mcp") req.url = "/.well-known/oauth-authorization-server" + req.url.slice(req.path.length);
+    }
+    next();
+  });
   app.use(mcpAuthRouter({ provider, issuerUrl: url, baseUrl: url, scopesSupported: SCOPES, resourceName: "FoodX", resourceServerUrl: new URL(resourceUrl), serviceDocumentationUrl: new URL("https://foodx.network/docs/mcp"),
     authorizationOptions: off, tokenOptions: off, clientRegistrationOptions: off, revocationOptions: off }));
 

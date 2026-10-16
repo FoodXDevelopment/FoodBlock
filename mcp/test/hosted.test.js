@@ -82,6 +82,11 @@ describe('the hosted door', { skip: !have && 'no Backend checkout (set FOODOS_BA
     assert.equal(resource.resource, `${base}/mcp`)
     const meta = await (await fetch(`${base}/.well-known/oauth-authorization-server`)).json()
     assert.deepEqual(meta.code_challenge_methods_supported, ['S256'])
+    // Discovery fallbacks the MCP spec has clients try: the root protected-resource URL and OpenID Connect discovery answer with the same documents.
+    for (const [path, want] of [['oauth-protected-resource', resource], ['oauth-protected-resource/mcp', resource], ['oauth-authorization-server', meta], ['openid-configuration', meta]]) {
+      const r = await fetch(`${base}/.well-known/${path}`)
+      assert.equal(r.status, 200, path); assert.deepEqual(await r.json(), want, path)
+    }
     assert.ok(meta.registration_endpoint && meta.scopes_supported.includes('foodblock:draft'))
 
     // 2. Dynamic registration, then the code flow with PKCE; the person's yes is their approval code.

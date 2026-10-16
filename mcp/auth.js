@@ -116,6 +116,13 @@ export function authorizedApp({ door, mcp, approve, provider }) {
       const metadata = getOAuthProtectedResourceMetadataUrl(resource);
       bearer = requireBearerAuth({ verifier, requiredScopes: [SCOPES[0]], resourceMetadataUrl: metadata });
       const inner = express.Router();
+      inner.use((req, _res, next) => { // discovery fallbacks the spec has clients try (root protected-resource URL, OpenID Connect discovery)
+        if (req.method === "GET" || req.method === "HEAD") {
+          if (req.path === "/.well-known/oauth-protected-resource") req.url = "/.well-known/oauth-protected-resource/mcp" + req.url.slice(req.path.length);
+          else if (req.path === "/.well-known/openid-configuration" || req.path === "/.well-known/openid-configuration/mcp") req.url = "/.well-known/oauth-authorization-server" + req.url.slice(req.path.length);
+        }
+        next();
+      });
       inner.use(mcpAuthRouter({ provider, issuerUrl: url, baseUrl: url, scopesSupported: SCOPES, resourceName: "FoodX", resourceServerUrl: resource }));
       inner.post("/oauth/consent", express.urlencoded({ extended: false, limit: "8kb" }), (req, res) => provider.consent(req, res));
       inner.use(async (req, res, next) => { try { if (await approve(req, res)) return; next(); } catch (error) { next(error); } });
