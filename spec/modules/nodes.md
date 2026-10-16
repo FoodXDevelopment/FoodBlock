@@ -23,10 +23,11 @@ A node asks for the blocks it may see since a point.
 
 ## Push
 
-A node sends signed blocks. A sealed copy may say which of the receiving node's people it is for (`for`: `{ hash: [id] }`).
-- A block whose `prev` is not held waits. Waiting blocks count against admission and expire after a time the node sets. A node asks for the missing block only from the signer of a signed push; an unsigned push's waiting blocks are never fetched, only kept until they expire.
+A node sends signed blocks. A sealed copy may say which of the receiving node's people it is for (`for`: `{ hash: [id] }`). A sealed block arrives as its signed public header, and the core checks that header alone (privacy.md, Checking a sealed block's link in its chain): the node never does.
+- **A block waits until every block it needs is held** (core.md, check 5): its `prev`, and by type the grant it passes on (`parent`) or counts to (`counted_to`), the offer it answers or stops, the grant it acts under. It is then judged once. Waiting blocks count against admission and expire after a time the node sets. A node asks for a missing block only from the signer of a signed push; an unsigned push's waiting blocks are never fetched, only kept until they expire.
 - Other refs to blocks not held are fetched when a reader needs them; they never hold a block back.
-- The answer says which blocks were taken, which wait, which were refused, and which pairs prove an equivocation. `equivocations` is always present, an empty list when there are none; each pair is sorted as text. The block of a pair that arrives second is neither taken nor refused: it is listed in its pair. When the pair is sealed, the proof is the two public headers (same author, key and `prev`, both signed); each sealed copy is served only to its audience.
+- **Rounds.** The blocks of a push are judged in rounds. A round is every waiting block whose needs are all held when the round begins, each judged against the same store, so what is taken never depends on the order inside a push. A block whose need was refused waits for good.
+- The answer says which blocks were taken, which wait (each with what it needs), which were refused, and which pairs prove an equivocation. `equivocations` is always present, an empty list when there are none: every pair of blocks of one key naming one `prev` that a block of this push belongs to, each pair sorted as text and the list sorted. **Both blocks of a pair are kept** (and served with the chain, so anyone may publish the proof). A pair's block is **not taken**: of two that arrive in the same round, neither is taken; a block that forks one already held, or one taken in an earlier round, is the later and is not taken. It is neither refused nor waiting. When the pair is sealed, the proof is the two public headers (same author, key and `prev`, both signed); each sealed copy is served only to its audience.
 
 **Signed answers.** A node signs every answer with any live signing key of its holder (a person or a machine), the genesis key or one brought in by a key grant. Discovery's `node` is the holder's id. There is no separate node actor. Two signed answers that give different blocks for one arrival number prove a lie.
 
@@ -41,7 +42,7 @@ A node publishes `.well-known/foodblock`: `{ protocol: "foodblock", version, nod
 
 ## Equivocation
 
-Two blocks with one signing key and one `prev` (core.md, invariant 3). Also two binding blocks of one record that do not see each other (an offer's allocations, an instance's ownership transfers), and two recovery rotations that cross. A node keeps both and serves them with the chain, so anyone may publish the proof. What a fold does with a pair is in folds.md.
+Two blocks with one signing key and one `prev` (core.md, invariant 3). The same holds for a sealed block known by its public header alone: a header and a whole block, or two headers, naming one `prev` for one key are a pair (privacy.md). Also two binding blocks of one record that do not see each other (an offer's allocations, an instance's ownership transfers), and two recovery rotations that cross. A node keeps both and serves them with the chain, so anyone may publish the proof. What a fold does with a pair is in folds.md.
 
 ## Finding
 

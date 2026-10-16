@@ -46,9 +46,10 @@ def orderer_of(record):
     return call("orderer_of", record)
 
 
-def consent(person, sender, blocks) -> dict:
-    """A person's live word about a sender (or none): { word, block }."""
-    return call("consent", person, sender, list(blocks))
+def consent(person, sender, blocks, under=None) -> dict:
+    """A person's live word about a sender (or none): { word, block }. `under`: the grant the sender's block acts under; a word
+    about its grantor is a word about the sender (consent follows the principal)."""
+    return call("consent", person, sender, list(blocks), under)
 
 
 def live_grant(act, grants, now):

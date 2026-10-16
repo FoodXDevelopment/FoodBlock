@@ -19,8 +19,8 @@ const ownerOf = (instance, blocks) => call('owner_of', blockOf(instance), list(b
 const receiverOf = (promise, blocks) => call('receiver_of', promise, list(blocks))
 const whereNow = (thing, blocks) => call('where_now', blockOf(thing), list(blocks))
 const orderer = (record) => call('orderer_of', record)
-/** The consent fold: a person's live word about a sender (or none): { word, block }. */
-const consent = (person, sender, blocks) => call('consent', person, sender || null, list(blocks))
+/** The consent fold: a person's live word about a sender (or none): { word, block }. `under`: the grant the sender's block acts under; a word about its grantor is a word about the sender (consent follows the principal). */
+const consent = (person, sender, blocks, under) => call('consent', person, sender || null, list(blocks), under || null)
 // Views, each saying whose clock or arrivals it reads.
 const liveGrant = (act, grants, now) => call('live_grant', act, list(grants), now)
 const withdrawalSeen = (withdrawal, block, blocks, { arrivedAt } = {}) => call('withdrawal_seen', withdrawal, block, list(blocks), arrivals(arrivedAt, blocks, [withdrawal, block]))

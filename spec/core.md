@@ -111,17 +111,18 @@ The fields each closed type may carry are in `protocol.json` (`fields`). A close
 
 ## 8. `valid(block, context)`
 
-`context` is the blocks the checker holds. It never includes a clock. `valid` is true when every check below passes. The first failure is the refusal, and its code is in `protocol.json` (`refusals.codes.block`).
+`context` is the blocks the checker holds. It never includes a clock. `valid` runs the checks below in this order and **stops at the first check that finds anything**. Its refusal is every code that one check found, one per code, in the order of `protocol.json` (`refusals.codes.block`, which lists the codes in the order of the checks; `refusals.checks` lists each check's codes). `valid` is true when no check finds anything.
 
 1. The block is exactly `{type, state, refs}` and follows canonical.md, strict writing included (`not_canonical`).
-2. Every value follows section 3 and its grammar in `protocol.json` (`float`, `integer_range`, `decimal`, `grammar`, `time`, `calendar`, `shape`).
+2. Every value follows section 3 and its grammar in `protocol.json` (`float`, `integer_range`, `decimal`, `grammar`, `time`, `calendar`, `shape`, `type_name`; `unknown_suite` for a hash name in refs that the reader does not know).
 3. The canonical body is at most `limits.block_bytes` (`size_limit`). `refs.after` names at most `limits.after_heads` blocks (`after_limit`).
-4. A genesis follows section 4 (`bad_genesis`). Any other block has the common five fields (`chain`).
-5. Its signing key is a key of the author that speaks for it, and its signature opens (`bad_signature`, `void_key`, `unknown_suite`).
-6. `prev` and `seq` fit the key's chain, or the block is a skip (`chain`).
-7. If the type is closed, it has its required fields and no undeclared ones (`required`, `undeclared_field`, `undeclared_ref`), and its module's checks pass (the codes in `protocol.json`).
+4. A genesis follows section 4 (`bad_genesis`). Any other block has the common five fields of section 5 (`chain`, `at_missing`), and its audience is public or a sorted list of commitments (`audience`).
+5. **What it rests on.** Every block it needs is in the context (`unmet`). The needs are in `protocol.json` (`needs`): every block needs its `prev`; a grant also its `parent` and the block it counts to (`counted_to`); a promise also the grant it acts under (`under`) and the promise it answers or stops (`answers`, `updates`). Authority depends on these blocks, so they are causal dependencies: a block that lacks one is **not judged**. Its refusal is `unmet` alone, and a node waits (nodes.md, Push). When they arrive it is judged once, with every other check.
+6. The id sent is the hash of the bytes (`bad_hash`). Its signing key is a key of the author that speaks for it, and its signature opens (`bad_signature`, `void_key`, `unknown_suite`, `not_own_rotation`, `recovery_scope`).
+7. `prev` and `seq` fit the key's chain, or the block is a skip (`chain`).
+8. If the type is closed, it has its required fields and no undeclared ones (`required`, `undeclared_ref`, `undeclared_field`), and its module's checks pass (the codes in `protocol.json`, in the order of the list).
 
-A block that fails several checks gets one refusal per code, in the order of the checks above, and `protocol.json` lists `refusals.codes.block` in that same order: canonical form (`not_canonical`), values (`float`, `integer_range`, `decimal`, `grammar`, `time`, `calendar`, `shape`, `type_name`), the audience (`audience`), limits (`size_limit`, `after_limit`), the genesis and the common five (`bad_genesis`, `chain`, `at_missing`), then an id sent that is not the hash (`bad_hash`) and the key and signature (`bad_signature`, `void_key`, `unknown_suite`, `not_own_rotation`, `recovery_scope`), then closed types (`required`, `undeclared_ref`, `undeclared_field`), then the codes a module adds, in the order of the list. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
+Checks 1 to 4 read the bytes alone, so a block that fails one is refused at once, whatever it lacks. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
 
 ## 9. The invariants
 
@@ -130,6 +131,7 @@ Core keeps three. Every other invariant is in the module that owns it, still num
 1. A block's identity is the hash of its canonical bytes; nothing else names it.
 2. A block never changes; a change is a new block.
 3. A key's blocks form one chain: no two of its blocks name the same `prev`. Two that do prove a lie. Both are kept, and neither binds anyone else.
+25. Authority depends on blocks, and they are causal dependencies: a block waits until it holds every block it needs (core.md, check 5), and is then judged once. No node holds a block that another would have judged otherwise for want of what it lacked.
 
 ## 10. What core leaves out
 

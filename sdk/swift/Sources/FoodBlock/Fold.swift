@@ -61,7 +61,7 @@ public enum Fold {
     public static func ordererOf(_ record: JSON) -> Any? { Core.maybe("orderer_of", record) }
     public static func receiverOf(_ promise: JSON, _ blocks: [JSON]) -> String? { Core.maybe("receiver_of", promise, blocks) as? String }
     /// The consent fold: a person's live word about a sender (or none): { word, block }.
-    public static func consent(_ person: String, _ sender: String?, _ blocks: [JSON]) -> JSON { (try? Core.json("consent", person, sender, blocks)) ?? [:] }
+    public static func consent(_ person: String, _ sender: String?, _ blocks: [JSON], under: String? = nil) -> JSON { (try? Core.json("consent", person, sender, blocks, under)) ?? [:] }
     /// Views, each saying whose clock or arrivals it reads.
     public static func liveGrant(_ act: JSON, _ grants: [JSON], now: String) -> Bool { Core.bool("live_grant", act, grants, now) }
     public static func withdrawalSeen(_ withdrawal: JSON, _ block: JSON, _ blocks: [JSON], arrivedAt: Identity.Arrival? = nil) -> Bool {

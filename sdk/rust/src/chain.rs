@@ -63,8 +63,10 @@ pub struct Chain {
     pub ok: bool,
 }
 
-/// The most missing seq numbers `check_chain` lists.
-pub const GAPS_MAX: i64 = 10_000;
+/// The most missing seq numbers `check_chain` lists (protocol.json `limits.gaps_max`).
+pub fn gaps_max() -> i64 {
+    crate::spec().protocol.get("limits").and_then(|l| l.get("gaps_max")).and_then(Value::as_i64).unwrap_or(10_000)
+}
 
 /// Check one key's chain: blocks it signed (each with state.seq and refs.prev) and the block that brought it in.
 pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
@@ -117,8 +119,8 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
         let explained = here.iter().all(|b| is_skip(b));
         if *seq > last_seq.saturating_add(1) && !explained {
             // A block may name any seq up to 2^53 - 1: listing every number missing before it would be a list that long (a hostile
-            // block made the core ask for 72 PB; found by the fuzzer). The first GAPS_MAX numbers are listed; `ok` is false either way.
-            let room = GAPS_MAX.saturating_sub(gaps.len() as i64).max(0);
+            // block made the core ask for 72 PB; found by the fuzzer). The first gaps_max numbers are listed; `ok` is false either way.
+            let room = gaps_max().saturating_sub(gaps.len() as i64).max(0);
             let end = (last_seq + 1).saturating_add(room).min(*seq);
             gaps.extend(last_seq + 1..end);
         }

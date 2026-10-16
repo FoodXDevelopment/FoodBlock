@@ -225,7 +225,7 @@ pub fn unwrap(message: &Value) -> Result<Value> {
     Ok(out)
 }
 
-/// A block's public header: `{ author, seq, prev, hash }`.
+/// A block's public header: `{ author, seq, prev, hash }`, with `withheld: true` and `skip: true` when the block says so.
 pub fn header(block: &Value) -> Value {
     let mut out = Map::new();
     for (key, value) in [
@@ -246,6 +246,10 @@ pub fn header(block: &Value) -> Value {
     // A safety report made under a law may leave its subject out of the audience: its header says so (privacy.md).
     if st(block, "withheld") == Some(&Value::Bool(true)) {
         out.insert("withheld".into(), Value::Bool(true));
+    }
+    // A skip says so in its header, so a reader of the header alone can check the jump in `seq`.
+    if st(block, "skip") == Some(&Value::Bool(true)) {
+        out.insert("skip".into(), Value::Bool(true));
     }
     Value::Object(out)
 }

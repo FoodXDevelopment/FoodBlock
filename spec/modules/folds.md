@@ -4,6 +4,10 @@ A **fold** reads a set of blocks into one answer. A **view** reads a fold and on
 
 **The promise of a fold:** any two nodes that hold the same set of blocks compute the same answer. A fold reads no clock and no arrival. Only a fold's answer may be called convergent.
 
+**A fold reads only what is whole.** A block whose needs (core.md, check 5; `protocol.json`, `needs`) are not all in a fold's input is not part of it, and neither is any block that needs that one. A node never stores such a block (it waits), so on a node the rule changes nothing; it makes a fold a function of its input alone, whatever subset it is handed. A fold of a promise that is itself not whole returns null.
+
+**Arrival-free, order-free.** A fold of a set gives one answer. It never breaks a tie by the hash of a block, by the order a node met its input in, or by arrival: where the input leaves two answers equally good, the fold says so (`forks`, `live`, a null) or names one only to name it, with no authority (the lowest hash, as for a tie of consent).
+
 **The promise of a view:** it is right for the reader that computes it, and says whose clock it used. Two readers may differ for a while, and neither is wrong. A view may show but never decide what another reader must accept. Only an orderer's own blocks trigger acts in the world.
 
 Each fold and view is named in `protocol.json` (`folds`, `views`), with its input and output.
@@ -42,7 +46,9 @@ The two blocks of a pair (core.md, invariant 3) count for nothing in any fold, a
 
 Input: the first promise P, and every block that names P in `for` or answers a block in the deal. A promise with no `answers` is not in the deal even if it names P in `for`: it is a new deal that P serves.
 
-**Step 0, who counts.** Keep only blocks signed by a side, or by an agent under that side's live grant. An open side is filled by whoever's accept binds. The live offer is P, or the latest counter between the same two sides.
+**Step 0, who counts.** Keep only blocks signed by a side, or by an agent under that side's live grant. An open side is filled by whoever's accept binds.
+
+**The live offers.** P is live. A counter to a live offer (a promise that answers it and carries no status) between the same two sides, signed by the side that did not sign the offer it answers, makes that offer no longer live and is live in its place. Two counters to one offer both stand: there may be several live offers, and the fold says so (`live`, sorted). An accept binds the live offer it answers. Of all binding accepts, the earliest in causal order binds; two that do not see each other prove the accepter's lie: neither binds, and both are listed in `forks`.
 
 **Then the stage is the first of these that holds, from the furthest along back to the start:**
 1. **reversed:** the promise is done, and counted transfers back `for` it cover what was paid.
@@ -66,12 +72,13 @@ The fold reads the circle C and every member grant with `refs.subject` C, in cau
 
 Every node returns the same names, so readers share one API. `protocol.json` (`folds`, `views`) gives each one's input and output. Ids and hashes are hex, and a list of them is sorted as text unless it says otherwise. A quantity a fold counts is a number in the line's unit (fold output, not signed content). A field that does not apply is null, or an empty list. What the list cannot say:
 - `signed_by_author` is true for a block that is the id's, signed by a key that speaks for it, or a key grant the recovery key signed.
-- `accept` is the binding accept: the promise itself when made to oneself, the first allocation on an open offer. `forks` are allocations that do not see the one before: proof, not counted. In `lines`, `moved` is capped at `needed` when a whole instance covers the line.
-- `members` maps each id to `{ roles, grant, counted_to }`, `grant` the member grant that put them in, or the circle for the founder.
+- `accept` is the binding accept: the promise itself when made to oneself, the first allocation on an open offer, the earliest accept of a live offer on a one-to-one deal. `offer` is the offer the binding accept answers; with no accept, the live offer when there is only one, else null. `live` lists every live offer, sorted. `forks` are allocations that do not see the one before, or accepts of live offers that do not see each other: proof, not counted. In `lines`, `moved` is capped at `needed` when a whole instance covers the line.
+- `members` maps each id to `{ roles, grant, counted_to }`, `grant` the member grant that put them in, or the circle for the founder (with several current grants, the lowest hash, only to name one). `removed` maps each id that is out to the `counted_to` of the stop that took their last current grant, or null when it names none (of several that do not see each other, the lowest hash's).
 - `where_now` is empty when no place is known, and two or more when moves cross. `ownership` has `owner` null after a transfer to an open receiver; with a `conflict`, `owner` is the owner before the crossing pair.
-- `chain` reports `gaps`, the seq numbers missing. A gap before a `skip` block is explained; any other gap is not. `length` counts the key's blocks that count: it leaves out both blocks of every equivocation pair and every later block of the key that follows one (Equivocations).
+- `chain` reports `gaps`, the seq numbers missing, the lowest first and at most `limits.gaps_max` of them (a block may say `seq` 2^53 - 1); `ok` is false whether or not all are listed. A gap before a `skip` block is explained; any other gap is not. `length` counts the key's blocks that count: it leaves out both blocks of every equivocation pair and every later block of the key that follows one (Equivocations).
 
 ## Invariants
 
+26. A fold reads only whole input, and is a function of it: the same blocks give the same answer on every node, whatever order they came in.
 4. A record's binding blocks come from its one orderer and form one chain. Two that do not see each other prove a lie.
 5. An instance has at most one owner in any fold.

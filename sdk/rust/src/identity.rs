@@ -333,7 +333,7 @@ pub fn forked_in(block: &Value, index: &Index) -> bool {
 }
 
 pub fn forked(block: &Value, blocks: &[Value]) -> bool {
-    forked_in(block, &index_of(blocks))
+    forked_in(block, &crate::js::held_index(blocks))
 }
 
 /// Whether a block counts in a fold other than the identity fold: a genesis, or a block of a key that has not signed
@@ -489,7 +489,7 @@ fn identity_depth(id: &str, index: &Index, arrived_at: ArrivedAt, depth: usize) 
 
 /// What an id's keys are, among these blocks.
 pub fn identity_of(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> Identity {
-    identity_in(id, &index_of(blocks), arrived_at)
+    identity_in(id, &crate::js::held_index(blocks), arrived_at)
 }
 
 fn read_keys(
@@ -814,13 +814,7 @@ fn speaks(entry: &KeyEntry, block: &Value, cx: &Context) -> bool {
         return true;
     }
     let good = rotation.counted_to.as_deref().and_then(|g| cx.index.get(g));
-    // A rotation names the last block of the old key that counts. Until that block is held, a block of the old key cannot be
-    // shown to come after it, so the key speaks on. A chain is taken oldest first: to hold `counted_to` a node must first take
-    // the blocks before it, and those are the old key's. Voiding them for want of `counted_to` would refuse them for good
-    // (a refused block is not asked for again) and deadlock the chain; when `counted_to` arrives the fold voids what follows it.
-    if rotation.counted_to.is_some() && good.is_none() {
-        return true;
-    }
+    // A rotation's `counted_to` is one of the blocks it rests on (protocol.json `needs`): a fold never meets a rotation without it.
     if let Some(good_seq) = good.and_then(|g| int(st(g, "seq"))) {
         if crate::js::number_of(st(block, "seq")) <= good_seq {
             return true;
@@ -850,7 +844,7 @@ pub fn key_timeline_in(id: &str, index: &Index, arrived_at: ArrivedAt) -> Vec<Ke
     identity_in(id, index, arrived_at).keys
 }
 pub fn key_timeline(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> Vec<KeyEntry> {
-    key_timeline_in(id, &index_of(blocks), arrived_at)
+    key_timeline_in(id, &crate::js::held_index(blocks), arrived_at)
 }
 /// The keys that speak for an id (every key it holds that is not void).
 pub fn keys_of(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> Vec<String> {
@@ -914,8 +908,25 @@ pub fn signed_by_author_in(block: &Value, index: &Index, arrived_at: ArrivedAt) 
         .any(|e| opens_as(block, &e.key, &e.suite) && speaks(e, block, &cx))
 }
 
+/// Whether this key of an id speaks for a sealed block known by its public header alone (`header`: a block without a `type`,
+/// with the header's author, seq and prev): the test of `signed_by_author`, with the key the header's signature opened.
+pub fn key_speaks_for_header(entry: &KeyEntry, header: &Value, index: &Index, arrived_at: ArrivedAt) -> bool {
+    let mut all = index.clone();
+    all.insert(hash_of(header).to_string(), header.clone());
+    let id = rs(header, "author").unwrap_or("");
+    let state = identity_in(id, &all, arrived_at);
+    let h = hash_of(header);
+    if let Some(ended) = &state.ended {
+        if !ended.iter().any(|e| e == h || all.get(e).is_some_and(|b| past_in(b, &all).contains(h))) {
+            return false;
+        }
+    }
+    let cx = Context { index: &all, rotations: &state.rotations, arrived_at };
+    state.keys.iter().any(|e| e.key == entry.key && speaks(e, header, &cx))
+}
+
 pub fn signed_by_author(block: &Value, blocks: &[Value], arrived_at: ArrivedAt) -> bool {
-    signed_by_author_in(block, &index_of(blocks), arrived_at)
+    signed_by_author_in(block, &crate::js::held_index(blocks), arrived_at)
 }
 
 /// The identity fold (§11, What each fold returns).
@@ -944,7 +955,7 @@ impl IdentityState {
 /// The identity fold: who an id is among these blocks: `{ signed_by_author, keys (sorted), frozen (sorted), operators
 /// (sorted) }`.
 pub fn identity_state(id: &str, blocks: &[Value], arrived_at: ArrivedAt) -> IdentityState {
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     let timeline = key_timeline_in(id, &index, arrived_at);
     let mut keys: Vec<String> = timeline
         .iter()
@@ -1015,7 +1026,7 @@ pub fn chains_of_in(id: &str, index: &Index) -> Vec<KeyChain> {
         .collect()
 }
 pub fn chains_of(id: &str, blocks: &[Value]) -> Vec<KeyChain> {
-    chains_of_in(id, &index_of(blocks))
+    chains_of_in(id, &crate::js::held_index(blocks))
 }
 
 /// Where an id's next block goes for one of its keys.
@@ -1033,5 +1044,5 @@ pub fn next_link_for_in(id: &str, public_key: &str, index: &Index) -> Result<Lin
     next_link(chain.chain.head.as_ref(), Some(&chain.by))
 }
 pub fn next_link_for(id: &str, public_key: &str, blocks: &[Value]) -> Result<Link> {
-    next_link_for_in(id, public_key, &index_of(blocks))
+    next_link_for_in(id, public_key, &crate::js::held_index(blocks))
 }

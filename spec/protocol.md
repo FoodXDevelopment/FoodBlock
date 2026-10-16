@@ -6,7 +6,7 @@ This is the index. The spec is one short core, twelve modules, and a folder of o
 
 ## Files
 
-- `core.md`: a block, the types and verbs, suites, numbers and time, the genesis, the chain, messages, required fields, `valid(block, context)` and invariants 1 to 3. Buildable alone with canonical.md.
+- `core.md`: a block, the types and verbs, suites, numbers and time, the genesis, the chain, messages, required fields, `valid(block, context)` and invariants 1 to 3 and 25. Buildable alone with canonical.md.
 - `canonical.md`: the one exact byte form of a block (RFC 8785 plus strict writing).
 - `modules/blocks.md`: the other fields a block carries, causal order, no clock, records, refusals.
 - `modules/identity.md`: keys, rotation, recovery, custody, contacts.
@@ -68,13 +68,14 @@ Core is always needed. Three peers: micro, edge, node. Two are variants: a micro
 
 ## Invariants
 
-Core has 1 to 3. The rest are in the module that owns them, with the same numbers.
+Core has 1 to 3 and 25. The rest are in the module that owns them, with the same numbers.
 
 | Number | Module |
 |---|---|
-| 1, 2, 3 | core.md |
-| 4, 5 | folds.md |
+| 1, 2, 3, 25 | core.md |
+| 4, 5, 26 | folds.md |
 | 6, 7, 9, 10, 23 | authority.md |
+| 27 | circles.md |
 | 8, 19 | identity.md |
 | 11, 12, 13, 14, 15, 22 | promises.md |
 | 16, 20, 21, 24 | strangers.md |

@@ -16,7 +16,7 @@ fn is_hash(s: &str) -> bool {
     bare.len() == 64 && bare.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))
 }
 
-/// The hashes a block names, through every ref.
+/// The hashes a block names, through every ref, and by `state.counted_to`.
 pub fn causes_of(block: &Value) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     if let Some(Value::Object(refs)) = block.get("refs") {
@@ -30,6 +30,14 @@ pub fn causes_of(block: &Value) -> Vec<String> {
                 if is_hash(h) && !out.iter().any(|o| o == h) {
                     out.push(h.to_string());
                 }
+            }
+        }
+    }
+    // A rotation or removal sees the block it counts to (protocol.json `causal_state`): its causal past holds the chain it cuts.
+    for key in crate::spec().list("causal_state") {
+        if let Some(h) = block.get("state").and_then(|s| s.get(&key)).and_then(Value::as_str) {
+            if is_hash(h) && !out.iter().any(|o| o == h) {
+                out.push(h.to_string());
             }
         }
     }

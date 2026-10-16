@@ -19,7 +19,7 @@ const authorOf = (block) => block.refs?.author || block.hash
 const isSealed = (message) => Boolean(message?.header)
 // A sealed block as the node knows it: its public header, so chains, folds over headers, and filters on author and
 // hash still work. Its body is only in the copies.
-const headerBlock = ({ header }) => ({ hash: header.hash, state: { seq: header.seq, audience: ['sealed'] }, refs: { author: header.author, prev: header.prev } })
+const headerBlock = ({ header, header_signature }) => ({ hash: header.hash, state: { seq: header.seq, audience: ['sealed'], ...(header.withheld ? { withheld: true } : {}), ...(header.skip ? { skip: true } : {}) }, refs: { author: header.author, prev: header.prev }, header_signature })
 // A waiting row keeps its recipients as a JSON list; an older row holds one bare id, read as a list of one.
 const waitingRecipients = (text) => (!text ? [] : text.startsWith('[') ? JSON.parse(text) : [text])
 const blockOf = (message) => (isSealed(message) ? headerBlock(message) : fb.unwrap(message))
@@ -158,12 +158,16 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
     }
     await db.unwait(expired)
     const blocks = incoming.map((one) => one.block)
-    const named = blocks.flatMap((block) => [block.refs?.prev, block.refs?.schema, ...list(block.refs?.after)]).filter(Boolean)
+    // what the SDK needs to judge these blocks: the blocks each rests on (prev, the grant it acts under or passes on, the offer it answers, a counted_to)
+    const named = blocks.flatMap((block) => [block.refs?.prev, block.refs?.schema, ...list(block.refs?.after), ...list(block.refs?.under), ...list(block.refs?.parent), ...list(block.refs?.answers), ...list(block.refs?.updates), block.state?.counted_to]).filter(Boolean)
     const around = await db.around([...new Set([...blocks.map(authorOf), ...owners])], [...new Set([...named, ...(admission ? [admission] : [])])])
     const known = around.map((entry) => entry.block).filter((block) => !blocks.some((other) => other.hash === block.hash))
     const schemas = new Map([...known, ...blocks].filter((block) => block.type === 'thing' && block.state?.kind === 'schema').map((block) => [block.hash, block]))
     const result = fb.sync.accept(blocks.filter((block) => block.type !== undefined), known, { schemas })
-    const sealed = acceptSealed(incoming.filter((one) => isSealed(one.message)), [...known, ...result.taken])
+    // A sealed block arrives as its signed public header. The core checks it (a key of its author that speaks for it, the same key's next
+    // seq, no rival, once its prev is held); the node does none of it.
+    const sealedAnswer = fb.sync.acceptSealed(incoming.filter((one) => isSealed(one.message)).map((one) => one.message), [...known, ...result.taken])
+    const sealed = { taken: sealedAnswer.taken.map(headerBlock), waiting: sealedAnswer.waiting, refused: sealedAnswer.refused, equivocations: sealedAnswer.equivocations }
 
     const rule = admissionRule([...known, ...result.taken], admission, owners)
     const taken = [], admittedNow = new Map()
@@ -218,34 +222,4 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
   app.post('/push', route(push))
   app.node = { pull, push, challenge: async () => { const challenge = fb.sync.newChallenge(); await db.issue(challenge); return { challenge } }, wellKnown, announcement: async () => fb.sync.announcement(await wellKnown()) }
   return app
-}
-
-/**
- * Sealed blocks arrive as their signed public header: taken when the header is signed by a live key of its author
- * and its prev is held; waiting when the prev is not; two from one key naming one prev prove a lie. The body stays
- * sealed, so the write check is the recipients' to make when they open it.
- */
-function acceptSealed(incoming, held) {
-  const taken = [], waiting = [], refused = [], equivocations = []
-  const has = new Set(held.map((block) => block.hash))
-  const slots = new Map()
-  for (const block of held) if (Number.isInteger(block.state?.seq) && block.type !== undefined) {
-    const signer = fb.identity.signerOf(block, fb.identity.keyTimeline(block.refs.author, held))
-    if (signer) slots.set(`${block.refs.author} ${signer} ${block.refs.prev}`, block.hash)
-  }
-  for (const { message, block } of [...incoming].sort((a, b) => (a.block.state.seq ?? 0) - (b.block.state.seq ?? 0))) {
-    const { header } = message
-    const signer = fb.identity.keysOf(header.author, held).find((key) => fb.headerSignedBy(message, key))
-    if (!Number.isInteger(header.seq) || header.seq < 1 || !HASH.test(header.prev || '')) { refused.push({ hash: block.hash, code: 'shape', detail: 'a header is { author, seq, prev, hash }' }); continue }
-    if (!has.has(header.prev)) { waiting.push({ hash: block.hash, needs: [header.prev] }); continue }
-    if (!signer) { refused.push({ hash: block.hash, code: 'bad_signature', detail: 'the header is not signed by a live key of its author' }); continue }
-    const slot = `${header.author} ${signer} ${header.prev}`
-    if (slots.has(slot) && slots.get(slot) !== block.hash) {
-      equivocations.push([slots.get(slot), block.hash].sort()); continue
-    }
-    slots.set(slot, block.hash)
-    has.add(block.hash)
-    taken.push(block)
-  }
-  return { taken, waiting, refused, equivocations }
 }

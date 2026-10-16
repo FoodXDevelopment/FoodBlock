@@ -115,8 +115,8 @@ object Fold {
     }).obj()
 
     /** The consent fold: a person's live word about a sender (or none): `{ word, block }`. */
-    fun consent(person: String, sender: String?, blocks: List<JsonObject>): JsonObject =
-        Native.invoke("consent", JsonPrimitive(person), text(sender), JsonArray(blocks)).obj()
+    fun consent(person: String, sender: String?, blocks: List<JsonObject>, under: String? = null): JsonObject =
+        Native.invoke("consent", JsonPrimitive(person), text(sender), JsonArray(blocks), text(under)).obj()
 
     /** Whether an act stands under a live grant at the reader's `now`. */
     fun liveGrant(act: JsonObject, grants: List<JsonObject>, now: String): Boolean =
@@ -197,6 +197,10 @@ object Sync {
     ): JsonObject = Native.invoke(
         "accept", JsonArray(incoming), JsonArray(held), arrivals(arrivals), schemas?.let(::JsonArray) ?: JsonNull,
     ).obj()
+
+    /** What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. `taken` are hashes. */
+    fun acceptSealed(incoming: List<JsonObject>, held: List<JsonObject>, arrivals: Map<String, String>? = null): JsonObject =
+        Native.invoke("accept_sealed", JsonArray(incoming), JsonArray(held), arrivals(arrivals)).obj()
 
     /** A signed pull: the request plus signer, node and exactly one proof against replay (`counter` or `challenge`); no time. */
     fun signPull(

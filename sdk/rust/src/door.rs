@@ -208,17 +208,24 @@ fn dispatch(op: &str, a: &Args) -> Out {
                 if !whole {
                     return Ok(json!([{ "code": "not_canonical", "detail": "a block is exactly { type, state, refs }" }]));
                 }
-                let findings = crate::check::refusals(
+                let findings = crate::valid::content_refusals(
                     crate::js::type_of(&block),
                     block.get("state").unwrap_or(&none),
                     block.get("refs").unwrap_or(&none),
-                    crate::CheckOptions::default(),
                 );
                 Value::Array(findings.iter().map(|r| r.to_json()).collect())
             }
         },
+        // What a block rests on (protocol.json `needs`): all of it, or with the blocks held, what is not held yet.
+        "needs" => {
+            if a.v(1).is_array() {
+                json!(crate::js::unmet_in(a.v(0), &crate::js::held_index(a.list(1).iter())))
+            } else {
+                json!(crate::js::needs_of(a.v(0)))
+            }
+        }
         "receipt_code" => json!(crate::strangers::receipt_code(a.s(0)?)),
-        "consent" => crate::strangers::consent(a.s(0)?, a.opt(1), &a.list(2)),
+        "consent" => crate::strangers::consent(a.s(0)?, a.opt(1), &a.list(2), a.opt(3)),
         "admission_refusals" => Value::Array(
             crate::strangers::admission_refusals(a.v(0), a.s(1)?, &a.list(2), a.v(3), a.v(4).as_u64().unwrap_or(0))
                 .iter()
@@ -359,9 +366,9 @@ fn dispatch(op: &str, a: &Args) -> Out {
             arrived!(a.v(2), lookup, at);
             crate::identity::identity_state(a.s(0)?, &a.list(1), at).to_json()
         }
-        "counts" => json!(crate::identity::counts_in(a.v(0), &index_of(a.list(1).iter()))),
+        "counts" => json!(crate::identity::counts_in(a.v(0), &crate::js::held_index(a.list(1).iter()))),
         "forked" => json!(crate::identity::forked(a.v(0), &a.list(1))),
-        "fork_pairs" => json!(crate::identity::fork_pairs_in(&index_of(a.list(0).iter()))),
+        "fork_pairs" => json!(crate::identity::fork_pairs_in(&crate::js::held_index(a.list(0).iter()))),
         "next_link_for" => crate::identity::next_link_for(a.s(0)?, a.s(1)?, &a.list(2))?.to_json(),
         "is_live" => json!(crate::grant::is_live(a.v(0), &a.list(1), a.opt(2))),
         "ancestors" => json!(crate::grant::ancestors(a.v(0), &a.list(1))),
@@ -583,6 +590,11 @@ fn sync(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             let schemas = index_of(a.list(3).iter());
             sync::accept(&a.list(0), &a.list(1), at, if a.v(3).is_array() { Some(&schemas) } else { None })
                 .to_json()
+        }
+        // The sealed blocks of a push: (messages, held, arrivals). Held holds whole blocks, sealed messages or their public headers.
+        "accept_sealed" => {
+            arrived!(a.v(2), lookup, at);
+            sync::accept_sealed(&a.list(0), &a.list(1), at).to_json()
         }
         "answer_signed_by" => json!(sync::answer_signed_by(a.v(0), &a.strings(1))),
         "well_known_errors" => json!(sync::well_known_errors(a.v(0))),

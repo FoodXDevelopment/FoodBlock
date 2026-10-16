@@ -80,3 +80,32 @@ test('discovery: .well-known/foodblock names the node, what it holds, its admiss
   assert.deepEqual(Object.keys(fb.sync.announcement(doc)), ['protocol', 'version', 'node', 'endpoints'])
   assert.match(fb.sync.wellKnownErrors({ ...doc, holds: ['me'] })[0], /holds/)
 })
+
+test('push: authority rests on blocks, so a block waits for them and is judged once; a pair that arrives together is taken by neither', () => {
+  const { keys, me } = person()
+  const ag = person('agent')
+  const grant = fb.write('grant', { kind: 'shop', scope: { acts: ['promise'], until: '2026-12-31T00:00:00.000Z' } }, { to: ag.me.hash }, { author: me.hash, key: keys, held: [me, ag.me], at: at(1) })
+  const offer = fb.write('promise', { terms: { expires: '2026-10-20T00:00:00.000Z' } }, { from: me.hash, what: me.hash, under: grant.hash }, { author: ag.me.hash, key: ag.keys, held: [me, ag.me, grant], at: at(2) })
+  assert.deepEqual(fb.sync.accept([offer], [me, ag.me]).waiting, [{ hash: offer.hash, needs: [grant.hash] }], 'the grant it acts under is a block it needs')
+  assert.deepEqual(fb.sync.accept([offer, grant], [me, ag.me]).taken.map((b) => b.hash), [grant.hash, offer.hash])
+  const one = say(me, keys, [me], 'two trays', 1), other = say(me, keys, [me], 'five trays', 1)
+  for (const order of [[one, other], [other, one]]) {
+    const { taken, equivocations } = fb.sync.accept(order, [me])
+    assert.deepEqual([taken.length, equivocations], [0, [[one.hash, other.hash].sort()]])
+  }
+})
+
+test('push: a sealed block is checked by its public header in the core; a header and a body of one hash are two halves of one block', () => {
+  const { keys, me } = person()
+  const first = say(me, keys, [me], 'one', 1)
+  const body = say(me, keys, [me, first], 'two', 2)
+  const header = fb.header(body)
+  const sign = (h, privateKey) => { const { signature, ...rest } = fb.call ? fb.call('sign_message', h, privateKey, 'std') : require('../src/core.cjs').call('sign_message', h, privateKey, 'std'); return { version: '1.6', header: rest, header_signature: signature } }
+  const message = sign(header, keys.private_key)
+  assert.deepEqual(fb.sync.acceptSealed([message], [me, first]).taken, [message])
+  assert.deepEqual(fb.sync.acceptSealed([sign({ ...header, seq: 5 }, keys.private_key)], [me, first]).refused.map((r) => r.code), ['chain'])
+  // the body arrives for the header already held: the other half, not a duplicate
+  assert.deepEqual(fb.sync.accept([body], [me, first, message]).taken.map((b) => b.hash), [body.hash])
+  // and the header for a body held
+  assert.deepEqual(fb.sync.acceptSealed([message], [me, first, body]).taken, [message])
+})

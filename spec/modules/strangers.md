@@ -22,7 +22,9 @@ A person's answer to contact is an `observe` of kind `consent`. It carries `stat
 - `keep`: keep my copy of the record for me.
 - `move`: move my record to the custodian or node in `state.to`.
 
-`refs.subject` names who it is about: the sender, or an operator (a person or business whose agents it covers). Left out, it is about every sender who has no live YES. It may name an ask or deal in `refs.for`. The block is the person's when she signs it, or her custodian on her word, with the raw message's hash in `derives_from`. `refs.from` names the person whose word it is when someone else records it; left out, it is the author.
+`refs.subject` names who it is about: the sender, an operator, or a principal (a person or business whose agents it covers). Left out, it is about every sender who has no live YES.
+
+**Consent follows the principal.** A sender is named by itself, by its operators, and by the grantor of the grant its block acts under: the author of the grant it names in `refs.under` (and the circle that grant was signed `as`), when that grant is live, is addressed to the sender or open, and is one others act under (not a key or member grant). So a stranger's `yes` to a person covers that person's agents acting under her live grant, and her `stop` binds them. A word about her is a word about them, and a recorder's STOP binds the recorder's own side, which includes the principals the sender acts for. It may name an ask or deal in `refs.for`. The block is the person's when she signs it, or her custodian on her word, with the raw message's hash in `derives_from`. `refs.from` names the person whose word it is when someone else records it; left out, it is the author.
 
 **Recording a STOP for someone off FoodX.** A person with no keys (a contact, identity.md) cannot sign. Whoever received her STOP records it: the SMS gateway, her custodian, her channel provider, or the asker's own app that saw the reply. The recorder writes a `stop` consent `from` her, with the raw message in `derives_from`. **Anyone may record a STOP, and it binds only the recorder's own side**: the recorder, its operator and every agent under that operator. An app that sees her reply records it against its own sending. It cannot bind anyone else's.
 
@@ -50,6 +52,6 @@ Where words must bind (an SMS, a voice call), the custodian echoes the exact ter
 ## Invariants
 
 16. Every message to a stranger has a human author, or goes through the receiver's own published order channel.
-20. Consent is a block. Anyone may record a STOP, binding their own side; only the person lifts it; there is no public list.
+20. Consent is a block, and it follows the principal. Anyone may record a STOP, binding their own side; only the person lifts it; there is no public list.
 21. The ask is ordinary and never pitches; the receipt, sent by the asker or her custodian in the same thread, is the door into an app.
 24. A model's reading is never the person's claim until she puts that fact to someone else in her own step; sharing it claims nothing.

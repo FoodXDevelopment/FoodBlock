@@ -38,6 +38,104 @@ pub fn index_of<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     index
 }
 
+/// Calls `f` with each block a block rests on (protocol.json `needs`): its `prev`, and by type the grant it passes on, the offer
+/// it answers or stops, the grant it acts under, the block a rotation or removal counts to. Without allocating.
+pub fn each_need(block: &Value, f: &mut dyn FnMut(&str)) {
+    let table = crate::spec().protocol.get("needs");
+    for group in ["every", type_of(block)] {
+        let Some(Value::Array(paths)) = table.and_then(|t| t.get(group)) else { continue };
+        for path in paths.iter().filter_map(Value::as_str) {
+            let Some((side, key)) = path.split_once('.') else { continue };
+            let Some(value) = block.get(side).and_then(|o| o.get(key)) else { continue };
+            match value {
+                Value::String(h) if !h.is_empty() => f(h),
+                Value::Array(items) => {
+                    for h in items.iter().filter_map(Value::as_str).filter(|h| !h.is_empty()) {
+                        f(h);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+/// The blocks a block rests on (protocol.json `needs`): its `prev`, and by type the grant it passes on, the offer it answers or
+/// stops, the grant it acts under, the block a rotation or removal counts to. They are causal dependencies: a block waits until
+/// all are held, and a fold reads only blocks whose needs are in its input.
+pub fn needs_of(block: &Value) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    each_need(block, &mut |h| {
+        if !out.iter().any(|o| o == h) {
+            out.push(h.to_string());
+        }
+    });
+    out
+}
+
+/// The needs of a block that are not in the index.
+pub fn unmet_in(block: &Value, index: &Index) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    each_need(block, &mut |h| {
+        if !index.contains_key(h) && !out.iter().any(|o| o == h) {
+            out.push(h.to_string());
+        }
+    });
+    out
+}
+
+fn is_read(block: &Value) -> bool {
+    block.get("state").is_some_and(Value::is_object) && block.get("refs").is_some_and(Value::is_object)
+}
+
+/// The largest part of an index in which every block's needs are present: the blocks a fold may read. Borrowed, when nothing
+/// has to go (the common case: a node's own store is whole).
+pub fn closed_ref(index: &Index) -> alloc::borrow::Cow<'_, Index> {
+    let mut gone: alloc::collections::BTreeSet<&str> = Default::default();
+    for (h, b) in index {
+        if !is_read(b) {
+            gone.insert(h);
+        }
+    }
+    loop {
+        let before = gone.len();
+        for (h, b) in index {
+            if gone.contains(h.as_str()) {
+                continue;
+            }
+            let mut unmet = false;
+            each_need(b, &mut |n| {
+                if !index.contains_key(n) || gone.contains(n) {
+                    unmet = true;
+                }
+            });
+            if unmet {
+                gone.insert(h);
+            }
+        }
+        if gone.len() == before {
+            break;
+        }
+    }
+    if gone.is_empty() {
+        return alloc::borrow::Cow::Borrowed(index);
+    }
+    alloc::borrow::Cow::Owned(index.iter().filter(|(h, _)| !gone.contains(h.as_str())).map(|(h, b)| (h.clone(), b.clone())).collect())
+}
+
+/// `closed_ref`, owned (the index itself when nothing has to go).
+pub fn closed(index: Index) -> Index {
+    match closed_ref(&index) {
+        alloc::borrow::Cow::Borrowed(_) => index,
+        alloc::borrow::Cow::Owned(whole) => whole,
+    }
+}
+
+/// An index of blocks by hash, closed: what a fold may read of these blocks.
+pub fn held_index<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
+    closed(index_of(blocks))
+}
+
 /// A block's hash ("" when it has none).
 pub fn hash_of(block: &Value) -> &str {
     block.get("hash").and_then(Value::as_str).unwrap_or("")

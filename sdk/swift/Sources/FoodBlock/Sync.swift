@@ -86,6 +86,10 @@ public enum Sync {
         out.equivocations = r["equivocations"] as? [[String]] ?? []
         return out
     }
+    /// What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. `taken` are hashes.
+    public static func acceptSealed(_ incoming: [JSON], _ held: [JSON] = [], arrivedAt: Identity.Arrival? = nil) -> JSON {
+        (try? Core.json("accept_sealed", incoming, held, Identity.log(arrivedAt, []))) ?? [:]
+    }
     public static func waitedTooLong(_ since: String, _ now: String, _ ttl: Double) -> Bool { Core.bool("waited_too_long", since, now, Int(ttl)) }
 
     public static func pushAnswer(_ result: Accepted, node: String, privateKey: String, suite: String = "std") throws -> JSON {

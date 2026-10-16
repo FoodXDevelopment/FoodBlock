@@ -180,9 +180,14 @@ func ReceiverOf(promise Block, blocks []Block) string {
 // OrdererOf is the orderer a record names (state.orderer), or nil.
 func OrdererOf(record Block) any { return must[any]("orderer_of", record) }
 
-// Consent is a person's live word about a sender (or none): { word, block }.
-func Consent(person, sender string, blocks []Block) map[string]any {
-	return must[map[string]any]("consent", person, nilIfEmpty(sender), plural(blocks))
+// Consent is a person's live word about a sender (or none): { word, block }. The optional under is the grant the sender's
+// block acts under: a word about its grantor is a word about the sender (consent follows the principal).
+func Consent(person, sender string, blocks []Block, under ...string) map[string]any {
+	grant := ""
+	if len(under) > 0 {
+		grant = under[0]
+	}
+	return must[map[string]any]("consent", person, nilIfEmpty(sender), plural(blocks), nilIfEmpty(grant))
 }
 
 // LiveGrant is the grant, among grants, that makes an act live at the reader's now (nil when none).

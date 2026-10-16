@@ -21,7 +21,7 @@ pub fn live_grant(grants: &[Value], now: &str) -> bool {
 /// counterparty's node (`arrived`: a lookup of arrivals there).
 #[cfg(feature = "folds")]
 pub fn withdrawal_seen(withdrawal: &Value, block: &Value, blocks: &[Value], arrived: ArrivedAt) -> bool {
-    let index = index_of(blocks.iter().chain([withdrawal, block]));
+    let index = crate::js::held_index(blocks.iter().chain([withdrawal, block]));
     sees_in(block, hash_of(withdrawal), &index) || arrived.is_some_and(|f| f(hash_of(withdrawal)).is_some_and(|a| !a.is_empty()))
 }
 
@@ -37,7 +37,7 @@ pub fn due(promise: &Value, arrived: ArrivedAt) -> Option<String> {
 /// `recovery_reach`: the blocks a recovery rotation voids in the pure fold but the reach protects on this reader's node
 /// (they, or a block of another identity that built on them, arrived before the reach began). Sorted.
 pub fn recovery_reach(rotation: &Value, blocks: &[Value], arrived: ArrivedAt) -> Vec<String> {
-    let index: Index = index_of(blocks.iter().chain([rotation]));
+    let index: Index = crate::js::held_index(blocks.iter().chain([rotation]));
     let Some(id) = rs(rotation, "author") else { return vec![] };
     let mut out: Vec<String> = index
         .values()
@@ -57,10 +57,15 @@ pub fn promise_view(first: &Value, blocks: &[Value], now: Option<&str>, confirme
     // Stage 8 becomes expired once the reader's own clock passes `expires` and nothing binds.
     let st_name = ss_of(&stage, "stage");
     if matches!(st_name.as_str(), "offered" | "asked") {
-        let offer = ss_of(&stage, "offer");
-        let index = index_of(blocks.iter().chain([first]));
-        let expires = index.get(&offer).and_then(|o| get(o, "state.terms.expires")).filter(|v| truthy(Some(v)));
-        if matches!((now, expires), (Some(n), Some(e)) if !n.is_empty() && n > text(Some(e)).as_str()) {
+        // Expired when every live offer has an `expires` the reader's clock has passed (one still open could bind).
+        let index = crate::js::held_index(blocks.iter().chain([first]));
+        let live: Vec<String> = stage.get("live").and_then(Value::as_array).map(|l| l.iter().filter_map(|x| x.as_str().map(String::from)).collect()).unwrap_or_default();
+        let all_past = !live.is_empty()
+            && live.iter().all(|h| {
+                let expires = index.get(h).and_then(|o| get(o, "state.terms.expires")).filter(|v| truthy(Some(v)));
+                matches!((now, expires), (Some(n), Some(e)) if !n.is_empty() && n > text(Some(e)).as_str())
+            });
+        if all_past {
             stage["stage"] = json!("expired");
         }
     }

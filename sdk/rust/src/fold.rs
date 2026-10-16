@@ -18,6 +18,7 @@ fn read_all<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     for b in blocks {
         index.insert(hash_of(b).to_string(), b.clone());
     }
+    let mut index = crate::js::closed(index);
     crate::identity::mark_forks(&mut index);
     index
 }
@@ -119,7 +120,8 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         core::iter::once(first_block).chain(index_of(blocks).values().collect::<Vec<_>>()),
     );
     let first_hash = hash_of(first_block).to_string();
-    let first = index[&first_hash].clone();
+    // A promise that rests on blocks the input lacks is not read yet: there is no stage.
+    let Some(first) = index.get(&first_hash).cloned() else { return Value::Null };
     // The deal: every block naming the first promise in `for`, or answering or updating a block in it (history only
     // where it counts).
     let mut deal: Vec<String> = vec![first_hash.clone()];
@@ -249,7 +251,9 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     if to_self {
         accept = Some(&first);
     } else if !open {
-        accept = live
+        // Binding accepts, across every live offer. The earliest in causal order binds; two that do not see each other prove the
+        // accepter's lie: neither binds, and both are listed in `forks`.
+        let mut candidates: Vec<&Value> = live
             .iter()
             .filter(|offer| !quote_only(offer))
             .flat_map(|offer| {
@@ -258,9 +262,15 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
                     .into_iter()
                     .filter(move |b| side_of(b).is_some() && side_of(b) != so)
             })
-            .find(|b| {
-                !declined_by_offerer(b) && !before_stops.iter().any(|s| sees_in(b, hash_of(s), &index))
-            });
+            .filter(|b| !declined_by_offerer(b) && !before_stops.iter().any(|s| sees_in(b, hash_of(s), &index)))
+            .collect();
+        candidates.dedup_by(|a, b| hash_of(a) == hash_of(b));
+        let first_ones = earliest(&candidates, &index);
+        if first_ones.len() == 1 {
+            accept = Some(first_ones[0]);
+        } else if first_ones.len() > 1 {
+            forks = sorted_set(first_ones.iter().map(|b| hash_of(b).to_string()));
+        }
     } else {
         let requests: Vec<&Value> = answers_of(&first_hash, Some("accepted"))
             .into_iter()
@@ -336,8 +346,12 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let sides = json!({ "from": from, "to": to });
     // Every name the spec gives (§11, What each fold returns): a field that does not apply is null, or an empty list.
     let result = |stage: &str, more: Value| -> Value {
+        // The offer the binding accept answers; with none, the live offer when there is only one.
+        let reported: Value = if accept.is_some() { json!(hash_of(offer)) } else if live.len() == 1 { json!(hash_of(live[0])) } else { Value::Null };
+        let mut live_hashes: Vec<String> = live.iter().map(|o| hash_of(o).to_string()).collect();
+        live_hashes.sort();
         let mut out = json!({
-            "stage": stage, "stop": null, "from": null, "offer": hash_of(offer), "accept": accept.map(hash_of),
+            "stage": stage, "stop": null, "from": null, "offer": reported, "live": live_hashes, "accept": accept.map(hash_of),
             "sides": sides, "quantity": null, "takers": takers, "forks": forks, "lines": [], "total": null,
             "paid": null, "stopped": [],
         });
@@ -636,20 +650,27 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
 }
 
 // ---- A circle: membership and roles ----
-/// One member of a circle: the roles they hold and the grant that made them a member.
+/// One member of a circle: the roles they hold and the grant that made them a member (with several current grants that do not
+/// see each other, the roles of all of them, and the grant with the lowest hash, to name one).
 #[derive(Debug, Clone, PartialEq)]
 pub struct Member {
     pub roles: Vec<String>,
     pub grant: Option<String>,
+    /// Every current grant (the heads that have not ended).
+    pub grants: Vec<String>,
 }
 
 /// A circle's members and roles: `{ founder, members: { id: { roles, grant, counted_to } }, removed: { id:
-/// counted_to } }` (counted_to is null for a current member).
+/// counted_to } }` (counted_to is null for a current member, and for a removal that names none).
 #[derive(Debug, Clone, PartialEq)]
 pub struct CircleState {
     pub founder: String,
     pub members: indexmap::IndexMap<String, Member, crate::js::BuildHasher>,
     pub removed: indexmap::IndexMap<String, Option<String>, crate::js::BuildHasher>,
+    /// For each grant that ended, the cut of every stop that ended it: the block the stop names in `counted_to`, else the stop.
+    pub cuts: Vec<(String, String)>,
+    /// The blocks signed as the circle by a member after the cut of a grant that ended: they carry no authority for the circle.
+    pub void: alloc::collections::BTreeSet<String>,
 }
 
 impl CircleState {
@@ -668,6 +689,15 @@ struct Invitation {
     update: bool,
     grant: Option<String>,
     added: Vec<String>,
+}
+
+/// One accepted grant of a member that no later acceptance of theirs supersedes (a head), and whether it has ended.
+#[derive(Clone)]
+struct Head {
+    grant: String,
+    accept: String,
+    roles: Vec<String>,
+    ended: bool,
 }
 
 struct Circle<'a> {
@@ -695,12 +725,15 @@ impl<'a> Circle<'a> {
             Member {
                 roles: self.roles.first().map(|(n, _)| vec![n.clone()]).unwrap_or_default(),
                 grant: Some(self.id.clone()),
+                grants: vec![self.id.clone()],
             },
         );
         CircleState {
             founder: self.founder.clone(),
             members,
             removed: Default::default(),
+            cuts: Vec::new(),
+            void: Default::default(),
         }
     }
     fn past_fold(&self, block: &Value) -> CircleState {
@@ -730,7 +763,9 @@ impl<'a> Circle<'a> {
         state
     }
     // One pass in causal order: each invitation, answer, change and removal applies where it falls, so a member
-    // removed and later invited again is in, by the new grant; a grant once ended stays ended.
+    // removed and later invited again is in, by the new grant; a grant once ended stays ended. A member may hold several
+    // accepted grants: those no later acceptance of theirs supersedes are their heads, and they are a member while a head
+    // has not ended, holding the roles of all heads that have not.
     fn fold_now(&self, set: &[Value]) -> CircleState {
         let id = self.id.as_str();
         let founder = self.founder.as_str();
@@ -739,6 +774,12 @@ impl<'a> Circle<'a> {
         let mut updates: Vec<(String, Invitation)> = Vec::new();
         let mut ended: Vec<String> = Vec::new();
         let mut agreed: Vec<(String, Vec<String>)> = Vec::new();
+        // Every authorised stop of a grant and its cut; those of grants that ended are kept (a block must be within every cut).
+        let mut stop_cuts: Vec<(String, String)> = Vec::new();
+        // Every end that took a member's last current grant: who, the stop, and the counted_to it names.
+        let mut ends: Vec<(String, String, Option<String>)> = Vec::new();
+        // Each member's heads, ended or not (an ended head still supersedes what it saw).
+        let mut book: Vec<(String, Vec<Head>)> = Vec::new();
         // The grant that last made each one a member (kept after they are removed, for crossing removals).
         let mut held: Vec<(String, String)> = vec![(founder.to_string(), id.to_string())];
         let held_of = |held: &[(String, String)], who: &str| -> Option<String> {
@@ -779,6 +820,41 @@ impl<'a> Circle<'a> {
                 .filter(|s| !s.is_empty())
                 .map(String::from)
         };
+        // What the circle fold keeps of a member from their heads.
+        // A member's current grants: the heads (accepted grants no other acceptance of theirs supersedes) that have not ended.
+        let current = |book: &[(String, Vec<Head>)], who: &str| -> Vec<Head> {
+            let hs: &[Head] = book.iter().find(|(k, _)| k == who).map(|(_, h)| h.as_slice()).unwrap_or(&[]);
+            hs.iter()
+                .filter(|h| {
+                    !h.ended
+                        && !hs
+                            .iter()
+                            .any(|o| o.accept != h.accept && self.index.get(&o.accept).is_some_and(|ob| sees_in(ob, &h.accept, self.index)))
+                })
+                .cloned()
+                .collect()
+        };
+        let refresh = |state: &mut CircleState, book: &[(String, Vec<Head>)], who: &str| {
+            let live_heads = current(book, who);
+            let live: Vec<&Head> = live_heads.iter().collect();
+            if live.is_empty() {
+                return;
+            }
+            let mut roles: Vec<String> = Vec::new();
+            for h in &live {
+                for r in &h.roles {
+                    if !roles.contains(r) {
+                        roles.push(r.clone());
+                    }
+                }
+            }
+            if live.len() > 1 {
+                roles.sort();
+            }
+            let mut grants: Vec<String> = live.iter().map(|h| h.grant.clone()).collect();
+            grants.sort_by(|a, b| cmp16(a, b));
+            state.members.insert(who.to_string(), Member { roles, grant: grants.first().cloned(), grants });
+        };
         let refs: Vec<&Value> = set.iter().collect();
         for block in causal_order_among(&sub_index(&refs), self.index) {
             let answered = list(rf(&block, "answers"));
@@ -817,26 +893,30 @@ impl<'a> Circle<'a> {
                 if target.to.as_deref().is_some_and(|t| t != who) {
                     continue;
                 }
+                let cut = counted_to(&block).unwrap_or_else(|| hash_of(&block).to_string());
                 if status == Some("accepted") {
                     if target.update {
                         let of = target.grant.clone().unwrap_or_default();
-                        if let Some(member) = state.members.get_mut(&who) {
-                            if member.grant.as_deref() == Some(of.as_str()) && !ended.contains(&of)
-                            {
-                                member.roles =
-                                    unique(member.roles.iter().chain(target.added.iter()));
+                        if !ended.contains(&of) {
+                            if let Some((_, hs)) = book.iter_mut().find(|(k, _)| *k == who) {
+                                if let Some(h) = hs.iter_mut().find(|h| h.grant == of && !h.ended) {
+                                    h.roles = unique(h.roles.iter().chain(target.added.iter()));
+                                }
                             }
+                            refresh(&mut state, &book, &who);
                         }
                     } else if !ended.contains(&grant) {
-                        state.members.insert(
-                            who.clone(),
-                            Member {
-                                roles: target.roles.clone(),
-                                grant: Some(grant.clone()),
-                            },
-                        );
+                        let at = match book.iter().position(|(k, _)| *k == who) {
+                            Some(at) => at,
+                            None => {
+                                book.push((who.clone(), vec![]));
+                                book.len() - 1
+                            }
+                        };
+                        book[at].1.push(Head { grant: grant.clone(), accept: hash_of(&block).to_string(), roles: target.roles.clone(), ended: false });
                         held.push((who.clone(), grant.clone()));
                         state.removed.shift_remove(&who);
+                        refresh(&mut state, &book, &who);
                     }
                 } else if matches!(status, Some("stopped" | "declined")) && who != founder {
                     let of = if target.update {
@@ -844,14 +924,24 @@ impl<'a> Circle<'a> {
                     } else {
                         grant.clone()
                     };
-                    if state
-                        .members
-                        .get(&who)
-                        .is_some_and(|m| m.grant.as_deref() == Some(of.as_str()))
-                    {
-                        ended.push(of);
-                        state.removed.insert(who.clone(), counted_to(&block));
-                        state.members.shift_remove(&who);
+                    let head = book.iter().find(|(k, _)| *k == who).and_then(|(_, hs)| hs.iter().find(|h| h.grant == of));
+                    if head.is_some() {
+                        stop_cuts.push((of.clone(), cut));
+                        if !ended.contains(&of) {
+                            ended.push(of.clone());
+                            if let Some((_, hs)) = book.iter_mut().find(|(k, _)| *k == who) {
+                                for h in hs.iter_mut().filter(|h| h.grant == of) {
+                                    h.ended = true;
+                                }
+                            }
+                            let any_live = !current(&book, &who).is_empty();
+                            if any_live {
+                                refresh(&mut state, &book, &who);
+                            } else {
+                                ends.push((who.clone(), hash_of(&block).to_string(), counted_to(&block)));
+                                state.members.shift_remove(&who);
+                            }
+                        }
                     }
                 }
             } else if !updated.is_empty() && (can(&block, if is_stop(&block) { "remove" } else { "admit" })) {
@@ -862,20 +952,42 @@ impl<'a> Circle<'a> {
                 else {
                     continue;
                 };
+                // the member whose current head this grant is
+                let who = book
+                    .iter()
+                    .find(|(_, hs)| hs.iter().any(|h| h.grant == grant && !h.ended))
+                    .map(|(k, _)| k.clone());
+                if is_stop(&block) {
+                    stop_cuts.push((grant.clone(), counted_to(&block).unwrap_or_else(|| hash_of(&block).to_string())));
+                }
                 if ended.contains(&grant) {
                     continue;
                 }
-                let who = state
-                    .members
-                    .iter()
-                    .find(|(_, m)| m.grant.as_deref() == Some(grant.as_str()))
-                    .map(|(k, _)| k.clone());
                 if is_stop(&block) {
-                    // An invitation not yet answered simply ends.
+                    // An invitation not yet answered simply ends: a stop that has not seen the member's answer comes before it, so
+                    // the answer accepts nothing, whichever of the two a reader meets first.
                     let Some(who) = who else {
                         ended.push(grant);
                         continue;
                     };
+                    let answer = book
+                        .iter()
+                        .find(|(k, _)| *k == who)
+                        .and_then(|(_, hs)| hs.iter().find(|h| h.grant == grant && !h.ended))
+                        .map(|h| h.accept.clone())
+                        .unwrap_or_default();
+                    if who != founder && !sees_in(&block, &answer, self.index) {
+                        ended.push(grant.clone());
+                        if let Some((_, hs)) = book.iter_mut().find(|(k, _)| *k == who) {
+                            hs.retain(|h| h.grant != grant);
+                        }
+                        if !current(&book, &who).is_empty() {
+                            refresh(&mut state, &book, &who);
+                        } else {
+                            state.members.shift_remove(&who);
+                        }
+                        continue;
+                    }
                     if who == founder {
                         continue;
                     }
@@ -913,36 +1025,56 @@ impl<'a> Circle<'a> {
                     if rival && remover != founder && earlier(theirs.as_deref(), mine.as_deref()) {
                         continue;
                     }
-                    ended.push(grant);
-                    state.removed.insert(who.clone(), counted_to(&block));
-                    state.members.shift_remove(&who);
-                } else if let (Some(Value::Array(after)), Some(who)) = (st(&block, "roles"), who) {
-                    if let Some(member) = state.members.get_mut(&who) {
-                        let after: Vec<String> = after.iter().map(|x| text(Some(x))).collect();
-                        let before = member.roles.clone();
-                        member.roles = before
-                            .iter()
-                            .filter(|r| after.contains(r))
-                            .cloned()
-                            .collect();
-                        let added = after
-                            .iter()
-                            .filter(|r| !before.contains(r))
-                            .cloned()
-                            .collect();
-                        updates.push((
-                            hash_of(&block).to_string(),
-                            Invitation {
-                                to: Some(who),
-                                roles: vec![],
-                                update: true,
-                                grant: Some(grant),
-                                added,
-                            },
-                        ));
+                    ended.push(grant.clone());
+                    if let Some((_, hs)) = book.iter_mut().find(|(k, _)| *k == who) {
+                        for h in hs.iter_mut().filter(|h| h.grant == grant) {
+                            h.ended = true;
+                        }
                     }
+                    let any_live = !current(&book, &who).is_empty();
+                    if any_live {
+                        refresh(&mut state, &book, &who);
+                    } else {
+                        ends.push((who.clone(), hash_of(&block).to_string(), counted_to(&block)));
+                        state.members.shift_remove(&who);
+                    }
+                } else if let (Some(Value::Array(after)), Some(who)) = (st(&block, "roles"), who) {
+                    let after: Vec<String> = after.iter().map(|x| text(Some(x))).collect();
+                    let mut before: Vec<String> = Vec::new();
+                    if let Some((_, hs)) = book.iter_mut().find(|(k, _)| *k == who) {
+                        if let Some(h) = hs.iter_mut().find(|h| h.grant == grant && !h.ended) {
+                            before = h.roles.clone();
+                            h.roles = before.iter().filter(|r| after.contains(r)).cloned().collect();
+                        }
+                    }
+                    refresh(&mut state, &book, &who);
+                    let added = after.iter().filter(|r| !before.contains(r)).cloned().collect();
+                    updates.push((
+                        hash_of(&block).to_string(),
+                        Invitation {
+                            to: Some(who),
+                            roles: vec![],
+                            update: true,
+                            grant: Some(grant),
+                            added,
+                        },
+                    ));
                 }
             }
+        }
+        state.cuts = stop_cuts.into_iter().filter(|(g, _)| ended.contains(g)).collect();
+        // Who is out: the counted_to of the last stop that took their last current grant (of several that do not see each other,
+        // the one with the lowest hash, only to name one), null when it names none.
+        for (who, _, _) in &ends {
+            if state.members.contains_key(who) || state.removed.contains_key(who) {
+                continue;
+            }
+            let mine: Vec<&(String, String, Option<String>)> = ends.iter().filter(|e| e.0 == *who).collect();
+            let last = mine
+                .iter()
+                .filter(|e| !mine.iter().any(|o| o.1 != e.1 && self.index.get(&o.1).is_some_and(|ob| sees_in(ob, &e.1, self.index))))
+                .min_by(|a, b| cmp16(&a.1, &b.1));
+            state.removed.insert(who.clone(), last.and_then(|e| e.2.clone()));
         }
         state
     }
@@ -985,19 +1117,54 @@ pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Op
             .collect(),
         _ => Vec::new(),
     };
-    let c = Circle {
+    let build = |related: Vec<Value>| Circle {
         index: read,
-        id,
-        founder,
-        roles,
+        id: id.clone(),
+        founder: founder.clone(),
+        roles: roles.clone(),
         removal_needed: needed.unwrap_or(default_needed),
         related,
         memo: RefCell::new(Vec::new()),
     };
-    Some(match within {
+    let run = |c: &Circle| match within {
         Some(w) => c.past_fold(read.get(hash_of(w)).unwrap_or(w)),
         None => c.fold(&c.related),
-    })
+    };
+    // Pass 1 reads every stop and the cut it names. A block a member signed as the circle that is neither the cut of a grant that
+    // ended nor in the cut's causal past carries no authority for the circle, whether or not it saw the stop (circles.md).
+    let first = build(related.clone());
+    let whole = first.fold(&first.related);
+    let mut void: alloc::collections::BTreeSet<String> = Default::default();
+    if !whole.cuts.is_empty() {
+        for b in read.values() {
+            let Some(author) = rs(b, "author").filter(|a| *a != founder) else { continue };
+            if rs(b, "as") != Some(id.as_str()) {
+                continue;
+            }
+            // A removal is never set aside this way: two that cross follow the crossing rule.
+            if type_of(b) == "grant" && ss(b, "kind") == Some("member") && ss(b, "status") == Some("stopped") && !list(rf(b, "updates")).is_empty() && list(rf(b, "answers")).is_empty() {
+                continue;
+            }
+            let at = first.past_fold(b);
+            let Some(member) = at.members.get(author) else { continue };
+            let outside = whole.cuts.iter().any(|(g, cut)| {
+                member.grants.contains(g)
+                    && hash_of(b) != cut
+                    && !read.get(cut).is_some_and(|x| sees_in(x, hash_of(b), read))
+            });
+            if outside {
+                void.insert(hash_of(b).to_string());
+            }
+        }
+    }
+    let mut out = if void.is_empty() {
+        run(&first)
+    } else {
+        let kept: Vec<Value> = related.into_iter().filter(|b| !void.contains(hash_of(b))).collect();
+        run(&build(kept))
+    };
+    out.void = void;
+    Some(out)
 }
 
 /// A circle's members and roles (protocol.md §8, §11). A member grant counts if signed as the circle by someone holding
@@ -1027,7 +1194,14 @@ fn may_act_as_in(block: &Value, circle: &str, read: &Index, role: Option<&str>) 
 // Whether the block's author, in the circle's fold of the block's causal past, holds `role` if one is named, else a
 // role with the power.
 fn may_with_in(block: &Value, circle: &str, read: &Index, role: Option<&str>, power: &str) -> bool {
+    // a block that rests on blocks not held is not read yet
+    if !crate::js::unmet_in(block, read).is_empty() {
+        return false;
+    }
     let Some(state) = circle_state_in(circle, read, Some(block)) else { return false };
+    if state.void.contains(hash_of(block)) {
+        return false;
+    }
     let Some(member) = rs(block, "author").and_then(|a| state.members.get(a)) else { return false };
     match role {
         Some(r) => member.roles.iter().any(|x| x == r),
@@ -1062,7 +1236,7 @@ pub fn members_then(block: &Value, recipient: &str, blocks: &[Value]) -> Vec<Str
     let mut parts = recipient.split('#');
     let circle = parts.next().unwrap_or("");
     let role = parts.next();
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     if !index.contains_key(circle) {
         return vec![];
     }
@@ -1175,7 +1349,7 @@ pub fn owner_of(instance: &Value, blocks: &[Value]) -> Option<String> {
 
 /// Who receives a bearer promise (refs.to names a thing): whoever owns it now; otherwise refs.to itself.
 pub fn receiver_of(promise: &Value, blocks: &[Value]) -> Option<String> {
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     let to = rs(promise, "to")?;
     match index.get(to) {
         Some(t) if type_of(t) == "thing" => owner_of(t, blocks),
@@ -1187,7 +1361,7 @@ pub fn receiver_of(promise: &Value, blocks: &[Value]) -> Option<String> {
 /// its own refs.place; a place that is a thing is wherever that thing is (stopping at a repeat). Two moves that do not
 /// see each other give both places. A sorted list of hashes.
 pub fn where_now(thing: &Value, blocks: &[Value]) -> Vec<String> {
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     let read = read_all(index.values());
     where_now_in(thing, &index, &read, &mut Vec::new())
 }
@@ -1271,7 +1445,7 @@ pub fn successor_state(
     now: Option<&str>,
     arrived_at: ArrivedAt,
 ) -> Value {
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     let gh = hash_of(grant);
     let person = rs(grant, "author");
     let witnesses = list(st(grant, "witnesses"));

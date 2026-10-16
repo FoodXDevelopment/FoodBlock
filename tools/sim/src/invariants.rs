@@ -126,7 +126,7 @@ pub fn logical_digest(w: &mut World) -> Vec<String> {
         out.push(format!("a{i} keys={} frozen={} signed={:?}", st.keys.len(), st.frozen.len(), signed));
     }
     for (p, s, _) in &w.truth.consents {
-        let c = foodblock::strangers::consent(p, Some(s), &u);
+        let c = foodblock::strangers::consent(p, Some(s), &u, None);
         out.push(format!("consent {} {} {}", who(p), who(s), c["word"]));
     }
     out.sort();
@@ -372,7 +372,7 @@ pub fn check(w: &mut World) -> Vec<String> {
     trace("// 10. STOPs");
     // 10. STOPs are honoured; only the person lifts one.
     for (p, s, word) in &w.truth.consents {
-        let c = foodblock::strangers::consent(p, Some(s), &u);
+        let c = foodblock::strangers::consent(p, Some(s), &u, None);
         if c["word"] != json!(word) && c["word"].is_null() == (*word != "none") {
             v.push(format!("consent of {} about {}: the fold says {}, expected {}", name(p), name(s), c["word"], word));
         }
@@ -395,7 +395,7 @@ pub fn check(w: &mut World) -> Vec<String> {
                 taken += 1;
             }
         }
-        let stopped = flood.iter().any(|b| foodblock::strangers::consent(receiver, b["refs"]["author"].as_str(), &u)["word"] == json!("stop"));
+        let stopped = flood.iter().any(|b| foodblock::strangers::consent(receiver, b["refs"]["author"].as_str(), &u, None)["word"] == json!("stop"));
         if !stopped && taken != *k {
             v.push(format!("admission let {} strangers in where the rule says {}", taken, k));
         }

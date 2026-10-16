@@ -203,6 +203,17 @@ func Accept(incoming, held []Block, options ...AcceptOptions) Accepted {
 	return out
 }
 
+// AcceptSealed is what a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that
+// speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. incoming are
+// sealed messages { header, header_signature, ... }; held whole blocks, sealed messages or their headers. Taken are the hashes.
+func AcceptSealed(incoming, held []Block, arrivedAt ...ArrivedAt) map[string]any {
+	var at ArrivedAt
+	if len(arrivedAt) > 0 {
+		at = arrivedAt[0]
+	}
+	return must[map[string]any]("accept_sealed", plural(incoming), plural(held), arrivals(at, nil))
+}
+
 // WaitedTooLong is whether a waiting block has waited past the node's own time to live since it arrived.
 func WaitedTooLong(since, now string, ttl time.Duration) bool {
 	return must[bool]("waited_too_long", since, now, ttl.Milliseconds())

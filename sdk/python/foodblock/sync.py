@@ -86,6 +86,16 @@ def accept(incoming, held=(), arrived_at=None, schemas=None) -> dict:
     return {**out, "taken": [by_hash.get(h, h) for h in out["taken"]]}  # the core names what it took; here, the blocks
 
 
+def accept_sealed(incoming, held=(), arrived_at=None) -> dict:
+    """What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it
+    opens its signature; the same key's next seq; no rival) once the block it names in prev is held. `incoming` are sealed
+    messages { header, header_signature, ... }; `held` whole blocks, sealed messages or their headers."""
+    incoming, held = list(incoming), list(held or [])
+    out = call("accept_sealed", incoming, held, _arrived(arrived_at, []))
+    by_hash = {m.get("header", {}).get("hash"): m for m in incoming}
+    return {**out, "taken": [by_hash.get(h, h) for h in out["taken"]]}
+
+
 def waited_too_long(since, now, ttl) -> bool:
     return call("waited_too_long", since, now, ttl)
 

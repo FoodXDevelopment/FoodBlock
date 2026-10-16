@@ -30,6 +30,24 @@
   "prev",
   "after"
  ],
+ "causal_state": [
+  "counted_to"
+ ],
+ "needs": {
+  "every": [
+   "refs.prev"
+  ],
+  "grant": [
+   "refs.parent",
+   "state.counted_to"
+  ],
+  "promise": [
+   "refs.under",
+   "refs.answers",
+   "refs.updates"
+  ],
+  "note": "order: refs that order blocks by cause (a block's causal past also holds every block it names by counted_to). needs: the blocks a block's authority rests on, by type. A block waits until all it needs are held, and is judged once; a fold reads only blocks whose needs are all in its input."
+ },
  "refs": {
   "who_and_where": [
    "author",
@@ -117,7 +135,8 @@
   "hash"
  ],
  "header_optional": [
-  "withheld"
+  "withheld",
+  "skip"
  ],
  "required": {
   "actor": [
@@ -357,7 +376,26 @@
   "when_after": [
    "after",
    "wait"
-  ]
+  ],
+  "places": {
+   "containers": [
+    "terms",
+    "scope"
+   ],
+   "lists": [
+    "lines",
+    "split"
+   ],
+   "bare": [
+    "money",
+    "price",
+    "amount",
+    "quantity",
+    "pack",
+    "where"
+   ],
+   "note": "A shape is read only at a place the protocol gives it, never by a field name deeper in. The places are the fields of a block's state, of its terms and scope, and of each item of its lines and split. A value at a place is read by its own keys, and the fields named in bare hold an object, never a bare value. A map nested under a field is data: nothing in it is read as a shape."
+  }
  },
  "time_fields": [
   "at",
@@ -413,7 +451,8 @@
  "limits": {
   "block_bytes": 65536,
   "after_heads": 16,
-  "decimals_max": 15
+  "decimals_max": 15,
+  "gaps_max": 10000
  },
  "hashes": {
   "sha256": {
@@ -1013,7 +1052,7 @@
   "note": "Not part of the protocol. No node reads an older shape."
  },
  "refusals": {
-  "about": "Every refusal is { hash, code, detail }: code from these lists, detail free text for people. block: why a node refuses a block's bytes (final for those bytes). fold: why a fold counts a block for nothing. message: why a node refuses a pull or push. A block breaking several rules gets one entry per rule found, in this order: block codes are listed in the order of the checks in core.md section 8, and a block refusal list follows that order.",
+  "about": "Every refusal is { hash, code, detail }: code from these lists, detail free text for people. block: why a node refuses a block's bytes (final for those bytes), or, for unmet, why it waits. fold: why a fold counts a block for nothing. message: why a node refuses a pull or push. valid runs the checks in `checks` in order and stops at the first check that finds anything; its refusal is every code that check found, one per code, in the order of the block codes below.",
   "fields": [
    "hash",
    "code",
@@ -1030,12 +1069,13 @@
     "calendar": "a time or date in the right shape that is not a real calendar instant",
     "shape": "an amount, money, price, range, mark, share, split, when, where or reveal without its keys",
     "type_name": "a type that does not match grammar.type_name",
-    "audience": "an audience that is neither public nor a sorted list of commitments",
     "size_limit": "its canonical body is over limits.block_bytes (a sealed copy's block, once opened)",
     "after_limit": "refs.after names more than limits.after_heads heads",
+    "audience": "an audience that is neither public nor a sorted list of commitments",
     "bad_genesis": "a genesis with author, prev, after or seq, not public, missing a genesis field, with only one of the recovery fields, or not signed by its own key",
     "chain": "a seq or prev that does not fit its key's chain, or a skip that goes backwards",
     "at_missing": "no at on a block that is not an observe, transform or transfer",
+    "unmet": "the block rests on blocks the checker does not hold (its prev, an offer it answers, a grant it acts under or passes on, a counted_to): not a refusal but a wait; judged once, when they arrive",
     "bad_hash": "an id sent with it is not the hash of its canonical bytes",
     "bad_signature": "its signature opens with no key of its author",
     "void_key": "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to",
@@ -1046,10 +1086,10 @@
     "undeclared_ref": "on a closed type, a ref key neither shared nor declared by its schema",
     "undeclared_field": "on a closed type, a state field neither its type's base field nor declared by its schema",
     "status_not_answer": "a status on a block that neither answers nor updates its author's own",
-    "bad_status": "a status not in statuses, or stopped without a stop from stop",
+    "bad_status": "a status not in statuses, stopped without a valid stop, or a stop beside any other status or none",
     "ask_without_expires": "an ask with no terms.expires",
-    "not_a_side": "a promise, or a deal block, signed by neither side nor an agent under a side's live grant",
-    "deal_not_named": "an answer or counter in a deal that does not name the first promise in refs.for",
+    "not_a_side": "a promise, or a deal block, signed by neither side, nor the circle it signs as, nor the grantor of the grant it acts under",
+    "deal_not_named": "an answer or counter in a deal that does not name the deal's first promise, exactly, in refs.for",
     "lines": "a line without an id unique in the promise, a top-level price or quantity beside lines, or refs.what not the lines' what",
     "wider_than_parent": "a child grant's scope or depth wider than its parent's on any field",
     "not_receiver": "a grant passed on by someone other than its parent's receiver",
@@ -1073,7 +1113,62 @@
     "not_human": "a first block to a stranger signed by an agent, outside the receiver's order channel",
     "stopped": "a message to a person with a live STOP naming its author or operator"
    }
-  }
+  },
+  "checks": [
+   [
+    "not_canonical"
+   ],
+   [
+    "float",
+    "integer_range",
+    "decimal",
+    "grammar",
+    "time",
+    "calendar",
+    "shape",
+    "type_name",
+    "unknown_suite"
+   ],
+   [
+    "size_limit",
+    "after_limit"
+   ],
+   [
+    "audience",
+    "bad_genesis",
+    "chain",
+    "at_missing"
+   ],
+   [
+    "unmet"
+   ],
+   [
+    "bad_hash",
+    "bad_signature",
+    "void_key",
+    "unknown_suite",
+    "not_own_rotation",
+    "recovery_scope"
+   ],
+   [
+    "chain"
+   ],
+   [
+    "required",
+    "undeclared_ref",
+    "undeclared_field",
+    "status_not_answer",
+    "bad_status",
+    "ask_without_expires",
+    "not_a_side",
+    "deal_not_named",
+    "lines",
+    "wider_than_parent",
+    "not_receiver",
+    "scope_until",
+    "bad_roles"
+   ]
+  ]
  },
  "folds": {
   "identity": {
@@ -1086,17 +1181,18 @@
    }
   },
   "promise_stage": {
-   "input": "a first promise and the blocks held; no clock",
+   "input": "a first promise and the blocks held; no clock. A promise that rests on blocks not held has no stage (null)",
    "output": {
     "stage": "offered, asked, declined, stopped, accepted, underway, done or reversed",
     "stop": "before or onward, when stopped",
     "from": "the onward stop's hash",
-    "offer": "the live offer's hash",
+    "offer": "the offer the binding accept answers; with none, the live offer when there is only one, else null",
+    "live": "every live offer, sorted (two counters to one offer both stand)",
     "accept": "the binding accept's hash, or null",
     "sides": "{ from, to }",
     "quantity": "the quantity chosen, or null",
     "takers": "[{ who, request, allocation, quantity }] on an open offer, in causal order",
-    "forks": "allocations that do not see the one before, sorted",
+    "forks": "allocations that do not see the one before, or accepts of live offers that do not see each other: sorted, none counted",
     "lines": "[{ id, needed, moved }], id null without lines",
     "total": "money the price comes to, or null",
     "paid": "money counted to the from side, or null",
@@ -1108,7 +1204,7 @@
    "output": {
     "founder": "the founder's id",
     "members": "{ id: { roles, grant, counted_to } }",
-    "removed": "{ id: counted_to or null }"
+    "removed": "{ id: counted_to or null }: null when the stop names none"
    }
   },
   "may_act_as": {
@@ -1134,7 +1230,7 @@
   "chain": {
    "head": "hash of the latest block",
    "length": "the key's blocks that count: both blocks of an equivocation pair and every later block of the key are left out",
-   "gaps": "seq numbers missing that no skip block explains",
+   "gaps": "seq numbers missing that no skip block explains: the lowest first, at most limits.gaps_max",
    "skips": "hashes of skip blocks",
    "equivocations": "pairs of hashes naming one prev, each pair sorted",
    "broken": "hashes whose prev does not name the block before",

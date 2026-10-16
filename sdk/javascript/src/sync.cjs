@@ -31,6 +31,17 @@ function accept(incoming, held = [], { arrivedAt, schemas } = {}) {
   const byHash = new Map(blocks.map((block) => [block.hash, block])) // the door names what it takes by hash; callers get the blocks
   return { ...answer, taken: answer.taken.map((hash) => byHash.get(hash)) }
 }
+/**
+ * What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it
+ * opens its signature; the same key's next `seq`, no rival) once the block it names in `prev` is held. `incoming` are sealed
+ * messages { header, header_signature, ... }; `held` whole blocks, sealed messages or their headers. Returns { taken (the
+ * messages), waiting, refused, equivocations }.
+ */
+function acceptSealed(incoming, held = [], { arrivedAt } = {}) {
+  const messages = list(incoming), answer = call('accept_sealed', messages, list(held), arrivals(arrivedAt, [], []))
+  const byHash = new Map(messages.map((message) => [message.header?.hash, message]))
+  return { ...answer, taken: answer.taken.map((hash) => byHash.get(hash)) }
+}
 /** What a node's admission and strangers rules refuse of a block for a person: not_admitted, not_human, stopped. */
 const admissionRefusals = (block, receiver, blocks, admission = {}, strangersToday = 0) => call('admission_refusals', block, receiver, list(blocks), admission || {}, strangersToday)
 /** Residency (profiles/residency.md): a block that stays in regions its node does not hold in. */
@@ -43,4 +54,4 @@ const wellKnown = ({ node, holds = [], speaks_for = [], admission = null, endpoi
 const announcement = (doc) => call('announcement', doc)
 const wellKnownErrors = (doc) => call('well_known_errors', doc ?? null)
 
-module.exports = { pullRequest, signPull, signPush, newChallenge, pullErrors, pullRefusals, pushRefusals, messageRefusals, matches, headsOf, answerPull, answerSignedBy, pushRequest, recipientsOf, accept, admissionRefusals, residencyRefusals, waitedTooLong, pushAnswer, wellKnown, announcement, wellKnownErrors }
+module.exports = { pullRequest, signPull, signPush, newChallenge, pullErrors, pullRefusals, pushRefusals, messageRefusals, matches, headsOf, answerPull, answerSignedBy, pushRequest, recipientsOf, accept, acceptSealed, admissionRefusals, residencyRefusals, waitedTooLong, pushAnswer, wellKnown, announcement, wellKnownErrors }

@@ -9,7 +9,7 @@
 //! Stages 1 to 4 and 7 read the block alone (check.rs); 5 and 6 read the context. A block whose `prev` is not held
 //! cannot be checked against its chain: a node holds it as waiting (sync.rs) rather than calling it invalid.
 use crate::block::{rehash, suite_of};
-use crate::check::{findings_with, ordered, CheckOptions};
+use crate::check::{ordered, CheckOptions};
 use crate::error::Refusal;
 use crate::identity::{
     identity_in, is_genesis, opens_as, recovery_key_hash_in, signed_by_author_in, suite_named, ArrivedAt,
@@ -49,24 +49,69 @@ fn recovery_may_sign(block: &Value) -> bool {
     key_grant
 }
 
-/// Every refusal of a signed block against what the checker holds (`held`, blocks by hash, not including the block).
-/// `schemas` lets a named schema's fields and roles count as declared.
+/// The check (protocol.json `refusals.checks`, 1 to 4) a finding of the bytes belongs to: the first that lists its code.
+fn content_check(code: &str) -> usize {
+    let checks = crate::js::get(&crate::spec().protocol, "refusals.checks").and_then(Value::as_array).cloned().unwrap_or_default();
+    for (i, codes) in checks.iter().take(4).enumerate() {
+        if codes.as_array().is_some_and(|c| c.iter().any(|x| x.as_str() == Some(code))) {
+            return i + 1;
+        }
+    }
+    4
+}
+
+/// What the bytes alone say (checks 1 to 4, then a closed type's own, check 8): the refusal of the first of them that finds
+/// anything. It needs no context, so it is the answer for text read from the wire before anything is held.
+pub fn content_refusals(t: &str, state: &Value, refs: &Value) -> Vec<Refusal> {
+    let (w, closed) = crate::check::findings_staged(crate::spec(), t, state, refs, CheckOptions::default());
+    for check in 1..=4 {
+        let found: Vec<Refusal> = w.iter().filter(|r| content_check(&r.code) == check).cloned().collect();
+        if !found.is_empty() {
+            return ordered(found, "block");
+        }
+    }
+    ordered(closed, "block")
+}
+
+/// `valid(block, context)` (core.md, section 8): the checks run in order (protocol.json `refusals.checks`) and stop at the
+/// first that finds anything; the refusal is every code that check found, one per code, in the order of the block codes.
+/// A block that rests on blocks the context lacks is not judged: its refusal is `unmet` alone, and a node waits.
+/// `held` is read closed (a block whose needs are not in it is not there). `schemas` lets a named schema's fields and roles
+/// count as declared.
 pub fn valid(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: ArrivedAt) -> Vec<Refusal> {
+    valid_in_closed(block, &crate::js::closed_ref(held), schemas, arrived_at)
+}
+
+/// `valid` over a context that is already closed (a node's own store is; `accept` reads it closed once).
+pub fn valid_in_closed(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: ArrivedAt) -> Vec<Refusal> {
     let spec = crate::spec();
     let (t, state, refs) = (type_of(block), block.get("state").unwrap_or(&Value::Null), block.get("refs").unwrap_or(&Value::Null));
-    let mut w = findings_with(spec, t, state, refs, CheckOptions { schemas, held: Some(held) });
+    let (mut w, closed_type_findings) = crate::check::findings_staged(spec, t, state, refs, CheckOptions { schemas, held: Some(held) });
     // core.md section 8, check 1: a block is exactly { type, state, refs }. A block with no `type` is not canonical (a `type`
     // that is not a word is `type_name`, found above).
     if block.get("type").is_none() {
         w.push(f("not_canonical", "a block is exactly { type, state, refs }: this one has no type"));
     }
-    let content_ok = state.is_object() && refs.is_object();
-    if !content_ok {
+    // Checks 1 to 4 read the bytes alone.
+    for check in 1..=4 {
+        let found: Vec<Refusal> = w.iter().filter(|r| content_check(&r.code) == check).cloned().collect();
+        if !found.is_empty() {
+            return ordered(found, "block");
+        }
+    }
+    if !(state.is_object() && refs.is_object()) {
         return ordered(w, "block");
     }
+    // Check 5: what the block rests on (core.md section 8; protocol.json `needs`).
+    let missing = crate::js::unmet_in(block, held);
+    if !missing.is_empty() {
+        return vec![f("unmet", format!("it rests on blocks not held: {}", missing.join(", ")))];
+    }
     let hash = hash_of(block);
+    // Check 6: the id sent, the signing key and the signature.
+    let mut w6: Vec<Refusal> = Vec::new();
     if !hash.is_empty() && hash != rehash(block) {
-        w.push(f("bad_hash", "the id sent with it is not the hash of its canonical bytes"));
+        w6.push(f("bad_hash", "the id sent with it is not the hash of its canonical bytes"));
     }
     let asked_suite = suite_of(block);
     // A genesis is signed by its own key.
@@ -75,27 +120,30 @@ pub fn valid(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: A
         let key = ss(block, "public_key_sign").unwrap_or("");
         if !crate::sign::knows_suite(&suite) {
             if spec.suite(&suite).is_some() {
-                w.push(f("unknown_suite", format!("the suite {suite} is declared but this build cannot use it")));
+                w6.push(f("unknown_suite", format!("the suite {suite} is declared but this build cannot use it")));
             }
         } else if !opens_as(block, key, &suite) {
-            w.push(f("bad_genesis", "a genesis is signed by its own key"));
+            w6.push(f("bad_genesis", "a genesis is signed by its own key"));
         }
         if !asked_suite.is_empty() && asked_suite != "std" && asked_suite != suite {
-            w.push(f("bad_hash", "the message names a suite other than the key's"));
+            w6.push(f("bad_hash", "the message names a suite other than the key's"));
         }
-        return ordered(w, "block");
+        if !w6.is_empty() {
+            return ordered(w6, "block");
+        }
+        return ordered(closed_type_findings, "block");
     }
     // Any other block: its signing key is a key of its author that speaks for it.
     let author = rs(block, "author").unwrap_or("");
     if author.is_empty() {
-        return ordered(w, "block");
+        return ordered(w6, "block");
     }
     let mut with = held.clone();
     let signer_entry;
     let identity = identity_in(author, held, arrived_at);
     if identity.keys.is_empty() {
-        w.push(f("bad_signature", "the author's genesis is not held, so no key of the author can open it"));
-        return ordered(w, "block");
+        w6.push(f("bad_signature", "the author's genesis is not held, so no key of the author can open it"));
+        return ordered(w6, "block");
     }
     signer_entry = identity.keys.iter().find(|k| opens_as(block, &k.key, &k.suite)).cloned();
     // The recovery key: named by the genesis's hash, in the identity's suite unless the genesis names another.
@@ -107,22 +155,20 @@ pub fn valid(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: A
         _ => false,
     };
     if signer_entry.is_none() && !recovery_signed {
-        // An operator may rotate the keys of its agent or machine: a block by the operator's own key. It is then the
-        // operator's block (refs.author is the operator); nothing to do here.
         let unbuilt = identity.keys.iter().any(|k| !crate::sign::knows_suite(&k.suite));
         if unbuilt {
-            w.push(f("unknown_suite", "a key of its author is in a suite this reader cannot use"));
+            w6.push(f("unknown_suite", "a key of its author is in a suite this reader cannot use"));
         } else {
-            w.push(f("bad_signature", "its signature opens with no key of its author"));
+            w6.push(f("bad_signature", "its signature opens with no key of its author"));
         }
-        return ordered(w, "block");
+        return ordered(w6, "block");
     }
     if recovery_signed && !recovery_may_sign(block) {
-        w.push(f("recovery_scope", "the recovery key signs only key grants and the defeats a profile gives it"));
+        w6.push(f("recovery_scope", "the recovery key signs only key grants and the defeats a profile gives it"));
     }
     with.insert(hash_of(block).to_string(), block.clone());
     if !(recovery_signed && !recovery_may_sign(block)) && !signed_by_author_in(block, &with, arrived_at) {
-        w.push(f(
+        w6.push(f(
             "void_key",
             "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to",
         ));
@@ -131,16 +177,20 @@ pub fn valid(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: A
     if t == "grant" && ss(block, "kind") == Some("key") && truthy(st(block, "replaces")) && !recovery_signed {
         if let Some(e) = &signer_entry {
             if Some(e.key.as_str()) != ss(block, "replaces") {
-                w.push(f("not_own_rotation", "a key is rotated only by itself, by the recovery key, or by its operator"));
+                w6.push(f("not_own_rotation", "a key is rotated only by itself, by the recovery key, or by its operator"));
             }
         }
     }
-    // Stage 6: prev and seq against the key's chain.
+    if !w6.is_empty() {
+        return ordered(w6, "block");
+    }
+    // Check 7: prev and seq against the key's chain.
+    let mut w7: Vec<Refusal> = Vec::new();
     if let Some(prev) = rs(block, "prev").filter(|p| !p.is_empty()) {
         let seq = int(st(block, "seq"));
         let skip = st(block, "skip") == Some(&Value::Bool(true));
         match held.get(prev) {
-            None => w.push(f("chain", format!("refs.prev ({prev}) is not held: the key's previous block cannot be checked"))),
+            None => w7.push(f("chain", format!("refs.prev ({prev}) is not held"))),
             Some(p) => {
                 let key = signer_entry.as_ref().map(|e| e.key.clone());
                 let same_key = signer_entry
@@ -158,21 +208,24 @@ pub fn valid(block: &Value, held: &Index, schemas: Option<&Index>, arrived_at: A
                         _ => false,
                     };
                     if !ok {
-                        w.push(f("chain", "state.seq is one more than the previous block's (or a skip that jumps forward)"));
+                        w7.push(f("chain", "state.seq is one more than the previous block's (or a skip that jumps forward)"));
                     }
                 } else {
                     // The key's first block names the block that brought the key in: the genesis, or a key grant.
                     let brought = ss(p, "public_key_sign") == key.as_deref() && key.is_some()
                         || (recovery_signed && prev == author);
-                    let by_operator = false;
-                    if !(brought || by_operator) {
-                        w.push(f("chain", "refs.prev is neither the key's previous block nor the block that brought the key in"));
+                    if !brought {
+                        w7.push(f("chain", "refs.prev is neither the key's previous block nor the block that brought the key in"));
                     } else if !(seq == Some(1.0) || (skip && seq.is_some_and(|s| s >= 1.0))) {
-                        w.push(f("chain", "a key's first block has seq 1"));
+                        w7.push(f("chain", "a key's first block has seq 1"));
                     }
                 }
             }
         }
     }
-    ordered(w, "block")
+    if !w7.is_empty() {
+        return ordered(w7, "block");
+    }
+    // Check 8: a closed type's own: required and undeclared fields, and its module's checks.
+    ordered(closed_type_findings, "block")
 }

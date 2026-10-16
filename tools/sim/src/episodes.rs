@@ -304,7 +304,7 @@ impl World {
         self.actors[v].head = Self::hash(&rot);
         self.actors[v].seq = 0;
         // a careful client names what it had seen on the old key (`after`), so the old chain stays in the new key's causal past
-        let after = self.make(v, "observe", json!({ "kind": "note", "text": "back, with a new key" }), json!({ "after": [counted_to.clone()] }));
+        let after = self.make(v, "observe", json!({ "kind": "note", "text": "back, with a new key" }), json!({}));
         self.send(v, &after);
         self.truth.counted.push((id.clone(), Self::hash(&after)));
         self.truth.owners.push((counted_to_thing(&self.truth, &fraud), id, false));
@@ -352,7 +352,7 @@ impl World {
         self.actors[h].key = nk;
         self.actors[h].head = Self::hash(&rot);
         self.actors[h].seq = 0;
-        let back = self.make(h, "observe", json!({ "kind": "note", "text": "recovered; custody ended" }), json!({ "after": [counted_to.clone()] }));
+        let back = self.make(h, "observe", json!({ "kind": "note", "text": "recovered; custody ended" }), json!({}));
         self.send(h, &back);
         self.truth.counted.push((id, Self::hash(&back)));
         self.actors[h].recovery = None;
@@ -482,6 +482,9 @@ impl World {
         }
         let before = self.make(m, "observe", json!({ "kind": "note", "text": "flour ordered" }), json!({ "as": circle }));
         self.send(m, &before);
+        // written after the last good block, before the member has seen any removal: the cut still takes its authority away
+        let ghost = self.make(m, "observe", json!({ "kind": "note", "text": "offline, still ordering" }), json!({ "as": circle }));
+        self.send(m, &ghost);
         // the invitation the founder gave this member
         let inv = self.created.iter().find(|b| b["type"] == "grant" && b["state"]["kind"] == "member" && b["refs"]["to"] == json!(self.id(m)) && b["refs"]["subject"] == json!(circle) && b["state"].get("status").is_none()).cloned();
         let Some(inv) = inv else { return };
@@ -491,6 +494,7 @@ impl World {
         let after = self.make(m, "observe", json!({ "kind": "note", "text": "still ordering" }), json!({ "as": circle, "after": [Self::hash(&end)] }));
         self.send(m, &after);
         self.truth.may_act.push((before, circle.clone(), true));
+        self.truth.may_act.push((ghost, circle.clone(), false));
         self.truth.may_act.push((after, circle, false));
         self.businesses[bi].members.retain(|&x| x != m);
     }

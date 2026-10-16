@@ -3,7 +3,7 @@
 //! every ancestor is (invariant 9). A grant carries no status: its author ends it by an `updates` with stopped; the
 //! receiver declines or leaves by an `answers`. This is the grant check a micro that acts in the world needs.
 use crate::error::Refusal;
-use crate::js::{get, hash_of, index_of, list, rf, rs, ss, st, strict_eq, text, truthy, Index};
+use crate::js::{get, hash_of, list, rf, rs, ss, st, strict_eq, text, truthy, Index};
 use crate::prelude::*;
 use crate::time::compare_durations;
 
@@ -185,7 +185,7 @@ fn why_not_live_seen(
 
 /// Why a grant is not live among these blocks: empty when live.
 pub fn why_not_live(grant: &Value, blocks: &[Value], now: Option<&str>) -> Vec<String> {
-    why_not_live_in(Some(grant), &index_of(blocks), now)
+    why_not_live_in(Some(grant), &crate::js::held_index(blocks), now)
 }
 
 pub fn is_live_in(grant: &Value, index: &Index, now: Option<&str>) -> bool {
@@ -199,7 +199,7 @@ pub fn is_live(grant: &Value, blocks: &[Value], now: Option<&str>) -> bool {
 
 /// The grants above this one, nearest first.
 pub fn ancestors(grant: &Value, blocks: &[Value]) -> Vec<Value> {
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     let (mut out, mut seen): (Vec<Value>, Vec<String>) = (Vec::new(), Vec::new());
     let mut at = rs(grant, "parent").and_then(|h| index.get(h));
     while let Some(g) = at {
@@ -298,12 +298,12 @@ pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
 
 /// Whether a block signed under a grant speaks for its grantor, among these blocks: empty, or why not.
 pub fn why_not_under(block: &Value, blocks: &[Value], now: Option<&str>) -> Vec<String> {
-    why_not_under_in(block, &index_of(blocks), now)
+    why_not_under_in(block, &crate::js::held_index(blocks), now)
 }
 
 /// Who answers for an agent or machine: the authors of its live grants of kind operator, naming it in refs.to (§2).
 pub fn operators_of(agent: &str, blocks: &[Value], now: Option<&str>) -> Vec<String> {
-    let index = index_of(blocks);
+    let index = crate::js::held_index(blocks);
     let authors: Vec<&str> = index
         .values()
         .filter(|b| {

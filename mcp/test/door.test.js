@@ -90,6 +90,20 @@ describe('the door', () => {
     assert.deepEqual(fb.grant.whyNotUnder(block, node.all(), { now: new Date().toISOString() }), [])
   })
 
+  it('consent follows the principal: the seller\'s yes to the person covers her assistant, and her STOP binds it too', () => {
+    const { door, node, person, seller, offer, flour } = world()
+    const assistant = door.agent('claude')
+    assert.equal(door.approve(door.connect(assistant, { acts: ['promise'], days: 7, limit: fb.money(2000, 'GBP') }).draft, CODE).ok, true)
+    const ask = door.approve(door.ask({ offer: offer.hash, quantity: fb.amount('5', 'kg') }).draft, CODE)
+    // the seller words no consent for the assistant itself: one yes, to the person
+    say(seller, node, 'observe', { kind: 'consent', word: 'yes' }, { subject: person.id })
+    const counter = say(seller, node, 'promise', { terms: { price: { money: fb.money(140, 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: flour.hash, answers: ask.block, for: ask.block })
+    assert.equal(door.accept(assistant, { promise: counter.hash }).bound, true)
+    // a STOP naming the person is a STOP for every agent acting under her grant
+    say(seller, node, 'observe', { kind: 'consent', word: 'stop' }, { subject: person.id })
+    assert.throws(() => door.accept(assistant, { promise: counter.hash }), /stopped/)
+  })
+
   it('a STOP\'d recipient is never messaged: not drafted, not sent', () => {
     const { door, node, person, seller, offer } = world()
     say(seller, node, 'observe', { kind: 'consent', word: 'stop' }, { subject: person.id })

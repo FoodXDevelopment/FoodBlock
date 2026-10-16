@@ -2,10 +2,6 @@
 
 Open work, with enough context to pick up.
 
-- **Sealed blocks on push belong in the SDK.** `sync.accept` takes public blocks. A sealed copy arrives as its
-  signed public header, and the node checks that header itself (`acceptSealed` in `server/node.js`: signed by a
-  live key of its author, prev held, no second block for one seq). That check should be an SDK function every node
-  shares.
 - **Waiting blocks are asked for only from whoever pushed them** (spec §10). A push carries no identity, so the
   node cannot tell who pushed; it retries waiting blocks on every push and drops them after `WAIT_TTL`.
 - **Local discovery.** The node builds its local announcement but runs no mDNS / DNS-SD responder or short-range

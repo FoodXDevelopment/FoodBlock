@@ -16,7 +16,7 @@ The fields a block may carry beyond core.md, causal order, records and refusals.
 - `state.orderer`: on a record's first block, the signing key that orders it, when not the key that signed it (folds.md, Orderer).
 - `state.skip`: `true` on a block that jumps `seq` forward (core.md, The chain).
 
-**Causal order.** `prev` is exact: the previous block of the same key. `refs.after` is the set of other heads the author had seen, at most 16. A block's **causal past** is every block reachable from it through its refs. Order never reads `at`: `seq`, `prev` and `after` give it.
+**Causal order.** `prev` is exact: the previous block of the same key. `refs.after` is the set of other heads the author had seen, at most 16. A block's **causal past** is every block reachable from it through its refs, and through the block it counts to (`state.counted_to`, a rotation's or a removal's), so a rotation sees the chain it cuts. Order never reads `at`: `seq`, `prev` and `after` give it.
 
 **No clock.** A micro that has no clock leaves out `at` and `when`. Its edge times the block: the edge writes its own `observe` of kind `receipt`, `refs.derives_from` the block, `state.at` the time it received it. A reader that needs a time uses the earliest receipt by an edge it trusts, and otherwise reads the time as unknown. A clockless micro cannot test a grant's `until`; it obeys a stop on arrival and asks its edge before an act that cannot be undone (authority.md).
 

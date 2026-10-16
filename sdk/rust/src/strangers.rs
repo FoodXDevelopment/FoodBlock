@@ -3,7 +3,7 @@
 //! the person's own claim.
 use crate::check::ordered;
 use crate::error::Refusal;
-use crate::js::{get, hash_of, index_of, list, rf, rs, ss, st, truthy, type_of, Index};
+use crate::js::{get, hash_of, list, rf, rs, ss, st, truthy, type_of, Index};
 use crate::order::sees_in;
 use crate::prelude::*;
 
@@ -31,6 +31,27 @@ fn operators(agent: &str, index: &Index) -> Vec<String> {
     crate::grant::operators_of(agent, &blocks, None)
 }
 
+/// The principals a sender acts for under a grant: the author of the grant the block names in `refs.under`, and the circle it
+/// was signed as, when that grant is live, is addressed to the sender (or open) and is one others act under (not a key or a
+/// member grant). Consent follows the principal: a word about her is a word about her agents acting under her live grant.
+fn principals(sender: &str, under: Option<&str>, index: &Index) -> Vec<String> {
+    let Some(grant) = under.and_then(|u| index.get(u)) else { return vec![] };
+    let acts_under = type_of(grant) == "grant" && !matches!(ss(grant, "kind"), Some("key" | "member"));
+    let addressed = !truthy(rf(grant, "to")) || rs(grant, "to") == Some(sender);
+    if !(acts_under && addressed && crate::grant::is_live_in(grant, index, None)) {
+        return vec![];
+    }
+    let mut out: Vec<String> = Vec::new();
+    for key in ["author", "as"] {
+        if let Some(p) = rs(grant, key) {
+            if !out.iter().any(|o| o == p) {
+                out.push(p.to_string());
+            }
+        }
+    }
+    out
+}
+
 /// The `consent` fold: a person's live word about a sender (strangers.md, section 2). The person is the block's
 /// `refs.from`, else its author. The person's own blocks count for every word and bind every sender. Anyone else may
 /// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an agent under
@@ -40,14 +61,15 @@ fn operators(agent: &str, index: &Index) -> Vec<String> {
 /// blocks). A `stop` wins any tie; a tie between other words leaves no live word; a tie that agrees stands, naming the
 /// lowest hash. There is no public list: the fold reads only the blocks the caller holds. `{ word, block }`, both null
 /// when there is none.
-pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value]) -> Value {
-    let mut index = index_of(blocks.iter());
+pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], under: Option<&str>) -> Value {
+    let mut index = crate::js::held_index(blocks.iter());
     crate::identity::mark_forks(&mut index);
     let words = crate::spec().list("consent_words");
     let asker_side: Vec<String> = match sender {
         Some(s) => {
             let mut n = vec![s.to_string()];
             n.extend(operators(s, &index));
+            n.extend(principals(s, under, &index));
             n
         }
         None => vec![],
@@ -132,8 +154,8 @@ pub fn is_agents(block: &Value, index: &Index) -> bool {
 }
 
 /// A stranger to a sender: someone who has answered none of the sender's blocks and has no live YES for the sender.
-pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value]) -> bool {
-    let index = index_of(blocks.iter());
+pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], under: Option<&str>) -> bool {
+    let index = crate::js::held_index(blocks.iter());
     let sender_blocks: Vec<&str> = index
         .values()
         .filter(|b| rs(b, "author") == Some(sender))
@@ -142,7 +164,7 @@ pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value]) -> bool {
     let answered = index.values().any(|b| {
         rs(b, "author") == Some(receiver) && list(rf(b, "answers")).iter().any(|a| sender_blocks.contains(a))
     });
-    let yes = consent(receiver, Some(sender), blocks).get("word").and_then(Value::as_str) == Some("yes");
+    let yes = consent(receiver, Some(sender), blocks, under).get("word").and_then(Value::as_str) == Some("yes");
     !answered && !yes
 }
 
@@ -160,7 +182,7 @@ pub fn admission_refusals(
     strangers_today: u64,
 ) -> Vec<Refusal> {
     let mut w = Vec::new();
-    let index = index_of(blocks.iter());
+    let index = crate::js::held_index(blocks.iter());
     let sender = rs(block, "author").unwrap_or("");
     let parties: Vec<&str> = list(admission.get("parties"));
     if !parties.contains(&sender) {
@@ -170,10 +192,11 @@ pub fn admission_refusals(
             }
         }
     }
-    if consent(receiver, Some(sender), blocks).get("word").and_then(Value::as_str) == Some("stop") {
+    let under = rs(block, "under");
+    if consent(receiver, Some(sender), blocks, under).get("word").and_then(Value::as_str) == Some("stop") {
         w.push(Refusal::new("stopped", "the person has a live STOP naming this sender or its operator"));
     }
-    if is_agents(block, &index) && is_stranger(receiver, sender, blocks) {
+    if is_agents(block, &index) && is_stranger(receiver, sender, blocks, under) {
         let t = type_of(block);
         let typed = format!("{}.{}", t, st(block, "kind").and_then(Value::as_str).unwrap_or(""));
         let allowed = get(admission, "order_channel")

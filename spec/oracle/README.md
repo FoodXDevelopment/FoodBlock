@@ -9,7 +9,7 @@ any SDK. It is plain Node with the built-in `crypto`: no dependency, no network,
   refusal codes, `valid(block, context)` in core.md section 8 order, the chain, the identity fold (keys, rotation,
   frozen keys, recovery, operators) and the reach view, circles, the promise stage and its view, ownership, place,
   consent, admission, signed requests, the successor, rekey and ballot profiles, and the compact CBOR form (key
-  table 1). `door(op, ...args)` is the table of ops the `door` section of the vectors names.
+  table 1). `door(op, ...args)` is the table of ops the `door` section of the vectors names. It also holds what a push needs of the spec: what a block needs (`needs`) and waits for, the rounds of `accept` and `accept_sealed` (a sealed block's public header, checked once the block it names in `prev` is held), the circle's cut, and consent following the principal.
 - `run.cjs` runs it against every section of `spec/vectors.json` and `spec/canonical-vectors.json`, vector by vector.
   It also checks that every block in every story passes `valid` against its story (a block a story marks void on
   purpose is the one exception).

@@ -119,7 +119,7 @@ function makeWorld(seed, size = 30) {
   const maybe = (b, a, p = 0.12) => (r.coin(p) ? faulty(b, a) : b);
   for (let i = 0; i < size; i++) {
     const a = person();
-    const act = r.int(22);
+    const act = r.int(24);
     const asset = things.length ? r.pick(things) : null;
     try {
       if (act === 0 || !things.length) { const t = w.post(a, 'thing', { kind: r.pick(['eggs', 'milk', 'truck', 'crate', 'market']), name: 'Thing' + i }, r.coin(0.3) && things.length ? { of: r.pick(things).hash } : {}); things.push(maybe(t, a)); }
@@ -177,6 +177,13 @@ function makeWorld(seed, size = 30) {
         const nk = fb.keypair(r.hex(64), 'std'); w.post(a, 'grant', { kind: 'key', public_key_sign: nk.public_key_sign }, { subject: a.id });
       } else if (act === 20 && things.length) { w.post(a, 'observe', { kind: 'confirm', confidence: r.pick(['0.9', '1', '0.5']) }, { [r.pick(['confirms', 'defeats'])]: r.pick(ids()) }); }
       else if (act === 21) { w.post(a, 'observe', { kind: 'note', text: 'about a contact' }, { subject: contact.hash }); }
+      else if (act === 22) { // consent: a person's own word about a sender (an agent, a person), or about every sender
+        const subject = r.pick([agent.id, person().id, undefined]);
+        w.post(a, 'observe', { kind: 'consent', word: r.pick(['yes', 'stop', 'keep', 'move']) }, { ...(subject ? { subject } : {}) });
+      } else if (act === 23) { // a recorder writes down someone else's word
+        const subject = r.pick([agent.id, a.id, person().id, undefined]);
+        w.post(a, 'observe', { kind: 'consent', word: r.pick(['yes', 'stop']) }, { from: person().id, ...(subject ? { subject } : {}), ...(r.coin(0.3) && ids().length ? { derives_from: r.pick(ids()) } : {}) });
+      }
     } catch (e) { if (process.env.WORLD_DEBUG) console.error('world:', e.stack); }
   }
   return { w, r, people, agent, circle, things, promises, transfers, grants, incoming };
