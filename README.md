@@ -1,5 +1,7 @@
 # FoodBlock
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/FoodXDevelopment/FoodBlock/badge)](https://scorecard.dev/viewer/?uri=github.com/FoodXDevelopment/FoodBlock)
+
 The smallest language strangers in food need to agree on, with no boss. Everything else is data.
 
 A block is three fields, signed by its author on their own device:
