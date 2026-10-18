@@ -127,9 +127,12 @@ if (PACK) {
     if (r.status !== 0) bad('kotlin natives: ' + (r.stderr || r.stdout).slice(-300))
     else console.log('kotlin ' + r.stdout.trim().split('\n').join('\n       '))
     const javaOk = cp.spawnSync('java', ['-version']).status === 0
+    // The AAR needs the Android SDK and all three Android natives (built on a computer with the NDK); without them it is skipped.
+    const aar = !!(process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT) &&
+      ['arm64-v8a', 'armeabi-v7a', 'x86_64'].every(a => fs.existsSync(path.join(k, 'natives/android', a, 'libfoodblock.so')))
     if (javaOk) {
-      const g = cp.spawnSync('./gradlew', ['--no-daemon', ':foodblock:jar', ':foodblock:testBundled', ...(process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT ? [':android:assembleRelease'] : [])], { cwd: k, encoding: 'utf8' })
-      g.status === 0 ? console.log('kotlin jar built, bundled loader tested' + (process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT ? ', AAR built' : ' (no ANDROID_HOME: AAR skipped)')) : bad('gradle: ' + (g.stdout + g.stderr).slice(-400))
+      const g = cp.spawnSync('./gradlew', ['--no-daemon', ':foodblock:jar', ':foodblock:testBundled', ...(aar ? [':android:assembleRelease'] : [])], { cwd: k, encoding: 'utf8' })
+      g.status === 0 ? console.log('kotlin jar built, bundled loader tested' + (aar ? ', AAR built' : ' (no Android SDK or Android natives: AAR skipped)')) : bad('gradle: ' + (g.stdout + g.stderr).slice(-400))
     } else console.log('kotlin jar/AAR skipped (no JDK 17 on this computer; CI builds them: .github/workflows/packages.yml)')
   } else console.log('kotlin skipped (needs Rust; the jar and AAR need a JDK 17)')
   fs.rmSync(scratch, { recursive: true, force: true })

@@ -7,12 +7,30 @@ What is published, and what publishing FoodBlock 1.6 needs. Nothing is published
 | Where | What | Speaks |
 |---|---|---|
 | npm `@foodxdev/foodblock@0.5.0` | the JS SDK | 0.5 |
-| npm `foodblock-mcp@0.5.x` | the MCP server | 0.5 |
+| npm `foodblock-mcp@0.5.2` | the MCP server | 0.5 |
 | npm `foodblock-cli@0.5.1` | the CLI | 0.5 |
+| PyPI `foodblock@0.1.0` | the Python SDK (pre-1.0, not the Rust-core SDK in this repository) | 0.x |
 | MCP Registry `io.github.FoodXDevelopment/foodblock-mcp` | points at `foodblock-mcp` on npm | 0.5 |
 | Glama | indexes `glama.json` from the GitHub repository | whatever is pushed there |
 
 So `npx foodblock-mcp` and `npm install foodblock-cli` give the 0.5 tools, not what is in this repository.
+
+## Package names and installs
+
+The names are the ones in each package manifest. "From source" means a clone of this repository; the 1.6 versions are
+not published yet.
+
+| Package (manifest) | Name | Install today |
+|---|---|---|
+| `sdk/javascript/package.json` | `@foodxdev/foodblock` | npm has 0.5.0 only. 1.6: from source, `npm install ./sdk/javascript` |
+| `mcp/package.json` | `foodblock-mcp` | npm has 0.5.2 only. 1.6: from source, `npm install ./sdk/javascript && npm install ./mcp` |
+| `cli/package.json` | `foodblock-cli` (bins `fb`, `foodblock-cli`) | npm has 0.5.1 only. 1.6: from source, `npm install ./sdk/javascript && npm install ./cli` |
+| `server/package.json` | `foodblock-node` | not a package; from source (`cd server && npm install`) or its Dockerfile |
+| `sdk/python/pyproject.toml` | `foodblock` | PyPI has 0.1.0 only. 1.6: from source, `pip install ./sdk/python` |
+| `sdk/rust/Cargo.toml` | `foodblock` | not on crates.io; from source, `foodblock = { path = "sdk/rust" }` in `Cargo.toml` |
+| `sdk/go/go.mod` | `github.com/FoodXDevelopment/foodblock/sdk/go` | not tagged yet; from source, `replace` it to `./sdk/go` in `go.mod` |
+| `Package.swift` (root) | `FoodBlock`, `FoodBlockWindow` | not released (no XCFramework release yet); from source, add the clone as a local package after `sdk/swift/scripts/build-xcframework.sh` |
+| `sdk/kotlin/build.gradle.kts` | Maven `world.foodx:foodblock` (and the Android AAR) | not published; from source, `cd sdk/kotlin && scripts/build-natives.sh && ./gradlew :foodblock:jar` |
 
 ## What publishing 1.6 needs
 

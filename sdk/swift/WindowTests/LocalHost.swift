@@ -20,7 +20,7 @@ final class LocalHost {
         guard let j = try? JSONSerialization.jsonObject(with: line) as? JSON, let u = j["url"] as? String else { process.terminate(); throw XCTSkip("the host did not start") }
         url = URL(string: u)
     }
-    deinit { try? input.fileHandleForWriting.close(); process.terminate() }
+    deinit { try? input.fileHandleForWriting.close(); if process.isRunning { process.terminate() } }  // init can throw XCTSkip before the process launched
 }
 private func shell(_ c: String) throws -> String {
     let p = Process(), o = Pipe(); p.executableURL = URL(fileURLWithPath: "/bin/zsh"); p.arguments = ["-lc", c]; p.standardOutput = o; try p.run(); p.waitUntilExit()
