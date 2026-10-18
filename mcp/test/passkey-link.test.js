@@ -10,15 +10,16 @@ import { createHub } from '../hosted.js'
 import { mcpEndpoint } from '../server.js'
 
 // A person who signs in with a passkey links Google: the Google account then reaches the SAME person; one already tied to someone else is refused.
-const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'Backend-foodx-computer')
-const have = existsSync(resolve(BACKEND, 'kernel/node/passkeys.js'))
+const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'foodx')
+const have = existsSync(resolve(BACKEND, 'foodos/node/passkeys.js'))
+if (!have) console.error(`\n*** SKIPPED (not passing): ${new URL(import.meta.url).pathname.split('/').pop()} needs the foodx checkout with foodos/ at ${BACKEND}. Set FOODOS_BACKEND to run it. ***\n`)
 const load = (path) => import(pathToFileURL(resolve(BACKEND, path)).href)
 const b64 = (buf) => buf.toString('base64url')
 const listen = (handler) => new Promise((done) => { const s = http.createServer(handler); s.listen(0, '127.0.0.1', () => done({ s, url: `http://127.0.0.1:${s.address().port}` })) })
 
-describe('linking Google to a passkey person', { skip: !have && 'no Backend checkout' }, () => {
+describe('linking Google to a passkey person', { skip: !have && 'no foodx checkout' }, () => {
   it('lands on the same person, and never moves a Google account', async () => {
-    const { Host, Passkeys } = await load('kernel/node/index.js'), { TestAuthenticator } = await load('kernel/testing/helpers/webauthn-device.mjs'), { fb } = await load('kernel/edge/sdk.js')
+    const { Host, Passkeys } = await load('foodos/node/index.js'), { TestAuthenticator } = await load('foodos/testing/helpers/webauthn-device.mjs'), { fb } = await load('foodos/edge/sdk.js')
     const dir = mkdtempSync(join(tmpdir(), 'link-')); after(() => rmSync(dir, { recursive: true, force: true }))
     const host = new Host(), passkeys = new Passkeys({ host })
     const hex = (s) => Buffer.from(s, 'base64url').toString('hex')

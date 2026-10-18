@@ -1,5 +1,5 @@
-// A remote node for the door: a FoodOS host's window for one person, over HTTP (the Backend's kernel/node/host.js `handler`, the same
-// shape as the index client in kernel/index/http.js: a base URL and an injectable fetch). The door reads and writes through the same
+// A remote node for the door: a FoodOS host's window for one person, over HTTP (the foodx checkout's foodos/node/host.js `handler`, the same
+// shape as the index client in foodos/index/http.js: a base URL and an injectable fetch). The door reads and writes through the same
 // { all, get, push } it has with the in-memory node; this one keeps a mirror of what the host holds and sends what the door signs.
 //
 //   refresh()  pull the host's blocks into the mirror (GET {base}/window/blocks)
@@ -50,7 +50,7 @@ export function remoteNode({ base, token, fetch: request = globalThis.fetch } = 
   };
 }
 
-// The open index for the door's find (the Backend's kernel/index/http.js shape: POST {base}/find with { what, near, when, limit },
+// The open index for the door's find (the foodx checkout's foodos/index/http.js shape: POST {base}/find with { what, near, when, limit },
 // GET {base}/.well-known/foodblock-index). The index signs every answer; this checks the signature against the index's key
 // (pinned by `key`, else read once from the index's well-known and kept), checks that every block it carries is as its author
 // signed it, that it answers the query asked, and that each result is an offer among those blocks. A lying answer throws.

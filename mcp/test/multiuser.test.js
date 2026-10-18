@@ -12,10 +12,11 @@ import { createHub } from '../hosted.js'
 import { mcpEndpoint } from '../server.js'
 import { remoteIndex } from '../remote.js'
 
-// The many-person door, end to end and local: a real FoodOS host (Backend kernel), the hub (sign-in with a fake Google, reviewer sign-in,
+// The many-person door, end to end and local: a real FoodOS host (the foodx checkout's foodos/), the hub (sign-in with a fake Google, reviewer sign-in,
 // durable tokens), and MCP clients as several people with several assistants. Nothing may cross between people or assistants.
-const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'Backend-foodx-computer')
-const have = existsSync(resolve(BACKEND, 'kernel/node/host.js'))
+const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'foodx')
+const have = existsSync(resolve(BACKEND, 'foodos/node/host.js'))
+if (!have) console.error(`\n*** SKIPPED (not passing): ${new URL(import.meta.url).pathname.split('/').pop()} needs the foodx checkout with foodos/ at ${BACKEND}. Set FOODOS_BACKEND to run it. ***\n`)
 const load = (path) => import(pathToFileURL(resolve(BACKEND, path)).href)
 const b64 = (buf) => buf.toString('base64url')
 const listen = (handler) => new Promise((done) => { const s = http.createServer(handler); s.listen(0, '127.0.0.1', () => done({ s, url: `http://127.0.0.1:${s.address().port}` })) })
@@ -34,12 +35,12 @@ const browser = () => {
 }
 let hubBase = ''
 
-describe('the many-person door', { skip: !have && 'no Backend checkout (set FOODOS_BACKEND)' }, () => {
+describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS_BACKEND)' }, () => {
   it('keeps every person and every assistant apart, survives a restart, and revokes', async () => {
-    const { Host } = await load('kernel/node/index.js')
-    const { PublicIndex } = await load('kernel/index/index.js')
-    const { handler: indexHandler } = await load('kernel/index/http.js')
-    const { serveHost } = await load('kernel/testing/helpers/serve-host.mjs')
+    const { Host } = await load('foodos/node/index.js')
+    const { PublicIndex } = await load('foodos/index/index.js')
+    const { handler: indexHandler } = await load('foodos/index/http.js')
+    const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
     const dir = mkdtempSync(join(tmpdir(), 'hub-')); after(() => rmSync(dir, { recursive: true, force: true }))
     const stateFile = join(dir, 'state.json'), master = randomBytes(40).toString('hex')
 
@@ -225,8 +226,8 @@ describe('the many-person door', { skip: !have && 'no Backend checkout (set FOOD
   })
 
   it('rate limits one person without slowing another', async () => {
-    const { Host } = await load('kernel/node/index.js')
-    const { serveHost } = await load('kernel/testing/helpers/serve-host.mjs')
+    const { Host } = await load('foodos/node/index.js')
+    const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
     const dir = mkdtempSync(join(tmpdir(), 'hub2-')); after(() => rmSync(dir, { recursive: true, force: true }))
     const host = new Host(), served = await serveHost({ host }); after(() => served.close())
     const provision = async ({ id, genesis }) => { if (!host.tenants.has(id)) await host.join(genesis); return { base: `${served.url}/${id}`, token: host.credential(id, { scopes: ['read', 'write'] }) } }

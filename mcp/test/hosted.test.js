@@ -10,11 +10,12 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import fb from '@foodxdev/foodblock'
 import { createDoor, newPerson, remoteNode, remoteIndex, serveHttp } from '../server.js'
 
-// The hosted door, end to end and local: a FoodOS host (Backend kernel/node/host.js) and a public index behind one HTTP server, the door
+// The hosted door, end to end and local: a FoodOS host (foodx foodos/node/host.js) and a public index behind one HTTP server, the door
 // reaching the person's node there through the host's window, and an assistant reaching the door over Streamable HTTP with OAuth.
-// Needs the Backend checkout (FOODOS_BACKEND, default ~/Backend-foodx-computer); skipped without it.
-const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'Backend-foodx-computer')
-const have = existsSync(resolve(BACKEND, 'kernel/node/host.js'))
+// Needs the foodx checkout (FOODOS_BACKEND, default ~/foodx); skipped without it.
+const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'foodx')
+const have = existsSync(resolve(BACKEND, 'foodos/node/host.js'))
+if (!have) console.error(`\n*** SKIPPED (not passing): ${new URL(import.meta.url).pathname.split('/').pop()} needs the foodx checkout with foodos/ at ${BACKEND}. Set FOODOS_BACKEND to run it. ***\n`)
 const load = (path) => import(pathToFileURL(resolve(BACKEND, path)).href)
 const CODE = 'ABCDE-12345'
 const use = async (client, name, args = {}) => {
@@ -24,12 +25,12 @@ const use = async (client, name, args = {}) => {
 }
 const b64 = (buf) => buf.toString('base64url')
 
-describe('the hosted door', { skip: !have && 'no Backend checkout (set FOODOS_BACKEND)' }, () => {
+describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACKEND)' }, () => {
   it('reaches a real host over HTTP, behind OAuth, and every block it signs lands on the host', async () => {
-    const { Host } = await load('kernel/node/index.js')
-    const { PublicIndex } = await load('kernel/index/index.js')
-    const { handler: indexHandler } = await load('kernel/index/http.js')
-    const { serveHost } = await load('kernel/testing/helpers/serve-host.mjs')
+    const { Host } = await load('foodos/node/index.js')
+    const { PublicIndex } = await load('foodos/index/index.js')
+    const { handler: indexHandler } = await load('foodos/index/http.js')
+    const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
 
     // The host keeps the person's node; the seller's blocks are there as if synced in.
     const person = newPerson(), seller = newPerson()
