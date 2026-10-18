@@ -149,6 +149,10 @@ Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 
 ## Licence
 
-MIT
+MIT. Copyright FOODX WORLD LIMITED (England and Wales, company 16406719), which owns this repository. The protocol
+needs no one's permission to implement.
+
+How we treat each other, and what content is not allowed: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Reporting a
+weakness: [`SECURITY.md`](SECURITY.md).
 
 To cite FoodBlock, see [`CITATION.cff`](CITATION.cff).
