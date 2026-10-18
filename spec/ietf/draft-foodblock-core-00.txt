@@ -1,0 +1,896 @@
+
+
+
+
+Network Working Group                                        P. Reynolds
+Internet-Draft                                                     FoodX
+Intended status: Informational                           16 October 2026
+Expires: 19 April 2027
+
+
+     FoodBlock Core: Signed, Hash-Addressed Blocks for Food Records
+                        draft-foodblock-core-00
+
+Abstract
+
+   FoodBlock is a small data format and a set of checking rules for
+   records of food: what was made, moved, promised or allowed, and by
+   whom.  A record is a block of three fields (type, state and refs)
+   signed by its author.  The identity of a block is the hash of its
+   canonical bytes, which are the JSON Canonicalization Scheme (RFC
+   8785) applied to a block that also follows a strict writing profile.
+   Authors link their blocks into per-key chains.  This document defines
+   the block, the canonical form, the signature suites, the chain, the
+   messages that carry a block, and the function valid() that decides
+   whether a block is sound against the blocks a checker holds.  It is
+   the core only: an implementation of this document alone can make,
+   sign, check and chain blocks.  Rules for identities, rotation,
+   consent, promises, privacy and node-to-node exchange are in separate
+   modules that build on this core.
+
+Status of this draft
+
+   This is an independent submission describing FoodBlock 1.6 (year
+   zero: there is no earlier version in the protocol).  The normative
+   source is spec/core.md, spec/canonical.md and spec/protocol.json in
+   the FoodBlock repository, with conformance vectors in spec/
+   vectors.json.  This draft restates the core for review; where it and
+   the source differ, the source governs.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 1]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 19 April 2027.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
+   2.  Terminology . . . . . . . . . . . . . . . . . . . . . . . . .   3
+   3.  The Block . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+   4.  Canonical Form  . . . . . . . . . . . . . . . . . . . . . . .   5
+   5.  Suites  . . . . . . . . . . . . . . . . . . . . . . . . . . .   6
+   6.  Numbers, Time and Text  . . . . . . . . . . . . . . . . . . .   7
+   7.  The Genesis . . . . . . . . . . . . . . . . . . . . . . . . .   7
+   8.  The Chain . . . . . . . . . . . . . . . . . . . . . . . . . .   7
+   9.  Messages  . . . . . . . . . . . . . . . . . . . . . . . . . .   8
+   10. Required Fields . . . . . . . . . . . . . . . . . . . . . . .   8
+   11. The Function valid()  . . . . . . . . . . . . . . . . . . . .   9
+   12. Invariants  . . . . . . . . . . . . . . . . . . . . . . . . .  10
+   13. Security Considerations . . . . . . . . . . . . . . . . . . .  10
+   14. Privacy Considerations  . . . . . . . . . . . . . . . . . . .  12
+   15. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  12
+     15.1.  Media Types  . . . . . . . . . . . . . . . . . . . . . .  12
+     15.2.  Well-Known URI . . . . . . . . . . . . . . . . . . . . .  13
+     15.3.  Protocol Registries  . . . . . . . . . . . . . . . . . .  14
+   16. References  . . . . . . . . . . . . . . . . . . . . . . . . .  14
+     16.1.  Normative References . . . . . . . . . . . . . . . . . .  14
+     16.2.  Informative References . . . . . . . . . . . . . . . . .  15
+   Appendix A.  Example  . . . . . . . . . . . . . . . . . . . . . .  16
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  16
+
+
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 2]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+1.  Introduction
+
+   Food moves through many hands: growers, makers, carriers, sellers and
+   eaters.  Each keeps its own records, and no record can be checked by
+   a stranger without trusting whoever holds it.  FoodBlock makes the
+   smallest agreement strangers need: who said it, under what authority,
+   to whom, with what consent, and how it settled.  Everything else
+   (drafts, beliefs, goals, budgets, rankings) stays on each
+   participant's own node and never becomes a block.
+
+   A block is immutable and append-only.  A change is a new block that
+   links to the old one.  Because a block's identity is the hash of its
+   bytes, any two parties that hold the same bytes hold the same block,
+   and a reader never needs to trust a name it was sent.
+
+   This document specifies the core.  Modules (identity, authority,
+   promises, folds, privacy, nodes, strangers, circles and others) are
+   out of scope except where this document must refer to them.
+
+2.  Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+   Block:  A JSON object with exactly the members "type", "state" and
+      "refs" (Section 3).
+
+   Id:  The hash of a block's canonical bytes, in the hash of the suite
+      of the key that signed it.
+
+   Identity:  An "actor" block with no author (a genesis).  Its id is
+      the identity's id.
+
+   Key:  A public signing key that speaks for an identity.
+
+   Chain:  The sequence of blocks signed by one key, each naming the one
+      before in "prev".
+
+   Suite:  A named combination of hash, signature algorithm and key
+      agreement (Section 5).
+
+   Context:  The set of blocks a checker holds when it runs valid().  It
+      never includes a clock.
+
+   Node:  The software that holds a participant's blocks and speaks for
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 3]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+      them.
+
+   Closed type, open type:  Four types carry authority and are closed:
+      "actor", "promise", "transfer" and "grant".  Any other type is
+      open.
+
+   Fields and refs are written in code font in the source specification;
+   here they appear in quotation marks.
+
+3.  The Block
+
+   A block is a JSON object [RFC8259] of three members and nothing else:
+
+   { "type": <string>, "state": <object>, "refs": <object> }
+
+   *  "type" says what kind of act the block is.  A type is a string
+      matching the regular expression ^[a-z][a-z0-9_]*$.
+
+   *  "state" holds data.
+
+   *  "refs" holds links to other blocks.  A link is one id, or a set of
+      ids written as a sorted array.
+
+   Seven types are known.  Each has a mood that says what the block
+   claims. "actor" (a person, agent, circle or contact) and "thing"
+   (anything held, found or written) exist. "observe" (a claim),
+   "transform" (things change) and "transfer" (owner, holder or place
+   changes) are. "promise" must. "grant" may.
+
+   The four closed types have fields fixed by the specification, and a
+   node MUST refuse a closed block that breaks it.  Every other type is
+   open: a node checks an open block only against this document, then
+   stores it and passes it on.  A fold (a function from a set of blocks
+   to an answer, defined in the folds module) reads the types it knows;
+   an open block it does not know gives no authority, moves no owner and
+   binds no one.
+
+   Seven reference keys, the verbs, link one block to another by
+   meaning: "updates" (a new version of), "answers" (the reply to, and
+   the only way to consent), "confirms" and "defeats" (more or less
+   true), "for" (what the block serves), "derives_from" and "same_as".
+   The keys "prev" and "after" link blocks by order only.  The complete
+   lists are in protocol.json.
+
+   The id of a block is the hash of its canonical bytes (Section 4).  A
+   reader MUST recompute the id from the bytes and MUST NOT trust an id
+   it was sent.
+
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 4]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+4.  Canonical Form
+
+   The canonical bytes of a block are the output of the JSON
+   Canonicalization Scheme [RFC8785] applied to the block, where the
+   block already follows the strict writing rules below:
+
+   id        = Hash_suite( JCS(block) )
+   signature = Sign_alg( private_key, JCS(block) )
+   block     = { "type": type, "state": state, "refs": refs }
+
+   Hash_suite is the hash of the suite of the signing key.  SHA-256
+   [RFC6234] is written as 64 lowercase hexadecimal characters.  Any
+   other hash is written with its name as a prefix, such as "sm3:"
+   followed by 64 hexadecimal characters.
+
+   RFC 8785 fixes the bytes: object members sorted by UTF-16 code units
+   at every depth, no insignificant whitespace, strings in UTF-8
+   [RFC3629] with the shortest escapes, numbers as ECMAScript writes
+   them.  JCS does not fix content, so a writer MUST follow these strict
+   writing rules, and a reader MUST refuse (and MUST NOT repair) a block
+   that breaks one:
+
+   1.  The block is exactly "type", "state" and "refs".
+
+   2.  No "null" appears anywhere, including inside arrays.  No number
+       has a fraction or an exponent.  A value with a fraction is
+       written as a decimal string matching
+       ^-?(0|[1-9][0-9]*)(\.[0-9]+)?$.
+
+   3.  Integers lie within -(2^53 - 1) to 2^53 - 1.  Negative zero is
+       refused.
+
+   4.  Every string and every object key is in Unicode Normalization
+       Form C [UAX15] and holds no unpaired surrogate.
+
+   5.  A string array directly under a "refs" key is a set.  It is
+       written in ascending UTF-16 order with no repeats.  Every other
+       array keeps its written order.  A "refs" key inside "state" is an
+       ordinary key.
+
+   6.  No object has a duplicate key.
+
+   7.  "state.audience" is "public" or a sorted list of commitments with
+       no repeats.
+
+   Times are UTC to the millisecond, written exactly as YYYY-MM-
+   DDTHH:MM:SS.sssZ (a strict subset of the format of [RFC3339]), and
+   MUST be real calendar instants.  Dates are YYYY-MM-DD.  Durations are
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 5]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   ISO 8601 with at least one unit.  Hexadecimal is lowercase.  The
+   canonical body of a block MUST NOT exceed 65536 octets
+   (protocol.json, "limits.block_bytes").
+
+   A compact binary form of a public block [RFC8949] exists for
+   constrained links.  It is a transport only: a receiver rebuilds the
+   JSON first, and the id never covers CBOR bytes.
+
+5.  Suites
+
+   A suite names a hash, a signature algorithm and an envelope together.
+   A key names its suite in "state.suite"; when absent the suite is
+   "std".  A block is hashed with the hash of the suite of the key that
+   signed it and verified with that key's algorithm.
+
+   +=======+=========+============+=================+=================+
+   | Suite | Hash    | Signature  | Signing key     | Signature (hex) |
+   |       |         |            | (lowercase hex) |                 |
+   +=======+=========+============+=================+=================+
+   | std   | SHA-256 | Ed25519    | SPKI DER,       | 64 octets       |
+   |       |         | [RFC8032]  | 32-octet key    |                 |
+   |       |         |            | [RFC8410]       |                 |
+   +-------+---------+------------+-----------------+-----------------+
+   | p256  | SHA-256 | ECDSA      | SPKI DER,       | r, s (32 octets |
+   |       |         | P-256 with | 65-octet key    | each), or       |
+   |       |         | SHA-256    |                 | passkey form    |
+   +-------+---------+------------+-----------------+-----------------+
+   | sm    | SM3     | SM2 with   | SPKI DER,       | r then s, 32    |
+   |       |         | SM3        | 65-octet key    | octets each     |
+   +-------+---------+------------+-----------------+-----------------+
+
+                 Table 1: Suites defined by FoodBlock 1.6
+
+   A signing key is written as lowercase hexadecimal of a
+   SubjectPublicKeyInfo (SPKI) DER encoding: the fixed prefix
+   302a300506032b6570032100 then the 32-octet key for "std"; the prefix
+   3059301306072a8648ce3d020106082a8648ce3d030107034200 then the
+   65-octet uncompressed SEC1 point for "p256"; the prefix
+   3059301306072a8648ce3d020106082a811ccf5501822d034200 then the
+   65-octet point for "sm".  The "sm" suite uses the SM2 user id
+   "1234567812345678".  A "p256" signature is either the 64-octet ECDSA
+   signature (r then s) or a longer passkey form, a WebAuthn assertion
+   that carries its own challenge, which a reader tells apart by length.
+
+   The encryption key and envelope of each suite (X25519 [RFC7748] with
+   HKDF [RFC5869] and AES-256-GCM for "std") belong to the privacy
+   module and are not needed to make, sign, check or chain public
+   blocks.  A post-quantum suite is one further row once its sizes are
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 6]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   fixed in the conformance vectors.  A reader MUST refuse a block whose
+   key names a suite it does not know ("unknown_suite").  Moving an
+   identity to a new suite is a key grant that replaces a key and names
+   the new suite.
+
+6.  Numbers, Time and Text
+
+   Signed content holds exactly these value kinds: object, array,
+   string, integer and boolean.  It never holds null or a floating point
+   number.  A count, a sequence number and a money amount in minor units
+   are integers.  Any fractional quantity is a decimal string.  Which
+   fields hold times and dates is listed in protocol.json
+   ("time_fields", "date_fields").  A reader that finds a value outside
+   these rules MUST refuse the block and MUST NOT correct it.
+
+7.  The Genesis
+
+   A genesis is the one block with no author.  It is an "actor" with no
+   "author", "prev", "after" or "seq", signed by its own key.  Its id is
+   the id of the identity.
+
+   { "type": "actor",
+     "state": { "kind": ..., "at": ..., "audience": "public",
+                "public_key_sign": ... },
+     "refs": {} }
+
+   The suite, an encryption key and recovery fields are optional.  A
+   genesis is always public.  A person adds an encryption key, a
+   recovery key, more devices or a custodian later, each by a key grant,
+   a "grant" block of kind "key" defined by the identity module.
+
+8.  The Chain
+
+   Each signing key has its own chain.  Every block but a genesis
+   carries "refs.author" (the identity's id), "refs.prev", "state.seq",
+   "state.at" and "state.audience".
+
+   *  "refs.prev" names the key's previous block.  A key's first block
+      names the block that brought the key in: the genesis, or a key
+      grant.
+
+   *  "state.seq" is one more than the "seq" of the "prev" block.  A
+      key's first block has seq 1.  The one exception is a skip, a block
+      marked "state.skip": true, which may jump to any higher seq (a
+      device that lost its counter writes one).
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 7]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   *  "state.at" is when the author says the block was written, on the
+      author's clock.  An "observe", "transform" or "transfer" MAY omit
+      it when its signer has no clock.
+
+   A core node knows one signing key per identity: the genesis key.  It
+   stores a block signed by any other key and counts it for nothing.
+
+   Two blocks of one key that name the same "prev" prove that the key's
+   holder lied (an equivocation).  Both are kept, so anyone can publish
+   the proof, and neither binds anyone.
+
+9.  Messages
+
+   A block travels as a message, a UTF-8 JSON object:
+
+   { "version": "1.6",
+     "block": { "type": ..., "state": ..., "refs": ... },
+     "signature": "<hex>" }
+
+   The signature is by the signing key over the canonical bytes of
+   "block".  A suite other than "std" adds "suite".  When a block is
+   carried in an e-mail attachment or file the media type is
+   application/foodblock+json (Section 15).
+
+10.  Required Fields
+
+   Every block but a genesis carries the five fields of Section 8.  In
+   addition:
+
+   *  "actor": "state.kind".
+
+   *  "transfer": "refs.what", and at least one of "refs.to_owner",
+      "refs.to_holder", "refs.to_place" or "state.count".  A payment (a
+      transfer carrying "state.money") is exempt from "refs.what".
+
+   *  "promise": "refs.what" or "state.what"; an ask also carries
+      "terms.expires".
+
+   *  "grant": "state.kind".
+
+   *  An answer (a block with "refs.answers") carries "state.status" and
+      is exempt from the other required fields of its type.  The single
+      exception is a counter-offer.
+
+   *  An open type: nothing beyond the common five.
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 8]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   The fields each closed type may carry are listed in protocol.json
+   ("fields").  A closed block with any other field MUST be refused
+   ("undeclared_field") unless a schema the block names declares it.
+
+11.  The Function valid()
+
+   valid(block, context) takes a block and the set of blocks the checker
+   holds.  It never reads a clock.  It runs the eight checks below in
+   order and stops at the first check that finds anything.  Its refusal
+   is every code that one check found, one per code, in the order
+   protocol.json lists them ("refusals"). valid() is true when no check
+   finds anything.
+
+   1.  The block is exactly "type", "state" and "refs" and follows
+       Section 4, strict writing included ("not_canonical").
+
+   2.  Every value follows Section 6 and its grammar ("float",
+       "integer_range", "decimal", "grammar", "time", "calendar",
+       "shape", "type_name", "unknown_suite").
+
+   3.  The canonical body is at most the block-size limit, and
+       "refs.after" names at most 16 blocks ("size_limit",
+       "after_limit").
+
+   4.  A genesis follows Section 7 ("bad_genesis").  Any other block has
+       the common five fields, and its audience is public or a sorted
+       list of commitments ("chain", "at_missing", "audience").
+
+   5.  Every block it needs is in the context ("unmet").  The needs are
+       listed in protocol.json: every block needs its "prev"; a grant
+       also its parent and the block it counts to; a promise also the
+       grant it acts under and the promise it answers or stops.
+       Authority depends on these blocks, so they are causal
+       dependencies.  A block that lacks one is not judged: its refusal
+       is "unmet" alone, and a node waits.  When the needed blocks
+       arrive the block is judged once, with every other check.
+
+   6.  The id sent is the hash of the bytes ("bad_hash").  The signing
+       key is a key of the author that speaks for it, and its signature
+       verifies ("bad_signature", "void_key", "unknown_suite",
+       "not_own_rotation", "recovery_scope").
+
+   7.  "prev" and "seq" fit the key's chain, or the block is a skip
+       ("chain").
+
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                 [Page 9]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   8.  If the type is closed, it has its required fields and no
+       undeclared ones, and the checks of its module pass ("required",
+       "undeclared_ref", "undeclared_field", and the module codes in
+       protocol.json).
+
+   Checks 1 to 4 read the bytes alone, so a block that fails one is
+   refused at once whatever it lacks.  A block that passes every check
+   may still count for nothing in a later fold; valid() says only that
+   the bytes are sound.
+
+   An implementation conforms when it reproduces the canonical strings,
+   ids, signatures and refusal codes of the published conformance
+   vectors, and refuses what they refuse.  Two conforming
+   implementations give the same id for the same block.
+
+12.  Invariants
+
+   The core keeps these invariants.  (Numbering follows the source
+   specification.)
+
+   1.  A block's identity is the hash of its canonical bytes; nothing
+       else names it.
+
+   2.  A block never changes; a change is a new block.
+
+   3.  A key's blocks form one chain: no two of its blocks name the same
+       "prev".  Two that do prove a lie.  Both are kept, and neither
+       binds anyone else.
+
+   Further, authority depends on blocks, and they are causal
+   dependencies: a block waits until it holds every block it needs and
+   is then judged once.  No node holds a block that another would have
+   judged otherwise for want of what it lacked (source invariant 25).  A
+   finite-state model of this waiting rule, of equivocation, consent,
+   allocation and key rotation is published beside the specification and
+   is exhaustively checked in its continuous integration.
+
+13.  Security Considerations
+
+   The considerations of [RFC3552] apply.  The following are specific to
+   this format.
+
+   *Integrity and authenticity.* A block's id is a collision-resistant
+   hash of its canonical bytes, and an author's signature covers the
+   same bytes.  A reader that recomputes the id and verifies the
+   signature need not trust the sender.  The strength of both is that of
+   the chosen suite.  A suite that is later broken is replaced by a key
+   grant that moves an identity to a new suite; blocks already signed
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 10]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   remain valid under the old suite's verification, so a reader that
+   continues to accept a broken suite accepts forgeries under it.
+   Readers SHOULD refuse suites they consider broken.
+
+   *Canonicalization.* Two parties that disagree on the canonical bytes
+   of a block disagree on its id.  This is why the strict writing rules
+   are mandatory and why a reader refuses rather than repairs: repairing
+   would let two different byte strings claim one id's authority, or one
+   byte string two.  NFC and duplicate-key rules close the usual JSON
+   ambiguities (visually identical keys, parser differences on duplicate
+   keys).  Implementations MUST use a JSON parser that detects duplicate
+   keys, or a check that does.
+
+   *Signature malleability and signed content.* A signature is over the
+   canonical bytes, and the id is the hash of the same bytes, so a third
+   party cannot alter a signed block without changing its id.  A reader
+   MUST verify the signature with a key that speaks for the author in
+   the context, not with a key the message names for itself.
+
+   *Equivocation and withholding.* An author can sign two blocks that
+   name one "prev".  The core does not prevent this; it makes it
+   provable, since both blocks are kept and either can be shown.  A node
+   can be shown only one branch for a time, so a reader that needs more
+   assurance asks for the author's latest heads and names them in
+   "after".  An attacker who withholds blocks can delay a reader's view
+   but cannot make a reader accept a block that lacks what it needs:
+   such a block waits.
+
+   *Resource use.* Blocks are bounded in size (65536 octets) and a
+   block's "after" set is bounded (16).  Waiting blocks, which are held
+   only until what they need arrives, consume storage; a node SHOULD
+   bound them and expire them after a time it sets, and MAY refuse a
+   push.  A node SHOULD apply the sequence-gap limit published in
+   protocol.json when reporting gaps, since a block may claim a very
+   large "seq".
+
+   *Replay.* A signed block is public evidence of what its author said;
+   replaying it adds nothing the author did not say.  Requests between
+   nodes carry a counter or a challenge against replay (nodes module);
+   the core carries no clock and so offers none.
+
+   *Clocks.* "state.at" is the author's claim, not evidence.  Nothing in
+   the core that gives, takes or orders authority reads another author's
+   "at".  Where a rule needs a clock it names whose, and the answer is a
+   local view, never an agreement.
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 11]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   *Key loss and compromise.* The core knows one key per identity.
+   Rotation, recovery keys, devices and custodians are in the identity
+   module; an implementation that supports them MUST NOT let a rotated-
+   out key's later blocks count.
+
+   *Authority is not implied.* A node stores and passes on every sound
+   block, whatever its type.  Storing a block grants its author nothing;
+   an open block of an unknown type binds no one.
+
+14.  Privacy Considerations
+
+   The considerations of [RFC6973] apply.  Blocks are append-only and
+   can be copied, so a public block cannot be unsent.  Authors SHOULD
+   therefore publish only what strangers must agree on: who said it,
+   under what authority, to whom, with what consent, and how it settled.
+   Drafts, beliefs, goals, limits, budgets and rankings are not blocks
+   and stay on the author's node.
+
+   A core node writes and reads public blocks only.  A private block
+   carries "state.audience" as a sorted list of commitments, each a
+   salted hash of one recipient, and its body is encrypted to that
+   audience (privacy module).  Even then a public header of the form {
+   author, seq, prev, hash } remains visible so that anyone can check a
+   chain, its gaps and its forks; the header reveals the existence and
+   timing structure of an author's activity, and authors who need to
+   hide that cannot use this format.  Commitments use a fresh 16-octet
+   random salt per block per recipient to prevent dictionary reversal of
+   low-entropy values such as phone numbers.  A hashed phone number can
+   be reversed, so nothing about a refusal of contact (a STOP) is
+   published.
+
+   Linkability is inherent: all blocks of an identity are linked by
+   "author" and by the chain.  A person who wants unlinkable activity
+   uses separate identities.  A custodian holding a person's keys sees
+   what it signs; the format requires that a held key always says so.
+
+15.  IANA Considerations
+
+   This document requests the registrations below.  If they are not
+   accepted, the identifiers remain private conventions of the FoodBlock
+   protocol.
+
+15.1.  Media Types
+
+   IANA is requested to register the media types "application/
+   foodblock+json" and "application/foodblock+cbor" in the "Media Types"
+   registry [RFC6838].
+
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 12]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   Type name:  application
+
+   Subtype names:  foodblock+json; foodblock+cbor
+
+   Required parameters:  N/A
+
+   Optional parameters:  N/A
+
+   Encoding considerations:  foodblock+json is UTF-8 JSON [RFC8259];
+      foodblock+cbor is binary CBOR [RFC8949].
+
+   Security considerations:  See Section 13 of this document.
+
+   Interoperability considerations:  See Section 4.  The id and
+      signature of a block are over its JSON Canonicalization Scheme
+      bytes in both forms.
+
+   Published specification:  This document.
+
+   Applications that use this media type:  Nodes, SDKs and e-mail or
+      messaging clients that exchange FoodBlock messages (an attachment
+      with file extension .foodblock).
+
+   Fragment identifier considerations:  N/A
+
+   Person and e-mail address to contact for further information:  FoodX,
+      developers@foodx.com
+
+   Intended usage:  COMMON
+
+   Restrictions on usage:  None
+
+   Author and change controller:  The author of this document.
+
+15.2.  Well-Known URI
+
+   IANA is requested to register the following in the "Well-Known URIs"
+   registry [RFC8615].  A node publishes a discovery document at this
+   location (nodes module); that document is outside the core defined
+   here.
+
+   URI suffix:  foodblock
+
+   Change controller:  The author of this document.
+
+   Specification document:  This document, and the FoodBlock nodes
+      module.
+
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 13]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   Status:  permanent
+
+15.3.  Protocol Registries
+
+   This document creates no IANA registry.  The lists of types, verbs,
+   suites and refusal codes are closed lists in the protocol file
+   (protocol.json) that every implementation loads; additions are made
+   by a new protocol version, not by registration.
+
+16.  References
+
+16.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+   [RFC3339]  Klyne, G. and C. Newman, "Date and Time on the Internet:
+              Timestamps", RFC 3339, DOI 10.17487/RFC3339, July 2002,
+              <https://www.rfc-editor.org/info/rfc3339>.
+
+   [RFC3629]  Yergeau, F., "UTF-8, a transformation format of ISO
+              10646", STD 63, RFC 3629, DOI 10.17487/RFC3629, November
+              2003, <https://www.rfc-editor.org/info/rfc3629>.
+
+   [RFC6234]  Eastlake 3rd, D. and T. Hansen, "US Secure Hash Algorithms
+              (SHA and SHA-based HMAC and HKDF)", RFC 6234,
+              DOI 10.17487/RFC6234, May 2011,
+              <https://www.rfc-editor.org/info/rfc6234>.
+
+   [RFC8032]  Josefsson, S. and I. Liusvaara, "Edwards-Curve Digital
+              Signature Algorithm (EdDSA)", RFC 8032,
+              DOI 10.17487/RFC8032, January 2017,
+              <https://www.rfc-editor.org/info/rfc8032>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+   [RFC8259]  Bray, T., Ed., "The JavaScript Object Notation (JSON) Data
+              Interchange Format", STD 90, RFC 8259,
+              DOI 10.17487/RFC8259, December 2017,
+              <https://www.rfc-editor.org/info/rfc8259>.
+
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 14]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   [RFC8410]  Josefsson, S. and J. Schaad, "Algorithm Identifiers for
+              Ed25519, Ed448, X25519, and X448 for Use in the Internet
+              X.509 Public Key Infrastructure", RFC 8410,
+              DOI 10.17487/RFC8410, August 2018,
+              <https://www.rfc-editor.org/info/rfc8410>.
+
+   [RFC8785]  Rundgren, A., Jordan, B., and S. Erdtman, "JSON
+              Canonicalization Scheme (JCS)", RFC 8785,
+              DOI 10.17487/RFC8785, June 2020,
+              <https://www.rfc-editor.org/info/rfc8785>.
+
+   [UAX15]    The Unicode Consortium, "Unicode Normalization Forms",
+              Unicode Standard Annex 15, 2025,
+              <https://www.unicode.org/reports/tr15/>.
+
+16.2.  Informative References
+
+   [RFC3552]  Rescorla, E. and B. Korver, "Guidelines for Writing RFC
+              Text on Security Considerations", BCP 72, RFC 3552,
+              DOI 10.17487/RFC3552, July 2003,
+              <https://www.rfc-editor.org/info/rfc3552>.
+
+   [RFC5869]  Krawczyk, H. and P. Eronen, "HMAC-based Extract-and-Expand
+              Key Derivation Function (HKDF)", RFC 5869,
+              DOI 10.17487/RFC5869, May 2010,
+              <https://www.rfc-editor.org/info/rfc5869>.
+
+   [RFC6838]  Freed, N., Klensin, J., and T. Hansen, "Media Type
+              Specifications and Registration Procedures", BCP 13,
+              RFC 6838, DOI 10.17487/RFC6838, January 2013,
+              <https://www.rfc-editor.org/info/rfc6838>.
+
+   [RFC6973]  Cooper, A., Tschofenig, H., Aboba, B., Peterson, J.,
+              Morris, J., Hansen, M., and R. Smith, "Privacy
+              Considerations for Internet Protocols", RFC 6973,
+              DOI 10.17487/RFC6973, July 2013,
+              <https://www.rfc-editor.org/info/rfc6973>.
+
+   [RFC7748]  Langley, A., Hamburg, M., and S. Turner, "Elliptic Curves
+              for Security", RFC 7748, DOI 10.17487/RFC7748, January
+              2016, <https://www.rfc-editor.org/info/rfc7748>.
+
+   [RFC8615]  Nottingham, M., "Well-Known Uniform Resource Identifiers
+              (URIs)", RFC 8615, DOI 10.17487/RFC8615, May 2019,
+              <https://www.rfc-editor.org/info/rfc8615>.
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 15]
+
+Internet-Draft               FoodBlock Core                 October 2026
+
+
+   [RFC8949]  Bormann, C. and P. Hoffman, "Concise Binary Object
+              Representation (CBOR)", STD 94, RFC 8949,
+              DOI 10.17487/RFC8949, December 2020,
+              <https://www.rfc-editor.org/info/rfc8949>.
+
+Appendix A.  Example
+
+   The input block (ids shortened):
+
+   { "type": "thing",
+     "state": { "name": "Sourdough",
+                "price": { "minor": 450, "currency": "GBP" },
+                "weight": { "value": "0.8", "unit": "kg" } },
+     "refs": { "author": "abc123", "of": "def456" } }
+
+   Its canonical bytes (shown wrapped; the bytes contain no line break):
+
+   {"refs":{"author":"abc123","of":"def456"},"state":{"name":
+   "Sourdough","price":{"currency":"GBP","minor":450},"weight":
+   {"unit":"kg","value":"0.8"}},"type":"thing"}
+
+   Its id with the "std" suite is
+   7bda2dba2c55126f32646c376de02d3f7d91a21ff956336649307dd6e7c0d51d.
+
+Author's Address
+
+   Patrick Reynolds
+   FoodX
+   Email: developers@foodx.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Reynolds                  Expires 19 April 2027                [Page 16]
