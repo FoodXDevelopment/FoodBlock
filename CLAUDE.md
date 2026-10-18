@@ -34,7 +34,7 @@ author; its identity is the SHA-256 of its canonical form. Seven types (`actor`,
 Every closed list is in `spec/protocol.json`, which code loads. Three profiles of peer (micro, edge, node); only
 people and machines hold nodes, and a business is a circle of them.
 
-`spec/core.md` and `spec/modules/` are normative (`spec/protocol.md` is their index): where anything else disagrees, they govern. `spec/whitepaper.md` is the published
+`spec/core.md` and `spec/modules/` are normative (`spec/protocol.md` is their index): where anything else disagrees, they govern. The published whitepaper (https://foodx.network/foodblock-whitepaper-v1.5.pdf; its source is kept with FoodX's papers) is the published
 v1.5 paper, kept as the paper; where it and the spec differ, the spec is current.
 
 ## Principles
@@ -59,7 +59,6 @@ spec/core.md, modules/  the protocol (1.6, normative; protocol.md is the index);
 spec/oracle/            an implementation written from the spec text alone; `node spec/oracle/run.cjs` checks the vectors
 sdk/rust/               the one core (every rule, once): crate, C library, WebAssembly, JNI
 spec/run-vectors.cjs    the conformance runner
-spec/whitepaper.md      the published v1.5 paper (and .pdf)
 sdk/javascript/         the reference SDK (src/index.cjs is its whole API)
 sdk/python, go, swift,  the same protocol in other languages, thin layers over the Rust core (Go runs its WebAssembly in
 kotlin                  wazero; Swift links an XCFramework; Kotlin bundles JNI natives); each runs every vector section
