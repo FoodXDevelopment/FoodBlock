@@ -26,7 +26,7 @@ other side can check that authority. Nothing can be lost or forged without it sh
   [canonical form](spec/canonical.md), [transport](spec/transport.md) (email is the envelope, FoodBlock the
   letter) and the [conformance vectors](spec/vectors.json). There is no earlier version in the protocol: 1.6 is
   year zero. Old data enters once, through [a converter](spec/legacy/converter.md) that is not part of the protocol.
-- **The paper:** [the FoodBlock whitepaper v1.5 (PDF)](https://foodx.network/foodblock-whitepaper-v1.5.pdf): why the
+- **The paper:** [the FoodBlock whitepaper v1.6 (PDF)](https://foodx.network/foodblock-whitepaper-v1.6.pdf): why the
   protocol exists. Where it and the spec differ, the spec is current.
 
 ## The language

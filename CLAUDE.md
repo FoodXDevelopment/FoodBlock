@@ -34,8 +34,8 @@ author; its identity is the SHA-256 of its canonical form. Seven types (`actor`,
 Every closed list is in `spec/protocol.json`, which code loads. Three profiles of peer (micro, edge, node); only
 people and machines hold nodes, and a business is a circle of them.
 
-`spec/core.md` and `spec/modules/` are normative (`spec/protocol.md` is their index): where anything else disagrees, they govern. The published whitepaper (https://foodx.network/foodblock-whitepaper-v1.5.pdf; its source is kept with FoodX's papers) is the published
-v1.5 paper, kept as the paper; where it and the spec differ, the spec is current.
+`spec/core.md` and `spec/modules/` are normative (`spec/protocol.md` is their index): where anything else disagrees, they govern. The published whitepaper (https://foodx.network/foodblock-whitepaper-v1.6.pdf; its source is kept with FoodX's papers) is the published
+v1.6 paper, kept as the paper; where it and the spec differ, the spec is current.
 
 ## Principles
 
