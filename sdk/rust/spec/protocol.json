@@ -120,16 +120,9 @@
    "audience",
    "public_key_sign"
   ],
-  "optional": [
-   "suite",
-   "public_key_encrypt",
-   "recovery_key_hash",
-   "recovery_reach",
-   "recovery_suite",
-   "custodian"
-  ],
   "recovery_note": "recovery_key_hash and recovery_reach come together or not at all",
-  "recognised": "An actor is judged as a genesis when it has state.public_key_sign or has no refs.author; it is then held to this list alone (bad_genesis), and its signature must open with its own public_key_sign (bad_genesis, never bad_signature)."
+  "recognised": "An actor is judged as a genesis when it has state.public_key_sign or has no refs.author; it is then held to this list alone (bad_genesis), and its signature must open with its own public_key_sign (bad_genesis, never bad_signature).",
+  "optional_note": "A genesis may also carry any key field (key_fields) but roles, and name and marks. It needs only `required`."
  },
  "common": [
   "author",
@@ -190,15 +183,7 @@
   "actor": [
    "name",
    "marks",
-   "public_key_sign",
-   "public_key_encrypt",
-   "recovery_key_hash",
-   "recovery_reach",
-   "recovery_suite",
-   "suite",
-   "removal",
-   "roles",
-   "custodian"
+   "removal"
   ],
   "transfer": [
    "money",
@@ -214,19 +199,28 @@
   "grant": [
    "scope",
    "depth",
+   "replaces",
+   "counted_to",
+   "recovery_key"
+  ],
+  "note": "The base fields of the closed types. Every closed type may also carry `every`. A closed block says more only through a schema it names (core.md, section 7). The open types (thing, observe, transform and any new word) list nothing here: their fields are described by the base schemas (spec/schemas), and nothing is refused for them."
+ },
+ "key_fields": {
+  "on": [
+   "actor",
+   "grant"
+  ],
+  "fields": [
    "public_key_sign",
    "public_key_encrypt",
    "suite",
-   "replaces",
-   "counted_to",
-   "recovery_key",
    "recovery_key_hash",
    "recovery_reach",
    "recovery_suite",
    "roles",
    "custodian"
   ],
-  "note": "The base fields of the closed types. Every closed type may also carry `every`. A closed block says more only through a schema it names (core.md, section 7). The open types (thing, observe, transform and any new word) list nothing here: their fields are described by the base schemas (spec/schemas), and nothing is refused for them."
+  "note": "Defined once. A genesis (actor) carries them, a key grant carries them, and a member grant and a circle's actor carry roles. A genesis may carry all but roles (genesis.optional); a field that is not a key field is the type's own (fields)."
  },
  "terms": [
   "price",

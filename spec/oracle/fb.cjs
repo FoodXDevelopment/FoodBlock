@@ -310,6 +310,8 @@ const SHARED_REFS = new Set([...P.refs.who_and_where, ...P.refs.what_and_which, 
 const POWERS = new Set([...P.powers, 'rekey']); // rekey is the power of profiles/rekeys.md
 const STATUSES = new Set(P.statuses);
 const FIELDS_EVERY = new Set(P.fields.every);
+// A type's own base fields, and the key fields (defined once) for an actor and a grant.
+const baseFields = type => [...(P.fields[type] || []), ...(P.key_fields.on.includes(type) ? P.key_fields.fields : [])];
 const PROFILE_FIELDS = { every: ['proof', 'assisted_by', 'stays_in'], grant: ['witnesses', 'needed', 'wait', 'keys', 'answer_within', 'marks', 'epoch'] };
 // GUESS: the grant kinds profiles add (successor, recall) are not "grants others act under", so they carry no scope.until; the text names no rule for them.
 const PROFILE_GRANT_KINDS = new Set(['successor', 'recall']);
@@ -494,7 +496,7 @@ function contentFindings(b, ctx) {
     if (state.audience !== 'public') bad.push('not public');
     for (const f of P.genesis.required) if (!(f in state) || (f !== 'audience' && (!isStr(state[f]) || state[f] === ''))) bad.push('missing ' + f);
     if (('recovery_key_hash' in state) !== ('recovery_reach' in state)) bad.push('only one of the recovery fields');
-    const allowed = new Set([...P.genesis.required, ...P.genesis.optional, 'name', 'marks']);
+    const allowed = new Set([...P.genesis.required, ...P.key_fields.fields.filter(f => f !== 'roles'), 'name', 'marks']);
     for (const k of Object.keys(state)) if (!allowed.has(k)) bad.push('field ' + k);
     for (const k of Object.keys(refs)) bad.push('ref ' + k);
     if (bad.length) add(4, 'bad_genesis', bad.join('; '));
@@ -560,7 +562,7 @@ function closedFindings(b, ctx, add) {
   if (!refs.schema || schema) {
     const declared = schema && isObj(schema.state.fields) ? Object.keys(schema.state.fields) : [];
     const roles = schema && Array.isArray(schema.state.roles) ? schema.state.roles : [];
-    const allowed = new Set([...FIELDS_EVERY, ...PROFILE_FIELDS.every, ...(P.fields[type] || []), ...(PROFILE_FIELDS[type] || []), ...declared]);
+    const allowed = new Set([...FIELDS_EVERY, ...PROFILE_FIELDS.every, ...baseFields(type), ...(PROFILE_FIELDS[type] || []), ...declared]);
     for (const k of Object.keys(state)) if (!allowed.has(k)) add(A, 'undeclared_field', k);
     for (const k of Object.keys(refs)) if (!SHARED_REFS.has(k) && !roles.includes(k)) add(A, 'undeclared_ref', k);
   } else if (store) add(A, 'undeclared_ref', 'refs.schema names a schema this node does not hold');
@@ -2289,7 +2291,7 @@ function door(op, ...a) {
     case 'verify': return verifyBlock(a[0], a[1], a[2]);
     case 'hash': return hashOfBlock({ type: a[0], state: a[1], refs: a[2] }, a[3]);
     case 'valid': return valid(a[0], a[1], a[2]);
-    case 'base_fields': return [...(P.fields[a[0]] || [])];
+    case 'base_fields': return baseFields(a[0]);
     case 'merkle_root': return merkleRoot(a[0]);
     case 'merkle_proof': return merkleProof(a[0], a[1]);
     case 'merkle_verify': return merkleVerify(a[0], a[1], a[2], a[3], a[4]);

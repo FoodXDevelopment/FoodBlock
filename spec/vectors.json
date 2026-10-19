@@ -74272,13 +74272,13 @@
    "expect": [
     "name",
     "marks",
+    "removal",
     "public_key_sign",
     "public_key_encrypt",
+    "suite",
     "recovery_key_hash",
     "recovery_reach",
     "recovery_suite",
-    "suite",
-    "removal",
     "roles",
     "custodian"
    ]
@@ -74341,12 +74341,12 @@
    "expect": [
     "scope",
     "depth",
-    "public_key_sign",
-    "public_key_encrypt",
-    "suite",
     "replaces",
     "counted_to",
     "recovery_key",
+    "public_key_sign",
+    "public_key_encrypt",
+    "suite",
     "recovery_key_hash",
     "recovery_reach",
     "recovery_suite",

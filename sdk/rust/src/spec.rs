@@ -148,7 +148,11 @@ impl Spec {
             grant_kinds: list("grant_kinds"),
             powers: list("powers"),
             genesis_required: list("genesis.required"),
-            genesis_optional: list("genesis.optional"),
+            // A genesis may carry any key field but `roles` (a circle's), beyond what it requires.
+            genesis_optional: list("key_fields.fields")
+                .into_iter()
+                .filter(|f| f != "roles" && !list("genesis.required").contains(f))
+                .collect(),
             common: list("common"),
             terms: list("terms"),
             line: list("line"),
@@ -182,9 +186,15 @@ impl Spec {
     pub fn list(&self, path: &str) -> Vec<String> {
         strings(crate::js::get(&self.protocol, path))
     }
-    /// The base fields of a type (protocol.json `fields`).
+    /// The base fields of a type (protocol.json `fields` and, for an actor and a grant, `key_fields`).
     pub fn fields(&self, type_name: &str) -> Vec<String> {
-        strings(self.protocol.get("fields").and_then(|f| f.get(type_name)))
+        let mut out = strings(self.protocol.get("fields").and_then(|f| f.get(type_name)));
+        // The key fields are defined once and carried by every type in `key_fields.on` (an actor and a grant).
+        let keys = self.protocol.get("key_fields");
+        if strings(keys.and_then(|k| k.get("on"))).iter().any(|t| t == type_name) {
+            out.extend(strings(keys.and_then(|k| k.get("fields"))));
+        }
+        out
     }
     pub fn has_type(&self, name: &str) -> bool {
         self.types.iter().any(|t| t == name)

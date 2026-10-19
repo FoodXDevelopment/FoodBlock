@@ -119,7 +119,7 @@ The signature is by the signing key over the canonical bytes of `block`. A suite
 - **An answer** (a block with `refs.answers`) carries `state.status` and is exempt from the other required fields of its type. So is an author's own **stop**, a block with `refs.updates` and `state.status: stopped`: it needs no more than the common five. The one exception to the status is a **counter-offer**, a promise that answers a promise with new terms and no status (promises.md, Answers).
 - **An open type:** nothing beyond the common five.
 
-The fields each closed type may carry are in `protocol.json` (`fields`). A closed block with any other field is refused (`undeclared_field`), unless a schema the block names declares it, or an optional profile in `protocol.json` (`optional_profiles`, the profile's `fields` for that type and `every`) declares it. The profile's fields are always declared, whether or not the reader knows the profile: a node that has never heard of one still accepts every block in it.
+The fields each closed type may carry are in `protocol.json` (`fields`); the key fields an actor and a grant share, written once, are `key_fields`. A closed block with any other field is refused (`undeclared_field`), unless a schema the block names declares it, or an optional profile in `protocol.json` (`optional_profiles`, the profile's `fields` for that type and `every`) declares it. The profile's fields are always declared, whether or not the reader knows the profile: a node that has never heard of one still accepts every block in it.
 
 ## 8. `valid(block, context)`
 
