@@ -3,13 +3,13 @@
 
 
 Network Working Group                                        P. Reynolds
-Internet-Draft                                                     FoodX
-Intended status: Informational                           16 October 2026
-Expires: 19 April 2027
+Internet-Draft                                       FOODX WORLD LIMITED
+Intended status: Informational                           18 October 2026
+Expires: 21 April 2027
 
 
      FoodBlock Core: Signed, Hash-Addressed Blocks for Food Records
-                        draft-foodblock-core-00
+                    draft-reynolds-foodblock-core-00
 
 Abstract
 
@@ -53,7 +53,7 @@ Status of This Memo
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 1]
+Reynolds                  Expires 21 April 2027                 [Page 1]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -63,7 +63,7 @@ Internet-Draft               FoodBlock Core                 October 2026
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 19 April 2027.
+   This Internet-Draft will expire on 21 April 2027.
 
 Copyright Notice
 
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 2]
+Reynolds                  Expires 21 April 2027                 [Page 2]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -165,7 +165,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 3]
+Reynolds                  Expires 21 April 2027                 [Page 3]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -221,7 +221,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 4]
+Reynolds                  Expires 21 April 2027                 [Page 4]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -277,7 +277,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 5]
+Reynolds                  Expires 21 April 2027                 [Page 5]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -333,7 +333,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 6]
+Reynolds                  Expires 21 April 2027                 [Page 6]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -389,7 +389,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 7]
+Reynolds                  Expires 21 April 2027                 [Page 7]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -445,7 +445,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 8]
+Reynolds                  Expires 21 April 2027                 [Page 8]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -501,7 +501,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                 [Page 9]
+Reynolds                  Expires 21 April 2027                 [Page 9]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -557,7 +557,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 10]
+Reynolds                  Expires 21 April 2027                [Page 10]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -613,7 +613,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 11]
+Reynolds                  Expires 21 April 2027                [Page 11]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -669,7 +669,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 12]
+Reynolds                  Expires 21 April 2027                [Page 12]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -725,7 +725,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 13]
+Reynolds                  Expires 21 April 2027                [Page 13]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -781,7 +781,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 14]
+Reynolds                  Expires 21 April 2027                [Page 14]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -837,7 +837,7 @@ Internet-Draft               FoodBlock Core                 October 2026
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 15]
+Reynolds                  Expires 21 April 2027                [Page 15]
 
 Internet-Draft               FoodBlock Core                 October 2026
 
@@ -869,8 +869,8 @@ Appendix A.  Example
 Author's Address
 
    Patrick Reynolds
-   FoodX
-   Email: developers@foodx.com
+   FOODX WORLD LIMITED
+   Email: hello@foodx.network
 
 
 
@@ -893,4 +893,4 @@ Author's Address
 
 
 
-Reynolds                  Expires 19 April 2027                [Page 16]
+Reynolds                  Expires 21 April 2027                [Page 16]

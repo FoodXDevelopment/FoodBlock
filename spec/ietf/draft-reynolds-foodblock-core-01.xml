@@ -5,16 +5,16 @@
   <!ENTITY nbsp "&#160;">
   <!ENTITY zwsp "&#8203;">
 ]>
-<rfc xmlns:xi="http://www.w3.org/2001/XInclude" category="info" docName="draft-foodblock-core-00"
+<rfc xmlns:xi="http://www.w3.org/2001/XInclude" category="info" docName="draft-reynolds-foodblock-core-01"
      ipr="trust200902" submissionType="independent" version="3" xml:lang="en" sortRefs="true" symRefs="true" tocInclude="true">
   <front>
     <title abbrev="FoodBlock Core">FoodBlock Core: Signed, Hash-Addressed Blocks for Food Records</title>
-    <seriesInfo name="Internet-Draft" value="draft-foodblock-core-00"/>
+    <seriesInfo name="Internet-Draft" value="draft-reynolds-foodblock-core-01"/>
     <author fullname="Patrick Reynolds" initials="P." surname="Reynolds">
-      <organization>FoodX</organization>
-      <address><email>developers@foodx.com</email></address>
+      <organization>FOODX WORLD LIMITED</organization>
+      <address><email>hello@foodx.network</email></address>
     </author>
-    <date year="2026" month="October" day="16"/>
+    <date year="2026" month="October" day="18"/>
     <keyword>FoodBlock</keyword>
     <keyword>content addressing</keyword>
     <keyword>digital signature</keyword>
@@ -227,7 +227,7 @@ block     = { "type": type, "state": state, "refs": refs }
           <dt>Published specification:</dt><dd>This document.</dd>
           <dt>Applications that use this media type:</dt><dd>Nodes, SDKs and e-mail or messaging clients that exchange FoodBlock messages (an attachment with file extension .foodblock).</dd>
           <dt>Fragment identifier considerations:</dt><dd>N/A</dd>
-          <dt>Person and e-mail address to contact for further information:</dt><dd>FoodX, developers@foodx.com</dd>
+          <dt>Person and e-mail address to contact for further information:</dt><dd>Patrick Reynolds, hello@foodx.network</dd>
           <dt>Intended usage:</dt><dd>COMMON</dd>
           <dt>Restrictions on usage:</dt><dd>None</dd>
           <dt>Author and change controller:</dt><dd>The author of this document.</dd>
