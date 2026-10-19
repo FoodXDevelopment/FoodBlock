@@ -20337,6 +20337,469 @@
      }
     },
     "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.where",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "where": {
+       "lat": "51.5",
+       "lon": "-0.12"
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.nonce",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "nonce": "abababababababababababababababab"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.confidence",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "confidence": "0.8"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.orderer",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "orderer": "302a300506032b6570032100d404bc44565aedbb899150e5b0b3b32b9441bf0cb7884c33130da8dbc27dd2cf"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.skip",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 9,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "skip": true
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.withheld",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "withheld": true
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.channel",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      },
+      "channel": "sms"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry state.stop.occurrences",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "status": "stopped",
+      "stop": {
+       "occurrences": [
+        "2026-12-01T00:00:00.000Z"
+       ]
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "updates": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry scope.parties",
+    "by": "check",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "kind": "operator",
+      "scope": {
+       "acts": [
+        "promise"
+       ],
+       "parties": [
+        "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+       ]
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "to": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry scope.condition",
+    "by": "check",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "kind": "operator",
+      "scope": {
+       "acts": [
+        "promise"
+       ],
+       "condition": {
+        "settled": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+       }
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "to": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.confirms",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "confirms": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.defeats",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "defeats": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.derives_from",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "derives_from": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.same_as",
+    "by": "check",
+    "block": {
+     "type": "actor",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "kind": "contact",
+      "name": "Sam"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "same_as": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.for_whom",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "for_whom": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.to_holder",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "count": 1
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "what": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      "to_holder": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.place",
+    "by": "check",
+    "block": {
+     "type": "transfer",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "what": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      "to_place": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+      "place": "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: a closed block may carry refs.of",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "what": "bread",
+      "terms": {
+       "expires": "2027-01-01T00:00:00.000Z"
+      }
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "from": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "of": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+     }
+    },
+    "codes": []
+   },
+   {
+    "name": "necessity: refs.author holds exactly one id, a set is refused",
+    "by": "check",
+    "block": {
+     "type": "observe",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "kind": "note"
+     },
+     "refs": {
+      "author": [
+       "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+      ],
+      "prev": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9"
+     }
+    },
+    "codes": [
+     "grammar"
+    ]
+   },
+   {
+    "name": "necessity: refs.prev holds exactly one id, a set is refused",
+    "by": "check",
+    "block": {
+     "type": "observe",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-19T12:00:01.000Z",
+      "audience": "public",
+      "kind": "note"
+     },
+     "refs": {
+      "author": "3db1e5297ffb730913ede487f1fbc17df8dbd4efa1c862fff647130fe1abd9c9",
+      "prev": [
+       "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+       "efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+      ]
+     }
+    },
+    "codes": [
+     "grammar"
+    ]
    }
   ]
  },
