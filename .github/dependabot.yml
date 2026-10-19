@@ -1,0 +1,31 @@
+# Weekly checks for updated dependencies, in one grouped pull request per ecosystem
+# so the noise stays small. GitHub Actions are pinned by commit SHA; this keeps the pins current.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ['*'] }
+  - package-ecosystem: npm
+    directories: [/sdk/javascript, /server, /mcp, /cli]
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    groups:
+      npm: { patterns: ['*'] }
+  - package-ecosystem: cargo
+    directories: [/sdk/rust, /tools/fuzz, /tools/sim]
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 3
+    groups:
+      cargo: { patterns: ['*'] }
+  - package-ecosystem: gomod
+    directory: /sdk/go
+    schedule: { interval: weekly }
+    groups:
+      gomod: { patterns: ['*'] }
+  - package-ecosystem: pip
+    directory: /sdk/python
+    schedule: { interval: weekly }
+    groups:
+      pip: { patterns: ['*'] }
