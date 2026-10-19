@@ -214,6 +214,7 @@ pub fn ancestors(grant: &Value, blocks: &[Value]) -> Vec<Value> {
 }
 
 /// Whether the grant's scope covers the block's act: no `acts` covers everything, else it lists the block's type or `type.kind`.
+#[cfg(feature = "folds")]
 pub(crate) fn covers(block: &Value, grant: &Value) -> bool {
     let Some(acts) = get(grant, "state.scope.acts").filter(|v| truthy(Some(v))) else { return true };
     let kind = text(st(block, "kind"));
@@ -281,6 +282,31 @@ pub fn act_name(block: &Value) -> String {
     }
 }
 
+/// Who a block or a grant speaks for (folds.md, Who a block speaks for). A micro has no circle fold, so it cannot judge a circle's
+/// `sign` power: a block or grant signed `as` a circle speaks for no one it can name, and only its author is known.
+mod who {
+    use crate::js::Index;
+    #[cfg(not(feature = "folds"))]
+    use crate::js::rs;
+    use crate::prelude::*;
+    #[cfg(feature = "folds")]
+    pub(super) fn grantor_of(grant: &Value, index: &Index) -> Option<String> {
+        crate::fold::grantor_of(grant, index)
+    }
+    #[cfg(feature = "folds")]
+    pub(super) fn speaker_of(block: &Value, index: &Index, now: Option<&str>) -> Option<String> {
+        crate::fold::speaker_of(block, index, now)
+    }
+    #[cfg(not(feature = "folds"))]
+    pub(super) fn grantor_of(grant: &Value, _index: &Index) -> Option<String> {
+        if rs(grant, "as").is_some_and(|c| !c.is_empty()) { None } else { rs(grant, "author").map(String::from) }
+    }
+    #[cfg(not(feature = "folds"))]
+    pub(super) fn speaker_of(block: &Value, _index: &Index, _now: Option<&str>) -> Option<String> {
+        if rs(block, "as").is_some_and(|c| !c.is_empty()) { None } else { rs(block, "author").map(String::from) }
+    }
+}
+
 /// Whether an act moves things or binds its principal (authority.md, Acts that can be undone): a transfer, a transform, or a
 /// promise that is not an ask, a decline or a stop.
 fn moves_or_binds(block: &Value, principal: Option<&str>) -> bool {
@@ -305,16 +331,16 @@ fn moves_or_binds(block: &Value, principal: Option<&str>) -> bool {
 pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
     let grant = rs(block, "under").and_then(|h| index.get(h));
     let principal = grant
-        .and_then(|g| crate::fold::grantor_of(g, index))
-        .or_else(|| crate::fold::speaker_of(block, index, None));
+        .and_then(|g| who::grantor_of(g, index))
+        .or_else(|| who::speaker_of(block, index, None));
     let trusted = |schema: &Value| {
         crate::js::type_of(schema) == "thing"
             && ss(schema, "kind") == Some("schema")
             && principal.as_deref().is_some_and(|p| {
-                crate::fold::speaker_of(schema, index, None).as_deref() == Some(p)
+                who::speaker_of(schema, index, None).as_deref() == Some(p)
                     || index.values().any(|c| {
                         list(rf(c, "confirms")).contains(&hash_of(schema))
-                            && crate::fold::speaker_of(c, index, None).as_deref() == Some(p)
+                            && who::speaker_of(c, index, None).as_deref() == Some(p)
                     })
             })
     };
@@ -334,7 +360,7 @@ pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
                 ss(a, "status") == Some("accepted")
                     && list(rf(a, "answers")).contains(&hash_of(ask))
                     && principal.is_some()
-                    && crate::fold::speaker_of(a, index, None) == principal
+                    && who::speaker_of(a, index, None) == principal
             })
             && list(rf(block, "for")).contains(&hash_of(ask))
     });

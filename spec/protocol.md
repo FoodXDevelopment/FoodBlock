@@ -139,6 +139,7 @@ One line for each word a reader may trip on.
 - **Schema:** a thing of kind schema that says what fields and grounds a kind of block has.
 - **Side:** the giving or receiving end of a promise.
 - **Skip:** a block that jumps `seq` forward because the counter was lost.
+- **Speaks for:** the one party a fold counts a block for: its author, the circle it names in `as` if its author may sign for it, or the grantor of the grant it acts under (folds.md).
 - **SPKI DER:** a standard byte form of a public key.
 - **Stranger:** someone who has answered none of a sender's blocks and has given no YES (consent.md).
 - **Suite:** a hash, a signature algorithm and an envelope named together.
