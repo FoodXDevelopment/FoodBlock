@@ -11,14 +11,29 @@ Compressions that were tried or weighed for 1.6 (revised 2026-10-19), kept or no
 - **Where it went differently from the plan.** `peers` did not merge into `nodes`. A micro needs `peers` but not `nodes`; merging would make a device builder read the 9 KB of pull, push and admission to learn what a micro is. The index is the page every builder reads first.
 - **Result.** Vectors 956, oracle 962, audit 0 differences, `sync-spec --check`, JavaScript, Rust, Python, Go, server, MCP, CLI, EPCIS: all pass. FoodOS 122 of 122, 102 of 102, 265 of 266 (the baseline). The wasm was rebuilt (the modules list is inside `protocol.json`).
 
+### A sealed limit: `scope.limit_commitment` beside the visible `scope.limit`
+
+- **What.** Rule 7 asked for a grant that names the act and "has a limit", which pushed people toward a visible `scope.limit`. A counterparty who reads a café's cap prices against it. Now the grant may carry a commitment to the limit (the protocol's one privacy primitive, privacy.md) and the amount stays in the sealed `limit` observe on the principal's node.
+- **Why a reader does less.** Nothing new to learn: the commitment is the same salted hash as an audience. A reader checks that the commitment exists; the principal's node opens it. A visible limit still works.
+- **What it cannot do.** Without the amount, a reader cannot tell whether a child grant's limit is no larger than its parent's. That is checked only where both amounts are. The public check is existence plus the subset rule for every other field.
+- **Result.** Vectors, oracle, audit, necessity (101 of 101 covered) and FoodOS (café and machine demos no longer need an `undo: ok` schema) all pass.
+
+### Sensor operator, Merkle count, base-schema key, wording
+
+- The sensor's operator is the existing `operator` grant, signed by the sensor's owner with `refs.subject` the sensor; no field was added. An operator grant with a `subject` makes its author no one's operator.
+- The chunk count of a Merkle root is signed in the same block (`state.chunks`), and `merkle_verify` reads it from the block, not from the caller.
+- Base schemas are trusted by hash, never by publisher: the public seed stays, and the spec says there is no privileged publisher.
+- In prose, "agent" is "autonomous system"; the actor kind value `agent` stays until Patrick decides to rename it (TODOS.md; it needs a FoodOS change).
+
 ## Not kept
 
-### `confirms` and `defeats` as one verb with a sign
+### `confirms` and `defeats` as one verb with a sign (decided: they stay two verbs)
 
 - **What it would be.** One ref key (say `judges`) and a sign in `state` (`for` or `against`).
 - **What it costs.** A sign must live somewhere, and refs hold links, not data, so it goes to `state`. Every reader of a verdict would then read two places to learn which way it points. One block could no longer confirm one claim and defeat another (today the two keys can sit in one block). The two verbs also do different work in the folds: a `defeats` by a side or a named confirmer stops a transfer counting; a `confirms` is a ground. A sign puts that difference behind an `if`.
 - **Blast radius.** The words appear 124 and 129 times in the spec and core, in 118 signed vectors (every one would be re-signed), in the oracle, the audit worlds and the schemas, and in 17 FoodOS source files (`model/promise.js`, `network/write.js`, `rails/proof.js`, `network/identity/successor.js`, the data-back contract and others) plus 15 FoodOS tests. That is a large FoodOS change for one fewer word.
 - **Result.** Not built. Reverted at the weighing stage: it does not reduce what a reader must do, and it fails the rule "no large FoodOS change".
+- **Decision (Patrick, 2026-10-19).** `confirms` and `defeats` stay two verbs because they do different jobs: `confirms` adds weight to a claim; `defeats` opens a dispute and stops a block counting.
 
 ### Fold `members_then` into `circle_state`
 
@@ -42,6 +57,7 @@ Compressions that were tried or weighed for 1.6 (revised 2026-10-19), kept or no
 - **Overlap.** Both name "the rule this block follows". `circles.md` says a shared record "names its rule in `refs.under` (a schema)" and `things.md` says `under` can name a law, a custom or a house rule, which are schemas.
 - **Why they stay two.** They differ in what a reader must do. `under` names a **grant or a rule the block acts under**: the block cannot be judged without it (it is in `needs`, so the block waits), the grant is checked for its signer, scope and liveness, and consent follows the grantor through it. `schema` names the **shape a block follows**: it is not awaited (an unheld schema is `undeclared_ref`, ask for it), it declares fields and roles, and its `undo: ok` mark is read only from a trusted one. One merged key would make every reader look at the target's type to know whether to wait, check authority, or read fields. Today the key says it.
 - **Result.** No change.
+- **Decision (Patrick, 2026-10-19).** `under` and `schema` stay two keys.
 
 ### Not to be merged (by decision)
 

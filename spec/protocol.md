@@ -132,7 +132,7 @@ One line for each word a reader may trip on.
 - **NFC:** the standard form for Unicode text, so equal text has equal bytes.
 - **Node:** the peer held by a person or machine; also the software that holds someone's blocks.
 - **Open type:** any type but the four closed ones. Stored and passed on; it grants no authority.
-- **Operator:** the author of an agent's or machine's operator grant. It answers for it.
+- **Operator:** the author of an autonomous system's or machine's operator grant. It answers for it.
 - **Orderer:** the one key that orders a record's binding blocks (folds.md).
 - **Passkey:** a key kept in a phone or computer and used with a fingerprint or face; its signature is the p256 passkey form (encoding.md, Passkeys).
 - **Profile (optional):** an extra rule set in `profiles/`. **Peer:** micro, edge or node.

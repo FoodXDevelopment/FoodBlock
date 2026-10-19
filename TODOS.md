@@ -9,6 +9,7 @@ Open work, with enough context to pick up.
 - **A node that holds many blocks.** A pull reads every block since `since` before filtering, which is fine for one
   person's node; an index needs the filter and `heads` in SQL.
 - **Publishing 1.6.** See `DISTRIBUTION.md`.
+- Decide before the freeze: rename the actor kind value `agent` (needs FoodOS change).
 - EPCIS profile vectors not yet written: AssociationEvent, SensorElement, ErrorDeclaration, a circle as covered person (spec/profiles/foodblock-profile-epcis.md §9).
 - Passkeys: a real device's assertion has not been tried (the vectors use a test authenticator that writes the same shapes); the Kotlin tests need a JDK.
 

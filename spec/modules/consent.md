@@ -6,11 +6,11 @@ A **stranger** to a sender is someone who has answered none of the sender's bloc
 
 ## 1. Every message to a stranger has a human author
 
-A first message to a stranger is signed by a person: the person's own key, or their custodian on their word (identity.md, Held keys). An agent may draft it. It does not send it.
+A first message to a stranger is signed by a person: the person's own key, or their custodian on their word (identity.md, Held keys). An autonomous system may draft it. It does not send it.
 
-The one exception is the receiver's own published order channel. A node that wants agent-written orders says so in its admission rule (`order_channel`: the acts, as `type.kind` names, that an agent may send first). Then an agent may send those acts there, once for each real request, and its block names the grant it acts under.
+The one exception is the receiver's own published order channel. A node that wants orders written by an autonomous system says so in its admission rule (`order_channel`: the acts, as `type.kind` names, that an autonomous system may send first). Then an autonomous system may send those acts there, once for each real request, and its block names the grant it acts under.
 
-A node refuses any other first block to a stranger that an agent signed (`not_human`). A block is an agent's when its author is an actor of kind `agent` or `machine`, or it names a grant in `refs.under`.
+A node refuses any other first block to a stranger that an autonomous system signed (`not_human`). A block is an autonomous system's when its author is an actor of kind `agent` or `machine`, or it names a grant in `refs.under`.
 
 ## 2. Consent is a block
 
@@ -20,11 +20,11 @@ A person's answer to contact is an `observe` of kind `consent`. It carries `stat
 - `keep`: keep my copy of the record for me.
 - `move`: move my record to the custodian or node in `state.to`.
 
-`refs.subject` names who it is about: the sender, an operator, or a principal (a person or business whose agents it covers). Left out, it is about every sender who has no live YES.
+`refs.subject` names who it is about: the sender, an operator, or a principal (a person or business whose autonomous systems it covers). Left out, it is about every sender who has no live YES.
 
-**Consent follows the principal.** A sender is named by itself, by its operators, and by the grantor of the grant its block acts under: the author of the grant it names in `refs.under` (and the circle that grant was signed `as`), when that grant is live, is addressed to the sender or open, and is one others act under (not a key or member grant). So a stranger's `yes` to a person covers that person's agents acting under her live grant, and her `stop` binds them. A word about her is a word about them, and a recorder's STOP binds the recorder's own side, which includes the principals the sender acts for. It may name an ask or deal in `refs.for`. The block is the person's when she signs it, or her custodian on her word, with the raw message's hash in `derives_from`. `refs.from` names the person whose word it is when someone else records it; left out, it is the author.
+**Consent follows the principal.** A sender is named by itself, by its operators, and by the grantor of the grant its block acts under: the author of the grant it names in `refs.under` (and the circle that grant was signed `as`), when that grant is live, is addressed to the sender or open, and is one others act under (not a key or member grant). So a stranger's `yes` to a person covers that person's autonomous systems acting under her live grant, and her `stop` binds them. A word about her is a word about them, and a recorder's STOP binds the recorder's own side, which includes the principals the sender acts for. It may name an ask or deal in `refs.for`. The block is the person's when she signs it, or her custodian on her word, with the raw message's hash in `derives_from`. `refs.from` names the person whose word it is when someone else records it; left out, it is the author.
 
-**Recording a STOP for someone off FoodX.** A person with no keys (a contact, identity.md) cannot sign. Whoever received her STOP records it: the SMS gateway, her custodian, her channel provider, or the asker's own app that saw the reply. The recorder writes a `stop` consent `from` her, with the raw message in `derives_from`. **Anyone may record a STOP, and it binds only the recorder's own side**: the recorder, its operator and every agent under that operator. An app that sees her reply records it against its own sending. It cannot bind anyone else's.
+**Recording a STOP for someone off FoodX.** A person with no keys (a contact, identity.md) cannot sign. Whoever received her STOP records it: the SMS gateway, her custodian, her channel provider, or the asker's own app that saw the reply. The recorder writes a `stop` consent `from` her, with the raw message in `derives_from`. **Anyone may record a STOP, and it binds only the recorder's own side**: the recorder, its operator and every autonomous system under that operator. An app that sees her reply records it against its own sending. It cannot bind anyone else's.
 
 **Recognising an opt-out is the recorder's reading, not a word list.** The protocol holds no list of stop words in any language. The recorder asks a model the right question about the message (does this person want no more contact?) or takes the carrier's own opt-out signal, and records the result as the block above. That reading is the recorder's, never hers.
 

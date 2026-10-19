@@ -69,6 +69,19 @@ Still year zero and unpublished: 1.6, revised 2026-10-19. No rule changed in thi
 
 Scoreboard (after Phase 2, after Phase 3): listed fields 38, 38; terms 9, 9; scope fields 7, 7; reference keys 24, 24; verbs 7, 7; folds 10, 10; modules 13, 11; profiles 15, 15; lists in `protocol.json` 54, 54; vectors 956, 976 (oracle 962, 982); things with no test needing them: 19 found, 0 left.
 
+### Phase 4 of the 1.6 refinement (2026-10-19): a sealed limit, the sensor's operator, the signed chunk count
+
+Still year zero and unpublished. Patrick approved each decision.
+
+- **The limit stays secret and still counts.** A grant's `scope.limit_commitment` is a salted commitment (privacy.md) to `{ limit, per }`. Every reader can see that a limit exists and was fixed at signing (a grant never changes; a new amount is a new grant that `updates` the old one). The amount, the period and the salt sit in the `observe` of kind `limit` sealed to the receiver; `limit_opens` checks that the observe opens the grant. Rule 7 (reversibility) now asks for "a commitment to a limit, or a visible one". A visible `scope.limit` stays allowed; a grant carries one or the other. A child of a sealed grant must carry a limit; whether its amount is no larger is checked only on the principal's node. Door ops `limit_commitment` and `limit_opens`; SDK wrappers in all five languages.
+- **The sensor's operator is the existing `operator` grant.** The sensor's owner signs it, `refs.subject` the sensor, `refs.to` the one who may sign its readings. No new field. An operator grant that names a `subject` makes its author no one's operator (`operators_of`, the identity fold and the oracle skip it), so an owner cannot rotate the keys of the device she appointed.
+- **The Merkle chunk count is signed with the root.** `state.chunks` sits beside the `{ scheme: "merkle", value }` mark; `merkle_verify(block, chunk, index, proof)` reads both from the block. The count is no longer an argument. Wrappers `merkle.root`, `proof`, `verify` in all five SDKs.
+- **Base schemas are trusted by hash, never by publisher** (`spec/schemas/README.md`, a pointer in `core.md` and `things.md`).
+- **Wording.** In prose, "agent" is now "autonomous system" (spec, README, CLAUDE, doc comments). The actor kind value `agent`, field and function names are unchanged, and the spec says so. `TODOS.md`: decide before the freeze whether to rename the value.
+- **Decisions recorded** in `spec/EXPERIMENTS.md`: `confirms` and `defeats` stay two verbs; `under` and `schema` stay two keys.
+
+Scoreboard (after Phase 3, after Phase 4): scope fields 7, 8; door ops 59, 61 (`merkle_verify` changed); necessity table 100 things, 101, all covered; vectors 1010 pass, oracle 1016 pass, audit parity 0 differences.
+
 ## 0.5.0 (20 February 2026, npm)
 
 The JavaScript SDK, MCP server and CLI of the 0.x protocol. Superseded by 1.6.

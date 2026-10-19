@@ -42,7 +42,7 @@ other side can check that authority. Nothing can be lost or forged without it sh
 
 | | Type | Meaning |
 |---|---|---|
-| What exists | `actor` | A person, an agent or machine, a circle, or a contact |
+| What exists | `actor` | A person, an autonomous system or machine, a circle, or a contact |
 | | `thing` | Anything held, found or written: food, tools, places, recipes, shares, schemas |
 | Is | `observe` | A claim that something is so |
 | | `transform` | A thing changes: inputs become outputs, or a thing is kept and stays itself |
@@ -85,18 +85,18 @@ and a record, kept by its members' nodes, never a node of its own.
 | [`sdk/rust`](sdk/rust/) | The one core: every rule, as a Rust crate, a C library and WebAssembly |
 | [`sdk/python`](sdk/python/), [`sdk/go`](sdk/go/), [`sdk/swift`](sdk/swift/), [`sdk/kotlin`](sdk/kotlin/) | The same protocol in other languages, thin layers over the core; each runs every vector section |
 | [`server/`](server/) | A node: Postgres for the blocks, HTTP for signed pull, push and `.well-known/foodblock` |
-| [`mcp/`](mcp/) | An MCP server, so any AI agent can write and read signed blocks |
+| [`mcp/`](mcp/) | An MCP server, so any autonomous system can write and read signed blocks |
 | [`cli/`](cli/) | `fb`: make an identity and device keys, write blocks in its key chain, check, validate, verify, and convert old data once |
 | [`sql/schema.sql`](sql/schema.sql) | The node's store: append-only, each block kept exactly as it arrived |
 | [`test/`](test/) | Cross-language canonical vectors, and the script that copies the spec into each SDK |
 
 Each SDK's README says which profile it covers.
 
-## For AI agents
+## For autonomous systems
 
-FoodBlock is built for people, agents and machines to use together. An agent can read and write it directly:
+FoodBlock is built for people, autonomous systems and machines to use together. An autonomous system can read and write it directly:
 
-- **MCP server**: [`mcp/`](mcp/), for Claude, Cursor, Windsurf, Gemini CLI and any MCP-compatible agent
+- **MCP server**: [`mcp/`](mcp/), for Claude, Cursor, Windsurf, Gemini CLI and any MCP-compatible autonomous system
 - **The spec in one file**: [`spec/protocol.md`](spec/protocol.md), with every list machine-readable in
   [`spec/protocol.json`](spec/protocol.json)
 - **LLM quick reference**: https://foodx.network/llms.txt

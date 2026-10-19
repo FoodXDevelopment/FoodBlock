@@ -19,7 +19,7 @@ A block is three fields and nothing else:
 The **id** of a block is the hash of its canonical bytes (canonical.md). The author signs the same bytes. A reader recomputes the id from the bytes and never trusts one it was sent.
 
 **The known types.** A type is a word that matches `^[a-z][a-z0-9_]*$`. Seven are known. Each has a mood, which says what the block claims:
-- Exists: `actor` (a person, agent, circle or contact) and `thing` (anything held, found or written).
+- Exists: `actor` (a person, autonomous system, circle or contact; the actor kind `agent` names an autonomous system) and `thing` (anything held, found or written).
 - Is: `observe` (a claim), `transform` (things change) and `transfer` (owner, holder or place changes).
 - Must: `promise`. May: `grant`.
 
@@ -112,7 +112,7 @@ The signature is by the signing key over the canonical bytes of `block`. A suite
 - **An answer** (a block with `refs.answers`) carries `state.status` and is exempt from the other required fields of its type. So is an author's own **stop**, a block with `refs.updates` and `state.status: stopped`: it needs no more than the common five. The one exception to the status is a **counter-offer**, a promise that answers a promise with new terms and no status (promises.md, Answers).
 - **An open type:** nothing beyond the common five.
 
-The fields each closed type may carry are in `protocol.json` (`fields`); the key fields an actor and a grant share, written once, are `key_fields`. A closed block with any other field is refused (`undeclared_field`), unless a schema the block names declares it, or an optional profile in `protocol.json` (`optional_profiles`, the profile's `fields` for that type and `every`) declares it. The profile's fields are always declared, whether or not the reader knows the profile: a node that has never heard of one still accepts every block in it.
+The fields each closed type may carry are in `protocol.json` (`fields`); the key fields an actor and a grant share, written once, are `key_fields`. A closed block with any other field is refused (`undeclared_field`), unless a schema the block names declares it, or an optional profile in `protocol.json` (`optional_profiles`, the profile's `fields` for that type and `every`) declares it. The profile's fields are always declared, whether or not the reader knows the profile: a node that has never heard of one still accepts every block in it. The base schemas are trusted by their hash, never by who signed them; there is no privileged publisher (`spec/schemas/README.md`).
 
 ## 8. `valid(block, context)`
 

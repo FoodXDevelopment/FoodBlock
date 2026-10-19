@@ -14,7 +14,7 @@ spec/                    the rules: core.md and modules/ (protocol.md is the ind
   │   swift, kotlin
   │
   ├── server/            a node: stores and numbers blocks, answers signed pull and push, .well-known
-  ├── mcp/               an AI agent's way in: writes and reads signed blocks over MCP
+  ├── mcp/               an autonomous system's way in: writes and reads signed blocks over MCP
   └── cli/               a person's or a machine's way in: the same, from a terminal
 ```
 
