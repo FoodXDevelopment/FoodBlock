@@ -21,6 +21,18 @@ A shape is read **only at a place the protocol gives it**, never by a field name
 
 A block's canonical body is at most 65,536 bytes; larger content is linked by its hash. `after` names at most 16 heads. A post-quantum signature must still fit in the block limit.
 
+## Large content
+
+A block holds at most 65,536 bytes; larger content is linked by its hash. A stream, or a file read in parts, is linked by its **Merkle root**, so one chunk can be proved without sending the rest. There is one convention, and it uses SHA-256 whatever the suite:
+- Split the content into chunks of any size (a chunk may be empty). With one chunk the root is its leaf. With none there is no root.
+- A **leaf** is SHA-256 of the byte `00` then the chunk. A **node** is SHA-256 of the byte `01` then the left hash then the right hash, 32 bytes each. The distinct first bytes mean a chunk can never pass for a node.
+- Hash the leaves in order. Join neighbours in pairs, left to right, into the level above. If a level has an odd number, its last hash is **carried up unchanged**, not hashed with itself. Repeat until one hash is left: the root, written as 64 lowercase hex characters.
+- A **proof** of chunk `i` of `n` is the list of sibling hashes (hex), from the leaf up: at each level, the neighbour of the node on the path (the left one when the node is on the right, else the right one). A level where the node was carried adds nothing.
+- To **verify**, take the chunk, `i` and `n`; hash the leaf; at each level of the path (its width starts at `n` and becomes the width rounded up to even, halved), use the next sibling when the node has a neighbour; the proof must be used up exactly, and the last hash must be the root. A sibling that is not 64 lowercase hex characters fails.
+- The root does not commit to `n`; the count is stated beside the root, in the signed block that names it. A root is written as a mark `{ scheme: "merkle", value: <root> }` where a hash would be linked.
+
+The door ops are `merkle_root`, `merkle_proof` and `merkle_verify` (`protocol.json`, `door`).
+
 ## The compact form (CBOR)
 
 For links where JSON is too heavy (a radio, a tag, a sensor) a **public block** may travel as CBOR (RFC 8949, a compact binary form of JSON), media type `application/foodblock+cbor`. It is a transport form only. **The id is always the hash of the canonical JSON.** A receiver rebuilds the block, writes its canonical JSON (canonical.md), hashes it, and verifies the signature over that JSON. It never hashes or signs CBOR bytes.

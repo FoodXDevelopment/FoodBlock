@@ -77,7 +77,10 @@
   ],
   "note": "Shared ref keys are these lists plus the verbs and the causal keys. refs.of names the kind an instance belongs to; state.kind is a label."
  },
- "refs_single": ["author", "prev"],
+ "refs_single": [
+  "author",
+  "prev"
+ ],
  "refs_single_note": "These two links hold exactly one id; an array there is `grammar` (core.md, section 1).",
  "statuses": [
   "accepted",
@@ -384,7 +387,11 @@
    "after",
    "wait"
   ],
-  "when_window": ["not_before", "not_after", "takes"],
+  "when_window": [
+   "not_before",
+   "not_after",
+   "takes"
+  ],
   "when_window_note": "Any of these, at least one, alone or beside the keys of a range or a relative form; not_before and not_after are times, takes a duration (blocks.md, profiles/tasks.md).",
   "places": {
    "containers": [
@@ -527,7 +534,12 @@
      "challenge": "base64url, no padding, of SHA-256 of the signed bytes (for a block, its id)",
      "client_data_type": "webauthn.get",
      "up_flag": 1,
-     "not_checked": ["rpIdHash", "origin", "counter", "uv"]
+     "not_checked": [
+      "rpIdHash",
+      "origin",
+      "counter",
+      "uv"
+     ]
     }
    },
    "encrypt_key": {
@@ -1733,6 +1745,29 @@
      "options"
     ],
     "result": "outside the protocol (legacy/converter.md); a case carries `oracle: false`"
+   },
+   "merkle_root": {
+    "args": [
+     "chunks: [hex]"
+    ],
+    "result": "encoding.md, Large content: the Merkle root (64 hex) over the chunks; an error (argument) for no chunks"
+   },
+   "merkle_proof": {
+    "args": [
+     "chunks: [hex]",
+     "index"
+    ],
+    "result": "the proof of that chunk: the sibling hashes (hex) from the leaf up; an error (argument) for an index that is no chunk"
+   },
+   "merkle_verify": {
+    "args": [
+     "root",
+     "chunk: hex",
+     "index",
+     "count",
+     "proof: [hex]"
+    ],
+    "result": "true when the proof shows the chunk is chunk `index` of `count` under the root"
    }
   }
  },
@@ -1896,7 +1931,11 @@
    "plain": 0,
    "array": "[t, block, signature]",
    "header": "{ author, seq, prev, hash }",
-   "header_bytes": ["author", "prev", "hash"],
+   "header_bytes": [
+    "author",
+    "prev",
+    "hash"
+   ],
    "header_note": "A chain header has exactly the four keys. seq is an integer; the three ids are 32-byte byte strings when bare, text when they carry a hash prefix."
   }
  }

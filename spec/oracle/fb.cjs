@@ -2241,6 +2241,29 @@ function readingConditionHolds(c, blocks, now) {
   return keeps(before[before.length - 1]) && rs.filter(r => r.state.at > start).every(keeps);
 }
 
+// ================================================================ large content: the Merkle root (encoding.md, Large content)
+// Written from the text: leaf = SHA-256(00 || chunk); node = SHA-256(01 || left || right); an odd one at the end of a level is carried up.
+const argError = msg => { const e = new Error(msg); e.kind = 'argument'; return e; };
+const merkleLeaf = chunk => crypto.createHash('sha256').update(Buffer.concat([Buffer.from([0]), chunk])).digest();
+const merkleNode = (l, r) => crypto.createHash('sha256').update(Buffer.concat([Buffer.from([1]), l, r])).digest();
+const merkleLevels = chunks => { let level = chunks.map(c => merkleLeaf(Buffer.from(c, 'hex'))); const all = [level]; while (level.length > 1) { const next = []; for (let i = 0; i < level.length; i += 2) next.push(i + 1 < level.length ? merkleNode(level[i], level[i + 1]) : level[i]); level = next; all.push(level); } return all; };
+function merkleRoot(chunks) { if (!Array.isArray(chunks) || !chunks.length) throw argError('merkle_root needs at least one chunk'); const lv = merkleLevels(chunks); return lv[lv.length - 1][0].toString('hex'); }
+function merkleProof(chunks, index) {
+  if (!Array.isArray(chunks) || !Number.isInteger(index) || index < 0 || index >= chunks.length) throw argError('merkle_proof needs an index of a chunk');
+  const out = []; let at = index;
+  for (const level of merkleLevels(chunks)) { if (level.length === 1) break; if (at % 2 === 1) out.push(level[at - 1].toString('hex')); else if (at + 1 < level.length) out.push(level[at + 1].toString('hex')); at = Math.floor(at / 2); }
+  return out;
+}
+function merkleVerify(root, chunk, index, count, proof) {
+  if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1 || index < 0 || index >= count || !Array.isArray(proof) || !/^[0-9a-f]*$/.test(chunk) || chunk.length % 2) return false;
+  let h = merkleLeaf(Buffer.from(chunk, 'hex')), at = index, width = count, used = 0;
+  while (width > 1) {
+    if (at % 2 === 1 || at + 1 < width) { const s = proof[used++]; if (typeof s !== 'string' || !/^[0-9a-f]{64}$/.test(s)) return false; h = at % 2 === 1 ? merkleNode(Buffer.from(s, 'hex'), h) : merkleNode(h, Buffer.from(s, 'hex')); }
+    at = Math.floor(at / 2); width = Math.ceil(width / 2);
+  }
+  return used === proof.length && h.toString('hex') === root;
+}
+
 // ================================================================ the door: one case per rule
 function door(op, ...a) {
   switch (op) {
@@ -2267,6 +2290,9 @@ function door(op, ...a) {
     case 'verify': return verifyBlock(a[0], a[1], a[2]);
     case 'hash': return hashOfBlock({ type: a[0], state: a[1], refs: a[2] }, a[3]);
     case 'valid': return valid(a[0], a[1]);
+    case 'merkle_root': return merkleRoot(a[0]);
+    case 'merkle_proof': return merkleProof(a[0], a[1]);
+    case 'merkle_verify': return merkleVerify(a[0], a[1], a[2], a[3], a[4]);
     case 'recovery_key_hash': return recoveryKeyHash(a[0], a[1]);
     case 'salted_hash': return saltedHash(a[0], a[1], a[2]);
     case 'wrap': return wrap(a[0]);

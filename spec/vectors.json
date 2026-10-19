@@ -74283,6 +74283,512 @@
    "expect": {
     "stage": "accepted"
    }
+  },
+  {
+   "name": "merkle: one chunk is its own leaf, hash of 00 then the chunk",
+   "op": "merkle_root",
+   "args": [
+    [
+     "6368756e6b2030"
+    ]
+   ],
+   "expect": "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+   "exact": true
+  },
+  {
+   "name": "merkle: an empty chunk is a chunk (hash of the byte 00)",
+   "op": "merkle_root",
+   "args": [
+    [
+     ""
+    ]
+   ],
+   "expect": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+   "exact": true
+  },
+  {
+   "name": "merkle: the root of 2 chunks (an odd one is carried up unchanged)",
+   "op": "merkle_root",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031"
+    ]
+   ],
+   "expect": "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+   "exact": true
+  },
+  {
+   "name": "merkle: the root of 3 chunks (an odd one is carried up unchanged)",
+   "op": "merkle_root",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032"
+    ]
+   ],
+   "expect": "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180",
+   "exact": true
+  },
+  {
+   "name": "merkle: the root of 5 chunks (an odd one is carried up unchanged)",
+   "op": "merkle_root",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034"
+    ]
+   ],
+   "expect": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+   "exact": true
+  },
+  {
+   "name": "merkle: the root of 7 chunks (an odd one is carried up unchanged)",
+   "op": "merkle_root",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034",
+     "6368756e6b2035",
+     "6368756e6b2036"
+    ]
+   ],
+   "expect": "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4",
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 1 of 2",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031"
+    ],
+    1
+   ],
+   "expect": [
+    "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 1 of 2 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+    "6368756e6b2031",
+    1,
+    2,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 2 of 3",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032"
+    ],
+    2
+   ],
+   "expect": [
+    "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 2 of 3 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180",
+    "6368756e6b2032",
+    2,
+    3,
+    [
+     "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 0 of 3",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032"
+    ],
+    0
+   ],
+   "expect": [
+    "fc16ad32089b575c05788b0527cceb44f6035998741b1fad421061dd831032b0",
+    "10f36571e0b0f4ef36e2c3ab0a3e6cf58806896afe1d43acff9fec16ae5bfff2"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 0 of 3 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180",
+    "6368756e6b2030",
+    0,
+    3,
+    [
+     "fc16ad32089b575c05788b0527cceb44f6035998741b1fad421061dd831032b0",
+     "10f36571e0b0f4ef36e2c3ab0a3e6cf58806896afe1d43acff9fec16ae5bfff2"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 4 of 5",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034"
+    ],
+    4
+   ],
+   "expect": [
+    "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 4 of 5 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2034",
+    4,
+    5,
+    [
+     "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 2 of 5",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034"
+    ],
+    2
+   ],
+   "expect": [
+    "94cff0c7008175627f2e4e5bd1c53feabc957b2b8d965822cb0ea54e07baa6f9",
+    "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+    "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 2 of 5 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2032",
+    2,
+    5,
+    [
+     "94cff0c7008175627f2e4e5bd1c53feabc957b2b8d965822cb0ea54e07baa6f9",
+     "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 6 of 7",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034",
+     "6368756e6b2035",
+     "6368756e6b2036"
+    ],
+    6
+   ],
+   "expect": [
+    "c6fc26aee31e7099e24c9b673db927cbec20bd6771b2077c83ec273376085964",
+    "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 6 of 7 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4",
+    "6368756e6b2036",
+    6,
+    7,
+    [
+     "c6fc26aee31e7099e24c9b673db927cbec20bd6771b2077c83ec273376085964",
+     "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the proof of chunk 3 of 7",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034",
+     "6368756e6b2035",
+     "6368756e6b2036"
+    ],
+    3
+   ],
+   "expect": [
+    "10f36571e0b0f4ef36e2c3ab0a3e6cf58806896afe1d43acff9fec16ae5bfff2",
+    "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+    "8ace35f2f2608ed41287ea1f9b2da5b72d6ffe3cce3c7f859139241bab8c6c89"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: chunk 3 of 7 verifies under its root",
+   "op": "merkle_verify",
+   "args": [
+    "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4",
+    "6368756e6b2033",
+    3,
+    7,
+    [
+     "10f36571e0b0f4ef36e2c3ab0a3e6cf58806896afe1d43acff9fec16ae5bfff2",
+     "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+     "8ace35f2f2608ed41287ea1f9b2da5b72d6ffe3cce3c7f859139241bab8c6c89"
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "merkle: the carried chunk 4 of 5 has a one-hash proof",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031",
+     "6368756e6b2032",
+     "6368756e6b2033",
+     "6368756e6b2034"
+    ],
+    4
+   ],
+   "expect": [
+    "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
+   ],
+   "exact": true
+  },
+  {
+   "name": "merkle: a proof for another chunk does not verify",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2032",
+    2,
+    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a changed chunk does not verify",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b203939",
+    1,
+    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: the wrong index does not verify",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2031",
+    0,
+    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: the carried chunk 4 of 5 does not verify as chunk 4 of 6, where it has a sibling",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2034",
+    4,
+    6,
+    [
+     "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a proof with a hash too many does not verify",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2031",
+    1,
+    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa",
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a proof with a hash too few does not verify",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2031",
+    1,
+    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a proof hash in capitals is refused",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2031",
+    1,
+    5,
+    [
+     "8BA70465BE7BB83B3312BD74A8C3241CC7D96089C8C72EE7940D53B422B11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: an index past the count does not verify",
+   "op": "merkle_verify",
+   "args": [
+    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    "6368756e6b2031",
+    5,
+    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: two leaf hashes written as one chunk do not reproduce the node above them",
+   "op": "merkle_root",
+   "args": [
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474fc16ad32089b575c05788b0527cceb44f6035998741b1fad421061dd831032b0"
+    ]
+   ],
+   "expect": "1337e2d066800de6364a4bb44a6a09e697d2e5d596d529366698884b56a0bee5",
+   "exact": true
+  },
+  {
+   "name": "merkle: no chunks, no root",
+   "op": "merkle_root",
+   "args": [
+    []
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "merkle: no such chunk, no proof",
+   "op": "merkle_proof",
+   "args": [
+    [
+     "6368756e6b2030",
+     "6368756e6b2031"
+    ],
+    2
+   ],
+   "error": {
+    "kind": "argument"
+   }
   }
  ]
 }

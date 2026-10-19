@@ -42,6 +42,7 @@ pub mod check;
 pub mod error;
 pub mod grant;
 pub mod identity;
+pub mod merkle;
 pub mod js;
 pub mod order;
 pub mod random;

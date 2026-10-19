@@ -52,6 +52,13 @@ fn strings_of(v: &Value) -> Vec<String> {
         .map(|a| a.iter().map(|x| crate::js::text(Some(x))).collect())
         .unwrap_or_default()
 }
+fn hex_chunks(v: &Value) -> core::result::Result<Vec<Vec<u8>>, Fail> {
+    v.as_array()
+        .ok_or_else(|| Fail::Argument("chunks is a list of hex".into()))?
+        .iter()
+        .map(|c| c.as_str().and_then(crate::block::unhex).ok_or_else(|| Fail::Argument("a chunk is hex".into())))
+        .collect()
+}
 fn keypair_of(v: &Value) -> crate::Keypair {
     crate::Keypair {
         suite: text_or_empty(v.get("suite")),
@@ -355,6 +362,26 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "compare_durations" => json!(crate::time::compare_durations(a.s(0)?, a.s(1)?, a.s(2)?)),
         "types" => json!(crate::spec().types),
         "grammar" => json!(a.v(1).as_str().is_some_and(|t| crate::spec().is(a.opt(0).unwrap_or(""), t))),
+        // merkle_root(chunks: [hex]), merkle_proof(chunks, index), merkle_verify(root, chunk, index, count, proof)
+        "merkle_root" => {
+            let chunks = hex_chunks(a.v(0))?;
+            match crate::merkle::root(&chunks) {
+                Some(r) => json!(r),
+                None => return Err(Fail::Argument("merkle_root needs at least one chunk".into())),
+            }
+        }
+        "merkle_proof" => {
+            let chunks = hex_chunks(a.v(0))?;
+            match a.v(1).as_u64().and_then(|i| crate::merkle::proof(&chunks, i as usize)) {
+                Some(p) => json!(p),
+                None => return Err(Fail::Argument("merkle_proof needs an index of a chunk".into())),
+            }
+        }
+        "merkle_verify" => {
+            let chunk = crate::block::unhex(a.s(1)?).ok_or_else(|| Fail::Argument("chunk is hex".into()))?;
+            let (index, count) = (a.v(2).as_u64().unwrap_or(u64::MAX), a.v(3).as_u64().unwrap_or(0));
+            json!(index < u64::MAX && crate::merkle::verify(a.s(0)?, &chunk, index as usize, count as usize, &a.strings(4)))
+        }
         "recovery_key_hash" => json!(crate::identity::recovery_key_hash_in(a.opt(1).unwrap_or("std"), a.s(0)?)),
         "is_genesis" => json!(crate::identity::is_genesis(a.v(0))),
         "genesis_opens" => json!(crate::identity::genesis_opens(if a.v(0).is_null() { None } else { Some(a.v(0)) })),

@@ -206,6 +206,24 @@ check('rule 9: an acceptance and a stop that carry only status, no kind and no s
   assert.deepEqual(sortedRoles(state), sortedRoles(oracle.door('circle_state', cafe10.hash, w.blocks)))
 })
 
+// ---------- Phase 2 ----------
+// Large content: one Merkle convention (encoding.md). Roots, proofs and verdicts are identical in the core and the oracle, for every size.
+check('merkle: the core and the oracle give one root and one proof for every chunk of 1 to 40 chunks, and every proof opens', () => {
+  const chunks = (n) => Array.from({ length: n }, (_, i) => Buffer.from(`chunk ${i}`).toString('hex'))
+  for (let n = 1; n <= 40; n++) {
+    const c = chunks(n), root = call('merkle_root', c)
+    assert.equal(oracle.door('merkle_root', c), root, `root of ${n}`)
+    for (let i = 0; i < n; i++) {
+      const proof = call('merkle_proof', c, i)
+      assert.deepEqual(oracle.door('merkle_proof', c, i), proof, `proof ${i} of ${n}`)
+      assert.equal(call('merkle_verify', root, c[i], i, n, proof), true)
+      assert.equal(oracle.door('merkle_verify', root, c[i], i, n, proof), true)
+      const other = c[(i + 1) % n]
+      if (n > 1) { assert.equal(call('merkle_verify', root, other, i, n, proof), false); assert.equal(oracle.door('merkle_verify', root, other, i, n, proof), false) }
+    }
+  }
+})
+
 for (const f of failures) realLog('✗ ' + f)
 realLog(`audit: ${worldCount} worlds, ${blockCount} blocks. Parity [compared, differing]: ${J(tally)}`)
 for (const d of diffs.slice(0, 15)) realLog('  differs: ' + d)
