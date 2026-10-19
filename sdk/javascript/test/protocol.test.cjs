@@ -104,7 +104,7 @@ test('promises: no status on an offer or ask, three answers with stop scopes, fo
   assert.match(strict('promise', { ...offer, terms: { ...offer.terms, repeat: 'every friday' } }, refs).join(), /RRULE/)
   assert.match(strict('promise', { ...offer, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY' } }, refs).join(), /state.when/)
   assert.deepEqual(strict('promise', { ...offer, when: { after: 'f'.repeat(64), wait: 'PT30M' } }, refs), [], 'a relative when')
-  assert.deepEqual(strict('promise', { ...offer, not: true, when: { from: '2026-10-16T09:00:00.000Z', to: '2026-10-16T10:00:00.000Z' }, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY;BYDAY=FR', price: { share: '0.06', of: 'f'.repeat(64) } } }, refs), [])
+  assert.deepEqual(strict('promise', { ...offer, when: { from: '2026-10-16T09:00:00.000Z', to: '2026-10-16T10:00:00.000Z' }, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY;BYDAY=FR', price: { share: '0.06', of: 'f'.repeat(64) } } }, refs), [])
   assert.match(strict('promise', { seq: 1, at: offer.at, audience: 'public', what: 'eggs' }, { author: tom, prev: genesisOfJo, to: tom }).join(), /expires/)
 })
 

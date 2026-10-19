@@ -9,7 +9,7 @@ join(mia, ['member']); join(ned, ['member', 'assessor'])
 show('assessors via members_then', fb.membersThen(pool, pool.hash + '#assessor', w.blocks).map(x => x.slice(0, 6)), 'ned', ned.id.slice(0, 6))
 const roof = w.w(mia, 'thing', { kind: 'roof', name: "Mia's roof" }, {}, 'roof')
 const schema = w.w(nia, 'thing', { kind: 'schema', target: 'promise', name: 'hail cover', fields: { peril: 'text' }, grounds: { event: 'hail damage occurred at the roof', confirms: ['observe'], defeats: ['observe'], confirmers: [pool.hash + '#assessor'] } }, { as: pool.hash }, 'cover schema (confirmer = pool#assessor)')
-const cover = w.w(nia, 'promise', { what: 'cover hail damage to roof up to 500', terms: { price: GBP(500), condition: { peril: 'hail', where: 'roof' }, if_wrong: { repay: GBP(500) }, settled_by: ned.id, expires: '2027-06-01T00:00:00.000Z' } }, { from: pool.hash, to: mia.id, as: pool.hash, schema: schema.hash }, 'conditional promise: pool covers Mia')
+const cover = w.w(nia, 'promise', { what: 'cover hail damage to roof up to 500', terms: { price: GBP(500), condition: { peril: 'hail', where: 'roof' }, expires: '2027-06-01T00:00:00.000Z' } }, { from: pool.hash, to: mia.id, as: pool.hash, schema: schema.hash }, 'conditional promise: pool covers Mia')
 w.w(mia, 'promise', { status: 'accepted' }, { answers: cover.hash, for: cover.hash }, 'mia accepts')
 show('stage', fb.promiseStage(cover, w.blocks).stage)
 // claim + confirmation

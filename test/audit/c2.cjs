@@ -44,7 +44,7 @@ show('fold/view for kept-vs-broken exposed by SDK?', Object.keys(fb.fold).filter
 // the defeat: no fold looks at defeats of a transfer
 // 5 loan
 const loanSchema = w.w(lena, 'thing', { kind: 'schema', target: 'promise.loan', fields: { principal: 'money', rate: 'decimal' }, name: 'loan' }, {}, 'loan schema')
-const loan = w.w(lena, 'promise', { what: 'loan of 100 GBP, repay 110 by 2027-01-31', principal: GBP(10000), terms: { price: GBP(11000), pay_by: '2027-01-31T00:00:00.000Z', expires: '2026-12-31T00:00:00.000Z' } }, { from: lena.id, to: bo.id, schema: loanSchema.hash }, 'loan offer (lender->borrower, price=repayment)')
+const loan = w.w(lena, 'promise', { what: 'loan of 100 GBP, repay 110 by 2027-01-31', principal: GBP(10000), terms: { price: GBP(11000), expires: '2026-12-31T00:00:00.000Z' } }, { from: lena.id, to: bo.id, schema: loanSchema.hash }, 'loan offer (lender->borrower, price=repayment)')
 w.w(bo, 'promise', { status: 'accepted' }, { answers: loan.hash, for: loan.hash }, 'bo accepts loan')
 const adv = w.w(lena, 'transfer', { money: GBP(10000) }, { to_owner: bo.id, for: loan.hash }, 'lena advances 100')
 w.w(bo, 'transfer', { status: 'accepted' }, { answers: adv.hash, for: loan.hash }, 'bo accepts advance')

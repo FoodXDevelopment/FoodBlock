@@ -1,6 +1,6 @@
 # Promises
 
-A promise moves a noun from one side to the other. Sides and what moves are in `refs`; `terms`, `what` (a description) and `not` are in `state`. A promise is read by the stage fold (folds.md, A promise's stage).
+A promise moves a noun from one side to the other. Sides and what moves are in `refs`; `terms` and `what` (a description) are in `state`. A promise is read by the stage fold (folds.md, A promise's stage).
 
 **Sides.** `refs.from` gives; `refs.to` receives. Either may be left out, which leaves it open: an offer open to anyone, or a want (an ask with `from` open, so offers can answer it). A promise signed by `from` is an **offer**; signed by `to`, an **ask**. What comes back (money, goods or nothing) flows the other way and is read from the transfers.
 - **Only a side signs.** A promise is signed by a side: its author, the circle it signs `as`, or the grantor of the grant it acts under (that grant's author, or the circle it was signed `as`); otherwise `not_a_side`. A promise names a circle's side only through a signer the fold lets speak for it (folds.md, Who a block speaks for): an accept, answer or stop signed `as` a circle by someone without the `sign` power there binds no one (`no_role`), and a removed member's block after the cut speaks for no one. An answer or a stop is signed by a side of the deal it answers or stops in the same way. The grant is one the promise needs (core.md, check 5), so this is judged once it is held. What someone without a key said they would do is the receiver's own `observe` (kind `message`, then a reading of it), never a promise.
@@ -12,15 +12,13 @@ A promise moves a noun from one side to the other. Sides and what moves are in `
 
 **The deal** is named by its first promise. A **first promise** is a promise with no `refs.answers`. Every later block in the deal (counter-offers, answers, transfers, work) names that first promise in `refs.for`, so two nodes never split one deal into two. An answer or counter that names another block in `refs.for` than its deal's first promise is refused (`deal_not_named`): the first promise is the one answered when that has no `answers`, else the `for` of the one answered. An answer or counter with **no** `refs.for` at all is `deal_not_named` too, whether or not the block it answers is held (the answer, being checked alone, cannot show that the deal's first promise is the one it answers). A first promise may itself carry `refs.for`: that names what it serves, such as the parent task of a sub-task. It starts a new deal and does not join the one it names. **An allocation (below) also starts a deal of its own.** It names the open offer in `refs.for` like any answer, but the blocks that settle it (transfers, work, a stop) name the allocation in `refs.for`, so each taker has a deal that no other taker's payment can count toward.
 
-**Terms:** `{ price, quantity, lines, pay_by, deliver_by, until, repeat, condition, expires, if_wrong, settled_by, needs, text }`.
+**Terms:** `{ price, quantity, lines, deliver_by, until, repeat, condition, expires, needs }`.
 - `price` is money, money per unit (`{ money, per }`, `per` an amount), or a share of something measured (`{ share, of }`: `share` a decimal string, `of` a schema saying what is measured). Under a per-unit price, `quantity` may be a range `{ min, max }`, and the answer's `terms.quantity` names the quantity chosen. A per-unit total is `money.minor` times the quantity over `per`, rounded to the nearest minor unit, halves up. **A flat money price** (`{ minor, currency }` with no `per`) is the total for the whole promise, or, inside a line of `lines`, the total for that line, whatever its quantity. An ask with no price asks for one: a price comes from the person or from their grant, never from a guess.
 - `lines`: one order with many lines, `[{ id, what, quantity, price }]`, accepted at once. Each `id` is unique in the promise, and blocks for one line name it (`state.line`). `refs.what` equals the set of the lines' `what`. With `lines`, there is no top-level `price` or `quantity`.
 - `until` is a return or end date; `expires` ends an unanswered offer or ask (every ask carries one).
 - `repeat` is an RFC 5545 RRULE value, a standard text rule for repeating dates (`FREQ=WEEKLY;BYDAY=TU`). It is counted from the start of `state.when`. An occurrence is named by its start time.
-- `condition` and `if_wrong` are data under a schema: what must be true, and what settles if it goes wrong. The protocol evaluates neither. The schema's grounds name who confirms them, and `settled_by` names who settles a dispute.
+- `condition` is data under a schema: what must be true. The protocol evaluates only the sensor condition (profiles/tasks.md). The schema's grounds name who confirms it, and who settles a dispute (below).
 - `needs`: what the work must meet, from a schema, never a name.
-- `text` names a plain-language terms document by its hash, so a court can read what both agreed.
-- **Must-not.** `state.not: true` makes the promise a promise not to do the step.
 
 **Relative time.** `state.when` may be `{ after, wait }`: `after` a block id, `wait` a duration. The step is due `wait` after that block arrives on the performer's node, counted on the performer's own clock, the way a successor's wait is. This is scheduling, never authority. If the anchor never arrives, the step waits and does not fire. A `repeat` counts from that start.
 
@@ -44,7 +42,7 @@ A promise or grant has no status of its own: offered or asked is read from who s
 
 **Claims.** A claim is an ask by the receiving side `for` a past block when nothing was promised first. An unanswered claim or ask binds no one and is never a debt in any fold.
 
-**Disputes** end one of two ways: the sides counter until both accept, or the party named in `settled_by` signs a ruling, and readers check the signer. Someone not named in advance can only propose.
+**Disputes** end one of two ways: the sides counter until both accept, or a confirmer the deal's schema names in its grounds signs a ruling (a `confirms` or a `defeats` of the disputed block), and readers check the signer. Someone not named in advance can only propose.
 
 **Many parties.** A promise is between two sides. A group buy is the circle's promise to the seller, plus each member's promise to the circle.
 

@@ -827,7 +827,6 @@ function refusals() {
   check('a duration that is not ISO 8601', base({ per: 'weekly' }), ['time'])
   check('an amount without its unit', base({ weight: { value: '1' } }), [])
   check('an amount without its unit, as a shape (unit and value, value a number)', base({ weight: { value: 1, unit: 'kg' } }), ['shape'])
-  check('a lang that is not a language tag', base({ lang: 'not a tag' }), ['grammar'])
   // Limits.
   check('a body over 65,536 bytes', base({ text: 'x'.repeat(65536) }), ['size_limit'])
   check('more than 16 heads in after', base({}, { after: Array.from({ length: 17 }, (_, i) => sha(`head ${i}`)).sort() }), ['after_limit'])

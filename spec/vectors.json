@@ -17931,27 +17931,6 @@
     ]
    },
    {
-    "name": "a lang that is not a language tag",
-    "by": "check",
-    "block": {
-     "type": "observe",
-     "state": {
-      "seq": 1,
-      "at": "2026-10-15T12:00:00.000Z",
-      "audience": "public",
-      "kind": "note",
-      "lang": "not a tag"
-     },
-     "refs": {
-      "author": "3743fe2276b714133b7d31d479e5e68eaec951334664a7d4c68133400af30ea8",
-      "prev": "3743fe2276b714133b7d31d479e5e68eaec951334664a7d4c68133400af30ea8"
-     }
-    },
-    "codes": [
-     "grammar"
-    ]
-   },
-   {
     "name": "a body over 65,536 bytes",
     "by": "check",
     "block": {

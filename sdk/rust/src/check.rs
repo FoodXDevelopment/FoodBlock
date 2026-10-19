@@ -493,8 +493,6 @@ impl<'a> Checker<'a> {
             w.extend(self.price_shape(t.get("price"), "terms.price"));
         }
         w.extend(self.quantity_shape(t.get("quantity"), t.get("price"), "terms.quantity"));
-        w.extend(self.hash_shape(t.get("text"), "terms.text"));
-        w.extend(self.hash_shape(t.get("settled_by"), "terms.settled_by"));
         if let Some(r) = t.get("repeat") {
             if !r.as_str().is_some_and(rrule) {
                 w.push(f(
@@ -1029,9 +1027,6 @@ impl<'a> Checker<'a> {
                         w.push(f("not_a_side", "a deal block is signed by a side of the deal, as it, or under its grant"));
                     }
                 }
-                if !g("not").is_none_or(|n| n == &Value::Bool(true)) {
-                    w.push(f("shape", "state.not is true (a promise not to do the step), or left out"));
-                }
                 if !g("what").is_none_or(|x| x.is_string() || x.is_object()) {
                     w.push(f("shape", "state.what describes time or a job (text, or data under a schema)"));
                 }
@@ -1269,7 +1264,7 @@ impl<'a> Checker<'a> {
             w.push(f("grammar", "state.confidence is a decimal string from 0 to 1"));
         }
         // Fields that hold an id, wherever they are written (core.md section 3, grammar): the block counted to, a custodian, a recovery
-        // hash, who assisted, the parties of an admission, who settles a dispute.
+        // hash, who assisted, and the parties of an admission.
         for key in ["counted_to", "custodian", "recovery_key_hash", "assisted_by"] {
             w.extend(self.hash_shape(g(key), &format!("state.{key}")));
         }
@@ -1282,16 +1277,10 @@ impl<'a> Checker<'a> {
                 w.extend(self.hash_shape(Some(id), "state.parties"));
             }
         }
-        if let Some(by) = state.get("terms").and_then(|t| t.get("settled_by")) {
-            w.extend(self.hash_shape(Some(by), "terms.settled_by"));
-        }
         // Keys and suites, wherever they are written (core.md, Suites): a key outside its suite's grammar, or a suite not known.
         w.extend(self.key_checks(state));
         for key in ["replaces", "recovery_key", "orderer"] {
             self.any_sign_key(g(key), key, &mut w);
-        }
-        if !g("lang").is_none_or(|l| self.is("lang", Some(l))) {
-            w.push(f("grammar", "state.lang is a BCP 47 language tag (sw, pt-BR)"));
         }
         if !g("nonce").is_none_or(|n| self.is("nonce", Some(n))) {
             w.push(f("grammar", "state.nonce is 16 random bytes, hex"));

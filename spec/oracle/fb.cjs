@@ -472,11 +472,9 @@ function contentFindings(b, ctx) {
   for (const flag of ['skip', 'withheld']) if (flag in state && state[flag] !== true) add(2, 'shape', 'state.' + flag + ' is true, or left out');
   for (const k of ['line', 'channel']) if (k in state && !isStr(state[k])) add(2, 'shape', 'state.' + k + ' is text');
   if ('confidence' in state && (!isStr(state.confidence) || !RX.confidence.test(state.confidence))) add(2, 'grammar', 'confidence');
-  if ('lang' in state && (!isStr(state.lang) || !RX.lang.test(state.lang))) add(2, 'grammar', 'lang');
   if ('nonce' in state && (!isStr(state.nonce) || !RX.nonce.test(state.nonce))) add(2, 'grammar', 'nonce');
   for (const f of ['counted_to', 'custodian', 'recovery_key_hash', 'assisted_by']) if (f in state) { const p = idProblem(state[f]); if (p) add(2, p, f); }
   for (const f of ['parties']) if (f in state) for (const id of asList(state[f])) { const p = idProblem(id); if (p) add(2, p, f); }
-  if (isObj(state.terms) && 'settled_by' in state.terms) { const p = idProblem(state.terms.settled_by); if (p) add(2, p, 'settled_by'); }
   // suites and keys
   for (const f of ['suite', 'recovery_suite']) if (f in state && !['std', 'p256', 'sm'].includes(state[f])) add(2, 'unknown_suite', f);
   const ks = ['std', 'p256', 'sm'].includes(state.suite) ? state.suite : 'std';
@@ -501,7 +499,7 @@ function contentFindings(b, ctx) {
     if (state.audience !== 'public') bad.push('not public');
     for (const f of P.genesis.required) if (!(f in state) || (f !== 'audience' && (!isStr(state[f]) || state[f] === ''))) bad.push('missing ' + f);
     if (('recovery_key_hash' in state) !== ('recovery_reach' in state)) bad.push('only one of the recovery fields');
-    const allowed = new Set([...P.genesis.required, ...P.genesis.optional, 'name', 'marks', 'lang']);
+    const allowed = new Set([...P.genesis.required, ...P.genesis.optional, 'name', 'marks']);
     for (const k of Object.keys(state)) if (!allowed.has(k)) bad.push('field ' + k);
     for (const k of Object.keys(refs)) bad.push('ref ' + k);
     if (bad.length) add(4, 'bad_genesis', bad.join('; '));

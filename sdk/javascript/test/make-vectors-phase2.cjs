@@ -28,6 +28,9 @@ function door(name, op, args, { expect, exact, error } = {}) {
   return got
 }
 
+// ---- cases that Phase 2 removes: the rule they tested is gone ----
+for (const name of ['a lang that is not a language tag']) V.refusals.cases = V.refusals.cases.filter((c) => c.name !== name)
+
 // ---- the Merkle root (encoding.md, Large content) ----
 // A third implementation, plain, to settle the expectations: level by level, an odd one carried up, as the spec states.
 const h = (...parts) => crypto.createHash('sha256').update(Buffer.concat(parts)).digest()

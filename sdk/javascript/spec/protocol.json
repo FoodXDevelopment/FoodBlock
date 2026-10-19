@@ -181,7 +181,6 @@
    "confidence",
    "orderer",
    "skip",
-   "lang",
    "withheld",
    "line",
    "status",
@@ -242,8 +241,7 @@
   ],
   "promise": [
    "what",
-   "terms",
-   "not"
+   "terms"
   ],
   "grant": [
    "scope",
@@ -265,16 +263,12 @@
   "price",
   "quantity",
   "lines",
-  "pay_by",
   "deliver_by",
   "until",
   "repeat",
   "condition",
   "expires",
-  "if_wrong",
-  "settled_by",
-  "needs",
-  "text"
+  "needs"
  ],
  "line": [
   "id",
@@ -418,7 +412,6 @@
   "when",
   "expires",
   "until",
-  "pay_by",
   "deliver_by"
  ],
  "date_fields": [
@@ -452,7 +445,6 @@
   "role_ref": "^([a-z0-9-]+:)?[0-9a-f]{64}#.+$",
   "currency": "^[A-Z]{3}$",
   "type_name": "^[a-z][a-z0-9_]*$",
-  "lang": "^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$",
   "receipt_code": "^[0-9A-HJKMNP-TV-Z]{4}-[0-9A-HJKMNP-TV-Z]{4}$",
   "receipt_code_long": "^[0-9A-HJKMNP-TV-Z]{5}-[0-9A-HJKMNP-TV-Z]{5}$"
  },
@@ -1909,8 +1901,7 @@
     "state.recovery_key_hash",
     "state.assisted_by",
     "state.shares[].from",
-    "state.split[].for",
-    "state.terms.settled_by"
+    "state.split[].for"
    ],
    "sign_key": [
     "state.public_key_sign",

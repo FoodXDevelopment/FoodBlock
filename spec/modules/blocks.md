@@ -7,7 +7,6 @@ The fields a block may carry beyond core.md, causal order, records and refusals.
 - `state.when`: when it happened, if different from `at`. Four forms: an instant; a range `{ from, to }`; a relative form `{ after, wait }` (promises.md, Relative time); or a **window**, an object with any of `not_before` (a time), `not_after` (a time) and `takes` (a duration), at least one of them, which may also sit beside the keys of a range or a relative form, and no other key (`protocol.json`, `shapes.when_window`; profiles/tasks.md). A window is the performer's room to move, never a promise of when; it is read like the other forms wherever `when` is read. An object that fits none of the forms is refused (`shape`).
 - `state.where`: a point `{lat, lon}` (WGS84 degrees as decimal strings), or an area, a point with `radius`, an amount in metres. `refs.place`: a thing it is in or at.
 - `state.kind`: a label for what sort of step or thing this is. Kinds are open words, and the ones the protocol reads are listed in `protocol.json` (`kinds`). Not `refs.of`, which names the thing this one is an instance of (things.md).
-- `state.lang`: the language of the block's text, a BCP 47 tag (`sw`, `pt-BR`). Text with no tag is read as unknown. A reader shows text in its own language when a schema supplies labels, never by guessing.
 - `refs.as`: the circle the author signs for.
 - `refs.under`: the grant, rule or law it acts under.
 - `refs.schema`: the schema it follows.
