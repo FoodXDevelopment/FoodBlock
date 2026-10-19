@@ -1,5 +1,8 @@
 # FoodBlock
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15657/badge)](https://www.bestpractices.dev/projects/15657)
+[![IETF Internet-Draft](https://img.shields.io/badge/IETF-draft--reynolds--foodblock--core-blue)](https://datatracker.ietf.org/doc/draft-reynolds-foodblock-core/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23457910.svg)](https://doi.org/10.5281/zenodo.23457910)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/FoodXDevelopment/FoodBlock/badge)](https://scorecard.dev/viewer/?uri=github.com/FoodXDevelopment/FoodBlock)
 
 The smallest language strangers in food need to agree on, with no boss. Everything else is data.
