@@ -1209,7 +1209,7 @@
    }
   },
   "promise_stage": {
-   "input": "a first promise and the blocks held; no clock. A promise that rests on blocks not held has no stage (null)",
+   "input": "a first promise, or an allocation (promises.md), and the blocks held; no clock. A promise that rests on blocks not held, one that speaks for neither side, or an allocation the open offer does not bind has no stage (null)",
    "output": {
     "stage": "offered, asked, declined, stopped, accepted, underway, done or reversed",
     "stop": "before or onward, when stopped",
@@ -1218,8 +1218,8 @@
     "live": "every live offer, sorted (two counters to one offer both stand)",
     "accept": "the binding accept's hash, or null",
     "sides": "{ from, to }",
-    "quantity": "the quantity chosen, or null",
-    "takers": "[{ who, request, allocation, quantity }] on an open offer, in causal order",
+    "quantity": "the quantity chosen, or null; on an open offer, the sum its allocations bind",
+    "takers": "[{ who, request, allocation, quantity }] on an open offer, in causal order; in an allocation's own deal, that one taker",
     "forks": "allocations that do not see the one before, or accepts of live offers that do not see each other: sorted, none counted",
     "lines": "[{ id, needed, moved }], id null without lines",
     "total": "money the price comes to, or null",

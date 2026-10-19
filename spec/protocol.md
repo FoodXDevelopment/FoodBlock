@@ -89,7 +89,7 @@ Core has 1 to 3 and 25. The rest are in the module that owns them, with the same
 
 One line for each word a reader may trip on.
 - **Act:** a kind of block a grant covers, named `type.kind` (authority.md).
-- **Allocation:** an offerer's own `accepted` answer that makes an accept on an open offer bind.
+- **Allocation:** an offerer's own `accepted` answer that makes an accept on an open offer bind. It starts a deal of its own.
 - **AES-GCM:** a standard cipher that hides data and detects tampering.
 - **Arrival:** when a block reached a node, on that node's own record. Never `at`.
 - **Attestation:** a trusted issuer's claim that a key belongs to a real person or business.

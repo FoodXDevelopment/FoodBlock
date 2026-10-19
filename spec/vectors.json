@@ -52097,6 +52097,3602 @@
     "stage": "offered",
     "accept": null
    }
+  },
+  {
+   "name": "allocation: the open offer is offered until an allocation binds",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "money": {
+         "minor": 300,
+         "currency": "GBP"
+        },
+        "per": {
+         "value": "1",
+         "unit": "{egg}"
+        }
+       },
+       "quantity": {
+        "value": "100",
+        "unit": "{egg}"
+       },
+       "expires": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:18.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+     },
+     "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "offered",
+    "takers": []
+   }
+  },
+  {
+   "name": "allocation: the open offer binds, and its quantity and total are what its allocations bind together (the third is over what was offered)",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "money": {
+         "minor": 300,
+         "currency": "GBP"
+        },
+        "per": {
+         "value": "1",
+         "unit": "{egg}"
+        }
+       },
+       "quantity": {
+        "value": "100",
+        "unit": "{egg}"
+       },
+       "expires": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:18.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+     },
+     "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "accepted",
+    "accept": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+    "quantity": {
+     "value": "90",
+     "unit": "{egg}"
+    },
+    "total": {
+     "minor": 27000,
+     "currency": "GBP"
+    },
+    "takers": [
+     {
+      "who": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "allocation": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+     },
+     {
+      "who": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "allocation": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+     }
+    ]
+   }
+  },
+  {
+   "name": "allocation: the first allocation is a deal of its own, between the offerer and the taker",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "60",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:22.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+     },
+     "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "accepted",
+    "accept": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+    "offer": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+    "sides": {
+     "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+    },
+    "quantity": {
+     "value": "60",
+     "unit": "{egg}"
+    },
+    "total": {
+     "minor": 18000,
+     "currency": "GBP"
+    },
+    "takers": [
+     {
+      "who": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "allocation": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+     }
+    ]
+   }
+  },
+  {
+   "name": "allocation: an allocation past what was offered has no deal",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "30",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:24.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+     },
+     "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     }
+    ],
+    {}
+   ],
+   "expect": null,
+   "exact": true
+  },
+  {
+   "name": "allocation: a taker's goods and payment, named for his allocation, settle his deal: done",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "30",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:23.000Z",
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+     },
+     "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     },
+     {
+      "hash": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "lot": "L2",
+       "pack": {
+        "value": "30",
+        "unit": "{egg}"
+       },
+       "at": "2026-10-19T12:01:25.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "of": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676"
+      },
+      "signature": "bdbc7e3b028dbe31e602f4bc524422f44a8acf82680a62049b4ae2c47ebb496df35e2c169e016f54efc8abbe6cc9a15c0291cc1f8360f709e93708b83027c40c"
+     },
+     {
+      "hash": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+      "type": "transfer",
+      "state": {
+       "at": "2026-10-19T12:01:26.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "what": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+       "to_owner": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807"
+      },
+      "signature": "2ff624fdb255a59bbb187353510f7db6325ee0e3ba0ada446d79c4428c87fb46837ef4e9f7c33f118402d82579a78184b5ed728da716e8a33820268a0a15de0f"
+     },
+     {
+      "hash": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:27.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      },
+      "signature": "f6f5e431b1cc22c797edf97833bb25d748ea72aa3fe94742dbb2b1d1c8bf92cdf27a9c400df532d697524a104277611a526fc5678cdef4143a42623c39610e05"
+     },
+     {
+      "hash": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 9000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:28.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f"
+      },
+      "signature": "36a259b8237af485b60ba259a7387988089efc1bff48470a0eec26152c78c36ff51028a1f7639938beaae68fab9c838c88d97e1898d63835f31832353b97720d"
+     },
+     {
+      "hash": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:29.000Z",
+       "audience": "public",
+       "seq": 8
+      },
+      "refs": {
+       "answers": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf"
+      },
+      "signature": "b2e2d103a8edc97131eaba94173674ccc938d3423cb658d9ade314901c7d157bf6379b4796e06e829d0e952c53ee6182b5dea209ba214110b8615f759188640d"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "done",
+    "paid": {
+     "minor": 9000
+    },
+    "quantity": {
+     "value": "30",
+     "unit": "{egg}"
+    }
+   }
+  },
+  {
+   "name": "allocation: another taker's deal is untouched by it: accepted, nothing paid",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "60",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:22.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+     },
+     "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     },
+     {
+      "hash": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "lot": "L2",
+       "pack": {
+        "value": "30",
+        "unit": "{egg}"
+       },
+       "at": "2026-10-19T12:01:25.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "of": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676"
+      },
+      "signature": "bdbc7e3b028dbe31e602f4bc524422f44a8acf82680a62049b4ae2c47ebb496df35e2c169e016f54efc8abbe6cc9a15c0291cc1f8360f709e93708b83027c40c"
+     },
+     {
+      "hash": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+      "type": "transfer",
+      "state": {
+       "at": "2026-10-19T12:01:26.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "what": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+       "to_owner": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807"
+      },
+      "signature": "2ff624fdb255a59bbb187353510f7db6325ee0e3ba0ada446d79c4428c87fb46837ef4e9f7c33f118402d82579a78184b5ed728da716e8a33820268a0a15de0f"
+     },
+     {
+      "hash": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:27.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      },
+      "signature": "f6f5e431b1cc22c797edf97833bb25d748ea72aa3fe94742dbb2b1d1c8bf92cdf27a9c400df532d697524a104277611a526fc5678cdef4143a42623c39610e05"
+     },
+     {
+      "hash": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 9000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:28.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f"
+      },
+      "signature": "36a259b8237af485b60ba259a7387988089efc1bff48470a0eec26152c78c36ff51028a1f7639938beaae68fab9c838c88d97e1898d63835f31832353b97720d"
+     },
+     {
+      "hash": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:29.000Z",
+       "audience": "public",
+       "seq": 8
+      },
+      "refs": {
+       "answers": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf"
+      },
+      "signature": "b2e2d103a8edc97131eaba94173674ccc938d3423cb658d9ade314901c7d157bf6379b4796e06e829d0e952c53ee6182b5dea209ba214110b8615f759188640d"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "accepted",
+    "paid": null
+   }
+  },
+  {
+   "name": "allocation: and the open offer still only binds",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "money": {
+         "minor": 300,
+         "currency": "GBP"
+        },
+        "per": {
+         "value": "1",
+         "unit": "{egg}"
+        }
+       },
+       "quantity": {
+        "value": "100",
+        "unit": "{egg}"
+       },
+       "expires": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:18.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+     },
+     "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     },
+     {
+      "hash": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "lot": "L2",
+       "pack": {
+        "value": "30",
+        "unit": "{egg}"
+       },
+       "at": "2026-10-19T12:01:25.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "of": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676"
+      },
+      "signature": "bdbc7e3b028dbe31e602f4bc524422f44a8acf82680a62049b4ae2c47ebb496df35e2c169e016f54efc8abbe6cc9a15c0291cc1f8360f709e93708b83027c40c"
+     },
+     {
+      "hash": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+      "type": "transfer",
+      "state": {
+       "at": "2026-10-19T12:01:26.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "what": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+       "to_owner": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807"
+      },
+      "signature": "2ff624fdb255a59bbb187353510f7db6325ee0e3ba0ada446d79c4428c87fb46837ef4e9f7c33f118402d82579a78184b5ed728da716e8a33820268a0a15de0f"
+     },
+     {
+      "hash": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:27.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      },
+      "signature": "f6f5e431b1cc22c797edf97833bb25d748ea72aa3fe94742dbb2b1d1c8bf92cdf27a9c400df532d697524a104277611a526fc5678cdef4143a42623c39610e05"
+     },
+     {
+      "hash": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 9000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:28.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f"
+      },
+      "signature": "36a259b8237af485b60ba259a7387988089efc1bff48470a0eec26152c78c36ff51028a1f7639938beaae68fab9c838c88d97e1898d63835f31832353b97720d"
+     },
+     {
+      "hash": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:29.000Z",
+       "audience": "public",
+       "seq": 8
+      },
+      "refs": {
+       "answers": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf"
+      },
+      "signature": "b2e2d103a8edc97131eaba94173674ccc938d3423cb658d9ade314901c7d157bf6379b4796e06e829d0e952c53ee6182b5dea209ba214110b8615f759188640d"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "accepted"
+   }
+  },
+  {
+   "name": "allocation: a payment named for the open offer counts toward no taker's quantity",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "60",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:22.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+     },
+     "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     },
+     {
+      "hash": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "lot": "L2",
+       "pack": {
+        "value": "30",
+        "unit": "{egg}"
+       },
+       "at": "2026-10-19T12:01:25.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "of": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676"
+      },
+      "signature": "bdbc7e3b028dbe31e602f4bc524422f44a8acf82680a62049b4ae2c47ebb496df35e2c169e016f54efc8abbe6cc9a15c0291cc1f8360f709e93708b83027c40c"
+     },
+     {
+      "hash": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+      "type": "transfer",
+      "state": {
+       "at": "2026-10-19T12:01:26.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "what": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+       "to_owner": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807"
+      },
+      "signature": "2ff624fdb255a59bbb187353510f7db6325ee0e3ba0ada446d79c4428c87fb46837ef4e9f7c33f118402d82579a78184b5ed728da716e8a33820268a0a15de0f"
+     },
+     {
+      "hash": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:27.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      },
+      "signature": "f6f5e431b1cc22c797edf97833bb25d748ea72aa3fe94742dbb2b1d1c8bf92cdf27a9c400df532d697524a104277611a526fc5678cdef4143a42623c39610e05"
+     },
+     {
+      "hash": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 9000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:28.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f"
+      },
+      "signature": "36a259b8237af485b60ba259a7387988089efc1bff48470a0eec26152c78c36ff51028a1f7639938beaae68fab9c838c88d97e1898d63835f31832353b97720d"
+     },
+     {
+      "hash": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:29.000Z",
+       "audience": "public",
+       "seq": 8
+      },
+      "refs": {
+       "answers": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf"
+      },
+      "signature": "b2e2d103a8edc97131eaba94173674ccc938d3423cb658d9ade314901c7d157bf6379b4796e06e829d0e952c53ee6182b5dea209ba214110b8615f759188640d"
+     },
+     {
+      "hash": "14706585d1273c492ca39e70550283a76a7eaf639d2c7782132a402710c30aa4",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 18000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:30.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      },
+      "signature": "b02add47750597df48e796a2f23cdbb8a300df002477b4d50e7414dededf46cb63de52ea191f3ea0ec84e90bd4da41c0002f17b17da38b1ad4b24d13b702e80b"
+     },
+     {
+      "hash": "9a7ba3416a76672a5dee06ffbd237f1dc23a97a62595226ebbdba749026f7e81",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:31.000Z",
+       "audience": "public",
+       "seq": 9
+      },
+      "refs": {
+       "answers": "14706585d1273c492ca39e70550283a76a7eaf639d2c7782132a402710c30aa4",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f"
+      },
+      "signature": "1cb4ae971f08e21cd175d249dea014c209da75573474ec9b495cbc398fd3d8cb4cd68e31e55260de00d0204b62571a0b5624958b9e13e6ad095b6aa2b75e1306"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "accepted",
+    "paid": null
+   }
+  },
+  {
+   "name": "allocation: a stop onward ends that taker's deal alone",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "60",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:22.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+     },
+     "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     },
+     {
+      "hash": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "lot": "L2",
+       "pack": {
+        "value": "30",
+        "unit": "{egg}"
+       },
+       "at": "2026-10-19T12:01:25.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "of": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676"
+      },
+      "signature": "bdbc7e3b028dbe31e602f4bc524422f44a8acf82680a62049b4ae2c47ebb496df35e2c169e016f54efc8abbe6cc9a15c0291cc1f8360f709e93708b83027c40c"
+     },
+     {
+      "hash": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+      "type": "transfer",
+      "state": {
+       "at": "2026-10-19T12:01:26.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "what": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+       "to_owner": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807"
+      },
+      "signature": "2ff624fdb255a59bbb187353510f7db6325ee0e3ba0ada446d79c4428c87fb46837ef4e9f7c33f118402d82579a78184b5ed728da716e8a33820268a0a15de0f"
+     },
+     {
+      "hash": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:27.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      },
+      "signature": "f6f5e431b1cc22c797edf97833bb25d748ea72aa3fe94742dbb2b1d1c8bf92cdf27a9c400df532d697524a104277611a526fc5678cdef4143a42623c39610e05"
+     },
+     {
+      "hash": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 9000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:28.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f"
+      },
+      "signature": "36a259b8237af485b60ba259a7387988089efc1bff48470a0eec26152c78c36ff51028a1f7639938beaae68fab9c838c88d97e1898d63835f31832353b97720d"
+     },
+     {
+      "hash": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:29.000Z",
+       "audience": "public",
+       "seq": 8
+      },
+      "refs": {
+       "answers": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf"
+      },
+      "signature": "b2e2d103a8edc97131eaba94173674ccc938d3423cb658d9ade314901c7d157bf6379b4796e06e829d0e952c53ee6182b5dea209ba214110b8615f759188640d"
+     },
+     {
+      "hash": "14706585d1273c492ca39e70550283a76a7eaf639d2c7782132a402710c30aa4",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 18000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:30.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      },
+      "signature": "b02add47750597df48e796a2f23cdbb8a300df002477b4d50e7414dededf46cb63de52ea191f3ea0ec84e90bd4da41c0002f17b17da38b1ad4b24d13b702e80b"
+     },
+     {
+      "hash": "9a7ba3416a76672a5dee06ffbd237f1dc23a97a62595226ebbdba749026f7e81",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:31.000Z",
+       "audience": "public",
+       "seq": 9
+      },
+      "refs": {
+       "answers": "14706585d1273c492ca39e70550283a76a7eaf639d2c7782132a402710c30aa4",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f"
+      },
+      "signature": "1cb4ae971f08e21cd175d249dea014c209da75573474ec9b495cbc398fd3d8cb4cd68e31e55260de00d0204b62571a0b5624958b9e13e6ad095b6aa2b75e1306"
+     },
+     {
+      "hash": "407a55e31bd1aa126d55ef9406cfced0ae9cf15820c36321e0aa133dc0e32838",
+      "type": "promise",
+      "state": {
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-19T12:01:32.000Z",
+       "audience": "public",
+       "seq": 10
+      },
+      "refs": {
+       "updates": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+       "for": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+       "after": [
+        "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9a7ba3416a76672a5dee06ffbd237f1dc23a97a62595226ebbdba749026f7e81"
+      },
+      "signature": "842d54fd056fd471bbfd65a8424399dd1b91cfcdd5b4cb547a5f9ea45a5323ce6b2b181b25b25f4eb4a6b9053a8c05875607b0aedfc16a3ece95f767637ea908"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "stopped",
+    "stop": "onward"
+   }
+  },
+  {
+   "name": "allocation: and not another taker's",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+     "type": "promise",
+     "state": {
+      "status": "accepted",
+      "terms": {
+       "quantity": {
+        "value": "30",
+        "unit": "{egg}"
+       }
+      },
+      "at": "2026-10-19T12:01:23.000Z",
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "after": [
+       "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      ],
+      "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+     },
+     "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+    },
+    [
+     {
+      "hash": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:13.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000ed21301b83b685e8d342bf5306235a217ce260509ce32da17823a1f2bf5307d"
+      },
+      "refs": {},
+      "signature": "c879d396d59a5967a0866207966ebd4c867f63887f0fab5ce116c03d5cc3d1e4b2ce6b5f04d887e82fb7d58e397bda8aa3a4e302f8df045c8a045e6026c55708"
+     },
+     {
+      "hash": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:14.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009242570457e7f5a3b2fb7cb19764c764776def984f52c028a59a8b39c46245c1"
+      },
+      "refs": {},
+      "signature": "56177b121b8e13e1b59be86251a92fa8479710bdecf63ba9cf25c3ae572ee587542a1a41b1df52f5d9ddfa926523ea148ab49bf0f48ab5542e778c7a553c5304"
+     },
+     {
+      "hash": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ec7f39762b0a5d98b0e4810df0c4326b46e90fddc3d21f6e5cbf3d9e30839f26"
+      },
+      "refs": {},
+      "signature": "66222f5d7540e95c50ea534e08142e870b0962251885a164de3d15c61a10e341308b6e81bcdd13dc4630b44b2a30b08f57a308df7dc0d856bd32e68d2a289901"
+     },
+     {
+      "hash": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100e0b5df553fe95a0d3654939c6652c9676f058227ed011ceb34398e2eb7f40b44"
+      },
+      "refs": {},
+      "signature": "e3fd38e0af4e34ce570924c504203bac025bf56d183e280114f3551bd653b236e16513c34fbc025cb4d0f9063db81e2a5ee37403e3e64fc09662b92decb27b0a"
+     },
+     {
+      "hash": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b"
+      },
+      "signature": "22b315db8ae2d227b7e5af7c858c601cd1d09cdc9abdd863554edc0695f48ba8921b210b167105cad8996daf375d0b5a9848403194eaa5265ef9fcbe78ef5608"
+     },
+     {
+      "hash": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "money": {
+          "minor": 300,
+          "currency": "GBP"
+         },
+         "per": {
+          "value": "1",
+          "unit": "{egg}"
+         }
+        },
+        "quantity": {
+         "value": "100",
+         "unit": "{egg}"
+        },
+        "expires": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "what": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f"
+      },
+      "signature": "76114e5ffb104c24f0a14d2e5534e16580eff12ea9f51be07eb3cfa92c865fdadaff4f91f4db550fc91e58577617d92b7d01aced8d1c46a4b891df3cbe114403"
+     },
+     {
+      "hash": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:19.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07"
+      },
+      "signature": "947adbfa89dbb2f516cb2e33a23a63971ad68ef19036dd4dadcfc060f8fe6531398a5fe289c4d0a24ed9274176080ebedfd33bce5c0da6d93243ba36907bfb0e"
+     },
+     {
+      "hash": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:20.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586"
+      },
+      "signature": "657c2d0e5ba873d432bcf607e5a3a50ba1ea44dd80e8907e6da16712b9e8f0b010e71f745201da3fd8f72c02879e1ad9bbd8acfaf981fb0e22844187d551ed01"
+     },
+     {
+      "hash": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:21.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+       ],
+       "author": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb",
+       "prev": "914a10e6e151ae8a6b635454875b6b96cc751c4db05da73a6d474ec60d6065cb"
+      },
+      "signature": "26c137a6bf98aa2edd3e24a1d449e4bd2f70aa1c0e05bab04d0c22c6c80696d99ea9db712eeff69fe788c26b575942a1a7ac89c1f0e0b169128ea64ac6bb4207"
+     },
+     {
+      "hash": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "60",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:22.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "answers": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df"
+      },
+      "signature": "6c49b9ae0eaba5bc33b39cffd7961492cdbc2fabd4a371f29d94076ec5ae6389d8165de1ce3f6d69bd12a1ce64e41d6faa86c83371ad966ddd86dc187315e903"
+     },
+     {
+      "hash": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:23.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "answers": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+      },
+      "signature": "98a3ab53a3c3e70ce2e0c66108486ab87df632ecdc030f0b20bf4d1a48d4951d4bbf30abfa0bd0ef86da9bd4731ab28595423bb7cb2fca9d73f15fd58f3fd10c"
+     },
+     {
+      "hash": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "terms": {
+        "quantity": {
+         "value": "30",
+         "unit": "{egg}"
+        }
+       },
+       "at": "2026-10-19T12:01:24.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "answers": "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "after": [
+        "74aca6a3f8f0ea05e4d5ae4a90e6c7bb8c4953f6974d8f3807c4d2d12607f207"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257"
+      },
+      "signature": "62b069eb4cc6925f319adca58c12b333194c534ad63ccd31accd3b9c5501cf75520eb234ee0796ff9c78531629b211222d91643076cb488f0514202de19afd0c"
+     },
+     {
+      "hash": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "lot": "L2",
+       "pack": {
+        "value": "30",
+        "unit": "{egg}"
+       },
+       "at": "2026-10-19T12:01:25.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "of": "fd599e5d2e96deb942f755dfcbeeb95bcaa36278d054879e54c4ca8e99515e9f",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "4532f84902f8be4b35fdf80c6c498e27462f944dbba78ff7e850586769805676"
+      },
+      "signature": "bdbc7e3b028dbe31e602f4bc524422f44a8acf82680a62049b4ae2c47ebb496df35e2c169e016f54efc8abbe6cc9a15c0291cc1f8360f709e93708b83027c40c"
+     },
+     {
+      "hash": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+      "type": "transfer",
+      "state": {
+       "at": "2026-10-19T12:01:26.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "what": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807",
+       "to_owner": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9266e9d0f5caa0208ec09d939abdda5212e9503ff41e41493cbf9df0ba5bb807"
+      },
+      "signature": "2ff624fdb255a59bbb187353510f7db6325ee0e3ba0ada446d79c4428c87fb46837ef4e9f7c33f118402d82579a78184b5ed728da716e8a33820268a0a15de0f"
+     },
+     {
+      "hash": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:27.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "0ba092530f7a6b777d88f5db3b08fef70e2acdb2ac78e42c1a1276b504779e4f"
+      },
+      "signature": "f6f5e431b1cc22c797edf97833bb25d748ea72aa3fe94742dbb2b1d1c8bf92cdf27a9c400df532d697524a104277611a526fc5678cdef4143a42623c39610e05"
+     },
+     {
+      "hash": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 9000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:28.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "3b8f63fed03487463e4d62e0702c1423314bb05411ca7c003ecd95e6737f3586",
+       "prev": "75f003448294b91b82720e40d5693b8ae3d8e779684ad09905517d880e59407f"
+      },
+      "signature": "36a259b8237af485b60ba259a7387988089efc1bff48470a0eec26152c78c36ff51028a1f7639938beaae68fab9c838c88d97e1898d63835f31832353b97720d"
+     },
+     {
+      "hash": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:29.000Z",
+       "audience": "public",
+       "seq": 8
+      },
+      "refs": {
+       "answers": "6e8023459c68031f878c7b08df859c9dd218d1c5d259b94413b719d0da834386",
+       "for": "db8e81bbe4e4f981a2c702d9a7379f0be0c04dd232f5ac6872ecb9be9312f257",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "2fadfa62a5aa06235a1ad3dca9aff631f9481104197d808d6e26da37d05b5ecf"
+      },
+      "signature": "b2e2d103a8edc97131eaba94173674ccc938d3423cb658d9ade314901c7d157bf6379b4796e06e829d0e952c53ee6182b5dea209ba214110b8615f759188640d"
+     },
+     {
+      "hash": "14706585d1273c492ca39e70550283a76a7eaf639d2c7782132a402710c30aa4",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 18000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-19T12:01:30.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to_owner": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "author": "430d959cbd63f469e65238c255ba687b34b69743ef2994b1010afe65b49c3d07",
+       "prev": "226b94131df71e6d67662f0fb2a9007325b2adb4ccf1fdcfef3258dd547be1af"
+      },
+      "signature": "b02add47750597df48e796a2f23cdbb8a300df002477b4d50e7414dededf46cb63de52ea191f3ea0ec84e90bd4da41c0002f17b17da38b1ad4b24d13b702e80b"
+     },
+     {
+      "hash": "9a7ba3416a76672a5dee06ffbd237f1dc23a97a62595226ebbdba749026f7e81",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:31.000Z",
+       "audience": "public",
+       "seq": 9
+      },
+      "refs": {
+       "answers": "14706585d1273c492ca39e70550283a76a7eaf639d2c7782132a402710c30aa4",
+       "for": "6e178d3184131c6d067800bda7db4032f89c3debccb7a0333720ba83314f03df",
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "ac24e8ebf1439586f6b09a1952ab09b9f2e2d80b47bb2db4bf73d27ca723d30f"
+      },
+      "signature": "1cb4ae971f08e21cd175d249dea014c209da75573474ec9b495cbc398fd3d8cb4cd68e31e55260de00d0204b62571a0b5624958b9e13e6ad095b6aa2b75e1306"
+     },
+     {
+      "hash": "407a55e31bd1aa126d55ef9406cfced0ae9cf15820c36321e0aa133dc0e32838",
+      "type": "promise",
+      "state": {
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-19T12:01:32.000Z",
+       "audience": "public",
+       "seq": 10
+      },
+      "refs": {
+       "updates": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+       "for": "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3",
+       "after": [
+        "8d03ce736b1e3ebf64a3a6f5c015f104a8343ed21b8e9acd860210ae2f6f2da3"
+       ],
+       "author": "c0268c27fcffc44e909a6d654da63cd19fec37536af25f4d146971c1a88be58b",
+       "prev": "9a7ba3416a76672a5dee06ffbd237f1dc23a97a62595226ebbdba749026f7e81"
+      },
+      "signature": "842d54fd056fd471bbfd65a8424399dd1b91cfcdd5b4cb547a5f9ea45a5323ce6b2b181b25b25f4eb4a6b9053a8c05875607b0aedfc16a3ece95f767637ea908"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "done"
+   }
   }
  ]
 }

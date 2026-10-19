@@ -115,6 +115,22 @@ fn total_of(price: Option<&Value>, quantity: Option<&Value>) -> Option<(f64, Val
     None
 }
 
+// The sum of decimal strings, exactly, written with no trailing zeros ("4", "4.25"); None when one is not a decimal.
+fn decimal_sum(values: &[&str]) -> Option<String> {
+    let parts = values.iter().map(|v| fraction(Some(&Value::String(v.to_string())))).collect::<Option<Vec<_>>>()?;
+    let d = parts.iter().map(|p| p.1).max().unwrap_or(1);
+    let mut n: i128 = 0;
+    for (pn, pd) in &parts {
+        n = n.checked_add(pn.checked_mul(d / pd)?)?;
+    }
+    let (whole, rest) = (n.abs() / d, n.abs() % d);
+    let digits = d.to_string().len() - 1;
+    let frac = format!("{rest:0digits$}");
+    let frac = frac.trim_end_matches('0');
+    let sign = if n < 0 { "-" } else { "" };
+    Some(if frac.is_empty() { format!("{sign}{whole}") } else { format!("{sign}{whole}.{frac}") })
+}
+
 /// Options for a promise's stage: `confirmers` (ids whose confirms count a transfer, beside those the deal's schema
 /// names in its grounds). The fold reads no clock.
 #[derive(Default, Clone)]
@@ -134,6 +150,31 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let first_hash = hash_of(first_block).to_string();
     // A promise that rests on blocks the input lacks is not read yet: there is no stage.
     let Some(first) = index.get(&first_hash).cloned() else { return Value::Null };
+    // An allocation starts its own deal (promises.md, Who may bind): the offerer's accepted answer to a request on an open offer.
+    // The deal is read with the allocation as its head and the offer as its root; an allocation the open offer does not bind has none.
+    let alloc: Option<(Value, Value, Value)> = (|| {
+        if type_of(&first) != "promise" || ss(&first, "status") != Some("accepted") {
+            return None;
+        }
+        let request = list(rf(&first, "answers")).iter().find_map(|h| index.get(*h))?;
+        if type_of(request) != "promise" || ss(request, "status") != Some("accepted") {
+            return None;
+        }
+        let offer = list(rf(request, "answers"))
+            .iter()
+            .find_map(|h| index.get(*h))
+            .filter(|o| type_of(o) == "promise" && list(rf(o, "answers")).is_empty())?;
+        let open_offer = rs(offer, "from").is_none_or(str::is_empty) || rs(offer, "to").is_none_or(str::is_empty);
+        if !open_offer {
+            return None;
+        }
+        let taker = promise_stage(offer, blocks, options)
+            .get("takers")
+            .and_then(Value::as_array)
+            .and_then(|ts| ts.iter().find(|t| t.get("allocation").and_then(Value::as_str) == Some(first_hash.as_str())).cloned())?;
+        Some((offer.clone(), request.clone(), taker))
+    })();
+    let root: Value = alloc.as_ref().map_or_else(|| first.clone(), |(o, _, _)| o.clone());
     // The deal: every block naming the first promise in `for`, or answering or updating a block in it (history only
     // where it counts).
     let mut deal: Vec<String> = vec![first_hash.clone()];
@@ -168,17 +209,27 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             _ => Some(r.to_string()),
         }
     };
-    let (from_ref, to_ref) = (rs(&first, "from"), rs(&first, "to"));
-    let (from_id, to_id) = (side_of_ref(from_ref), side_of_ref(to_ref));
+    let (from_ref, to_ref) = (rs(&root, "from"), rs(&root, "to"));
+    let (mut from_id, mut to_id) = (side_of_ref(from_ref), side_of_ref(to_ref));
+    // An allocation's open side is the taker who made the request.
+    if let Some((_, request, _)) = &alloc {
+        let taker = speaker_of(request, &index, now);
+        if from_ref.is_none_or(str::is_empty) {
+            from_id = taker.clone();
+        }
+        if to_ref.is_none_or(str::is_empty) {
+            to_id = taker;
+        }
+    }
     let (from, to) = (from_id.as_deref(), to_id.as_deref());
-    let offerer_is_from = speaks_as(&first, from, &index, now);
+    let offerer_is_from = speaks_as(&root, from, &index, now);
     // A first promise that speaks for neither side is nobody's promise: it has no stage (folds.md, Who a block speaks for).
-    if !offerer_is_from && !speaks_as(&first, to, &index, now) {
+    if !offerer_is_from && !speaks_as(&root, to, &index, now) {
         return Value::Null;
     }
     let offerer = if offerer_is_from { from } else { to };
     let other = if offerer_is_from { to_ref } else { from_ref };
-    let open = other.is_none_or(str::is_empty);
+    let open = alloc.is_none() && other.is_none_or(str::is_empty);
     let side_of = |b: &Value| -> Option<&'static str> {
         if speaks_as(b, from, &index, now) {
             Some("from")
@@ -207,7 +258,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     };
 
     // 2. The live offers: the first promise, or the latest counters between the same two sides.
-    let mut live: Vec<&Value> = vec![&first];
+    let mut live: Vec<&Value> = vec![&root];
     if !open {
         loop {
             let next: Vec<&Value> = live
@@ -272,8 +323,12 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let mut forks: Vec<String> = Vec::new();
     let mut accept: Option<&Value> = None;
     // To yourself: a promise whose from and to both name its author is accepted when made.
-    let to_self = from.is_some_and(|f| !f.is_empty()) && from == to && rs(&first, "author") == from;
-    if to_self {
+    let to_self = alloc.is_none() && from.is_some_and(|f| !f.is_empty()) && from == to && rs(&first, "author") == from;
+    if let Some((_, _, taker)) = &alloc {
+        // The allocation is the binding accept of its own deal, for this taker alone.
+        accept = Some(&first);
+        takers.push(taker.clone());
+    } else if to_self {
         accept = Some(&first);
     } else if !open {
         // Binding accepts, across every live offer. The earliest in causal order binds; two that do not see each other prove the
@@ -353,7 +408,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             }
             allocated += q.unwrap_or(0.0);
             takers.push(json!({
-                "who": rf(request, "author"), "request": hash_of(request), "allocation": hash_of(&allocation),
+                "who": speaker_of(request, &index, now), "request": hash_of(request), "allocation": hash_of(&allocation),
                 "quantity": quantity.unwrap_or(Value::Null),
             }));
         }
@@ -362,6 +417,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         }
     }
     let offer: &Value = match accept {
+        Some(_) if alloc.is_some() => &root,
         Some(a) if !open && !to_self => list(rf(a, "answers"))
             .first()
             .and_then(|h| index.get(*h))
@@ -409,15 +465,40 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         // told the sender she wants no contact, so the fold reads that ask as declined in advance. Her own accept
         // (above) would still bind: `answers` is the only consent to a deal.
         if !open {
-            if let (Some(person), Some(sender)) = (other.filter(|s| !s.is_empty()), rs(&first, "author")) {
+            if let (Some(person), Some(sender)) = (other.filter(|s| !s.is_empty()), rs(&root, "author")) {
                 let held: Vec<Value> = index.values().cloned().collect();
-                if crate::strangers::consent(person, Some(sender), &held, rs(&first, "under")).get("word").and_then(Value::as_str) == Some("stop") {
+                if crate::strangers::consent(person, Some(sender), &held, rs(&root, "under")).get("word").and_then(Value::as_str) == Some("stop") {
                     return result("declined", json!({}));
                 }
             }
         }
         return result(if offerer_is_from { "offered" } else { "asked" }, json!({}));
     };
+    // An open offer is settled by no one: each allocation is a deal of its own (promises.md, Who may bind). What is left to say of
+    // the offer itself is that it binds, or that its offerer stopped it onward.
+    if open {
+        // Its quantity is what its allocations bind together, and its total is what the price comes to for that.
+        let offered = get(&first, "state.terms.quantity.max").filter(|v| truthy(Some(v))).or(get(&first, "state.terms.quantity")).filter(|v| truthy(Some(v)));
+        let quantity_of = |t: &Value| t.get("quantity").filter(|q| truthy(Some(q))).cloned();
+        let unit = offered.and_then(|o| o.get("unit")).or_else(|| takers.iter().find_map(|t| t.get("quantity").and_then(|q| q.get("unit")))).cloned();
+        let amounts: Vec<String> = takers
+            .iter()
+            .filter_map(quantity_of)
+            .filter(|q| Some(q.get("unit").cloned().unwrap_or(Value::Null)) == unit)
+            .filter_map(|q| q.get("value").and_then(Value::as_str).map(String::from))
+            .collect();
+        let sum = if amounts.is_empty() { None } else { decimal_sum(&amounts.iter().map(String::as_str).collect::<Vec<_>>()) };
+        let bound = sum.map(|v| json!({ "value": v, "unit": unit }));
+        let total = total_of(get(&first, "state.terms.price"), bound.as_ref()).map(|(m, c)| json!({ "minor": num(m), "currency": c }));
+        let more = json!({ "quantity": bound, "total": total });
+        if let Some(onward) = stops.iter().find(|b| ss(b, "stop") == Some("onward")) {
+            let mut stopped = more;
+            stopped["stop"] = json!("onward");
+            stopped["from"] = json!(hash_of(onward));
+            return result("stopped", stopped);
+        }
+        return result("accepted", more);
+    }
     // 7, 8. Settling.
     let empty = json!({});
     let terms = get(offer, "state.terms")
@@ -453,7 +534,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let to_side = receiver("to");
     let from_side = receiver("from");
     // A confirmer is one given, or one the deal's schema names in its grounds (an id, or circle#role: its holders).
-    let schema = rs(&first, "schema").and_then(|h| index.get(h));
+    let schema = rs(&root, "schema").and_then(|h| index.get(h));
     let mut named_raw: Vec<String> = options.confirmers.clone();
     if let Some(Value::Array(c)) = schema.and_then(|s| get(s, "state.grounds.confirmers")) {
         named_raw.extend(c.iter().map(|x| text(Some(x))));
@@ -646,9 +727,9 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         }
     }
     let occurrences = sorted_set(occurrences);
-    // `paid` carries a currency even with no total: the first payment's.
+    // `paid` is null until a payment is counted; it carries the price's currency, else the first payment's.
     let currency = own_currency.clone();
-    let paid_json = if total.is_some() || paid != 0.0 {
+    let paid_json = if !pays.is_empty() {
         json!({ "minor": num(paid), "currency": currency })
     } else {
         Value::Null

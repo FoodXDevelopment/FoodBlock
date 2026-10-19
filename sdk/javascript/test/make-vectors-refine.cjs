@@ -163,6 +163,40 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   stage('bearer: a voucher nobody owns yet has no side that can answer', bearer2, s.held, { stage: 'offered', accept: null })
 }
 
+// ---- 4. An allocation starts a deal of its own ----
+{
+  const s = story(), maya = s.person('amaya'), t1 = s.person('at1'), t2 = s.person('at2'), t3 = s.person('at3')
+  const eggs = s.say(maya, 'thing', { kind: 'eggs' })
+  const EGG = (n) => fb.amount(String(n), '{egg}')
+  const O = s.say(maya, 'promise', { terms: { price: { money: M(300), per: EGG(1) }, quantity: EGG(100), expires: LATER } }, { from: maya.id, what: eggs.hash })
+  const request = (t, q) => s.say(t, 'promise', { status: 'accepted', terms: { quantity: EGG(q) } }, { answers: O.hash, for: O.hash, after: [O.hash] })
+  const allocate = (r, q) => s.say(maya, 'promise', { status: 'accepted', terms: { quantity: EGG(q) } }, { answers: r.hash, for: O.hash, after: [r.hash] })
+  const r1 = request(t1, 60), r2 = request(t2, 30), r3 = request(t3, 30)
+  stage('allocation: the open offer is offered until an allocation binds', O, s.held, { stage: 'offered', takers: [] })
+  const a1 = allocate(r1, 60), a2 = allocate(r2, 30), a3 = allocate(r3, 30)
+  stage('allocation: the open offer binds, and its quantity and total are what its allocations bind together (the third is over what was offered)', O, s.held,
+    { stage: 'accepted', accept: a1.hash, quantity: { value: '90', unit: '{egg}' }, total: { minor: 27000, currency: 'GBP' }, takers: [{ who: t1.id, allocation: a1.hash }, { who: t2.id, allocation: a2.hash }] })
+  stage('allocation: the first allocation is a deal of its own, between the offerer and the taker', a1, s.held,
+    { stage: 'accepted', accept: a1.hash, offer: O.hash, sides: { from: maya.id }, quantity: { value: '60', unit: '{egg}' }, total: { minor: 18000, currency: 'GBP' }, takers: [{ who: t1.id, allocation: a1.hash }] })
+  door('allocation: an allocation past what was offered has no deal', 'promise_stage', [a3, s.held, {}], { expect: null, exact: true })
+  // t2 settles his own 30 eggs: goods and payment name his allocation
+  const lot = s.say(maya, 'thing', { kind: 'eggs', lot: 'L2', pack: EGG(30) }, { of: eggs.hash })
+  const handed = s.say(maya, 'transfer', {}, { what: lot.hash, to_owner: t2.id, for: a2.hash })
+  s.say(t2, 'transfer', { status: 'accepted' }, { answers: handed.hash, for: a2.hash })
+  const paid = s.say(t2, 'transfer', { money: M(9000) }, { to_owner: maya.id, for: a2.hash })
+  s.say(maya, 'transfer', { status: 'accepted' }, { answers: paid.hash, for: a2.hash })
+  stage('allocation: a taker\'s goods and payment, named for his allocation, settle his deal: done', a2, s.held, { stage: 'done', paid: { minor: 9000 }, quantity: { value: '30', unit: '{egg}' } })
+  stage('allocation: another taker\'s deal is untouched by it: accepted, nothing paid', a1, s.held, { stage: 'accepted', paid: null })
+  stage('allocation: and the open offer still only binds', O, s.held, { stage: 'accepted' })
+  // money named for the open offer itself settles no one
+  const stray = s.say(t1, 'transfer', { money: M(18000) }, { to_owner: maya.id, for: O.hash })
+  s.say(maya, 'transfer', { status: 'accepted' }, { answers: stray.hash, for: O.hash })
+  stage('allocation: a payment named for the open offer counts toward no taker\'s quantity', a1, s.held, { stage: 'accepted', paid: null })
+  s.say(maya, 'promise', { status: 'stopped', stop: 'onward' }, { updates: a1.hash, for: a1.hash, after: [a1.hash] })
+  stage('allocation: a stop onward ends that taker\'s deal alone', a1, s.held, { stage: 'stopped', stop: 'onward' })
+  stage('allocation: and not another taker\'s', a2, s.held, { stage: 'done' })
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

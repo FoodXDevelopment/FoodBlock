@@ -607,7 +607,7 @@ function closedFindings(b, ctx, add) {
         }
       } else if (update) {
         const target = held.get(refs.updates);
-        if (target && target.type === 'promise' && ![target.refs.from, target.refs.to].some(speaks)) add(A, 'not_a_side', 'signed by neither side');
+        if (target && target.type === 'promise' && (target.refs.from !== undefined || target.refs.to !== undefined) && ![target.refs.from, target.refs.to].some(speaks)) add(A, 'not_a_side', 'signed by neither side'); // an allocation has no sides of its own: its author stops it
       } else {
         if (![refs.from, refs.to].some(speaks)) add(A, 'not_a_side', 'signed by neither side');
       }
@@ -1684,6 +1684,15 @@ const countedIn = (result, commitment, counter) => result.refs.author === counte
 // ================================================================ decimals (core.md: amounts are decimal strings; the fold's counts are numbers)
 function dec(s) { const m = /^(-?)(\d+)(?:\.(\d+))?$/.exec(String(s)); if (!m) return null; const f = m[3] || ''; return { n: BigInt(m[1] + m[2] + f), d: 10n ** BigInt(f.length) }; }
 const decNum = a => (a && a.value !== undefined ? Number(a.value) : null);
+// the sum of decimal strings, exactly, written with no trailing zeros
+function decSum(values) {
+  const ds = values.map(dec);
+  const D = ds.reduce((m, x) => (x.d > m ? x.d : m), 1n);
+  const n = ds.reduce((a, x) => a + x.n * (D / x.d), 0n);
+  const abs = n < 0n ? -n : n, k = D.toString().length - 1;
+  const frac = (abs % D).toString().padStart(k, '0').replace(/0+$/, '');
+  return (n < 0n ? '-' : '') + (abs / D).toString() + (frac ? '.' + frac : '');
+}
 // money per unit: minor times quantity over per, rounded to the nearest minor unit, halves up
 function perUnitTotal(minor, per, qty) {
   const q = dec(qty.value), p = dec(per.value);
@@ -1697,22 +1706,6 @@ function promiseStage(firstIn, poolIn) {
   const pool = new Pool(typeof firstIn === 'string' ? poolOf(poolIn).all() : [firstIn, ...poolOf(poolIn).all()]);
   const P = pool.get(typeof firstIn === 'string' ? firstIn : firstIn.hash);
   if (!P) return null;
-  const out = { stage: null, stop: null, from: null, offer: P.hash, accept: null, sides: { from: P.refs.from === undefined ? null : P.refs.from, to: P.refs.to === undefined ? null : P.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [] };
-  // a side that names a thing is whoever owns the thing now (promises.md, Bearer)
-  const sideOf = r => { if (r === undefined) return undefined; const t = pool.get(r); return t && t.type === 'thing' ? ownershipFold(t, pool).owner : r; };
-  const from = sideOf(P.refs.from), to = sideOf(P.refs.to);
-  const all = pool.all().filter(b => counts(b, pool));
-  // the deal: P, and every block that names P in for or answers a block in the deal. A promise with no answers is a new deal.
-  const deal = new Map([[P.hash, P]]);
-  for (let grew = true; grew;) {
-    grew = false;
-    for (const b of all) {
-      if (deal.has(b.hash)) continue;
-      const names = asList(b.refs.for).includes(P.hash) && !(b.type === 'promise' && b.refs.answers === undefined);
-      if (names || (b.refs.answers !== undefined && deal.has(b.refs.answers)) || (b.refs.updates !== undefined && deal.has(b.refs.updates))) { deal.set(b.hash, b); grew = true; }
-    }
-  }
-  const D = [...deal.values()];
   // who a block speaks for (folds.md, Who a block speaks for): one party. A block that names a circle in `as` speaks for it when its author may
   // sign for it, else for no one; a block under a live grant made for its receiver speaks for the grantor (the circle the grant was signed `as`
   // when its signer may sign for it, else its author); any other block speaks for its author.
@@ -1735,13 +1728,43 @@ function promiseStage(firstIn, poolIn) {
     return whoMemo.get(b.hash);
   };
   const quote = b => { const c = cover(b); return !!c && !c.covered; };
+  // an allocation starts its own deal (promises.md, Who may bind): the offerer's accepted answer to a request on an open offer. It is read with
+  // the allocation as head and the offer as root; an allocation the open offer does not bind has no deal.
+  const alloc = (() => {
+    if (P.type !== 'promise' || P.state.status !== 'accepted' || P.refs.answers === undefined) return null;
+    const R = pool.get(P.refs.answers);
+    if (!R || R.type !== 'promise' || R.state.status !== 'accepted') return null;
+    const O = pool.get(R.refs.answers);
+    if (!O || O.type !== 'promise' || O.refs.answers !== undefined || (O.refs.from !== undefined && O.refs.to !== undefined)) return null;
+    const t = promiseStage(O, pool).takers.find(x => x.allocation === P.hash);
+    return t ? { O, R, t } : null;
+  })();
+  const Q = alloc ? alloc.O : P; // the root: sides, terms, what
+  const out = { stage: null, stop: null, from: null, offer: Q.hash, accept: null, sides: { from: Q.refs.from === undefined ? null : Q.refs.from, to: Q.refs.to === undefined ? null : Q.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [] };
+  // a side that names a thing is whoever owns the thing now (promises.md, Bearer)
+  const sideOf = r => { if (r === undefined) return undefined; const t = pool.get(r); return t && t.type === 'thing' ? ownershipFold(t, pool).owner : r; };
+  let from = sideOf(Q.refs.from), to = sideOf(Q.refs.to);
+  // an allocation's open side is the taker who made the request
+  if (alloc) { if (from === undefined) from = who(alloc.R); if (to === undefined) to = who(alloc.R); }
+  const all = pool.all().filter(b => counts(b, pool));
+  // the deal: P, and every block that names P in for or answers a block in the deal. A promise with no answers is a new deal.
+  const deal = new Map([[P.hash, P]]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const b of all) {
+      if (deal.has(b.hash)) continue;
+      const names = asList(b.refs.for).includes(P.hash) && !(b.type === 'promise' && b.refs.answers === undefined);
+      if (names || (b.refs.answers !== undefined && deal.has(b.refs.answers)) || (b.refs.updates !== undefined && deal.has(b.refs.updates))) { deal.set(b.hash, b); grew = true; }
+    }
+  }
+  const D = [...deal.values()];
   const isSide = id => id !== null && id !== undefined && (id === from || id === to);
-  if (!isSide(who(P))) return null; // a first promise that speaks for neither side is nobody's promise: no stage
-  const open = P.refs.from === undefined || P.refs.to === undefined;
-  const self = from !== undefined && from === to && from === who(P);
+  if (!isSide(who(Q))) return null; // a first promise that speaks for neither side is nobody's promise: no stage
+  const open = !alloc && (Q.refs.from === undefined || Q.refs.to === undefined);
+  const self = !alloc && from !== undefined && from === to && from === who(Q);
   // ---- the live offers: P, or the latest counters between the same two sides, each signed by the side that did not sign the offer it answers
   // (not on an open offer). Two counters that cross both stand.
-  let lives = [P];
+  let lives = [Q];
   if (!open) {
     for (;;) {
       const next = [];
@@ -1759,7 +1782,8 @@ function promiseStage(firstIn, poolIn) {
   const seenStop = a => stopsBefore.some(s => pool.sees(a.hash, s.hash));
   // ---- binding accepts
   let accept = null, takers = [], forks = [];
-  if (self) accept = P;
+  if (alloc) { accept = P; takers = [alloc.t]; }
+  else if (self) accept = P;
   else if (!open) {
     // every binding accept of a live offer; the earliest in causal order binds, and two that do not see each other prove the accepter's lie:
     // neither binds and both are listed in forks
@@ -1778,14 +1802,14 @@ function promiseStage(firstIn, poolIn) {
     if (accept) live = pool.get(accept.refs.answers) || live;
   } else {
     // an open offer binds only through the offerer's allocation: its own accepted answer to an accept
-    const requests = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && b.refs.answers === P.hash && who(b) !== who(P));
-    const allocs = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && requests.some(r => r.hash === b.refs.answers) && who(b) === who(P))
+    const requests = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && b.refs.answers === P.hash && who(b) !== who(Q));
+    const allocs = D.filter(b => b.type === 'promise' && b.state.status === 'accepted' && requests.some(r => r.hash === b.refs.answers) && who(b) === who(Q))
       .sort((a, b) => pool.past(a.hash).size - pool.past(b.hash).size);
     const chain = [];
     for (const a of allocs) {
       if (!chain.length || pool.sees(a.hash, chain[chain.length - 1].hash)) chain.push(a); else forks.push(a.hash);
     }
-    const offeredQty = P.state.terms && P.state.terms.quantity ? (P.state.terms.quantity.max ? Number(P.state.terms.quantity.max.value) : decNum(P.state.terms.quantity)) : null;
+    const offeredQty = Q.state.terms && Q.state.terms.quantity ? (Q.state.terms.quantity.max ? Number(Q.state.terms.quantity.max.value) : decNum(Q.state.terms.quantity)) : null;
     let sum = 0;
     for (const a of chain) {
       const r = requests.find(x => x.hash === a.refs.answers);
@@ -1793,7 +1817,7 @@ function promiseStage(firstIn, poolIn) {
       const qn = q ? decNum(q) : 0;
       if (offeredQty !== null && sum + qn > offeredQty) continue; // invariant 11: what is bound never exceeds what is offered
       sum += qn;
-      takers.push({ who: r.refs.author, request: r.hash, allocation: a.hash, quantity: q });
+      takers.push({ who: who(r), request: r.hash, allocation: a.hash, quantity: q });
     }
     if (takers.length) accept = pool.get(takers[0].allocation);
   }
@@ -1803,9 +1827,25 @@ function promiseStage(firstIn, poolIn) {
   out.live = lives.map(o => o.hash).sort();
   out.accept = accept ? accept.hash : null;
   if (accept) out.accept = accept.hash;
+  // an open offer is settled by no one: each allocation is a deal of its own (promises.md, Who may bind). What is left to say of the offer itself is
+  // that it binds, or that its offerer stopped it onward.
+  if (open && accept) {
+    // its quantity is what its allocations bind together, and its total is what the price comes to for that
+    const offered = Q.state.terms && Q.state.terms.quantity ? (Q.state.terms.quantity.max ? Q.state.terms.quantity.max : Q.state.terms.quantity) : null;
+    const withQ = takers.filter(t => t.quantity);
+    const unit = offered ? offered.unit : (withQ.length ? withQ[0].quantity.unit : undefined);
+    const amounts = withQ.filter(t => t.quantity.unit === unit).map(t => t.quantity.value);
+    if (amounts.length) out.quantity = { value: decSum(amounts), unit };
+    const pr = Q.state.terms && Q.state.terms.price;
+    if (isObj(pr) && has(pr, 'minor', 'currency')) out.total = { minor: pr.minor, currency: pr.currency };
+    else if (isObj(pr) && has(pr, 'money', 'per') && isObj(pr.per) && out.quantity) out.total = { minor: perUnitTotal(pr.money.minor, pr.per, out.quantity), currency: pr.money.currency };
+    const ow = onward.filter(b => who(b) === who(Q));
+    if (ow.length) { out.stage = 'stopped'; out.stop = 'onward'; out.from = ow[0].hash; } else out.stage = 'accepted';
+    return out;
+  }
   // the quantity chosen
-  const terms = isObj(live.state.terms) ? live.state.terms : (isObj(P.state.terms) ? P.state.terms : {});
-  const pterms = isObj(P.state.terms) ? P.state.terms : {};
+  const terms = isObj(live.state.terms) ? live.state.terms : (isObj(Q.state.terms) ? Q.state.terms : {});
+  const pterms = isObj(Q.state.terms) ? Q.state.terms : {};
   let chosen = null;
   if (takers.length === 1) chosen = takers[0].quantity;
   else if (accept && accept !== P && accept.state.terms && accept.state.terms.quantity) chosen = accept.state.terms.quantity;
@@ -1822,7 +1862,7 @@ function promiseStage(firstIn, poolIn) {
   }
   out.total = total;
   // ---- settling: counted blocks made for P
-  const schema = P.refs.schema && pool.get(P.refs.schema);
+  const schema = Q.refs.schema && pool.get(Q.refs.schema);
   const confirmers = new Set(schema && isObj(schema.state.grounds) ? asList(schema.state.grounds.confirmers).flatMap(c => c.includes('#') ? membersThen({ hash: P.hash }, c, pool) : [c]) : []);
   const confirmed = h => pool.all().some(c => asList(c.refs.confirms).includes(h) && confirmers.has(c.refs.author) && counts(c, pool));
   const accepted = (h, receiver) => D.some(a => a.refs.answers === h && a.state.status === 'accepted' && (receiver === undefined || who(a) === receiver));
@@ -1854,8 +1894,8 @@ function promiseStage(firstIn, poolIn) {
   const refunded = refunds.map(moneyFor).filter(m => m && (!total || sameCur(m))).reduce((s, m) => s + m.minor, 0);
   // lines: how much of each line the counted transfers moved
   const lineSpecs = Array.isArray(terms.lines) ? terms.lines.map(l => ({ id: l.id, unit: l.quantity && l.quantity.unit, needed: l.quantity ? decNum(l.quantity) : null })) :
-    (P.refs.what !== undefined && !(P.state.what !== undefined && P.refs.what === undefined) ? [{ id: null, unit: chosen ? chosen.unit : (terms.quantity && terms.quantity.unit), needed: chosen ? decNum(chosen) : (isObj(terms.quantity) && terms.quantity.value !== undefined ? decNum(terms.quantity) : null) }] : []);
-  const isWork = P.refs.what === undefined && P.state.what !== undefined;
+    (Q.refs.what !== undefined && !(Q.state.what !== undefined && Q.refs.what === undefined) ? [{ id: null, unit: chosen ? chosen.unit : (terms.quantity && terms.quantity.unit), needed: chosen ? decNum(chosen) : (isObj(terms.quantity) && terms.quantity.value !== undefined ? decNum(terms.quantity) : null) }] : []);
+  const isWork = Q.refs.what === undefined && Q.state.what !== undefined;
   for (const l of lineSpecs) {
     let moved = 0, whole = false;
     for (const t of goods) {
@@ -1891,8 +1931,8 @@ function promiseStage(firstIn, poolIn) {
   else if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
   else if (!open && lives.some(o => declines.some(d => d.refs.answers === o.hash && isSide(who(d)) && who(d) !== who(o)))) out.stage = 'declined';
   // a block sent despite a live STOP is kept; consent decides what binds: the ask is read as declined in advance (consent.md)
-  else if (!open && consentFold(who(P) === from ? to : from, P.refs.author, pool, P.refs.under).word === 'stop') out.stage = 'declined';
-  else out.stage = who(P) === to && who(P) !== from ? 'asked' : 'offered';
+  else if (!open && consentFold(who(Q) === from ? to : from, Q.refs.author, pool, Q.refs.under).word === 'stop') out.stage = 'declined';
+  else out.stage = who(Q) === to && who(Q) !== from ? 'asked' : 'offered';
   return out;
 }
 function promiseView(first, blocks, opts) {

@@ -1018,8 +1018,9 @@ impl<'a> Checker<'a> {
                 if let (Some(t), true) = (target.filter(|t| type_of(t) == "promise"), principals.is_some()) {
                     let (tf, tt) = (rf(t, "from"), rf(t, "to"));
                     let is_side = |side: Option<&Value>| speaks(side);
-                    // An answer is judged once both sides are named; an `updates` (a stop) is the author's, whatever the sides.
-                    let judged = (tf.is_some() && tt.is_some()) || (r("answers").is_none() && r("updates").is_some());
+                    // An answer is judged once both sides are named; an `updates` (a stop) is the author's, whatever the sides, and an allocation (an
+                    // answer, with no sides of its own) is stopped by its author without the check judging whose side that is.
+                    let judged = (tf.is_some() && tt.is_some()) || (r("answers").is_none() && r("updates").is_some() && (tf.is_some() || tt.is_some()));
                     if answering && judged && !(tf.is_some() && is_side(tf)) && !(tt.is_some() && is_side(tt)) {
                         w.push(f("not_a_side", "a deal block is signed by a side of the deal, as it, or under its grant"));
                     }
