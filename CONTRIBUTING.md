@@ -14,7 +14,7 @@ Clone this repository. The spec is in [`spec/`](spec/) (start at [`spec/protocol
 
 ## Change it
 
-Changes come as pull requests on GitHub.
+Changes come as pull requests on GitHub. How a change is proposed and how versions work is in [`GOVERNANCE.md`](GOVERNANCE.md).
 
 1. Fork the repository and make a branch.
 2. Make one change. Keep it small; every change should make the system simpler.
