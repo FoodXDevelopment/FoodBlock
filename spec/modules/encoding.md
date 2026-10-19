@@ -33,6 +33,21 @@ A block holds at most 65,536 bytes; larger content is linked by its hash. A stre
 
 The door ops are `merkle_root`, `merkle_proof` and `merkle_verify` (`protocol.json`, `door`).
 
+## Other suites
+
+`std` is in core.md. `p256` and `sm` are two more rows of the same table in `protocol.json` (`suites`), for places where a key must be a platform key (a phone's secure hardware, a passkey) or a national standard applies.
+
+| Suite | Hash | Signature | Signing key (hex) | Signature (hex) | Encryption key (hex) | Envelope |
+|---|---|---|---|---|---|---|
+| `p256` | SHA-256 | ECDSA P-256 with SHA-256 | SPKI DER: `3059301306072a8648ce3d020106082a8648ce3d030107034200` then 65 bytes | `r` then `s`, 32 bytes each | ECDH P-256, 65 bytes (SEC1 uncompressed) | `p256-hkdf-sha256-aes-256-gcm` |
+| `sm` | SM3 | SM2 with SM3, user id `1234567812345678` | SPKI DER: `3059301306072a8648ce3d020106082a811ccf5501822d034200` then 65 bytes | `r` then `s`, 32 bytes each | SM2 curve ECDH, 65 bytes | `sm2-hkdf-sm3-sm4-gcm` |
+
+- **Seed to key.** For `p256` and `sm` the seed is the private scalar `d`, 32 bytes big-endian (it must lie in 1 to n-1). The public key is the SPKI hex of the table, built from the public point: `04` then `x` then `y`, 32 bytes each.
+- **ECDSA P-256.** `e` is SHA-256 of the bytes. The nonce `k` is derived by RFC 6979 section 3.2 with HMAC-SHA-256, the private scalar `d` and `h1` = the 32 bytes of `e`, no extra data; the first `k` in 1 to n-1 is used. `r` is the x coordinate of `kG` mod n, `s = k^-1 (e + r d) mod n`. `s` is not reduced to its low half. The signature is `r` then `s`, 32 bytes each, big-endian.
+- **SM2** is GM/T 0003.2-2012 with the user id `1234567812345678`. `ZA = SM3(ENTLA || ID || a || b || xG || yG || xA || yA)`, `ENTLA` the 16-bit big-endian bit length of the id, every number 32 bytes big-endian, `a`, `b`, `G` the curve `sm2p256v1` of GM/T 0003.5 and `A` the signer's public point. `e = SM3(ZA || bytes)` as a 256-bit integer. The nonce `k` is derived by RFC 6979 section 3.2 with HMAC-SM3, `d` and `h1` = the 32 bytes of `e`. `r = (e + x1) mod n` where `(x1, y1) = kG`, and `s = ((1 + d)^-1 (k - r d)) mod n`. A pair with `r = 0`, `r + k = n` or `s = 0` takes the next `k` of the RFC 6979 sequence. The signature is `r` then `s`, 32 bytes each.
+- SM3 is GM/T 0004-2012, SM4 is GM/T 0002-2012 (block cipher, 16-byte key), SM4-GCM is NIST SP 800-38D over SM4 with a 12-byte nonce, a 16-byte tag and no additional data, and HKDF-SM3 is HKDF of RFC 5869 with HMAC-SM3.
+- The `p256` signature has two forms: the 64-byte ECDSA signature, and a longer **passkey** form, a WebAuthn assertion that carries its own challenge (passkeys.md). A reader tells them apart by length. The passkey signature is made by the authenticator and is not deterministic.
+
 ## The compact form (CBOR)
 
 For links where JSON is too heavy (a radio, a tag, a sensor) a **public block** may travel as CBOR (RFC 8949, a compact binary form of JSON), media type `application/foodblock+cbor`. It is a transport form only. **The id is always the hash of the canonical JSON.** A receiver rebuilds the block, writes its canonical JSON (canonical.md), hashes it, and verifies the signature over that JSON. It never hashes or signs CBOR bytes.

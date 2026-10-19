@@ -1,12 +1,12 @@
 # Passkeys
 
-A passkey is a FoodBlock key. The phone's own sign-in, a fingerprint or a face, signs the block. No seed phrase, no key file, no app to install. This page is the one signature form that makes it so. It belongs to the `p256` suite (core.md, Suites).
+A passkey is a FoodBlock key. The phone's own sign-in, a fingerprint or a face, signs the block. No seed phrase, no key file, no app to install. This page is the one signature form that makes it so. It belongs to the `p256` suite (encoding.md, Other suites).
 
 **The idea.** A passkey is a P-256 key that never leaves the person's device. To use it, a program asks the device to sign a *challenge*. The device signs a small package (WebAuthn, the browser standard for passkeys) that holds the challenge. FoodBlock sets the challenge to the hash of the block. So the signature on the package is a signature on the block, and anyone can check it with the key and the block alone.
 
 ## The key
 
-The key is an ordinary `p256` signing key (core.md): `state.public_key_sign` in the genesis or a key grant, `state.suite: "p256"`. WebAuthn gives it as SPKI DER (`getPublicKey()` with algorithm ES256, -7), which is the same bytes. From a COSE key (`x`, `y`, 32 bytes each) it is the suite's SPKI prefix, then `04`, `x`, `y`. Nothing marks a key as a passkey: the same key signs either way. A passkey that signed the genesis is the identity.
+The key is an ordinary `p256` signing key (encoding.md, Other suites): `state.public_key_sign` in the genesis or a key grant, `state.suite: "p256"`. WebAuthn gives it as SPKI DER (`getPublicKey()` with algorithm ES256, -7), which is the same bytes. From a COSE key (`x`, `y`, 32 bytes each) it is the suite's SPKI prefix, then `04`, `x`, `y`. Nothing marks a key as a passkey: the same key signs either way. A passkey that signed the genesis is the identity.
 
 ## The signature
 
@@ -19,7 +19,7 @@ The signature (hex) is these bytes, in this order:
 | `authenticatorData` | as long as the length says, at least 37 |
 | `clientDataJSON` | all the rest, at least 1 |
 
-A signature of exactly 64 bytes is the plain form (core.md). One of more is the passkey form. It travels where a signature travels: in the message `signature`, in the CBOR byte string, in the store. No other field travels with the block, and a reader needs nothing but the block, the signature and the key.
+A signature of exactly 64 bytes is the plain form (encoding.md, Other suites). One of more is the passkey form. It travels where a signature travels: in the message `signature`, in the CBOR byte string, in the store. No other field travels with the block, and a reader needs nothing but the block, the signature and the key.
 
 ## What was signed, and the challenge
 
@@ -32,7 +32,7 @@ For the bytes `M` a signature covers (a block's canonical bytes; for a signed me
 
 `verify(M, signature, key)` is true when all of these hold; otherwise false, with no reason given:
 
-1. The key is a P-256 key (core.md) and the signature is longer than 64 bytes and parses as the table says.
+1. The key is a P-256 key (encoding.md, Other suites) and the signature is longer than 64 bytes and parses as the table says.
 2. Bit 0 of the flags byte of `authenticatorData` (byte 32) is set: the user was present (`UP`).
 3. `clientDataJSON` is UTF-8 JSON, an object, with no key repeated at any depth. Its `type` is the text `webauthn.get` and its `challenge` is the text above, byte for byte. No other member is read.
 4. The ECDSA signature `r`, `s` opens over `authenticatorData || SHA-256(clientDataJSON)` with the key.

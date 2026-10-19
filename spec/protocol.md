@@ -6,7 +6,7 @@ This is the index. The spec is one short core, thirteen modules, and a folder of
 
 ## Files
 
-- `core.md`: a block, the types and verbs, suites, numbers and time, the genesis, the chain, messages, required fields, `valid(block, context)` and invariants 1 to 3 and 25. Buildable alone with canonical.md.
+- `core.md`: a block, the types and verbs, the `std` suite and how a suite is named, numbers and time, the genesis, the chain, messages, required fields, `valid(block, context)` and invariants 1 to 3 and 25. Buildable alone with canonical.md.
 - `canonical.md`: the one exact byte form of a block (RFC 8785 plus strict writing).
 - `modules/blocks.md`: the other fields a block carries, causal order, no clock, records, refusals.
 - `modules/identity.md`: keys, rotation, recovery, custody, contacts.
@@ -19,7 +19,7 @@ This is the index. The spec is one short core, thirteen modules, and a folder of
 - `modules/nodes.md`: messages, pull, push, admission, discovery, equivocation, finding.
 - `modules/folds.md`: folds and views, the orderer, ownership, the promise stage.
 - `modules/consent.md`: a human author for a first message to a stranger, consent as a block.
-- `modules/encoding.md`: bytes, shapes, limits, the compact CBOR form.
+- `modules/encoding.md`: bytes, shapes, limits, large content (the Merkle root), the other suites (`p256`, `sm`), the compact CBOR form.
 - `modules/peers.md`: micro, edge, node.
 - `transport.md`: email and other envelopes. A convention beside the protocol.
 - `profiles/`: optional profiles (below).

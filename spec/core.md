@@ -37,23 +37,16 @@ The **id** of a block is the hash of its canonical bytes (canonical.md). The aut
 
 ## 2. Suites: hash, signature, key agreement
 
-A **suite** names a hash, a signature algorithm and an envelope (key agreement and encryption) together. The default is `std`. The suites are in `protocol.json` (`suites`).
+A **suite** names a hash, a signature algorithm and an envelope (key agreement and encryption) together. The default is `std`. The suites are in `protocol.json` (`suites`). This page defines `std`, which is all a micro needs. The others (`p256`, `sm`) are rows of the same shape, written out in modules/encoding.md, Other suites.
 
 | Suite | Hash | Signature | Signing key (hex) | Signature (hex) | Encryption key (hex) | Envelope |
 |---|---|---|---|---|---|---|
 | `std` | SHA-256 | Ed25519, RFC 8032 | SPKI DER: `302a300506032b6570032100` then 32 bytes | 64 bytes | X25519, 32 raw bytes | `x25519-hkdf-sha256-aes-256-gcm` |
-| `p256` | SHA-256 | ECDSA P-256 with SHA-256 | SPKI DER: `3059301306072a8648ce3d020106082a8648ce3d030107034200` then 65 bytes | `r` then `s`, 32 bytes each | ECDH P-256, 65 bytes (SEC1 uncompressed) | `p256-hkdf-sha256-aes-256-gcm` |
-| `sm` | SM3 | SM2 with SM3, user id `1234567812345678` | SPKI DER: `3059301306072a8648ce3d020106082a811ccf5501822d034200` then 65 bytes | `r` then `s`, 32 bytes each | SM2 curve ECDH, 65 bytes | `sm2-hkdf-sm3-sm4-gcm` |
 
 **How a signature is made.** The signed bytes are the UTF-8 canonical bytes (canonical.md) of what is signed; no hash is signed separately except as the algorithm says.
-- **Seed to key.** A test or device key is made from a 32-byte seed. For `std` the seed is the Ed25519 private key of RFC 8032. For `p256` and `sm` the seed is the private scalar `d`, 32 bytes big-endian (it must lie in 1 to n-1). The public key is the SPKI hex of the table, built from the public point (`std`: the 32-byte RFC 8032 key; the others: `04` then `x` then `y`, 32 bytes each).
+- **Seed to key.** A test or device key is made from a 32-byte seed: the Ed25519 private key of RFC 8032. The public key is the SPKI hex of the table, built from the 32-byte RFC 8032 public key.
 - **Ed25519** is deterministic by RFC 8032 (pure Ed25519, the message is the bytes).
-- **ECDSA P-256.** `e` is SHA-256 of the bytes. The nonce `k` is derived by RFC 6979 section 3.2 with HMAC-SHA-256, the private scalar `d` and `h1` = the 32 bytes of `e`, no extra data; the first `k` in 1 to n-1 is used. `r` is the x coordinate of `kG` mod n, `s = k^-1 (e + r d) mod n`. `s` is not reduced to its low half. The signature is `r` then `s`, 32 bytes each, big-endian.
-- **SM2** is GM/T 0003.2-2012 with the user id `1234567812345678`. `ZA = SM3(ENTLA || ID || a || b || xG || yG || xA || yA)`, `ENTLA` the 16-bit big-endian bit length of the id, every number 32 bytes big-endian, `a`, `b`, `G` the curve `sm2p256v1` of GM/T 0003.5 and `A` the signer's public point. `e = SM3(ZA || bytes)` as a 256-bit integer. The nonce `k` is derived by RFC 6979 section 3.2 with HMAC-SM3, `d` and `h1` = the 32 bytes of `e`. `r = (e + x1) mod n` where `(x1, y1) = kG`, and `s = ((1 + d)^-1 (k - r d)) mod n`. A pair with `r = 0`, `r + k = n` or `s = 0` takes the next `k` of the RFC 6979 sequence. The signature is `r` then `s`, 32 bytes each.
-- SM3 is GM/T 0004-2012, SM4 is GM/T 0002-2012 (block cipher, 16-byte key), SM4-GCM is NIST SP 800-38D over SM4 with a 12-byte nonce, a 16-byte tag and no additional data, and HKDF-SM3 is HKDF of RFC 5869 with HMAC-SM3.
-- **Verifiers accept any valid signature.** A writer must derive its nonce as above, so that two implementations given the same key and bytes write the same signature (the vectors check exact bytes). A passkey signature (modules/passkeys.md) is made by the authenticator and is not deterministic.
-
-The `p256` signature has two forms: the 64-byte ECDSA signature, and a longer **passkey** form, a WebAuthn assertion that carries its own challenge (modules/passkeys.md). A reader tells them apart by length.
+- **Verifiers accept any valid signature.** A writer must derive its nonce as the suite says, so that two implementations given the same key and bytes write the same signature (the vectors check exact bytes). A signature made by a device that is not deterministic (a passkey, modules/passkeys.md) is still a valid signature.
 
 A post-quantum suite (ML-DSA, ML-KEM, SHA3-256) is one more row. It is noted in `protocol.json` as `future` and is not usable until its sizes are fixed in vectors. A signature is never longer than the block limit allows.
 
