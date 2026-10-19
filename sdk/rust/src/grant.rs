@@ -76,6 +76,11 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
             wrong.push(wider("scope.limit is no larger than the parent's".into()));
         }
     }
+    // A sealed limit (a commitment) is compared only on the principal's node, where the amount is. Everyone else checks that the child
+    // still carries a limit: a commitment of its own, or a visible limit.
+    if truthy(p.get("limit_commitment")) && !(truthy(c.get("limit_commitment")) || truthy(c.get("limit"))) {
+        wrong.push(wider("scope carries a limit (a commitment or a visible limit), as the parent's does".into()));
+    }
     let duration = |key: &str, ok: fn(i32) -> bool| -> bool {
         match (
             c.get(key).and_then(Value::as_str),
@@ -368,13 +373,13 @@ pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
         get(g, "state.scope.acts")
             .and_then(Value::as_array)
             .is_some_and(|a| a.iter().any(|x| x.as_str() == Some(act.as_str())))
-            && truthy(get(g, "state.scope.limit"))
+            && (truthy(get(g, "state.scope.limit")) || truthy(get(g, "state.scope.limit_commitment")))
     });
     if asked || granted {
         vec![]
     } else {
         vec![format!(
-            "{act} may not be undone: it needs a trusted schema that says undo ok, a specific ask its principal answered accepted, or a grant that names it and has a limit"
+            "{act} may not be undone: it needs a trusted schema that says undo ok, a specific ask its principal answered accepted, or a grant that names it and has a limit (visible, or sealed as a commitment)"
         )]
     }
 }
@@ -384,7 +389,8 @@ pub fn why_not_under(block: &Value, blocks: &[Value], now: Option<&str>) -> Vec<
     why_not_under_in(block, &crate::js::held_index(blocks), now)
 }
 
-/// Who answers for an agent or machine: the authors of its live grants of kind operator, naming it in refs.to (§2).
+/// Who answers for an autonomous system or machine: the authors of its live grants of kind operator, naming it in refs.to and no `subject` (§2).
+/// An operator grant that names a `subject` appoints `to` as operator of that thing (a sensor); it makes its author no one's operator.
 pub fn operators_of(agent: &str, blocks: &[Value], now: Option<&str>) -> Vec<String> {
     let index = crate::js::held_index(blocks);
     let authors: Vec<&str> = index
@@ -393,6 +399,7 @@ pub fn operators_of(agent: &str, blocks: &[Value], now: Option<&str>) -> Vec<Str
             crate::js::type_of(b) == "grant"
                 && ss(b, "kind") == Some("operator")
                 && rs(b, "to") == Some(agent)
+                && rs(b, "subject").is_none()
                 && st(b, "status").is_none()
                 && is_live_in(b, &index, now)
         })
@@ -405,10 +412,16 @@ pub fn operators_of(agent: &str, blocks: &[Value], now: Option<&str>) -> Vec<Str
 /// The `observe` of kind limit for a grant, as `{ type, state, refs, audience }` to hand to `write`: `agent`, the
 /// grant's receiver, is its whole audience, so no counterparty ever reads the limit and the grant check never looks
 /// at it.
-pub fn limit_fence(grant_hash: &str, agent: &str, limit: &Value, per: Option<&str>) -> Value {
+///
+/// With a `salt`, the observe also carries it: whoever holds the observe can open the grant's `scope.limit_commitment`
+/// (`limit_opens`). The salt is private to the principal's node and the autonomous system.
+pub fn limit_fence(grant_hash: &str, agent: &str, limit: &Value, per: Option<&str>, salt: Option<&str>) -> Value {
     let mut state = json!({ "kind": "limit", "limit": limit });
     if let Some(p) = per.filter(|p| !p.is_empty()) {
         state["per"] = json!(p);
+    }
+    if let Some(s) = salt.filter(|s| !s.is_empty()) {
+        state["salt"] = json!(s);
     }
     json!({ "type": "observe", "state": state, "refs": { "for": grant_hash }, "audience": [agent] })
 }
@@ -422,4 +435,32 @@ pub fn within_limit(limit: &Value, money: &Value, spent: i64) -> bool {
         return false;
     };
     cap.get("currency").is_some() && cap.get("currency") == money.get("currency") && spent + minor <= cap_minor
+}
+
+/// The commitment to a limit (authority.md, The limit is the principal's fence): the salted hash (privacy.md) of the canonical JSON of
+/// `{ limit, per }` (`per` left out when there is none), in a suite's hash. It goes in the grant's `scope.limit_commitment`.
+pub fn limit_commitment_in(suite: &str, limit: &Value, per: Option<&str>, salt: &str) -> String {
+    let mut value = json!({ "limit": limit });
+    if let Some(p) = per.filter(|p| !p.is_empty()) {
+        value["per"] = json!(p);
+    }
+    crate::audience::salted_hash_in(suite, salt, &crate::canonical::canonical_json(&value))
+}
+
+/// Whether the limit observe is the opening of the grant's `scope.limit_commitment`: the observe is of kind `limit`, `for` this grant,
+/// and its `limit`, `per` and `salt` hash to the commitment. This is the check on the principal's node (and the autonomous system's); a reader without
+/// the observe can only see that the commitment exists.
+pub fn limit_opens_in(suite: &str, grant: &Value, fence: &Value) -> bool {
+    let Some(commitment) = get(grant, "state.scope.limit_commitment").and_then(Value::as_str) else {
+        return false;
+    };
+    crate::js::type_of(fence) == "observe"
+        && ss(fence, "kind") == Some("limit")
+        && list(rf(fence, "for")).contains(&hash_of(grant))
+        && match (st(fence, "limit"), st(fence, "salt").and_then(Value::as_str)) {
+            (Some(limit), Some(salt)) => {
+                limit_commitment_in(suite, limit, st(fence, "per").and_then(Value::as_str), salt) == commitment
+            }
+            _ => false,
+        }
 }

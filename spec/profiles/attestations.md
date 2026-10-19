@@ -12,7 +12,7 @@ Optional. Ties a key to a real-name person, a registered business or a device, f
 
 ## Devices
 
-A machine or a sensor that signs is an actor with its own key (identity.md, Agents and machines). Three signed facts, none new, say **"this device, set up by X, reported Y at T"**:
+A machine or a sensor that signs is an actor with its own key (identity.md, Autonomous systems and machines). Three signed facts, none new, say **"this device, set up by X, reported Y at T"**:
 
 - **The key is the device's.** An attestation (`kind_of: device`) signed by the maker or the installer, `refs.subject` the device, `state.scheme` how the key is held (`secure_element`, `installed_by`) and `state.value` the maker's serial or the thing it was set up at (a commitment, if private). An attestation for a sensor that cannot sign may name it in `refs.from`. A reader decides which issuers count, as for any attestation.
 - **Set up by X.** The sensor's **owner** says who may sign for it: an `operator` grant the owner signs, `refs.to` the device, `refs.subject` the sensor thing. Only the owner's word counts. A grant a stranger signs, or an installer who does not own the sensor, makes no one an operator of it. When the owner gives the sensor away (a transfer the new owner accepts), the old owner's grants stop counting, and the new owner's start; nothing needs to be revoked. The owner ends one by an `updates` that carries `status: stopped`. (The operator of a machine in identity.md is the same grant without `refs.subject`: who answers for the machine.)

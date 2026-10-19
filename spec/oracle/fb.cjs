@@ -633,6 +633,10 @@ function closedFindings(b, ctx, add) {
   if (type === 'grant' && isStr(state.kind) && state.kind !== '' && !asAnswer) {
     const scope = isObj(state.scope) ? state.scope : null;
     if (scope) for (const k of Object.keys(scope)) if (!P.scope.includes(k)) add(A, 'undeclared_field', 'scope.' + k);
+    if (scope && scope.limit_commitment !== undefined) { // a sealed limit (authority.md): a commitment, and never beside a visible limit
+      if (!isStr(scope.limit_commitment) || idProblem(scope.limit_commitment)) add(A, 'grammar', 'scope.limit_commitment is a commitment');
+      if (scope.limit !== undefined) add(A, 'shape', 'a visible limit or a limit_commitment, never both');
+    }
     const readByProtocol = ['key', 'member', 'operator'].includes(state.kind);
     if (readByProtocol) { if (scope && scope.until !== undefined) add(A, 'scope_until', state.kind + ' grants carry no scope.until'); }
     else if (!PROFILE_GRANT_KINDS.has(state.kind) && !(scope && scope.until !== undefined)) add(A, 'scope_until', 'a grant others act under carries scope.until');
@@ -672,6 +676,8 @@ function scopeWithin(child, parent) {
     if (c.limit === undefined) return false;
     if (jcs(c.limit.currency) !== jcs(p.limit.currency) || c.limit.minor > p.limit.minor) return false;
   }
+  // a sealed limit is compared only where the amount is (the principal's node); here the child must still carry a limit
+  if (p.limit_commitment !== undefined && c.limit_commitment === undefined && c.limit === undefined) return false;
   const at = parent.at || child.at;
   if (p.per !== undefined) {
     if (c.per === undefined) { if (c.limit !== undefined) return false; }
@@ -912,13 +918,13 @@ function computeIdentity(id, pool, visiting) {
   const res = { signed_by_author: sba, keys: keyList.slice().sort(), frozen: [...frozen].filter(k => st.keys.has(k)).sort(), operators: [], info, cutoff, keyMap: st.keys, ended, timeline, rotations: st.rotations, rh, recoveryOk, genKey, idSuite, order, counting };
   return res;
 }
-// The operators of an agent or machine: authors of live grants of kind operator naming it in refs.to.
+// The operators of an autonomous system or machine: authors of live grants of kind operator naming it in refs.to and no subject (a grant with a subject appoints an operator of a thing).
 function operatorsOf(id, poolIn, visiting) {
   const pool = poolOf(poolIn);
   visiting = visiting || new Set();
   const out = new Set();
   for (const gr of pool.all()) {
-    if (gr.type !== 'grant' || gr.state.kind !== 'operator' || gr.refs.to !== id || !isStr(gr.refs.author)) continue;
+    if (gr.type !== 'grant' || gr.state.kind !== 'operator' || gr.refs.to !== id || gr.refs.subject !== undefined || !isStr(gr.refs.author)) continue;
     if (visiting.has(gr.refs.author) && gr.refs.author !== id) { /* in progress: read below */ }
     const O = gr.refs.author;
     if (O === id) continue;
@@ -1481,7 +1487,7 @@ function whyNotUnder(b, poolIn) {
     const mark = trusted ? S.state.undo : undefined;
     // irreversible: a trusted schema says never (whatever the block's type), or the act moves things or binds and no trusted schema says ok
     if (mark === 'never' || (mark !== 'ok' && moves)) {
-      const specificGrant = sc.limit !== undefined && asList(sc.acts).includes(act);
+      const specificGrant = (sc.limit !== undefined || sc.limit_commitment !== undefined) && asList(sc.acts).includes(act);
       const askedAndAccepted = asList(b.refs.for).some(h => {
         const ask = pool.get(h);
         return ask && ask.type === 'promise' && (ask.state.what === act || (ask.refs.schema !== undefined && ask.refs.schema === b.refs.schema)) &&
@@ -2129,7 +2135,7 @@ function depositPaid(ask, deposit, blocks) {
   return pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ask.hash) && t.refs.to_owner === deposit.holder && isObj(t.state.money) &&
     jcs(t.state.money.currency) === jcs(deposit.money.currency) && t.state.money.minor >= deposit.money.minor && counts(t, pool));
 }
-// A model's reading is the agent's claim; it becomes the person's only when she puts that fact to someone else in her own step (things.md, Truth)
+// A model's reading is the autonomous system's claim; it becomes the person's only when she puts that fact to someone else in her own step (things.md, Truth)
 const readingIsPersonsClaim = (reading, person, blocks) => reading.state.kind === 'reading' && poolOf(blocks).all().some(b => b.refs.author === person && asList(b.refs.derives_from).includes(reading.hash) && [...asList(b.refs.to), ...asList(b.refs.to_owner)].some(x => x !== person));
 
 // ================================================================ messages (privacy.md, nodes.md)
@@ -2229,7 +2235,7 @@ function decCmp(x, y) { // decimal strings (core.md section 3), compared exactly
 function readingConditionHolds(c, blocks, now) {
   if (!c || !isStr(c.reading) || !isStr(c.kind) || !isStr(c.op) || !isStr(c.over) || !c.value || !isStr(c.value.value)) return false;
   const start = addDur(now, c.over, -1);
-  // a reading counts only if its signer is the sensor itself, the sensor's owner (the ownership fold of the sensor thing), or an agent the owner named:
+  // a reading counts only if its signer is the sensor itself, the sensor's owner (the ownership fold of the sensor thing), or an autonomous system the owner named:
   // the receiver of a live operator grant the owner signed whose refs.subject names the sensor (tasks.md)
   const pool = poolOf(blocks || []);
   const sensorBlock = pool.get(c.reading);
@@ -2257,14 +2263,32 @@ function merkleProof(chunks, index) {
   for (const level of merkleLevels(chunks)) { if (level.length === 1) break; if (at % 2 === 1) out.push(level[at - 1].toString('hex')); else if (at + 1 < level.length) out.push(level[at + 1].toString('hex')); at = Math.floor(at / 2); }
   return out;
 }
-function merkleVerify(root, chunk, index, count, proof) {
-  if (!Number.isInteger(index) || !Number.isInteger(count) || count < 1 || index < 0 || index >= count || !Array.isArray(proof) || !/^[0-9a-f]*$/.test(chunk) || chunk.length % 2) return false;
+// The reader's check (encoding.md): the block holds exactly one merkle mark, and its state.chunks is the signed count.
+function merkleVerify(block, chunk, index, proof) {
+  const st = block && block.state;
+  if (!isObj(st) || !Array.isArray(st.marks)) return false;
+  const roots = st.marks.filter(m => isObj(m) && m.scheme === 'merkle');
+  if (roots.length !== 1 || !isStr(roots[0].value) || !Number.isInteger(st.chunks) || st.chunks < 1) return false;
+  const root = roots[0].value, count = st.chunks;
+  if (!Number.isInteger(index) || index < 0 || index >= count || !Array.isArray(proof) || !/^[0-9a-f]*$/.test(chunk) || chunk.length % 2) return false;
   let h = merkleLeaf(Buffer.from(chunk, 'hex')), at = index, width = count, used = 0;
   while (width > 1) {
     if (at % 2 === 1 || at + 1 < width) { const s = proof[used++]; if (typeof s !== 'string' || !/^[0-9a-f]{64}$/.test(s)) return false; h = at % 2 === 1 ? merkleNode(Buffer.from(s, 'hex'), h) : merkleNode(h, Buffer.from(s, 'hex')); }
     at = Math.floor(at / 2); width = Math.ceil(width / 2);
   }
   return used === proof.length && h.toString('hex') === root;
+}
+
+// ================================================================ a sealed limit (authority.md, The limit is the principal's fence)
+// The commitment: the salted hash (privacy.md) of the canonical JSON of { limit, per }, per left out when there is none.
+function limitCommitment(limit, per, salt, suite) { const v = { limit }; if (per) v.per = per; return saltedHash(salt, v, suite); }
+// The principal's node (and the autonomous system) open it: the observe of kind limit, for the grant, whose limit, per and salt commit to scope.limit_commitment.
+function limitOpens(grant, fence, suite) {
+  const c = grant && isObj(grant.state) && isObj(grant.state.scope) ? grant.state.scope.limit_commitment : undefined;
+  if (!isStr(c) || !fence || fence.type !== 'observe' || !isObj(fence.state) || fence.state.kind !== 'limit') return false;
+  if (!asList(fence.refs && fence.refs.for).includes(grant.hash)) return false;
+  if (fence.state.limit === undefined || !isStr(fence.state.salt)) return false;
+  return limitCommitment(fence.state.limit, fence.state.per, fence.state.salt, suite) === c;
 }
 
 // ================================================================ the door: one case per rule
@@ -2296,7 +2320,9 @@ function door(op, ...a) {
     case 'base_fields': return baseFields(a[0]);
     case 'merkle_root': return merkleRoot(a[0]);
     case 'merkle_proof': return merkleProof(a[0], a[1]);
-    case 'merkle_verify': return merkleVerify(a[0], a[1], a[2], a[3], a[4]);
+    case 'merkle_verify': return merkleVerify(a[0], a[1], a[2], a[3]);
+    case 'limit_commitment': return limitCommitment(a[0], a[1], a[2], a[3]);
+    case 'limit_opens': return limitOpens(a[0], a[1], a[2]);
     case 'recovery_key_hash': return recoveryKeyHash(a[0], a[1]);
     case 'salted_hash': return saltedHash(a[0], a[1], a[2]);
     case 'wrap': return wrap(a[0]);

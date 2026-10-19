@@ -82,3 +82,22 @@ pub fn verify(root_hex: &str, chunk: &[u8], index: usize, count: usize, proof: &
     }
     used == proof.len() && hex(&h) == root_hex
 }
+
+/// The check a reader makes of a block that names a Merkle root: the block's `state.marks` holds exactly one mark
+/// `{ scheme: "merkle", value: <root> }` and its `state.chunks` is the signed count (an integer, at least 1). `proof` shows that `chunk`
+/// is chunk number `index` of that many chunks under that root. The count is never an argument: the one who offers the chunk cannot choose it.
+pub fn verify_block(block: &Value, chunk: &[u8], index: usize, proof: &[String]) -> bool {
+    let Some(state) = block.get("state") else { return false };
+    let roots: Vec<&Value> = state
+        .get("marks")
+        .and_then(Value::as_array)
+        .map(|m| m.iter().filter(|x| x.get("scheme").and_then(Value::as_str) == Some("merkle")).collect())
+        .unwrap_or_default();
+    let (Some(root), Some(count)) = (
+        roots.first().filter(|_| roots.len() == 1).and_then(|m| m.get("value")).and_then(Value::as_str),
+        state.get("chunks").and_then(Value::as_u64).filter(|n| *n >= 1),
+    ) else {
+        return false;
+    };
+    verify(root, chunk, index, count as usize, proof)
+}

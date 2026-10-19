@@ -58,8 +58,8 @@ const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").spl
  * @param reviewer    { passphrase }: enables reviewer sign-in as reviewer-<name>   openaiChallenge  token for /.well-known/openai-apps-challenge
  * @param extend      (api) => void: more pages for the signed-in person on this same app and session (api: app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson)
  */
-// `chat` (optional) is the person's own agent on every chat door, from the FoodOS host: { custody(personId) -> { keys, encryption, genesis } | null (people who first wrote from a chat
-// are held by FoodX as custodian, and sign in here with a code sent to a chat they use), signin: { start(phone), check(phone, code) -> personId | null }, talk(personId, words) -> the agent's answer }.
+// `chat` (optional) is the person's own autonomous system on every chat door, from the FoodOS host: { custody(personId) -> { keys, encryption, genesis } | null (people who first wrote from a chat
+// are held by FoodX as custodian, and sign in here with a code sent to a chat they use), signin: { start(phone), check(phone, code) -> personId | null }, talk(personId, words) -> the autonomous system's answer }.
 export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null, draftsFor = null, chat = null }) {
   const state = durableState(stateFile), seal = sealer(master), allow = limiter(now);
   const secure = publicUrl.startsWith("https:");

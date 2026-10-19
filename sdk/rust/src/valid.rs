@@ -173,7 +173,7 @@ pub fn valid_in_closed(block: &Value, held: &Index, schemas: Option<&Index>, arr
             "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to",
         ));
     }
-    // A key is rotated only by itself, by the recovery key, or by the operator of an agent or machine.
+    // A key is rotated only by itself, by the recovery key, or by the operator of an autonomous system or machine.
     if t == "grant" && ss(block, "kind") == Some("key") && truthy(st(block, "replaces")) && !recovery_signed {
         if let Some(e) = &signer_entry {
             if Some(e.key.as_str()) != ss(block, "replaces") {

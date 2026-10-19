@@ -290,7 +290,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         .iter()
         .filter(|b| status(b, "stopped") && ss(b, "stop") == Some("before") && (!open || by_offerer(b)))
         .collect();
-    // An agent's ask is a quote request unless its grant names the act: no accept of it binds. The grantor's own
+    // An autonomous system's ask is a quote request unless its grant names the act: no accept of it binds. The grantor's own
     // `accepted` answer to it, or a grant that lists `promise` in scope.acts, makes it bind (promises.md, invariant 22).
     let quote_only = |offer: &Value| -> bool {
         let grant = rs(offer, "under").and_then(|h| index.get(h));

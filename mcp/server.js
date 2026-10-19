@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The FoodBlock MCP server: the door (door.js) behind two transports. Any assistant can find, read, ask and promise on
-// FoodBlock. The assistant drafts; the person decides, with one tap on an approval page. Six tools; a hosted door (the host has the person's agent) offers `ask_my_foodos` first, then find and read only:
+// FoodBlock. The assistant drafts; the person decides, with one tap on an approval page. Six tools; a hosted door (the host has the person's autonomous system) offers `ask_my_foodos` first, then find and read only:
 //   foodblock_find, foodblock_read, foodblock_ask, foodblock_promise, foodblock_accept, foodblock_connect
 //
 //   node server.js                 stdio (Claude Desktop, Claude Code, Cursor, Gemini CLI)
@@ -26,7 +26,7 @@ import { remoteNode, remoteIndex } from "./remote.js";
 import { doorProvider, authorizedApp } from "./auth.js";
 
 const APP_MIME = "text/html;profile=mcp-app", APPROVAL_CARD_URI = "ui://foodx/approval-card";
-// The approval card, an MCP App: it draws the agent's answer and, when there is an approval_url, one button to our own page. It binds nothing itself.
+// The approval card, an MCP App: it draws the autonomous system's answer and, when there is an approval_url, one button to our own page. It binds nothing itself.
 const APPROVAL_CARD = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;margin:0;padding:12px"><div id="a"></div><p id="b"></p><p style="font-size:12px;opacity:.7">FoodX. Built on the open FoodBlock protocol.</p><script>
 const show=(r)=>{const o=r&&(r.structuredContent||(()=>{try{return JSON.parse(r.content[0].text)}catch{return null}})());if(!o)return;document.getElementById('a').textContent=o.answer||'';if(o.approval_url){const l=document.createElement('a');l.href=o.approval_url;l.target='_blank';l.rel='noopener';l.textContent='Review and say yes';l.style='display:inline-block;padding:8px 14px;border-radius:10px;background:#14301f;color:#fff;text-decoration:none';document.getElementById('b').replaceChildren(l)}};
 addEventListener('message',(e)=>{const m=e.data;if(m&&m.method==='ui/notifications/tool-result')show(m.params)});if(window.openai&&window.openai.toolOutput)show({structuredContent:window.openai.toolOutput});
@@ -46,7 +46,7 @@ const terms = {
   deliver_by: z.string().optional().describe("UTC time YYYY-MM-DDTHH:MM:SS.sssZ"), expires: z.string().optional().describe("when this lapses if unanswered; default 7 days"),
 };
 
-/** One assistant's view of the door: its own agent identity, six tools (each with a title and honest annotations). */
+/** One assistant's view of the door: its own autonomous system identity, six tools (each with a title and honest annotations). */
 export function createServer({ door, name = "assistant", assistant: given } = {}) {
   door ||= createDoor();
   const index = door.index || null; // the open index, when one is set: find asks it; read, ask and promise stay on the host
@@ -64,8 +64,8 @@ export function createServer({ door, name = "assistant", assistant: given } = {}
   const tool = (id, title, description, inputSchema, annotations, run, scope, meta = {}) =>
     server.registerTool(id, { title, description, inputSchema, annotations: { title, readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false, ...annotations }, _meta: { securitySchemes: [{ type: "oauth2", scopes: [scope] }], ...meta } }, guard(run, scope));
 
-  // The main tool: inside any assistant (ChatGPT, Claude, Meta AI, Siri...) the person's own FoodX agent talks; the assistant relays the words and the answer.
-  // The host has the agent when it gives the door `talk`. Then this is a hosted door: it finds and reads, and anything that binds happens on the approval page the answer links to.
+  // The main tool: inside any assistant (ChatGPT, Claude, Meta AI, Siri...) the person's own FoodX autonomous system talks; the assistant relays the words and the answer.
+  // The host has the autonomous system when it gives the door `talk`. Then this is a hosted door: it finds and reads, and anything that binds happens on the approval page the answer links to.
   const hosted = Boolean(door.talk);
   if (hosted) {
     server.registerResource("approval-card", APPROVAL_CARD_URI, { title: "Approval card", description: "The one place a person says yes: shows the exact words and a button to our approval page.", mimeType: APP_MIME }, async () => ({ contents: [{ uri: APPROVAL_CARD_URI, mimeType: APP_MIME, text: APPROVAL_CARD }] }));

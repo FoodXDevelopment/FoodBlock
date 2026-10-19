@@ -211,15 +211,15 @@ check('rule 9: an acceptance and a stop that carry only status, no kind and no s
 check('merkle: the core and the oracle give one root and one proof for every chunk of 1 to 40 chunks, and every proof opens', () => {
   const chunks = (n) => Array.from({ length: n }, (_, i) => Buffer.from(`chunk ${i}`).toString('hex'))
   for (let n = 1; n <= 40; n++) {
-    const c = chunks(n), root = call('merkle_root', c)
+    const c = chunks(n), root = call('merkle_root', c), named = { type: 'thing', state: { kind: 'stream', marks: [{ scheme: 'merkle', value: root }], chunks: n }, refs: {} }
     assert.equal(oracle.door('merkle_root', c), root, `root of ${n}`)
     for (let i = 0; i < n; i++) {
       const proof = call('merkle_proof', c, i)
       assert.deepEqual(oracle.door('merkle_proof', c, i), proof, `proof ${i} of ${n}`)
-      assert.equal(call('merkle_verify', root, c[i], i, n, proof), true)
-      assert.equal(oracle.door('merkle_verify', root, c[i], i, n, proof), true)
+      assert.equal(call('merkle_verify', named, c[i], i, proof), true)
+      assert.equal(oracle.door('merkle_verify', named, c[i], i, proof), true)
       const other = c[(i + 1) % n]
-      if (n > 1) { assert.equal(call('merkle_verify', root, other, i, n, proof), false); assert.equal(oracle.door('merkle_verify', root, other, i, n, proof), false) }
+      if (n > 1) { assert.equal(call('merkle_verify', named, other, i, proof), false); assert.equal(oracle.door('merkle_verify', named, other, i, proof), false) }
     }
   }
 })
@@ -283,6 +283,10 @@ check('device attestation: the owner\'s device and the owner count; a stranger\'
   assert.equal(both('reading_condition_holds', frost, without('device'), at(4)), false, 'without the device\'s readings there is none at the start of the hour: the rogue\'s -9 C and the owner\'s -1 C do not carry it')
   const onlyRogue = c12.blocks.filter((b) => !(b.type === 'observe' && b.state.kind === 'temperature' && b.refs.author !== c12.people['rogue-device'].id))
   assert.equal(both('reading_condition_holds', frost, onlyRogue, at(4)), false, 'only the rogue device\'s reading is held: neither the stranger\'s nor the installer\'s grant makes it an operator of the probe')
+})
+check('device attestation: an operator grant that names a sensor makes its author no one\'s operator (the owner answers for nobody by it)', () => {
+  const ops = (id) => [fb.grant.operatorsOf(id, c12.blocks), oracle.operatorsOf(id, c12.blocks)]
+  for (const who of ['device', 'rogue-device']) for (const found of ops(c12.people[who].id)) assert.deepEqual(found, [], who)
 })
 check('device attestation: when the owner gives the sensor away, the old owner\'s grants stop counting and the new owner\'s start', () => {
   const sensor = c12.blocks.find((b) => b.type === 'thing' && b.state.name === 'frost probe')

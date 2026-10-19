@@ -15,6 +15,7 @@ const chain = require('./chain.cjs')
 const order = require('./order.cjs')
 const identity = require('./identity.cjs')
 const grant = require('./grant.cjs')
+const merkle = require('./merkle.cjs')
 const fold = require('./fold.cjs')
 const sync = require('./sync.cjs')
 const keystore = require('./keystore.cjs')
@@ -55,7 +56,7 @@ module.exports = {
   nextLink: chain.nextLink, checkChain: chain.checkChain, causalOrder: order.causalOrder, pastOf: order.pastOf, sees: order.sees,
 
   // Who someone is; authority; the folds; between nodes
-  identity, grant, fold, sync,
+  identity, grant, fold, sync, merkle,
   promiseStage: fold.promiseStage, promiseView: fold.promiseView, consent: fold.consent, circleState: fold.circleState, identityState: identity.identityState, membersThen: fold.membersThen, whereNow: fold.whereNow, ownerOf: fold.ownerOf,
 
   // Keys kept on a person's device, locked with a recovery code (product custody, not protocol)

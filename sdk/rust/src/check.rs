@@ -627,6 +627,20 @@ impl<'a> Checker<'a> {
             ));
         }
         w.extend(self.money_shape(scope.get("limit"), "scope.limit"));
+        if let Some(c) = scope.get("limit_commitment") {
+            if !self.test("id", Some(c)) {
+                w.push(f(
+                    "grammar",
+                    "scope.limit_commitment is a commitment (a salted hash, written like an id)",
+                ));
+            }
+            if scope.get("limit").is_some() {
+                w.push(f(
+                    "shape",
+                    "a scope carries a visible limit or a limit_commitment, never both",
+                ));
+            }
+        }
         w.extend(self.duration_shape(scope.get("per"), "scope.per"));
         w.extend(self.duration_shape(scope.get("notice"), "scope.notice"));
         w
@@ -1468,7 +1482,7 @@ fn hashes_text(value: Option<&Value>) -> Vec<String> {
     }
 }
 
-// A side signs for itself, or a member signs as it (refs.as), or an agent under its grant (refs.under).
+// A side signs for itself, or a member signs as it (refs.as), or an autonomous system under its grant (refs.under).
 /// The places a block's time, date and duration fields are checked (protocol.json `time_fields_checked_in`): its state, its
 /// terms, its scope and each line of its terms.
 fn time_places(state: &Value) -> Vec<(String, &Value)> {

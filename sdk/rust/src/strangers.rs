@@ -65,7 +65,7 @@ fn operators(agent: &str, index: &Index) -> Vec<String> {
 
 /// The principals a sender acts for under a grant: the author of the grant the block names in `refs.under`, and the circle it
 /// was signed as, when that grant is live, is addressed to the sender (or open) and is one others act under (not a key or a
-/// member grant). Consent follows the principal: a word about her is a word about her agents acting under her live grant.
+/// member grant). Consent follows the principal: a word about her is a word about her autonomous systems acting under her live grant.
 fn principals(sender: &str, under: Option<&str>, index: &Index) -> Vec<String> {
     let Some(grant) = under.and_then(|u| index.get(u)) else { return vec![] };
     let acts_under = type_of(grant) == "grant" && !matches!(ss(grant, "kind"), Some("key" | "member"));
@@ -86,7 +86,7 @@ fn principals(sender: &str, under: Option<&str>, index: &Index) -> Vec<String> {
 
 /// The `consent` fold: a person's live word about a sender (consent.md). The person is the block's
 /// `refs.from`, else its author. The person's own blocks count for every word and bind every sender. Anyone else may
-/// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an agent under
+/// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an autonomous system under
 /// that operator. Only the person lifts a stop: by her own block, or by a `yes` a recorder outside the asker's side
 /// received from her, with the stop in its causal past. The live word is the latest block that names the sender
 /// (or the sender's operator), else the latest that names no one, in causal order (a recorder's chain orders its own
@@ -176,7 +176,7 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], under: Opti
     }
 }
 
-/// Whether a block is an agent's: its author is an actor of kind `agent` or `machine`, or it names a grant in
+/// Whether a block is an autonomous system's: its author is an actor of kind `agent` or `machine`, or it names a grant in
 /// `refs.under` (consent.md).
 pub fn is_agents(block: &Value, index: &Index) -> bool {
     let kind_agent = rs(block, "author")
@@ -202,7 +202,7 @@ pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], under: Option
 
 /// The message refusals a node's admission and strangers rules give (protocol.json `refusals.codes.message`):
 /// `not_admitted` (the sender is not among the rule's `parties` and the node already took `per_stranger` blocks today
-/// from others) and `not_human` (a first block to a stranger an agent signed, outside the receiver's `order_channel`).
+/// from others) and `not_human` (a first block to a stranger an autonomous system signed, outside the receiver's `order_channel`).
 /// Not `stopped`: a block sent despite a live STOP is valid and kept, and the fold reads it as stopped (`consent`,
 /// `promise_stage`): consent decides what binds, not what exists. `admission` is the
 /// admission observe's state `{ parties, per_stranger, order_channel }` (null for none); `receiver` is the person the
@@ -240,7 +240,7 @@ pub fn admission_refusals(
 }
 
 /// A model's reading is not a person's observation (things.md, Truth): an `observe` of kind `reading` (an
-/// import is one, with `method: import`) signed by an agent's key is that agent's claim. Sharing it claims nothing,
+/// import is one, with `method: import`) signed by an autonomous system's key is that autonomous system's claim. Sharing it claims nothing,
 /// and neither does her private `confirms`. It is the person's own claim only when she puts that fact to someone else
 /// in her own step: a block of hers with the reading in `derives_from` that names someone other than herself in
 /// `refs.to` or `refs.to_owner`. True when `person` has done so among these blocks.

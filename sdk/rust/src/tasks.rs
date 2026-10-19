@@ -53,7 +53,7 @@ pub fn reading_condition_holds(condition: &Value, blocks: &[Value], now: &str) -
         return false;
     };
     let Some(start) = crate::time::add_duration(now, over, -1) else { return false };
-    // A reading counts only if its signer is the sensor itself, the sensor's owner (the ownership fold of the sensor thing), or an agent
+    // A reading counts only if its signer is the sensor itself, the sensor's owner (the ownership fold of the sensor thing), or an autonomous system
     // the owner named: the receiver of a live `operator` grant the owner signed whose `refs.subject` names the sensor. A grant anyone
     // else signs makes no one an operator of someone's sensor, and a rogue device that names the sensor in `refs.from` confirms nothing.
     let index = crate::js::held_index(blocks);

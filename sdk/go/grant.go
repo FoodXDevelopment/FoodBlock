@@ -22,9 +22,24 @@ func ScopeWithin(child, parent Block) []string {
 	return plural(must[[]string]("scope_within", child, parent))
 }
 
-// LimitFence is the observe of kind limit for a grant, to hand to Write: its audience is the agent alone.
+// LimitFence is the observe of kind limit for a grant, to hand to Write: its audience is the autonomous system alone.
 func LimitFence(grantHash, agent string, limit map[string]any, per string) map[string]any {
 	return must[map[string]any]("limit_fence", grantHash, agent, limit, nilIfEmpty(per))
+}
+
+// LimitFenceSealed is LimitFence with the salt that opens the grant's scope.limit_commitment.
+func LimitFenceSealed(grantHash, agent string, limit map[string]any, per, salt string) map[string]any {
+	return must[map[string]any]("limit_fence", grantHash, agent, limit, nilIfEmpty(per), nilIfEmpty(salt))
+}
+
+// LimitCommitment is the commitment to a limit, for a grant's scope.limit_commitment (authority.md). suite is "" for std.
+func LimitCommitment(limit map[string]any, per, salt, suite string) string {
+	return must[string]("limit_commitment", limit, nilIfEmpty(per), salt, nilIfEmpty(suite))
+}
+
+// LimitOpens is whether the limit observe opens the grant's scope.limit_commitment.
+func LimitOpens(grant, fence Block, suite string) bool {
+	return must[bool]("limit_opens", grant, fence, nilIfEmpty(suite))
 }
 
 // WithinLimit is whether spending money stays inside a limit (the limit observe, its state, or the money); spent is
@@ -67,7 +82,7 @@ func WhyNotUnder(b Block, blocks []Block, options ...LiveOptions) []string {
 	return plural(must[[]string]("why_not_under", b, plural(blocks), nowOf(options)))
 }
 
-// OperatorsOf are the people who answer for an agent.
+// OperatorsOf are the people who answer for an autonomous system.
 func OperatorsOf(agent string, blocks []Block, options ...LiveOptions) []string {
 	return plural(must[[]string]("operators_of", agent, plural(blocks), nowOf(options)))
 }

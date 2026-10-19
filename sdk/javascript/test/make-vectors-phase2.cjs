@@ -65,6 +65,7 @@ for (const name of ['a lang that is not a language tag']) V.refusals.cases = V.r
 }
 
 // ---- the Merkle root (encoding.md, Large content) ----
+V.door = V.door.filter((c) => c.name !== 'merkle: the carried chunk 4 of 5 does not verify as chunk 4 of 6, where it has a sibling' && c.name !== 'merkle: an index past the count does not verify')
 // A third implementation, plain, to settle the expectations: level by level, an odd one carried up, as the spec states.
 const h = (...parts) => crypto.createHash('sha256').update(Buffer.concat(parts)).digest()
 const leaf = (hex) => h(Buffer.from([0]), Buffer.from(hex, 'hex'))
@@ -72,6 +73,8 @@ const levelsOf = (chunks) => { let level = chunks.map(leaf); const all = [level]
 const rootOf = (chunks) => { const l = levelsOf(chunks); return l[l.length - 1][0].toString('hex') }
 const proofOf = (chunks, index) => { const out = []; let at = index; for (const level of levelsOf(chunks)) { if (level.length === 1) break; if (at % 2) out.push(level[at - 1].toString('hex')); else if (at + 1 < level.length) out.push(level[at + 1].toString('hex')); at = Math.floor(at / 2) } return out }
 const chunk = (i) => Buffer.from(`chunk ${i}`, 'utf8').toString('hex')
+// The block that names a root: the mark beside the signed count (encoding.md, Large content).
+const named = (root, count, extra = {}) => ({ type: 'thing', state: { kind: 'stream', marks: [{ scheme: 'merkle', value: root }], chunks: count, ...extra }, refs: {} })
 const sets = { 1: [chunk(0)], 2: [0, 1].map(chunk), 3: [0, 1, 2].map(chunk), 5: [0, 1, 2, 3, 4].map(chunk), 7: [0, 1, 2, 3, 4, 5, 6].map(chunk) }
 // The single-chunk root is the leaf hash; the empty chunk is a chunk.
 door('merkle: one chunk is its own leaf, hash of 00 then the chunk', 'merkle_root', [sets[1]], { expect: leaf(sets[1][0]).toString('hex'), exact: true })
@@ -81,21 +84,28 @@ for (const n of [2, 3, 5, 7]) door(`merkle: the root of ${n} chunks (an odd one 
 for (const [n, i] of [[2, 1], [3, 2], [3, 0], [5, 4], [5, 2], [7, 6], [7, 3]]) {
   const root = rootOf(sets[n]), proof = proofOf(sets[n], i)
   door(`merkle: the proof of chunk ${i} of ${n}`, 'merkle_proof', [sets[n], i], { expect: proof, exact: true })
-  door(`merkle: chunk ${i} of ${n} verifies under its root`, 'merkle_verify', [root, sets[n][i], i, n, proof], { expect: true, exact: true })
+  door(`merkle: chunk ${i} of ${n} verifies under its root`, 'merkle_verify', [named(root, n), sets[n][i], i, proof], { expect: true, exact: true })
 }
 {
   const root = rootOf(sets[5]), proof = proofOf(sets[5], 4)
   door('merkle: the carried chunk 4 of 5 has a one-hash proof', 'merkle_proof', [sets[5], 4], { expect: proof, exact: true }); assert.equal(proof.length, 1)
   const good = proofOf(sets[5], 1)
-  door('merkle: a proof for another chunk does not verify', 'merkle_verify', [root, sets[5][2], 2, 5, good], { expect: false, exact: true })
-  door('merkle: a changed chunk does not verify', 'merkle_verify', [root, chunk(99), 1, 5, good], { expect: false, exact: true })
-  door('merkle: the wrong index does not verify', 'merkle_verify', [root, sets[5][1], 0, 5, good], { expect: false, exact: true })
-  // The root does not commit the count (the count is stated beside the root, signed in the same block), but the count fixes the shape of the path:
-  door('merkle: the carried chunk 4 of 5 does not verify as chunk 4 of 6, where it has a sibling', 'merkle_verify', [root, sets[5][4], 4, 6, proof], { expect: false, exact: true })
-  door('merkle: a proof with a hash too many does not verify', 'merkle_verify', [root, sets[5][1], 1, 5, [...good, good[0]]], { expect: false, exact: true })
-  door('merkle: a proof with a hash too few does not verify', 'merkle_verify', [root, sets[5][1], 1, 5, good.slice(0, -1)], { expect: false, exact: true })
-  door('merkle: a proof hash in capitals is refused', 'merkle_verify', [root, sets[5][1], 1, 5, [good[0].toUpperCase(), ...good.slice(1)]], { expect: false, exact: true })
-  door('merkle: an index past the count does not verify', 'merkle_verify', [root, sets[5][1], 5, 5, good], { expect: false, exact: true })
+  door('merkle: a proof for another chunk does not verify', 'merkle_verify', [named(root, 5), sets[5][2], 2, good], { expect: false, exact: true })
+  door('merkle: a changed chunk does not verify', 'merkle_verify', [named(root, 5), chunk(99), 1, good], { expect: false, exact: true })
+  door('merkle: the wrong index does not verify', 'merkle_verify', [named(root, 5), sets[5][1], 0, good], { expect: false, exact: true })
+  // The root does not commit the count; the signed state.chunks beside it fixes the shape of the path, and nobody who offers a chunk can choose it:
+  door('merkle: the carried chunk 4 of 5 does not verify when the block says 6 chunks, where it has a sibling', 'merkle_verify', [named(root, 6), sets[5][4], 4, proof], { expect: false, exact: true })
+  door('merkle: a proof with a hash too many does not verify', 'merkle_verify', [named(root, 5), sets[5][1], 1, [...good, good[0]]], { expect: false, exact: true })
+  door('merkle: a proof with a hash too few does not verify', 'merkle_verify', [named(root, 5), sets[5][1], 1, good.slice(0, -1)], { expect: false, exact: true })
+  door('merkle: a proof hash in capitals is refused', 'merkle_verify', [named(root, 5), sets[5][1], 1, [good[0].toUpperCase(), ...good.slice(1)]], { expect: false, exact: true })
+  door('merkle: an index past the signed count does not verify', 'merkle_verify', [named(root, 5), sets[5][1], 5, good], { expect: false, exact: true })
+  // A block that does not state its count proves nothing, nor one with two roots, nor a count that is not a whole number of at least 1.
+  door('merkle: a block with the root and no state.chunks proves nothing', 'merkle_verify', [{ type: 'thing', state: { kind: 'stream', marks: [{ scheme: 'merkle', value: root }] }, refs: {} }, sets[5][1], 1, good], { expect: false, exact: true })
+  door('merkle: a block with no merkle mark proves nothing', 'merkle_verify', [{ type: 'thing', state: { kind: 'stream', chunks: 5 }, refs: {} }, sets[5][1], 1, good], { expect: false, exact: true })
+  door('merkle: a block with two merkle marks proves nothing', 'merkle_verify', [named(root, 5, { marks: [{ scheme: 'merkle', value: root }, { scheme: 'merkle', value: rootOf(sets[2]) }] }), sets[5][1], 1, good], { expect: false, exact: true })
+  door('merkle: a count of zero proves nothing', 'merkle_verify', [named(root, 0), sets[5][1], 1, good], { expect: false, exact: true })
+  door('merkle: a count written as text proves nothing', 'merkle_verify', [named(root, '5'), sets[5][1], 1, good], { expect: false, exact: true })
+  door('merkle: the signed count and a root of another stream do not verify this chunk', 'merkle_verify', [named(rootOf(sets[7]), 5), sets[5][1], 1, good], { expect: false, exact: true })
   // The convention matters: a node is not a leaf, so a chunk that spells two hashes cannot stand in for their node.
   const l0 = leaf(sets[2][0]), l1 = leaf(sets[2][1])
   const forged = Buffer.concat([l0, l1]).toString('hex')

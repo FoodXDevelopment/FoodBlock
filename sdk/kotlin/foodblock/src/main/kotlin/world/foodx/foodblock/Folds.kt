@@ -18,7 +18,7 @@ data class KeyEntry(val key: String, val by: String, val signer: String?, val vo
 
 object Identity {
     /**
-     * A new person, agent, machine or circle: their genesis, signed (in the suite of `keys`). It needs only `kind`,
+     * A new person, autonomous system, machine or circle: their genesis, signed (in the suite of `keys`). It needs only `kind`,
      * `at` and the key; `recoveryKey` (the offline key's public signing key, only its hash is written) and `reach`
      * come as a pair or not at all. `encryptionKey` is the public encryption key, or null for a device that only signs.
      */
@@ -73,15 +73,23 @@ object Grant {
     /** The act a block is, named `type.kind`. */
     fun actName(block: JsonObject): String = Native.invoke("act_name", block).string()
 
-    /** The observe of kind limit for a grant, to hand to `write`: its audience is the agent alone. */
-    fun limitFence(grantHash: String, agent: String, limit: JsonObject, per: String? = null): JsonObject =
-        Native.invoke("limit_fence", JsonPrimitive(grantHash), JsonPrimitive(agent), limit, text(per)).obj()
+    /** The observe of kind limit for a grant, to hand to `write`: its audience is the autonomous system alone. */
+    fun limitFence(grantHash: String, agent: String, limit: JsonObject, per: String? = null, salt: String? = null): JsonObject =
+        Native.invoke("limit_fence", JsonPrimitive(grantHash), JsonPrimitive(agent), limit, text(per), text(salt)).obj()
+
+    /** The commitment to a limit, for the grant's `scope.limit_commitment` (authority.md). */
+    fun limitCommitment(limit: JsonObject, per: String?, salt: String, suite: String? = null): String =
+        Native.invoke("limit_commitment", limit, text(per), JsonPrimitive(salt), text(suite)).string()
+
+    /** Whether the limit observe opens the grant's `scope.limit_commitment`. */
+    fun limitOpens(grant: JsonObject, fence: JsonObject, suite: String? = null): Boolean =
+        Native.invoke("limit_opens", grant, fence, text(suite)).bool()
 
     /** Whether spending `money` stays inside a limit; `spent` is what the principal's node has counted in the period (minor units). */
     fun withinLimit(limit: JsonObject, money: JsonObject, spent: Long = 0): Boolean =
         Native.invoke("within_limit", limit, money, JsonPrimitive(spent)).bool()
 
-    /** The people an agent acts for, by the live grants among `blocks`. */
+    /** The people an autonomous system acts for, by the live grants among `blocks`. */
     fun operatorsOf(agent: String, blocks: List<JsonObject>, now: String? = null): List<String> =
         Native.invoke("operators_of", JsonPrimitive(agent), JsonArray(blocks), text(now)).strings()
 
@@ -98,6 +106,19 @@ object Grant {
 data class Ownership(val owner: String?, val transfers: List<String>, val conflict: List<String>?)
 
 /** The folds (edge and node profiles). */
+/** Large content (modules/encoding.md): the Merkle root of chunks (hex), a chunk's proof, and the reader's check of a block. */
+object Merkle {
+    /** The root (64 hex) over the chunks (each hex). */
+    fun root(chunks: List<String>): String = Native.invoke("merkle_root", texts(chunks)).string()
+
+    /** The sibling hashes (hex) that prove chunk `index`, from the leaf up. */
+    fun proof(chunks: List<String>, index: Int): List<String> = Native.invoke("merkle_proof", texts(chunks), JsonPrimitive(index)).strings()
+
+    /** True when `siblings` show `chunk` (hex) is chunk `index` of the count the block signs (`state.chunks`), under its one merkle mark. */
+    fun verify(block: JsonObject, chunk: String, index: Int, siblings: List<String>): Boolean =
+        Native.invoke("merkle_verify", block, JsonPrimitive(chunk), JsonPrimitive(index), texts(siblings)).bool()
+}
+
 object Fold {
     /** A promise's stage from its first promise and the blocks of its deal: `{ stage, offer, accept, sides, ... }`. No clock. */
     fun promiseStage(

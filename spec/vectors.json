@@ -74915,10 +74915,22 @@
    "name": "merkle: chunk 1 of 2 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78"
+       }
+      ],
+      "chunks": 2
+     },
+     "refs": {}
+    },
     "6368756e6b2031",
     1,
-    2,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474"
     ]
@@ -74946,10 +74958,22 @@
    "name": "merkle: chunk 2 of 3 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180"
+       }
+      ],
+      "chunks": 3
+     },
+     "refs": {}
+    },
     "6368756e6b2032",
     2,
-    3,
     [
      "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78"
     ]
@@ -74978,10 +75002,22 @@
    "name": "merkle: chunk 0 of 3 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "bd3cf76e51ab8727a501fac86c9a7dcf4f95b433acd2caaf45ccd6e3482ec180"
+       }
+      ],
+      "chunks": 3
+     },
+     "refs": {}
+    },
     "6368756e6b2030",
     0,
-    3,
     [
      "fc16ad32089b575c05788b0527cceb44f6035998741b1fad421061dd831032b0",
      "10f36571e0b0f4ef36e2c3ab0a3e6cf58806896afe1d43acff9fec16ae5bfff2"
@@ -75012,10 +75048,22 @@
    "name": "merkle: chunk 4 of 5 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2034",
     4,
-    5,
     [
      "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
     ]
@@ -75047,10 +75095,22 @@
    "name": "merkle: chunk 2 of 5 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2032",
     2,
-    5,
     [
      "94cff0c7008175627f2e4e5bd1c53feabc957b2b8d965822cb0ea54e07baa6f9",
      "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
@@ -75085,10 +75145,22 @@
    "name": "merkle: chunk 6 of 7 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4"
+       }
+      ],
+      "chunks": 7
+     },
+     "refs": {}
+    },
     "6368756e6b2036",
     6,
-    7,
     [
      "c6fc26aee31e7099e24c9b673db927cbec20bd6771b2077c83ec273376085964",
      "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
@@ -75123,10 +75195,22 @@
    "name": "merkle: chunk 3 of 7 verifies under its root",
    "op": "merkle_verify",
    "args": [
-    "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4"
+       }
+      ],
+      "chunks": 7
+     },
+     "refs": {}
+    },
     "6368756e6b2033",
     3,
-    7,
     [
      "10f36571e0b0f4ef36e2c3ab0a3e6cf58806896afe1d43acff9fec16ae5bfff2",
      "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78",
@@ -75158,10 +75242,22 @@
    "name": "merkle: a proof for another chunk does not verify",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2032",
     2,
-    5,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
@@ -75175,10 +75271,22 @@
    "name": "merkle: a changed chunk does not verify",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b203939",
     1,
-    5,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
@@ -75192,10 +75300,22 @@
    "name": "merkle: the wrong index does not verify",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2031",
     0,
-    5,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
@@ -75206,13 +75326,25 @@
    "exact": true
   },
   {
-   "name": "merkle: the carried chunk 4 of 5 does not verify as chunk 4 of 6, where it has a sibling",
+   "name": "merkle: the carried chunk 4 of 5 does not verify when the block says 6 chunks, where it has a sibling",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 6
+     },
+     "refs": {}
+    },
     "6368756e6b2034",
     4,
-    6,
     [
      "d9b59b3301f4c19daad08c8f5a75e3bdaed4ce068d9336b834045e42abd77683"
     ]
@@ -75224,10 +75356,22 @@
    "name": "merkle: a proof with a hash too many does not verify",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2031",
     1,
-    5,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
@@ -75242,10 +75386,22 @@
    "name": "merkle: a proof with a hash too few does not verify",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2031",
     1,
-    5,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb"
@@ -75258,10 +75414,22 @@
    "name": "merkle: a proof hash in capitals is refused",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2031",
     1,
-    5,
     [
      "8BA70465BE7BB83B3312BD74A8C3241CC7D96089C8C72EE7940D53B422B11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
@@ -75272,13 +75440,196 @@
    "exact": true
   },
   {
-   "name": "merkle: an index past the count does not verify",
+   "name": "merkle: an index past the signed count does not verify",
    "op": "merkle_verify",
    "args": [
-    "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b",
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
     "6368756e6b2031",
     5,
-    5,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a block with the root and no state.chunks proves nothing",
+   "op": "merkle_verify",
+   "args": [
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ]
+     },
+     "refs": {}
+    },
+    "6368756e6b2031",
+    1,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a block with no merkle mark proves nothing",
+   "op": "merkle_verify",
+   "args": [
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "chunks": 5
+     },
+     "refs": {}
+    },
+    "6368756e6b2031",
+    1,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a block with two merkle marks proves nothing",
+   "op": "merkle_verify",
+   "args": [
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       },
+       {
+        "scheme": "merkle",
+        "value": "f71fbc5d4d01bde3fc00b3470ae81e7d6d25fdf60914b35c0ab741b9a0a82f78"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
+    "6368756e6b2031",
+    1,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a count of zero proves nothing",
+   "op": "merkle_verify",
+   "args": [
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": 0
+     },
+     "refs": {}
+    },
+    "6368756e6b2031",
+    1,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: a count written as text proves nothing",
+   "op": "merkle_verify",
+   "args": [
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "077f9b0a3996546dfd1842a170e1aa328b7080c0d99da9c2633b44207a46295b"
+       }
+      ],
+      "chunks": "5"
+     },
+     "refs": {}
+    },
+    "6368756e6b2031",
+    1,
+    [
+     "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
+     "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
+     "d60c7c2d5e91e9efe1779c9dcac3710dbd79d9cc699edb0b39bff419eefd3cfa"
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "merkle: the signed count and a root of another stream do not verify this chunk",
+   "op": "merkle_verify",
+   "args": [
+    {
+     "type": "thing",
+     "state": {
+      "kind": "stream",
+      "marks": [
+       {
+        "scheme": "merkle",
+        "value": "03f280ac7b3f0ab27a80d7ce6b8e9393e24b56d05e157cec0460f67121070df4"
+       }
+      ],
+      "chunks": 5
+     },
+     "refs": {}
+    },
+    "6368756e6b2031",
+    1,
     [
      "8ba70465be7bb83b3312bd74a8c3241cc7d96089c8c72ee7940d53b422b11474",
      "90d9240ec5c926c7286bd8aa9cbae61dc2f37430720cd5d1f7315abbddedf2cb",
@@ -79253,6 +79604,2575 @@
     "2026-11-03T02:30:00.000Z"
    ],
    "expect": true,
+   "exact": true
+  },
+  {
+   "name": "limit: the commitment is the salted hash of { limit, per } in canonical JSON",
+   "op": "limit_commitment",
+   "args": [
+    {
+     "minor": 5000,
+     "currency": "GBP"
+    },
+    "P1D",
+    "abababababababababababababababab"
+   ],
+   "expect": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+   "exact": true
+  },
+  {
+   "name": "limit: with no period, per is left out of the committed value",
+   "op": "limit_commitment",
+   "args": [
+    {
+     "minor": 5000,
+     "currency": "GBP"
+    },
+    null,
+    "abababababababababababababababab"
+   ],
+   "expect": "1225f5bc0ef1211509998dd0857f0a9714aa6cc8272402efc8371d57a2555d04",
+   "exact": true
+  },
+  {
+   "name": "limit: another salt, another commitment",
+   "op": "limit_commitment",
+   "args": [
+    {
+     "minor": 5000,
+     "currency": "GBP"
+    },
+    "P1D",
+    "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd"
+   ],
+   "expect": "2e8d26094285727f5f965c09798f41238d9d34de92479f84e90a7f7aba76fdae",
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a grant that names the act and carries a limit commitment is enough, marked never",
+   "op": "under_ok",
+   "args": [
+    {
+     "hash": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e",
+     "type": "transfer",
+     "state": {
+      "kind": "spray",
+      "at": "2026-10-20T09:00:09.000Z",
+      "audience": "public",
+      "seq": 1
+     },
+     "refs": {
+      "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "under": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "prev": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa"
+     },
+     "signature": "f4ffb653b556833c9e822879d7be15552a500074e9d0b311b0254548d0632023cfe3f4e3c1f2629604fcda406d9f23c703fc7864ed03f7b1d899e7c2bb873707"
+    },
+    [
+     {
+      "hash": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ab30ae83d20041b7883253bc0d3fd18bcf5d78e3e0ce04b0a8e09f9cdcfa68cf"
+      },
+      "refs": {},
+      "signature": "b116a7c4615039082c4d867e8672bd8f01099f15db66054ee788d1827b1a639ac14a873b1cbc7b6c2a47bdb20f542103c956ca2198ff73d738540a65cda1590d"
+     },
+     {
+      "hash": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000d7c0d341dcbfe229e5559dc021c2c7bc2f05452ae66545caca02796de53f3ae"
+      },
+      "refs": {},
+      "signature": "5e2c7a6500203006e977fbb8560e5b50feb871f023c2d75345f3034af198bf14a78be80a5cd557c944516364831bfa3a050b5dc53bd027a97281748a80e30b0e"
+     },
+     {
+      "hash": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-20T09:00:02.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613"
+      },
+      "signature": "383a074d90b4aa459f1b9f6d69eb3a2368aa1333830e0f37c762fb5d9633e4773c73136c82508dbb40f046c24ccbc15a78b9d10030eed9c7b30b01d52fba0c09"
+     },
+     {
+      "hash": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "type": "thing",
+      "state": {
+       "kind": "field",
+       "name": "north field",
+       "at": "2026-10-20T09:00:03.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec"
+      },
+      "signature": "849f099a7d034724eca7290b185906ef66a008e63ee9ee13250dd25edf755a2a6395fe570419b8f02a3aa19088b603a97bc29bf3431c7a2e0f8e6cb38a191103"
+     },
+     {
+      "hash": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "type": "thing",
+      "state": {
+       "kind": "schema",
+       "target": "transfer.spray",
+       "fields": {
+        "field": "text"
+       },
+       "undo": "never",
+       "at": "2026-10-20T09:00:04.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b"
+      },
+      "signature": "ad5909aca7cb3fbbb5f3b657c83ba84a81105c8b62f7793ef8280939bcd43e481cafa03aeec45522bcff5f806e201bb1f80f1ef79829a3b683f94b3797111e0b"
+     },
+     {
+      "hash": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:05.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb"
+      },
+      "signature": "63380962de505bb2bf1f70d7852b8b21f50dd8c6d857ebf4532db74eeec38d20e2bc4f2e40ab0846b20b67a0ba4a3b88e229c361fd7ca2289862840e7371170e"
+     },
+     {
+      "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:06.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+      },
+      "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+     },
+     {
+      "hash": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "per": "P1D",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:07.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830"
+      },
+      "signature": "a062ff4907f86e3a5610d7f8d7c8e27fc2eaf0acfc7061da02ddc57c4f8ce9a8135258e3961b352d2412e779b9a4c01b6b8dd3e6a77ebe43d0c174b4ba20fd07"
+     },
+     {
+      "hash": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.water"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:08.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2"
+      },
+      "signature": "5542d498a1ae606bd7a02b0cda978a13d48a2342a6d7e74f498f25700eef1aec2c8d7a26fb54df041359d3989c26c08297b59b9745649ad1edf568d225b7f708"
+     },
+     {
+      "hash": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:09.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa"
+      },
+      "signature": "f4ffb653b556833c9e822879d7be15552a500074e9d0b311b0254548d0632023cfe3f4e3c1f2629604fcda406d9f23c703fc7864ed03f7b1d899e7c2bb873707"
+     }
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: the same act under a broad grant with no limit is not live",
+   "op": "under_ok",
+   "args": [
+    {
+     "hash": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843",
+     "type": "transfer",
+     "state": {
+      "kind": "spray",
+      "at": "2026-10-20T09:00:10.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "under": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+      "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "prev": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e"
+     },
+     "signature": "4288ffdb9645e099030172e874c561c6f4a4fd6a3eaad99a940b096941429d34433af17db818dc2adc5fa7084a4ba335b104d9f50eb4334b3532e695d03dba0e"
+    },
+    [
+     {
+      "hash": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ab30ae83d20041b7883253bc0d3fd18bcf5d78e3e0ce04b0a8e09f9cdcfa68cf"
+      },
+      "refs": {},
+      "signature": "b116a7c4615039082c4d867e8672bd8f01099f15db66054ee788d1827b1a639ac14a873b1cbc7b6c2a47bdb20f542103c956ca2198ff73d738540a65cda1590d"
+     },
+     {
+      "hash": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000d7c0d341dcbfe229e5559dc021c2c7bc2f05452ae66545caca02796de53f3ae"
+      },
+      "refs": {},
+      "signature": "5e2c7a6500203006e977fbb8560e5b50feb871f023c2d75345f3034af198bf14a78be80a5cd557c944516364831bfa3a050b5dc53bd027a97281748a80e30b0e"
+     },
+     {
+      "hash": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-20T09:00:02.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613"
+      },
+      "signature": "383a074d90b4aa459f1b9f6d69eb3a2368aa1333830e0f37c762fb5d9633e4773c73136c82508dbb40f046c24ccbc15a78b9d10030eed9c7b30b01d52fba0c09"
+     },
+     {
+      "hash": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "type": "thing",
+      "state": {
+       "kind": "field",
+       "name": "north field",
+       "at": "2026-10-20T09:00:03.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec"
+      },
+      "signature": "849f099a7d034724eca7290b185906ef66a008e63ee9ee13250dd25edf755a2a6395fe570419b8f02a3aa19088b603a97bc29bf3431c7a2e0f8e6cb38a191103"
+     },
+     {
+      "hash": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "type": "thing",
+      "state": {
+       "kind": "schema",
+       "target": "transfer.spray",
+       "fields": {
+        "field": "text"
+       },
+       "undo": "never",
+       "at": "2026-10-20T09:00:04.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b"
+      },
+      "signature": "ad5909aca7cb3fbbb5f3b657c83ba84a81105c8b62f7793ef8280939bcd43e481cafa03aeec45522bcff5f806e201bb1f80f1ef79829a3b683f94b3797111e0b"
+     },
+     {
+      "hash": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:05.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb"
+      },
+      "signature": "63380962de505bb2bf1f70d7852b8b21f50dd8c6d857ebf4532db74eeec38d20e2bc4f2e40ab0846b20b67a0ba4a3b88e229c361fd7ca2289862840e7371170e"
+     },
+     {
+      "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:06.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+      },
+      "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+     },
+     {
+      "hash": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "per": "P1D",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:07.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830"
+      },
+      "signature": "a062ff4907f86e3a5610d7f8d7c8e27fc2eaf0acfc7061da02ddc57c4f8ce9a8135258e3961b352d2412e779b9a4c01b6b8dd3e6a77ebe43d0c174b4ba20fd07"
+     },
+     {
+      "hash": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.water"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:08.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2"
+      },
+      "signature": "5542d498a1ae606bd7a02b0cda978a13d48a2342a6d7e74f498f25700eef1aec2c8d7a26fb54df041359d3989c26c08297b59b9745649ad1edf568d225b7f708"
+     },
+     {
+      "hash": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:09.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa"
+      },
+      "signature": "f4ffb653b556833c9e822879d7be15552a500074e9d0b311b0254548d0632023cfe3f4e3c1f2629604fcda406d9f23c703fc7864ed03f7b1d899e7c2bb873707"
+     },
+     {
+      "hash": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:10.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e"
+      },
+      "signature": "4288ffdb9645e099030172e874c561c6f4a4fd6a3eaad99a940b096941429d34433af17db818dc2adc5fa7084a4ba335b104d9f50eb4334b3532e695d03dba0e"
+     }
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a visible limit is still enough",
+   "op": "under_ok",
+   "args": [
+    {
+     "hash": "9ca8e62cdd30d827a789bf5e21995628f885c7ac877c3d30be8d68a824be5ceb",
+     "type": "transfer",
+     "state": {
+      "kind": "spray",
+      "at": "2026-10-20T09:00:11.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "under": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+      "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "prev": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843"
+     },
+     "signature": "cfc6996680bc158a6f766ef23a44a18d8c18c560b07d4325e64d1fa4486ffe593f511fbe9e835e6f576791990308f45b9973b4ff69cf6934f7ae37e994752501"
+    },
+    [
+     {
+      "hash": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ab30ae83d20041b7883253bc0d3fd18bcf5d78e3e0ce04b0a8e09f9cdcfa68cf"
+      },
+      "refs": {},
+      "signature": "b116a7c4615039082c4d867e8672bd8f01099f15db66054ee788d1827b1a639ac14a873b1cbc7b6c2a47bdb20f542103c956ca2198ff73d738540a65cda1590d"
+     },
+     {
+      "hash": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000d7c0d341dcbfe229e5559dc021c2c7bc2f05452ae66545caca02796de53f3ae"
+      },
+      "refs": {},
+      "signature": "5e2c7a6500203006e977fbb8560e5b50feb871f023c2d75345f3034af198bf14a78be80a5cd557c944516364831bfa3a050b5dc53bd027a97281748a80e30b0e"
+     },
+     {
+      "hash": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-20T09:00:02.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613"
+      },
+      "signature": "383a074d90b4aa459f1b9f6d69eb3a2368aa1333830e0f37c762fb5d9633e4773c73136c82508dbb40f046c24ccbc15a78b9d10030eed9c7b30b01d52fba0c09"
+     },
+     {
+      "hash": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "type": "thing",
+      "state": {
+       "kind": "field",
+       "name": "north field",
+       "at": "2026-10-20T09:00:03.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec"
+      },
+      "signature": "849f099a7d034724eca7290b185906ef66a008e63ee9ee13250dd25edf755a2a6395fe570419b8f02a3aa19088b603a97bc29bf3431c7a2e0f8e6cb38a191103"
+     },
+     {
+      "hash": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "type": "thing",
+      "state": {
+       "kind": "schema",
+       "target": "transfer.spray",
+       "fields": {
+        "field": "text"
+       },
+       "undo": "never",
+       "at": "2026-10-20T09:00:04.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b"
+      },
+      "signature": "ad5909aca7cb3fbbb5f3b657c83ba84a81105c8b62f7793ef8280939bcd43e481cafa03aeec45522bcff5f806e201bb1f80f1ef79829a3b683f94b3797111e0b"
+     },
+     {
+      "hash": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:05.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb"
+      },
+      "signature": "63380962de505bb2bf1f70d7852b8b21f50dd8c6d857ebf4532db74eeec38d20e2bc4f2e40ab0846b20b67a0ba4a3b88e229c361fd7ca2289862840e7371170e"
+     },
+     {
+      "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:06.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+      },
+      "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+     },
+     {
+      "hash": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "per": "P1D",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:07.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830"
+      },
+      "signature": "a062ff4907f86e3a5610d7f8d7c8e27fc2eaf0acfc7061da02ddc57c4f8ce9a8135258e3961b352d2412e779b9a4c01b6b8dd3e6a77ebe43d0c174b4ba20fd07"
+     },
+     {
+      "hash": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.water"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:08.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2"
+      },
+      "signature": "5542d498a1ae606bd7a02b0cda978a13d48a2342a6d7e74f498f25700eef1aec2c8d7a26fb54df041359d3989c26c08297b59b9745649ad1edf568d225b7f708"
+     },
+     {
+      "hash": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:09.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa"
+      },
+      "signature": "f4ffb653b556833c9e822879d7be15552a500074e9d0b311b0254548d0632023cfe3f4e3c1f2629604fcda406d9f23c703fc7864ed03f7b1d899e7c2bb873707"
+     },
+     {
+      "hash": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:10.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e"
+      },
+      "signature": "4288ffdb9645e099030172e874c561c6f4a4fd6a3eaad99a940b096941429d34433af17db818dc2adc5fa7084a4ba335b104d9f50eb4334b3532e695d03dba0e"
+     },
+     {
+      "hash": "9ca8e62cdd30d827a789bf5e21995628f885c7ac877c3d30be8d68a824be5ceb",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:11.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843"
+      },
+      "signature": "cfc6996680bc158a6f766ef23a44a18d8c18c560b07d4325e64d1fa4486ffe593f511fbe9e835e6f576791990308f45b9973b4ff69cf6934f7ae37e994752501"
+     }
+    ]
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a limit commitment on a grant that does not name the act is not enough",
+   "op": "under_ok",
+   "args": [
+    {
+     "hash": "a143c1955c727242657e639998d1fd85c97ceeec5e2a43ae63ec6ec43e53e1fd",
+     "type": "transfer",
+     "state": {
+      "kind": "spray",
+      "at": "2026-10-20T09:00:12.000Z",
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "under": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+      "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "prev": "9ca8e62cdd30d827a789bf5e21995628f885c7ac877c3d30be8d68a824be5ceb"
+     },
+     "signature": "cfccb33c28902f5d959b9cd1ccd9acc60f2de757322fda52149dbcced4fa5609ac5d3d9d98c27b04e760b9591aa948dc763d2263f643aaa5a1ec498c6c980b00"
+    },
+    [
+     {
+      "hash": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ab30ae83d20041b7883253bc0d3fd18bcf5d78e3e0ce04b0a8e09f9cdcfa68cf"
+      },
+      "refs": {},
+      "signature": "b116a7c4615039082c4d867e8672bd8f01099f15db66054ee788d1827b1a639ac14a873b1cbc7b6c2a47bdb20f542103c956ca2198ff73d738540a65cda1590d"
+     },
+     {
+      "hash": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321000d7c0d341dcbfe229e5559dc021c2c7bc2f05452ae66545caca02796de53f3ae"
+      },
+      "refs": {},
+      "signature": "5e2c7a6500203006e977fbb8560e5b50feb871f023c2d75345f3034af198bf14a78be80a5cd557c944516364831bfa3a050b5dc53bd027a97281748a80e30b0e"
+     },
+     {
+      "hash": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-20T09:00:02.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613"
+      },
+      "signature": "383a074d90b4aa459f1b9f6d69eb3a2368aa1333830e0f37c762fb5d9633e4773c73136c82508dbb40f046c24ccbc15a78b9d10030eed9c7b30b01d52fba0c09"
+     },
+     {
+      "hash": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+      "type": "thing",
+      "state": {
+       "kind": "field",
+       "name": "north field",
+       "at": "2026-10-20T09:00:03.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "becf97a69b7dce5e1a2e419b12b634c9a4d3017d6ebfc395f81040d1316818ec"
+      },
+      "signature": "849f099a7d034724eca7290b185906ef66a008e63ee9ee13250dd25edf755a2a6395fe570419b8f02a3aa19088b603a97bc29bf3431c7a2e0f8e6cb38a191103"
+     },
+     {
+      "hash": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+      "type": "thing",
+      "state": {
+       "kind": "schema",
+       "target": "transfer.spray",
+       "fields": {
+        "field": "text"
+       },
+       "undo": "never",
+       "at": "2026-10-20T09:00:04.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b"
+      },
+      "signature": "ad5909aca7cb3fbbb5f3b657c83ba84a81105c8b62f7793ef8280939bcd43e481cafa03aeec45522bcff5f806e201bb1f80f1ef79829a3b683f94b3797111e0b"
+     },
+     {
+      "hash": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:05.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb"
+      },
+      "signature": "63380962de505bb2bf1f70d7852b8b21f50dd8c6d857ebf4532db74eeec38d20e2bc4f2e40ab0846b20b67a0ba4a3b88e229c361fd7ca2289862840e7371170e"
+     },
+     {
+      "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:06.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+      },
+      "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+     },
+     {
+      "hash": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer.water",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "per": "P1D",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:07.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830"
+      },
+      "signature": "a062ff4907f86e3a5610d7f8d7c8e27fc2eaf0acfc7061da02ddc57c4f8ce9a8135258e3961b352d2412e779b9a4c01b6b8dd3e6a77ebe43d0c174b4ba20fd07"
+     },
+     {
+      "hash": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "scope": {
+        "acts": [
+         "transfer.water"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:08.000Z",
+       "audience": "public",
+       "seq": 7
+      },
+      "refs": {
+       "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+       "prev": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2"
+      },
+      "signature": "5542d498a1ae606bd7a02b0cda978a13d48a2342a6d7e74f498f25700eef1aec2c8d7a26fb54df041359d3989c26c08297b59b9745649ad1edf568d225b7f708"
+     },
+     {
+      "hash": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:09.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa"
+      },
+      "signature": "f4ffb653b556833c9e822879d7be15552a500074e9d0b311b0254548d0632023cfe3f4e3c1f2629604fcda406d9f23c703fc7864ed03f7b1d899e7c2bb873707"
+     },
+     {
+      "hash": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:10.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "4a62acff0edc2d2168f25fde82a0d8f4f577001057711a3616fdede41af52d3e"
+      },
+      "signature": "4288ffdb9645e099030172e874c561c6f4a4fd6a3eaad99a940b096941429d34433af17db818dc2adc5fa7084a4ba335b104d9f50eb4334b3532e695d03dba0e"
+     },
+     {
+      "hash": "9ca8e62cdd30d827a789bf5e21995628f885c7ac877c3d30be8d68a824be5ceb",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:11.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "c85d92d71b9c0ca962c851a8e5e057e845b5e5e939d2fabedaca5672b4c9d843"
+      },
+      "signature": "cfc6996680bc158a6f766ef23a44a18d8c18c560b07d4325e64d1fa4486ffe593f511fbe9e835e6f576791990308f45b9973b4ff69cf6934f7ae37e994752501"
+     },
+     {
+      "hash": "a143c1955c727242657e639998d1fd85c97ceeec5e2a43ae63ec6ec43e53e1fd",
+      "type": "transfer",
+      "state": {
+       "kind": "spray",
+       "at": "2026-10-20T09:00:12.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "what": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "to_place": "ad68e1bed1803fdaa546b63c69c6b75e310b5460c6e27e833bcd55bf763a3e4b",
+       "under": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+       "schema": "294116b165560410e469adc907bd7e28e676cfb7594c90f6fa9a708799a29cdb",
+       "author": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+       "prev": "9ca8e62cdd30d827a789bf5e21995628f885c7ac877c3d30be8d68a824be5ceb"
+      },
+      "signature": "cfccb33c28902f5d959b9cd1ccd9acc60f2de757322fda52149dbcced4fa5609ac5d3d9d98c27b04e760b9591aa948dc763d2263f643aaa5a1ec498c6c980b00"
+     }
+    ]
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: the observe with the amount, period and salt opens the grant's commitment",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "fc4c43e8cfceb68337522706e45253905d41a4d8ee40d20be0928be2e421dbb2",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:13.000Z",
+      "audience": "public",
+      "seq": 8
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817"
+     },
+     "signature": "81e06ab4d9b3f876a3ca972b532b30570840c37ac38e4356add536d7642799adb4777ee622c6d55ab6c8d089e485ac5a19f6b105a2847dbec776a504ab07f905"
+    }
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a tampered amount does not open it",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "e714a367dada1414295d029210b856f06a84dc48a6d8a63dcb89d36f40326745",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 9000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:14.000Z",
+      "audience": "public",
+      "seq": 9
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "fc4c43e8cfceb68337522706e45253905d41a4d8ee40d20be0928be2e421dbb2"
+     },
+     "signature": "372845b8873f5aa3bc1c5f7a4dba0837e098690b302466fee38c4cfad907963bf33a6f90752e479caf16f1735b1feaab47e173d52bb7e4eb86ec17691094b502"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a tampered period does not open it",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "fbc188dba679de1911af80b4f422c3800c7bcc1a474af630da5a60d2e880d8e7",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P7D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:15.000Z",
+      "audience": "public",
+      "seq": 10
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "e714a367dada1414295d029210b856f06a84dc48a6d8a63dcb89d36f40326745"
+     },
+     "signature": "f7eca6f1d999f4c994c1757767b7672b7deedcd5014224807486993c60ad5a2bc4956f73609d8a8df4fefde2c5332feea6435db57de89d75bce8eebf60ae210d"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a left-out period does not open a commitment that holds one",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "33c9593d1e1c951e973ef897436da7fce53b0f837b715979f0283852719d9bbb",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:16.000Z",
+      "audience": "public",
+      "seq": 11
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "fbc188dba679de1911af80b4f422c3800c7bcc1a474af630da5a60d2e880d8e7"
+     },
+     "signature": "b82c933e7106b25b54797c93dce003e4b3a8667ee6e620bbfdbe9e2443d3bd004cb54fd26531c84a3772f66d393b24b99c74966414c77892b0179d469eed2c04"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: another salt does not open it",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "88af2368c9e574f60c7d47a429a237e5fafa46420ef0ffb3fc275dfa27fccdb9",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+      "at": "2026-10-20T09:00:17.000Z",
+      "audience": "public",
+      "seq": 12
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "33c9593d1e1c951e973ef897436da7fce53b0f837b715979f0283852719d9bbb"
+     },
+     "signature": "0c05b45b78a2dfa91a7232ed7d586851ea8a03895b4d3e1bef866e9b775ecbe37b3ae81edce9bdff334a468309654e3e7adb8d02f7492f5793e176931457d209"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: an observe with no salt does not open it",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "99b1d6c6546a87cdc6b5f17e023b512fa629ccf802d61ff6611a3d1dab4793c6",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "at": "2026-10-20T09:00:18.000Z",
+      "audience": "public",
+      "seq": 13
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "88af2368c9e574f60c7d47a429a237e5fafa46420ef0ffb3fc275dfa27fccdb9"
+     },
+     "signature": "1bf680e4eba311067829eefc04bbff023210e6b35f60219bd59ec63d4fd855a3eb091ed1f070443d63f764857d95269e26070bcda9d248806c41b31190eda503"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: an observe for another grant does not open it",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "0e79fe6bd337ca01787deb2f799d4f5fc0e47ebfaea3bbb382e8bcff044cc6d6",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:19.000Z",
+      "audience": "public",
+      "seq": 14
+     },
+     "refs": {
+      "for": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "99b1d6c6546a87cdc6b5f17e023b512fa629ccf802d61ff6611a3d1dab4793c6"
+     },
+     "signature": "c5f5fcef6a4b37bfb0a5194c181844c134bede76309f4bce5ee67905f71a82b2b7f534da3ed4f0acb0dc13f941328bc220322c7bea310f033dbd8af296702609"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: an observe that is not of kind limit does not open it",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:06.000Z",
+      "audience": "public",
+      "seq": 5
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "9a82b838316d6676bd0ee23daa12923eda978b4207632df0ba9b3e1a1bb649c9"
+     },
+     "signature": "6c4534acdcec0e8f4c6adaf133a30aa65bec35702a3d2523bd9eac45b9e08492559b6a2b9768a225237ab9f054f327393dce779a4965064b0457c3c36aa9c509"
+    },
+    {
+     "hash": "b17f1052e345ea3633baae08683bfac5210b0c5d64a482a410df7960ecbc2840",
+     "type": "observe",
+     "state": {
+      "kind": "note",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:20.000Z",
+      "audience": "public",
+      "seq": 15
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "0e79fe6bd337ca01787deb2f799d4f5fc0e47ebfaea3bbb382e8bcff044cc6d6"
+     },
+     "signature": "858ecf745ef9250435d7c6c2fdc5d8f56b115b26a418a931d0f4a3f5781aa7630a88e997c1d095353824d39927a381d15b0da5f9ca94176864e6f3d30e57a10a"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a grant with a visible limit has nothing to open",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "fd027bb0a1f9367e15a0993706e58ef3c85c4cdae61cd2e18e7bfdea55944aa2",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit": {
+        "minor": 5000,
+        "currency": "GBP"
+       },
+       "per": "P1D",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:07.000Z",
+      "audience": "public",
+      "seq": 6
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830"
+     },
+     "signature": "a062ff4907f86e3a5610d7f8d7c8e27fc2eaf0acfc7061da02ddc57c4f8ce9a8135258e3961b352d2412e779b9a4c01b6b8dd3e6a77ebe43d0c174b4ba20fd07"
+    },
+    {
+     "hash": "fc4c43e8cfceb68337522706e45253905d41a4d8ee40d20be0928be2e421dbb2",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:13.000Z",
+      "audience": "public",
+      "seq": 8
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817"
+     },
+     "signature": "81e06ab4d9b3f876a3ca972b532b30570840c37ac38e4356add536d7642799adb4777ee622c6d55ab6c8d089e485ac5a19f6b105a2847dbec776a504ab07f905"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: the old observe does not open the grant that updates it with a new commitment",
+   "op": "limit_opens",
+   "args": [
+    {
+     "hash": "15d632584950f9c80ccf3212dbd9cbf57f314044da491eb56ec35ceeed690ceb",
+     "type": "grant",
+     "state": {
+      "kind": "authority",
+      "scope": {
+       "acts": [
+        "transfer.spray",
+        "transfer.water",
+        "transfer"
+       ],
+       "limit_commitment": "92b2037b61d29fe192f2b28030eb8daf7b9f7c7d213faac670c2d052ac01ed8f",
+       "until": "2027-12-31T00:00:00.000Z"
+      },
+      "at": "2026-10-20T09:00:21.000Z",
+      "audience": "public",
+      "seq": 16
+     },
+     "refs": {
+      "to": "17c807eb93f612f275f8f3a04e2198a6d1038da0f36c601c785efd15a01f99aa",
+      "updates": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "b17f1052e345ea3633baae08683bfac5210b0c5d64a482a410df7960ecbc2840"
+     },
+     "signature": "aa7c505d42a04be9e0139fb3f67c785ca9697b4b48aa05165b6dfcd392f7323191f97eb2e506b91950b9860533ca3e3fc20fdd0105eb768c34236e7ec0e70309"
+    },
+    {
+     "hash": "fc4c43e8cfceb68337522706e45253905d41a4d8ee40d20be0928be2e421dbb2",
+     "type": "observe",
+     "state": {
+      "kind": "limit",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "per": "P1D",
+      "salt": "abababababababababababababababab",
+      "at": "2026-10-20T09:00:13.000Z",
+      "audience": "public",
+      "seq": 8
+     },
+     "refs": {
+      "for": "d56a63ef8933a997564ee3b39f4e83442c51620c8cde1804009a3617c4b07830",
+      "author": "6f31858863dc3cd361524b1d8399c06fa7f581d010d9e3299d25ce8d59213613",
+      "prev": "67bd4489cbaa55f743687f444ab641746b26316533c1c092817f315c6198f817"
+     },
+     "signature": "81e06ab4d9b3f876a3ca972b532b30570840c37ac38e4356add536d7642799adb4777ee622c6d55ab6c8d089e485ac5a19f6b105a2847dbec776a504ab07f905"
+    }
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a grant carrying a limit commitment is well formed",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:28.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25"
+     }
+    },
+    {
+     "author": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "prev": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "to": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff"
+    },
+    [
+     {
+      "hash": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:27.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210054f7b6a82bd15b7bdc6b4c1d560bfc59159230b7a2444e9ceb144ecf3477b1b4"
+      },
+      "refs": {},
+      "signature": "6ba816bd45eb79874e4ba98970af2207480f76b38cb544f586aba6753ad10a96f8754a4df82019ec6c8f7aa0b02eff4140b2ff4d86371c8df15ff0f1bcebd505"
+     }
+    ],
+    null
+   ],
+   "expect": [],
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a grant carrying a visible limit is well formed",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:29.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      }
+     }
+    },
+    {
+     "author": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "prev": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "to": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff"
+    },
+    [
+     {
+      "hash": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:27.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210054f7b6a82bd15b7bdc6b4c1d560bfc59159230b7a2444e9ceb144ecf3477b1b4"
+      },
+      "refs": {},
+      "signature": "6ba816bd45eb79874e4ba98970af2207480f76b38cb544f586aba6753ad10a96f8754a4df82019ec6c8f7aa0b02eff4140b2ff4d86371c8df15ff0f1bcebd505"
+     }
+    ],
+    null
+   ],
+   "expect": [],
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a limit commitment that is not a hash is refused",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:30.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit_commitment": "five thousand pounds"
+     }
+    },
+    {
+     "author": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "prev": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "to": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff"
+    },
+    [
+     {
+      "hash": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:27.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210054f7b6a82bd15b7bdc6b4c1d560bfc59159230b7a2444e9ceb144ecf3477b1b4"
+      },
+      "refs": {},
+      "signature": "6ba816bd45eb79874e4ba98970af2207480f76b38cb544f586aba6753ad10a96f8754a4df82019ec6c8f7aa0b02eff4140b2ff4d86371c8df15ff0f1bcebd505"
+     }
+    ],
+    null
+   ],
+   "expect": [
+    {
+     "code": "grammar"
+    }
+   ]
+  },
+  {
+   "name": "sealed limit: a limit commitment must be text",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:31.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit_commitment": 5000
+     }
+    },
+    {
+     "author": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "prev": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "to": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff"
+    },
+    [
+     {
+      "hash": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:27.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210054f7b6a82bd15b7bdc6b4c1d560bfc59159230b7a2444e9ceb144ecf3477b1b4"
+      },
+      "refs": {},
+      "signature": "6ba816bd45eb79874e4ba98970af2207480f76b38cb544f586aba6753ad10a96f8754a4df82019ec6c8f7aa0b02eff4140b2ff4d86371c8df15ff0f1bcebd505"
+     }
+    ],
+    null
+   ],
+   "expect": [
+    {
+     "code": "grammar"
+    }
+   ]
+  },
+  {
+   "name": "sealed limit: a visible limit and a limit commitment together are refused",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:32.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25"
+     }
+    },
+    {
+     "author": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "prev": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+     "to": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff"
+    },
+    [
+     {
+      "hash": "664eebbbfbb3d724c3f0a060fc3f163accc5ef7772d114a0568fd37d086562ff",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:27.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210054f7b6a82bd15b7bdc6b4c1d560bfc59159230b7a2444e9ceb144ecf3477b1b4"
+      },
+      "refs": {},
+      "signature": "6ba816bd45eb79874e4ba98970af2207480f76b38cb544f586aba6753ad10a96f8754a4df82019ec6c8f7aa0b02eff4140b2ff4d86371c8df15ff0f1bcebd505"
+     }
+    ],
+    null
+   ],
+   "expect": [
+    {
+     "code": "shape"
+    }
+   ]
+  },
+  {
+   "name": "sealed limit: a child under a sealed parent carries a commitment of its own",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:33.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer.spray"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit_commitment": "b1a4da3752a66f992c2d8c97b600150cf881c111a1a4e74fe018838e1e27bdbd"
+     }
+    },
+    {
+     "author": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "prev": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "parent": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+     "to": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a"
+    },
+    [
+     {
+      "hash": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:22.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100960eee01d5118f2962e6d8998dabf8da51fd0e4c4446e29d43e6e3a717829362"
+      },
+      "refs": {},
+      "signature": "fd0a452ff52e699875961f99a6030d13485e8d5fc21b07b7b05a30f9ee010b853d54b5fac5c8cc57b92108d0d541637140249a5aac666447cddea27359a8550a"
+     },
+     {
+      "hash": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:23.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100952355bd131eb9685aa8ba07f2db6663b8be95945440fedd4983e95fa56343ef"
+      },
+      "refs": {},
+      "signature": "af99e7d89ff71d8e5a6814eabf16a1f231a40ed7433a1af6ce9cb9a433475e44bdcc49e801b94e9ed099878f018b2fb261b6df7d02cacbc597971dd45b612f0d"
+     },
+     {
+      "hash": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:24.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321007e7e2305f6163550e2d047bd73139595033e18dc96690ab09ae6ca3d36d5726d"
+      },
+      "refs": {},
+      "signature": "5d581743ebcd37e8c6f8e200936d77262af6968e179f9c8b66b1d32d6169d235f59a84530abeaaa2980003197eddeae86d0d86233fc01538bbbdb77384a4e00c"
+     },
+     {
+      "hash": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:25.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00"
+      },
+      "signature": "26a124296e8826ece5ac1c55b8a955c928cb4fcfcf2a8ef37ca11f38be336b2f28bbf24c2a1e5c132696ab592ac1727c1afb43a1143ca175f2aa13fb955a550e"
+     },
+     {
+      "hash": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:26.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc"
+      },
+      "signature": "69d6a3ebf248af2c656cd98f9cfee02a1f1fc735fdd3eb474e35abefbced711e095aa2309427130e3ce5ed00ed982d3b7095ec9f16bcbd9d0a02b11d9dd43803"
+     }
+    ],
+    null
+   ],
+   "expect": [],
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a child under a sealed parent may carry a visible limit",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:34.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer.spray"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit": {
+       "minor": 1000,
+       "currency": "GBP"
+      }
+     }
+    },
+    {
+     "author": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "prev": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "parent": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+     "to": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a"
+    },
+    [
+     {
+      "hash": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:22.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100960eee01d5118f2962e6d8998dabf8da51fd0e4c4446e29d43e6e3a717829362"
+      },
+      "refs": {},
+      "signature": "fd0a452ff52e699875961f99a6030d13485e8d5fc21b07b7b05a30f9ee010b853d54b5fac5c8cc57b92108d0d541637140249a5aac666447cddea27359a8550a"
+     },
+     {
+      "hash": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:23.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100952355bd131eb9685aa8ba07f2db6663b8be95945440fedd4983e95fa56343ef"
+      },
+      "refs": {},
+      "signature": "af99e7d89ff71d8e5a6814eabf16a1f231a40ed7433a1af6ce9cb9a433475e44bdcc49e801b94e9ed099878f018b2fb261b6df7d02cacbc597971dd45b612f0d"
+     },
+     {
+      "hash": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:24.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321007e7e2305f6163550e2d047bd73139595033e18dc96690ab09ae6ca3d36d5726d"
+      },
+      "refs": {},
+      "signature": "5d581743ebcd37e8c6f8e200936d77262af6968e179f9c8b66b1d32d6169d235f59a84530abeaaa2980003197eddeae86d0d86233fc01538bbbdb77384a4e00c"
+     },
+     {
+      "hash": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:25.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00"
+      },
+      "signature": "26a124296e8826ece5ac1c55b8a955c928cb4fcfcf2a8ef37ca11f38be336b2f28bbf24c2a1e5c132696ab592ac1727c1afb43a1143ca175f2aa13fb955a550e"
+     },
+     {
+      "hash": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:26.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc"
+      },
+      "signature": "69d6a3ebf248af2c656cd98f9cfee02a1f1fc735fdd3eb474e35abefbced711e095aa2309427130e3ce5ed00ed982d3b7095ec9f16bcbd9d0a02b11d9dd43803"
+     }
+    ],
+    null
+   ],
+   "expect": [],
+   "exact": true
+  },
+  {
+   "name": "sealed limit: a child under a sealed parent with no limit at all is wider",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:35.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer.spray"
+      ],
+      "until": "2027-12-31T00:00:00.000Z"
+     }
+    },
+    {
+     "author": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "prev": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "parent": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+     "to": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a"
+    },
+    [
+     {
+      "hash": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:22.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100960eee01d5118f2962e6d8998dabf8da51fd0e4c4446e29d43e6e3a717829362"
+      },
+      "refs": {},
+      "signature": "fd0a452ff52e699875961f99a6030d13485e8d5fc21b07b7b05a30f9ee010b853d54b5fac5c8cc57b92108d0d541637140249a5aac666447cddea27359a8550a"
+     },
+     {
+      "hash": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:23.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100952355bd131eb9685aa8ba07f2db6663b8be95945440fedd4983e95fa56343ef"
+      },
+      "refs": {},
+      "signature": "af99e7d89ff71d8e5a6814eabf16a1f231a40ed7433a1af6ce9cb9a433475e44bdcc49e801b94e9ed099878f018b2fb261b6df7d02cacbc597971dd45b612f0d"
+     },
+     {
+      "hash": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:24.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321007e7e2305f6163550e2d047bd73139595033e18dc96690ab09ae6ca3d36d5726d"
+      },
+      "refs": {},
+      "signature": "5d581743ebcd37e8c6f8e200936d77262af6968e179f9c8b66b1d32d6169d235f59a84530abeaaa2980003197eddeae86d0d86233fc01538bbbdb77384a4e00c"
+     },
+     {
+      "hash": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:25.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00"
+      },
+      "signature": "26a124296e8826ece5ac1c55b8a955c928cb4fcfcf2a8ef37ca11f38be336b2f28bbf24c2a1e5c132696ab592ac1727c1afb43a1143ca175f2aa13fb955a550e"
+     },
+     {
+      "hash": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:26.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc"
+      },
+      "signature": "69d6a3ebf248af2c656cd98f9cfee02a1f1fc735fdd3eb474e35abefbced711e095aa2309427130e3ce5ed00ed982d3b7095ec9f16bcbd9d0a02b11d9dd43803"
+     }
+    ],
+    null
+   ],
+   "expect": [
+    {
+     "code": "wider_than_parent"
+    }
+   ]
+  },
+  {
+   "name": "sealed limit: the other fields are still checked under a sealed parent (acts)",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:36.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "observe"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit_commitment": "b1a4da3752a66f992c2d8c97b600150cf881c111a1a4e74fe018838e1e27bdbd"
+     }
+    },
+    {
+     "author": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "prev": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "parent": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+     "to": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a"
+    },
+    [
+     {
+      "hash": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:22.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100960eee01d5118f2962e6d8998dabf8da51fd0e4c4446e29d43e6e3a717829362"
+      },
+      "refs": {},
+      "signature": "fd0a452ff52e699875961f99a6030d13485e8d5fc21b07b7b05a30f9ee010b853d54b5fac5c8cc57b92108d0d541637140249a5aac666447cddea27359a8550a"
+     },
+     {
+      "hash": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:23.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100952355bd131eb9685aa8ba07f2db6663b8be95945440fedd4983e95fa56343ef"
+      },
+      "refs": {},
+      "signature": "af99e7d89ff71d8e5a6814eabf16a1f231a40ed7433a1af6ce9cb9a433475e44bdcc49e801b94e9ed099878f018b2fb261b6df7d02cacbc597971dd45b612f0d"
+     },
+     {
+      "hash": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:24.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321007e7e2305f6163550e2d047bd73139595033e18dc96690ab09ae6ca3d36d5726d"
+      },
+      "refs": {},
+      "signature": "5d581743ebcd37e8c6f8e200936d77262af6968e179f9c8b66b1d32d6169d235f59a84530abeaaa2980003197eddeae86d0d86233fc01538bbbdb77384a4e00c"
+     },
+     {
+      "hash": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:25.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00"
+      },
+      "signature": "26a124296e8826ece5ac1c55b8a955c928cb4fcfcf2a8ef37ca11f38be336b2f28bbf24c2a1e5c132696ab592ac1727c1afb43a1143ca175f2aa13fb955a550e"
+     },
+     {
+      "hash": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:26.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc"
+      },
+      "signature": "69d6a3ebf248af2c656cd98f9cfee02a1f1fc735fdd3eb474e35abefbced711e095aa2309427130e3ce5ed00ed982d3b7095ec9f16bcbd9d0a02b11d9dd43803"
+     }
+    ],
+    null
+   ],
+   "expect": [
+    {
+     "code": "wider_than_parent"
+    }
+   ]
+  },
+  {
+   "name": "sealed limit: a child under a visible parent that is sealed cannot be shown no larger, so it is wider",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:37.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer.spray"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit_commitment": "b1a4da3752a66f992c2d8c97b600150cf881c111a1a4e74fe018838e1e27bdbd"
+     }
+    },
+    {
+     "author": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "prev": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "parent": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+     "to": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a"
+    },
+    [
+     {
+      "hash": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:22.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100960eee01d5118f2962e6d8998dabf8da51fd0e4c4446e29d43e6e3a717829362"
+      },
+      "refs": {},
+      "signature": "fd0a452ff52e699875961f99a6030d13485e8d5fc21b07b7b05a30f9ee010b853d54b5fac5c8cc57b92108d0d541637140249a5aac666447cddea27359a8550a"
+     },
+     {
+      "hash": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:23.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100952355bd131eb9685aa8ba07f2db6663b8be95945440fedd4983e95fa56343ef"
+      },
+      "refs": {},
+      "signature": "af99e7d89ff71d8e5a6814eabf16a1f231a40ed7433a1af6ce9cb9a433475e44bdcc49e801b94e9ed099878f018b2fb261b6df7d02cacbc597971dd45b612f0d"
+     },
+     {
+      "hash": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:24.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321007e7e2305f6163550e2d047bd73139595033e18dc96690ab09ae6ca3d36d5726d"
+      },
+      "refs": {},
+      "signature": "5d581743ebcd37e8c6f8e200936d77262af6968e179f9c8b66b1d32d6169d235f59a84530abeaaa2980003197eddeae86d0d86233fc01538bbbdb77384a4e00c"
+     },
+     {
+      "hash": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:25.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00"
+      },
+      "signature": "26a124296e8826ece5ac1c55b8a955c928cb4fcfcf2a8ef37ca11f38be336b2f28bbf24c2a1e5c132696ab592ac1727c1afb43a1143ca175f2aa13fb955a550e"
+     },
+     {
+      "hash": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:26.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc"
+      },
+      "signature": "69d6a3ebf248af2c656cd98f9cfee02a1f1fc735fdd3eb474e35abefbced711e095aa2309427130e3ce5ed00ed982d3b7095ec9f16bcbd9d0a02b11d9dd43803"
+     }
+    ],
+    null
+   ],
+   "expect": [
+    {
+     "code": "wider_than_parent"
+    }
+   ]
+  },
+  {
+   "name": "sealed limit: a child under a visible parent keeps a visible limit no larger",
+   "op": "refusals",
+   "args": [
+    "grant",
+    {
+     "seq": 1,
+     "at": "2026-10-20T09:00:38.000Z",
+     "audience": "public",
+     "kind": "authority",
+     "scope": {
+      "acts": [
+       "transfer.spray"
+      ],
+      "until": "2027-12-31T00:00:00.000Z",
+      "limit": {
+       "minor": 1000,
+       "currency": "GBP"
+      }
+     }
+    },
+    {
+     "author": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "prev": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+     "parent": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+     "to": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a"
+    },
+    [
+     {
+      "hash": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-20T09:00:22.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100960eee01d5118f2962e6d8998dabf8da51fd0e4c4446e29d43e6e3a717829362"
+      },
+      "refs": {},
+      "signature": "fd0a452ff52e699875961f99a6030d13485e8d5fc21b07b7b05a30f9ee010b853d54b5fac5c8cc57b92108d0d541637140249a5aac666447cddea27359a8550a"
+     },
+     {
+      "hash": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:23.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100952355bd131eb9685aa8ba07f2db6663b8be95945440fedd4983e95fa56343ef"
+      },
+      "refs": {},
+      "signature": "af99e7d89ff71d8e5a6814eabf16a1f231a40ed7433a1af6ce9cb9a433475e44bdcc49e801b94e9ed099878f018b2fb261b6df7d02cacbc597971dd45b612f0d"
+     },
+     {
+      "hash": "08ad9a2c81d28cf8efdaec00eedc01e487e1e1c5e62ec35e5a3ea78246fd5e4a",
+      "type": "actor",
+      "state": {
+       "kind": "agent",
+       "at": "2026-10-20T09:00:24.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321007e7e2305f6163550e2d047bd73139595033e18dc96690ab09ae6ca3d36d5726d"
+      },
+      "refs": {},
+      "signature": "5d581743ebcd37e8c6f8e200936d77262af6968e179f9c8b66b1d32d6169d235f59a84530abeaaa2980003197eddeae86d0d86233fc01538bbbdb77384a4e00c"
+     },
+     {
+      "hash": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit_commitment": "82381ee0c51fd5c4048f3023cb6f793d66f74cd098ecded5fd64ce0b5c295d25",
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:25.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00"
+      },
+      "signature": "26a124296e8826ece5ac1c55b8a955c928cb4fcfcf2a8ef37ca11f38be336b2f28bbf24c2a1e5c132696ab592ac1727c1afb43a1143ca175f2aa13fb955a550e"
+     },
+     {
+      "hash": "4840d4cb276fe3c0ab7c2143775c509dafbd48811d504cd4f014791f4717817c",
+      "type": "grant",
+      "state": {
+       "kind": "authority",
+       "depth": 1,
+       "scope": {
+        "acts": [
+         "transfer.spray",
+         "transfer"
+        ],
+        "limit": {
+         "minor": 5000,
+         "currency": "GBP"
+        },
+        "until": "2027-12-31T00:00:00.000Z"
+       },
+       "at": "2026-10-20T09:00:26.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "329a7d1d7007f446603857eb8f0e0827f3f44cba7db1ccacd73a1bc3e8a31494",
+       "author": "eb0d88a160a6e01226bca8745dc5754cafbe56ff3e7843da8ef69cd265161b00",
+       "prev": "f311b9e4db3a3b76d7e56118d312a216bff70238da8593987994b92dc4fb79dc"
+      },
+      "signature": "69d6a3ebf248af2c656cd98f9cfee02a1f1fc735fdd3eb474e35abefbced711e095aa2309427130e3ce5ed00ed982d3b7095ec9f16bcbd9d0a02b11d9dd43803"
+     }
+    ],
+    null
+   ],
+   "expect": [],
    "exact": true
   }
  ]

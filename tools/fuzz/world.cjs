@@ -1,5 +1,5 @@
 'use strict';
-// A seeded generator of small worlds (people, a circle, an agent with a grant, promises, transfers, rotations, memberships)
+// A seeded generator of small worlds (people, a circle, an autonomous system with a grant, promises, transfers, rotations, memberships)
 // and of faults (equivocations, skips, replays, forged signatures, wider-than-parent grants, off-by-one chains, mutated and
 // re-signed fields). Signing and ids come from the spec-only oracle, never from the Rust core.
 const fb = require('../../spec/oracle/fb.cjs');

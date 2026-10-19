@@ -1,15 +1,15 @@
 // The door (the MCP server's logic, with no transport in it). Any assistant can find, read, ask and promise on FoodBlock
 // through it, under six rules:
-//   1. The agent drafts; the person decides. A draft is node-local data (core.md section 10), never a block. The
+//   1. The autonomous system drafts; the person decides. A draft is node-local data (core.md section 10), never a block. The
 //      person's one tap on the approval page signs it with the person's own key.
 //   2. An unanswered ask binds no one (promises.md).
-//   3. A first message to a stranger has a human author (consent.md): `ask` is always a draft; an agent-signed block
+//   3. A first message to a stranger has a human author (strangers.md): `ask` is always a draft; an autonomous system-signed block
 //      goes out only when the SDK's admission check says it may.
 //   4. STOP binds the sender: the `consent` fold is asked before every draft and every send (`stopped`). This is the sender's
 //      own discipline; a node never refuses a block for a STOP (consent.md, invariant 29).
 //   5. It never holds money: there is no transfer, payment or deposit here, and a grant's money limit is the fence.
 //   6. Open types, closed authority: the assistant writes no raw blocks. Every block is one of two shapes, an ask
-//      (the person's) or a promise or accept under a live grant (the agent's, naming it in refs.under).
+//      (the person's) or a promise or accept under a live grant (the autonomous system's, naming it in refs.under).
 // Every protocol rule is the SDK's (Rust core through WebAssembly): this file composes and asks, it checks nothing itself.
 import fb from "@foodxdev/foodblock";
 import { randomBytes, timingSafeEqual } from "node:crypto";
@@ -58,7 +58,7 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
   person.chain.forEach((block) => node.push(block));
 
   // ---- Signing ----
-  // The person signs on their tap; an agent signs only under a live grant, naming it.
+  // The person signs on their tap; an autonomous system signs only under a live grant, naming it.
   const writeAs = (who, spec, extra = {}) => {
     const signed = fb.write(spec.type, spec.state, spec.refs, { author: who.id, key: who.keys, held: who.chain, ...extra });
     return signed;
@@ -120,7 +120,7 @@ export function createDoor({ node = memoryNode(), person = newPerson(), now = cl
     return a.length === b.length && timingSafeEqual(a, b);
   }
 
-  // ---- The assistant: one agent per connection ----
+  // ---- The assistant: one autonomous system per connection ----
   /** A new assistant session: its own identity, no authority until the person approves a grant. */
   function agent(name = "assistant") {
     const me = newPerson("agent");

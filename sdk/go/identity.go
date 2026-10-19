@@ -32,7 +32,7 @@ type GenesisOptions struct {
 	Kind, At, EncryptionKey, RecoveryKey, Reach, RecoverySuite, Custodian string
 }
 
-// Genesis is a new person, agent, machine or signing circle: their genesis, signed. It needs only kind, at, audience
+// Genesis is a new person, autonomous system, machine or signing circle: their genesis, signed. It needs only kind, at, audience
 // and the key.
 func Genesis(keys Keypair, o GenesisOptions) (Block, error) {
 	given := map[string]any{}

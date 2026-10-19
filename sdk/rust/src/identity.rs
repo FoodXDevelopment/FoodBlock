@@ -2,7 +2,7 @@
 //! own signing key (and, if it likes, a suite, an encryption key, a custodian and a recovery pair), signed by its own
 //! key. Its hash is their id. A key comes in by a `grant` of kind key. A rotation (`replaces` and `counted_to`) voids
 //! the old key's blocks after its counted_to block, and is signed only by that key, by the recovery key, or for an
-//! agent or machine by its operator (invariant 8). A key brought in by a void block is void, and so is every key it
+//! autonomous system or machine by its operator (invariant 8). A key brought in by a void block is void, and so is every key it
 //! brought in. Two rotations of one key that do not see each other freeze the keys they bring in, until the recovery
 //! key settles it; two recovery rotations that do not see each other end the identity. Two blocks of one key that name
 //! one `prev` are a fork (invariant 3). Recovery reach is read from arrival on the reader's node (`arrived_at`),
@@ -77,7 +77,7 @@ pub struct GenesisOptions<'a> {
     pub custodian: &'a str,
 }
 
-/// A new person, agent, machine or circle that signs: their genesis, signed. It needs only kind, at, audience and
+/// A new person, autonomous system, machine or circle that signs: their genesis, signed. It needs only kind, at, audience and
 /// the key; the recovery fields come as a pair or not at all.
 pub fn genesis(keys: &crate::sign::Keypair, options: &GenesisOptions) -> Result<Value> {
     let suite = if keys.suite.is_empty() { "std" } else { keys.suite.as_str() };
@@ -389,7 +389,7 @@ fn rotation_of<'a>(rotations: &'a [(String, Rotation)], key: &str) -> Option<&'a
     rotations.iter().find(|(k, _)| k == key).map(|(_, r)| r)
 }
 
-/// The live operators of an agent or machine (the authors of its live operator grants) among these blocks.
+/// The live operators of an autonomous system or machine (the authors of its live operator grants) among these blocks.
 fn operators_in(id: &str, index: &Index) -> Vec<String> {
     let authors: Vec<&str> = index
         .values()
@@ -397,6 +397,7 @@ fn operators_in(id: &str, index: &Index) -> Vec<String> {
             type_of(b) == "grant"
                 && ss(b, "kind") == Some("operator")
                 && rs(b, "to") == Some(id)
+                && rs(b, "subject").is_none()
                 && st(b, "status").is_none()
                 && crate::grant::is_live_in(b, index, None)
         })
@@ -454,7 +455,7 @@ fn identity_depth(id: &str, index: &Index, arrived_at: ArrivedAt, depth: usize) 
         return Identity::default();
     }
     let root = root.unwrap();
-    // An agent's or machine's operator may rotate its keys (identity.md, Who may rotate): the operator's own keys.
+    // An autonomous system's or machine's operator may rotate its keys (identity.md, Who may rotate): the operator's own keys.
     let acts_for = matches!(ss(root, "kind"), Some("agent" | "machine"));
     let operators: Vec<(String, Vec<(String, String)>)> = if acts_for && depth == 0 {
         operators_in(id, index)
@@ -547,7 +548,7 @@ fn read_keys(
                 !e.void && !e.frozen && opens_as(grant, &e.key, &e.suite) && speaks(e, grant, &context)
             })
         };
-        // The operator of an agent or machine: a key of its operator opens the grant (the grant's author is the operator).
+        // The operator of an autonomous system or machine: a key of its operator opens the grant (the grant's author is the operator).
         let by_operator = !by_recovery
             && signer.is_none()
             && operators.iter().any(|(o, ks)| {
@@ -571,7 +572,7 @@ fn read_keys(
         }
         if let Some(old) = st(grant, "replaces").filter(|v| truthy(Some(v))) {
             let old = crate::js::text(Some(old));
-            // A key is rotated only by itself, by the recovery key, or by the operator of an agent or machine.
+            // A key is rotated only by itself, by the recovery key, or by the operator of an autonomous system or machine.
             if !by_recovery && !by_operator && keys[signer.unwrap()].key != old {
                 continue;
             }

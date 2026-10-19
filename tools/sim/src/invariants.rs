@@ -408,7 +408,7 @@ pub fn check(w: &mut World) -> Vec<String> {
         }
     }
     trace("// 12. Grants");
-    // 12. Grants: an agent acts only under a live grant that names the act; a child is never wider than its parent.
+    // 12. Grants: an autonomous system acts only under a live grant that names the act; a child is never wider than its parent.
     for (b, ok) in &w.truth.under {
         if !full.contains_key(b["hash"].as_str().unwrap()) {
             continue;

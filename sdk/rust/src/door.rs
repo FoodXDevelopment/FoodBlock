@@ -363,7 +363,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "types" => json!(crate::spec().types),
         "base_fields" => json!(crate::spec().fields(a.s(0)?)),
         "grammar" => json!(a.v(1).as_str().is_some_and(|t| crate::spec().is(a.opt(0).unwrap_or(""), t))),
-        // merkle_root(chunks: [hex]), merkle_proof(chunks, index), merkle_verify(root, chunk, index, count, proof)
+        // merkle_root(chunks: [hex]), merkle_proof(chunks, index), merkle_verify(block, chunk, index, proof)
         "merkle_root" => {
             let chunks = hex_chunks(a.v(0))?;
             match crate::merkle::root(&chunks) {
@@ -380,8 +380,8 @@ fn dispatch(op: &str, a: &Args) -> Out {
         }
         "merkle_verify" => {
             let chunk = crate::block::unhex(a.s(1)?).ok_or_else(|| Fail::Argument("chunk is hex".into()))?;
-            let (index, count) = (a.v(2).as_u64().unwrap_or(u64::MAX), a.v(3).as_u64().unwrap_or(0));
-            json!(index < u64::MAX && crate::merkle::verify(a.s(0)?, &chunk, index as usize, count as usize, &a.strings(4)))
+            let index = a.v(2).as_u64().unwrap_or(u64::MAX);
+            json!(index < u64::MAX && crate::merkle::verify_block(a.v(0), &chunk, index as usize, &a.strings(3)))
         }
         "recovery_key_hash" => json!(crate::identity::recovery_key_hash_in(a.opt(1).unwrap_or("std"), a.s(0)?)),
         "is_genesis" => json!(crate::identity::is_genesis(a.v(0))),
@@ -434,7 +434,9 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "is_live" => json!(crate::grant::is_live(a.v(0), &a.list(1), a.opt(2))),
         "ancestors" => json!(crate::grant::ancestors(a.v(0), &a.list(1))),
         "within_limit" => json!(crate::grant::within_limit(a.v(0), a.v(1), a.v(2).as_i64().unwrap_or(0))),
-        "limit_fence" => crate::grant::limit_fence(a.s(0)?, a.s(1)?, a.v(2), a.opt(3)),
+        "limit_fence" => crate::grant::limit_fence(a.s(0)?, a.s(1)?, a.v(2), a.opt(3), a.opt(4)),
+        "limit_commitment" => json!(crate::grant::limit_commitment_in(a.opt(3).unwrap_or("std"), a.v(0), a.opt(1), a.s(2)?)),
+        "limit_opens" => json!(crate::grant::limit_opens_in(a.opt(2).unwrap_or("std"), a.v(0), a.v(1))),
         "recipients_of" => json!(crate::sync::recipients_of(a.v(0), a.s(1)?)),
         // The one-time converter for pre-1.6 data: convert(oldBlocks, { keys, at, map, existing, channel, request_hash, schemas }).
         #[cfg(feature = "legacy")]

@@ -143,8 +143,23 @@ class BetweenNodes(unittest.TestCase):
         self.assertEqual(fence["audience"], ["b" * 64])
         self.assertTrue(fb.grant.within_limit(fence["state"], fb.money(3000, "GBP"), 2000))
         self.assertFalse(fb.grant.within_limit(fence["state"], fb.money(3001, "GBP"), 2000))
+        # a sealed limit: the grant carries the commitment, the observe carries the salt that opens it
+        salt = "ab" * 16
+        commitment = fb.grant.limit_commitment(fb.money(5000, "GBP"), "P7D", salt)
+        grant = fb.write("grant", {"kind": "authority", "scope": {"acts": ["transfer"], "limit_commitment": commitment, "until": "2027-01-01T00:00:00.000Z"}}, {"to": "b" * 64}, author=g["hash"], key=keys, held=[g], at=AT)
+        sealed = fb.grant.limit_fence(grant["hash"], "b" * 64, fb.money(5000, "GBP"), "P7D", salt)
+        observe = {"hash": "c" * 64, "type": "observe", "state": sealed["state"], "refs": sealed["refs"]}
+        self.assertTrue(fb.grant.limit_opens(grant, observe))
+        self.assertFalse(fb.grant.limit_opens(grant, {**observe, "state": {**observe["state"], "limit": fb.money(9000, "GBP")}}))
         self.assertEqual(fb.sync.push_request([], {"d" * 64: ["e" * 64]})["for"], {"d" * 64: ["e" * 64]})
         self.assertEqual(fb.sync.recipients_of({"d" * 64: ["e" * 64, "f" * 64]}, "d" * 64), ["e" * 64, "f" * 64])
+
+    def test_large_content_merkle(self):
+        chunks = [x * 8 for x in ["00", "11", "22", "33", "44"]]
+        root = fb.merkle.root(chunks)
+        block = {"type": "thing", "state": {"kind": "stream", "marks": [{"scheme": "merkle", "value": root}], "chunks": 5}, "refs": {}}
+        self.assertTrue(fb.merkle.verify(block, chunks[4], 4, fb.merkle.proof(chunks, 4)))
+        self.assertFalse(fb.merkle.verify({**block, "state": {**block["state"], "chunks": 6}}, chunks[4], 4, fb.merkle.proof(chunks, 4)))
 
 
 if __name__ == "__main__":

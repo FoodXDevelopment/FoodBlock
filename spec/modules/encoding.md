@@ -29,9 +29,9 @@ A block holds at most 65,536 bytes; larger content is linked by its hash. A stre
 - Hash the leaves in order. Join neighbours in pairs, left to right, into the level above. If a level has an odd number, its last hash is **carried up unchanged**, not hashed with itself. Repeat until one hash is left: the root, written as 64 lowercase hex characters.
 - A **proof** of chunk `i` of `n` is the list of sibling hashes (hex), from the leaf up: at each level, the neighbour of the node on the path (the left one when the node is on the right, else the right one). A level where the node was carried adds nothing.
 - To **verify**, take the chunk, `i` and `n`; hash the leaf; at each level of the path (its width starts at `n` and becomes the width rounded up to even, halved), use the next sibling when the node has a neighbour; the proof must be used up exactly, and the last hash must be the root. A sibling that is not 64 lowercase hex characters fails.
-- The root does not commit to `n`; the count is stated beside the root, in the signed block that names it. A root is written as a mark `{ scheme: "merkle", value: <root> }` where a hash would be linked.
+- **The count is signed with the root.** The root does not commit to `n`, so the same block states it: a root is written as a mark `{ scheme: "merkle", value: <root> }` in `state.marks`, and `state.chunks`, an integer of at least 1, is the number of chunks, beside it. A reader takes `n` from `state.chunks` of the block that names the root, never from whoever offers the chunk, so a proof cannot be bent to another count. A block with no such mark, two such marks, or no integer `state.chunks` proves nothing.
 
-The door ops are `merkle_root`, `merkle_proof` and `merkle_verify` (`protocol.json`, `door`).
+The door ops are `merkle_root`, `merkle_proof` and `merkle_verify(block, chunk, index, proof)`, which reads the root and the count from the block (`protocol.json`, `door`).
 
 ## Other suites
 

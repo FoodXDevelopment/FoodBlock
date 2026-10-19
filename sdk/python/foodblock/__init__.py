@@ -13,7 +13,7 @@ from .protocol import (
     compose, write, wrap, unwrap, header, seal_copy, open_copy, header_signed_by,
     next_link, check_chain, causal_order, causes_of, past_of, heads_among, sees,
 )
-from . import identity, grant, fold, sync, cbor, strangers, legacy
+from . import identity, grant, fold, sync, cbor, strangers, legacy, merkle
 from .fold import promise_stage, promise_view, consent, circle_state, members_then, where_now, owner_of
 from .identity import identity_state
 from .strangers import receipt_code, receipt_code_long, code_matches
@@ -28,6 +28,6 @@ __all__ = [
     "PUBLIC", "compose", "write", "check", "refusals", "valid", "strict_text", "amount", "money", "confidence", "terms", "is_time", "is_date",
     "wrap", "unwrap", "header", "seal_copy", "open_copy", "header_signed_by",
     "next_link", "check_chain", "causal_order", "causes_of", "past_of", "heads_among", "sees",
-    "identity", "grant", "fold", "sync", "cbor", "strangers", "legacy",
+    "identity", "grant", "fold", "sync", "cbor", "strangers", "legacy", "merkle",
     "promise_stage", "promise_view", "consent", "circle_state", "identity_state", "members_then", "where_now", "owner_of", "receipt_code", "receipt_code_long", "code_matches",
 ]

@@ -6,7 +6,7 @@ const { call, list, arrivals } = require('./core.cjs')
 const recoveryKeyHash = (publicKeyHex, suite = 'std') => call('recovery_key_hash', publicKeyHex, suite)
 
 /**
- * A new person, agent, machine or circle that signs: their genesis, signed. `keys` is { public_key_sign, private_key }
+ * A new person, autonomous system, machine or circle that signs: their genesis, signed. `keys` is { public_key_sign, private_key }
  * and `suite` when it is not std. A genesis needs only kind, at, audience and the key; the recovery key and its reach
  * come as a pair or not at all.
  */

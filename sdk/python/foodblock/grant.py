@@ -34,9 +34,20 @@ def act_name(block) -> str:
     return call("act_name", block)
 
 
-def limit_fence(grant_hash, agent, limit, per=None) -> dict:
-    """The observe of kind limit for a grant, to hand to `write`: sealed to the agent alone (its whole audience)."""
-    return call("limit_fence", grant_hash, agent, limit, per)
+def limit_fence(grant_hash, agent, limit, per=None, salt=None) -> dict:
+    """The observe of kind limit for a grant, to hand to `write`: sealed to the agent alone (its whole audience). With a
+    `salt` it carries the salt that opens the grant's `scope.limit_commitment`."""
+    return call("limit_fence", grant_hash, agent, limit, per, salt)
+
+
+def limit_commitment(limit, per, salt, suite=None) -> str:
+    """The commitment to a limit, for the grant's `scope.limit_commitment` (authority.md)."""
+    return call("limit_commitment", limit, per, salt, suite)
+
+
+def limit_opens(grant, fence, suite=None) -> bool:
+    """Whether the limit observe opens the grant's `scope.limit_commitment`."""
+    return call("limit_opens", grant, fence, suite)
 
 
 def within_limit(limit, money, spent=0) -> bool:

@@ -42,7 +42,7 @@ int fb_hash(const char *block_json, char **out);
 /* The signing key a 32-byte seed (hex) gives: { "public_key_sign", "private_key" }. A null seed makes a new key. */
 int fb_keypair(const char *seed_hex, char **out);
 
-/* A genesis, signed: who a person, agent or machine is. keys_json { public_key_sign, private_key };
+/* A genesis, signed: who a person, autonomous system or machine is. keys_json { public_key_sign, private_key };
  * options_json { kind, at, encryption_key, recovery_key (the offline key's public signing key), reach }: the recovery
  * fields come as a pair or not at all. */
 int fb_genesis(const char *keys_json, const char *options_json, char **out);

@@ -26,7 +26,7 @@ public enum Identity {
     /// The recovery key's hash, as a genesis names it, in the identity's suite.
     public static func recoveryKeyHash(_ publicKeyHex: String, suite: String = "std") -> String { (try? Core.string("recovery_key_hash", publicKeyHex, suite)) ?? "" }
 
-    /// A new person, agent, machine or signing circle: their genesis, signed (in the suite of `keys`). It needs only kind,
+    /// A new person, autonomous system, machine or signing circle: their genesis, signed (in the suite of `keys`). It needs only kind,
     /// at, audience and the key; the recovery key and its reach come as a pair or not at all (`recoverySuite` optional).
     public static func genesis(_ keys: Keypair, kind: String = "person", at: String? = nil, encryptionKey: String? = nil, recoveryKey: String? = nil,
                                reach: String? = nil, recoverySuite: String? = nil, custodian: String? = nil) throws -> JSON {
