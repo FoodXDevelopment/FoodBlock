@@ -1,4 +1,4 @@
-//! Strangers (modules/strangers.md): what may pass between people who have never dealt. A human author for a first
+//! Strangers (modules/consent.md): what may pass between people who have never dealt. A human author for a first
 //! message to a stranger, consent as a block (the `consent` fold), the receipt code, and a model's reading that is never
 //! the person's own claim.
 use crate::check::ordered;
@@ -84,7 +84,7 @@ fn principals(sender: &str, under: Option<&str>, index: &Index) -> Vec<String> {
     out
 }
 
-/// The `consent` fold: a person's live word about a sender (strangers.md, section 2). The person is the block's
+/// The `consent` fold: a person's live word about a sender (consent.md). The person is the block's
 /// `refs.from`, else its author. The person's own blocks count for every word and bind every sender. Anyone else may
 /// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an agent under
 /// that operator. Only the person lifts a stop: by her own block, or by a `yes` a recorder outside the asker's side
@@ -177,7 +177,7 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], under: Opti
 }
 
 /// Whether a block is an agent's: its author is an actor of kind `agent` or `machine`, or it names a grant in
-/// `refs.under` (strangers.md, section 1).
+/// `refs.under` (consent.md).
 pub fn is_agents(block: &Value, index: &Index) -> bool {
     let kind_agent = rs(block, "author")
         .and_then(|a| index.get(a))
@@ -239,7 +239,7 @@ pub fn admission_refusals(
     ordered(w, "message")
 }
 
-/// A model's reading is not a person's observation (strangers.md, section 4): an `observe` of kind `reading` (an
+/// A model's reading is not a person's observation (things.md, Truth): an `observe` of kind `reading` (an
 /// import is one, with `method: import`) signed by an agent's key is that agent's claim. Sharing it claims nothing,
 /// and neither does her private `confirms`. It is the person's own claim only when she puts that fact to someone else
 /// in her own step: a block of hers with the reading in `derives_from` that names someone other than herself in

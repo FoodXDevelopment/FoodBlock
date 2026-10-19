@@ -9,7 +9,7 @@ A `grant` gives authority. Every reader can check it.
 - A grant others act under carries `scope.until`; key, member and operator grants do not.
 - A grant takes effect when it is signed. The receiver may decline or leave by an `answers`. The exception is a member grant, which counts only after the member's own `answers` accepts it (circles.md).
 - A grant has no status of its own. The author ends it by an `updates` that carries `status: stopped`.
-- **The default is nothing.** A person who has said nothing has granted nothing. A grant that lets an agent spend or bind exists only after the person's own words, echoed back to them once (strangers.md). Until then an agent may ask and gather quotes.
+- **The default is nothing.** A person who has said nothing has granted nothing. A grant that lets an agent spend or bind exists only after the person's own words, echoed back to them once (identity.md, Held keys). Until then an agent may ask and gather quotes.
 
 **Scope subset rules.** A child's scope is a subset of its parent's on every field:
 - `acts` and `parties`: sets; the child's is a subset. A missing field means "all", so a child may omit a field only if its parent does.

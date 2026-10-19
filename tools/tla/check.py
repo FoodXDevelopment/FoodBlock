@@ -9,7 +9,7 @@ is the interleaving of independent machines; counts are reported per component a
   python3 tools/tla/check.py            # check all three components
   python3 tools/tla/check.py --mutate N # run with a deliberate bug; the checker must fail
 
-Consent (strangers.md, invariant 29): validity is about the block and what it rests on; consent decides what binds, not
+Consent (consent.md, invariant 29): validity is about the block and what it rests on; consent decides what binds, not
 what exists. A block sent despite a STOP is stored (the sender's chain goes on) and the fold reads it as stopped.
 `--mutate refuse_stop` restores the old rule (a stopped ask is refused and never stored): its sender's later blocks wait
 forever, and the checker finds it (NoConsentStall).

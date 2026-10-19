@@ -176,7 +176,7 @@ export function createNode({ pool, holder, key, owners = holder ? [holder] : [],
       const { message, recipients } = entryOf(block.hash)
       if (!(await rule.admits(db, block, admittedNow))) { refused.push({ hash: block.hash, code: 'not_admitted', detail: "not admitted by this node's rule" }); continue }
       // A block to one of the people this node speaks for: a human author for a first message to a stranger. A live STOP refuses nothing:
-      // the block is kept (its sender's chain goes on) and the fold reads it as stopped (strangers.md, invariant 29).
+      // the block is kept (its sender's chain goes on) and the fold reads it as stopped (consent.md, invariant 29).
       const to = owners.find((id) => id !== authorOf(block) && Object.values(block.refs || {}).flat().includes(id))
       const strangers = to ? fb.sync.admissionRefusals(block, to, [...known, ...result.taken], rule.state, 0).filter((one) => one.code !== 'not_admitted') : []
       if (strangers.length) { for (const one of strangers) refused.push({ hash: block.hash, code: one.code, detail: one.detail }); continue }

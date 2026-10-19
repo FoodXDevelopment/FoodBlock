@@ -782,7 +782,7 @@
     "nodes_local",
     "promises_own_deals",
     "folds_promise",
-    "strangers_own_asks"
+    "consent_own_asks"
    ],
    "node": [
     "edge",
@@ -791,7 +791,7 @@
     "folds",
     "privacy",
     "circles",
-    "strangers"
+    "consent"
    ],
    "index": [
     "node",
@@ -804,9 +804,9 @@
   "actor": {
    "circle": "circles.md",
    "contact": "identity.md",
-   "agent": "strangers.md",
-   "machine": "strangers.md",
-   "person": "strangers.md"
+   "agent": "consent.md",
+   "machine": "consent.md",
+   "person": "consent.md"
   },
   "thing": {
    "schema": "things.md"
@@ -820,7 +820,7 @@
    "reading": "things.md",
    "message": "transport.md",
    "profile": "identity.md",
-   "consent": "strangers.md"
+   "consent": "consent.md"
   },
   "grant": {
    "key": "identity.md",
@@ -845,7 +845,7 @@
   "privacy",
   "nodes",
   "folds",
-  "strangers",
+  "consent",
   "encoding",
   "peers"
  ],
@@ -1600,7 +1600,7 @@
      "held",
      "under?: grant id the sender's block acts under"
     ],
-    "result": "{ word, block } (strangers.md)"
+    "result": "{ word, block } (consent.md)"
    },
    "admission_refusals": {
     "args": [
@@ -1653,7 +1653,7 @@
      "person id",
      "held"
     ],
-    "result": "strangers.md, section 4"
+    "result": "things.md, Truth"
    },
    "reading_condition_holds": {
     "args": [

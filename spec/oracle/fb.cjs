@@ -1871,7 +1871,7 @@ function promiseStage(firstIn, poolIn) {
   else if (accept) out.stage = 'accepted';
   else if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
   else if (!open && lives.some(o => declines.some(d => d.refs.answers === o.hash && isSide(who(d)) && who(d) !== who(o)))) out.stage = 'declined';
-  // a block sent despite a live STOP is kept; consent decides what binds: the ask is read as declined in advance (strangers.md)
+  // a block sent despite a live STOP is kept; consent decides what binds: the ask is read as declined in advance (consent.md)
   else if (!open && consentFold(who(P) === from ? to : from, P.refs.author, pool, P.refs.under).word === 'stop') out.stage = 'declined';
   else out.stage = who(P) === to && who(P) !== from ? 'asked' : 'offered';
   return out;
@@ -1962,7 +1962,7 @@ function successorView(grant, blocks, o) {
   return { events: standing.map(e => e.hash).sort(), cancelled: [...cancelled].sort(), since: f.since, fires: f.fires, fired: f.fires !== null && now !== undefined && now >= f.fires };
 }
 
-// ================================================================ consent and admission (strangers.md)
+// ================================================================ consent and admission (consent.md)
 function consentFold(person, sender, blocks, under) {
   const pool = poolOf(blocks);
   const has = sender !== undefined && sender !== null;
@@ -2001,7 +2001,7 @@ function consentFold(person, sender, blocks, under) {
   const pick = aboutThem.length ? named : decide(cons.filter(b => b.refs.subject === undefined));
   return pick ? { word: pick.state.word, block: pick.hash } : { word: null, block: null };
 }
-// admission_refusals(block, recipient, held, rule, arrivedToday): the message refusals of nodes.md and strangers.md
+// admission_refusals(block, recipient, held, rule, arrivedToday): the message refusals of nodes.md and consent.md
 function admissionRefusals(block, recipient, held, rule, today) {
   const pool = poolOf(held);
   rule = rule || {};
@@ -2033,7 +2033,7 @@ function depositPaid(ask, deposit, blocks) {
   return pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ask.hash) && t.refs.to_owner === deposit.holder && isObj(t.state.money) &&
     jcs(t.state.money.currency) === jcs(deposit.money.currency) && t.state.money.minor >= deposit.money.minor && counts(t, pool));
 }
-// A model's reading is the agent's claim; it becomes the person's only when she puts that fact to someone else in her own step (strangers.md, section 4)
+// A model's reading is the agent's claim; it becomes the person's only when she puts that fact to someone else in her own step (things.md, Truth)
 const readingIsPersonsClaim = (reading, person, blocks) => reading.state.kind === 'reading' && poolOf(blocks).all().some(b => b.refs.author === person && asList(b.refs.derives_from).includes(reading.hash) && [...asList(b.refs.to), ...asList(b.refs.to_owner)].some(x => x !== person));
 
 // ================================================================ messages (privacy.md, nodes.md)

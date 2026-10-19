@@ -32,7 +32,7 @@ An **identity** is an `actor` and its id is its genesis hash. It has one or more
 
 **Held keys (custody).** A person who cannot or will not hold keys may have a custodian they chose hold them. The genesis or key grant names the custodian in `state.custodian`, so every reader sees the key is held by someone else.
 - The protocol does not count a held key as lesser. A reader weighs the custodian: who it is, and what it publishes about how it signs (profiles/custody.md).
-- The custodian signs only on the person's own word. The block's grounds say how it came: `state.channel`, an open label (`sms`, `ussd`, `voice`, `letter`, `meeting`), and `derives_from` the hash of the raw message. Words the custodian read by a model are a reading, and the person's own yes to the exact terms is what the custodian signs on (strangers.md).
+- The custodian signs only on the person's own word. The block's grounds say how it came: `state.channel`, an open label (`sms`, `ussd`, `voice`, `letter`, `meeting`), and `derives_from` the hash of the raw message. Words the custodian read by a model are a reading, and the person's own yes to the exact terms is what the custodian signs on (things.md, Truth).
 - The person may take their keys at any time: a key grant to a key on their own device rotates the custodian's key out, and their record stays theirs.
 - A custodian never acts for the person on its own judgement. That needs a grant, like any agent's.
 

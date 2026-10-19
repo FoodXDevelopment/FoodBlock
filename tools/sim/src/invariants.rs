@@ -382,7 +382,7 @@ pub fn check(w: &mut World) -> Vec<String> {
             continue;
         }
         // Consent decides what binds, not what exists: the block sent despite the STOP is valid, no node refuses it, and
-        // the sender's next block on its chain is not left waiting on it (strangers.md, invariant 29).
+        // the sender's next block on its chain is not left waiting on it (consent.md, invariant 29).
         let r = foodblock::strangers::admission_refusals(first, person, &u, &json!({}), 0);
         if r.iter().any(|x| x.code == "stopped") {
             v.push(format!("a node refused a block for the STOP of {}: it must be kept and read as stopped", name(person)));

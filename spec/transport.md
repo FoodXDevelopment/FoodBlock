@@ -6,14 +6,14 @@ A convention beside the protocol, the way calendar invites ride on email. The pr
 - The email body is plain text, made from the block, for any human reader, in the reader's language where known.
 - One attachment, `application/foodblock+json` (file `.foodblock`), holds `{ "version": "1.6", "messages": [ ... ] }`: block messages (core.md, section 6), sealed to the recipient when they are not public. It carries the author's genesis and the grant chain the agent acts under.
 - Header `FoodBlock-Hash: <hash>`. The email's `Message-ID` is random per envelope and matched to the block on the node, so a reply's `In-Reply-To` finds the block without letting email providers link envelopes together.
-- A message to someone who is a stranger obeys strangers.md: a human sends it, it holds only the ask, and it says how to STOP.
+- A message to someone who is a stranger obeys consent.md: a human sends it, and it says how to STOP.
 
 ## Receiving
 - From a FoodBlock speaker: the attached blocks are read and checked like any push. The email adds nothing.
 - From anyone else (words only): the receiver writes their own `observe` of kind `message`:
   - `refs.subject`: the sender, an `actor` of kind `contact` the receiver writes (no keys; anyone may later claim it is `same_as` a genesis);
   - `refs.derives_from`: the hash of the raw email (kept, because email signing keys rotate);
-  - then a separate reading ("this says yes to the order"), `for` the deal's first promise, with a confidence. A reading is the agent's, not the person's (strangers.md).
+  - then a separate reading ("this says yes to the order"), `for` the deal's first promise, with a confidence. A reading is the agent's, not the person's (things.md, Truth).
 - A reply in words never `answers` a promise; only a signed block does. A fold may count "accepted, observed" but ranks it below "accepted, signed".
 - Raw message ids are never stored, only their hashes.
 

@@ -1,6 +1,6 @@
 package foodblock
 
-// Strangers (modules/strangers.md) and the small profiles: thin calls into the Rust core.
+// Strangers (modules/consent.md) and the small profiles: thin calls into the Rust core.
 
 // ReceiptCode is the short receipt code of a block: the first 5 bytes of its id in Crockford Base32, XXXX-XXXX.
 func ReceiptCode(id string) string { return must[string]("receipt_code", id) }

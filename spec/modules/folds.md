@@ -19,7 +19,7 @@ Each fold and view is named in `protocol.json` (`folds`, `views`), with its inpu
 | `ownership`, `where_now` | fold | blocks | here |
 | `promise_stage` | fold | blocks | here |
 | `circle_state`, `may_act_as`, `members_then` | fold | blocks | here |
-| `consent` | fold | blocks | strangers.md |
+| `consent` | fold | blocks | consent.md |
 | `promise_view` (adds `expired`) | view | the reader's clock | here |
 | `live_grant` (`scope.until`) | view | the clock of the node that relies on the act, when it takes the block in | authority.md |
 | `recovery_reach` | view | the reader's record of arrivals | identity.md |
@@ -57,7 +57,7 @@ Input: the first promise P, and every block that names P in `for` or answers a b
 4. **underway:** a binding accept exists (promises.md, Who may bind), and counted blocks `for` it exist (promises.md, Settling).
 5. **accepted:** a binding accept exists.
 6. **stopped** (before): the author stopped it `before`, and no accept binds over the stop. An accept binds unless the stop is in its causal past.
-7. **declined:** the other side answered `declined`, or, on a promise with two named sides, the other side holds a live STOP naming the author of the first promise (the `consent` fold, strangers.md): a block sent despite a STOP is kept, and reads as declined in advance. Her own binding accept (stages 4 and 5) still wins.
+7. **declined:** the other side answered `declined`, or, on a promise with two named sides, the other side holds a live STOP naming the author of the first promise (the `consent` fold, consent.md): a block sent despite a STOP is kept, and reads as declined in advance. Her own binding accept (stages 4 and 5) still wins.
 8. **offered** (signed by `from`) or **asked** (signed by `to`).
 
 An accept that reached the offerer after `expires`, on the offerer's own clock, does not bind. Only the offerer's node can know it, so the offerer says so by answering the accept `declined`. The fold reads that answer and no clock.

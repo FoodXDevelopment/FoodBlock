@@ -72,7 +72,7 @@ public enum Fold {
     public static func countedIn(_ result: JSON?, _ commitment: String, _ counter: String) -> Bool { Core.bool("counted_in", result ?? [:], commitment, counter) }
 }
 
-/// Strangers (modules/strangers.md) and the small profiles: thin calls into the Rust core.
+/// Strangers (modules/consent.md) and the small profiles: thin calls into the Rust core.
 public enum Strangers {
     /// A model's reading is the person's claim only once the person's own block confirms it.
     public static func readingIsPersonsClaim(_ reading: JSON, _ person: String, _ blocks: [JSON]) -> Bool { Core.bool("reading_is_persons_claim", reading, person, blocks) }

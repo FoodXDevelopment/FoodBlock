@@ -35,8 +35,12 @@ What the types hold, in detail. The types and verbs are in core.md.
 - An `observe` with no `derives_from` is direct sensing; with it, an interpretation.
 - `confidence` is the author's stated probability. Readers work out whether an author is well calibrated from confirms and defeats over time; it is never written.
 - An `observe` says what is so in `state.text`, or in fields its schema declares. A reading carries its `amount`, and may add its `accuracy` and `coverage`, and names the sensor it came from, a thing, in `refs.from`.
-- **A model's reading is not a person's observation.** An `observe` of kind `reading` is signed by the agent's own key, `derives_from` the raw evidence, and states the `method`. Sharing it claims nothing. It becomes the person's claim only when she puts that fact to someone else in her own step (strangers.md, section 4).
+- **A model's reading is not a person's observation.** An `observe` of kind `reading` is signed by the agent's own key, `derives_from` the raw evidence, and states the `method`. Sharing it claims nothing. It becomes the person's claim only when she puts that fact to someone else in her own step: a block she signs, naming someone other than herself in `refs.to` or `refs.to_owner`, with the reading in `derives_from`. Her private `confirms` is not enough.
 - **An import** (a record brought back from a platform) is a reading with `method: import`: the agent's `observe` of kind `reading`, `derives_from` the export file's hash, naming its source in `state.text`. There is one kind, `reading`, for every model's reading. Platforms do not sign. It is the person's claim only once she puts that fact to someone else.
 - **Large content** is linked by its hash. A stream is linked by its **Merkle root**: split it into chunks, hash each chunk with a leading byte `00`, join neighbours by hashing byte `01` then both hashes, and carry an odd one up unchanged. The root proves one chunk without sending the rest.
 - A physical act carries its grounds, linked by hash: the readings, a camera frame's hash, the door sensor's observe. So a stranger can weigh a machine's claim. A sensor gives evidence; it never settles a promise alone (promises.md, Settling).
 - What counts as evidence for a kind of block is its schema's grounds. There is no global score; each reader weighs.
+
+## Invariants
+
+24. A model's reading is never the person's claim until she puts that fact to someone else in her own step; sharing it claims nothing.

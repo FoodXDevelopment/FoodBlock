@@ -2,7 +2,7 @@
 
 Version 1.6 (2026-10-15). Year zero: there is no earlier version in the protocol.
 
-This is the index. The spec is one short core, twelve modules, and a folder of optional profiles, plus a few data files. Where another document in this repository disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
+This is the index. The spec is one short core, thirteen modules, and a folder of optional profiles, plus a few data files. Where another document in this repository disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
 
 ## Files
 
@@ -18,7 +18,7 @@ This is the index. The spec is one short core, twelve modules, and a folder of o
 - `modules/privacy.md`: commitments, audience, sealing, the public header, envelopes.
 - `modules/nodes.md`: messages, pull, push, admission, discovery, equivocation, finding.
 - `modules/folds.md`: folds and views, the orderer, ownership, the promise stage.
-- `modules/strangers.md`: human author, consent as a block, the receipt as the invitation, a model's reading.
+- `modules/consent.md`: a human author for a first message to a stranger, consent as a block.
 - `modules/encoding.md`: bytes, shapes, limits, the compact CBOR form.
 - `modules/peers.md`: micro, edge, node.
 - `transport.md`: email and other envelopes. A convention beside the protocol.
@@ -60,7 +60,7 @@ Core is always needed. Three peers: micro, edge, node. Two are variants: a micro
 | identity | own keys | own keys | yes | yes |
 | things | the types it writes | the types it writes | yes | yes |
 | authority | | yes | yes | yes |
-| strangers | | | admission and own asks | yes |
+| consent | | | admission and own asks | yes |
 | nodes | | | local pull and push | yes |
 | promises | | | own deals | yes |
 | folds | | | promise fold | every fold (an index serves all) |
@@ -80,7 +80,8 @@ Core has 1 to 3 and 25. The rest are in the module that owns them, with the same
 | 8, 19 | identity.md |
 | 28 | passkeys.md |
 | 11, 12, 13, 14, 15, 22 | promises.md |
-| 16, 20, 21, 24, 29, 30 | strangers.md |
+| 16, 20, 29 | consent.md |
+| 24 | things.md |
 | 17 | privacy.md |
 | 18 | nodes.md |
 
@@ -139,7 +140,7 @@ One line for each word a reader may trip on.
 - **Side:** the giving or receiving end of a promise.
 - **Skip:** a block that jumps `seq` forward because the counter was lost.
 - **SPKI DER:** a standard byte form of a public key.
-- **Stranger:** someone who has answered none of a sender's blocks and has given no YES (strangers.md).
+- **Stranger:** someone who has answered none of a sender's blocks and has given no YES (consent.md).
 - **Suite:** a hash, a signature algorithm and an envelope named together.
 - **UCUM:** a standard list of units of measure.
 - **Verb:** a ref key that links blocks by meaning.

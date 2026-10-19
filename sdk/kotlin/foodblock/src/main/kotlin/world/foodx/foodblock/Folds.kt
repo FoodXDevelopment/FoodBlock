@@ -264,7 +264,7 @@ object Sync {
     fun announcement(doc: JsonObject): JsonObject = Native.invoke("announcement", doc).obj()
 }
 
-/** Strangers (modules/strangers.md) and the small profiles. */
+/** Strangers (modules/consent.md) and the small profiles. */
 object Strangers {
     /** A model's reading is the person's claim only once the person's own block confirms it. */
     fun readingIsPersonsClaim(reading: JsonObject, person: String, blocks: List<JsonObject>): Boolean =

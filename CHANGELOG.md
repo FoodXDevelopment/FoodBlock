@@ -6,7 +6,7 @@ What changed in each version. The spec says what each version means; this page s
 
 Year zero: 1.6 is the first version of the protocol itself. Old data enters once, through the converter in `spec/legacy/`.
 
-- The spec split into one short core (`spec/core.md`) and twelve modules, with every closed list in `spec/protocol.json`.
+- The spec split into one short core (`spec/core.md`) and thirteen modules, with every closed list in `spec/protocol.json`.
 - Seven types in three moods, seven verbs; four closed types carry authority.
 - Signing suites `std` (Ed25519), `p256` (including passkeys) and `sm`.
 - Privacy: commitments, sealed blocks, erasure by deleting the salt.

@@ -4,7 +4,7 @@
    One honest node per element of Nodes. A node is pushed small batches of blocks, in any order.
    It models, for the three independent parts of the protocol that carry authority:
      - identity   : key chains, equivocation, rotation, conflict, recovery rotation   (identity.md, nodes.md)
-     - consent    : YES / STOP, consent follows the principal; a block sent despite a STOP is kept and read as stopped (strangers.md)
+     - consent    : YES / STOP, consent follows the principal; a block sent despite a STOP is kept and read as stopped (consent.md)
      - allocation : an open offer, bound only by the orderer's own allocation          (promises.md, folds.md)
    and, for all of them, authority dependencies that wait like `prev` (core.md check 5; `needs`).
 
@@ -120,7 +120,7 @@ IdJudge(b, S) ==       \* depends on b and its causal past only (no arrival, no 
      ELSE IF ~(T[T[b].prev].key = k \/ T[T[b].prev].newkey = k \/ (k = RecKey /\ T[T[b].prev].kind = "genesis")) THEN "chain"
      ELSE "ok"
 
-\* ---------------------------------------------------------------- consent fold (strangers.md)
+\* ---------------------------------------------------------------- consent fold (consent.md)
 Principals(a) == {T[a].author} \cup (IF T[a].under = "none" THEN {} ELSE {T[T[a].under].author})
 Applies(c, a) == /\ T[c].kind = "consent"
                  /\ (IF T[c].person = "none" THEN T[c].author ELSE T[c].person) = "P"

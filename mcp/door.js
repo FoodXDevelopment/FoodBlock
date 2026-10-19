@@ -3,10 +3,10 @@
 //   1. The agent drafts; the person decides. A draft is node-local data (core.md section 10), never a block. The
 //      person's one tap on the approval page signs it with the person's own key.
 //   2. An unanswered ask binds no one (promises.md).
-//   3. A first message to a stranger has a human author (strangers.md): `ask` is always a draft; an agent-signed block
+//   3. A first message to a stranger has a human author (consent.md): `ask` is always a draft; an agent-signed block
 //      goes out only when the SDK's admission check says it may.
 //   4. STOP binds the sender: the `consent` fold is asked before every draft and every send (`stopped`). This is the sender's
-//      own discipline; a node never refuses a block for a STOP (strangers.md, invariant 29).
+//      own discipline; a node never refuses a block for a STOP (consent.md, invariant 29).
 //   5. It never holds money: there is no transfer, payment or deposit here, and a grant's money limit is the fence.
 //   6. Open types, closed authority: the assistant writes no raw blocks. Every block is one of two shapes, an ask
 //      (the person's) or a promise or accept under a live grant (the agent's, naming it in refs.under).

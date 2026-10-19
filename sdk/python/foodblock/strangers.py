@@ -1,4 +1,4 @@
-"""Strangers (modules/strangers.md) and the small profiles: thin calls into the Rust core."""
+"""Strangers (modules/consent.md) and the small profiles: thin calls into the Rust core."""
 
 from ._core import call
 

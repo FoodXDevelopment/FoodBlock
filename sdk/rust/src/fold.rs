@@ -380,7 +380,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         {
             return result("declined", json!({}));
         }
-        // A block sent despite a live STOP is valid and kept; consent decides what binds (strangers.md). The person
+        // A block sent despite a live STOP is valid and kept; consent decides what binds (consent.md). The person
         // told the sender she wants no contact, so the fold reads that ask as declined in advance. Her own accept
         // (above) would still bind: `answers` is the only consent to a deal.
         if !open {

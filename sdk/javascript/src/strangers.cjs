@@ -1,4 +1,4 @@
-// Strangers (modules/strangers.md) and the small profiles. The rules run in the Rust core.
+// Strangers (modules/consent.md) and the small profiles. The rules run in the Rust core.
 const { call, list } = require('./core.cjs')
 
 /** The short receipt code of a block (profiles/short-form.md): the first 5 bytes of its id in Crockford Base32, `XXXX-XXXX`. */

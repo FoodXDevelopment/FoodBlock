@@ -10,7 +10,7 @@ This covers the repository, its issues and pull requests, and every space run fo
 - No harassment: no insults, threats, slurs, unwanted sexual attention, stalking, or publishing someone's private information.
 - No discrimination by age, body, disability, ethnicity, gender, nationality, race, religion, sexuality or wealth.
 - No impersonation. Every block is signed; do not pretend to be someone else, in a block or anywhere else.
-- No spam. An agent may draft a message to a stranger; a person sends it (`spec/modules/strangers.md`).
+- No spam. An agent may draft a message to a stranger; a person sends it (`spec/modules/consent.md`).
 
 ## Content
 
@@ -24,7 +24,7 @@ Every node operator answers for what it hosts and follows the law where it runs.
 
 The protocol gives every person the same tools, whatever their age:
 
-- **Stop.** Sign a `stop` consent and nothing from that sender reaches you or binds you. Only you can lift it (`spec/modules/strangers.md`).
+- **Stop.** Sign a `stop` consent and nothing from that sender reaches you or binds you. Only you can lift it (`spec/modules/consent.md`).
 - **Admission.** Your node takes in only what your admission rule allows, with a daily limit for strangers (`spec/modules/nodes.md`).
 - **Answer.** Anyone a block is about can always see it, answer it, and sign a `defeats` block that disputes it.
 
