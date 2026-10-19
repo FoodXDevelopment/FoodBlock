@@ -36,21 +36,33 @@ fn sub_index(blocks: &[&Value]) -> Index {
 }
 
 // ---- A promise's stage ----
-// Who a block speaks for: a side it names as its author or `as`, or a side whose live grant it acts under.
-fn speaks_as(block: &Value, side: Option<&str>, index: &Index, now: Option<&str>) -> bool {
-    let Some(side) = side.filter(|s| !s.is_empty()) else {
-        return false;
-    };
-    if rs(block, "author") == Some(side) || rs(block, "as") == Some(side) {
-        return true;
+// Who a block speaks for (folds.md, Who a block speaks for): one party. A block that names a circle in `as` speaks for that
+// circle when its author may sign for it (the `sign` power in the circle's fold of the block's causal past), else for
+// no one (`no_role`). Otherwise a block under a live grant, made for its receiver, speaks for the grant's grantor; any other
+// block speaks for its author.
+pub(crate) fn speaker_of(block: &Value, index: &Index, now: Option<&str>) -> Option<String> {
+    if let Some(circle) = rs(block, "as").filter(|c| !c.is_empty()) {
+        return may_act_as_in(block, circle, index, None).then(|| circle.to_string());
     }
-    let Some(grant) = rs(block, "under").and_then(|h| index.get(h)) else {
-        return false;
-    };
-    type_of(grant) == "grant"
-        && rs(grant, "author") == Some(side)
-        && (!truthy(rf(grant, "to")) || strict_eq(rf(grant, "to"), rf(block, "author")))
-        && is_live_in(grant, index, now)
+    if let Some(grant) = rs(block, "under").and_then(|h| index.get(h)) {
+        if type_of(grant) == "grant"
+            && (!truthy(rf(grant, "to")) || strict_eq(rf(grant, "to"), rf(block, "author")))
+            && is_live_in(grant, index, now)
+        {
+            return grantor_of(grant, index);
+        }
+    }
+    rs(block, "author").map(String::from)
+}
+// The grantor of a grant: the circle it was signed `as` (when its signer may sign for it), else its author.
+pub(crate) fn grantor_of(grant: &Value, index: &Index) -> Option<String> {
+    match rs(grant, "as").filter(|c| !c.is_empty()) {
+        Some(circle) => may_act_as_in(grant, circle, index, None).then(|| circle.to_string()),
+        None => rs(grant, "author").map(String::from),
+    }
+}
+fn speaks_as(block: &Value, side: Option<&str>, index: &Index, now: Option<&str>) -> bool {
+    side.filter(|s| !s.is_empty()).is_some_and(|s| speaker_of(block, index, now).as_deref() == Some(s))
 }
 
 fn amount_in(amount: Option<&Value>, unit: Option<&Value>) -> Option<f64> {
@@ -151,6 +163,10 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let from = rs(&first, "from");
     let to = rs(&first, "to");
     let offerer_is_from = speaks_as(&first, from, &index, now);
+    // A first promise that speaks for neither side is nobody's promise: it has no stage (folds.md, Who a block speaks for).
+    if !offerer_is_from && !speaks_as(&first, to, &index, now) {
+        return Value::Null;
+    }
     let offerer = if offerer_is_from { from } else { to };
     let other = if offerer_is_from { to } else { from };
     let open = other.is_none_or(str::is_empty);
@@ -229,11 +245,11 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         if named {
             return false;
         }
-        let principal = grant.and_then(|g| rs(g, "author")).map(String::from);
+        let principal = grant.and_then(|g| grantor_of(g, &index));
         !in_deal.iter().any(|b| {
             status(b, "accepted")
                 && list(rf(b, "answers")).contains(&hash_of(offer))
-                && principal.as_deref().is_some_and(|p| rs(b, "author") == Some(p))
+                && principal.as_deref().is_some_and(|p| speaks_as(b, Some(p), &index, now))
         })
     };
     // 6. A binding accept: one to one, the other side's accept of a live offer unless the offerer declined it; open to
@@ -450,7 +466,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         let r = receiver.as_deref();
         answers_of(hash_of(b), Some("accepted"))
             .iter()
-            .any(|a| r.is_some() && (rs(a, "author") == r || rs(a, "as") == r))
+            .any(|a| speaks_as(a, r, &index, now))
             || index.values().any(|o| {
                 list(rf(o, "confirms")).contains(&hash_of(b))
                     && rs(o, "author").is_some_and(|a| named.iter().any(|n| n == a))

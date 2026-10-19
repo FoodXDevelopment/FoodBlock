@@ -32,6 +32,15 @@ Profiles add `successor_view` (profiles/successor.md, the reader's arrivals and 
 
 A record's **orderer** is the key that signed its first block, or the key its `state.orderer` names. It is a boss for that one record, chosen by whoever opens it: for an offer, the seller. Its binding blocks (an offer's allocations) must each have the one before in their causal past.
 
+## Who a block speaks for
+
+A block speaks for one party, and a fold counts it for that party alone.
+- A block that names a circle in `refs.as` speaks for the circle if its author holds the `sign` power in the circle's fold of the block's causal past (`may_act_as`; circles.md). If not, it speaks for no one (`no_role`): it is kept, and counts for nothing in any deal or any ownership.
+- Any other block that acts under a live grant made for its author (or open) speaks for the grantor: the grant's author, or, when the grant was signed `as` a circle, that circle if the grant's signer held `sign` there.
+- Any other block speaks for its author.
+
+Every fold below asks this one question: a side of a deal, the owner of a thing, the receiver who accepts a transfer. Where a rule says a side "signs", this is what it means.
+
 ## Ownership
 
 The orderer of an instance's ownership is its owner. A transfer of ownership counts only if signed by the owner the previous counted transfer named (or the maker, for the first), with that transfer in its causal past. The owner is the `to_owner` of the last counted ownership transfer, else the maker. A transfer to a named receiver moves ownership, and holding, when the receiver answers it `accepted`; until then it stays with the giver. A transfer to an open receiver (a `count`) moves on the orderer's signature.
@@ -44,9 +53,9 @@ The two blocks of a pair (core.md, invariant 3) count for nothing in any fold, a
 
 ## A promise's stage
 
-Input: the first promise P, and every block that names P in `for` or answers a block in the deal. A promise with no `answers` is not in the deal even if it names P in `for`: it is a new deal that P serves.
+Input: the first promise P, and every block that names P in `for` or answers a block in the deal. A first promise that speaks for neither of its sides has no stage (null). A promise with no `answers` is not in the deal even if it names P in `for`: it is a new deal that P serves.
 
-**Step 0, who counts.** Keep only blocks signed by a side, or by an agent under that side's live grant. An open side is filled by whoever's accept binds.
+**Step 0, who counts.** Keep only blocks that speak for a side (Who a block speaks for). An open side is filled by whoever's accept binds.
 
 **The live offers.** P is live. A counter to a live offer (a promise that answers it and carries no status) between the same two sides, signed by the side that did not sign the offer it answers, makes that offer no longer live and is live in its place. Two counters to one offer both stand: there may be several live offers, and the fold says so (`live`, sorted). An accept binds the live offer it answers. Of all binding accepts, the earliest in causal order binds; two that do not see each other prove the accepter's lie: neither binds, and both are listed in `forks`.
 
@@ -83,3 +92,4 @@ Every node returns the same names, so readers share one API. `protocol.json` (`f
 26. A fold reads only whole input, and is a function of it: the same blocks give the same answer on every node, whatever order they came in.
 4. A record's binding blocks come from its one orderer and form one chain. Two that do not see each other prove a lie.
 5. An instance has at most one owner in any fold.
+31. A block speaks for one party: its author, the circle it names in `as` if its author may sign for it, or the grantor of the grant it acts under. A fold never counts it for another.

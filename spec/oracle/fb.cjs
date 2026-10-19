@@ -1629,8 +1629,7 @@ function circleWhole(circleId, poolIn, limit) {
 }
 const circleState = (circleId, blocks) => { const f = circleWhole(circleId, blocks); return { founder: f.founder, members: f.members, removed: f.removed }; };
 // may_act_as(block, circle): the author holds a role with the sign power in the circle's fold of the block's causal past
-function mayActAs(block, circleId, blocks) {
-  const pool = new Pool([block, ...poolOf(blocks).all()]);
+function mayActAsIn(block, circleId, pool) {
   if (!pool.get(block.hash)) return false; // a block that rests on blocks not held is not read yet
   if (circleId === undefined || circleId === null) return true; // GUESS: a block that signs for no circle needs no role
   if (block.refs.as !== circleId) return false;
@@ -1640,6 +1639,9 @@ function mayActAs(block, circleId, blocks) {
   const m = f.members[block.refs.author];
   if (!m || !C || f.void.has(block.hash)) return false;
   return asList(m.roles).some(rn => ((C.state.roles || []).find(r => r.name === rn) || { powers: [] }).powers.includes('sign'));
+}
+function mayActAs(block, circleId, blocks) {
+  return mayActAsIn(block, circleId, new Pool([block, ...poolOf(blocks).all()]));
 }
 // members_then(block, recipient): the members of a circle (or the holders of circle#role) in the circle fold of the block's causal past
 function membersThen(block, recipient, blocks) {
@@ -1707,17 +1709,30 @@ function promiseStage(firstIn, poolIn) {
     }
   }
   const D = [...deal.values()];
-  // who a block speaks for: its author, or the principal of the live grant it acts under
+  // who a block speaks for (folds.md, Who a block speaks for): one party. A block that names a circle in `as` speaks for it when its author may
+  // sign for it, else for no one; a block under a live grant made for its receiver speaks for the grantor (the circle the grant was signed `as`
+  // when its signer may sign for it, else its author); any other block speaks for its author.
+  const grantor = g => g.refs.as !== undefined ? (mayActAsIn(g, g.refs.as, pool) ? g.refs.as : null) : g.refs.author;
   const cover = b => {
     if (b.refs.under === undefined) return null;
     const g = pool.get(b.refs.under);
     if (!g || g.type !== 'grant' || !grantLive(g, pool) || (g.refs.to !== undefined && g.refs.to !== b.refs.author)) return { principal: null, covered: false };
     const sc = isObj(g.state.scope) ? g.state.scope : {};
-    return { principal: g.refs.author, covered: sc.acts === undefined || actNames(b).some(n => asList(sc.acts).includes(n)) };
+    return { principal: grantor(g), covered: sc.acts === undefined || actNames(b).some(n => asList(sc.acts).includes(n)) };
   };
-  const who = b => { const c = cover(b); return c && c.principal ? c.principal : b.refs.author; };
+  const whoMemo = new Map();
+  const who = b => {
+    if (!whoMemo.has(b.hash)) {
+      let w;
+      if (b.refs.as !== undefined) w = mayActAsIn(b, b.refs.as, pool) ? b.refs.as : null;
+      else { const c = cover(b); w = c && c.principal ? c.principal : b.refs.author; }
+      whoMemo.set(b.hash, w);
+    }
+    return whoMemo.get(b.hash);
+  };
   const quote = b => { const c = cover(b); return !!c && !c.covered; };
-  const isSide = id => id === from || id === to;
+  const isSide = id => id !== null && id !== undefined && (id === from || id === to);
+  if (!isSide(who(P))) return null; // a first promise that speaks for neither side is nobody's promise: no stage
   const open = from === undefined || to === undefined;
   const self = from !== undefined && from === to && from === who(P);
   // ---- the live offers: P, or the latest counters between the same two sides, each signed by the side that did not sign the offer it answers
@@ -1806,7 +1821,7 @@ function promiseStage(firstIn, poolIn) {
   const schema = P.refs.schema && pool.get(P.refs.schema);
   const confirmers = new Set(schema && isObj(schema.state.grounds) ? asList(schema.state.grounds.confirmers).flatMap(c => c.includes('#') ? membersThen({ hash: P.hash }, c, pool) : [c]) : []);
   const confirmed = h => pool.all().some(c => asList(c.refs.confirms).includes(h) && confirmers.has(c.refs.author) && counts(c, pool));
-  const accepted = (h, receiver) => D.some(a => a.refs.answers === h && a.state.status === 'accepted' && (receiver === undefined || a.refs.author === receiver));
+  const accepted = (h, receiver) => D.some(a => a.refs.answers === h && a.state.status === 'accepted' && (receiver === undefined || who(a) === receiver));
   const settling = D.filter(b => b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && isSide(who(b)));
   const goods = [], pays = [], refunds = [], works = [];
   for (const b of settling) {

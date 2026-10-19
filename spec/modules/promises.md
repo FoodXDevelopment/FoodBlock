@@ -3,7 +3,7 @@
 A promise moves a noun from one side to the other. Sides and what moves are in `refs`; `terms`, `what` (a description) and `not` are in `state`. A promise is read by the stage fold (folds.md, A promise's stage).
 
 **Sides.** `refs.from` gives; `refs.to` receives. Either may be left out, which leaves it open: an offer open to anyone, or a want (an ask with `from` open, so offers can answer it). A promise signed by `from` is an **offer**; signed by `to`, an **ask**. What comes back (money, goods or nothing) flows the other way and is read from the transfers.
-- **Only a side signs.** A promise is signed by a side: its author, the circle it signs `as`, or the grantor of the grant it acts under (that grant's author, or the circle it was signed `as`); otherwise `not_a_side`. An answer or a stop is signed by a side of the deal it answers or stops in the same way. The grant is one the promise needs (core.md, check 5), so this is judged once it is held. What someone without a key said they would do is the receiver's own `observe` (kind `message`, then a reading of it), never a promise.
+- **Only a side signs.** A promise is signed by a side: its author, the circle it signs `as`, or the grantor of the grant it acts under (that grant's author, or the circle it was signed `as`); otherwise `not_a_side`. A promise names a circle's side only through a signer the fold lets speak for it (folds.md, Who a block speaks for): an accept, answer or stop signed `as` a circle by someone without the `sign` power there binds no one (`no_role`), and a removed member's block after the cut speaks for no one. An answer or a stop is signed by a side of the deal it answers or stops in the same way. The grant is one the promise needs (core.md, check 5), so this is judged once it is held. What someone without a key said they would do is the receiver's own `observe` (kind `message`, then a reading of it), never a promise.
 - **Bearer.** `refs.to` may name a thing: whoever owns it at settlement receives.
 - **Who it is for.** `refs.for_whom`: a person, a circle, or open, written as a commitment. It reaches the other side only when it changes their work, and only as much as they need (`terms.needs`).
 - **To yourself.** A promise whose `refs.from` and `refs.to` both name its author is accepted when made. The top of a plan is one.
@@ -50,7 +50,7 @@ A promise or grant has no status of its own: offered or asked is read from who s
 ## Invariants
 
 11. What is bound from an offer never exceeds what is offered.
-12. A block counts in a deal only if a side, or its agent under a grant, signed it.
+12. A block counts in a deal only if it speaks for a side (folds.md, invariant 31).
 13. A promise is settled only by blocks the receiving side accepts or the grounds confirm.
 14. An unanswered ask or claim binds no one.
 15. `answers` is the only consent to a deal.

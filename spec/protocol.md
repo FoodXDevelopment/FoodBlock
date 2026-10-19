@@ -74,7 +74,7 @@ Core has 1 to 3 and 25. The rest are in the module that owns them, with the same
 | Number | Module |
 |---|---|
 | 1, 2, 3, 25 | core.md |
-| 4, 5, 26 | folds.md |
+| 4, 5, 26, 31 | folds.md |
 | 6, 7, 9, 10, 23 | authority.md |
 | 27 | circles.md |
 | 8, 19 | identity.md |
