@@ -1302,7 +1302,8 @@ fn ownership_in(thing_hash: &str, index: &Index) -> Ownership {
             conflict: None,
         };
     };
-    let mut owner: Option<String> = rs(thing, "author").map(String::from);
+    // The maker is who the thing's block speaks for: a thing made `as` a circle is the circle's.
+    let mut owner: Option<String> = speaker_of(thing, index, None);
     let mut last: Option<&Value> = None;
     let accepted = |transfer: &Value| {
         index.values().any(|b| {
@@ -1310,7 +1311,7 @@ fn ownership_in(thing_hash: &str, index: &Index) -> Ownership {
                 && ss(b, "status") == Some("accepted")
                 && crate::identity::counts_in(b, index)
                 && list(rf(b, "answers")).contains(&hash_of(transfer))
-                && rs(b, "author").is_some_and(|a| list(rf(transfer, "to_owner")).contains(&a))
+                && speaker_of(b, index, None).is_some_and(|a| list(rf(transfer, "to_owner")).contains(&a.as_str()))
         })
     };
     let candidates: Vec<&Value> = index
@@ -1337,7 +1338,7 @@ fn ownership_in(thing_hash: &str, index: &Index) -> Ownership {
             .filter(|b| {
                 !transfers.iter().any(|t| t == hash_of(b))
                     && o.is_some()
-                    && (rs(b, "author") == o || rs(b, "as") == o)
+                    && speaker_of(b, index, None).as_deref() == o
                     && last.is_none_or(|l| sees_in(b, hash_of(l), index))
             })
             .collect();
@@ -1416,7 +1417,7 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
         .collect();
     let mut holders: Vec<Option<String>> = vec![owner.clone()];
     for b in &all {
-        if rs(b, "author").map(String::from) == owner {
+        if speaker_of(b, read, None) == owner {
             holders.extend(
                 list(rf(b, "to_holder"))
                     .into_iter()
@@ -1427,7 +1428,7 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
     let moves: Vec<Value> = all
         .iter()
         .filter(|b| {
-            truthy(rf(b, "to_place")) && holders.contains(&rs(b, "author").map(String::from))
+            truthy(rf(b, "to_place")) && holders.contains(&speaker_of(b, read, None))
         })
         .map(|b| (*b).clone())
         .collect();

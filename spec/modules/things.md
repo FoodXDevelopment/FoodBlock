@@ -7,7 +7,7 @@ What the types hold, in detail. The types and verbs are in core.md.
 - **Marks.** A thing carries its exact marks, `[{ scheme, value }]` (a lot code, a barcode, a phone number), and the words printed on it as read when first seen (`words`). A recall matches marks exactly.
 - **Containment.** A thing can be in another (`refs.place`), and what is inside moves with it until taken out. Its own `refs.place` is where it was made or first seen. Where it is now is a fold (folds.md).
 - **Parts.** A transfer may move an amount of an instance (`state.amount`). The part keeps the instance's marks; the rest stays with the sender. A transfer with no `amount` moves the whole instance. Toward a promise line, that means its `pack` in the line's unit, and an instance with no pack in that unit covers the line.
-- **Shares.** A share is a thing, so it can be held and sold. Whole ownership is not a thing: it is who owns after a transfer.
+- **Shares.** A share is a thing, so it can be held and sold. Whole ownership is not a thing: it is who owns after a transfer. Shares or stock a member makes `as` a circle are the circle's own (folds.md, Ownership).
 - **Schemas.** A schema is a thing of kind `schema`. A law, a custom, a faith duty or a house rule is one too, so `under` can name it. Anyone may write one; equal schemas are linked with `same_as`. A `refs.under` that names a law counts only for readers who trust that law's author. A schema states:
   - `target`: the type, or `type.kind`, it is for;
   - `fields`: each field's name and field type (the field types are in `protocol.json`);

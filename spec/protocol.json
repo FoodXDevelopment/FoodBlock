@@ -1585,6 +1585,20 @@
     ],
     "result": "true or false (folds.md); no code is returned"
    },
+   "ownership": {
+    "args": [
+     "instance: full_block",
+     "held"
+    ],
+    "result": "{ owner, transfers, conflict } as the fold `ownership` (folds.md)"
+   },
+   "where_now": {
+    "args": [
+     "thing: full_block",
+     "held"
+    ],
+    "result": "the places (hashes), sorted; empty when none is known (folds.md)"
+   },
    "circle_state": {
     "args": [
      "circle id",

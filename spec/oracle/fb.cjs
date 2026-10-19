@@ -1909,18 +1909,21 @@ function due(promise, arrivals) {
 }
 
 // ================================================================ ownership and place (folds.md)
+function speakerOf(b, pool) { if (b.refs.as !== undefined) return mayActAsIn(b, b.refs.as, pool) ? b.refs.as : null; return b.refs.author; }
 function ownershipFold(thingIn, blocks) {
-  const pool = poolOf(blocks);
-  const thing = typeof thingIn === 'string' ? pool.get(thingIn) : (pool.get(thingIn.hash) || (unmetIn(thingIn, pool.m).length ? null : thingIn));
+  const held = poolOf(blocks);
+  const pool = typeof thingIn === 'string' || held.get(thingIn.hash) ? held : new Pool([thingIn, ...held.all()]);
+  const thing = pool.get(typeof thingIn === 'string' ? thingIn : thingIn.hash);
   if (!thing) return { owner: null, transfers: [], conflict: null }; // an instance that rests on blocks not held is not read yet
-  const maker = thing.refs.author;
+  const speaker = b => speakerOf(b, pool);
+  const maker = speaker(thing); // a thing made `as` a circle is the circle's (folds.md, Who a block speaks for)
   const named = t => t.refs.to_owner !== undefined;
   const transfers = pool.all().filter(t => t.type === 'transfer' && t.refs.answers === undefined && asList(t.refs.what).includes(thing.hash) && t.state.amount === undefined && (named(t) || t.state.count !== undefined) && counts(t, pool));
-  const accepted = t => !named(t) || pool.all().some(a => a.refs.answers === t.hash && a.state.status === 'accepted' && a.refs.author === t.refs.to_owner && counts(a, pool));
+  const accepted = t => !named(t) || pool.all().some(a => a.refs.answers === t.hash && a.state.status === 'accepted' && speaker(a) === t.refs.to_owner && counts(a, pool));
   let owner = maker, prev = null, conflict = null;
   const list = [];
   for (;;) {
-    const elig = transfers.filter(t => t.refs.author === owner && accepted(t) && (prev ? pool.sees(t.hash, prev.hash) : true) && t !== prev && !list.includes(t));
+    const elig = transfers.filter(t => speaker(t) === owner && accepted(t) && (prev ? pool.sees(t.hash, prev.hash) : true) && t !== prev && !list.includes(t));
     if (!elig.length) break;
     const maximal = elig.filter(t => !elig.some(u => u !== t && pool.sees(u.hash, t.hash)));
     if (maximal.length > 1) { conflict = maximal.map(t => t.hash).sort(); break; }
@@ -1932,17 +1935,18 @@ function ownershipFold(thingIn, blocks) {
   return { owner, transfers: list.map(t => t.hash), conflict };
 }
 function whereNow(thingIn, blocks, seen) {
-  const pool = poolOf(blocks);
-  const thing = typeof thingIn === 'string' ? pool.get(thingIn) : thingIn;
+  const held = poolOf(blocks);
+  const pool = typeof thingIn === 'string' || held.get(thingIn.hash) ? held : new Pool([thingIn, ...held.all()]);
+  const thing = typeof thingIn === 'string' ? pool.get(thingIn) : pool.get(thingIn.hash) || thingIn;
   seen = seen || new Set();
   if (seen.has(thing.hash)) return [];
   seen = new Set([...seen, thing.hash]);
   const own = ownershipFold(thing, pool);
-  const ownerNow = own.owner === null ? thing.refs.author : own.owner;
+  const ownerNow = own.owner === null ? speakerOf(thing, pool) : own.owner;
   const holders = new Set();
   const moves = pool.all().filter(t => t.type === 'transfer' && t.refs.answers === undefined && asList(t.refs.what).includes(thing.hash) && counts(t, pool));
-  for (const t of moves) if (t.refs.to_holder !== undefined && (t.refs.author === ownerNow || t.refs.author === thing.refs.author)) holders.add(t.refs.to_holder);
-  const placed = moves.filter(t => t.refs.to_place !== undefined && (t.refs.author === ownerNow || t.refs.author === thing.refs.author || holders.has(t.refs.author)));
+  for (const t of moves) if (t.refs.to_holder !== undefined && (speakerOf(t, pool) === ownerNow || speakerOf(t, pool) === speakerOf(thing, pool))) holders.add(t.refs.to_holder);
+  const placed = moves.filter(t => t.refs.to_place !== undefined && (speakerOf(t, pool) === ownerNow || speakerOf(t, pool) === speakerOf(thing, pool) || holders.has(speakerOf(t, pool))));
   const maximal = placed.filter(t => !placed.some(u => u !== t && pool.sees(u.hash, t.hash)));
   const direct = maximal.length ? [...new Set(maximal.map(t => t.refs.to_place))] : (thing.refs.place !== undefined ? [thing.refs.place] : []);
   const res = new Set();
@@ -2170,6 +2174,8 @@ function door(op, ...a) {
     case 'sees': return pastOfBlock(a[0], a[2]).includes(a[1].hash);
     case 'may_act_as': return mayActAs(a[0], a[1], a[2]);
     case 'circle_state': return circleState(a[0], a[1]);
+    case 'ownership': return ownershipFold(a[0], a[1]);
+    case 'where_now': return whereNow(a[0], a[1]);
     case 'spec': return { protocol: P };
     case 'accept_sealed': { const r = acceptSealed(a[0], a[1]); return { ...r, taken: r.taken.map(b => b.hash) }; }
     case 'matches': return matches(a[0], a[1], a[2]);

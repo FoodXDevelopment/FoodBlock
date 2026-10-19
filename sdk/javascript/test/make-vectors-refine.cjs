@@ -99,6 +99,40 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   stage('circle-signed deal: a member\'s stop signed as the circle stops it', o6, s.held, { stage: 'stopped', stop: 'before' })
 }
 
+// ---- 2. The maker of a thing made `as` a circle is the circle ----
+{
+  const s = story(), ann = s.person('oann'), bea = s.person('obea'), eve = s.person('oeve'), cal = s.person('ocal')
+  const cafe = s.say(ann, 'actor', { kind: 'circle', name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] })
+  const g = s.say(ann, 'grant', { kind: 'member', roles: ['baker'] }, { subject: cafe.hash, to: bea.id, as: cafe.hash })
+  s.say(bea, 'grant', { status: 'accepted', kind: 'member' }, { answers: g.hash, subject: cafe.hash })
+  const kind = s.say(bea, 'thing', { kind: 'share', name: 'Cafe share' }, { as: cafe.hash })
+  const share = s.say(bea, 'thing', { kind: 'share', lot: 'S1' }, { of: kind.hash, as: cafe.hash })
+  const own = (name, thing, owner, extra = {}) => door(name, 'ownership', [thing, s.held], { expect: { owner, ...extra } })
+  own('ownership: a share a member made as the circle belongs to the circle, not to the member', share, cafe.hash)
+  const own2 = s.say(bea, 'thing', { kind: 'share', lot: 'S2' }, { of: kind.hash })
+  own('ownership: the same share made in the member\'s own name is the member\'s', own2, bea.id)
+  // the member gives it away as the circle; the receiver accepts
+  const give = s.say(bea, 'transfer', {}, { what: share.hash, to_owner: cal.id, as: cafe.hash })
+  own('ownership: a transfer signed as the circle waits for the receiver', share, cafe.hash)
+  s.say(cal, 'transfer', { status: 'accepted' }, { answers: give.hash })
+  own('ownership: the receiver accepts: the share is hers', share, cal.id, { transfers: [give.hash] })
+  // an outsider cannot give away the circle\'s share by signing as the circle
+  const stock = s.say(bea, 'thing', { kind: 'share', lot: 'S3' }, { of: kind.hash, as: cafe.hash })
+  const steal = s.say(eve, 'transfer', {}, { what: stock.hash, to_owner: eve.id, as: cafe.hash })
+  s.say(eve, 'transfer', { status: 'accepted' }, { answers: steal.hash })
+  own('ownership: an outsider\'s transfer signed as the circle moves nothing', stock, cafe.hash, { transfers: [] })
+  // nor can an outsider make stock for the circle: the block speaks for no one, so there is no owner
+  const fake = s.say(eve, 'thing', { kind: 'share', lot: 'S4' }, { of: kind.hash, as: cafe.hash })
+  door('ownership: a thing made as a circle by an outsider has no maker and no owner', 'ownership', [fake, s.held], { expect: { owner: null, transfers: [], conflict: null }, exact: true })
+  // a circle-owned thing is where the circle's member moved it
+  const shelf = s.say(bea, 'thing', { kind: 'shelf' }, { as: cafe.hash })
+  s.say(bea, 'transfer', {}, { what: share.hash, to_place: shelf.hash, as: cafe.hash })
+  s.say(bea, 'transfer', {}, { what: stock.hash, to_place: shelf.hash, as: cafe.hash })
+  door('where_now: stock the circle owns is moved by a member signing as the circle', 'where_now', [stock, s.held], { expect: [shelf.hash], exact: true })
+  const wander = s.say(eve, 'transfer', {}, { what: stock.hash, to_place: eve.id, as: cafe.hash })
+  door('where_now: a move signed as the circle by an outsider does not count', 'where_now', [stock, s.held], { expect: [shelf.hash], exact: true })
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)
