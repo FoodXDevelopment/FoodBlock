@@ -50,3 +50,11 @@ Every package is at `1.6.0`, and the protocol version each one reports is read f
    downloads its artifacts and publishes. `node tools/version-sync.cjs --pack` dry-runs all of it where the tools exist.
 
 The node (`server/`) is not a package: run it from this repository or with its Dockerfile.
+
+## Before a revised core is deployed: replay the stored blocks
+
+A node keeps every block exactly as it arrived (`sql/schema.sql`). Before a revised core replaces the one that wrote them, check what it would say about them. `tools/replay-check.cjs` reads exported blocks and prints counts and reason codes only, never a block, an id or a key. It never connects to anything.
+
+1. On the machine that holds the node's database, export the messages to a private file: `psql "$DATABASE_URL" -At -c "select message::text from blocks order by n" > blocks.jsonl`.
+2. In a checkout of the revised core: `node tools/replay-check.cjs blocks.jsonl` (`--json` for a machine-readable result, `--limit N` to judge the first N only).
+3. Read the counts. A block that fails would be refused by the revised core; fix the cause, or convert the data once with `fb convert`, before deploying. Delete the export afterwards.
