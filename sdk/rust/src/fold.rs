@@ -244,6 +244,8 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let deal_blocks: Vec<&Value> = deal.iter().map(|h| &index[h.as_str()]).collect();
     let in_deal: Vec<Value> = causal_order_among(&sub_index(&deal_blocks), &index)
         .into_iter()
+        // An `updates` of a promise that is not a stop counts for nothing: terms are fixed once written (promises.md).
+        .filter(|b| !(type_of(b) == "promise" && !list(rf(b, "updates")).is_empty() && list(rf(b, "answers")).is_empty() && ss(b, "status") != Some("stopped")))
         .filter(|b| hash_of(b) != first_hash && (side_of(b).is_some() || (open && !by_offerer(b))))
         .collect();
     let status = |b: &Value, word: &str| ss(b, "status") == Some(word);

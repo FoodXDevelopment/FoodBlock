@@ -20299,6 +20299,65 @@
     "codes": [
      "grammar"
     ]
+   },
+   {
+    "name": "a promise carrying new terms and updating another is refused: its terms are fixed once written",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "minor": 350,
+        "currency": "GBP"
+       },
+       "quantity": {
+        "value": "1",
+        "unit": "{tray}"
+       },
+       "expires": "2026-12-20T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:37.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "updates": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+      "for": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+      "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "prev": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a"
+     }
+    },
+    "codes": [
+     "required"
+    ]
+   },
+   {
+    "name": "an updates of a promise that is its author's stop is the one allowed",
+    "by": "check",
+    "block": {
+     "type": "promise",
+     "state": {
+      "status": "stopped",
+      "stop": "before",
+      "at": "2026-10-19T12:01:43.000Z",
+      "audience": "public",
+      "seq": 7
+     },
+     "refs": {
+      "updates": "ea2dd0a6cf5ae9e13c41676b45e7c0542a42dcf4a02d26acc3d3f22f3b6bd0c4",
+      "for": "ea2dd0a6cf5ae9e13c41676b45e7c0542a42dcf4a02d26acc3d3f22f3b6bd0c4",
+      "after": [
+       "ea2dd0a6cf5ae9e13c41676b45e7c0542a42dcf4a02d26acc3d3f22f3b6bd0c4"
+      ],
+      "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "prev": "ea2dd0a6cf5ae9e13c41676b45e7c0542a42dcf4a02d26acc3d3f22f3b6bd0c4"
+     }
+    },
+    "codes": []
    }
   ]
  },
@@ -55692,6 +55751,547 @@
    ],
    "expect": {
     "stage": "done"
+   }
+  },
+  {
+   "name": "terms fixed: a price written as an updates of the offer changes nothing in the deal",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "minor": 450,
+        "currency": "GBP"
+       },
+       "quantity": {
+        "value": "1",
+        "unit": "{tray}"
+       },
+       "expires": "2026-12-20T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:36.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "prev": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87"
+     },
+     "signature": "1f54b8a9cc7e07b9918c4fad0594fa709176e9a9c4815d829d8b3969058178becfbec371a74af14e7faa8c31178dcbf707a2bcfe399d022879fd737dfea4dd0b"
+    },
+    [
+     {
+      "hash": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:33.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009b64b583d71ccbf73c3a7edf9b88115244e4dac4b330f7f9b68b6c2a5097b4aa"
+      },
+      "refs": {},
+      "signature": "e022a608bfb010239edb56e67cd0a3fe5141164926a2989fad8d5103a76a265981a390d31fa7380a9c6714505ef934525ac326f873de7c9a142d67815594a208"
+     },
+     {
+      "hash": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:34.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210043b90426f1aa96b40d4986f584859c434bc8d47bb3bb1b5bb415cb7b835c267b"
+      },
+      "refs": {},
+      "signature": "25eae2c30aa161cdf366b7a6771821351e0cae5836aba2b4b417544d7031992e0eedba211e2b109b50e7a14ee9422f05ddd818e78476bc7138cfbb6eb9940109"
+     },
+     {
+      "hash": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:35.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c"
+      },
+      "signature": "3939ba746b68d66f51dfba4ea45963ad1f81ce5b322b63438251936cbf56b430b1069627b1499023e3b46456b714ec5a4fe93ab9ffb97627da68f2d65b033809"
+     },
+     {
+      "hash": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 450,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:36.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87"
+      },
+      "signature": "1f54b8a9cc7e07b9918c4fad0594fa709176e9a9c4815d829d8b3969058178becfbec371a74af14e7faa8c31178dcbf707a2bcfe399d022879fd737dfea4dd0b"
+     },
+     {
+      "hash": "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 350,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:37.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "updates": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "for": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a"
+      },
+      "signature": "6e6768a9cdf84e82eb77e1e9c289bdd0abded0c348044ff2b0d9dba128b8280db45d4f4012274527030b9dc9b5f8d9e49c5d2c6a73367db6098411fd3f67e80f"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "offered",
+    "live": [
+     "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a"
+    ]
+   }
+  },
+  {
+   "name": "terms fixed: the accept binds the offer as written, at the written price",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "minor": 450,
+        "currency": "GBP"
+       },
+       "quantity": {
+        "value": "1",
+        "unit": "{tray}"
+       },
+       "expires": "2026-12-20T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:36.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "prev": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87"
+     },
+     "signature": "1f54b8a9cc7e07b9918c4fad0594fa709176e9a9c4815d829d8b3969058178becfbec371a74af14e7faa8c31178dcbf707a2bcfe399d022879fd737dfea4dd0b"
+    },
+    [
+     {
+      "hash": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:33.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009b64b583d71ccbf73c3a7edf9b88115244e4dac4b330f7f9b68b6c2a5097b4aa"
+      },
+      "refs": {},
+      "signature": "e022a608bfb010239edb56e67cd0a3fe5141164926a2989fad8d5103a76a265981a390d31fa7380a9c6714505ef934525ac326f873de7c9a142d67815594a208"
+     },
+     {
+      "hash": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:34.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210043b90426f1aa96b40d4986f584859c434bc8d47bb3bb1b5bb415cb7b835c267b"
+      },
+      "refs": {},
+      "signature": "25eae2c30aa161cdf366b7a6771821351e0cae5836aba2b4b417544d7031992e0eedba211e2b109b50e7a14ee9422f05ddd818e78476bc7138cfbb6eb9940109"
+     },
+     {
+      "hash": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:35.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c"
+      },
+      "signature": "3939ba746b68d66f51dfba4ea45963ad1f81ce5b322b63438251936cbf56b430b1069627b1499023e3b46456b714ec5a4fe93ab9ffb97627da68f2d65b033809"
+     },
+     {
+      "hash": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 450,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:36.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87"
+      },
+      "signature": "1f54b8a9cc7e07b9918c4fad0594fa709176e9a9c4815d829d8b3969058178becfbec371a74af14e7faa8c31178dcbf707a2bcfe399d022879fd737dfea4dd0b"
+     },
+     {
+      "hash": "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 350,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:37.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "updates": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "for": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a"
+      },
+      "signature": "6e6768a9cdf84e82eb77e1e9c289bdd0abded0c348044ff2b0d9dba128b8280db45d4f4012274527030b9dc9b5f8d9e49c5d2c6a73367db6098411fd3f67e80f"
+     },
+     {
+      "hash": "227e751eb89f37b8b4331952520d13f82840cce4d0e68fdd81d8268d22603f15",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:38.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "for": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "after": [
+        "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+        "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86"
+       ],
+       "author": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "prev": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c"
+      },
+      "signature": "30f26652bcca87d7ff6d537386433cab07a019844364a43c10ff24427439cf05d15a4077ad4f2d9d2bd2586dc877cd8a6945e660cea5f23c5ad4e5346611b70e"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "accepted",
+    "accept": "227e751eb89f37b8b4331952520d13f82840cce4d0e68fdd81d8268d22603f15",
+    "offer": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+    "total": {
+     "minor": 450,
+     "currency": "GBP"
+    }
+   }
+  },
+  {
+   "name": "terms fixed: an accept of the quiet edit binds nothing",
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "c04ae03c5eb9b057c7b8678b99aafac8ee51de3d288aa262a4db045a9232f006",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "price": {
+        "minor": 460,
+        "currency": "GBP"
+       },
+       "quantity": {
+        "value": "1",
+        "unit": "{tray}"
+       },
+       "expires": "2026-12-20T00:00:00.000Z"
+      },
+      "at": "2026-10-19T12:01:39.000Z",
+      "audience": "public",
+      "seq": 4
+     },
+     "refs": {
+      "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "prev": "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86"
+     },
+     "signature": "2ec8a89a0564c744c9e5cf1d28b56fa7d74c775c4f55d30b14d497dee0cf5b6989c86fe6467c216caba307a3be1746ed6231bb13a39b1acbc0239c2cbad0f604"
+    },
+    [
+     {
+      "hash": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:33.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009b64b583d71ccbf73c3a7edf9b88115244e4dac4b330f7f9b68b6c2a5097b4aa"
+      },
+      "refs": {},
+      "signature": "e022a608bfb010239edb56e67cd0a3fe5141164926a2989fad8d5103a76a265981a390d31fa7380a9c6714505ef934525ac326f873de7c9a142d67815594a208"
+     },
+     {
+      "hash": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:01:34.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210043b90426f1aa96b40d4986f584859c434bc8d47bb3bb1b5bb415cb7b835c267b"
+      },
+      "refs": {},
+      "signature": "25eae2c30aa161cdf366b7a6771821351e0cae5836aba2b4b417544d7031992e0eedba211e2b109b50e7a14ee9422f05ddd818e78476bc7138cfbb6eb9940109"
+     },
+     {
+      "hash": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+      "type": "thing",
+      "state": {
+       "kind": "eggs",
+       "at": "2026-10-19T12:01:35.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c"
+      },
+      "signature": "3939ba746b68d66f51dfba4ea45963ad1f81ce5b322b63438251936cbf56b430b1069627b1499023e3b46456b714ec5a4fe93ab9ffb97627da68f2d65b033809"
+     },
+     {
+      "hash": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 450,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:36.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87"
+      },
+      "signature": "1f54b8a9cc7e07b9918c4fad0594fa709176e9a9c4815d829d8b3969058178becfbec371a74af14e7faa8c31178dcbf707a2bcfe399d022879fd737dfea4dd0b"
+     },
+     {
+      "hash": "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 350,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:37.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "updates": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "for": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a"
+      },
+      "signature": "6e6768a9cdf84e82eb77e1e9c289bdd0abded0c348044ff2b0d9dba128b8280db45d4f4012274527030b9dc9b5f8d9e49c5d2c6a73367db6098411fd3f67e80f"
+     },
+     {
+      "hash": "227e751eb89f37b8b4331952520d13f82840cce4d0e68fdd81d8268d22603f15",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:38.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "for": "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+       "after": [
+        "72b4e0f0f927843d15e55c4145c1a43c9dace99a86099ba1595faac8c9adf18a",
+        "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86"
+       ],
+       "author": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "prev": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c"
+      },
+      "signature": "30f26652bcca87d7ff6d537386433cab07a019844364a43c10ff24427439cf05d15a4077ad4f2d9d2bd2586dc877cd8a6945e660cea5f23c5ad4e5346611b70e"
+     },
+     {
+      "hash": "c04ae03c5eb9b057c7b8678b99aafac8ee51de3d288aa262a4db045a9232f006",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 460,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:39.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "c73ba151080b4c1fddda2f670b5c82130008ccda040eabf83bef7ef5975fed86"
+      },
+      "signature": "2ec8a89a0564c744c9e5cf1d28b56fa7d74c775c4f55d30b14d497dee0cf5b6989c86fe6467c216caba307a3be1746ed6231bb13a39b1acbc0239c2cbad0f604"
+     },
+     {
+      "hash": "51b5a69ae4a95eb0d1e2b17b064f65eaecaddbc7c12b9a44d4dc2ce74a610bff",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "price": {
+         "minor": 350,
+         "currency": "GBP"
+        },
+        "quantity": {
+         "value": "1",
+         "unit": "{tray}"
+        },
+        "expires": "2026-12-20T00:00:00.000Z"
+       },
+       "at": "2026-10-19T12:01:40.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "from": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "to": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "what": "798c36be4c57b9661547f968bae72b94a8f79d28cd28abd8cede9e57d462df87",
+       "updates": "c04ae03c5eb9b057c7b8678b99aafac8ee51de3d288aa262a4db045a9232f006",
+       "for": "c04ae03c5eb9b057c7b8678b99aafac8ee51de3d288aa262a4db045a9232f006",
+       "author": "c4531bbb1c7415cf3024e95aa6ee5aa8a1807914dafe825f0872458db191108c",
+       "prev": "c04ae03c5eb9b057c7b8678b99aafac8ee51de3d288aa262a4db045a9232f006"
+      },
+      "signature": "72c596d9411fe2c59000b4264f1ee2e5fe4df4838e12920935f3ca5cfbc97d5f66e9ebd1060b8be6f41c14e103aa221323cfae001c25344b82cd46cdc694ae0f"
+     },
+     {
+      "hash": "5cbbf667ee8ceef48d8418a4d96d89bf2887de425016954461bec31da0e628fb",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-19T12:01:41.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "51b5a69ae4a95eb0d1e2b17b064f65eaecaddbc7c12b9a44d4dc2ce74a610bff",
+       "for": "51b5a69ae4a95eb0d1e2b17b064f65eaecaddbc7c12b9a44d4dc2ce74a610bff",
+       "after": [
+        "51b5a69ae4a95eb0d1e2b17b064f65eaecaddbc7c12b9a44d4dc2ce74a610bff"
+       ],
+       "author": "0dafc2a133833afcc0d21e25ca52370af88a717e885dc3df090036e007b6be4c",
+       "prev": "227e751eb89f37b8b4331952520d13f82840cce4d0e68fdd81d8268d22603f15"
+      },
+      "signature": "93655c4b92d36e1b782b29210e2d90c1b66e8fa810577e718fdea7c1e3d6786df396befff66e2145a9481a068ccd59fb7c4c29f9e4eb2dbf8521d36e97f1f40a"
+     }
+    ],
+    {}
+   ],
+   "expect": {
+    "stage": "offered",
+    "accept": null
    }
   }
  ]

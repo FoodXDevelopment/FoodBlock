@@ -55,7 +55,7 @@ The two blocks of a pair (core.md, invariant 3) count for nothing in any fold, a
 
 Input: the first promise P, and every block that names P in `for` or answers a block in the deal. A first promise that speaks for neither of its sides has no stage (null). The input may instead be an **allocation** (promises.md, Who may bind), the offerer's `accepted` answer to a request on an open offer O: it is read as a deal of its own (below). A promise with no `answers` is not in the deal even if it names P in `for`: it is a new deal that P serves.
 
-**Step 0, who counts.** Keep only blocks that speak for a side (Who a block speaks for). A side that names a thing is the thing's owner in the same blocks (promises.md, Bearer). An open side is filled by whoever's accept binds.
+**Step 0, who counts.** Keep only blocks that speak for a side (Who a block speaks for). An `updates` of a promise that is not a stop counts for nothing: the terms are those of the promise as written (promises.md). A side that names a thing is the thing's owner in the same blocks (promises.md, Bearer). An open side is filled by whoever's accept binds.
 
 **The live offers.** P is live. A counter to a live offer (a promise that answers it and carries no status) between the same two sides, signed by the side that did not sign the offer it answers, makes that offer no longer live and is live in its place. Two counters to one offer both stand: there may be several live offers, and the fold says so (`live`, sorted). An accept binds the live offer it answers. Of all binding accepts, the earliest in causal order binds; two that do not see each other prove the accepter's lie: neither binds, and both are listed in `forks`.
 

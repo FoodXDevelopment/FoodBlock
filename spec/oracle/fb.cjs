@@ -535,6 +535,8 @@ function closedFindings(b, ctx, add) {
   // required
   const req = (cond, what) => { if (!cond) add(A, 'required', what); };
   if (asAnswer) req(state.status !== undefined, 'an answer carries state.status');
+  // a promise's terms are fixed once it is written (promises.md): an updates of a promise is its author's stop
+  if (type === 'promise') req(refs.updates === undefined || refs.answers !== undefined || state.status === 'stopped', 'an updates of a promise is its author\'s stop (state.status stopped)');
   if (type === 'actor') { if (!asAnswer) req(isStr(state.kind) && state.kind !== '', 'actor kind'); }
   if (type === 'grant') {
     if (!asAnswer) {
@@ -1757,7 +1759,8 @@ function promiseStage(firstIn, poolIn) {
       if (names || (b.refs.answers !== undefined && deal.has(b.refs.answers)) || (b.refs.updates !== undefined && deal.has(b.refs.updates))) { deal.set(b.hash, b); grew = true; }
     }
   }
-  const D = [...deal.values()];
+  // an updates of a promise that is not a stop counts for nothing: terms are fixed once written (promises.md)
+  const D = [...deal.values()].filter(b => !(b.type === 'promise' && b.refs.updates !== undefined && b.refs.answers === undefined && b.state.status !== 'stopped'));
   const isSide = id => id !== null && id !== undefined && (id === from || id === to);
   if (!isSide(who(Q))) return null; // a first promise that speaks for neither side is nobody's promise: no stage
   const open = !alloc && (Q.refs.from === undefined || Q.refs.to === undefined);

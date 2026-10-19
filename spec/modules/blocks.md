@@ -20,7 +20,7 @@ The fields a block may carry beyond core.md, causal order, records and refusals.
 
 **No clock.** A micro that has no clock leaves out `at` and `when`. Its edge times the block: the edge writes its own `observe` of kind `receipt`, `refs.derives_from` the block, `state.at` the time it received it. A reader that needs a time uses the earliest receipt by an edge it trusts, and otherwise reads the time as unknown. A clockless micro cannot test a grant's `until`; it obeys a stop on arrival and asks its edge before an act that cannot be undone (authority.md).
 
-**Records.** A **record** is a block and every version after it. `updates` names the version it replaces, and a record is named by its first version, so links to it survive every change.
+**Records.** A **record** is a block and every version after it. `updates` names the version it replaces, and a record is named by its first version, so links to it survive every change. (A promise is not a record in this sense: its terms are fixed, and its `updates` is its stop, promises.md.)
 
 **Shared ref keys** are in `protocol.json` (`refs`): every type may use them, the seven verbs and `prev` and `after`. On a closed type, any other ref key must be declared by the block's schema.
 

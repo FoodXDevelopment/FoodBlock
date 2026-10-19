@@ -29,7 +29,7 @@ A promise moves a noun from one side to the other. Sides and what moves are in `
 - `declined`: ends it.
 - `stopped`, with `state.stop` saying how far: `before` (before acceptance: a withdrawal), `onward` (from this block on: leaving a job), or `{ occurrences: [start times] }` (named occurrences of a standing promise).
 
-A promise or grant has no status of its own: offered or asked is read from who signed it. Its author stops it by an `updates` that carries `status: stopped`. The other side stops it by an `answers`. A new promise that `answers` one, with no status, is a **counter-offer**: an answer whose state carries new terms and no `status`. It is the one answer without a status (core.md, section 7). It binds nothing until the other side answers it `accepted`.
+A promise or grant has no status of its own: offered or asked is read from who signed it. Its author stops it by an `updates` that carries `status: stopped`. **That is all an `updates` of a promise is: its terms are fixed once it is written.** An `updates` of a promise that carries anything else is refused (`required`), and a fold that meets one counts it for nothing, so a new price is never a quiet edit. To change terms, the other side counters (below), or the author stops the promise and makes a new one. The reason is `answers` (invariant 15): an accept consents to the block it names, and an offer that could change under it would bind someone to terms they never answered. Grants and other records keep their versions (blocks.md). The other side stops it by an `answers`. A new promise that `answers` one, with no status, is a **counter-offer**: an answer whose state carries new terms and no `status`. It is the one answer without a status (core.md, section 7). It binds nothing until the other side answers it `accepted`.
 
 **Who may bind.**
 - A one-to-one offer binds on the other side's accept, with no allocation.
@@ -54,5 +54,5 @@ A promise or grant has no status of its own: offered or asked is read from who s
 12. A block counts in a deal only if it speaks for a side (folds.md, invariant 31).
 13. A promise is settled only by blocks the receiving side accepts or the grounds confirm.
 14. An unanswered ask or claim binds no one.
-15. `answers` is the only consent to a deal.
+15. `answers` is the only consent to a deal, and it consents to the terms of the block it names: a promise's terms are fixed once it is written.
 22. A background ask never binds before the person's yes: an agent's ask is a quote request unless its grant names the act.

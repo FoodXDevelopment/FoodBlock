@@ -37,8 +37,15 @@ function story() {
     refs = Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v)].sort() : v]))
     return keep(fb.write(type, state, refs, { author: who.id, key: keyOf(who.name), held, at: at(), audience, after, link }))
   }
+  // A block composed, chained and signed without the write check: what a node must still read, though it would refuse it.
+  const raw = (who, type, state, refs = {}) => {
+    const mine = held.filter((b) => b.refs && b.refs.author === who.id)
+    const link = { seq: (mine.length ? mine[mine.length - 1].state.seq : 0) + 1, prev: mine.length ? mine[mine.length - 1].hash : who.id }
+    const c = fb.compose(type, state, refs, { author: who.id, at: at(), audience: 'public', link })
+    return keep({ ...c, signature: fb.sign(c, keyOf(who.name).private_key) })
+  }
   const without = (...blocks) => held.filter((b) => !blocks.includes(b))
-  return { held, person, say, keep, without }
+  return { held, person, say, keep, raw, without }
 }
 
 const made = new Set()
@@ -52,6 +59,15 @@ function door(name, op, args, { expect, exact } = {}) {
   V.door = V.door.filter((c) => c.name !== name)
   V.door.push({ name, op, args, expect: expect !== undefined ? expect : got, ...(exact ? { exact: true } : {}) })
   return got
+}
+const codesOf = (list) => [...new Set(list.map((one) => one.code))]
+// A check case: the refusal the bytes of a block give, with nothing held.
+function check(name, block, codes) {
+  const got = call('refusals', block.type, block.state, block.refs, [], null)
+  assert.deepEqual(codesOf(got), codes, `${name}: ${JSON.stringify(got)}`)
+  made.add(name)
+  V.refusals.cases = V.refusals.cases.filter((c) => c.name !== name)
+  V.refusals.cases.push({ name, by: 'check', block: { type: block.type, state: block.state, refs: block.refs }, codes })
 }
 const stage = (name, first, held, expect) => door(name, 'promise_stage', [first, held, {}], { expect })
 
@@ -195,6 +211,26 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   s.say(maya, 'promise', { status: 'stopped', stop: 'onward' }, { updates: a1.hash, for: a1.hash, after: [a1.hash] })
   stage('allocation: a stop onward ends that taker\'s deal alone', a1, s.held, { stage: 'stopped', stop: 'onward' })
   stage('allocation: and not another taker\'s', a2, s.held, { stage: 'done' })
+}
+
+// ---- 5. A promise's terms are fixed once written: an `updates` of a promise is its stop ----
+{
+  const s = story(), pia = s.person('upia'), quin = s.person('uquin')
+  const eggs = s.say(pia, 'thing', { kind: 'eggs' })
+  const offer = s.say(pia, 'promise', { terms: { price: M(450), quantity: fb.amount('1', '{tray}'), expires: DAY } }, { from: pia.id, to: quin.id, what: eggs.hash })
+  const edit = { terms: { price: M(350), quantity: fb.amount('1', '{tray}'), expires: DAY } }
+  const cheaper = s.raw(pia, 'promise', edit, { from: pia.id, to: quin.id, what: eggs.hash, updates: offer.hash, for: offer.hash })
+  check('a promise carrying new terms and updating another is refused: its terms are fixed once written', cheaper, ['required'])
+  stage('terms fixed: a price written as an updates of the offer changes nothing in the deal', offer, s.held, { stage: 'offered', live: [offer.hash] })
+  const accept = s.say(quin, 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash, after: [offer.hash, cheaper.hash] })
+  stage('terms fixed: the accept binds the offer as written, at the written price', offer, s.held, { stage: 'accepted', accept: accept.hash, offer: offer.hash, total: { minor: 450, currency: 'GBP' } })
+  const offer2 = s.say(pia, 'promise', { terms: { price: M(460), quantity: fb.amount('1', '{tray}'), expires: DAY } }, { from: pia.id, to: quin.id, what: eggs.hash })
+  const cheaper2 = s.raw(pia, 'promise', edit, { from: pia.id, to: quin.id, what: eggs.hash, updates: offer2.hash, for: offer2.hash })
+  s.say(quin, 'promise', { status: 'accepted' }, { answers: cheaper2.hash, for: cheaper2.hash, after: [cheaper2.hash] })
+  stage('terms fixed: an accept of the quiet edit binds nothing', offer2, s.held, { stage: 'offered', accept: null })
+  const offer3 = s.say(pia, 'promise', { terms: { price: M(470), quantity: fb.amount('1', '{tray}'), expires: DAY } }, { from: pia.id, to: quin.id, what: eggs.hash })
+  const stop = s.say(pia, 'promise', { status: 'stopped', stop: 'before' }, { updates: offer3.hash, for: offer3.hash, after: [offer3.hash] })
+  check('an updates of a promise that is its author\'s stop is the one allowed', stop, [])
 }
 
 // ---- write ----

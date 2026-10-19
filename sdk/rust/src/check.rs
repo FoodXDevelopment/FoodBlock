@@ -996,6 +996,10 @@ impl<'a> Checker<'a> {
                 let (from_speaks, to_speaks) = (speaks(r("from")), speaks(r("to")));
                 let asked = to_speaks && !from_speaks;
                 w.extend(self.status_shape(state, refs));
+                // A promise's terms are fixed once it is written (promises.md, Terms are fixed): an `updates` of a promise is its author's stop.
+                if truthy(r("updates")) && !truthy(r("answers")) && g("status") != Some(&Value::String("stopped".into())) {
+                    w.push(f("required", "an updates of a promise is its author's stop (state.status stopped): terms are fixed once written; change them with a counter-offer or a new offer"));
+                }
                 if !answering && r("what").is_none() && g("what").is_none() {
                     w.push(f("required", "a promise names what moves: refs.what, or state.what for time or a job"));
                 }
