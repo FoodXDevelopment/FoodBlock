@@ -285,23 +285,6 @@
   "notice",
   "condition"
  ],
- "field_types": [
-  "text",
-  "integer",
-  "decimal",
-  "boolean",
-  "date",
-  "time",
-  "duration",
-  "amount",
-  "money",
-  "confidence",
-  "hash",
-  "hashes",
-  "marks",
-  "object",
-  "list"
- ],
  "schema": [
   "target",
   "fields",
@@ -328,10 +311,6 @@
   "price_per": [
    "money",
    "per"
-  ],
-  "price_share": [
-   "share",
-   "of"
   ],
   "range": [
    "min",

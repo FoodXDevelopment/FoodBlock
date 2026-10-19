@@ -357,7 +357,7 @@ function moneyProblem(m) {
   return currencyProblem(m.currency);
 }
 const has = (o, ...ks) => ks.every(k => k in o);
-// An amount { value, unit }, a price (money, money per unit { money, per }, or a share { share, of }) and a quantity (an amount, or a range { min, max }
+// An amount { value, unit }, a price (money, or money per unit { money, per }) and a quantity (an amount, or a range { min, max }
 // only under a per-unit price) at the places a promise's terms and lines name them (promises.md, Terms). Each returns a code, or null.
 const amountProblem = a => {
   if (a === undefined) return null;
@@ -373,10 +373,6 @@ function priceProblems(p) {
     if (p.money === undefined) out.push('shape'); else { const c = moneyProblem(p.money); if (c) out.push(c); }
     const c = amountProblem(p.per); if (c) out.push(c);
     return out;
-  }
-  if (isObj(p) && p.share !== undefined) {
-    if (Object.keys(p).some(k => !P.shapes.price_share.includes(k)) || !isStr(p.share) || idProblem(p.of)) return ['shape'];
-    return RX.decimal.test(p.share) ? [] : ['decimal'];
   }
   const c = moneyProblem(p); return c ? [c] : [];
 }
@@ -403,8 +399,7 @@ function shapeValue(v, out, key) {
   if ('unit' in v && within(P.shapes.amount)) bad(amountProblem(v)); // the structure first: a value that is not a decimal is only read once the amount has its two keys
   else if (has(v, 'scheme', 'value')) { if (!isStr(v.scheme) || !isStr(v.value)) bad('shape'); }
   if (has(v, 'money', 'per') && isObj(v.per)) { bad(moneyProblem(v.money)); if (!has(v.per, 'value', 'unit')) bad('shape'); }
-  if (has(v, 'share', 'of')) { if (!isStr(v.share) || !RX.decimal.test(v.share)) bad('decimal'); bad(idProblem(v.of) && 'grammar'); }
-  else if (has(v, 'from', 'share')) { if (!isStr(v.share) || !RX.decimal.test(v.share)) bad('decimal'); bad(idProblem(v.from) && 'grammar'); }
+  if (has(v, 'from', 'share')) { if (!isStr(v.share) || !RX.decimal.test(v.share)) bad('decimal'); bad(idProblem(v.from) && 'grammar'); }
   if (has(v, 'lat', 'lon')) { for (const k of ['lat', 'lon']) if (!isStr(v[k]) || !RX.decimal.test(v[k])) bad('shape'); if ('radius' in v && !(isObj(v.radius) && has(v.radius, 'value', 'unit'))) bad('shape'); }
   const composite = (has(v, 'money', 'per')) || (has(v, 'min', 'max')) || ('radius' in v);
   if (composite) for (const part of ['money', 'per', 'min', 'max', 'radius']) if (part in v) {

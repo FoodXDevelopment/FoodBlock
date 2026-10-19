@@ -499,7 +499,7 @@ fn is_ref_value(s: &str) -> bool {
     }
 }
 
-/// The field type a value is declared as in a schema (protocol.json `field_types`).
+/// The hint a converted schema gives for a field's value: text, integer, boolean, list or object.
 fn field_type_of(v: &Value) -> &'static str {
     match v {
         Value::Bool(_) => "boolean",

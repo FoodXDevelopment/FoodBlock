@@ -270,7 +270,7 @@ impl<'a> Checker<'a> {
             )
         }
     }
-    // A price is money, money per unit ({ money, per }), or a share of something measured ({ share, of }).
+    // A price is money, or money per unit ({ money, per }).
     fn price_shape(&self, value: Option<&Value>, name: &str) -> W {
         let v = value.unwrap_or(&Value::Null);
         if per_unit(value) {
@@ -286,19 +286,6 @@ impl<'a> Checker<'a> {
             }
             w.extend(self.amount_shape(v.get("per"), &format!("{name}.per")));
             return w;
-        }
-        if is_obj(value) && v.get("share").is_some() {
-            let ok = keys_within(v, &self.list("shapes.price_share"))
-                && v.get("share").is_some_and(Value::is_string)
-                && self.test("id", v.get("of"));
-            if !ok {
-                return s("shape", format!("{name} as a share is {{ share (a decimal string), of (the schema saying what is measured) }}"));
-            }
-            return if self.is("decimal", v.get("share")) {
-                vec![]
-            } else {
-                s("decimal", format!("{name}.share is a decimal string"))
-            };
         }
         self.money_shape(value, name)
     }

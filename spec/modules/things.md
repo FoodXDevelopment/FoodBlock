@@ -10,7 +10,7 @@ What the types hold, in detail. The types and verbs are in core.md.
 - **Shares.** A share is a thing, so it can be held and sold. Whole ownership is not a thing: it is who owns after a transfer. Shares or stock a member makes `as` a circle are the circle's own (folds.md, Ownership).
 - **Schemas.** A schema is a thing of kind `schema`. A law, a custom, a faith duty or a house rule is one too, so `under` can name it. Anyone may write one; equal schemas are linked with `same_as`. A `refs.under` that names a law counts only for readers who trust that law's author. A schema states:
   - `target`: the type, or `type.kind`, it is for;
-  - `fields`: each field's name and field type (the field types are in `protocol.json`);
+  - `fields`: each field's name, with a short hint of its value (`text`, `integer`, `money`...); nothing checks the hint, the name is what declares the field;
   - `roles`: the ref keys it declares beyond the shared ones;
   - `grounds`: the real event without which a block of this kind is a lie (`event`), which types or roles confirm or defeat it (`confirms`, `defeats`), and who can confirm them (`confirmers`, a list of ids or `circle#role`). Readers do the weighing;
   - `undo`: `never` when the act cannot be taken back, `ok` when it can; every schema for an act that moves things or binds someone says which (authority.md, Acts that can be undone). An act whose schema is silent, untrusted or not named is treated as irreversible;
