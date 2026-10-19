@@ -1128,7 +1128,7 @@
    "fold": {
     "not_a_side": "signed by neither side nor an agent under a side's live grant",
     "open_offer_counter": "a counter to an open offer: it ends nothing; only the author ends an open offer",
-    "not_live": "acts under a grant that is not live, or outside its scope, or is an act with undo never and has neither a specific accepted ask nor a grant naming it with a limit",
+    "not_live": "acts under a grant that is not live, or outside its scope, or is an act that moves things or binds someone with no trusted schema saying undo ok and neither a specific accepted ask nor a grant naming it with a limit",
     "no_role": "signs as a circle without a role with the sign power, in the circle's fold of its causal past",
     "not_counted": "a settling block the receiver has not accepted and no confirmer the grounds name has confirmed",
     "equivocation": "one of a pair that name one prev: proof, counted for nothing",
@@ -1584,6 +1584,13 @@
      "role?"
     ],
     "result": "true or false (folds.md); no code is returned"
+   },
+   "under_ok": {
+    "args": [
+     "full_block",
+     "held"
+    ],
+    "result": "true when the block speaks for its grantor under the grant it names (refs.under): the grant is held, is for its signer, is live, covers the act, and an act that moves things or binds is not irreversible, or has what that needs (authority.md); no clock is read"
    },
    "ownership": {
     "args": [

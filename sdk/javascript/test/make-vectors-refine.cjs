@@ -281,6 +281,49 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   stage('defeats: and defeats it: the work counts for nothing and the job is accepted, not done', job, s.held, { stage: 'accepted' })
 }
 
+// ---- 7. Reversibility: an act that moves things or binds someone is irreversible for an agent unless a trusted schema says undo ok ----
+{
+  const s = story(), farmer = s.person('ffarmer'), agent = s.person('fagent', { kind: 'agent' }), eve = s.person('feve'), buyer = s.person('fbuyer')
+  s.say(farmer, 'grant', { kind: 'operator' }, { to: agent.id })
+  const field = s.say(farmer, 'thing', { kind: 'field', name: 'north field' })
+  const ACTS = ['transfer.spray', 'transfer.water', 'transfer.open_valve', 'transfer.restock', 'transfer.sell', 'transfer', 'promise', 'observe']
+  const broad = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ACTS, until: LATER } }, { to: agent.id })
+  const limited = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ACTS, limit: M(5000), per: 'P1D', until: LATER } }, { to: agent.id })
+  const schema = (who, target, undo) => s.say(who, 'thing', { kind: 'schema', target, fields: { field: 'text' }, ...(undo ? { undo } : {}) })
+  const never = schema(farmer, 'transfer.spray', 'never'), ok = schema(farmer, 'transfer.water', 'ok'), silent = schema(farmer, 'transfer.open_valve')
+  const strangerOk = schema(eve, 'transfer.restock', 'ok'), strangerNever = schema(eve, 'transfer.water', 'never'), odd = schema(farmer, 'transfer.sell', 'maybe')
+  const act = (kind, under, extra = {}) => s.say(agent, 'transfer', { kind }, { what: field.hash, to_place: field.hash, under: under.hash, ...extra })
+  const underOk = (name, block, expect) => door(name, 'under_ok', [block, s.held], { expect, exact: true })
+  underOk('reversibility: an act the grantor\'s schema marks undo never, under a broad grant, is not live', act('spray', broad, { schema: never.hash }), false)
+  underOk('reversibility: an act the grantor\'s schema marks undo ok is live under the broad grant', act('water', broad, { schema: ok.hash }), true)
+  underOk('reversibility: an act whose schema states no undo is treated as irreversible', act('open_valve', broad, { schema: silent.hash }), false)
+  underOk('reversibility: an act that names no schema at all is treated as irreversible', act('launch_robot', broad), false)
+  underOk('reversibility: a schema that writes some other word than never or ok marks nothing', act('sell', broad, { schema: odd.hash }), false)
+  underOk('reversibility: a stranger\'s schema marking undo ok cannot unblock another person\'s act', act('restock', broad, { schema: strangerOk.hash }), false)
+  underOk('reversibility: a stranger\'s schema marking undo never cannot block an act the grantor marked ok (the act names its own schema)', act('water', broad, { schema: ok.hash }), true)
+  underOk('reversibility: the schema is found by refs.schema alone: one that targets the act but is not named marks nothing', act('water', broad), false)
+  // a stranger's schema the grantor confirmed is trusted
+  s.say(farmer, 'observe', { kind: 'trust', text: 'I use this schema' }, { confirms: strangerOk.hash })
+  underOk('reversibility: a stranger\'s schema the grantor confirmed is trusted: undo ok counts', act('restock', broad, { schema: strangerOk.hash }), true)
+  underOk('reversibility: a grant that names the act and has a limit is enough, marked never or not', act('spray', limited, { schema: never.hash }), true)
+  underOk('reversibility: a grant with a limit that does not name the act is not enough', act('open_valve', limited, { schema: silent.hash }) && act('irrigate', limited), false)
+  // a specific ask the principal answered accepted, naming the act
+  const ask = s.say(agent, 'promise', { what: 'transfer.spray', terms: { expires: LATER } }, { to: farmer.id, from: agent.id, under: broad.hash, schema: never.hash })
+  const spray2 = act('spray', broad, { schema: never.hash, for: ask.hash })
+  underOk('reversibility: a specific ask not yet answered does not make the act live', spray2, false)
+  s.say(farmer, 'promise', { status: 'accepted' }, { answers: ask.hash, for: ask.hash, after: [ask.hash] })
+  underOk('reversibility: the principal\'s accepted answer to the ask naming the act makes it live', spray2, true)
+  // promises: an ask binds no one, an offer does
+  const quote = s.say(agent, 'promise', { what: 'a delivery', terms: { expires: LATER } }, { to: farmer.id, from: buyer.id, under: broad.hash })
+  underOk('reversibility: an agent\'s ask is a quote request, not an act that binds', quote, true)
+  const offer = s.say(agent, 'promise', { what: 'a delivery', terms: { price: M(300), expires: LATER } }, { from: farmer.id, to: buyer.id, under: broad.hash })
+  underOk('reversibility: an agent\'s offer binds its principal: irreversible unless marked', offer, false)
+  const offerOk = s.say(agent, 'promise', { what: 'a delivery', terms: { price: M(300), expires: LATER } }, { from: farmer.id, to: buyer.id, under: broad.hash, schema: ok.hash })
+  underOk('reversibility: the same offer under a schema the grantor marked ok is live', offerOk, true)
+  const note = s.say(agent, 'observe', { kind: 'note', text: 'checked the gate' }, { under: broad.hash })
+  underOk('reversibility: an observe that moves nothing and binds no one needs no marking', note, true)
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

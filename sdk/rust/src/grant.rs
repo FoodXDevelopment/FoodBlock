@@ -213,6 +213,15 @@ pub fn ancestors(grant: &Value, blocks: &[Value]) -> Vec<Value> {
     out
 }
 
+/// Whether the grant's scope covers the block's act: no `acts` covers everything, else it lists the block's type or `type.kind`.
+pub(crate) fn covers(block: &Value, grant: &Value) -> bool {
+    let Some(acts) = get(grant, "state.scope.acts").filter(|v| truthy(Some(v))) else { return true };
+    let kind = text(st(block, "kind"));
+    let t = crate::js::type_of(block);
+    let typed = format!("{t}.{kind}");
+    acts.as_array().is_some_and(|a| a.iter().any(|x| x.as_str() == Some(t) || x.as_str() == Some(typed.as_str())))
+}
+
 /// Whether a block signed under a grant (`refs.under`) speaks for its grantor: empty, or why not. `scope.acts` lists
 /// the block types or `type.kind` names it covers.
 pub fn why_not_under_in(block: &Value, index: &Index, now: Option<&str>) -> Vec<String> {
@@ -272,22 +281,51 @@ pub fn act_name(block: &Value) -> String {
     }
 }
 
-/// Acts that cannot be undone (authority.md): a block whose schema (`refs.schema`) says `undo: never` is `not_live`
-/// unless it has a specific ask its principal answered `accepted`, naming that act, or a grant whose `scope.acts` names
-/// that act and has a `limit`. Empty when the act can be taken back, or the block has what it needs. A broad grant
-/// that lists only a kind of act is not enough. The block names that ask in `refs.for`. An ask names the act when its `state.what` is the act's name or it
-/// follows the same schema; the principal is the grant's author, or the circle the block signs `as`.
+/// Whether an act moves things or binds its principal (authority.md, Acts that can be undone): a transfer, a transform, or a
+/// promise that is not an ask, a decline or a stop.
+fn moves_or_binds(block: &Value, principal: Option<&str>) -> bool {
+    match crate::js::type_of(block) {
+        "transfer" | "transform" => true,
+        "promise" => {
+            let ends = matches!(ss(block, "status"), Some("declined" | "stopped"));
+            let ask = list(rf(block, "answers")).is_empty()
+                && principal.is_some_and(|p| list(rf(block, "to")).contains(&p) && !list(rf(block, "from")).contains(&p));
+            !ends && !ask
+        }
+        _ => false,
+    }
+}
+
+/// Acts that can be undone (authority.md): the default is that they cannot. A block under a grant that moves things or binds its
+/// principal is `not_live` unless the schema it names in `refs.schema` says `undo: ok`, and that schema is trusted (the grantor's
+/// own, or one the grantor confirmed), or it has a specific ask its principal answered `accepted`, naming that act, or a grant whose
+/// `scope.acts` names that act and has a `limit`. A broad grant that lists only a kind of act is not enough. Empty when the act can be
+/// taken back, or the block has what it needs. The block names the ask in `refs.for`. An ask names the act when its `state.what` is
+/// the act's name or it follows the same schema; the principal is the grantor of the grant.
 pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
-    let schema = rs(block, "schema").and_then(|h| index.get(h));
-    if !schema.is_some_and(|s| ss(s, "undo") == Some("never")) {
+    let grant = rs(block, "under").and_then(|h| index.get(h));
+    let principal = grant
+        .and_then(|g| crate::fold::grantor_of(g, index))
+        .or_else(|| crate::fold::speaker_of(block, index, None));
+    let trusted = |schema: &Value| {
+        crate::js::type_of(schema) == "thing"
+            && ss(schema, "kind") == Some("schema")
+            && principal.as_deref().is_some_and(|p| {
+                crate::fold::speaker_of(schema, index, None).as_deref() == Some(p)
+                    || index.values().any(|c| {
+                        list(rf(c, "confirms")).contains(&hash_of(schema))
+                            && crate::fold::speaker_of(c, index, None).as_deref() == Some(p)
+                    })
+            })
+    };
+    let marked = rs(block, "schema").and_then(|h| index.get(h)).filter(|s| trusted(s)).and_then(|s| ss(s, "undo"));
+    // Irreversible: a trusted schema says never (whatever the block's type: a spray is recorded as an observe), or the act moves things
+    // or binds and no trusted schema says ok.
+    let irreversible = marked == Some("never") || (marked != Some("ok") && moves_or_binds(block, principal.as_deref()));
+    if !irreversible {
         return vec![];
     }
     let act = act_name(block);
-    let grant = rs(block, "under").and_then(|h| index.get(h));
-    let principal = grant
-        .and_then(|g| rs(g, "author"))
-        .or_else(|| rs(block, "as"))
-        .or_else(|| rs(block, "author"));
     let asked = index.values().any(|ask| {
         crate::js::type_of(ask) == "promise"
             && (get(ask, "state.what").and_then(Value::as_str) == Some(act.as_str())
@@ -295,7 +333,8 @@ pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
             && index.values().any(|a| {
                 ss(a, "status") == Some("accepted")
                     && list(rf(a, "answers")).contains(&hash_of(ask))
-                    && rs(a, "author") == principal
+                    && principal.is_some()
+                    && crate::fold::speaker_of(a, index, None) == principal
             })
             && list(rf(block, "for")).contains(&hash_of(ask))
     });
@@ -309,7 +348,7 @@ pub fn why_not_live_undo(block: &Value, index: &Index) -> Vec<String> {
         vec![]
     } else {
         vec![format!(
-            "{act} cannot be undone: it needs a specific ask its principal answered accepted, or a grant that names it and has a limit"
+            "{act} may not be undone: it needs a trusted schema that says undo ok, a specific ask its principal answered accepted, or a grant that names it and has a limit"
         )]
     }
 }

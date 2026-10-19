@@ -36,7 +36,7 @@ A record's **orderer** is the key that signed its first block, or the key its `s
 
 A block speaks for one party, and a fold counts it for that party alone.
 - A block that names a circle in `refs.as` speaks for the circle if its author holds the `sign` power in the circle's fold of the block's causal past (`may_act_as`; circles.md). If not, it speaks for no one (`no_role`): it is kept, and counts for nothing in any deal or any ownership.
-- Any other block that acts under a live grant made for its author (or open) speaks for the grantor: the grant's author, or, when the grant was signed `as` a circle, that circle if the grant's signer held `sign` there.
+- Any other block that acts under a live grant made for its author (or open) speaks for the grantor: the grant's author, or, when the grant was signed `as` a circle, that circle if the grant's signer held `sign` there. A block outside the grant's scope speaks for its author alone, except a promise, which still speaks for its principal and is a quote request (promises.md).
 - Any other block speaks for its author.
 
 Every fold below asks this one question: a side of a deal, the owner of a thing, the receiver who accepts a transfer. Where a rule says a side "signs", this is what it means.

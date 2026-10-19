@@ -45,8 +45,11 @@ pub(crate) fn speaker_of(block: &Value, index: &Index, now: Option<&str>) -> Opt
         return may_act_as_in(block, circle, index, None).then(|| circle.to_string());
     }
     if let Some(grant) = rs(block, "under").and_then(|h| index.get(h)) {
+        // A promise outside the grant's scope is a quote request: it still speaks for its principal and binds no one
+        // (promises.md). Any other block outside the scope speaks for no one but its author.
         if type_of(grant) == "grant"
             && (!truthy(rf(grant, "to")) || strict_eq(rf(grant, "to"), rf(block, "author")))
+            && (type_of(block) == "promise" || crate::grant::covers(block, grant))
             && is_live_in(grant, index, now)
         {
             return grantor_of(grant, index);

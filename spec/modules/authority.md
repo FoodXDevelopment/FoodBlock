@@ -27,11 +27,15 @@ A `grant` gives authority. Every reader can check it.
 
 **Stopping.** A grant's withdrawal and its `until` end authority, for a machine as for anyone. A peer honours a stop the moment it arrives. Before an act that cannot be undone, it also checks that every grant it acts under is still live against the grantor's latest head it holds.
 
-**Acts that cannot be undone.** A schema marks an act `undo: never` when nothing can take it back: a cut, a spray, a valve opened, a robot sent. A block for such an act is `not_live` unless it has one of two things:
-- a specific ask the principal answered `accepted`, naming that act, or
-- a grant whose `scope.acts` names that act and has a `limit`.
+**Acts that can be undone: the default is that they cannot.** An act **moves things or binds someone** when it is a `transfer`, a `transform`, or a `promise` that binds its principal (an offer or an `accepted` answer; not an ask, a `declined` or a `stopped`). An agent that does one under a grant is acting irreversibly unless a schema says it may be taken back. A trusted schema that says `never` makes any block irreversible, whatever its type (a spray is recorded as an observe). The rule is closed by default:
+- **Which schema.** Only the one the act names in `refs.schema`. An act that names none is unmarked. The protocol never looks for a schema by its `target`, so no one can mark an act they did not write.
+- **Whose schema.** A schema counts only if it is the grantor's own (the grantor of the grant the act acts under: its author, or the circle it was signed `as`; the schema speaks for the same party, folds.md) or the grantor marked it trusted: wrote a block whose `refs.confirms` names it. A stranger's schema is ignored, for either word: it cannot block another person's act and it cannot unblock it.
+- **What it says.** Every schema for such an act states `undo`, `never` (nothing can take it back: a cut, a spray, a valve opened, a robot sent) or `ok` (it can). A schema that omits it, writes any other word, or is not trusted leaves the act **unmarked**.
+- **What the act needs.** Only an act marked `ok` by a trusted schema needs nothing more than the grant's scope. An act marked `never` and an unmarked act are the same: the block is `not_live` unless it has one of two things:
+  - a specific ask the principal answered `accepted`, naming that act, or
+  - a grant whose `scope.acts` names that act (its exact name, `type.kind`, or `type` for a block with no kind) and has a `limit`.
 
-A standing grant that lists only a broad kind of act is not enough.
+A standing grant that lists only a broad kind of act is not enough. A person who acts herself, under no grant, is not held to this: the rule is for agents.
 
 **How an ask names the act.** An ask names the act when its `state.what` is the act's name (`type.kind`), or when its `refs.schema` is the schema the act follows. The act's block names that ask in `refs.for`, and the principal's own `answers` of `accepted` is signed by the grantor of the grant it acts under, else the circle it signs `as`, else its author.
 
@@ -45,4 +49,4 @@ A standing grant that lists only a broad kind of act is not enough.
 7. No tie on authority is broken by hash.
 9. A grant is live only while every ancestor grant is live.
 10. A child grant's scope is a subset of its parent's on every field.
-23. An act that cannot be undone needs a specific accepted ask, or a grant that names the act and has a limit.
+23. An act that moves things or binds someone is irreversible for an agent unless a trusted schema (the grantor's own, or one the grantor confirmed) says `undo: ok`; otherwise it needs a specific accepted ask, or a grant that names the act and has a limit.

@@ -1457,12 +1457,6 @@ function grantLive(g, pool, seen = new Set()) {
   if (g.refs.parent !== undefined) return grantLive(pool.get(g.refs.parent), pool, seen);
   return true;
 }
-// The schema marking an act undo: never (things.md). It is named in refs.schema, or targets the act.
-function undoNever(b, pool) {
-  const s = b.refs.schema && pool.get(b.refs.schema);
-  if (s && s.state.undo === 'never') return true;
-  return pool.all().some(x => x.type === 'thing' && x.state.kind === 'schema' && x.state.undo === 'never' && actNames(b).includes(x.state.target));
-}
 function whyNotUnder(b, poolIn) {
   const pool = poolOf(poolIn);
   const fail = d => [{ code: 'not_live', detail: d }];
@@ -1476,12 +1470,28 @@ function whyNotUnder(b, poolIn) {
   const sc = !trigger && isObj(g.state.scope) ? g.state.scope : {};
   const names = actNames(b);
   if (sc.acts !== undefined && !names.some(n => asList(sc.acts).includes(n))) return fail('the act is outside the grant\'s scope');
-  if (undoNever(b, pool)) {
-    const specificGrant = sc.limit !== undefined && asList(sc.acts).some(n => names.includes(n) && n.includes('.'));
-    const ask = b.refs.for && pool.get(b.refs.for);
-    const askedAndAccepted = ask && ask.type === 'promise' && [ask.state.what, ask.refs.what].some(w => names.includes(w)) &&
-      pool.all().some(a => a.type === 'promise' && a.refs.answers === ask.hash && a.state.status === 'accepted' && a.refs.author === g.refs.author && counts(a, pool));
-    if (!specificGrant && !askedAndAccepted) return fail('an act that cannot be undone needs a specific accepted ask or a grant that names it with a limit');
+  // acts that can be undone (authority.md): the default is that they cannot. An act that moves things or binds its principal is not live unless the
+  // schema it names in refs.schema is trusted (the grantor's own, or one the grantor confirmed) and says undo: ok, or it has a specific accepted
+  // ask naming the act, or a grant that names the act and has a limit.
+  const principal = grantorOf(g, pool);
+  const act = names[names.length - 1];
+  const asks = b.type === 'promise' && b.refs.answers === undefined && principal !== null && asList(b.refs.to).includes(principal) && !asList(b.refs.from).includes(principal);
+  const moves = b.type === 'transfer' || b.type === 'transform' || (b.type === 'promise' && !['declined', 'stopped'].includes(b.state.status) && !asks);
+  {
+    const S = b.refs.schema && pool.get(b.refs.schema);
+    const trusted = S && S.type === 'thing' && S.state.kind === 'schema' && principal !== null &&
+      (speakerOf(S, pool) === principal || pool.all().some(c => asList(c.refs.confirms).includes(S.hash) && speakerOf(c, pool) === principal));
+    const mark = trusted ? S.state.undo : undefined;
+    // irreversible: a trusted schema says never (whatever the block's type), or the act moves things or binds and no trusted schema says ok
+    if (mark === 'never' || (mark !== 'ok' && moves)) {
+      const specificGrant = sc.limit !== undefined && asList(sc.acts).includes(act);
+      const askedAndAccepted = asList(b.refs.for).some(h => {
+        const ask = pool.get(h);
+        return ask && ask.type === 'promise' && (ask.state.what === act || (ask.refs.schema !== undefined && ask.refs.schema === b.refs.schema)) &&
+          pool.all().some(a => a.type === 'promise' && asList(a.refs.answers).includes(ask.hash) && a.state.status === 'accepted' && principal !== null && speakerOf(a, pool) === principal && counts(a, pool));
+      });
+      if (!specificGrant && !askedAndAccepted) return fail('an act that moves things or binds is irreversible unless a trusted schema says undo ok; it needs a specific accepted ask or a grant that names it with a limit');
+    }
   }
   return [];
 }
@@ -1708,27 +1718,15 @@ function promiseStage(firstIn, poolIn) {
   const pool = new Pool(typeof firstIn === 'string' ? poolOf(poolIn).all() : [firstIn, ...poolOf(poolIn).all()]);
   const P = pool.get(typeof firstIn === 'string' ? firstIn : firstIn.hash);
   if (!P) return null;
-  // who a block speaks for (folds.md, Who a block speaks for): one party. A block that names a circle in `as` speaks for it when its author may
-  // sign for it, else for no one; a block under a live grant made for its receiver speaks for the grantor (the circle the grant was signed `as`
-  // when its signer may sign for it, else its author); any other block speaks for its author.
-  const grantor = g => g.refs.as !== undefined ? (mayActAsIn(g, g.refs.as, pool) ? g.refs.as : null) : g.refs.author;
   const cover = b => {
     if (b.refs.under === undefined) return null;
     const g = pool.get(b.refs.under);
     if (!g || g.type !== 'grant' || !grantLive(g, pool) || (g.refs.to !== undefined && g.refs.to !== b.refs.author)) return { principal: null, covered: false };
     const sc = isObj(g.state.scope) ? g.state.scope : {};
-    return { principal: grantor(g), covered: sc.acts === undefined || actNames(b).some(n => asList(sc.acts).includes(n)) };
+    return { principal: grantorOf(g, pool), covered: sc.acts === undefined || actNames(b).some(n => asList(sc.acts).includes(n)) };
   };
   const whoMemo = new Map();
-  const who = b => {
-    if (!whoMemo.has(b.hash)) {
-      let w;
-      if (b.refs.as !== undefined) w = mayActAsIn(b, b.refs.as, pool) ? b.refs.as : null;
-      else { const c = cover(b); w = c && c.principal ? c.principal : b.refs.author; }
-      whoMemo.set(b.hash, w);
-    }
-    return whoMemo.get(b.hash);
-  };
+  const who = b => { if (!whoMemo.has(b.hash)) whoMemo.set(b.hash, speakerOf(b, pool)); return whoMemo.get(b.hash); };
   const quote = b => { const c = cover(b); return !!c && !c.covered; };
   // an allocation starts its own deal (promises.md, Who may bind): the offerer's accepted answer to a request on an open offer. It is read with
   // the allocation as head and the offer as root; an allocation the open offer does not bind has no deal.
@@ -1958,7 +1956,20 @@ function due(promise, arrivals) {
 }
 
 // ================================================================ ownership and place (folds.md)
-function speakerOf(b, pool) { if (b.refs.as !== undefined) return mayActAsIn(b, b.refs.as, pool) ? b.refs.as : null; return b.refs.author; }
+// the grantor of a grant: the circle it was signed `as` (when its signer may sign for it), else its author
+function grantorOf(g, pool) { return g.refs.as !== undefined ? (mayActAsIn(g, g.refs.as, pool) ? g.refs.as : null) : g.refs.author; }
+// who a block speaks for (folds.md, Who a block speaks for): one party. A block that names a circle in `as` speaks for it when its author may
+// sign for it, else for no one; a block under a live grant made for its receiver speaks for the grantor (a promise outside the grant's scope is
+// a quote request and still does; any other block outside it speaks for its author); any other block speaks for its author.
+function speakerOf(b, pool) {
+  if (b.refs.as !== undefined) return mayActAsIn(b, b.refs.as, pool) ? b.refs.as : null;
+  if (b.refs.under !== undefined) {
+    const g = pool.get(b.refs.under);
+    const sc = g && isObj(g.state.scope) ? g.state.scope : {};
+    if (g && g.type === 'grant' && grantLive(g, pool) && (g.refs.to === undefined || g.refs.to === b.refs.author) && (b.type === 'promise' || sc.acts === undefined || actNames(b).some(n => asList(sc.acts).includes(n)))) return grantorOf(g, pool);
+  }
+  return b.refs.author;
+}
 function ownershipFold(thingIn, blocks) {
   const held = poolOf(blocks);
   const pool = typeof thingIn === 'string' || held.get(thingIn.hash) ? held : new Pool([thingIn, ...held.all()]);
@@ -2223,6 +2234,7 @@ function door(op, ...a) {
     case 'sees': return pastOfBlock(a[0], a[2]).includes(a[1].hash);
     case 'may_act_as': return mayActAs(a[0], a[1], a[2]);
     case 'circle_state': return circleState(a[0], a[1]);
+    case 'under_ok': return whyNotUnder(a[0], a[1]).length === 0;
     case 'ownership': return ownershipFold(a[0], a[1]);
     case 'where_now': return whereNow(a[0], a[1]);
     case 'spec': return { protocol: P };

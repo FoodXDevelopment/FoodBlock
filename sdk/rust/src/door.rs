@@ -448,6 +448,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "scope_refusals" => Value::Array(crate::grant::scope_refusals(a.v(0), a.v(1)).iter().map(|r| r.to_json()).collect()),
         "operators_of" => json!(crate::grant::operators_of(a.s(0)?, &a.list(1), a.opt(2))),
         "why_not_under" => json!(crate::grant::why_not_under(a.v(0), &a.list(1), a.opt(2))),
+        "under_ok" => json!(crate::grant::why_not_under(a.v(0), &a.list(1), None).is_empty()),
         "why_not_live" => json!(crate::grant::why_not_live(a.v(0), &a.list(1), a.opt(2))),
         _ => return more(op, a),
     })

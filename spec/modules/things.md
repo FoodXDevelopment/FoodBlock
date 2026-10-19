@@ -13,7 +13,7 @@ What the types hold, in detail. The types and verbs are in core.md.
   - `fields`: each field's name and field type (the field types are in `protocol.json`);
   - `roles`: the ref keys it declares beyond the shared ones;
   - `grounds`: the real event without which a block of this kind is a lie (`event`), which types or roles confirm or defeat it (`confirms`, `defeats`), and who can confirm them (`confirmers`, a list of ids or `circle#role`). Readers do the weighing;
-  - `undo`: `never` when the act cannot be taken back (authority.md, Acts that cannot be undone);
+  - `undo`: `never` when the act cannot be taken back, `ok` when it can; every schema for an act that moves things or binds someone says which (authority.md, Acts that can be undone). An act whose schema is silent, untrusted or not named is treated as irreversible;
   - `labels`: names for its fields and values in each language, `{ lang: { name: label } }`. Words people read live here, never in the protocol.
 
   Until the base schemas are published, the fields this spec names are the base, listed per type in `protocol.json`.
