@@ -1,6 +1,6 @@
 # Consent
 
-What a person's word does to what may reach them and what binds them. Two rules, each one primitive that every part of the system reads.
+What a person's word does to what may reach them and what binds them. A few rules, each one primitive that every part of the system reads.
 
 A **stranger** to a sender is someone who has answered none of the sender's blocks and has no live YES for the sender (below).
 
@@ -40,4 +40,6 @@ A person's answer to contact is an `observe` of kind `consent`. It carries `stat
 
 16. Every message to a stranger has a human author, or goes through the receiver's own published order channel.
 20. Consent is a block, and it follows the principal. Anyone may record a STOP, binding their own side; only the person lifts it; there is no public list.
+21. The ask is ordinary and never pitches; the receipt, sent by the asker or her custodian in the same thread, is the door into an app.
 29. Validity is about the block alone and what it rests on; consent decides what binds, not what exists. A block sent despite a STOP is kept in the chain and read as stopped, so an honest sender's chain never stalls because of anyone else's consent.
+30. A first ask to someone off the network travels in the asker's own name from the asker's own channel and carries the code of the signed ask; the reply binds only when she sends YES with that code to a custodian she chose. A custodian speaks only for its own client, in her name, to people already in that conversation: never first to a stranger nobody chose, never after STOP.

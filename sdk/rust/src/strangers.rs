@@ -200,7 +200,7 @@ pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], under: Option
     !answered && !yes
 }
 
-/// The message refusals a node's admission and strangers rules give (protocol.json `refusals.codes.message`):
+/// The message refusals a node's admission and consent rules give (protocol.json `refusals.codes.message`):
 /// `not_admitted` (the sender is not among the rule's `parties` and the node already took `per_stranger` blocks today
 /// from others) and `not_human` (a first block to a stranger an autonomous system signed, outside the receiver's `order_channel`).
 /// Not `stopped`: a block sent despite a live STOP is valid and kept, and the fold reads it as stopped (`consent`,

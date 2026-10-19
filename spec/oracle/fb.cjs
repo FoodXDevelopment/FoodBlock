@@ -1841,7 +1841,7 @@ function promiseStage(firstIn, poolIn, opts) {
   out.accept = accept ? accept.hash : null;
   if (accept) out.accept = accept.hash;
   // before a binding accept nothing is chosen or settled: the quantity, total, lines and paid stay empty. A block sent despite a live STOP is kept;
-  // consent decides what binds: the ask is read as declined in advance (strangers.md)
+  // consent decides what binds: the ask is read as declined in advance (consent.md)
   if (!accept) {
     if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
     else if (!open && lives.some(o => declines.some(d => d.refs.answers === o.hash && isSide(who(d)) && who(d) !== who(o)))) out.stage = 'declined';

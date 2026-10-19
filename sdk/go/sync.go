@@ -233,7 +233,7 @@ func PushAnswer(result Accepted, node, privateKey string, suite ...string) (map[
 	return ask[map[string]any]("push_answer", parts, node, privateKey, suiteOf(suite))
 }
 
-// AdmissionRefusals is what a node's admission and strangers rules refuse of a block for a person: not_admitted,
+// AdmissionRefusals is what a node's admission and consent rules refuse of a block for a person: not_admitted,
 // not_human. admission is the node's admission rules (JSON); strangersToday counts strangers already taken today.
 func AdmissionRefusals(b Block, receiver string, blocks []Block, admission map[string]any, strangersToday int) []Finding {
 	return plural(must[[]Finding]("admission_refusals", b, receiver, plural(blocks), orEmpty(admission), strangersToday))

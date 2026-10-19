@@ -3,7 +3,7 @@
 //   1. The autonomous system drafts; the person decides. A draft is node-local data (core.md section 10), never a block. The
 //      person's one tap on the approval page signs it with the person's own key.
 //   2. An unanswered ask binds no one (promises.md).
-//   3. A first message to a stranger has a human author (strangers.md): `ask` is always a draft; an autonomous system-signed block
+//   3. A first message to a stranger has a human author (consent.md): `ask` is always a draft; an autonomous system-signed block
 //      goes out only when the SDK's admission check says it may.
 //   4. STOP binds the sender: the `consent` fold is asked before every draft and every send (`stopped`). This is the sender's
 //      own discipline; a node never refuses a block for a STOP (consent.md, invariant 29).
