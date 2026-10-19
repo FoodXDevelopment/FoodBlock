@@ -57,6 +57,7 @@ v1.6 paper, kept as the paper; where it and the spec differ, the spec is current
 spec/core.md, modules/  the protocol (1.6, normative; protocol.md is the index); profiles/ (optional); protocol.json
                         (every list), canonical.md, transport.md, vectors.json beside it; legacy/ is the one-time converter's data
 spec/oracle/            an implementation written from the spec text alone; `node spec/oracle/run.cjs` checks the vectors
+spec/schemas/           the base schemas as signed things with stable ids (`schemas.json` is the source, `published.json` the result; `node sdk/javascript/test/make-schemas.cjs`)
 sdk/rust/               the one core (every rule, once): crate, C library, WebAssembly, JNI
 spec/run-vectors.cjs    the conformance runner
 sdk/javascript/         the reference SDK (src/index.cjs is its whole API)

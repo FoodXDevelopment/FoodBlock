@@ -34,6 +34,28 @@ A read-only audit compared the Rust core with the oracle and tried the spec agai
 
 Also: the core and the oracle now give identical answers for every fold over every audited world and every vector story (`node test/audit/run.cjs`), which settled seven small differences the spec text decides (what a stage reports before a binding accept, confirmers named as `circle#role`, the chain's head, the earliest owner transfer, and others). Door ops `ownership`, `where_now` and `under_ok` are named in `protocol.json`.
 
+### Phase 2 of the 1.6 refinement (2026-10-19): compress, publish the base schemas, add the Merkle rule
+
+Still year zero and unpublished. Every change was checked against FoodOS and the app (nothing a FoodOS file reads or writes was deleted).
+
+Compression:
+- Deleted the closed fields nothing reads and FoodOS does not use: `terms.pay_by`, `terms.if_wrong`, `terms.settled_by`, `terms.text`, `promise.not`, `state.lang`. A dispute is settled by a confirmer the deal's schema names.
+- Deleted `{share, of}` prices (nothing can evaluate a measure no block gives) and the `field_types` list (nothing read it; a schema's `fields` are names with a free hint).
+- The field lists for the open types (thing 13, observe 12, transform 1) and the five profile lists for observe left `protocol.json`: they refused nothing. The base schemas describe them.
+- The key fields an actor and a grant share (public_key_sign, public_key_encrypt, suite, recovery_*, roles, custodian) are defined once in `key_fields`; a block looks the same. The door op `base_fields` gives every SDK its `FIELDS` from the core.
+- Deleted the `schema` and `grounds` lists (no code read them; the `schema` base schema names them).
+- `core.md` keeps `std` and how a suite is named; `p256`, `sm` and the passkey form moved to `modules/encoding.md` and `modules/passkeys.md`.
+
+Left as they were, because FoodOS or the core reads them: `terms.deliver_by` and `terms.until` (FoodOS promise, scope and edge code), the `recovery_*` fields (the identity folds and the recovery rule read them), `keep` (FoodOS writes transforms with a subject: cooking sessions, deeds), `refs.for_whom`, `refs.same_as`, `refs.of`, `state.channel`, `state.where`, `state.confidence`, and the separate `until` and `condition` of a grant's scope.
+
+Added:
+- `spec/schemas/`: 17 base schemas as signed things with stable ids, vectors for each, and audit case 11 (a vote under shares, kept and broken promises, person-confirmed delivery, teach, loan and payout over the shared folds).
+- The Merkle rule (modules/encoding.md): leaf = SHA-256 of 00 then the chunk, node = SHA-256 of 01 then both hashes, an odd one carried up; a proof is the sibling hashes from the leaf up. Door ops `merkle_root`, `merkle_proof`, `merkle_verify`, in the core and the oracle, with vectors and a parity check for 1 to 40 chunks.
+- Profile attestations, Devices: "this device, set up by X, reported Y at T". A reading counts when its signer is the sensor, the sensor's owner, or the receiver of a live operator grant the owner signed (Phase 1 counted a grant anyone wrote). Audit case 12 and door vectors.
+- The oracle reads a schema store and settles one line rule it got wrong (a promise with a thing and no quantity needs one counted transfer).
+
+Scoreboard (before, after): listed fields 74, 38; closed-type fields 48, 38; terms 13, 9; scope fields 7, 7; reference keys 24, 24; modules 13, 13; profiles 15, 15; lists in `protocol.json` 56, 54; core.md 158 lines (17,418 bytes), 151 lines (15,856 bytes).
+
 ## 0.5.0 (20 February 2026, npm)
 
 The JavaScript SDK, MCP server and CLI of the 0.x protocol. Superseded by 1.6.
