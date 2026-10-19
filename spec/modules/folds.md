@@ -79,7 +79,7 @@ An accept that reached the offerer after `expires`, on the offerer's own clock, 
 
 ## Circle membership and roles
 
-The fold reads the circle C and every member grant with `refs.subject` C, in causal order, by the rules in circles.md. The founder holds the first role in C's `roles`. A member grant counts if signed `as` C by a key of someone holding `admit` in the fold of its causal past. A circle whose actor lists no roles is refused (`bad_roles`); if a fold meets one anyway, the founder holds no role, so no one holds any power: no member grant counts and no one signs `as` the circle.
+The fold reads the circle C and every member grant with `refs.subject` C, and every grant that answers or updates one of them, in causal order, by the rules in circles.md. The founder holds the first role in C's `roles`. A member grant counts if signed `as` C by a key of someone holding `admit` in the fold of its causal past. A circle whose actor lists no roles is refused (`bad_roles`); if a fold meets one anyway, the founder holds no role, so no one holds any power: no member grant counts and no one signs `as` the circle.
 
 ## What each fold returns
 

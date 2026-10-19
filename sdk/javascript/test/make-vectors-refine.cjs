@@ -356,6 +356,29 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   door('readings: once the operator ends the grant, no reading of the device\'s or the operator\'s counts', 'reading_condition_holds', [cond(sensor.hash), s.held, NOW], { expect: false })
 }
 
+// ---- 9. Member acceptances and stops are derived from what they answer or update ----
+{
+  const s = story(), ann = s.person('mann'), mo = s.person('mmo'), nan = s.person('mnan'), ola = s.person('mola')
+  const circle = (name) => s.say(ann, 'actor', { kind: 'circle', name, roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] })
+  const invite = (c, who) => s.say(ann, 'grant', { kind: 'member', roles: ['baker'] }, { subject: c.hash, to: who.id, as: c.hash })
+  const members = (name, c, expect) => door(name, 'circle_state', [c.hash, s.held], { expect })
+  const joined = circle('Joined')
+  const gMo = invite(joined, mo)
+  members('circle: an invitation not yet accepted makes no one a member', joined, { founder: ann.id, members: { [ann.id]: {} } })
+  s.say(mo, 'grant', { status: 'accepted' }, { answers: gMo.hash })
+  members('circle: an acceptance with no kind and no subject, only the grant it answers, makes the member', joined, { members: { [mo.id]: { roles: ['baker'], grant: gMo.hash } } })
+  const removed = circle('Removed')
+  const gNan = invite(removed, nan)
+  const yesNan = s.say(nan, 'grant', { status: 'accepted' }, { answers: gNan.hash })
+  s.say(ann, 'grant', { status: 'stopped', stop: 'onward' }, { updates: gNan.hash, as: removed.hash, after: [yesNan.hash] })
+  members('circle: a stop with no kind and no subject, only the grant it updates, removes the member', removed, { removed: { [nan.id]: null } })
+  const left = circle('Left')
+  const gOla = invite(left, ola)
+  s.say(ola, 'grant', { status: 'accepted' }, { answers: gOla.hash })
+  s.say(ola, 'grant', { status: 'stopped', stop: 'onward' }, { answers: gOla.hash })
+  members('circle: a member\'s own leaving, an answer with only status, takes them out', left, { removed: { [ola.id]: null } })
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

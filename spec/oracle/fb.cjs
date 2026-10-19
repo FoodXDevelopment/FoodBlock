@@ -1515,7 +1515,16 @@ function circleFold(circleId, poolIn, limit, exclude) {
   const roles = Array.isArray(C.state.roles) ? C.state.roles : [];
   const powersOf = names => new Set(asList(names).flatMap(n => (roles.find(r => r.name === n) || { powers: [] }).powers));
   const needed = (C.state.removal && C.state.removal.needed) || 1;
+  // every member grant naming the circle, and every grant that answers or updates one of them (an acceptance, a leaving, a stop): it need carry
+  // no kind or subject of its own
   const grants = pool.all().filter(b => b.type === 'grant' && b.state.kind === 'member' && b.refs.subject === circleId && inScope(b.hash) && counts(b, pool));
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const b of pool.all()) {
+      if (b.type !== 'grant' || grants.includes(b) || !inScope(b.hash) || !counts(b, pool)) continue;
+      if (grants.some(g => b.refs.answers === g.hash || b.refs.updates === g.hash)) { grants.push(b); grew = true; }
+    }
+  }
   const founderRoles = roles.length ? [roles[0].name] : [];
   const members = {};
   // powers of an author at a block: the circle fold of the block's causal past (recursion on a strictly smaller set)
@@ -1631,7 +1640,7 @@ function circleWhole(circleId, poolIn, limit) {
     for (const b of pool.all()) {
       const author = b.refs.author;
       if (!isStr(author) || author === first.founder || b.refs.as !== circleId) continue;
-      if (b.type === 'grant' && b.state.kind === 'member' && b.state.status === 'stopped' && b.refs.updates !== undefined && b.refs.answers === undefined) continue;
+      if (b.type === 'grant' && b.state.status === 'stopped' && b.refs.updates !== undefined && b.refs.answers === undefined) continue;
       const past = new Set(pool.past(b.hash)); past.delete(b.hash);
       const m = circleFold(circleId, pool, past).members[author];
       if (!m) continue;

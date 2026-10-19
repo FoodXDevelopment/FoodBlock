@@ -1216,17 +1216,35 @@ pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Op
     let root = read.get(circle)?;
     let id = hash_of(root).to_string();
     let founder = rs(root, "author").unwrap_or("").to_string();
-    let related: Vec<Value> = read
+    let mut related: Vec<Value> = read
         .values()
         .filter(|b| {
             type_of(b) == "grant"
                 && ss(b, "kind") == Some("member")
                 && list(rf(b, "subject")).contains(&id.as_str())
-                // Every member grant and answer naming the circle that counts: with seq, or as its author's history.
+                // Every member grant naming the circle that counts: with seq, or as its author's history.
                 && crate::identity::counts_in(b, read)
         })
         .cloned()
         .collect();
+    // And every grant that answers or updates one of them (an acceptance, a leaving, a stop): it need carry no `kind` or `subject` of its own.
+    loop {
+        let known: Vec<String> = related.iter().map(|b| hash_of(b).to_string()).collect();
+        let more: Vec<Value> = read
+            .values()
+            .filter(|b| {
+                type_of(b) == "grant"
+                    && !known.iter().any(|k| k == hash_of(b))
+                    && list(rf(b, "answers")).iter().chain(list(rf(b, "updates")).iter()).any(|h| known.iter().any(|k| k == h))
+                    && crate::identity::counts_in(b, read)
+            })
+            .cloned()
+            .collect();
+        if more.is_empty() {
+            break;
+        }
+        related.extend(more);
+    }
     let needed = get(root, "state.removal.needed")
         .filter(|v| truthy(Some(v)))
         .map(|v| number_of(Some(v)));
@@ -1273,7 +1291,7 @@ pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Op
                 continue;
             }
             // A removal is never set aside this way: two that cross follow the crossing rule.
-            if type_of(b) == "grant" && ss(b, "kind") == Some("member") && ss(b, "status") == Some("stopped") && !list(rf(b, "updates")).is_empty() && list(rf(b, "answers")).is_empty() {
+            if type_of(b) == "grant" && ss(b, "status") == Some("stopped") && !list(rf(b, "updates")).is_empty() && list(rf(b, "answers")).is_empty() {
                 continue;
             }
             let at = first.past_fold(b);
