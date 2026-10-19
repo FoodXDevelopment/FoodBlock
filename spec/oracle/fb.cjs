@@ -1293,9 +1293,9 @@ function chainFold(blocksIn, id) {
   // blocks counted: those before the first pair
   const firstPairSeq = pairs.length ? Math.min(...pairs.flat().map(h => pool.get(h).state.seq)) : Infinity;
   const counted = sorted.filter(b => b.state.seq < firstPairSeq && !inPair.has(b.hash));
-  // protocol.json (folds.chain.output.head) says head is "hash of the latest block": a string. The vector writes it as { hash }.
+  // head: the block with the highest seq, or null when two share it (folds.md)
   return {
-    head: counted.length ? counted[counted.length - 1].hash : null, length: counted.length, gaps, skips: skips.sort(), equivocations: pairs, broken: broken.sort(),
+    head: bySeq.length && sorted.filter(b => b.state.seq === bySeq[bySeq.length - 1].state.seq).length === 1 ? bySeq[bySeq.length - 1].hash : null, length: counted.length, gaps, skips: skips.sort(), equivocations: pairs, broken: broken.sort(),
     ok: !gaps.length && !pairs.length && !broken.length,
   };
 }
@@ -1722,7 +1722,7 @@ function perUnitTotal(minor, per, qty) {
 }
 
 // ================================================================ a promise's stage (folds.md, promises.md)
-function promiseStage(firstIn, poolIn) {
+function promiseStage(firstIn, poolIn, opts) {
   // the first promise is read with the blocks held; one that rests on blocks not held is not read yet: no stage (folds.md)
   const pool = new Pool(typeof firstIn === 'string' ? poolOf(poolIn).all() : [firstIn, ...poolOf(poolIn).all()]);
   const P = pool.get(typeof firstIn === 'string' ? firstIn : firstIn.hash);
@@ -1837,6 +1837,15 @@ function promiseStage(firstIn, poolIn) {
   out.live = lives.map(o => o.hash).sort();
   out.accept = accept ? accept.hash : null;
   if (accept) out.accept = accept.hash;
+  // before a binding accept nothing is chosen or settled: the quantity, total, lines and paid stay empty. A block sent despite a live STOP is kept;
+  // consent decides what binds: the ask is read as declined in advance (strangers.md)
+  if (!accept) {
+    if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
+    else if (!open && lives.some(o => declines.some(d => d.refs.answers === o.hash && isSide(who(d)) && who(d) !== who(o)))) out.stage = 'declined';
+    else if (!open && consentFold(who(Q) === from ? to : from, Q.refs.author, pool, Q.refs.under).word === 'stop') out.stage = 'declined';
+    else out.stage = who(Q) === to && who(Q) !== from ? 'asked' : 'offered';
+    return out;
+  }
   // an open offer is settled by no one: each allocation is a deal of its own (promises.md, Who may bind). What is left to say of the offer itself is
   // that it binds, or that its offerer stopped it onward.
   if (open && accept) {
@@ -1873,11 +1882,13 @@ function promiseStage(firstIn, poolIn) {
   out.total = total;
   // ---- settling: counted blocks made for P
   const schema = Q.refs.schema && pool.get(Q.refs.schema);
-  const confirmers = new Set(schema && isObj(schema.state.grounds) ? asList(schema.state.grounds.confirmers).flatMap(c => c.includes('#') ? membersThen({ hash: P.hash }, c, pool) : [c]) : []);
-  const confirmed = h => pool.all().some(c => asList(c.refs.confirms).includes(h) && confirmers.has(c.refs.author) && counts(c, pool));
+  // a block confirms or defeats only if its author is named: an id, or a holder of circle#role in the circle's fold of that block's causal past
+  const named = [...asList(opts && opts.confirmers), ...(schema && isObj(schema.state.grounds) ? asList(schema.state.grounds.confirmers) : [])];
+  const namedBy = c => named.some(n => (n.includes('#') ? membersThen(c, n, pool).includes(c.refs.author) : n === c.refs.author));
+  const confirmed = h => pool.all().some(c => asList(c.refs.confirms).includes(h) && namedBy(c) && counts(c, pool));
   const accepted = (h, receiver) => D.some(a => a.refs.answers === h && a.state.status === 'accepted' && (receiver === undefined || who(a) === receiver));
   // a block a side of the deal, or a confirmer the schema names, defeats counts for nothing (folds.md, Settling)
-  const defeated = h => pool.all().some(c => asList(c.refs.defeats).includes(h) && counts(c, pool) && (isSide(who(c)) || confirmers.has(c.refs.author)));
+  const defeated = h => pool.all().some(c => asList(c.refs.defeats).includes(h) && counts(c, pool) && (isSide(who(c)) || namedBy(c)));
   const settling = D.filter(b => !defeated(b.hash) && b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && isSide(who(b)));
   const goods = [], pays = [], refunds = [], works = [];
   for (const b of settling) {
@@ -1928,23 +1939,18 @@ function promiseStage(firstIn, poolIn) {
     if (isObj(pterms.quantity) && pterms.quantity.value !== undefined) covered = works.filter(w => w.state.amount && w.state.amount.unit === pterms.quantity.unit).reduce((s, w) => s + decNum(w.state.amount), 0) >= decNum(pterms.quantity);
     else covered = works.length > 0;
   }
-  const paidAll = total === null || (out.paid !== null && out.paid.minor >= total.minor);
+  const paidAll = total === null || (out.paid !== null ? out.paid.minor : 0) >= total.minor;
   const anySettling = goods.length + pays.length + works.length > 0;
   // ---- onward stop and occurrences
   const occ = new Set();
   for (const b of D) if (b.type === 'promise' && b.state.status === 'stopped' && isObj(b.state.stop) && Array.isArray(b.state.stop.occurrences) && isSide(who(b))) b.state.stop.occurrences.forEach(o => occ.add(o));
   out.stopped = [...occ].sort();
-  // ---- the stage: the first of these that holds, from the furthest along back to the start
-  if (accept && covered && paidAll && refunded > 0 && out.paid && refunded >= out.paid.minor) out.stage = 'reversed';
-  else if (accept && covered && paidAll) out.stage = 'done';
-  else if (accept && onward.length) { out.stage = 'stopped'; out.stop = 'onward'; out.from = onward[0].hash; }
-  else if (accept && anySettling) out.stage = 'underway';
-  else if (accept) out.stage = 'accepted';
-  else if (stopsBefore.length) { out.stage = 'stopped'; out.stop = 'before'; }
-  else if (!open && lives.some(o => declines.some(d => d.refs.answers === o.hash && isSide(who(d)) && who(d) !== who(o)))) out.stage = 'declined';
-  // a block sent despite a live STOP is kept; consent decides what binds: the ask is read as declined in advance (consent.md)
-  else if (!open && consentFold(who(Q) === from ? to : from, Q.refs.author, pool, Q.refs.under).word === 'stop') out.stage = 'declined';
-  else out.stage = who(Q) === to && who(Q) !== from ? 'asked' : 'offered';
+  // ---- the stage: the first of these that holds, from the furthest along back to the start (with no binding accept, above)
+  if (covered && paidAll && refunded > 0 && out.paid && refunded >= out.paid.minor) out.stage = 'reversed';
+  else if (covered && paidAll) out.stage = 'done';
+  else if (onward.length) { out.stage = 'stopped'; out.stop = 'onward'; out.from = onward[0].hash; }
+  else if (anySettling) out.stage = 'underway';
+  else out.stage = 'accepted';
   return out;
 }
 function promiseView(first, blocks, opts) {
@@ -1994,9 +2000,10 @@ function ownershipFold(thingIn, blocks) {
   for (;;) {
     const elig = transfers.filter(t => speaker(t) === owner && accepted(t) && (prev ? pool.sees(t.hash, prev.hash) : true) && t !== prev && !list.includes(t));
     if (!elig.length) break;
-    const maximal = elig.filter(t => !elig.some(u => u !== t && pool.sees(u.hash, t.hash)));
-    if (maximal.length > 1) { conflict = maximal.map(t => t.hash).sort(); break; }
-    const t = maximal[0];
+    // the next counted transfer is the earliest of those the owner signed: two that do not see each other prove a lie
+    const earliest = elig.filter(t => !elig.some(u => u !== t && pool.sees(t.hash, u.hash)));
+    if (earliest.length > 1) { conflict = earliest.map(t => t.hash).sort(); break; }
+    const t = earliest[0];
     list.push(t); prev = t;
     owner = named(t) ? t.refs.to_owner : null;
     if (owner === null) break;
@@ -2278,7 +2285,7 @@ function door(op, ...a) {
     case 'due': return due(a[0], a[1]);
     case 'refusals': return refusals(a[0], a[1], a[2], a[3]);
     case 'promise_view': return promiseView(a[0], a[1], a[2]);
-    case 'promise_stage': return promiseStage(a[0], a[1]);
+    case 'promise_stage': return promiseStage(a[0], a[1], a[2]);
     case 'live_grant': return liveGrant(a[0], a[1], a[2]);
     case 'withdrawal_seen': return withdrawalSeen(a[0], a[1], a[2], a[3]);
     case 'consent': return consentFold(a[0], a[1], a[2], a[3]);

@@ -1,0 +1,32 @@
+const { fb, oracle, World } = require('./lib.cjs')
+const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
+const w = new World('case6 device reading')
+const inst = w.person('installer'), mfr = w.person('manufacturer', 'business'), dev = w.person('device', 'machine'), rogue = w.person('rogue-device', 'machine'), edge = w.person('edge')
+const bed = w.w(inst, 'thing', { kind: 'bed', name: 'bed 3', where: { lat: '51.5', lon: '-0.1' } }, {}, 'bed')
+const sensor = w.w(inst, 'thing', { kind: 'sensor', name: 'soil probe', marks: [{ scheme: 'serial', value: 'SP-77' }] }, { place: bed.hash }, 'sensor thing (placed in bed 3)')
+const op = w.w(inst, 'grant', { kind: 'operator' }, { to: dev.id, subject: sensor.hash }, 'operator grant: installer answers for device (subject = sensor)')
+const att = w.w(mfr, 'observe', { kind: 'attestation', scheme: 'secure_element', value: 'SE-1234-ABCD', kind_of: 'device' }, { subject: dev.id }, 'manufacturer attests device key lives in secure element (profile attestations, kind_of=device)')
+const schema = w.w(inst, 'thing', { kind: 'schema', target: 'observe.reading', name: 'soil moisture', fields: { amount: 'amount', accuracy: 'amount', coverage: 'text' }, grounds: { event: 'the probe measured soil moisture in the bed', confirmers: [mfr.id] } }, {}, 'schema')
+const raw = fb.hash('observe', { raw: 'adc=0x2f1' }, {})
+const rd = w.w(dev, 'observe', { kind: 'reading', amount: { value: '31', unit: '%' }, accuracy: { value: '2', unit: '%' }, method: 'capacitive', at: '2026-10-05T10:00:00.000Z' }, { from: sensor.hash, derives_from: raw, schema: schema.hash }, 'device reading 31% at T')
+const rr = w.w(edge, 'observe', { kind: 'receipt', at: '2026-10-05T10:00:03.000Z' }, { derives_from: rd.hash }, 'edge receipt (time)')
+const bad = w.w(rogue, 'observe', { kind: 'reading', amount: { value: '5', unit: '%' }, at: '2026-10-05T10:00:00.000Z' }, { from: sensor.hash, schema: schema.hash }, 'rogue device claims same sensor')
+const idDev = fb.identity.identityState(dev.id, w.blocks), idRogue = fb.identity.identityState(rogue.id, w.blocks)
+const explain = (reading) => {
+  const author = reading.refs.author, sensorId = reading.refs.from
+  const st = fb.identity.identityState(author, w.blocks)
+  const installs = w.blocks.filter(b => b.type === 'grant' && b.state.kind === 'operator' && b.refs.to === author && b.refs.subject === sensorId).map(b => b.refs.author)
+  const atts = w.blocks.filter(b => b.type === 'observe' && b.state.kind === 'attestation' && b.refs.subject === author).map(b => ({ by: b.refs.author.slice(0, 6), scheme: b.state.scheme }))
+  const rec = w.blocks.filter(b => b.state.kind === 'receipt' && b.refs.derives_from === reading.hash).map(b => b.state.at)
+  return { signedByDeviceKey: fb.identity.signedByAuthor(reading, w.blocks), operators: st.operators.map(x => x.slice(0, 6)), installedFor: installs.map(x => x.slice(0, 6)), attestations: atts, receiptTimes: rec, claimedAt: reading.state.at, personsClaim: (() => { try { return fb.strangers.readingIsPersonsClaim(reading, w.blocks, null) } catch (e) { return 'ERR ' + e.message } })() }
+}
+show('reader view of device reading', explain(rd))
+show('reader view of rogue reading', explain(bad))
+const rob = oracle.door('reading_is_persons_claim', rd, w.blocks, null); show('oracle reading_is_persons_claim', rob)
+show('mfr kind_of=device attestation validates?', w.log.find(l => l.note.startsWith('manufacturer')).sdk)
+w.report()
+console.log('\n--- reading_condition_holds with only the rogue reading')
+const cond = { reading: sensor.hash, kind: 'reading', op: 'lt', value: { value: '10', unit: '%' }, over: 'PT1H' }
+const onlyRogue = w.blocks.filter(b => b.hash !== rd.hash)
+const rust = require('../../sdk/javascript/src/core.cjs')
+console.log('rust holds (rogue says 5% < 10%):', rust.call('reading_condition_holds', cond, onlyRogue, '2026-10-05T10:30:00.000Z'), '| oracle', oracle.door('reading_condition_holds', cond, onlyRogue, '2026-10-05T10:30:00.000Z'))

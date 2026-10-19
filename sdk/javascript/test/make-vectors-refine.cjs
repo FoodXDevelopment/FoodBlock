@@ -379,6 +379,46 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   members('circle: a member\'s own leaving, an answer with only status, takes them out', left, { removed: { [ola.id]: null } })
 }
 
+// ---- 10. Where the core and the oracle differed and the spec text now decides ----
+{
+  const s = story(), ann = s.person('pann2'), bob = s.person('pbob2'), cat = s.person('pcat2'), ned = s.person('pned2'), kay = s.person('pkay2')
+  // the chain's head is the block with the highest seq, or null when two share it
+  const n1 = s.say(ann, 'observe', { kind: 'note', text: 'one' }), n2 = s.say(ann, 'observe', { kind: 'note', text: 'two' }), n3 = s.say(ann, 'observe', { kind: 'note', text: 'three' })
+  const chainOf = (...blocks) => blocks
+  door('check_chain: the head is the block with the highest seq', 'check_chain', [chainOf(n1, n2, n3), ann.id], { expect: { head: n3.hash, length: 3, ok: true } })
+  const twin = fb.write('observe', { kind: 'note', text: 'two, again' }, {}, { author: ann.id, key: keyOf('pann2'), held: s.held.filter((b) => b !== n3 && b !== n2), at: at(), audience: 'public' })
+  door('check_chain: two blocks share the highest seq: no head, and neither counts', 'check_chain', [chainOf(n1, n2, twin), ann.id], { expect: { head: null, length: 1, ok: false } })
+  // a promise before a binding accept chooses and settles nothing
+  const eggs = s.say(ann, 'thing', { kind: 'eggs' })
+  const offer = s.say(ann, 'promise', { terms: { price: M(450), quantity: fb.amount('1', '{tray}'), expires: DAY } }, { from: ann.id, to: bob.id, what: eggs.hash })
+  stage('a promise with no binding accept has no quantity, total, lines or payment yet', offer, s.held, { stage: 'offered', quantity: null, total: null, paid: null, lines: [] })
+  // a job moves nothing: it has no lines
+  const job = s.say(ann, 'promise', { what: 'mend a fence', terms: { price: M(2000), expires: DAY } }, { from: ann.id, to: bob.id })
+  s.say(bob, 'promise', { status: 'accepted' }, { answers: job.hash, for: job.hash, after: [job.hash] })
+  stage('a job moves nothing: no lines, and nothing is paid yet', job, s.held, { stage: 'accepted', lines: [], paid: null, total: { minor: 2000 } })
+  // ownership: a second transfer by the same owner, once the thing has moved on, counts for nothing
+  const bowl = s.say(ann, 'thing', { kind: 'bowl' })
+  const sold = s.say(ann, 'transfer', {}, { what: bowl.hash, to_owner: bob.id })
+  s.say(bob, 'transfer', { status: 'accepted' }, { answers: sold.hash })
+  const again = s.say(ann, 'transfer', {}, { what: bowl.hash, to_owner: cat.id })
+  s.say(cat, 'transfer', { status: 'accepted' }, { answers: again.hash })
+  const resold = s.say(bob, 'transfer', {}, { what: bowl.hash, to_owner: cat.id })
+  s.say(cat, 'transfer', { status: 'accepted' }, { answers: resold.hash })
+  door('ownership: the next counted transfer is the earliest the owner signed; a later one by a past owner counts for nothing', 'ownership', [bowl, s.held], { expect: { owner: cat.id, transfers: [sold.hash, resold.hash], conflict: null }, exact: true })
+  // a confirmer named as circle#role is a holder of the role in the circle's fold of the confirm's own causal past
+  const pool = s.say(ann, 'actor', { kind: 'circle', name: 'Pool', roles: [{ name: 'steward', powers: ['sign', 'admit', 'remove'] }, { name: 'assessor', powers: [] }] })
+  const grant = s.say(ann, 'grant', { kind: 'member', roles: ['assessor'] }, { subject: pool.hash, to: ned.id, as: pool.hash })
+  const yes = s.say(ned, 'grant', { status: 'accepted' }, { answers: grant.hash })
+  const schema = s.say(ann, 'thing', { kind: 'schema', target: 'promise', grounds: { event: 'the work was done', confirmers: [pool.hash + '#assessor'] } })
+  const jobs = [0, 1].map((i) => { const j = s.say(ann, 'promise', { what: 'dig bed ' + i, terms: { expires: DAY } }, { from: ann.id, to: kay.id, schema: schema.hash }); s.say(kay, 'promise', { status: 'accepted' }, { answers: j.hash, for: j.hash, after: [j.hash] }); return j })
+  const w0 = s.say(ann, 'observe', { kind: 'work', text: 'dug bed 0' }, { for: jobs[0].hash }), w1 = s.say(ann, 'observe', { kind: 'work', text: 'dug bed 1' }, { for: jobs[1].hash })
+  s.say(ned, 'observe', { kind: 'confirm', confidence: '1' }, { confirms: w0.hash, for: jobs[0].hash, after: [w0.hash, yes.hash] })
+  stage('confirmers: an assessor of the pool, a member in the fold of his own confirm, confirms the work: done', jobs[0], s.held, { stage: 'done' })
+  const stop = s.say(ann, 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: yes.hash }, { updates: grant.hash, subject: pool.hash, as: pool.hash, after: [yes.hash] })
+  s.say(ned, 'observe', { kind: 'confirm', confidence: '1' }, { confirms: w1.hash, for: jobs[1].hash, after: [w1.hash, stop.hash] })
+  stage('confirmers: the same assessor, after the pool removed him, confirms nothing: unconfirmed work is not counted, so the job is only accepted', jobs[1], s.held, { stage: 'accepted' })
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

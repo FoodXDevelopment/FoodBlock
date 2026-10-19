@@ -328,7 +328,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     let mut forks: Vec<String> = Vec::new();
     let mut accept: Option<&Value> = None;
     // To yourself: a promise whose from and to both name its author is accepted when made.
-    let to_self = alloc.is_none() && from.is_some_and(|f| !f.is_empty()) && from == to && rs(&first, "author") == from;
+    let to_self = alloc.is_none() && from.is_some_and(|f| !f.is_empty()) && from == to && speaker_of(&first, &index, now).as_deref() == from;
     if let Some((_, _, taker)) = &alloc {
         // The allocation is the binding accept of its own deal, for this taker alone.
         accept = Some(&first);
@@ -544,19 +544,17 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
     if let Some(Value::Array(c)) = schema.and_then(|s| get(s, "state.grounds.confirmers")) {
         named_raw.extend(c.iter().map(|x| text(Some(x))));
     }
-    let named: Vec<String> = named_raw
-        .iter()
-        .flat_map(|who| {
-            let mut parts = who.splitn(2, '#');
-            let circle = parts.next().unwrap_or("");
-            match parts.next().map(|r| r.split('#').next().unwrap_or("")) {
-                Some(role) if !role.is_empty() => {
-                    holders_of(circle_state_in(circle, &index, None).as_ref(), role)
-                }
-                _ => vec![who.clone()],
+    // A block confirms or defeats only if its author is named: an id, or a holder of circle#role in the circle's fold of that block's causal
+    // past (the same question as members_then).
+    let named_by = |o: &Value| -> bool {
+        let Some(author) = rs(o, "author") else { return false };
+        named_raw.iter().any(|who| match who.split_once('#') {
+            Some((circle, role)) if !role.is_empty() => {
+                holders_of(circle_state_in(circle, &index, Some(o)).as_ref(), role.split('#').next().unwrap_or("")).iter().any(|h| h == author)
             }
+            _ => who == author,
         })
-        .collect();
+    };
     let counted = |b: &Value, receiver: &Option<String>| -> bool {
         let r = receiver.as_deref();
         answers_of(hash_of(b), Some("accepted"))
@@ -564,7 +562,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             .any(|a| speaks_as(a, r, &index, now))
             || index.values().any(|o| {
                 list(rf(o, "confirms")).contains(&hash_of(b))
-                    && rs(o, "author").is_some_and(|a| named.iter().any(|n| n == a))
+                    && named_by(o)
             })
     };
     let includes = |b: &Value, key: &str, who: &Option<String>| {
@@ -576,7 +574,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         index.values().any(|o| {
             list(rf(o, "defeats")).contains(&hash_of(b))
                 && crate::identity::counts_in(o, &index)
-                && (side_of(o).is_some() || rs(o, "author").is_some_and(|a| named.iter().any(|n| n == a)))
+                && (side_of(o).is_some() || named_by(o))
         })
     };
     let transfers: Vec<&Value> = in_deal
@@ -752,10 +750,11 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         "quantity": chosen,
         "total": total.as_ref().map(|(m, c)| json!({ "minor": num(*m), "currency": c })),
         "paid": paid_json,
-        "lines": line_state.iter().map(|l| json!({
+        // A promise that moves nothing (a job, time, money alone: no `what`, no `lines`) has no line to report.
+        "lines": if offer_what || truthy(terms.get("lines")) { line_state.iter().map(|l| json!({
             "id": l.id, "needed": l.needed.map(num),
             "moved": if l.moved.is_finite() { num(l.moved) } else { l.needed.map(num).unwrap_or(Value::Null) },
-        })).collect::<Vec<_>>(),
+        })).collect::<Vec<_>>() } else { Vec::new() },
         "stopped": occurrences,
     });
     // 1. Reversed: a done promise with counted transfers back for it covering what was paid.
@@ -772,7 +771,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         more["from"] = json!(hash_of(onward));
         return result("stopped", more);
     }
-    let stage = if !goods.is_empty() || !pays.is_empty() || !work.is_empty() {
+    let stage = if !goods.is_empty() || !pays.is_empty() || !accepted_work.is_empty() {
         "underway"
     } else {
         "accepted"

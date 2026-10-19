@@ -14,7 +14,7 @@
     "README.md"
   ],
   "scripts": {
-    "test": "node ../../spec/run-vectors.cjs && node ../../spec/oracle/run.cjs && node --test test/*.test.cjs",
+    "test": "node ../../spec/run-vectors.cjs && node ../../spec/oracle/run.cjs && node ../../test/audit/run.cjs && node --test test/*.test.cjs",
     "build:wasm": "node scripts/build-wasm.cjs",
     "fuzz:build": "cargo build --release --manifest-path ../../tools/fuzz/Cargo.toml",
     "fuzz:vectors": "node ../../tools/fuzz/run-vectors.cjs",

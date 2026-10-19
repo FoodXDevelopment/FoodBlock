@@ -67,6 +67,7 @@ sql/schema.sql          the node's store: append-only, each block kept exactly a
 mcp/                    the MCP door: six tools (find, read, ask, promise, accept, connect); the agent drafts, the person signs
 cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
 test/vectors.json       cross-language canonical vectors (they hash the same under 1.6)
+test/audit/             the audit's worlds as permanent tests: every fold computed by the core and the oracle must be identical (`run.cjs`)
 test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript packages (and legacy/aliases-0.x.json into the Rust crate); --check proves they match
 ```
 
@@ -78,7 +79,7 @@ test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript p
 | spec/protocol.json | `node test/sync-spec.cjs`, then every SDK's tests |
 | The Rust core | `cd sdk/rust && cargo test`, rebuild WebAssembly (`cd sdk/javascript && node scripts/build-wasm.cjs`; Go embeds the same file: `node tools/version-sync.cjs --write`), rebuild the Python library (`cargo rustc --release --features ffi --crate-type cdylib`), the Swift XCFramework, then every SDK's tests |
 | Python / Go / Swift / Kotlin SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && CGO_ENABLED=0 go test ./...` / `sdk/swift/scripts/build-xcframework.sh --macos && swift test` (at the root, with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`) / `cd sdk/kotlin && ./gradlew :foodblock:test` |
-| The oracle | `node spec/oracle/run.cjs` |
+| The oracle, or any fold | `node spec/oracle/run.cjs` and `node test/audit/run.cjs` (the core and the oracle must give identical folds over every audited world and every vector story) |
 | The EPCIS / FSMA 204 profile | `node spec/profiles/epcis/run.cjs` (regenerate: `make-vectors.cjs`) |
 | The node | `cd server && npm test` (in-memory Postgres, no setup; `TEST_DATABASE_URL=postgresql://... npm test` for a real one) |
 | The MCP server | `cd mcp && npm test` (starts the server and calls its tools over stdio) |

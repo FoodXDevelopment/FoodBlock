@@ -1257,7 +1257,7 @@
   },
   "chain": {
    "input": "the blocks of one signing key, and the id of the block that brought that key in",
-   "head": "hash of the latest block",
+   "head": "hash of the block with the highest seq, or null when two share it",
    "length": "the key's blocks that count: both blocks of an equivocation pair and every later block of the key are left out",
    "gaps": "seq numbers missing that no skip block explains: the lowest first, at most limits.gaps_max",
    "skips": "hashes of skip blocks",

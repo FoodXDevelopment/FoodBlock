@@ -1,0 +1,42 @@
+const { fb, oracle, World } = require('./lib.cjs')
+const w = new World('case1 coffee shop')
+const alice = w.person('alice'), bob = w.person('bob'), carol = w.person('carol'), pay = w.person('payprovider', 'agent')
+const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
+const cafe = w.w(alice, 'actor', { kind: 'circle', name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'manager', powers: ['sign'] }] }, {}, 'circle')
+// bob manager
+const mg = w.w(alice, 'grant', { kind: 'member', roles: ['manager'] }, { subject: cafe.hash, to: bob.id, as: cafe.hash }, 'member grant bob manager (alice as cafe)')
+const ma = w.w(bob, 'grant', { status: 'accepted', kind: 'member' }, { answers: mg.hash, subject: cafe.hash }, 'bob accepts')
+show('circle', fb.circleState(cafe, w.blocks).members && Object.entries(fb.circleState(cafe, w.blocks).members).map(([k, v]) => [k.slice(0, 6), v.roles]))
+// Does alice need to be signing as cafe for the member grant? She is the founder. Try manager (sign only) admitting
+const mgBad = w.raw(bob, 'grant', { kind: 'member', roles: ['manager'] }, { subject: cafe.hash, to: carol.id, as: cafe.hash }, 'bob(manager, no admit) tries to admit carol')
+show('bob admit counts?', Object.keys(fb.circleState(cafe, w.blocks).members).map(k => k.slice(0, 6)), 'carol has accepted? no')
+// shares: kind thing + schema
+const shareKind = w.w(bob, 'thing', { kind: 'share', name: 'Cafe share' }, { as: cafe.hash }, 'share kind (bob as cafe)')
+const mint = w.w(bob, 'transform', { kind: 'mint' }, { as: cafe.hash }, 'transform: mint 100 shares (no inputs)')
+const shares = []
+for (let i = 0; i < 100; i++) shares.push(w.w(bob, 'thing', { kind: 'share', lot: 'S' + i }, { of: shareKind.hash, derives_from: mint.hash, as: cafe.hash }, 'share ' + i))
+show('100 shares written', shares.filter(s => !s.refusedWrite).length)
+const own = (s) => ({ sdk: fb.ownerOf(s, w.blocks), oracle: oracle.ownershipFold(s, w.blocks) })
+show('owner of share0 (maker bob as cafe) sdk', fb.ownerOf(shares[0], w.blocks), 'owner full sdk', fb.fold.ownership(shares[0], w.blocks))
+show('owner oracle', oracle.ownershipFold(shares[0], w.blocks))
+// offer
+const offer = w.w(bob, 'promise', { terms: { price: { money: { minor: 500, currency: 'GBP' }, per: { value: '1', unit: 'share' } }, quantity: { value: '5', unit: 'share' }, expires: '2026-12-01T00:00:00.000Z' } }, { from: cafe.hash, to: carol.id, what: shareKind.hash, as: cafe.hash }, 'offer 5 shares (bob as cafe) -> carol')
+const acc = w.w(carol, 'promise', { status: 'accepted', terms: { quantity: { value: '5', unit: 'share' } } }, { answers: offer.hash, for: offer.hash }, 'carol accepts')
+show('stage after accept', fb.promiseStage(offer, w.blocks).stage, oracle.door('promise_stage', offer, w.blocks).stage)
+const payment = w.w(carol, 'transfer', { money: { minor: 2500, currency: 'GBP' }, marks: [{ scheme: 'upi', value: 'REF123' }] }, { to_owner: cafe.hash, for: offer.hash }, 'carol pays 25 GBP')
+const confirm = w.w(pay, 'observe', { kind: 'payment', text: 'upi callback' }, { confirms: payment.hash, derives_from: fb.hash('observe', { raw: 'cb' }, {}) }, 'provider confirms payment')
+const rcv = w.w(bob, 'transfer', { kind: 'receipt-ack', status: 'accepted' }, { answers: payment.hash, for: offer.hash }, 'XX bob (not as cafe) accepts payment', {})
+show('stage after payment (unaccepted by cafe)', fb.promiseStage(offer, w.blocks).stage)
+const pa = w.w(bob, 'transfer', { status: 'accepted' }, { answers: payment.hash, for: offer.hash, as: cafe.hash }, 'cafe accepts payment (bob as cafe)')
+show('stage after payment accepted', fb.promiseStage(offer, w.blocks).stage, 'paid', fb.promiseStage(offer, w.blocks).paid)
+// share transfer: 1 transfer of 5 instances
+const give = shares.slice(0, 5).map(s => s.hash).sort()
+const tr = w.w(bob, 'transfer', { }, { what: give, to_owner: carol.id, for: offer.hash, as: cafe.hash }, 'transfer 5 shares to carol (bob as cafe)')
+show('stage after transfer unaccepted', fb.promiseStage(offer, w.blocks).stage)
+const tra = w.w(carol, 'transfer', { status: 'accepted' }, { answers: tr.hash, for: offer.hash }, 'carol accepts shares')
+const st = fb.promiseStage(offer, w.blocks), so = oracle.door('promise_stage', offer, w.blocks)
+show('stage after shares accepted', st.stage, so.stage, JSON.stringify(st.lines), JSON.stringify(st.total), JSON.stringify(st.paid))
+for (const s of shares.slice(0, 6)) show('owner', s.state.lot, (fb.ownerOf(s, w.blocks) || 'null').slice(0, 6), (oracle.ownershipFold(s, w.blocks).owner || 'null').slice(0, 6))
+show('ids: alice', alice.id.slice(0, 6), 'cafe', cafe.hash.slice(0, 6), 'carol', carol.id.slice(0, 6))
+w.report()
+module.exports = { w }

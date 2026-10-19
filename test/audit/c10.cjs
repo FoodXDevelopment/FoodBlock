@@ -1,0 +1,11 @@
+// Member acceptances and stops carry only `status`: no `kind`, no `subject`. What they answer or update says which circle they are for.
+const { fb, World } = require('./lib.cjs')
+const w = new World('case10 bare acceptance')
+const ann = w.person('ann'), mo = w.person('mo'), nan = w.person('nan')
+const co = w.w(ann, 'actor', { kind: 'circle', name: 'Co-op', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] }, {}, 'circle')
+const invite = (p) => w.w(ann, 'grant', { kind: 'member', roles: ['baker'] }, { subject: co.hash, to: p.id, as: co.hash }, 'invite ' + p.label)
+const gMo = invite(mo), gNan = invite(nan)
+w.w(mo, 'grant', { status: 'accepted' }, { answers: gMo.hash }, 'mo accepts with status alone')
+const yes = w.w(nan, 'grant', { status: 'accepted' }, { answers: gNan.hash }, 'nan accepts with status alone')
+w.w(ann, 'grant', { status: 'stopped', stop: 'onward' }, { updates: gNan.hash, as: co.hash, after: [yes.hash] }, 'ann stops nan\'s grant with status alone')
+w.report()

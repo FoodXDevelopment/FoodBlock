@@ -1,0 +1,43 @@
+const { fb, oracle, World } = require('./lib.cjs')
+const { w } = require('./c1.cjs')
+console.log('\n=============== c1b')
+const P = w.people, alice = P.alice, bob = P.bob, carol = P.carol, pay = P.payprovider
+const cafe = w.blocks.find(b => b.type === 'actor' && b.state.kind === 'circle')
+const shareKind = w.blocks.find(b => b.type === 'thing' && b.state.kind === 'share' && !b.refs.of)
+const shares = w.blocks.filter(b => b.state.lot)
+const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
+// A: alice (founder, owner role w/ sign) transfers S10 (made by bob as cafe) to dave-less carol, as cafe
+const x1 = w.w(alice, 'transfer', {}, { what: shares[10].hash, to_owner: carol.id, as: cafe.hash }, 'alice as cafe transfers S10 (made by bob as cafe) to carol')
+show('S10 owner after alice-as-cafe transfer (carol accepted? no)', fb.ownerOf(shares[10], w.blocks)?.slice(0,6), 'carol=', carol.id.slice(0,6), 'bob=', bob.id.slice(0,6))
+w.w(carol, 'transfer', { status: 'accepted' }, { answers: x1.hash }, 'carol accepts S10')
+show('S10 owner after carol accepts', (fb.ownerOf(shares[10], w.blocks) || 'null').slice(0, 6), 'oracle', (oracle.ownershipFold(shares[10], w.blocks).owner || 'null').slice(0, 6))
+// B: forged `as`: carol (not member) signs an offer as cafe
+const forged0 = null; const forged = w.w(carol, 'promise', { terms: { price: { minor: 1, currency: 'GBP' }, expires: '2026-12-01T00:00:00.000Z' } }, { from: cafe.hash, to: alice.id, what: shareKind.hash, as: cafe.hash }, 'forged: carol offers as cafe')
+show('forged valid? log last', JSON.stringify(w.log[w.log.length - 1]))
+const fa = w.w(alice, 'promise', { status: 'accepted' }, { answers: forged.hash, for: forged.hash }, 'alice accepts the forged offer'); show('forged: no stage (sdk)', fb.promiseStage(forged, w.blocks), 'oracle', oracle.door('promise_stage', forged, w.blocks), 'may_act_as', fb.fold.mayActAs(forged, cafe, w.blocks))
+// C: dividend promise: bearer, share priced
+const profit = w.w(bob, 'thing', { kind: 'schema', target: 'observe.profit', name: 'quarterly profit', fields: { period: 'text', profit: 'money' }, grounds: { event: 'quarter closed and accounts signed', confirms: ['observe'], confirmers: [alice.id] } }, { as: cafe.hash }, 'profit schema')
+const div = w.w(bob, 'promise', { terms: { price: { share: '0.01', of: profit.hash }, repeat: 'FREQ=MONTHLY;INTERVAL=3;COUNT=4', expires: '2027-12-01T00:00:00.000Z', until: '2027-12-31T00:00:00.000Z' }, when: '2026-12-31T00:00:00.000Z' }, { from: cafe.hash, to: shares[0].hash, what: profit.hash, as: cafe.hash }, 'dividend promise: from cafe to bearer share S0, priced share of profit')
+show('dividend receiver (sdk)', fb.fold.receiverOf(div, w.blocks))
+const divAny = w.w(bob, 'promise', { terms: { price: { share: '0.01', of: profit.hash }, repeat: 'FREQ=MONTHLY;INTERVAL=3', expires: '2027-12-01T00:00:00.000Z' }, when: '2026-12-31T00:00:00.000Z' }, { from: cafe.hash, to: shareKind.hash, what: profit.hash, as: cafe.hash }, 'dividend promise to the share KIND (all holders)')
+show('dividend-to-kind receiver (sdk)', fb.fold.receiverOf(divAny, w.blocks))
+// profit observe under schema; confirmed by alice
+const q1 = w.w(bob, 'observe', { kind: 'profit', period: '2026-Q4', profit: { minor: 100000, currency: 'GBP' } }, { as: cafe.hash, schema: profit.hash, for: divAny.hash }, 'profit observe Q4 (schema)')
+const q1c = w.w(alice, 'observe', { kind: 'confirmation' }, { confirms: q1.hash }, 'alice confirms profit')
+// dividend payment transfer to S0's owner
+const owner0 = fb.ownerOf(shares[0], w.blocks)
+const d1 = w.w(bob, 'transfer', { money: { minor: 1000, currency: 'GBP' }, marks: [{ scheme: 'upi', value: 'DIV1' }], split: [{ for: div.hash, money: { minor: 1000, currency: 'GBP' } }] }, { to_owner: owner0, for: [div.hash], as: cafe.hash }, 'dividend paid to current owner of S0')
+show('dividend stage (to S0, unaccepted)', JSON.stringify(fb.promiseStage(div, w.blocks)))
+w.w(P.carol, 'transfer', { status: 'accepted' }, { answers: d1.hash, for: div.hash }, 'owner accepts dividend')
+show('dividend stage after accept', JSON.stringify(fb.promiseStage(div, w.blocks)))
+w.report()
+console.log('\n=============== c1c')
+const dacc = w.w(carol, 'promise', { status: 'accepted' }, { answers: div.hash, for: div.hash }, 'S0 owner (carol) accepts bearer dividend')
+const s1 = fb.promiseStage(div, w.blocks)
+show('bearer dividend stage after owner accepts', s1.stage, 'accept', s1.accept, 'total', s1.total, 'paid', s1.paid)
+// outsider accepts as cafe on an offer from alice to cafe
+const offer2 = w.w(alice, 'promise', { terms: { price: { minor: 100, currency: 'GBP' }, expires: '2027-01-01T00:00:00.000Z' } }, { from: alice.id, to: cafe.hash, what: shareKind.hash }, 'alice offers to cafe')
+const bad = w.w(carol, 'promise', { status: 'accepted' }, { answers: offer2.hash, for: offer2.hash, as: cafe.hash }, 'outsider carol accepts as cafe')
+show('outsider-as-cafe accept: stage sdk', fb.promiseStage(offer2, w.blocks).stage)
+const good = w.w(bob, 'promise', { status: 'accepted' }, { answers: offer2.hash, for: offer2.hash, as: cafe.hash }, 'manager bob accepts as cafe (sign power)')
+show('manager accept: stage sdk', fb.promiseStage(offer2, w.blocks).stage, 'accept hash is bob\'s?', fb.promiseStage(offer2, w.blocks).accept === good.hash)
