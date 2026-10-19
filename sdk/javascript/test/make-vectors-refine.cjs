@@ -233,6 +233,54 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   check('an updates of a promise that is its author\'s stop is the one allowed', stop, [])
 }
 
+// ---- 6. A block a side or a named confirmer defeats counts for nothing ----
+{
+  const s = story(), pat = s.person('dpat'), lena = s.person('dlena'), eve = s.person('deve'), judge = s.person('djudge')
+  const eggs = s.say(pat, 'thing', { kind: 'eggs' })
+  const schema = s.say(pat, 'thing', { kind: 'schema', target: 'promise', name: 'a tray of eggs', grounds: { event: 'a tray of eggs reached the buyer', confirms: ['observe'], defeats: ['observe'], confirmers: [judge.id] } })
+  let n = 0
+  const deal = (withSchema) => {
+    const offer = s.say(pat, 'promise', { terms: { price: M(500), quantity: fb.amount('1', '{tray}'), expires: DAY } }, { from: pat.id, to: lena.id, what: eggs.hash, ...(withSchema ? { schema: schema.hash } : {}) })
+    s.say(lena, 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash, after: [offer.hash] })
+    const tray = s.say(pat, 'thing', { kind: 'eggs', lot: 'D' + n++, pack: fb.amount('1', '{tray}') }, { of: eggs.hash })
+    const delivery = s.say(pat, 'transfer', {}, { what: tray.hash, to_owner: lena.id, for: offer.hash })
+    s.say(lena, 'transfer', { status: 'accepted' }, { answers: delivery.hash, for: offer.hash })
+    const payment = s.say(lena, 'transfer', { money: M(500) }, { to_owner: pat.id, for: offer.hash })
+    s.say(pat, 'transfer', { status: 'accepted' }, { answers: payment.hash, for: offer.hash })
+    return { offer, delivery, payment }
+  }
+  const defeat = (who, target, offer) => s.say(who, 'observe', { kind: 'complaint', text: 'not as agreed' }, { defeats: target.hash, for: offer.hash })
+  // the receiver defeats the delivery she accepted
+  const d1 = deal(false)
+  stage('defeats: delivered, accepted and paid: done', d1.offer, s.held, { stage: 'done' })
+  defeat(lena, d1.delivery, d1.offer)
+  stage('defeats: the receiver defeats the delivery: it no longer counts, and the deal is not done', d1.offer, s.held, { stage: 'underway', lines: [{ needed: 1, moved: 0 }], paid: { minor: 500 } })
+  // a stranger's defeat counts for nothing
+  const d2 = deal(false)
+  defeat(eve, d2.delivery, d2.offer)
+  stage('defeats: a stranger\'s defeat counts for nothing: still done', d2.offer, s.held, { stage: 'done' })
+  // the giver retracts her own delivery
+  const d3 = deal(false)
+  defeat(pat, d3.delivery, d3.offer)
+  stage('defeats: the giver defeats his own delivery: it no longer counts', d3.offer, s.held, { stage: 'underway' })
+  // a payment defeated by the payer, or by a confirmer the schema names
+  const d4 = deal(false)
+  defeat(lena, d4.payment, d4.offer)
+  stage('defeats: a defeated payment is not paid: the goods are in, the price is not covered', d4.offer, s.held, { stage: 'underway', paid: null })
+  const d5 = deal(true)
+  stage('defeats: a deal with a named confirmer, before he speaks: done', d5.offer, s.held, { stage: 'done' })
+  defeat(judge, d5.delivery, d5.offer)
+  stage('defeats: a confirmer the schema names defeats the delivery: it counts for nothing', d5.offer, s.held, { stage: 'underway' })
+  // work
+  const job = s.say(pat, 'promise', { what: 'teach bread', terms: { quantity: fb.amount('2', 'h'), expires: DAY } }, { from: pat.id, to: lena.id })
+  s.say(lena, 'promise', { status: 'accepted' }, { answers: job.hash, for: job.hash, after: [job.hash] })
+  const lesson = s.say(pat, 'observe', { kind: 'work', amount: fb.amount('2', 'h'), text: 'taught 2h' }, { for: job.hash })
+  s.say(lena, 'observe', { status: 'accepted' }, { answers: lesson.hash, for: job.hash })
+  stage('defeats: the learner accepts the lesson: done', job, s.held, { stage: 'done' })
+  defeat(lena, lesson, job)
+  stage('defeats: and defeats it: the work counts for nothing and the job is accepted, not done', job, s.held, { stage: 'accepted' })
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

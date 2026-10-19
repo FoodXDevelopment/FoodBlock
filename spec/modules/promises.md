@@ -40,7 +40,7 @@ A promise or grant has no status of its own: offered or asked is read from who s
 - An accept beats a withdrawal unless the withdrawal is in the accept's causal past. An accept that reaches the offerer after `expires`, on the offerer's own clock, does not bind (a view, folds.md); the offerer answers it `declined`.
 - **An agent's ask is a quote request** unless its grant names the act. A promise signed by an agent under a grant whose `scope.acts` does not list `promise` can be answered by an offer, but no accept of it binds its principal. Only the principal's own `answers`, or a grant that names the act, makes it bind. So a background search can gather quotes and never commit anyone.
 
-**Settling.** A promise settles by folding the counted blocks made `for` it: transfers, a transform, or the worker's own work. A giver's transfer counts when it moves ownership (folds.md, Ownership): to a named receiver, once the receiver answers it `accepted`; to an open receiver, on the orderer's signature. Any other counted block is one the receiver answers `accepted`, or one a confirmer the schema's grounds name confirms. A promise is never marked delivered by itself, so a deed is said once. A sensor reading is a ground a confirmer may cite; it never settles alone. A return in goods is a second promise `for` the first.
+**Settling.** A promise settles by folding the counted blocks made `for` it: transfers, a transform, or the worker's own work. A giver's transfer counts when it moves ownership (folds.md, Ownership): to a named receiver, once the receiver answers it `accepted`; to an open receiver, on the orderer's signature. Any other counted block is one the receiver answers `accepted`, or one a confirmer the schema's grounds name confirms. A block a side of the deal, or a confirmer the schema's grounds name, `defeats` counts for nothing (folds.md, Defeated blocks): a delivery the receiver disputes is no longer a delivery. A promise is never marked delivered by itself, so a deed is said once. A sensor reading is a ground a confirmer may cite; it never settles alone. A return in goods is a second promise `for` the first.
 
 **Claims.** A claim is an ask by the receiving side `for` a past block when nothing was promised first. An unanswered claim or ask binds no one and is never a debt in any fold.
 
@@ -52,7 +52,7 @@ A promise or grant has no status of its own: offered or asked is read from who s
 
 11. What is bound from an offer never exceeds what is offered.
 12. A block counts in a deal only if it speaks for a side (folds.md, invariant 31).
-13. A promise is settled only by blocks the receiving side accepts or the grounds confirm.
+13. A promise is settled only by blocks the receiving side accepts or the grounds confirm, and that no side or named confirmer has defeated.
 14. An unanswered ask or claim binds no one.
 15. `answers` is the only consent to a deal, and it consents to the terms of the block it names: a promise's terms are fixed once it is written.
 22. A background ask never binds before the person's yes: an agent's ask is a quote request unless its grant names the act.

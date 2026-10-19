@@ -1869,7 +1869,9 @@ function promiseStage(firstIn, poolIn) {
   const confirmers = new Set(schema && isObj(schema.state.grounds) ? asList(schema.state.grounds.confirmers).flatMap(c => c.includes('#') ? membersThen({ hash: P.hash }, c, pool) : [c]) : []);
   const confirmed = h => pool.all().some(c => asList(c.refs.confirms).includes(h) && confirmers.has(c.refs.author) && counts(c, pool));
   const accepted = (h, receiver) => D.some(a => a.refs.answers === h && a.state.status === 'accepted' && (receiver === undefined || who(a) === receiver));
-  const settling = D.filter(b => b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && isSide(who(b)));
+  // a block a side of the deal, or a confirmer the schema names, defeats counts for nothing (folds.md, Settling)
+  const defeated = h => pool.all().some(c => asList(c.refs.defeats).includes(h) && counts(c, pool) && (isSide(who(c)) || confirmers.has(c.refs.author)));
+  const settling = D.filter(b => !defeated(b.hash) && b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && isSide(who(b)));
   const goods = [], pays = [], refunds = [], works = [];
   for (const b of settling) {
     if (b.type === 'transfer') {

@@ -568,9 +568,17 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         who.as_deref()
             .is_some_and(|w| list(rf(b, key)).contains(&w))
     };
+    // A block a side of the deal, or a confirmer the deal's schema names, defeats counts for nothing (folds.md, Settling).
+    let defeated = |b: &Value| {
+        index.values().any(|o| {
+            list(rf(o, "defeats")).contains(&hash_of(b))
+                && crate::identity::counts_in(o, &index)
+                && (side_of(o).is_some() || rs(o, "author").is_some_and(|a| named.iter().any(|n| n == a)))
+        })
+    };
     let transfers: Vec<&Value> = in_deal
         .iter()
-        .filter(|b| type_of(b) == "transfer" && st(b, "status").is_none())
+        .filter(|b| type_of(b) == "transfer" && st(b, "status").is_none() && !defeated(b))
         .collect();
     let goods: Vec<&Value> = transfers
         .iter()
@@ -606,6 +614,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
                 || (type_of(b) == "observe" && ss(b, "kind") == Some("work")))
                 && side_of(b).is_some()
                 && st(b, "status").is_none()
+                && !defeated(b)
         })
         .collect();
     let accepted_work: Vec<&&Value> = work.iter().filter(|b| counted(b, &to_side)).collect();
