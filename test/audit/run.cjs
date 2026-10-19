@@ -10,7 +10,7 @@ const assert = require('assert/strict')
 const { fb, oracle } = require('./lib.cjs')
 const { call } = require('../../sdk/javascript/src/core.cjs')
 
-const files = ['c1', 'c1b', 'c1d', 'c1e', 'c2', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c6', 'c7', 'c9', 'c10', 'c11']
+const files = ['c1', 'c1b', 'c1d', 'c1e', 'c2', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c6', 'c7', 'c9', 'c10', 'c11', 'c12']
 const realLog = console.log
 console.log = () => {}
 for (const f of files) require('./' + f + '.cjs')
@@ -267,6 +267,33 @@ check('loan: the advance (a payout record the borrower accepts) and the repaymen
   const s = both('promise_stage', c11.blocks.find((b) => b.hash === c11.loan), c11.blocks, {})
   assert.equal(s.stage, 'done')
   assert.deepEqual(s.total, { minor: 11000, currency: 'GBP' })
+})
+
+// Device attestation: who may sign a sensor's readings is the sensor's owner's word, and only that.
+const c12 = world('case12 device attestation')
+check('device attestation: the world is valid in both engines, with the schema store', () => { assert.deepEqual(c12.problems, []); assert.equal(c12.log.filter((l) => l.writeRefused).length, 0) })
+check('device attestation: the owner\'s device and the owner count; a stranger\'s or an installer\'s grant makes no operator of the probe', () => {
+  const at = (h) => `2026-11-03T${String(h).padStart(2, '0')}:30:00.000Z`
+  const frost = c12.frost
+  // the device read 3 C at 01:00, -2 C at 02:00, -3 C at 03:00; the owner read -1 C at 04:00; a rogue device read -9 C at 03:00
+  assert.equal(both('reading_condition_holds', frost, c12.blocks, at(2)), false, 'at 02:30 the state at the start of the hour (01:30) was 3 C')
+  assert.equal(both('reading_condition_holds', frost, c12.blocks, at(3)), true, 'at 03:30 the hour opened at -2 C and stayed below zero')
+  assert.equal(both('reading_condition_holds', frost, c12.blocks, at(4)), true)
+  const without = (who) => c12.blocks.filter((b) => !(b.type === 'observe' && b.state.kind === 'temperature' && b.refs.author === c12.people[who].id))
+  assert.equal(both('reading_condition_holds', frost, without('device'), at(4)), false, 'without the device\'s readings there is none at the start of the hour: the rogue\'s -9 C and the owner\'s -1 C do not carry it')
+  const onlyRogue = c12.blocks.filter((b) => !(b.type === 'observe' && b.state.kind === 'temperature' && b.refs.author !== c12.people['rogue-device'].id))
+  assert.equal(both('reading_condition_holds', frost, onlyRogue, at(4)), false, 'only the rogue device\'s reading is held: neither the stranger\'s nor the installer\'s grant makes it an operator of the probe')
+})
+check('device attestation: when the owner gives the sensor away, the old owner\'s grants stop counting and the new owner\'s start', () => {
+  const sensor = c12.blocks.find((b) => b.type === 'thing' && b.state.name === 'frost probe')
+  const t = fb.write('transfer', {}, { what: sensor.hash, to_owner: c12.people.installer.id }, { author: c12.people.farmer.id, key: c12.people.farmer.keys, held: c12.blocks, at: '2026-11-03T05:00:00.000Z' })
+  const acc = fb.write('transfer', { status: 'accepted' }, { answers: t.hash }, { author: c12.people.installer.id, key: c12.people.installer.keys, held: [...c12.blocks, t], at: '2026-11-03T05:01:00.000Z' })
+  const held = [...c12.blocks, t, acc]
+  assert.equal(both('ownership', sensor, held).owner, c12.people.installer.id)
+  const at = '2026-11-03T04:30:00.000Z'
+  const without = (who) => held.filter((b) => !(b.type === 'observe' && b.state.kind === 'temperature' && b.refs.author === c12.people[who].id))
+  assert.equal(both('reading_condition_holds', c12.frost, without('rogue-device'), at), false, 'the device the farmer named no longer counts: the farmer no longer owns the probe')
+  assert.equal(both('reading_condition_holds', c12.frost, held, at), true, 'the installer, now the owner, had named the rogue device: its readings count')
 })
 
 for (const f of failures) realLog('✗ ' + f)

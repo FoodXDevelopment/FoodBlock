@@ -2229,10 +2229,12 @@ function decCmp(x, y) { // decimal strings (core.md section 3), compared exactly
 function readingConditionHolds(c, blocks, now) {
   if (!c || !isStr(c.reading) || !isStr(c.kind) || !isStr(c.op) || !isStr(c.over) || !c.value || !isStr(c.value.value)) return false;
   const start = addDur(now, c.over, -1);
-  // a reading counts only if the sensor itself signed it, or an operator of the sensor did: the receiver or the author of a live operator grant whose
-  // refs.subject names the sensor (tasks.md)
+  // a reading counts only if its signer is the sensor itself, the sensor's owner (the ownership fold of the sensor thing), or an agent the owner named:
+  // the receiver of a live operator grant the owner signed whose refs.subject names the sensor (tasks.md)
   const pool = poolOf(blocks || []);
-  const operatedBy = who => isStr(who) && pool.all().some(g => g.type === 'grant' && g.state.kind === 'operator' && g.state.status === undefined && asList(g.refs.subject).includes(c.reading) && (g.refs.to === who || g.refs.author === who) && grantLive(g, pool));
+  const sensorBlock = pool.get(c.reading);
+  const owner = sensorBlock && sensorBlock.type === 'thing' ? ownershipFold(sensorBlock, blocks || []).owner : null;
+  const operatedBy = who => isStr(who) && isStr(owner) && (who === owner || pool.all().some(g => g.type === 'grant' && g.state.kind === 'operator' && g.state.status === undefined && asList(g.refs.subject).includes(c.reading) && g.refs.to === who && g.refs.author === owner && grantLive(g, pool)));
   const rs = (blocks || []).filter(b => b.type === 'observe' && b.state.kind === c.kind && [].concat(b.refs.from || []).includes(c.reading) && (b.refs.author === c.reading || operatedBy(b.refs.author))
     && b.state.amount && b.state.amount.unit === c.value.unit && isStr(b.state.amount.value) && isStr(b.state.at) && b.state.at <= now)
     .sort((x, y) => (x.state.at < y.state.at ? -1 : x.state.at > y.state.at ? 1 : 0));

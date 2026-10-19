@@ -7,12 +7,40 @@ const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 const assert = require('assert/strict')
+const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
+const { genesis } = fb.identity
 
 const FILE = path.join(__dirname, '../../../spec/vectors.json')
 const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
 const made = new Set()
 const subset = (a, b) => (Array.isArray(b) && Array.isArray(a) && a.length === b.length ? b.every((v, i) => subset(a[i], v)) : (b && typeof b === 'object' && !Array.isArray(b)) ? b !== null && Object.entries(b).every(([k, v]) => subset(a && a[k], v)) : (assert.deepEqual(a, b), true))
+
+// ---- a story: people with seeded keys, blocks written one after another ----
+const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex')
+const keys = {}
+const keyOf = (name) => {
+  if (keys[name]) return keys[name]
+  const kp = fb.keypairFromSeed(sha(`foodblock 1.6 phase 2 vectors: ${name}`), 'std')
+  keys[name] = { private_key: kp.private_key, public_key_sign: kp.public_key_sign }
+  return keys[name]
+}
+let tick = 0
+const at = () => new Date(Date.UTC(2026, 10, 3, 0, 0, 0) + 1000 * tick++).toISOString()
+function story() {
+  const held = []
+  const keep = (block) => { held.push(block); return block }
+  const person = (name, { kind = 'person' } = {}) => {
+    const g = keep(genesis(keyOf(name), { kind, at: at() }))
+    return { name, id: g.hash, g }
+  }
+  const say = (who, type, state, refs = {}, { time } = {}) => {
+    refs = Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v)].sort() : v]))
+    return keep(fb.write(type, state, refs, { author: who.id, key: keyOf(who.name), held, at: time || at() }))
+  }
+  return { held, person, say }
+}
+
 // A door case: the op, its arguments, and what it must give (a subset match unless `exact`).
 function door(name, op, args, { expect, exact, error } = {}) {
   args = JSON.parse(JSON.stringify(args))
@@ -110,6 +138,41 @@ for (const [n, i] of [[2, 1], [3, 2], [3, 0], [5, 4], [5, 2], [7, 6], [7, 3]]) {
   closed('base schema loan: a field the schema does not declare is refused', loanState({ colour: 'red' }), refsOf('loan'), [S.loan], ['undeclared_field'])
   closed('base schema loan: the schema must be held to be read', loanState(), refsOf('loan'), [], ['undeclared_ref'])
   closed('base schema teach: a promise that names it carries no extra field', { seq: 1, at: '2026-12-01T00:00:00.000Z', audience: 'public', what: 'teach sourdough', terms: { quantity: { value: '2', unit: 'h' }, expires: '2026-12-31T00:00:00.000Z' } }, refsOf('teach'), [S.teach], [])
+}
+
+// ---- devices: "this device, set up by X, reported Y at T" (profiles/attestations.md, Devices) ----
+{
+  const s = story()
+  const farmer = s.person('devices: farmer'), installer = s.person('devices: installer'), stranger = s.person('devices: stranger')
+  const device = s.person('devices: device', { kind: 'machine' }), rogue = s.person('devices: rogue device', { kind: 'machine' }), actorSensor = s.person('devices: sensor with a key', { kind: 'machine' })
+  const probe = s.say(farmer, 'thing', { kind: 'sensor', name: 'frost probe' })
+  const T = (h, m = 0) => `2026-11-03T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00.000Z`
+  const reading = (who, from, value, h) => s.say(who, 'observe', { kind: 'temperature', amount: { value, unit: 'Cel' } }, { from }, { time: T(h) })
+  const cond = (from) => ({ reading: from, kind: 'temperature', op: 'lt', value: { value: '0', unit: 'Cel' }, over: 'PT1H' })
+  const holds = (name, from, held, now, expect) => door(name, 'reading_condition_holds', [cond(from), held, now], { expect, exact: true })
+  // the device and the rogue read; with no grant at all neither counts
+  reading(device, probe.hash, '-2', 1); reading(device, probe.hash, '-3', 2); reading(rogue, probe.hash, '-8', 1); reading(rogue, probe.hash, '-9', 2)
+  holds('devices: no operator grant, no reading counts', probe.hash, s.held, T(2, 30), false)
+  // a stranger's grant, and the installer's (who does not own the probe), make no operator of it
+  s.say(stranger, 'grant', { kind: 'operator' }, { to: rogue.id, subject: probe.hash })
+  s.say(installer, 'grant', { kind: 'operator' }, { to: rogue.id, subject: probe.hash })
+  holds('devices: a stranger\'s or an installer\'s operator grant does not make an operator of the probe', probe.hash, s.held, T(2, 30), false)
+  // the owner names the device: its readings count, the rogue\'s still do not
+  const owner = s.say(farmer, 'grant', { kind: 'operator' }, { to: device.id, subject: probe.hash })
+  holds('devices: the owner names the device: its readings count', probe.hash, s.held, T(2, 30), true)
+  holds('devices: the rogue device\'s -9 C is not needed and not counted: without the device\'s readings nothing holds', probe.hash, s.held.filter((b) => !(b.type === 'observe' && b.refs.author === device.id)), T(2, 30), false)
+  // the owner's own reading counts
+  const ownerProbe = s.say(farmer, 'thing', { kind: 'sensor', name: 'second probe' })
+  reading(farmer, ownerProbe.hash, '-1', 0); reading(farmer, ownerProbe.hash, '-2', 1)
+  holds('devices: the owner\'s own reading counts', ownerProbe.hash, s.held, T(1, 30), true)
+  // the sensor gives away: the old owner\'s grants stop counting
+  const t = s.say(farmer, 'transfer', {}, { what: probe.hash, to_owner: installer.id })
+  s.say(installer, 'transfer', { status: 'accepted' }, { answers: t.hash })
+  holds('devices: the probe has a new owner: the old owner\'s grant to the device no longer counts', probe.hash, s.held.filter((b) => !(b.type === 'observe' && b.refs.author === rogue.id)), T(2, 30), false)
+  holds('devices: the new owner (the installer) had named the rogue device: its reading counts now', probe.hash, s.held, T(2, 30), true)
+  // a sensor that is an actor signs its own readings
+  reading(actorSensor, actorSensor.id, '-4', 1); reading(actorSensor, actorSensor.id, '-5', 2)
+  holds('devices: a sensor that is an actor signs its own readings, and they count', actorSensor.id, s.held, T(2, 30), true)
 }
 
 // ---- write ----

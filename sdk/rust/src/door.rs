@@ -460,7 +460,6 @@ fn dispatch(op: &str, a: &Args) -> Out {
         }
         #[cfg(feature = "legacy")]
         "old_hash" => json!(crate::legacy::old_hash(a.v(0))),
-        "reading_condition_holds" => json!(crate::tasks::reading_condition_holds(a.v(0), &a.list(1), a.s(2)?)),
         "children_of" => json!(crate::tasks::children_of(a.s(0)?, &a.list(1))),
         "why_not_live_undo" => json!(crate::grant::why_not_live_undo(a.v(0), &index_of(a.list(1).iter()))),
         "act_name" => json!(crate::grant::act_name(a.v(0))),
@@ -522,6 +521,7 @@ fn envelope(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
 fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
     use crate::fold;
     Ok(Some(match op {
+        "reading_condition_holds" => json!(crate::tasks::reading_condition_holds(a.v(0), &a.list(1), a.s(2)?)),
         "promise_stage" => {
             let o = a.v(2);
             let options = fold::StageOptions {

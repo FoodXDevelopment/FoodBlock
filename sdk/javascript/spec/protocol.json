@@ -829,11 +829,6 @@
   },
   "ballots": {
    "file": "profiles/ballots.md",
-   "fields": {
-    "observe": [
-     "counted"
-    ]
-   },
    "folds": {
     "counted_in": {
      "input": "a ballot result, a commitment, the named counter",
@@ -898,11 +893,6 @@
     "every": [
      "proof",
      "assisted_by"
-    ],
-    "observe": [
-     "quiet",
-     "step_up",
-     "assisted"
     ]
    }
   },
@@ -927,14 +917,7 @@
    "file": "profiles/attestations.md",
    "observe_kinds": [
     "attestation"
-   ],
-   "fields": {
-    "observe": [
-     "scheme",
-     "value",
-     "kind_of"
-    ]
-   }
+   ]
   },
   "residency": {
    "file": "profiles/residency.md",
@@ -987,13 +970,6 @@
     "recall"
    ],
    "fields": {
-    "observe": [
-     "period",
-     "gross",
-     "fees",
-     "country",
-     "tax_id"
-    ],
     "grant": [
      "answer_within",
      "marks"
@@ -1010,13 +986,7 @@
    ],
    "condition_schemas": [
     "reading_condition"
-   ],
-   "fields": {
-    "observe": [
-     "phase",
-     "fraction"
-    ]
-   }
+   ]
   },
   "foodblock-profile-epcis": {
    "file": "profiles/foodblock-profile-epcis.md"

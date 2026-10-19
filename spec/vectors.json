@@ -76659,6 +76659,2138 @@
    ],
    "expect": [],
    "exact": true
+  },
+  {
+   "name": "devices: no operator grant, no reading counts",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "devices: a stranger's or an installer's operator grant does not make an operator of the probe",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "devices: the owner names the device: its readings count",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     },
+     {
+      "hash": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:09.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb"
+      },
+      "signature": "799046c507e826e6102de1f4f499cf1c889c5bec426434f9b8a157c601e1b403a5e5198bd3227903a01fdf572ea0c12610a2d8b5539a9bcbf88c455523637406"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "devices: the rogue device's -9 C is not needed and not counted: without the device's readings nothing holds",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     },
+     {
+      "hash": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:09.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb"
+      },
+      "signature": "799046c507e826e6102de1f4f499cf1c889c5bec426434f9b8a157c601e1b403a5e5198bd3227903a01fdf572ea0c12610a2d8b5539a9bcbf88c455523637406"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "devices: the owner's own reading counts",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     },
+     {
+      "hash": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:09.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb"
+      },
+      "signature": "799046c507e826e6102de1f4f499cf1c889c5bec426434f9b8a157c601e1b403a5e5198bd3227903a01fdf572ea0c12610a2d8b5539a9bcbf88c455523637406"
+     },
+     {
+      "hash": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "second probe",
+       "at": "2026-11-03T00:00:10.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b"
+      },
+      "signature": "f40ee9b2d2d9c1e915538d0ccc1c9b6d54dfb8762779a243e4ff86119235ca068c4cc3d484f861b23ef015603b9e923be0c734b38ade1db774787b27f3c77200"
+     },
+     {
+      "hash": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-1",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae"
+      },
+      "signature": "d82bb38a5286cd6776a265dc4356cff1583d22a4f3e4f766672057d4fb43997899e49ac0c5b85f8e0a65373e1df7d4d019b93c784340aa031d2ef0e88065d205"
+     },
+     {
+      "hash": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8"
+      },
+      "signature": "e1fd92b3072327eb4617615f50f46de4e3722374f4789927237a82f52a6db66489c6c01926ccc65c68cc511a2defe805a2026d4e514990a815f08aa023980704"
+     }
+    ],
+    "2026-11-03T01:30:00.000Z"
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "devices: the probe has a new owner: the old owner's grant to the device no longer counts",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     },
+     {
+      "hash": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:09.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb"
+      },
+      "signature": "799046c507e826e6102de1f4f499cf1c889c5bec426434f9b8a157c601e1b403a5e5198bd3227903a01fdf572ea0c12610a2d8b5539a9bcbf88c455523637406"
+     },
+     {
+      "hash": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "second probe",
+       "at": "2026-11-03T00:00:10.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b"
+      },
+      "signature": "f40ee9b2d2d9c1e915538d0ccc1c9b6d54dfb8762779a243e4ff86119235ca068c4cc3d484f861b23ef015603b9e923be0c734b38ade1db774787b27f3c77200"
+     },
+     {
+      "hash": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-1",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae"
+      },
+      "signature": "d82bb38a5286cd6776a265dc4356cff1583d22a4f3e4f766672057d4fb43997899e49ac0c5b85f8e0a65373e1df7d4d019b93c784340aa031d2ef0e88065d205"
+     },
+     {
+      "hash": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8"
+      },
+      "signature": "e1fd92b3072327eb4617615f50f46de4e3722374f4789927237a82f52a6db66489c6c01926ccc65c68cc511a2defe805a2026d4e514990a815f08aa023980704"
+     },
+     {
+      "hash": "405596a3fb54be9ae573b7ae1fa1ef6b5a441666e2a4d283e60bda23e8f4348e",
+      "type": "transfer",
+      "state": {
+       "at": "2026-11-03T00:00:11.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "what": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "to_owner": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5"
+      },
+      "signature": "e5649b80b20c5585c25f1b25152cef49a18c6ff442e69316df6341d92be7e955cba970f615761368596ddfdad14f98f0ed0546675fc6097497bcefadbd92ad09"
+     },
+     {
+      "hash": "b35e3ade171734fea52bda1fa20af6d9c496e1bf2ad541ac63b5ca386737c240",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-11-03T00:00:12.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "405596a3fb54be9ae573b7ae1fa1ef6b5a441666e2a4d283e60bda23e8f4348e",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0"
+      },
+      "signature": "1f6021e663b6611ffe9f9c0da3d300a80914c58f5f8b61038ffe0a6afe267643289b2b0813c8b9746b37d13219a534fede22476c5731efbda464a6f89cf58d00"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": false,
+   "exact": true
+  },
+  {
+   "name": "devices: the new owner (the installer) had named the rogue device: its reading counts now",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     },
+     {
+      "hash": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:09.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb"
+      },
+      "signature": "799046c507e826e6102de1f4f499cf1c889c5bec426434f9b8a157c601e1b403a5e5198bd3227903a01fdf572ea0c12610a2d8b5539a9bcbf88c455523637406"
+     },
+     {
+      "hash": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "second probe",
+       "at": "2026-11-03T00:00:10.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b"
+      },
+      "signature": "f40ee9b2d2d9c1e915538d0ccc1c9b6d54dfb8762779a243e4ff86119235ca068c4cc3d484f861b23ef015603b9e923be0c734b38ade1db774787b27f3c77200"
+     },
+     {
+      "hash": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-1",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae"
+      },
+      "signature": "d82bb38a5286cd6776a265dc4356cff1583d22a4f3e4f766672057d4fb43997899e49ac0c5b85f8e0a65373e1df7d4d019b93c784340aa031d2ef0e88065d205"
+     },
+     {
+      "hash": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8"
+      },
+      "signature": "e1fd92b3072327eb4617615f50f46de4e3722374f4789927237a82f52a6db66489c6c01926ccc65c68cc511a2defe805a2026d4e514990a815f08aa023980704"
+     },
+     {
+      "hash": "405596a3fb54be9ae573b7ae1fa1ef6b5a441666e2a4d283e60bda23e8f4348e",
+      "type": "transfer",
+      "state": {
+       "at": "2026-11-03T00:00:11.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "what": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "to_owner": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5"
+      },
+      "signature": "e5649b80b20c5585c25f1b25152cef49a18c6ff442e69316df6341d92be7e955cba970f615761368596ddfdad14f98f0ed0546675fc6097497bcefadbd92ad09"
+     },
+     {
+      "hash": "b35e3ade171734fea52bda1fa20af6d9c496e1bf2ad541ac63b5ca386737c240",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-11-03T00:00:12.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "405596a3fb54be9ae573b7ae1fa1ef6b5a441666e2a4d283e60bda23e8f4348e",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0"
+      },
+      "signature": "1f6021e663b6611ffe9f9c0da3d300a80914c58f5f8b61038ffe0a6afe267643289b2b0813c8b9746b37d13219a534fede22476c5731efbda464a6f89cf58d00"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": true,
+   "exact": true
+  },
+  {
+   "name": "devices: a sensor that is an actor signs its own readings, and they count",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+     "kind": "temperature",
+     "op": "lt",
+     "value": {
+      "value": "0",
+      "unit": "Cel"
+     },
+     "over": "PT1H"
+    },
+    [
+     {
+      "hash": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f8aad9b5ee632e551be10c7e19766be5f19758371601073195cdb0bf5df8735d"
+      },
+      "refs": {},
+      "signature": "6ca4d452995c52b59f3d54cda4a44d3d9706b05b1bd46d756fedf3c8ff0d8ba414322f0b8bd1ca8a1aea95c907b68f1440437f46a0c5b7e9166989601e262e0e"
+     },
+     {
+      "hash": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:01.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dbeeeb94a38eb3d3b3e4819c06e33e740e86e85e0213e69f3333c4a205fad6c6"
+      },
+      "refs": {},
+      "signature": "40a948b242c247efe7199aef4250bead48a4e56663e4f17ef0379c4210f209aa349acb9812ec6fb42b3af44ecf699f8ff7a0d187b50e68976905292b1c8e680e"
+     },
+     {
+      "hash": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-11-03T00:00:02.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100f34947710fde3be5b088a1b0dce5c8e1826380087c141e1c960fd9f17eef5891"
+      },
+      "refs": {},
+      "signature": "929c67e79d3594dece4edbe0c6025baf36630de5c3ef38fa3411c5d18cf4d780049383bf507769b7cacec152aa9b426db5849921eec27272cfe073aeb643b304"
+     },
+     {
+      "hash": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:03.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100886b582f0e908ef94f3cd0a17705f022aeec9ee68f17e848da466d8e89a095ea"
+      },
+      "refs": {},
+      "signature": "2a74c98c55a3d451d26b6c709cdf6b53e5670ac2a9b34510a8e4ead0dd898ab42eabbac577ae1dc47d21358ba74a29bb8cdde74b8ce1a94a75e3857919a28601"
+     },
+     {
+      "hash": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:04.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321008e7d6f7ce5582cf09942a7e5a5dfe9fa21da0a0a55c460135605b41511d22c03"
+      },
+      "refs": {},
+      "signature": "badbb3d9f22a128b87ebde9057498aaea8e5f2f7596f41904dd2370ab651b08c23dbb87a93ea390a55da045597985f701ddfa80963d1bb4e40f191045fd3d307"
+     },
+     {
+      "hash": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-11-03T00:00:05.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009f428608b80c148809e1e5a923cfdb942cc8c2960c206eb6937b1c64d4fa8b64"
+      },
+      "refs": {},
+      "signature": "a181f3263971186f25b988cfca37da701ef2e4ac588ab743b937b3b9ec527ac50ef8e99d98d27641b27747aeaa577d16f2e7d7dc73dcb1463f998b17e0621209"
+     },
+     {
+      "hash": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "frost probe",
+       "at": "2026-11-03T00:00:06.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154"
+      },
+      "signature": "afef302b66b13958f66a5c75b075e36df324c022c335e2b7065408827b961526734be27b428d8f2f4f62b6488dda93906ddcea4d0f10f90fc772f652bd61d50c"
+     },
+     {
+      "hash": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4"
+      },
+      "signature": "e844232e53c1163e7c4ac5f61bd749078588c6fe0673dd491478ade633fecb5e5c089048d6c6afba83d0300fcf357471547e475697f5a29ca0d33a620273b705"
+     },
+     {
+      "hash": "2d79732459cfb70a88530b081b181c48eb584293a1081038ccb2bdd9ac662611",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-3",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "prev": "bbe20291b9d64dd0843d9e0054c84c660ecef9cc10d2762c45ae011b0c63d63e"
+      },
+      "signature": "54809e3fbc388fa263a01436267e944d973a4ace6e5a97c1beb701443cf6a3d60a3efdf20d4890e173e61ca0ec432df48271dcc9dc876912231116ce9497970d"
+     },
+     {
+      "hash": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-8",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4"
+      },
+      "signature": "537bf90917f6ba064f3205218f44da54e8bd48a32616902ab17ac968cc7e0a483c1f114c85ded266f4132f98d22084e6ba589daacd61a14bd82fc739876ad008"
+     },
+     {
+      "hash": "4eac54718a3ffb43c84fa64562aa3cb752b5ca264c3214f099fbeea58584985d",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-9",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "prev": "b665af5604c4de50d44666830f3d498641b4f96d14477a137db4d05605472fc7"
+      },
+      "signature": "34fb06ac9f760045db6238935ba9750aba26fee61628ecb5a68942eedc817bc64a62067a4fb69a073fe9cd45839f9801d27e09554a0e2fe8c5785ff55b2d4604"
+     },
+     {
+      "hash": "bee901e27466e426469a56d3803b0b03756d56d168388396a83f183661c5931f",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:07.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae",
+       "prev": "73af2c66ac6cb1ddd773e9e477c63472e7e0acc090e1eaa1e6bbf970a4d616ae"
+      },
+      "signature": "04c203018038b24ab87a6acc86acebbf4bbdf3640a7d23c4968d6936dff399999aa5d255c2e8a33ae92e594b371608db205f5051a2ad57b99c1e0eb9a16d1904"
+     },
+     {
+      "hash": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:08.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "to": "355c6535449e307bf023ba2bc55e4a0d75162d7af31e8c43004378db33ae7da4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2"
+      },
+      "signature": "1561ae11e584a119fddb953fbbe2cc3d9ab4b6dd45c4b15080bbf2cbcec5e117286d104e463003fac1bb315b5d4255817e76554798bf4562532bf42657a2370e"
+     },
+     {
+      "hash": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-11-03T00:00:09.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f5b9aff103addb1e8f6c30cb51494880b233b23e640baff4df382fb7a99343e4",
+       "subject": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb"
+      },
+      "signature": "799046c507e826e6102de1f4f499cf1c889c5bec426434f9b8a157c601e1b403a5e5198bd3227903a01fdf572ea0c12610a2d8b5539a9bcbf88c455523637406"
+     },
+     {
+      "hash": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "second probe",
+       "at": "2026-11-03T00:00:10.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "dfdee9471fdc488dc0cbfb81e23f50ccd9259c6bb5b29931e1e20bf34cf41d5b"
+      },
+      "signature": "f40ee9b2d2d9c1e915538d0ccc1c9b6d54dfb8762779a243e4ff86119235ca068c4cc3d484f861b23ef015603b9e923be0c734b38ade1db774787b27f3c77200"
+     },
+     {
+      "hash": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-1",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T00:00:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae"
+      },
+      "signature": "d82bb38a5286cd6776a265dc4356cff1583d22a4f3e4f766672057d4fb43997899e49ac0c5b85f8e0a65373e1df7d4d019b93c784340aa031d2ef0e88065d205"
+     },
+     {
+      "hash": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-2",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 5
+      },
+      "refs": {
+       "from": "cb49cbd47141fa5f252b51a3c2273bfee466e05bf0a387aeac288fcff2811aae",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "7f0d6c4a4500f42894e88d13cde2b62f4241c9bb1a1ba2175b5692d54c353fd8"
+      },
+      "signature": "e1fd92b3072327eb4617615f50f46de4e3722374f4789927237a82f52a6db66489c6c01926ccc65c68cc511a2defe805a2026d4e514990a815f08aa023980704"
+     },
+     {
+      "hash": "405596a3fb54be9ae573b7ae1fa1ef6b5a441666e2a4d283e60bda23e8f4348e",
+      "type": "transfer",
+      "state": {
+       "at": "2026-11-03T00:00:11.000Z",
+       "audience": "public",
+       "seq": 6
+      },
+      "refs": {
+       "what": "e197863b6613809db5eb9cafacfbce55d2eaa98932982911b97c1dc1e8917dbb",
+       "to_owner": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "author": "487e774d6f64689d98b91dd99fc563bee1520c281c1786a4b7fd9b25465c0154",
+       "prev": "28f91b9ea2f8f5cd73129f6a67be0c3378ada9bde70f46c41192db8f3229d6d5"
+      },
+      "signature": "e5649b80b20c5585c25f1b25152cef49a18c6ff442e69316df6341d92be7e955cba970f615761368596ddfdad14f98f0ed0546675fc6097497bcefadbd92ad09"
+     },
+     {
+      "hash": "b35e3ade171734fea52bda1fa20af6d9c496e1bf2ad541ac63b5ca386737c240",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-11-03T00:00:12.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "405596a3fb54be9ae573b7ae1fa1ef6b5a441666e2a4d283e60bda23e8f4348e",
+       "author": "a94ec3dd5d2122f3702ba013b3be357fb6631b7d09ee0dd36884ce75066ea9c2",
+       "prev": "7b3ff61349e87c021102fe0ef539ee118c725b2096000085dd71d879a008c6d0"
+      },
+      "signature": "1f6021e663b6611ffe9f9c0da3d300a80914c58f5f8b61038ffe0a6afe267643289b2b0813c8b9746b37d13219a534fede22476c5731efbda464a6f89cf58d00"
+     },
+     {
+      "hash": "7dbf43f648a6ba178e6bede81d36f74afe59d2ad23a137a56c9d7ec3e85ac601",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-4",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T01:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+       "author": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+       "prev": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2"
+      },
+      "signature": "a2dedc78b8a43b62b7b1e921b3b63552db6eb0d0ca77ba1357ede0597bb1d68ec0fd0b9d086917a2bb4198dd3c44249bdef9ee6f6f268ffca9823562942d9c0f"
+     },
+     {
+      "hash": "56320a37f16915134dc49e6b927343735df255e4108fa4ccdfe2701c614ef55f",
+      "type": "observe",
+      "state": {
+       "kind": "temperature",
+       "amount": {
+        "value": "-5",
+        "unit": "Cel"
+       },
+       "at": "2026-11-03T02:00:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+       "author": "65737fb0e0d20baa7d7600919c6a63f14fd686c3425a54f5adb265b3a7c6f4b2",
+       "prev": "7dbf43f648a6ba178e6bede81d36f74afe59d2ad23a137a56c9d7ec3e85ac601"
+      },
+      "signature": "4be8474b8129d258a65718105a1850a201f9f1ac67922100de8588239aeb3478d57f0fd89075ba9c8787104c10f79258bf4d4a38f09825319d377d79ef78ca0e"
+     }
+    ],
+    "2026-11-03T02:30:00.000Z"
+   ],
+   "expect": true,
+   "exact": true
   }
  ]
 }
