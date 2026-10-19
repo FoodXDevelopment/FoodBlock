@@ -29434,656 +29434,6 @@
    "expect": false
   },
   {
-   "name": "tasks: below 30% for PT4H does not hold: the state at the start of the window was 35",
-   "op": "reading_condition_holds",
-   "args": [
-    {
-     "reading": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-     "kind": "moisture",
-     "op": "lt",
-     "value": {
-      "value": "30",
-      "unit": "%"
-     },
-     "over": "PT4H"
-    },
-    [
-     {
-      "hash": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-      "type": "actor",
-      "state": {
-       "kind": "person",
-       "at": "2026-10-15T12:09:18.000Z",
-       "audience": "public",
-       "public_key_sign": "302a300506032b657003210074a761979647ce295661825671a5e42f715b60473437a8c2ed2479bd334a124b",
-       "public_key_encrypt": "deebeae5e825b0cb91c8ccdebb3cb4eabe6845b3a9df72be1b1a6b98d2b89463",
-       "recovery_key_hash": "6dca0d668f398b07ccac30f1e8775baafa7216aac546e6f8afe64856cbb99c25",
-       "recovery_reach": "P30D"
-      },
-      "refs": {},
-      "signature": "90df9f67114e0f8d60ec1103fa005744f599c8beca87bc5c06811e514f75b673729c1d42210830b99aba42e02bbc0b3783d25e255e17c0e62e7d83a185a6950d"
-     },
-     {
-      "hash": "e03910dbc3f744a36baf50ee1828dd52de5b8e83f53d2f2defeccb49e8b08924",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "x",
-       "stays_in": [
-        "EU"
-       ],
-       "at": "2026-10-15T12:09:19.000Z",
-       "audience": "public",
-       "seq": 1
-      },
-      "refs": {
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3"
-      },
-      "signature": "54651f159300ec584630f069d0efdffedd9aac3a5f2ed45ba740cac4ed1ae1f7dd982ea22e71eb4a1aebfb34a0c468d6ae8c4c60a82f309e38a6c4d56c99f90a"
-     },
-     {
-      "hash": "5b59b626eb72a7144cef8953e73c6904d3f590efed70b9cfcda6139579fb5c03",
-      "type": "promise",
-      "state": {
-       "what": "a table for six",
-       "terms": {
-        "expires": "2026-10-20T00:00:00.000Z"
-       },
-       "at": "2026-10-15T12:09:20.000Z",
-       "audience": "public",
-       "seq": 2
-      },
-      "refs": {
-       "to": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "e03910dbc3f744a36baf50ee1828dd52de5b8e83f53d2f2defeccb49e8b08924"
-      },
-      "signature": "3ef1310d5618ef6f19a4d5cfd31d5b7b541f64b16397a3ae67b309da914be20f5b3eed047eb51451f54fecc78b81d15ffb0f66bab8e311b81bef3fa276b61a0f"
-     },
-     {
-      "hash": "4690a60aaa82d71f6c7562b1bd22a4fde93f36ba34eeadc1031d56e82ed03e55",
-      "type": "transfer",
-      "state": {
-       "money": {
-        "minor": 100,
-        "currency": "GBP"
-       },
-       "at": "2026-10-15T12:09:21.000Z",
-       "audience": "public",
-       "seq": 3
-      },
-      "refs": {
-       "to_owner": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "for": "5b59b626eb72a7144cef8953e73c6904d3f590efed70b9cfcda6139579fb5c03",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "5b59b626eb72a7144cef8953e73c6904d3f590efed70b9cfcda6139579fb5c03"
-      },
-      "signature": "e125a2d76475d6f8f9f3e670b434fddf9f63bd01914b9005b327c4ada536154cfe793c589b5ff51fc3f09328159f42f3f96dba75ce6deccc8ce28e7285794904"
-     },
-     {
-      "hash": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd",
-      "type": "actor",
-      "state": {
-       "kind": "agent",
-       "at": "2026-10-15T12:09:22.000Z",
-       "audience": "public",
-       "public_key_sign": "302a300506032b6570032100664fe5a75526586236825fa547dd2acbdf416be9d6fbef4b1dfbebd81ffff028",
-       "public_key_encrypt": "7fbccdd2cd70c749cdbe2bcaf91bb519d41b1e7464fbbf15559e17977d348431",
-       "recovery_key_hash": "ec70430a8302d57c7c75e149409085a265fa9f627783e11e311683b6ed0459a3",
-       "recovery_reach": "P30D"
-      },
-      "refs": {},
-      "signature": "5cd6ee7148d42eea57f820a189627c4fcca2680db2fa2e6e86da30aa4d677d4730401bfc67ff01c16547027e0b19ce2f1ec7f12fb824e0545c4649642494be05"
-     },
-     {
-      "hash": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-      "type": "observe",
-      "state": {
-       "kind": "reading",
-       "text": "milk 1.20",
-       "method": "ocr",
-       "at": "2026-10-15T12:09:23.000Z",
-       "audience": "public",
-       "seq": 1
-      },
-      "refs": {
-       "derives_from": "7e9064dec08bd56d2e598dd87c176f58775d447be8090676af5fb7c9a63132bd",
-       "author": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd",
-       "prev": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd"
-      },
-      "signature": "ad8796026ebd42012312f1b5f4a553aeff4a45ada10373073715c4fa1cfe67eaaccaa88da6f99cc46a682a3e7cbd25171717bfc950a6423d14dffb39c4e93001"
-     },
-     {
-      "hash": "94a1e55106ae021e0e51d4e69cedcadaa36f759a9f216471b56e7555dda7cac1",
-      "type": "observe",
-      "state": {
-       "kind": "confirm",
-       "confidence": "1",
-       "at": "2026-10-15T12:09:24.000Z",
-       "audience": "public",
-       "seq": 4
-      },
-      "refs": {
-       "confirms": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "4690a60aaa82d71f6c7562b1bd22a4fde93f36ba34eeadc1031d56e82ed03e55"
-      },
-      "signature": "26dfb485ed7f3c9b9b294f62e0a0211d9e9eac424e366bd23b386755d9ed991e696ad11c3a3273b6f68e184b12203c19af05d0476583d12e5879a6c8d8b29c02"
-     },
-     {
-      "hash": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28",
-      "type": "actor",
-      "state": {
-       "kind": "person",
-       "at": "2026-10-15T12:09:25.000Z",
-       "audience": "public",
-       "public_key_sign": "302a300506032b657003210086fe25c1ee264ebf2aed4c7c946356fda4035ed8149cdddf07272f8eb7b194ca",
-       "public_key_encrypt": "f3cd61cc1f627a335d2718acbba68987943a14432f474a52da6f6d1de006127b",
-       "recovery_key_hash": "4967e1369f4d08f1336cd228fd62cda9cadcc9531a862064c7a555fd5504283c",
-       "recovery_reach": "P30D"
-      },
-      "refs": {},
-      "signature": "fbc32d1a503768357bdddb7233219be8311fc6f768956185d30a3790436f91bdd76ff375c4d6847431219144b0ff1b9a970cfe9f9e9c4ab2e933837b7604070a"
-     },
-     {
-      "hash": "372e566ce9cbdcb1a4f77d2b409640636e2485fc3c7e7af18de4f143fb5e7093",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "look at this",
-       "at": "2026-10-15T12:09:26.000Z",
-       "audience": "public",
-       "seq": 1
-      },
-      "refs": {
-       "to": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "derives_from": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28",
-       "prev": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28"
-      },
-      "signature": "5e75778481be8c0a32b7b2a5d52b7db8b16135d70aed41d41fe38aa5a8f8e90203810764a188f2c4b9b0ecbf24d1cca8dc6c7ac684393b45e054cba49acd6809"
-     },
-     {
-      "hash": "1df3e5d5de7dd4cd5c0685cf58eaa7e1e461b76778a5ebaf51c8a76bb9bf3b59",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "milk 1.20",
-       "at": "2026-10-15T12:09:27.000Z",
-       "audience": "public",
-       "seq": 5
-      },
-      "refs": {
-       "derives_from": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "94a1e55106ae021e0e51d4e69cedcadaa36f759a9f216471b56e7555dda7cac1"
-      },
-      "signature": "a33b5bcdd3a7ddbef6304de854d4ad88361763fb34ff1c7e0e627e6c51e081a869d6a375b3c41722b89446133019ce7d7efe0786b426ef87972eb7d45bb4ac04"
-     },
-     {
-      "hash": "2aa50c8e81f9154cbdcfb851dc296da202a8c9c54079fdcacfd55893f7fab9ba",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "I paid 1.20 for milk",
-       "at": "2026-10-15T12:09:28.000Z",
-       "audience": "public",
-       "seq": 6
-      },
-      "refs": {
-       "to": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28",
-       "derives_from": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "1df3e5d5de7dd4cd5c0685cf58eaa7e1e461b76778a5ebaf51c8a76bb9bf3b59"
-      },
-      "signature": "4c623e3b2d085aa5ab63149fc4345873aba3a1815231ece369f317e4e8ea9def822c7690689ab8ede2f97244aad8cdcaaf3fccaed70c6b1a391f90dc2a832b0e"
-     },
-     {
-      "hash": "fc5bf6c7232b561c782ca1a73746169f409e13d79f584028fb07528af974c2de",
-      "type": "observe",
-      "state": {
-       "kind": "reading",
-       "text": "platform export",
-       "method": "import",
-       "at": "2026-10-15T12:09:29.000Z",
-       "audience": "public",
-       "seq": 2
-      },
-      "refs": {
-       "derives_from": "a07b46f31feedf04638dba7c1de1588706d3bd4308fcc7c3a70955ff23c76d17",
-       "author": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd",
-       "prev": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973"
-      },
-      "signature": "495267880f2fc3b34aa1ae6a8b2a66ee28386ce228c143cfa10a24ca7ef3d6ed2562383e9e49a0df323fb13c4fd8453870adf2956af2d15003dd9573113b4f0a"
-     },
-     {
-      "hash": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-      "type": "thing",
-      "state": {
-       "kind": "sensor",
-       "name": "bed 3 moisture",
-       "at": "2026-10-15T12:09:30.000Z",
-       "audience": "public",
-       "seq": 7
-      },
-      "refs": {
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "2aa50c8e81f9154cbdcfb851dc296da202a8c9c54079fdcacfd55893f7fab9ba"
-      },
-      "signature": "25fbfe31faf74f34e1146b8b76ea99cb2085dc4e5ca62cdf57a76800bdce68536592624df5d037dcb4d58aca4b9f72c5ecefc250e2161133800cf892ec68d10c"
-     },
-     {
-      "hash": "06781d6cecc8da54609ad5ea46d9a86e5f823ffe2b5e5111b501adaceedc8a93",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "35",
-        "unit": "%"
-       },
-       "at": "2026-10-16T05:00:00.000Z",
-       "audience": "public",
-       "seq": 8
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e"
-      },
-      "signature": "299484da94db76484495d863b7f562f5b08b7dcb72e994acb6654b69064ea85f0f5ae2687be7b05d0c83f258fbd94e69c7ad04a427de127f7aafb539c6e9300f"
-     },
-     {
-      "hash": "e024716b9ec1d820f7bf866ecf028937617a20b69190c9ab07accfe726b3f9f5",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "28",
-        "unit": "%"
-       },
-       "at": "2026-10-16T07:30:00.000Z",
-       "audience": "public",
-       "seq": 9
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "06781d6cecc8da54609ad5ea46d9a86e5f823ffe2b5e5111b501adaceedc8a93"
-      },
-      "signature": "6bcbcd08dcf4d1b4ffcb55f2357fc499c62215a738b49ae14dacfb69ed28a4824d62e3d9a8cb01aca4a203fad4bc0d736605c1f8a36f165df31d511ba423db0b"
-     },
-     {
-      "hash": "e0a08a36e9cb39b4711c22cc812923975cb70111a01b931c8de2ed744a1f8f7a",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "25",
-        "unit": "%"
-       },
-       "at": "2026-10-16T08:30:00.000Z",
-       "audience": "public",
-       "seq": 10
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "e024716b9ec1d820f7bf866ecf028937617a20b69190c9ab07accfe726b3f9f5"
-      },
-      "signature": "893e03cb9a6c22c869b6840e88bd7c0694588f586b5dde6413317f48c0de5a010920864d969988e575bc6d5644352f2a1f763f345ca6a447f45fdc57a002a707"
-     },
-     {
-      "hash": "7fe09fe384717bc9a4774b61211ae7d4361a233803229de55fa4a32f63b79c10",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "22",
-        "unit": "%"
-       },
-       "at": "2026-10-16T09:30:00.000Z",
-       "audience": "public",
-       "seq": 11
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "e0a08a36e9cb39b4711c22cc812923975cb70111a01b931c8de2ed744a1f8f7a"
-      },
-      "signature": "74ce7447b93d4a302576a75fbcbb9a1ab54d62fa123d5a3b4f7a8a2df6a2773276ac79f01474db4ad15136e1cc63432cc2f44136a89b0cb954586c7932bc1802"
-     }
-    ],
-    "2026-10-16T10:00:00.000Z"
-   ],
-   "expect": false
-  },
-  {
-   "name": "tasks: below 30% for PT2H holds: the state at the start and every reading since are below",
-   "op": "reading_condition_holds",
-   "args": [
-    {
-     "reading": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-     "kind": "moisture",
-     "op": "lt",
-     "value": {
-      "value": "30",
-      "unit": "%"
-     },
-     "over": "PT2H"
-    },
-    [
-     {
-      "hash": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-      "type": "actor",
-      "state": {
-       "kind": "person",
-       "at": "2026-10-15T12:09:18.000Z",
-       "audience": "public",
-       "public_key_sign": "302a300506032b657003210074a761979647ce295661825671a5e42f715b60473437a8c2ed2479bd334a124b",
-       "public_key_encrypt": "deebeae5e825b0cb91c8ccdebb3cb4eabe6845b3a9df72be1b1a6b98d2b89463",
-       "recovery_key_hash": "6dca0d668f398b07ccac30f1e8775baafa7216aac546e6f8afe64856cbb99c25",
-       "recovery_reach": "P30D"
-      },
-      "refs": {},
-      "signature": "90df9f67114e0f8d60ec1103fa005744f599c8beca87bc5c06811e514f75b673729c1d42210830b99aba42e02bbc0b3783d25e255e17c0e62e7d83a185a6950d"
-     },
-     {
-      "hash": "e03910dbc3f744a36baf50ee1828dd52de5b8e83f53d2f2defeccb49e8b08924",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "x",
-       "stays_in": [
-        "EU"
-       ],
-       "at": "2026-10-15T12:09:19.000Z",
-       "audience": "public",
-       "seq": 1
-      },
-      "refs": {
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3"
-      },
-      "signature": "54651f159300ec584630f069d0efdffedd9aac3a5f2ed45ba740cac4ed1ae1f7dd982ea22e71eb4a1aebfb34a0c468d6ae8c4c60a82f309e38a6c4d56c99f90a"
-     },
-     {
-      "hash": "5b59b626eb72a7144cef8953e73c6904d3f590efed70b9cfcda6139579fb5c03",
-      "type": "promise",
-      "state": {
-       "what": "a table for six",
-       "terms": {
-        "expires": "2026-10-20T00:00:00.000Z"
-       },
-       "at": "2026-10-15T12:09:20.000Z",
-       "audience": "public",
-       "seq": 2
-      },
-      "refs": {
-       "to": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "e03910dbc3f744a36baf50ee1828dd52de5b8e83f53d2f2defeccb49e8b08924"
-      },
-      "signature": "3ef1310d5618ef6f19a4d5cfd31d5b7b541f64b16397a3ae67b309da914be20f5b3eed047eb51451f54fecc78b81d15ffb0f66bab8e311b81bef3fa276b61a0f"
-     },
-     {
-      "hash": "4690a60aaa82d71f6c7562b1bd22a4fde93f36ba34eeadc1031d56e82ed03e55",
-      "type": "transfer",
-      "state": {
-       "money": {
-        "minor": 100,
-        "currency": "GBP"
-       },
-       "at": "2026-10-15T12:09:21.000Z",
-       "audience": "public",
-       "seq": 3
-      },
-      "refs": {
-       "to_owner": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "for": "5b59b626eb72a7144cef8953e73c6904d3f590efed70b9cfcda6139579fb5c03",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "5b59b626eb72a7144cef8953e73c6904d3f590efed70b9cfcda6139579fb5c03"
-      },
-      "signature": "e125a2d76475d6f8f9f3e670b434fddf9f63bd01914b9005b327c4ada536154cfe793c589b5ff51fc3f09328159f42f3f96dba75ce6deccc8ce28e7285794904"
-     },
-     {
-      "hash": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd",
-      "type": "actor",
-      "state": {
-       "kind": "agent",
-       "at": "2026-10-15T12:09:22.000Z",
-       "audience": "public",
-       "public_key_sign": "302a300506032b6570032100664fe5a75526586236825fa547dd2acbdf416be9d6fbef4b1dfbebd81ffff028",
-       "public_key_encrypt": "7fbccdd2cd70c749cdbe2bcaf91bb519d41b1e7464fbbf15559e17977d348431",
-       "recovery_key_hash": "ec70430a8302d57c7c75e149409085a265fa9f627783e11e311683b6ed0459a3",
-       "recovery_reach": "P30D"
-      },
-      "refs": {},
-      "signature": "5cd6ee7148d42eea57f820a189627c4fcca2680db2fa2e6e86da30aa4d677d4730401bfc67ff01c16547027e0b19ce2f1ec7f12fb824e0545c4649642494be05"
-     },
-     {
-      "hash": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-      "type": "observe",
-      "state": {
-       "kind": "reading",
-       "text": "milk 1.20",
-       "method": "ocr",
-       "at": "2026-10-15T12:09:23.000Z",
-       "audience": "public",
-       "seq": 1
-      },
-      "refs": {
-       "derives_from": "7e9064dec08bd56d2e598dd87c176f58775d447be8090676af5fb7c9a63132bd",
-       "author": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd",
-       "prev": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd"
-      },
-      "signature": "ad8796026ebd42012312f1b5f4a553aeff4a45ada10373073715c4fa1cfe67eaaccaa88da6f99cc46a682a3e7cbd25171717bfc950a6423d14dffb39c4e93001"
-     },
-     {
-      "hash": "94a1e55106ae021e0e51d4e69cedcadaa36f759a9f216471b56e7555dda7cac1",
-      "type": "observe",
-      "state": {
-       "kind": "confirm",
-       "confidence": "1",
-       "at": "2026-10-15T12:09:24.000Z",
-       "audience": "public",
-       "seq": 4
-      },
-      "refs": {
-       "confirms": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "4690a60aaa82d71f6c7562b1bd22a4fde93f36ba34eeadc1031d56e82ed03e55"
-      },
-      "signature": "26dfb485ed7f3c9b9b294f62e0a0211d9e9eac424e366bd23b386755d9ed991e696ad11c3a3273b6f68e184b12203c19af05d0476583d12e5879a6c8d8b29c02"
-     },
-     {
-      "hash": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28",
-      "type": "actor",
-      "state": {
-       "kind": "person",
-       "at": "2026-10-15T12:09:25.000Z",
-       "audience": "public",
-       "public_key_sign": "302a300506032b657003210086fe25c1ee264ebf2aed4c7c946356fda4035ed8149cdddf07272f8eb7b194ca",
-       "public_key_encrypt": "f3cd61cc1f627a335d2718acbba68987943a14432f474a52da6f6d1de006127b",
-       "recovery_key_hash": "4967e1369f4d08f1336cd228fd62cda9cadcc9531a862064c7a555fd5504283c",
-       "recovery_reach": "P30D"
-      },
-      "refs": {},
-      "signature": "fbc32d1a503768357bdddb7233219be8311fc6f768956185d30a3790436f91bdd76ff375c4d6847431219144b0ff1b9a970cfe9f9e9c4ab2e933837b7604070a"
-     },
-     {
-      "hash": "372e566ce9cbdcb1a4f77d2b409640636e2485fc3c7e7af18de4f143fb5e7093",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "look at this",
-       "at": "2026-10-15T12:09:26.000Z",
-       "audience": "public",
-       "seq": 1
-      },
-      "refs": {
-       "to": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "derives_from": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28",
-       "prev": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28"
-      },
-      "signature": "5e75778481be8c0a32b7b2a5d52b7db8b16135d70aed41d41fe38aa5a8f8e90203810764a188f2c4b9b0ecbf24d1cca8dc6c7ac684393b45e054cba49acd6809"
-     },
-     {
-      "hash": "1df3e5d5de7dd4cd5c0685cf58eaa7e1e461b76778a5ebaf51c8a76bb9bf3b59",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "milk 1.20",
-       "at": "2026-10-15T12:09:27.000Z",
-       "audience": "public",
-       "seq": 5
-      },
-      "refs": {
-       "derives_from": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "94a1e55106ae021e0e51d4e69cedcadaa36f759a9f216471b56e7555dda7cac1"
-      },
-      "signature": "a33b5bcdd3a7ddbef6304de854d4ad88361763fb34ff1c7e0e627e6c51e081a869d6a375b3c41722b89446133019ce7d7efe0786b426ef87972eb7d45bb4ac04"
-     },
-     {
-      "hash": "2aa50c8e81f9154cbdcfb851dc296da202a8c9c54079fdcacfd55893f7fab9ba",
-      "type": "observe",
-      "state": {
-       "kind": "note",
-       "text": "I paid 1.20 for milk",
-       "at": "2026-10-15T12:09:28.000Z",
-       "audience": "public",
-       "seq": 6
-      },
-      "refs": {
-       "to": "9fa092ff8aa8cbbb35b26008a4e442c3835fe4f54304dd42303f57e82ad37a28",
-       "derives_from": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "1df3e5d5de7dd4cd5c0685cf58eaa7e1e461b76778a5ebaf51c8a76bb9bf3b59"
-      },
-      "signature": "4c623e3b2d085aa5ab63149fc4345873aba3a1815231ece369f317e4e8ea9def822c7690689ab8ede2f97244aad8cdcaaf3fccaed70c6b1a391f90dc2a832b0e"
-     },
-     {
-      "hash": "fc5bf6c7232b561c782ca1a73746169f409e13d79f584028fb07528af974c2de",
-      "type": "observe",
-      "state": {
-       "kind": "reading",
-       "text": "platform export",
-       "method": "import",
-       "at": "2026-10-15T12:09:29.000Z",
-       "audience": "public",
-       "seq": 2
-      },
-      "refs": {
-       "derives_from": "a07b46f31feedf04638dba7c1de1588706d3bd4308fcc7c3a70955ff23c76d17",
-       "author": "bc9a2885079f8ee7bb4cc21a7cc7d7fe9dbf0169746e481fdbbe26c8a3b47dbd",
-       "prev": "aa63f8fad3592a10664ae9bf1c2b15bde91eded478c052117d09046247f78973"
-      },
-      "signature": "495267880f2fc3b34aa1ae6a8b2a66ee28386ce228c143cfa10a24ca7ef3d6ed2562383e9e49a0df323fb13c4fd8453870adf2956af2d15003dd9573113b4f0a"
-     },
-     {
-      "hash": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-      "type": "thing",
-      "state": {
-       "kind": "sensor",
-       "name": "bed 3 moisture",
-       "at": "2026-10-15T12:09:30.000Z",
-       "audience": "public",
-       "seq": 7
-      },
-      "refs": {
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "2aa50c8e81f9154cbdcfb851dc296da202a8c9c54079fdcacfd55893f7fab9ba"
-      },
-      "signature": "25fbfe31faf74f34e1146b8b76ea99cb2085dc4e5ca62cdf57a76800bdce68536592624df5d037dcb4d58aca4b9f72c5ecefc250e2161133800cf892ec68d10c"
-     },
-     {
-      "hash": "06781d6cecc8da54609ad5ea46d9a86e5f823ffe2b5e5111b501adaceedc8a93",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "35",
-        "unit": "%"
-       },
-       "at": "2026-10-16T05:00:00.000Z",
-       "audience": "public",
-       "seq": 8
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e"
-      },
-      "signature": "299484da94db76484495d863b7f562f5b08b7dcb72e994acb6654b69064ea85f0f5ae2687be7b05d0c83f258fbd94e69c7ad04a427de127f7aafb539c6e9300f"
-     },
-     {
-      "hash": "e024716b9ec1d820f7bf866ecf028937617a20b69190c9ab07accfe726b3f9f5",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "28",
-        "unit": "%"
-       },
-       "at": "2026-10-16T07:30:00.000Z",
-       "audience": "public",
-       "seq": 9
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "06781d6cecc8da54609ad5ea46d9a86e5f823ffe2b5e5111b501adaceedc8a93"
-      },
-      "signature": "6bcbcd08dcf4d1b4ffcb55f2357fc499c62215a738b49ae14dacfb69ed28a4824d62e3d9a8cb01aca4a203fad4bc0d736605c1f8a36f165df31d511ba423db0b"
-     },
-     {
-      "hash": "e0a08a36e9cb39b4711c22cc812923975cb70111a01b931c8de2ed744a1f8f7a",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "25",
-        "unit": "%"
-       },
-       "at": "2026-10-16T08:30:00.000Z",
-       "audience": "public",
-       "seq": 10
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "e024716b9ec1d820f7bf866ecf028937617a20b69190c9ab07accfe726b3f9f5"
-      },
-      "signature": "893e03cb9a6c22c869b6840e88bd7c0694588f586b5dde6413317f48c0de5a010920864d969988e575bc6d5644352f2a1f763f345ca6a447f45fdc57a002a707"
-     },
-     {
-      "hash": "7fe09fe384717bc9a4774b61211ae7d4361a233803229de55fa4a32f63b79c10",
-      "type": "observe",
-      "state": {
-       "kind": "moisture",
-       "amount": {
-        "value": "22",
-        "unit": "%"
-       },
-       "at": "2026-10-16T09:30:00.000Z",
-       "audience": "public",
-       "seq": 11
-      },
-      "refs": {
-       "from": "0a0574b743867cb2f87b9a8e605c5ec52646ff29dcfabcf469ee60be6c3c9d6e",
-       "author": "17c968307401a34746eb3406eea8aa9291ac5518206784724125fb908a11f0f3",
-       "prev": "e0a08a36e9cb39b4711c22cc812923975cb70111a01b931c8de2ed744a1f8f7a"
-      },
-      "signature": "74ce7447b93d4a302576a75fbcbb9a1ab54d62fa123d5a3b4f7a8a2df6a2773276ac79f01474db4ad15136e1cc63432cc2f44136a89b0cb954586c7932bc1802"
-     }
-    ],
-    "2026-10-16T10:00:00.000Z"
-   ],
-   "expect": true
-  },
-  {
    "name": "tasks: a skill is a standing open offer (from itself, to open) and is valid",
    "op": "valid",
    "args": [
@@ -70835,6 +70185,1253 @@
    ],
    "expect": true,
    "exact": true
+  },
+  {
+   "name": "tasks: below 30% for PT4H does not hold: the state at the start of the window was 35",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT4H"
+    },
+    [
+     {
+      "hash": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:09.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100be15fe18691f7675e2be9d629e7f6d0605945c499cb25d1a45a593f4087cfe90"
+      },
+      "refs": {},
+      "signature": "34f0e7915940b28809f124f52e5609f1fda00fa31ff8b5ea9815e4a91e45c4e40e05b704f0caf64ed244180ac5d29ae91fbdcf654afe2782b31afd3a2b22630b"
+     },
+     {
+      "hash": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:10.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210092e3758a5959df930e7d55b1247c93bf323f49dd8e050a08eba86f03f3d075bc"
+      },
+      "refs": {},
+      "signature": "ce36cb2d4fc5eb7d93ff4c43e2ec3c67f22f39551d36ee1dfaf52d831c3a4707b66abb41aeb46c43662a9cc50f64059c6d86328458437a0249ecae050b5a1809"
+     },
+     {
+      "hash": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:11.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ad6d9444c7758c9fab8bc0e49b09d37e12b582a600d785c1405dd535bfbe8443"
+      },
+      "refs": {},
+      "signature": "ccfac0ac2bae0f722ec2592247c12d6efdf611d7720e1f9be77b85b372475a2da9e8537f5469c601a500352cc9530eb6c24267e4f3edd8283777344e820c3b0d"
+     },
+     {
+      "hash": "6176c9a0a0729faa7430d716843dc9888dd55bae1032dadc3b04ed0a0d459a2b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:12.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dffe21592f92c0f848c3de6c49c263052de74c43f87b7efa3cc4e6bf4f94af33"
+      },
+      "refs": {},
+      "signature": "3f88aafce48db6265bd38ad0ce4953c90002dde4b99727d83a50e117d2342a4f7da5a17f4a2580860c051f75eee47c7d8d6d4889567e0537f057d959d706b609"
+     },
+     {
+      "hash": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "bed 3 moisture",
+       "at": "2026-10-19T12:03:13.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1"
+      },
+      "signature": "c7ba7baa9959e7cce5f9ea3b7c8a652d10895d9a1e84a4d58a7a17984d6b4e6b45c40306629f30bb7c9f187788a0cf962563be02ac73a6d2481bc74c83248b02"
+     },
+     {
+      "hash": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-19T12:03:14.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "subject": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06"
+      },
+      "signature": "ac0e7ceed9c44c7b13a3853c6802506f04e79805f8ca806c9a76c08bb6c486c8572d84d0a7f637cf036fd048b0aba23d71a42a4335c5bdab56912b9b83cfd408"
+     },
+     {
+      "hash": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "35",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93"
+      },
+      "signature": "820ff7247a3553d801909dd03a8f98bfbfac326a73c71492e2a948ac8c82bc2e0ef98720f3e164524f69ee3400423861bef67cb20a67388e6b576bf760d9270f"
+     },
+     {
+      "hash": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1"
+      },
+      "signature": "4217926373178ad13395022daa5fb9df019226fad91101a1663c90aff80a67e11203c4433ad89635840754e6b39e333f328e4a0c763f9fc3ca5bde7776aa1d03"
+     },
+     {
+      "hash": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "25",
+        "unit": "%"
+       },
+       "at": "2026-10-16T08:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142"
+      },
+      "signature": "4e5c2d0ce4c324f0e4893d92556f7a76953f0e76894114332ef65ec9372f648fb81653e85514b741edb6db197944931cd44e20f3c5fd6cf025e74f31283fc408"
+     },
+     {
+      "hash": "4bb6f58f01ddeb625c436554cf6a42e0128e432cfbe3fa8003cbb8f764063a03",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2"
+      },
+      "signature": "00997a644ef35da26eb2c0508ddbdd1776b1a2c92389a2217c2285e8f90ab2dd614b19e9dd824a4cac815ef9e1469293ed0ed152c5b81399134dd75425922b09"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": false
+  },
+  {
+   "name": "tasks: below 30% for PT2H holds: the readings are the operator's device's, and the state at the start and every reading since are below",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT2H"
+    },
+    [
+     {
+      "hash": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:09.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100be15fe18691f7675e2be9d629e7f6d0605945c499cb25d1a45a593f4087cfe90"
+      },
+      "refs": {},
+      "signature": "34f0e7915940b28809f124f52e5609f1fda00fa31ff8b5ea9815e4a91e45c4e40e05b704f0caf64ed244180ac5d29ae91fbdcf654afe2782b31afd3a2b22630b"
+     },
+     {
+      "hash": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:10.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210092e3758a5959df930e7d55b1247c93bf323f49dd8e050a08eba86f03f3d075bc"
+      },
+      "refs": {},
+      "signature": "ce36cb2d4fc5eb7d93ff4c43e2ec3c67f22f39551d36ee1dfaf52d831c3a4707b66abb41aeb46c43662a9cc50f64059c6d86328458437a0249ecae050b5a1809"
+     },
+     {
+      "hash": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:11.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ad6d9444c7758c9fab8bc0e49b09d37e12b582a600d785c1405dd535bfbe8443"
+      },
+      "refs": {},
+      "signature": "ccfac0ac2bae0f722ec2592247c12d6efdf611d7720e1f9be77b85b372475a2da9e8537f5469c601a500352cc9530eb6c24267e4f3edd8283777344e820c3b0d"
+     },
+     {
+      "hash": "6176c9a0a0729faa7430d716843dc9888dd55bae1032dadc3b04ed0a0d459a2b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:12.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dffe21592f92c0f848c3de6c49c263052de74c43f87b7efa3cc4e6bf4f94af33"
+      },
+      "refs": {},
+      "signature": "3f88aafce48db6265bd38ad0ce4953c90002dde4b99727d83a50e117d2342a4f7da5a17f4a2580860c051f75eee47c7d8d6d4889567e0537f057d959d706b609"
+     },
+     {
+      "hash": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "bed 3 moisture",
+       "at": "2026-10-19T12:03:13.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1"
+      },
+      "signature": "c7ba7baa9959e7cce5f9ea3b7c8a652d10895d9a1e84a4d58a7a17984d6b4e6b45c40306629f30bb7c9f187788a0cf962563be02ac73a6d2481bc74c83248b02"
+     },
+     {
+      "hash": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-19T12:03:14.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "subject": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06"
+      },
+      "signature": "ac0e7ceed9c44c7b13a3853c6802506f04e79805f8ca806c9a76c08bb6c486c8572d84d0a7f637cf036fd048b0aba23d71a42a4335c5bdab56912b9b83cfd408"
+     },
+     {
+      "hash": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "35",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93"
+      },
+      "signature": "820ff7247a3553d801909dd03a8f98bfbfac326a73c71492e2a948ac8c82bc2e0ef98720f3e164524f69ee3400423861bef67cb20a67388e6b576bf760d9270f"
+     },
+     {
+      "hash": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1"
+      },
+      "signature": "4217926373178ad13395022daa5fb9df019226fad91101a1663c90aff80a67e11203c4433ad89635840754e6b39e333f328e4a0c763f9fc3ca5bde7776aa1d03"
+     },
+     {
+      "hash": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "25",
+        "unit": "%"
+       },
+       "at": "2026-10-16T08:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142"
+      },
+      "signature": "4e5c2d0ce4c324f0e4893d92556f7a76953f0e76894114332ef65ec9372f648fb81653e85514b741edb6db197944931cd44e20f3c5fd6cf025e74f31283fc408"
+     },
+     {
+      "hash": "4bb6f58f01ddeb625c436554cf6a42e0128e432cfbe3fa8003cbb8f764063a03",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2"
+      },
+      "signature": "00997a644ef35da26eb2c0508ddbdd1776b1a2c92389a2217c2285e8f90ab2dd614b19e9dd824a4cac815ef9e1469293ed0ed152c5b81399134dd75425922b09"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": true
+  },
+  {
+   "name": "readings: a rogue device that names the sensor cannot add a reading that breaks the condition",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT2H"
+    },
+    [
+     {
+      "hash": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:09.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100be15fe18691f7675e2be9d629e7f6d0605945c499cb25d1a45a593f4087cfe90"
+      },
+      "refs": {},
+      "signature": "34f0e7915940b28809f124f52e5609f1fda00fa31ff8b5ea9815e4a91e45c4e40e05b704f0caf64ed244180ac5d29ae91fbdcf654afe2782b31afd3a2b22630b"
+     },
+     {
+      "hash": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:10.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210092e3758a5959df930e7d55b1247c93bf323f49dd8e050a08eba86f03f3d075bc"
+      },
+      "refs": {},
+      "signature": "ce36cb2d4fc5eb7d93ff4c43e2ec3c67f22f39551d36ee1dfaf52d831c3a4707b66abb41aeb46c43662a9cc50f64059c6d86328458437a0249ecae050b5a1809"
+     },
+     {
+      "hash": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:11.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ad6d9444c7758c9fab8bc0e49b09d37e12b582a600d785c1405dd535bfbe8443"
+      },
+      "refs": {},
+      "signature": "ccfac0ac2bae0f722ec2592247c12d6efdf611d7720e1f9be77b85b372475a2da9e8537f5469c601a500352cc9530eb6c24267e4f3edd8283777344e820c3b0d"
+     },
+     {
+      "hash": "6176c9a0a0729faa7430d716843dc9888dd55bae1032dadc3b04ed0a0d459a2b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:12.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dffe21592f92c0f848c3de6c49c263052de74c43f87b7efa3cc4e6bf4f94af33"
+      },
+      "refs": {},
+      "signature": "3f88aafce48db6265bd38ad0ce4953c90002dde4b99727d83a50e117d2342a4f7da5a17f4a2580860c051f75eee47c7d8d6d4889567e0537f057d959d706b609"
+     },
+     {
+      "hash": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "bed 3 moisture",
+       "at": "2026-10-19T12:03:13.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1"
+      },
+      "signature": "c7ba7baa9959e7cce5f9ea3b7c8a652d10895d9a1e84a4d58a7a17984d6b4e6b45c40306629f30bb7c9f187788a0cf962563be02ac73a6d2481bc74c83248b02"
+     },
+     {
+      "hash": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-19T12:03:14.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "subject": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06"
+      },
+      "signature": "ac0e7ceed9c44c7b13a3853c6802506f04e79805f8ca806c9a76c08bb6c486c8572d84d0a7f637cf036fd048b0aba23d71a42a4335c5bdab56912b9b83cfd408"
+     },
+     {
+      "hash": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "35",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93"
+      },
+      "signature": "820ff7247a3553d801909dd03a8f98bfbfac326a73c71492e2a948ac8c82bc2e0ef98720f3e164524f69ee3400423861bef67cb20a67388e6b576bf760d9270f"
+     },
+     {
+      "hash": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1"
+      },
+      "signature": "4217926373178ad13395022daa5fb9df019226fad91101a1663c90aff80a67e11203c4433ad89635840754e6b39e333f328e4a0c763f9fc3ca5bde7776aa1d03"
+     },
+     {
+      "hash": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "25",
+        "unit": "%"
+       },
+       "at": "2026-10-16T08:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142"
+      },
+      "signature": "4e5c2d0ce4c324f0e4893d92556f7a76953f0e76894114332ef65ec9372f648fb81653e85514b741edb6db197944931cd44e20f3c5fd6cf025e74f31283fc408"
+     },
+     {
+      "hash": "4bb6f58f01ddeb625c436554cf6a42e0128e432cfbe3fa8003cbb8f764063a03",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2"
+      },
+      "signature": "00997a644ef35da26eb2c0508ddbdd1776b1a2c92389a2217c2285e8f90ab2dd614b19e9dd824a4cac815ef9e1469293ed0ed152c5b81399134dd75425922b09"
+     },
+     {
+      "hash": "e57fb012f5a202719dc141637da26086f9cf59b2c9c931786c39c7801148f528",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "90",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:45:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+       "prev": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384"
+      },
+      "signature": "d098ab84269d0648a709a35a9bb6573fb2569a085e59401c0e3ab87cab48a91ceecdccbb9806351cce34f475ea518bff156b437bc052315203ae81e4d32e650b"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": true
+  },
+  {
+   "name": "readings: a device with no operator grant for the sensor confirms no condition: its readings are ignored",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "4c0d2f4bc0f437e9d00dca98f5d0443e21605a8a0466994baa8325ce324bbfc9",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT2H"
+    },
+    [
+     {
+      "hash": "9f73d82a7eb7d619bbcf324471be46b0ec0ed7edc8745bf80e3b9a2d8737bd61",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:15.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100459be93c5c2395a5dffdf2ef83577c58540f363ce9da8d906537d36e3f38fa3e"
+      },
+      "refs": {},
+      "signature": "1a21c11106e4b5d45ebea2f8d9337758f49f8d8aa0757650b3f009877bf40a8c0e367e27da690b52d345e760d50c33c8e60a8a82e83e3e845e16195269e89e03"
+     },
+     {
+      "hash": "e4db68fd55656f5e88cb12c73c27c68a3d15591d90117fdeabb51c2e1739de6b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:16.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100326bc31d8ba8f71be39f88b3c5f4991dcacc9e7f05f1bbc1c2330a6f036e6d59"
+      },
+      "refs": {},
+      "signature": "6780b6aca85d288518e418b03177079bd22fb23eaafb8f7bf33bdc1300e8e47adaffe7d140a5412a181e7368864750e1e942cbe1575c4a2171ecb949a19f5d00"
+     },
+     {
+      "hash": "4c0d2f4bc0f437e9d00dca98f5d0443e21605a8a0466994baa8325ce324bbfc9",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "bed 4 moisture",
+       "at": "2026-10-19T12:03:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "9f73d82a7eb7d619bbcf324471be46b0ec0ed7edc8745bf80e3b9a2d8737bd61",
+       "prev": "9f73d82a7eb7d619bbcf324471be46b0ec0ed7edc8745bf80e3b9a2d8737bd61"
+      },
+      "signature": "4deb2dd927fb4eaef4785ed9547a34d18711a61e08cf34b88135b9336baf6ae92872df2fbfdc2bae5f0ab5b7e2fa80957539cce2ffa5b91ef256b7e3aae72408"
+     },
+     {
+      "hash": "c30ae05cb5a9cb1ece87bd2f86a428aeba24b5ca7fc6125819f1eb6925dfff96",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "29",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "4c0d2f4bc0f437e9d00dca98f5d0443e21605a8a0466994baa8325ce324bbfc9",
+       "author": "e4db68fd55656f5e88cb12c73c27c68a3d15591d90117fdeabb51c2e1739de6b",
+       "prev": "e4db68fd55656f5e88cb12c73c27c68a3d15591d90117fdeabb51c2e1739de6b"
+      },
+      "signature": "e79fab550feb32b0daf23b340a4f7ac46de538d4eddb778dbf8433be5799941061b6eaa9a185e6cff82f11518cacc6f41129d2912f076412e2f462db31473b0b"
+     },
+     {
+      "hash": "cb685eef814fa68ac0c8e669fa85cfd47f4121056ebe5ee803d73bb1be80ed58",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "4c0d2f4bc0f437e9d00dca98f5d0443e21605a8a0466994baa8325ce324bbfc9",
+       "author": "e4db68fd55656f5e88cb12c73c27c68a3d15591d90117fdeabb51c2e1739de6b",
+       "prev": "c30ae05cb5a9cb1ece87bd2f86a428aeba24b5ca7fc6125819f1eb6925dfff96"
+      },
+      "signature": "c86bcc14fa29d66fefb4936b08186e690f232a075b4fc9c8c1103458e4fa7d4d89317ea2339cf1731b5deb1ec978f8f69fd2822ef2382d3d90fca5bdbdf2630c"
+     },
+     {
+      "hash": "2aa036e16685af2ae35729318f15955ca37d913bb57845a281da5d5cd553da78",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "4c0d2f4bc0f437e9d00dca98f5d0443e21605a8a0466994baa8325ce324bbfc9",
+       "author": "e4db68fd55656f5e88cb12c73c27c68a3d15591d90117fdeabb51c2e1739de6b",
+       "prev": "cb685eef814fa68ac0c8e669fa85cfd47f4121056ebe5ee803d73bb1be80ed58"
+      },
+      "signature": "1a65c3933a460ab89de13a715ad8e7e6d3fc827a968c7bd30e1f2ed4602a3e97f71c3574a0411610af7e4dcb54c4aa60c28229ced9b36be762b68742a478b703"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": false
+  },
+  {
+   "name": "readings: the operator's own reading counts, and here it breaks the condition",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT2H"
+    },
+    [
+     {
+      "hash": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:09.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100be15fe18691f7675e2be9d629e7f6d0605945c499cb25d1a45a593f4087cfe90"
+      },
+      "refs": {},
+      "signature": "34f0e7915940b28809f124f52e5609f1fda00fa31ff8b5ea9815e4a91e45c4e40e05b704f0caf64ed244180ac5d29ae91fbdcf654afe2782b31afd3a2b22630b"
+     },
+     {
+      "hash": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:10.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210092e3758a5959df930e7d55b1247c93bf323f49dd8e050a08eba86f03f3d075bc"
+      },
+      "refs": {},
+      "signature": "ce36cb2d4fc5eb7d93ff4c43e2ec3c67f22f39551d36ee1dfaf52d831c3a4707b66abb41aeb46c43662a9cc50f64059c6d86328458437a0249ecae050b5a1809"
+     },
+     {
+      "hash": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:11.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ad6d9444c7758c9fab8bc0e49b09d37e12b582a600d785c1405dd535bfbe8443"
+      },
+      "refs": {},
+      "signature": "ccfac0ac2bae0f722ec2592247c12d6efdf611d7720e1f9be77b85b372475a2da9e8537f5469c601a500352cc9530eb6c24267e4f3edd8283777344e820c3b0d"
+     },
+     {
+      "hash": "6176c9a0a0729faa7430d716843dc9888dd55bae1032dadc3b04ed0a0d459a2b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:12.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dffe21592f92c0f848c3de6c49c263052de74c43f87b7efa3cc4e6bf4f94af33"
+      },
+      "refs": {},
+      "signature": "3f88aafce48db6265bd38ad0ce4953c90002dde4b99727d83a50e117d2342a4f7da5a17f4a2580860c051f75eee47c7d8d6d4889567e0537f057d959d706b609"
+     },
+     {
+      "hash": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "bed 3 moisture",
+       "at": "2026-10-19T12:03:13.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1"
+      },
+      "signature": "c7ba7baa9959e7cce5f9ea3b7c8a652d10895d9a1e84a4d58a7a17984d6b4e6b45c40306629f30bb7c9f187788a0cf962563be02ac73a6d2481bc74c83248b02"
+     },
+     {
+      "hash": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-19T12:03:14.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "subject": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06"
+      },
+      "signature": "ac0e7ceed9c44c7b13a3853c6802506f04e79805f8ca806c9a76c08bb6c486c8572d84d0a7f637cf036fd048b0aba23d71a42a4335c5bdab56912b9b83cfd408"
+     },
+     {
+      "hash": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "35",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93"
+      },
+      "signature": "820ff7247a3553d801909dd03a8f98bfbfac326a73c71492e2a948ac8c82bc2e0ef98720f3e164524f69ee3400423861bef67cb20a67388e6b576bf760d9270f"
+     },
+     {
+      "hash": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1"
+      },
+      "signature": "4217926373178ad13395022daa5fb9df019226fad91101a1663c90aff80a67e11203c4433ad89635840754e6b39e333f328e4a0c763f9fc3ca5bde7776aa1d03"
+     },
+     {
+      "hash": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "25",
+        "unit": "%"
+       },
+       "at": "2026-10-16T08:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142"
+      },
+      "signature": "4e5c2d0ce4c324f0e4893d92556f7a76953f0e76894114332ef65ec9372f648fb81653e85514b741edb6db197944931cd44e20f3c5fd6cf025e74f31283fc408"
+     },
+     {
+      "hash": "4bb6f58f01ddeb625c436554cf6a42e0128e432cfbe3fa8003cbb8f764063a03",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2"
+      },
+      "signature": "00997a644ef35da26eb2c0508ddbdd1776b1a2c92389a2217c2285e8f90ab2dd614b19e9dd824a4cac815ef9e1469293ed0ed152c5b81399134dd75425922b09"
+     },
+     {
+      "hash": "e57fb012f5a202719dc141637da26086f9cf59b2c9c931786c39c7801148f528",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "90",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:45:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+       "prev": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384"
+      },
+      "signature": "d098ab84269d0648a709a35a9bb6573fb2569a085e59401c0e3ab87cab48a91ceecdccbb9806351cce34f475ea518bff156b437bc052315203ae81e4d32e650b"
+     },
+     {
+      "hash": "934066a9d9af977fd16d561e42e59c66201c31ee4d93a65fba00fbc11a5c750f",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "55",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:50:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4"
+      },
+      "signature": "8542db7fa1f1d2c35133baab16d60045f2b8a36043408e58ffa6f70f4ce6d3eb38dcd23e25fd5c71ae16cac1b47da266ad624bcadf7664682b952bc86c063908"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": false
+  },
+  {
+   "name": "readings: a sensor that is an actor signs its own readings, and they count",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT2H"
+    },
+    [
+     {
+      "hash": "e3409fa10fe1585a09de6fe03f2b50589f14fac9c63ba741b5b0d5f40d847522",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:18.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210073837a17bf5070525f3022a81be913f50928c0d7e798415774aaa62b701ba934"
+      },
+      "refs": {},
+      "signature": "a6686fc496ed66d42d3a2dcc8c87e59d25e40229dc58a09a012b3b7eae93ea2a66cf63d70577eb69659cb5ed940a2a090bc20fce2e48420e551a8e7b813ce40d"
+     },
+     {
+      "hash": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:19.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210045533abe4d6ae40dc3f7a85aef4a61713e5e7a7fe82ada93841af15f251e61f8"
+      },
+      "refs": {},
+      "signature": "37be5991a93a3f867d539b1349fca24ddb99c999b2db54fcf5e6393a1bd8974573b629a1d3f256cc5816367e2715ded12240a60ea92b114968d29836ed0cb80e"
+     },
+     {
+      "hash": "ab1e23d5125473e6c49d93c676160f65da2fac39a06bdc2227923f621ea41d2e",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "35",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+       "author": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+       "prev": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b"
+      },
+      "signature": "87227a44a16d06b746b7dec0551a697c7e4d854f590b9275e3623a2125c361819616a1fc4c855839280c11d26e00543573de4060e09b965406791d3c52fcac0f"
+     },
+     {
+      "hash": "81e61b56d41cd02a9ace0b1fa5a3c0dbf064583aebc04e00853c2b1fabb9d73d",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+       "author": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+       "prev": "ab1e23d5125473e6c49d93c676160f65da2fac39a06bdc2227923f621ea41d2e"
+      },
+      "signature": "2abeb9e5af485ae4e9c3d7522915d38ee9e4b8e32a837f5a5d5efb787fc50656f12c5fd93eebc84e06de8b62161ad46d9ef397db747e8044ba327df344a2ad0c"
+     },
+     {
+      "hash": "e698c81e8b97b67c35b333caa385684b86c4a07e3be8de8b78639183d573a178",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+       "author": "05395774e5a8fda66392849e4e57d8113638dc8cf60678bbd2e74478b0f5dc0b",
+       "prev": "81e61b56d41cd02a9ace0b1fa5a3c0dbf064583aebc04e00853c2b1fabb9d73d"
+      },
+      "signature": "6dd77c3b1c5d731f23d74867e4dec918552370de87ee4df72b9daaebc6faf398897b99e3b2ea578125d9248b1cbec7198747c616a0e9e30a2ab3227fc3e7b90b"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": true
+  },
+  {
+   "name": "readings: once the operator ends the grant, no reading of the device's or the operator's counts",
+   "op": "reading_condition_holds",
+   "args": [
+    {
+     "reading": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+     "kind": "moisture",
+     "op": "lt",
+     "value": {
+      "value": "30",
+      "unit": "%"
+     },
+     "over": "PT2H"
+    },
+    [
+     {
+      "hash": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-19T12:03:09.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100be15fe18691f7675e2be9d629e7f6d0605945c499cb25d1a45a593f4087cfe90"
+      },
+      "refs": {},
+      "signature": "34f0e7915940b28809f124f52e5609f1fda00fa31ff8b5ea9815e4a91e45c4e40e05b704f0caf64ed244180ac5d29ae91fbdcf654afe2782b31afd3a2b22630b"
+     },
+     {
+      "hash": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:10.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210092e3758a5959df930e7d55b1247c93bf323f49dd8e050a08eba86f03f3d075bc"
+      },
+      "refs": {},
+      "signature": "ce36cb2d4fc5eb7d93ff4c43e2ec3c67f22f39551d36ee1dfaf52d831c3a4707b66abb41aeb46c43662a9cc50f64059c6d86328458437a0249ecae050b5a1809"
+     },
+     {
+      "hash": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:11.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100ad6d9444c7758c9fab8bc0e49b09d37e12b582a600d785c1405dd535bfbe8443"
+      },
+      "refs": {},
+      "signature": "ccfac0ac2bae0f722ec2592247c12d6efdf611d7720e1f9be77b85b372475a2da9e8537f5469c601a500352cc9530eb6c24267e4f3edd8283777344e820c3b0d"
+     },
+     {
+      "hash": "6176c9a0a0729faa7430d716843dc9888dd55bae1032dadc3b04ed0a0d459a2b",
+      "type": "actor",
+      "state": {
+       "kind": "machine",
+       "at": "2026-10-19T12:03:12.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dffe21592f92c0f848c3de6c49c263052de74c43f87b7efa3cc4e6bf4f94af33"
+      },
+      "refs": {},
+      "signature": "3f88aafce48db6265bd38ad0ce4953c90002dde4b99727d83a50e117d2342a4f7da5a17f4a2580860c051f75eee47c7d8d6d4889567e0537f057d959d706b609"
+     },
+     {
+      "hash": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+      "type": "thing",
+      "state": {
+       "kind": "sensor",
+       "name": "bed 3 moisture",
+       "at": "2026-10-19T12:03:13.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1"
+      },
+      "signature": "c7ba7baa9959e7cce5f9ea3b7c8a652d10895d9a1e84a4d58a7a17984d6b4e6b45c40306629f30bb7c9f187788a0cf962563be02ac73a6d2481bc74c83248b02"
+     },
+     {
+      "hash": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "at": "2026-10-19T12:03:14.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "to": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "subject": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06"
+      },
+      "signature": "ac0e7ceed9c44c7b13a3853c6802506f04e79805f8ca806c9a76c08bb6c486c8572d84d0a7f637cf036fd048b0aba23d71a42a4335c5bdab56912b9b83cfd408"
+     },
+     {
+      "hash": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "35",
+        "unit": "%"
+       },
+       "at": "2026-10-16T05:00:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93"
+      },
+      "signature": "820ff7247a3553d801909dd03a8f98bfbfac326a73c71492e2a948ac8c82bc2e0ef98720f3e164524f69ee3400423861bef67cb20a67388e6b576bf760d9270f"
+     },
+     {
+      "hash": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "28",
+        "unit": "%"
+       },
+       "at": "2026-10-16T07:30:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9539f64434915b5345ef756a5a1fef55be03d7fe9b8f220a1ef9de075b0313f1"
+      },
+      "signature": "4217926373178ad13395022daa5fb9df019226fad91101a1663c90aff80a67e11203c4433ad89635840754e6b39e333f328e4a0c763f9fc3ca5bde7776aa1d03"
+     },
+     {
+      "hash": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "25",
+        "unit": "%"
+       },
+       "at": "2026-10-16T08:30:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "9885df08494b5208f590159a6bad6946a09c617ce682e2a1fc19dfde00016142"
+      },
+      "signature": "4e5c2d0ce4c324f0e4893d92556f7a76953f0e76894114332ef65ec9372f648fb81653e85514b741edb6db197944931cd44e20f3c5fd6cf025e74f31283fc408"
+     },
+     {
+      "hash": "4bb6f58f01ddeb625c436554cf6a42e0128e432cfbe3fa8003cbb8f764063a03",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "22",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:30:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "f0f458a38c44a83f3bc1675d77ad0f2965a43708d10be8bbf2a61de84f9fdb93",
+       "prev": "81ff7033b22617897630d971b9e02800ebd81d65526190c105ca76f62d31c0c2"
+      },
+      "signature": "00997a644ef35da26eb2c0508ddbdd1776b1a2c92389a2217c2285e8f90ab2dd614b19e9dd824a4cac815ef9e1469293ed0ed152c5b81399134dd75425922b09"
+     },
+     {
+      "hash": "e57fb012f5a202719dc141637da26086f9cf59b2c9c931786c39c7801148f528",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "90",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:45:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384",
+       "prev": "144d2f3165ea80ee0ed494b744ae71a5de544950dc9febab026db8fa59599384"
+      },
+      "signature": "d098ab84269d0648a709a35a9bb6573fb2569a085e59401c0e3ab87cab48a91ceecdccbb9806351cce34f475ea518bff156b437bc052315203ae81e4d32e650b"
+     },
+     {
+      "hash": "934066a9d9af977fd16d561e42e59c66201c31ee4d93a65fba00fbc11a5c750f",
+      "type": "observe",
+      "state": {
+       "kind": "moisture",
+       "amount": {
+        "value": "55",
+        "unit": "%"
+       },
+       "at": "2026-10-16T09:50:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "906e12dbd4ea05da38d10b5ea6b059d5595f46cbbfaa693585fa92c597a5ad06",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4"
+      },
+      "signature": "8542db7fa1f1d2c35133baab16d60045f2b8a36043408e58ffa6f70f4ce6d3eb38dcd23e25fd5c71ae16cac1b47da266ad624bcadf7664682b952bc86c063908"
+     },
+     {
+      "hash": "3a8e8ac18249a33b1f156ccd66a8acda24f4aad9a059ea14dc2470a61b13c3d1",
+      "type": "grant",
+      "state": {
+       "kind": "operator",
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-19T12:03:20.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "updates": "719f9034dc3c0bb4ac62c7bf6978e637e1bdef47b6d7d2c46053569c18aaaca4",
+       "author": "e512fc06ee4f542fa6e2170624d59f480e95dbe4c070ad7bc3abc18692564ea1",
+       "prev": "934066a9d9af977fd16d561e42e59c66201c31ee4d93a65fba00fbc11a5c750f"
+      },
+      "signature": "439f677f4957bd2d9534650bbf7c43ea5241100b0b19fd0ad6e7b362bef684f4c13cc340ea4ceeefbe4495fb62e57f86435dc4bdefbc7373e9342dc159028101"
+     }
+    ],
+    "2026-10-16T10:00:00.000Z"
+   ],
+   "expect": false
   }
  ]
 }

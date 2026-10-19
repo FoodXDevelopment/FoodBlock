@@ -33,9 +33,9 @@ function story() {
     const g = keep(genesis(keyOf(name), { kind, at: at() }))
     return { name, id: g.hash, g }
   }
-  const say = (who, type, state, refs = {}, { after, link, audience = 'public' } = {}) => {
+  const say = (who, type, state, refs = {}, { after, link, audience = 'public', time } = {}) => {
     refs = Object.fromEntries(Object.entries(refs).map(([k, v]) => [k, Array.isArray(v) ? [...new Set(v)].sort() : v]))
-    return keep(fb.write(type, state, refs, { author: who.id, key: keyOf(who.name), held, at: at(), audience, after, link }))
+    return keep(fb.write(type, state, refs, { author: who.id, key: keyOf(who.name), held, at: time || at(), audience, after, link }))
   }
   // A block composed, chained and signed without the write check: what a node must still read, though it would refuse it.
   const raw = (who, type, state, refs = {}) => {
@@ -322,6 +322,38 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   underOk('reversibility: the same offer under a schema the grantor marked ok is live', offerOk, true)
   const note = s.say(agent, 'observe', { kind: 'note', text: 'checked the gate' }, { under: broad.hash })
   underOk('reversibility: an observe that moves nothing and binds no one needs no marking', note, true)
+}
+
+// ---- 8. Readings count as grounds only when the sensor or an operator of the sensor signed them ----
+{
+  const s = story(), gina = s.person('gina'), device = s.person('gdevice', { kind: 'machine' }), rogue = s.person('grogue', { kind: 'machine' }), probe = s.person('gprobe', { kind: 'machine' })
+  const sensor = s.say(gina, 'thing', { kind: 'sensor', name: 'bed 3 moisture' })
+  const operatorGrant = s.say(gina, 'grant', { kind: 'operator' }, { to: device.id, subject: sensor.hash })
+  const reading = (who, from, t, v) => s.say(who, 'observe', { kind: 'moisture', amount: fb.amount(v, '%') }, { from }, { time: `2026-10-16T${t}:00.000Z` })
+  const A = (value, unit) => fb.amount(value, unit)
+  const cond = (reading, over = 'PT2H') => ({ reading, kind: 'moisture', op: 'lt', value: A('30', '%'), over })
+  const NOW = '2026-10-16T10:00:00.000Z'
+  // the case make-vectors.cjs used to make, with readings signed by no operator: this section remakes it
+  V.door = V.door.filter((c) => c.name !== 'tasks: below 30% for PT2H holds: the state at the start and every reading since are below')
+  for (const [t, v] of [['05:00', '35'], ['07:30', '28'], ['08:30', '25'], ['09:30', '22']]) reading(device, sensor.hash, t, v)
+  door('tasks: below 30% for PT4H does not hold: the state at the start of the window was 35', 'reading_condition_holds', [cond(sensor.hash, 'PT4H'), s.held, NOW], { expect: false })
+  door('tasks: below 30% for PT2H holds: the readings are the operator\'s device\'s, and the state at the start and every reading since are below', 'reading_condition_holds', [cond(sensor.hash), s.held, NOW], { expect: true })
+  door('readings: a rogue device that names the sensor cannot add a reading that breaks the condition', 'reading_condition_holds', [cond(sensor.hash), [...s.held, reading(rogue, sensor.hash, '09:45', '90')], NOW], { expect: true })
+  // a rogue device alone confirms nothing
+  const lone = story(), lin = lone.person('glin'), lrogue = lone.person('glrogue', { kind: 'machine' })
+  const lsensor = lone.say(lin, 'thing', { kind: 'sensor', name: 'bed 4 moisture' })
+  for (const [t, v] of [['05:00', '29'], ['07:30', '28'], ['09:30', '22']]) lone.say(lrogue, 'observe', { kind: 'moisture', amount: fb.amount(v, '%') }, { from: lsensor.hash }, { time: `2026-10-16T${t}:00.000Z` })
+  door('readings: a device with no operator grant for the sensor confirms no condition: its readings are ignored', 'reading_condition_holds', [cond(lsensor.hash), lone.held, NOW], { expect: false })
+  // the operator\'s own reading counts
+  reading(gina, sensor.hash, '09:50', '55')
+  door('readings: the operator\'s own reading counts, and here it breaks the condition', 'reading_condition_holds', [cond(sensor.hash), s.held, NOW], { expect: false })
+  // the sensor\'s own key
+  const pk = story(), pbed = pk.person('gpbed'), psensor = pk.person('gpsensor', { kind: 'machine' })
+  for (const [t, v] of [['05:00', '35'], ['07:30', '28'], ['09:30', '22']]) pk.say(psensor, 'observe', { kind: 'moisture', amount: fb.amount(v, '%') }, { from: psensor.id }, { time: `2026-10-16T${t}:00.000Z` })
+  door('readings: a sensor that is an actor signs its own readings, and they count', 'reading_condition_holds', [cond(psensor.id), pk.held, NOW], { expect: true })
+  // an operator grant that ended no longer vouches
+  s.say(gina, 'grant', { kind: 'operator', status: 'stopped', stop: 'onward' }, { updates: operatorGrant.hash })
+  door('readings: once the operator ends the grant, no reading of the device\'s or the operator\'s counts', 'reading_condition_holds', [cond(sensor.hash), s.held, NOW], { expect: false })
 }
 
 // ---- write ----

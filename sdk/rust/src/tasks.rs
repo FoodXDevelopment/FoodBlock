@@ -2,7 +2,7 @@
 //! block and evidence is an observe. What code adds is small: a sensor condition is checked against the observes a
 //! performer's edge holds. The condition holds the rule; the readings are the evidence; a reading never settles a
 //! promise (promises.md, Settling).
-use crate::js::{get, hash_of, list, rf, ss, st, text, type_of};
+use crate::js::{get, hash_of, list, rf, rs, ss, st, text, type_of};
 use crate::prelude::*;
 
 // A decimal string as an exact fraction: "1.25" is 125 / 100.
@@ -47,6 +47,20 @@ pub fn reading_condition_holds(condition: &Value, blocks: &[Value], now: &str) -
         return false;
     };
     let Some(start) = crate::time::add_duration(now, over, -1) else { return false };
+    // A reading counts only if the sensor itself signed it, or an operator of the sensor did: the receiver or the author of a live
+    // `operator` grant whose `refs.subject` names the sensor. A rogue device that names the sensor in `refs.from` confirms nothing.
+    let index = crate::js::held_index(blocks);
+    let operated_by = |who: Option<&str>| {
+        who.is_some()
+            && index.values().any(|g| {
+                type_of(g) == "grant"
+                    && ss(g, "kind") == Some("operator")
+                    && st(g, "status").is_none()
+                    && list(rf(g, "subject")).contains(&sensor)
+                    && (rs(g, "to") == who || rs(g, "author") == who)
+                    && crate::grant::is_live_in(g, &index, Some(now))
+            })
+    };
     let mut readings: Vec<(&str, &str)> = blocks
         .iter()
         .filter(|b| {
@@ -54,6 +68,7 @@ pub fn reading_condition_holds(condition: &Value, blocks: &[Value], now: &str) -
                 && ss(b, "kind") == Some(kind)
                 && list(rf(b, "from")).contains(&sensor)
                 && get(b, "state.amount.unit") == Some(unit)
+                && (rs(b, "author") == Some(sensor) || operated_by(rs(b, "author")))
         })
         .filter_map(|b| Some((ss(b, "at")?, get(b, "state.amount.value")?.as_str()?)))
         .filter(|(at, _)| *at <= now)

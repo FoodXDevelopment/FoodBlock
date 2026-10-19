@@ -41,7 +41,7 @@ A standing grant that lists only a broad kind of act is not enough. A person who
 
 **Kinds the protocol reads:** `key`, `member`, `operator` (the list is in `protocol.json`; profiles add more). Every other kind is data whose meaning is its scope.
 - `key` is read in identity.md, `member` in circles.md.
-- `operator` names who answers for an agent or a machine (identity.md); `refs.to` is the agent.
+- `operator` names who answers for an agent or a machine (identity.md); `refs.to` is the agent. An operator grant that also names a sensor in `refs.subject` says that agent signs that sensor's readings; those readings, and the operator's own, count as grounds (things.md, Truth).
 
 ## Invariants
 

@@ -1401,13 +1401,7 @@ function doorVectors() {
     door('it becomes the person\'s claim when she puts that fact to someone else in her own step', 'reading_is_persons_claim', [reading, me.id, s.held], { expect: true })
     const imported = s.say(agent, 'an import: a record brought back from a platform', 'observe', { kind: 'reading', text: 'platform export', method: 'import' }, { derives_from: sha('the export file') })
     door('an import is a reading: the agent\'s claim until she puts it to someone', 'reading_is_persons_claim', [imported, me.id, s.held], { expect: false })
-    // Tasks: a sensor condition is checked against the observes the performer's edge holds.
-    const sensor = s.say(me, 'a soil sensor', 'thing', { kind: 'sensor', name: 'bed 3 moisture' })
-    const rd = (t, v) => s.say(me, `reading ${v} at ${t}`, 'observe', { kind: 'moisture', amount: A(v, '%') }, { from: sensor.hash }, { time: `2026-10-16T${t}:00.000Z` })
-    for (const [t, v] of [['05:00', '35'], ['07:30', '28'], ['08:30', '25'], ['09:30', '22']]) rd(t, v)
-    const cond = { reading: sensor.hash, kind: 'moisture', op: 'lt', value: A('30', '%'), over: 'PT2H' }
-    door('tasks: below 30% for PT4H does not hold: the state at the start of the window was 35', 'reading_condition_holds', [{ ...cond, over: 'PT4H' }, s.held, '2026-10-16T10:00:00.000Z'], { expect: false })
-    door('tasks: below 30% for PT2H holds: the state at the start and every reading since are below', 'reading_condition_holds', [cond, s.held, '2026-10-16T10:00:00.000Z'], { expect: true })
+    // Tasks: a sensor condition is checked against the readings an operator or the sensor signed: make-vectors-refine.cjs (rule 8).
   }
 
   // ---- Tasks (profiles/tasks.md): a task is a promise; skills are standing open offers; progress is an observe ----
