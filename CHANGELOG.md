@@ -6,7 +6,7 @@ What changed in each version. The spec says what each version means; this page s
 
 Year zero: 1.6 is the first version of the protocol itself. Old data enters once, through the converter in `spec/legacy/`.
 
-- The spec split into one short core (`spec/core.md`) and thirteen modules, with every closed list in `spec/protocol.json`.
+- The spec split into one short core (`spec/core.md`) and eleven modules, with every closed list in `spec/protocol.json`.
 - Seven types in three moods, seven verbs; four closed types carry authority.
 - Signing suites `std` (Ed25519), `p256` (including passkeys) and `sm`.
 - Privacy: commitments, sealed blocks, erasure by deleting the salt.
@@ -55,6 +55,19 @@ Added:
 - The oracle reads a schema store and settles one line rule it got wrong (a promise with a thing and no quantity needs one counted transfer).
 
 Scoreboard (before, after): listed fields 74, 38; closed-type fields 48, 38; terms 13, 9; scope fields 7, 7; reference keys 24, 24; modules 13, 13; profiles 15, 15; lists in `protocol.json` 56, 54; core.md 158 lines (17,418 bytes), 151 lines (15,856 bytes).
+
+### Phase 3 of the 1.6 refinement (2026-10-19): test the compressions, show what is necessary, say how it is governed
+
+Still year zero and unpublished: 1.6, revised 2026-10-19. No rule changed in this phase.
+
+- **Modules 13 to 11.** The passkey form is now a section of `modules/encoding.md` (with invariant 28), and the three peers are in `protocol.md` beside the table of which peer needs which module (the micro-safety paragraph is in `blocks.md`). `modules/passkeys.md` and `modules/peers.md` are gone.
+- **Tried and not kept** (reasons and numbers in `spec/EXPERIMENTS.md`): `confirms` and `defeats` as one verb with a sign; `members_then` folded into `circle_state`; `next_link` folded into `chain`; `under` merged with `schema`. None leaves a reader with less to do, and the first would change 17 FoodOS source files and re-sign 118 vectors.
+- **The necessity table** (`spec/NECESSITY.md`, made by `node tools/necessity.cjs`, kept current by `node test/necessity.cjs`): for each of 100 listed things (every field, term, line field, scope field, key field, verb, causal and ref key, closed type, status, stop kind, grant kind, power and single-id link) the tool deletes that one thing from `protocol.json` and runs the oracle, the audit worlds and the Rust core; what fails is listed. First measurement: 81 covered, 11 used but not enforced, 7 untested, 1 dead. 20 vectors (`sdk/javascript/test/make-vectors-necessity.cjs`) now carry every one of them; now 100 covered, 0 untested, 0 dead. Nothing was deleted: `refs.same_as` (the one nothing in this repository reads) is read by FoodOS. The 31 numbered invariants are each stated in the spec and matched by vector cases.
+- **`GOVERNANCE.md`**: how a change is proposed, how versions work (1.6 editable until the first registry release, then frozen), forks, the intent to hand stewardship to a neutral body, and the two-engine rule.
+- **`tools/replay-check.cjs`**: judges a node's exported stored blocks with the current core and prints counts and reason codes only (`DISTRIBUTION.md` says how to run it before a revised core is deployed).
+- `TODOS.md`: the resolved item removed; seven ideas parked on purpose with what would start each.
+
+Scoreboard (after Phase 2, after Phase 3): listed fields 38, 38; terms 9, 9; scope fields 7, 7; reference keys 24, 24; verbs 7, 7; folds 10, 10; modules 13, 11; profiles 15, 15; lists in `protocol.json` 54, 54; vectors 956, 976 (oracle 962, 982); things with no test needing them: 19 found, 0 left.
 
 ## 0.5.0 (20 February 2026, npm)
 

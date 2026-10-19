@@ -1,6 +1,6 @@
 # FoodBlock core
 
-Version 1.6 (2026-10-15). This page and canonical.md are enough to build a micro: make a block, sign it, check it, chain it. Every other rule is in a module (protocol.md). Where files disagree, this page governs.
+Version 1.6, revised 2026-10-19 (first written 2026-10-15). This page and canonical.md are enough to build a micro: make a block, sign it, check it, chain it. Every other rule is in a module (protocol.md). Where files disagree, this page governs.
 
 There is no earlier version in the protocol. Version 1.6 is year zero. Old data enters once, through a converter outside the protocol (legacy/converter.md).
 

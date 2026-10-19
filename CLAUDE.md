@@ -27,7 +27,7 @@ Nothing is a dead end. Every FoodBlock created generates signal that feeds other
 
 ## What this repository is
 
-The FoodBlock protocol, version 1.6, and the code that speaks it. A block is `{ type, state, refs }`, signed by its
+The FoodBlock protocol, version 1.6 (revised 2026-10-19), and the code that speaks it. A block is `{ type, state, refs }`, signed by its
 author; its identity is the SHA-256 of its canonical form. Seven types (`actor`, `thing`, `observe`, `transform`,
 `transfer`, `promise`, `grant`) and seven verbs (`updates`, `answers`, `confirms`, `defeats`, `for`, `derives_from`,
 `same_as`); `prev` and `after` are causal metadata. Every place is a `thing`, and so is a schema (kind schema).
@@ -69,6 +69,8 @@ mcp/                    the MCP door: six tools (find, read, ask, promise, accep
 cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
 test/vectors.json       cross-language canonical vectors (they hash the same under 1.6)
 test/audit/             the audit's worlds as permanent tests: every fold computed by the core and the oracle must be identical (`run.cjs`)
+test/necessity.cjs      spec/NECESSITY.md is current and nothing listed in protocol.json is dead or untested (`node tools/necessity.cjs` measures it by deleting each thing in turn)
+tools/replay-check.cjs  judges exported stored blocks with the current core: counts and reason codes only (DISTRIBUTION.md)
 test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript packages (and legacy/aliases-0.x.json into the Rust crate); --check proves they match
 ```
 
@@ -81,6 +83,7 @@ test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript p
 | The Rust core | `cd sdk/rust && cargo test`, rebuild WebAssembly (`cd sdk/javascript && node scripts/build-wasm.cjs`; Go embeds the same file: `node tools/version-sync.cjs --write`), rebuild the Python library (`cargo rustc --release --features ffi --crate-type cdylib`), the Swift XCFramework, then every SDK's tests |
 | Python / Go / Swift / Kotlin SDK | `cd sdk/python && python3 -m unittest discover -s tests` / `cd sdk/go && CGO_ENABLED=0 go test ./...` / `sdk/swift/scripts/build-xcframework.sh --macos && swift test` (at the root, with `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`) / `cd sdk/kotlin && ./gradlew :foodblock:test` |
 | The oracle, or any fold | `node spec/oracle/run.cjs` and `node test/audit/run.cjs` (the core and the oracle must give identical folds over every audited world and every vector story) |
+| A list in protocol.json, a field, a verb or a vector | `node test/necessity.cjs` (add a vector for anything it reports as untested; regenerate with `node tools/necessity.cjs`) |
 | The EPCIS / FSMA 204 profile | `node spec/profiles/epcis/run.cjs` (regenerate: `make-vectors.cjs`) |
 | The node | `cd server && npm test` (in-memory Postgres, no setup; `TEST_DATABASE_URL=postgresql://... npm test` for a real one) |
 | The MCP server | `cd mcp && npm test` (starts the server and calls its tools over stdio) |

@@ -1,6 +1,6 @@
 # FoodBlock protocol
 
-Version 1.6 (2026-10-15). Year zero: there is no earlier version in the protocol.
+Version 1.6, revised 2026-10-19 (first written 2026-10-15). Year zero: there is no earlier version in the protocol.
 
 This is the index. The spec is one short core, eleven modules, and a folder of optional profiles, plus a few data files. Where another document in this repository disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
 

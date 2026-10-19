@@ -26,11 +26,13 @@ This is an offer: it is signed by its `from` side. Its id is the hash of its can
 it as text: RFC 8785). The author signs the same bytes with Ed25519 (the default suite; `p256` and `sm` are two more). Nobody's clock decides who has authority. The
 other side can check that authority. Nothing can be lost or forged without it showing.
 
-- **The spec:** [`spec/protocol.md`](spec/protocol.md), FoodBlock 1.6. It is normative: where anything else here
+- **The spec:** [`spec/protocol.md`](spec/protocol.md), FoodBlock 1.6 (revised 2026-10-19). It is normative: where anything else here
   disagrees, it governs. Beside it: [`protocol.json`](spec/protocol.json) (every list, for code to load), the
   [canonical form](spec/canonical.md), [transport](spec/transport.md) (email is the envelope, FoodBlock the
   letter) and the [conformance vectors](spec/vectors.json). There is no earlier version in the protocol: 1.6 is
   year zero. Old data enters once, through [a converter](spec/legacy/converter.md) that is not part of the protocol.
+  [`NECESSITY.md`](spec/NECESSITY.md) shows, for every field, term, verb, closed type, reference key and invariant,
+  which vectors fail without it; [`EXPERIMENTS.md`](spec/EXPERIMENTS.md) records the compressions tried.
 - **The paper:** [the FoodBlock whitepaper v1.6 (PDF)](https://foodx.network/foodblock-whitepaper-v1.6.pdf) (DOI [10.5281/zenodo.23457910](https://doi.org/10.5281/zenodo.23457910)): why the
   protocol exists. Where it and the spec differ, the spec is current.
 
@@ -148,6 +150,9 @@ Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 | Rust core | `cd sdk/rust && cargo test` |
 | Kotlin SDK | `cd sdk/kotlin && ./gradlew :foodblock:test` (needs a JDK 17); the bundled-library check: `scripts/build-natives.sh jvm && ./gradlew :foodblock:testBundled` |
 | The oracle (written from the spec text alone) | `node spec/oracle/run.cjs` |
+| Every fold, core against oracle | `node test/audit/run.cjs` |
+| No listed thing is dead or untested | `node test/necessity.cjs` (the full measurement, ten minutes: `node tools/necessity.cjs`) |
+| Stored blocks against the current core | `node tools/replay-check.cjs <export>` (counts and reason codes only; see `DISTRIBUTION.md`) |
 | Node | `cd server && npm test` (in-memory Postgres; set `TEST_DATABASE_URL` for a real one) |
 | MCP server | `cd mcp && npm test` |
 | CLI | `cd cli && npm test` |
