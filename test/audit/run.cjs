@@ -10,7 +10,7 @@ const assert = require('assert/strict')
 const { fb, oracle } = require('./lib.cjs')
 const { call } = require('../../sdk/javascript/src/core.cjs')
 
-const files = ['c1', 'c1b', 'c1d', 'c1e', 'c2', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c6', 'c7', 'c9', 'c10']
+const files = ['c1', 'c1b', 'c1d', 'c1e', 'c2', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c6', 'c7', 'c9', 'c10', 'c11']
 const realLog = console.log
 console.log = () => {}
 for (const f of files) require('./' + f + '.cjs')
@@ -222,6 +222,51 @@ check('merkle: the core and the oracle give one root and one proof for every chu
       if (n > 1) { assert.equal(call('merkle_verify', root, other, i, n, proof), false); assert.equal(oracle.door('merkle_verify', root, other, i, n, proof), false) }
     }
   }
+})
+
+// The base schemas (spec/schemas) in use: each is data over folds both engines already share.
+const both = (op, ...args) => { const a = call(op, ...args), b = oracle.door(op, ...args); assert.deepEqual(J(a), J(b), op); return a }
+const c11 = world('case11 base schemas')
+check('base schemas: the publisher\'s chain is held and every use of a schema is valid in both engines', () => {
+  assert.deepEqual(c11.problems, [])
+  assert.equal(c11.log.filter((l) => l.writeRefused).length, 0)
+  assert.equal(Object.keys(c11.baseSchemas).length, 17)
+})
+// share_vote: a vote under a ballots rule weighs as many votes as the shares of refs.of its author owns (the ownership fold).
+check('share_vote: holding shares of a kind gives that many votes; shares made as the circle belong to the circle and vote for no one', () => {
+  const kind = c11.blocks.find((b) => b.type === 'thing' && b.state.name === 'Acme share')
+  const instances = c11.blocks.filter((b) => b.type === 'thing' && b.refs.of === kind.hash)
+  const weight = (who) => instances.filter((s) => both('ownership', s, c11.blocks).owner === who).length
+  const ids = c11.people
+  assert.equal(weight(ids.mo.id), 2)
+  assert.equal(weight(ids.nan.id), 1)
+  assert.equal(weight(ids.ann.id), 0)
+  const acme = c11.blocks.find((b) => b.type === 'actor' && b.state.kind === 'circle')
+  assert.equal(weight(acme.hash), 2)
+  const votes = c11.blocks.filter((b) => b.type === 'observe' && b.state.kind === 'vote')
+  assert.deepEqual(votes.map((v) => weight(v.refs.author)).sort(), [0, 1, 2])
+})
+// kept_promises: kept = the cook's promises that reached done; broken = stopped after a binding accept, or reversed; a decline binds nothing.
+check('kept_promises: kept and broken are read from the stage of each promise, alike in both engines', () => {
+  const stages = c11.keptRecord.map((h) => both('promise_stage', c11.blocks.find((b) => b.hash === h), c11.blocks, {}))
+  assert.deepEqual(stages.map((s) => s.stage), ['done', 'stopped', 'declined', 'accepted'])
+  const kept = stages.filter((s) => s.stage === 'done').length
+  const broken = stages.filter((s) => (s.stage === 'stopped' && s.accept) || s.stage === 'reversed').length
+  const open = stages.filter((s) => !['done', 'declined', 'reversed'].includes(s.stage) && !(s.stage === 'stopped' && s.accept)).length
+  assert.deepEqual([kept, broken, open], [1, 1, 1])
+})
+check('person_confirmed: the receiver\'s accepted answer to the transfer is what makes the delivery count', () => {
+  const stage = (h) => both('promise_stage', c11.blocks.find((b) => b.hash === h), c11.blocks, {})
+  assert.equal(stage(c11.personConfirmed.confirmed).stage, 'done')
+  assert.equal(stage(c11.personConfirmed.unconfirmed).stage, 'accepted')
+})
+check('teach: the learner\'s accepted answer to the lesson settles the promise to teach', () => {
+  assert.equal(both('promise_stage', c11.blocks.find((b) => b.hash === c11.teach), c11.blocks, {}).stage, 'done')
+})
+check('loan: the advance (a payout record the borrower accepts) and the repayment settle the promise', () => {
+  const s = both('promise_stage', c11.blocks.find((b) => b.hash === c11.loan), c11.blocks, {})
+  assert.equal(s.stage, 'done')
+  assert.deepEqual(s.total, { minor: 11000, currency: 'GBP' })
 })
 
 for (const f of failures) realLog('✗ ' + f)

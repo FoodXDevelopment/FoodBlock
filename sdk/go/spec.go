@@ -26,11 +26,11 @@ var (
 	Verbs = list(Protocol["verbs"])
 	// RefKeys are the shared ref keys every type may use.
 	RefKeys = append(append(append(list(obj(Protocol["refs"])["who_and_where"]), list(obj(Protocol["refs"])["what_and_which"])...), Verbs...), list(Protocol["causal"])...)
-	// Fields are each type's base fields, until the base schemas are published (§3).
+	// Fields are each closed type's base fields (the core's `base_fields`); an open type has none, its fields are the base schemas'.
 	Fields = func() map[string][]string {
 		out := map[string][]string{}
 		for _, t := range Types {
-			out[t] = list(obj(Protocol["fields"])[t])
+			out[t] = must[[]string]("base_fields", t)
 		}
 		return out
 	}()

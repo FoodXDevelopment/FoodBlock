@@ -17,7 +17,7 @@ public enum FoodBlock {
     public static let refKeys: [String] = ["who_and_where", "what_and_which"].flatMap { (spec["refs"] as! JSON)[$0] as! [String] } + verbs + (spec["causal"] as! [String])
     /// The suites this build knows (core.md, Suites): std, p256, sm.
     public static let suites: [String] = ((spec["suites"] as! JSON).filter { ($0.value as? JSON)?["hash"] != nil }.map { $0.key }).sorted()
-    public static let fields: [String: [String]] = Dictionary(uniqueKeysWithValues: types.map { ($0, (spec["fields"] as! JSON)[$0] as! [String]) })
+    public static let fields: [String: [String]] = Dictionary(uniqueKeysWithValues: types.map { ($0, ((try? Core.ask("base_fields", $0)) as? [String]) ?? []) })
     /// protocol.json `peers`: the sizes of peer (micro, edge, node).
     public static let peers = spec["peers"] as! JSON
     /// protocol.json `refusals.codes`: the groups of codes, in order.

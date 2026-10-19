@@ -517,7 +517,6 @@ function contentFindings(b, ctx) {
   return out;
 }
 
-function schemaOf(refs, held) { return refs.schema && held.get(refs.schema); }
 function closedFindings(b, ctx, add) {
   const { type, state, refs } = b, held = ctx.held;
   const A = 8;
@@ -554,14 +553,17 @@ function closedFindings(b, ctx, add) {
   }
   if (type === 'promise' && !asAnswer && !counter) req(refs.what !== undefined || state.what !== undefined, 'promise what');
   // undeclared
-  const schema = schemaOf(refs, held);
-  if (!(refs.schema && !schema) && !schema) {
-    const allowed = new Set([...FIELDS_EVERY, ...PROFILE_FIELDS.every, ...(P.fields[type] || []), ...(PROFILE_FIELDS[type] || [])]);
+  // A schema the block names declares more fields (its `fields`) and more ref keys (its `roles`), when the checker keeps a schema store
+  // (the door's `schemas` list). With no store the fields a schema may declare are not judged; with one, a named schema it does not hold is
+  // `undeclared_ref` (ask for it) (core.md, section 8).
+  const store = ctx.schemas, schema = refs.schema && store ? store.get(refs.schema) : undefined;
+  if (!refs.schema || schema) {
+    const declared = schema && isObj(schema.state.fields) ? Object.keys(schema.state.fields) : [];
+    const roles = schema && Array.isArray(schema.state.roles) ? schema.state.roles : [];
+    const allowed = new Set([...FIELDS_EVERY, ...PROFILE_FIELDS.every, ...(P.fields[type] || []), ...(PROFILE_FIELDS[type] || []), ...declared]);
     for (const k of Object.keys(state)) if (!allowed.has(k)) add(A, 'undeclared_field', k);
-    for (const k of Object.keys(refs)) if (!SHARED_REFS.has(k)) add(A, 'undeclared_ref', k);
-  } else if (refs.schema && !schema) {
-    // GUESS: a block that names a schema the checker does not hold is not judged on fields the schema may declare
-  }
+    for (const k of Object.keys(refs)) if (!SHARED_REFS.has(k) && !roles.includes(k)) add(A, 'undeclared_ref', k);
+  } else if (store) add(A, 'undeclared_ref', 'refs.schema names a schema this node does not hold');
   // module checks
   if (type === 'actor' && (state.kind === 'circle' || 'roles' in state)) {
     const roles = state.roles;
@@ -686,8 +688,8 @@ function scopeWithin(child, parent) {
 }
 
 // ---- the check as the door gives it
-function check(block, held) {
-  const ctx = { held: normHeld(held) };
+function check(block, held, schemas) {
+  const ctx = { held: normHeld(held), schemas: Array.isArray(schemas) ? normHeld(schemas) : null };
   const found = contentFindings(block, ctx);
   if (!found.length) return [];
   const stage = Math.min(...found.map(f => f.stage));
@@ -695,7 +697,7 @@ function check(block, held) {
   for (const f of found.filter(f => f.stage === stage)) { if (!seen.has(f.code)) { seen.add(f.code); list.push({ code: f.code, detail: f.detail }); } }
   return list;
 }
-const refusals = (type, state, refs, held) => check({ type, state, refs }, held);
+const refusals = (type, state, refs, held, schemas) => check({ type, state, refs }, held, schemas);
 
 // strict_text: a block as TEXT. Duplicate keys and number tokens are visible only here.
 function strictText(text) {
@@ -948,7 +950,7 @@ function recoveryReachView(rotation, blocks, arrivals) {
 // ================================================================ valid(block, context)  (core.md section 8)
 // block: { hash?, type, state, refs, signature, suite? }; context: the blocks held (array, Map or Pool). Returns refusals [{ code, detail }].
 function uniqueCodes(list) { const seen = new Set(), out = []; for (const f of list) if (!seen.has(f.code)) { seen.add(f.code); out.push({ code: f.code, detail: f.detail || '' }); } return out; }
-function validStages(block, poolIn) {
+function validStages(block, poolIn, schemasIn) {
   const pool = poolOf(poolIn);
   const b = blockOnly(block);
   const ctx = { held: pool.m, noClosed: true };
@@ -1021,13 +1023,13 @@ function validStages(block, poolIn) {
   }
   // check 8: a closed type's required fields, undeclared fields and its module's checks
   const late = [];
-  if (CLOSED.has(type) && !genesis) closedFindings(b, { held: pool.m, recoverySigned: role === 'recovery' }, (stage, code, detail) => late.push({ stage, code, detail }));
+  if (CLOSED.has(type) && !genesis) closedFindings(b, { held: pool.m, schemas: Array.isArray(schemasIn) ? normHeld(schemasIn) : null, recoverySigned: role === 'recovery' }, (stage, code, detail) => late.push({ stage, code, detail }));
   if (late.length) return found(8, late);
   return { stage: 0, findings: [] };
 }
 // The refusal: every code the failing check found, one per code, in the order of protocol.json refusals.codes.block.
 const CODE_ORDER = Object.keys(P.refusals.codes.block);
-function valid(block, context) { return uniqueCodes(validStages(block, context).findings).sort((a, b) => CODE_ORDER.indexOf(a.code) - CODE_ORDER.indexOf(b.code)); }
+function valid(block, context, schemas) { return uniqueCodes(validStages(block, context, schemas).findings).sort((a, b) => CODE_ORDER.indexOf(a.code) - CODE_ORDER.indexOf(b.code)); }
 
 // ================================================================ the compact form (encoding.md, CBOR)
 // A public block as CBOR (RFC 8949). The id is always the hash of the canonical JSON. Writing is deterministic; a reader refuses
@@ -1913,9 +1915,10 @@ function promiseStage(firstIn, poolIn, opts) {
     (Q.refs.what !== undefined && !(Q.state.what !== undefined && Q.refs.what === undefined) ? [{ id: null, unit: chosen ? chosen.unit : (terms.quantity && terms.quantity.unit), needed: chosen ? decNum(chosen) : (isObj(terms.quantity) && terms.quantity.value !== undefined ? decNum(terms.quantity) : null) }] : []);
   const isWork = Q.refs.what === undefined && Q.state.what !== undefined;
   for (const l of lineSpecs) {
-    let moved = 0, whole = false;
+    let moved = 0, whole = false, any = false;
     for (const t of goods) {
       if (l.id !== null && t.state.line !== l.id) continue;
+      any = true;
       if (t.state.amount) moved += decNum(t.state.amount);
       else {
         const inst = pool.get(asList(t.refs.what)[0]);
@@ -1924,14 +1927,17 @@ function promiseStage(firstIn, poolIn, opts) {
       }
     }
     if (l.needed !== null && (whole || moved > l.needed)) moved = l.needed;
-    out.lines.push({ id: l.id, needed: l.needed, moved });
+    // a line with no quantity needs one counted transfer of its thing (promises.md, Settling); how much it moved is then not a number
+    if (l.needed === null && whole) moved = null;
+    out.lines.push({ id: l.id, needed: l.needed, moved, any });
   }
   let covered = false;
-  if (lineSpecs.length) covered = out.lines.every(l => l.needed === null ? l.moved > 0 : l.moved >= l.needed);
+  if (lineSpecs.length) covered = out.lines.every(l => l.needed === null ? l.any : l.moved >= l.needed);
   else if (isWork) {
     if (isObj(pterms.quantity) && pterms.quantity.value !== undefined) covered = works.filter(w => w.state.amount && w.state.amount.unit === pterms.quantity.unit).reduce((s, w) => s + decNum(w.state.amount), 0) >= decNum(pterms.quantity);
     else covered = works.length > 0;
   }
+  out.lines = out.lines.map(({ id, needed, moved }) => ({ id, needed, moved }));
   const paidAll = total === null || (out.paid !== null ? out.paid.minor : 0) >= total.minor;
   const anySettling = goods.length + pays.length + works.length > 0;
   // ---- onward stop and occurrences
@@ -2282,7 +2288,8 @@ function door(op, ...a) {
     case 'sign': return signBlock(a[0], a[1], a[2]);
     case 'verify': return verifyBlock(a[0], a[1], a[2]);
     case 'hash': return hashOfBlock({ type: a[0], state: a[1], refs: a[2] }, a[3]);
-    case 'valid': return valid(a[0], a[1]);
+    case 'valid': return valid(a[0], a[1], a[2]);
+    case 'base_fields': return [...(P.fields[a[0]] || [])];
     case 'merkle_root': return merkleRoot(a[0]);
     case 'merkle_proof': return merkleProof(a[0], a[1]);
     case 'merkle_verify': return merkleVerify(a[0], a[1], a[2], a[3], a[4]);
@@ -2302,7 +2309,7 @@ function door(op, ...a) {
     case 'strict_text': return strictText(a[0]);
     case 'next_link': return nextLink(a[0], a[1]);
     case 'due': return due(a[0], a[1]);
-    case 'refusals': return refusals(a[0], a[1], a[2], a[3]);
+    case 'refusals': return refusals(a[0], a[1], a[2], a[3], a[4]);
     case 'promise_view': return promiseView(a[0], a[1], a[2]);
     case 'promise_stage': return promiseStage(a[0], a[1], a[2]);
     case 'live_grant': return liveGrant(a[0], a[1], a[2]);

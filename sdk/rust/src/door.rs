@@ -361,6 +361,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "add_duration" => json!(crate::time::add_duration(a.s(0)?, a.s(1)?, a.v(2).as_i64().unwrap_or(1))),
         "compare_durations" => json!(crate::time::compare_durations(a.s(0)?, a.s(1)?, a.s(2)?)),
         "types" => json!(crate::spec().types),
+        "base_fields" => json!(crate::spec().fields(a.s(0)?)),
         "grammar" => json!(a.v(1).as_str().is_some_and(|t| crate::spec().is(a.opt(0).unwrap_or(""), t))),
         // merkle_root(chunks: [hex]), merkle_proof(chunks, index), merkle_verify(root, chunk, index, count, proof)
         "merkle_root" => {

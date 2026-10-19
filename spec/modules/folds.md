@@ -77,6 +77,10 @@ An accept that reached the offerer after `expires`, on the offerer's own clock, 
 
 **The view `promise_view`** returns the same answer, except that stage 8 becomes **expired** once the reader's own clock passes `expires` and nothing binds.
 
+## Kept and broken
+
+A reading, not a fold: how often a person kept what they promised, read from the promises they gave. Take each first promise whose `refs.from` is the person and that a counterparty bound by a binding accept (`accept` is not null). Its stage (above) says the rest: **kept** when it is `done`; **broken** when it is `stopped` (onward) after the accept, or `reversed`; **open** otherwise. A promise that was declined, or stopped before any accept, bound no one and is not counted. The count is never trusted: an `observe` of kind `kept` (the `kept_promises` schema) is the writer's reading, and a reader recomputes it from the promises named in its `derives_from`. A reader that needs a deadline reads `terms.deliver_by` against its own clock, as for any view.
+
 ## Circle membership and roles
 
 The fold reads the circle C and every member grant with `refs.subject` C, and every grant that answers or updates one of them, in causal order, by the rules in circles.md. The founder holds the first role in C's `roles`. A member grant counts if signed `as` C by a key of someone holding `admit` in the fold of its causal past. A circle whose actor lists no roles is refused (`bad_roles`); if a fold meets one anyway, the founder holds no role, so no one holds any power: no member grant counts and no one signs `as` the circle.

@@ -3,7 +3,7 @@
 const { call, list, arrivals } = require('./core.cjs')
 const { PROTOCOL, TYPES, VERBS, REF_KEYS, VERSION } = require('./spec.cjs')
 
-const FIELDS = Object.fromEntries(TYPES.map((type) => [type, PROTOCOL.fields[type]]))
+const FIELDS = Object.fromEntries(TYPES.map((type) => [type, call('base_fields', type)]))
 const CODES = PROTOCOL.refusals.codes
 
 // `held` (blocks the check may look up) and `schemas` as the door takes them: lists.

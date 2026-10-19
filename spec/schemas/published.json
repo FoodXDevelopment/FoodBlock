@@ -1,0 +1,461 @@
+{
+ "about": "Written by sdk/javascript/test/make-schemas.cjs from schemas.json. Do not edit.",
+ "publisher": {
+  "id": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+  "public_key_sign": "302a300506032b6570032100e1ba70fb8788cec658b0e7b655e1dc91080eff9f7f33abc7bd45d6d25dea66e5",
+  "seed_text": "foodblock 1.6 base schemas"
+ },
+ "genesis": {
+  "hash": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+  "type": "actor",
+  "state": {
+   "kind": "publisher",
+   "at": "2026-10-19T00:00:00.000Z",
+   "audience": "public",
+   "public_key_sign": "302a300506032b6570032100e1ba70fb8788cec658b0e7b655e1dc91080eff9f7f33abc7bd45d6d25dea66e5"
+  },
+  "refs": {},
+  "signature": "fcb25cf67dbac0ecf5dda2b104200075189dcd07f3db6bb387425fdc762e1019e8ae4b115449c44bf7af8640c20f8e6b80d7e751c88837e1e821236862815101"
+ },
+ "order": [
+  "thing",
+  "schema",
+  "make",
+  "observation",
+  "admission",
+  "limit",
+  "consent",
+  "reading",
+  "work",
+  "attestation",
+  "share_vote",
+  "kept_promises",
+  "person_confirmed",
+  "sensor_confirmed",
+  "teach",
+  "loan",
+  "payout"
+ ],
+ "schemas": {
+  "thing": {
+   "hash": "5118875d2aa8a8f7fc7c8d300ee5e4b259233ba9b614a120148c26042dd16bbe",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "thing",
+    "target": "thing",
+    "fields": {
+     "name": "text",
+     "marks": "exact marks, [{ scheme, value }]",
+     "words": "the words printed on it, as first read",
+     "lot": "the lot code",
+     "use_by": "a date",
+     "pack": "an amount: what one instance holds",
+     "amount": "an amount"
+    },
+    "at": "2026-10-19T00:00:01.000Z",
+    "audience": "public",
+    "seq": 1
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9"
+   },
+   "signature": "8d59eb8cca1cd24c88d00080619b308d18b98dbdbaffb5ac0f8d095ca1430ace1a1e47226a9f5603e23ee790464f2901c76f2bf3e81dff106e346b21a5f0160b"
+  },
+  "schema": {
+   "hash": "05f9dcf0a3157187668f8a2112a63cb20840dca6b50c0a87f2f42efdd2b0c75b",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "schema",
+    "target": "thing.schema",
+    "fields": {
+     "target": "the type, or type.kind, it is for",
+     "fields": "{ name: hint }",
+     "roles": "the ref keys it declares beyond the shared ones",
+     "grounds": "{ event, confirms, defeats, confirmers }",
+     "undo": "never or ok",
+     "labels": "{ lang: { name: label } }"
+    },
+    "at": "2026-10-19T00:00:02.000Z",
+    "audience": "public",
+    "seq": 2
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "5118875d2aa8a8f7fc7c8d300ee5e4b259233ba9b614a120148c26042dd16bbe"
+   },
+   "signature": "049a562e0304f4ddddaf4ef48392c9157536aef41c64873080dfc3cb7dc3f6df9461328d1b7ac5b1fd9231c084b34ccaef4662a6ac8324ae7cf959e570177d04"
+  },
+  "make": {
+   "hash": "dbf1780cad14565c5d44406515a4982267c7db2e6159025f3141686cccc3ea4d",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "make",
+    "target": "transform.make",
+    "fields": {
+     "shares": "[{ from, share }]: how much of each input the output carries, a decimal string"
+    },
+    "at": "2026-10-19T00:00:03.000Z",
+    "audience": "public",
+    "seq": 3
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "05f9dcf0a3157187668f8a2112a63cb20840dca6b50c0a87f2f42efdd2b0c75b"
+   },
+   "signature": "d01e3db81c081bbd757dee54ae9579d09e8b101376d071bc060bd02a17942d05944015d0245d263eb470de2fa5190641d0d45de31462115ed49cf3fe1bb1b50a"
+  },
+  "observation": {
+   "hash": "03e7f60d4861d0a1c90ea05ada990743620ac3ae4a93e2538cd8fabf6a949ea1",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "observation",
+    "target": "observe",
+    "fields": {
+     "text": "what is so, in words",
+     "amount": "an amount"
+    },
+    "at": "2026-10-19T00:00:04.000Z",
+    "audience": "public",
+    "seq": 4
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "dbf1780cad14565c5d44406515a4982267c7db2e6159025f3141686cccc3ea4d"
+   },
+   "signature": "8227845f8a7749a74e9fe980d65527970fe3facb27231a422445830d8eebf6ff6d79881e6ee45334ba55f11c75666b6b4b1cdf8da56b145c2b956a3c92699b07"
+  },
+  "admission": {
+   "hash": "a47259772570c15ef5b20c497e6d25e3c1b1968830fb7d7aa54d3ef259837826",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "admission",
+    "target": "observe.admission",
+    "fields": {
+     "parties": "ids always admitted (a list)",
+     "per_stranger": "most blocks one day may bring from anyone else (an integer)",
+     "order_channel": "the acts, as type.kind, an agent may send first (a list)"
+    },
+    "at": "2026-10-19T00:00:05.000Z",
+    "audience": "public",
+    "seq": 5
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "03e7f60d4861d0a1c90ea05ada990743620ac3ae4a93e2538cd8fabf6a949ea1"
+   },
+   "signature": "8e115536723bc95bc9cd85885dc472fb206a7ce6d21f98a5305eff5bd64f4df43f2e2f42db6cfbe0b5456116f35a7b0ae70ee55eb2fdcb38198b9b6b60c6e508"
+  },
+  "limit": {
+   "hash": "dc1b3b8034777ff8c96ce1f9bb337e51882f33ec8de85d4d1215bc16473e68b7",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "limit",
+    "target": "observe.limit",
+    "fields": {
+     "limit": "money: the most the agent may spend",
+     "per": "a duration: the period the limit covers"
+    },
+    "grounds": {
+     "event": "the principal set the fence on the grant named in refs.for"
+    },
+    "at": "2026-10-19T00:00:06.000Z",
+    "audience": "public",
+    "seq": 6
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "a47259772570c15ef5b20c497e6d25e3c1b1968830fb7d7aa54d3ef259837826"
+   },
+   "signature": "6914d7e9c2c5477d54cc324061a6c2195141b15dd7a468ea87db3a0e5cc2a6f25a41caa1abf67277367d6913fdd3ce5de57aa52c4e865a1bf5826d5225135e0c"
+  },
+  "consent": {
+   "hash": "29ffd8bfb9ac3da3191982617bb2c5c34cb1273ccbefd393429a30a53565ea28",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "consent",
+    "target": "observe.consent",
+    "fields": {
+     "word": "yes, stop, keep or move",
+     "to": "for move: the custodian or node (an id)"
+    },
+    "grounds": {
+     "event": "the person said it, or a recorder heard it and kept the raw message in derives_from"
+    },
+    "at": "2026-10-19T00:00:07.000Z",
+    "audience": "public",
+    "seq": 7
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "dc1b3b8034777ff8c96ce1f9bb337e51882f33ec8de85d4d1215bc16473e68b7"
+   },
+   "signature": "50ef008b4894ff9833089663f2294adeb0d172d33653690bef57a8ce39e2c2a2aa313f701437334167cc6cf0077689132282ea8b26f73e0b55607ae0a41a090f"
+  },
+  "reading": {
+   "hash": "ce14c863a4c0f400f018706c7e87aaaa4f29264fa3e5e623c4b195ea784ec7e3",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "reading",
+    "target": "observe.reading",
+    "fields": {
+     "amount": "an amount: what was measured",
+     "text": "what was read, in words",
+     "accuracy": "an amount, in the unit of the reading",
+     "coverage": "a decimal from 0 to 1: how much was seen",
+     "method": "how: sensor, import, or a model's name"
+    },
+    "grounds": {
+     "event": "the sensor, or a reader of evidence, saw it; refs.from names the sensor"
+    },
+    "at": "2026-10-19T00:00:08.000Z",
+    "audience": "public",
+    "seq": 8
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "29ffd8bfb9ac3da3191982617bb2c5c34cb1273ccbefd393429a30a53565ea28"
+   },
+   "signature": "41ed96958335a38ac8d4743348990f411856fefd61c86c0c3f3de177edf6aa3c1fa96eae7b6f4a38c46ea511c6ed2c7e5bcb96cad57a58372d445bf4dd188a0a"
+  },
+  "work": {
+   "hash": "e166a26bce9cf5b2aa304ba4dc86bc6e2bad120a80a879da4f16e8a875b67a0e",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "work",
+    "target": "observe.work",
+    "fields": {
+     "text": "what was done, in words",
+     "amount": "an amount: the hours or the quantity",
+     "line": "the id of the promise line it is for"
+    },
+    "grounds": {
+     "event": "the worker did it",
+     "confirms": [
+      "observe"
+     ]
+    },
+    "at": "2026-10-19T00:00:09.000Z",
+    "audience": "public",
+    "seq": 9
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "ce14c863a4c0f400f018706c7e87aaaa4f29264fa3e5e623c4b195ea784ec7e3"
+   },
+   "signature": "ef3b4b43b19a9d419f092a200ab37b1301b9aaf767b2dd6bfe994445ae1a975a6e4f040cc2d98e27ac760747c1e7358b6fd353e4494051923d98e6777c4cc508"
+  },
+  "attestation": {
+   "hash": "93c19d1062d277419cb95091b045adbd94c6701ef604063707a3dc5526487bef",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "attestation",
+    "target": "observe.attestation",
+    "fields": {
+     "scheme": "the register: eudi, cnpj, rfc, abn, uscc, national_id, device",
+     "value": "the number, or a commitment to it",
+     "kind_of": "person, business or device"
+    },
+    "grounds": {
+     "event": "the issuer checked the register or the maker's record"
+    },
+    "at": "2026-10-19T00:00:10.000Z",
+    "audience": "public",
+    "seq": 10
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "e166a26bce9cf5b2aa304ba4dc86bc6e2bad120a80a879da4f16e8a875b67a0e"
+   },
+   "signature": "054011437970a649a3a2595edcbc383ab98813850342f4cf8c251ee459d44dbd630783a6ff2f200f01988d752e1769b200394251446ed1abdcde56c6fc659d05"
+  },
+  "share_vote": {
+   "hash": "28a05db1065e6bac9754bb6bd88445fd2b2fbd8c74ee531a0969f42a48d9591d",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "share_vote",
+    "target": "observe.vote",
+    "fields": {
+     "choice": "a commitment to the choice (privacy.md)"
+    },
+    "grounds": {
+     "event": "the voter owned the shares named in refs.of when the counter read the ownership fold; each owned instance is one vote"
+    },
+    "at": "2026-10-19T00:00:11.000Z",
+    "audience": "public",
+    "seq": 11
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "93c19d1062d277419cb95091b045adbd94c6701ef604063707a3dc5526487bef"
+   },
+   "signature": "f3f36f3a0655f9db7b97323a12b1dfbc7833efc71f470fd6a91caeaef02247437ae1e654beeca53ca04b1ad55c3937e75c5da800456102146e530789743cf90f"
+  },
+  "kept_promises": {
+   "hash": "e287e90581a9475f808323e4f8710b746f5c44fade81b9db85b14672a9462dec",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "kept_promises",
+    "target": "observe.kept",
+    "fields": {
+     "kept": "an integer: promises whose stage is done",
+     "broken": "an integer: promises stopped, declined or expired after a binding accept, or reversed",
+     "open": "an integer: the rest"
+    },
+    "grounds": {
+     "event": "the promise stages of refs.subject, read by the writer; a reader recomputes them from the promises named in derives_from (folds.md, Kept and broken)"
+    },
+    "at": "2026-10-19T00:00:12.000Z",
+    "audience": "public",
+    "seq": 12
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "28a05db1065e6bac9754bb6bd88445fd2b2fbd8c74ee531a0969f42a48d9591d"
+   },
+   "signature": "348632354e1a0421606a80d5bfac2ec343d6d1f87fc18d6b4938754860cbcd327b59065854732c0d0674fc5c9c35d2871511a7b6d4e5369666095e497586be0d"
+  },
+  "person_confirmed": {
+   "hash": "ba7c6d19e2da4313746fed094c7232c28ea227052b5cc9c49259efdaa38148bf",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "person_confirmed",
+    "target": "promise",
+    "fields": {},
+    "grounds": {
+     "event": "the receiver says it arrived: their accepted answer to the transfer, before the promise's terms.deliver_by",
+     "confirms": [
+      "transfer"
+     ]
+    },
+    "undo": "ok",
+    "at": "2026-10-19T00:00:13.000Z",
+    "audience": "public",
+    "seq": 13
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "e287e90581a9475f808323e4f8710b746f5c44fade81b9db85b14672a9462dec"
+   },
+   "signature": "dcd78f7ef0276207e1aa89e0a18188eccc5d1ac17c5441e072b71c0ded3cd66ab2bbd4ca7c1ee483f94ad3e3e6e61200ebc52613e6be6d6877e93bff8a0f1f02"
+  },
+  "sensor_confirmed": {
+   "hash": "b7de0fa2b2dc71ef335df9585b19ae6847e27486ada3aef662594a62025fae75",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "sensor_confirmed",
+    "target": "promise",
+    "fields": {},
+    "grounds": {
+     "event": "the sensor read past the line for the time terms.condition names (reading_condition, profiles/tasks.md); the schema's confirmers settle a dispute about the reading",
+     "confirms": [
+      "observe"
+     ]
+    },
+    "undo": "ok",
+    "at": "2026-10-19T00:00:14.000Z",
+    "audience": "public",
+    "seq": 14
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "ba7c6d19e2da4313746fed094c7232c28ea227052b5cc9c49259efdaa38148bf"
+   },
+   "signature": "3eec11386887c0c3bbb1307c4aa2ea1e0c228c028f787c4f15a7d6543fe26245aaf7396d5a9fc36f1c1b8746937ab0cbbf050d5ca8dd8d47bb2fff528ab4d403"
+  },
+  "teach": {
+   "hash": "5d869e97c3519f6a2dd4bda7ddc771527f97f24a4934903469b43b983b704a9e",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "teach",
+    "target": "promise.teach",
+    "fields": {},
+    "grounds": {
+     "event": "the lesson was given: the learner's accepted answer to the teacher's work block; a learner's make names the teacher's recipe in derives_from, with the share in state.shares if one was agreed",
+     "confirms": [
+      "observe"
+     ]
+    },
+    "undo": "ok",
+    "at": "2026-10-19T00:00:15.000Z",
+    "audience": "public",
+    "seq": 15
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "b7de0fa2b2dc71ef335df9585b19ae6847e27486ada3aef662594a62025fae75"
+   },
+   "signature": "8f8beb824368df8815ce9da50c58d57116439c5466e425bba0b7a19fdfd258e862308c6d76703eb3feeef1697ec3d9c33a999fc960a52a67f755c37340d3e208"
+  },
+  "loan": {
+   "hash": "98fd57c992c274588822f5a4a2a82f30cfae5e8a1fd6147caf9bf43244667d56",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "loan",
+    "target": "promise.loan",
+    "fields": {
+     "principal": "money: what is lent"
+    },
+    "grounds": {
+     "event": "the lender advanced the money (a payout record the borrower accepts) and it came back (the repayment, accepted by the lender)",
+     "confirms": [
+      "observe",
+      "transfer"
+     ]
+    },
+    "undo": "never",
+    "at": "2026-10-19T00:00:16.000Z",
+    "audience": "public",
+    "seq": 16
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "5d869e97c3519f6a2dd4bda7ddc771527f97f24a4934903469b43b983b704a9e"
+   },
+   "signature": "76661613081ef26e35b6c6a7723768dcd1f66492428f1f97571ac9c1479a8556ffe37abd38a77056b7ba72d6091421d15d055e92d74c1409f848b6ecefd20907"
+  },
+  "payout": {
+   "hash": "4fc15a0b29326a34c69620fffff5f044826291fcedb1285ed12537188bbbb1a1",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "payout",
+    "target": "observe.work",
+    "fields": {
+     "amount": "money: what was paid out",
+     "text": "what it was for, in words"
+    },
+    "grounds": {
+     "event": "the payer paid it: the transfer in derives_from; the receiver's accepted answer confirms. A loan's advance is a payout record too",
+     "confirms": [
+      "observe"
+     ]
+    },
+    "at": "2026-10-19T00:00:17.000Z",
+    "audience": "public",
+    "seq": 17
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "98fd57c992c274588822f5a4a2a82f30cfae5e8a1fd6147caf9bf43244667d56"
+   },
+   "signature": "428b83804b730a13d1c3a1824107c3745d4b8c9f791e43cb858cc683429184e045e6ff005c9040e30f26da19cf078f0bb21e5a85034f6f22e68e017bce555407"
+  }
+ }
+}

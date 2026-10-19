@@ -15,8 +15,10 @@ class World {
   add(b, note) {
     const held = this.blocks.slice()
     let r1, r2
-    try { r1 = fb.valid(b, held) } catch (e) { r1 = [{ code: 'THROW', detail: e.message }] }
-    try { r2 = oracle.door('valid', b, held) } catch (e) { r2 = [{ code: 'THROW', detail: e.message }] }
+    // A world that keeps a schema store (`useSchemas`) is judged with it: a closed block names a schema and carries what it declares.
+    const store = this.useSchemas ? held.filter((x) => x.type === 'thing' && x.state.kind === 'schema') : null
+    try { r1 = store ? fb.valid(b, held, { schemas: store }) : fb.valid(b, held) } catch (e) { r1 = [{ code: 'THROW', detail: e.message }] }
+    try { r2 = oracle.door('valid', b, held, store) } catch (e) { r2 = [{ code: 'THROW', detail: e.message }] }
     const c1 = r1.map(x => x.code).join(','), c2 = r2.map(x => x.code).join(',')
     this.log.push({ note, hash: b.hash.slice(0, 8), type: b.type, sdk: c1 || 'valid', oracle: c2 || 'valid' })
     if (c1 !== c2) this.problems.push(`SDK/oracle disagree on valid for ${note}: sdk=[${c1}] oracle=[${c2}]`)
@@ -29,7 +31,7 @@ class World {
   w(p, type, state, refs = {}, note = '', opts = {}) {
     let b
     try {
-      b = fb.write(type, { ...state }, { ...refs }, { author: p.id, key: p.keys, held: this.blocks, at: T(), ...opts })
+      b = fb.write(type, { ...state }, { ...refs }, { author: p.id, key: p.keys, held: this.blocks, at: T(), ...(this.useSchemas ? { schemas: this.blocks.filter((x) => x.type === 'thing' && x.state.kind === 'schema') } : {}), ...opts })
     } catch (e) {
       this.log.push({ note, type, writeRefused: (e.wrong || [e.message]).join(' | '), refused: (e.refused || []).map(x => x.code).join(',') })
       return { refusedWrite: true, error: e }

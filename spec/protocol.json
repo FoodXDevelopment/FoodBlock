@@ -200,38 +200,6 @@
    "roles",
    "custodian"
   ],
-  "thing": [
-   "name",
-   "marks",
-   "words",
-   "lot",
-   "use_by",
-   "pack",
-   "amount",
-   "target",
-   "fields",
-   "roles",
-   "grounds",
-   "undo",
-   "labels"
-  ],
-  "observe": [
-   "text",
-   "amount",
-   "accuracy",
-   "coverage",
-   "parties",
-   "per_stranger",
-   "order_channel",
-   "limit",
-   "per",
-   "word",
-   "to",
-   "method"
-  ],
-  "transform": [
-   "shares"
-  ],
   "transfer": [
    "money",
    "marks",
@@ -257,7 +225,8 @@
    "recovery_suite",
    "roles",
    "custodian"
-  ]
+  ],
+  "note": "The base fields of the closed types. Every closed type may also carry `every`. A closed block says more only through a schema it names (core.md, section 7). The open types (thing, observe, transform and any new word) list nothing here: their fields are described by the base schemas (spec/schemas), and nothing is refused for them."
  },
  "terms": [
   "price",
@@ -1739,6 +1708,12 @@
      "proof: [hex]"
     ],
     "result": "true when the proof shows the chunk is chunk `index` of `count` under the root"
+   },
+   "base_fields": {
+    "args": [
+     "type"
+    ],
+    "result": "the base fields of that type, beside `every`: the list in `fields`, or none for an open type"
    }
   }
  },

@@ -16,7 +16,7 @@ What the types hold, in detail. The types and verbs are in core.md.
   - `undo`: `never` when the act cannot be taken back, `ok` when it can; every schema for an act that moves things or binds someone says which (authority.md, Acts that can be undone). An act whose schema is silent, untrusted or not named is treated as irreversible;
   - `labels`: names for its fields and values in each language, `{ lang: { name: label } }`. Words people read live here, never in the protocol.
 
-  Until the base schemas are published, the fields this spec names are the base, listed per type in `protocol.json`.
+  **The base schemas** are published in `spec/schemas/` (`schemas.json` is their source, `published.json` the signed things, with stable ids). They describe, as data, what the protocol reads of its own kinds and what the open types carry: `thing`, `schema`, `make` and `observation` (the fields of the open types), `admission`, `limit`, `consent`, `reading`, `work`, `attestation`, `share_vote`, `kept_promises`, `person_confirmed`, `sensor_confirmed`, `teach`, `loan` and `payout`. Nothing is refused for lacking one: an open type carries what it likes, and a closed type carries the fields of `protocol.json` (`fields`) and of the schema it names. The publisher is a convention for finding them, not an authority: a reader trusts a schema by the rules of authority.md.
 
 ## Transforms and keeps
 - **A make** is a `transform` that names its inputs in `refs.derives_from`, each with its share if it matters (`state.shares`: `[{ from, share }]`). Its outputs are things that name it in `derives_from`. A transform consumes its inputs; with no output, it ends them (eaten, thrown out).

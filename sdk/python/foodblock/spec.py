@@ -12,5 +12,5 @@ SUITES = [name for name, one in PROTOCOL["suites"].items() if isinstance(one, di
 PEERS = PROTOCOL["peers"]
 STATUSES = PROTOCOL["statuses"]
 POWERS = PROTOCOL["powers"]
-FIELDS = {type_: PROTOCOL["fields"][type_] for type_ in TYPES}
+FIELDS = {type_: call("base_fields", type_) for type_ in TYPES}
 CODES = PROTOCOL["refusals"]["codes"]

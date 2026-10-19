@@ -24,6 +24,7 @@ This is the index. The spec is one short core, thirteen modules, and a folder of
 - `transport.md`: email and other envelopes. A convention beside the protocol.
 - `profiles/`: optional profiles (below).
 - `legacy/`: the one-time converter for old data. Not part of the protocol.
+- `schemas/`: the base schemas, as data: `schemas.json` (source) and `published.json` (signed things with stable ids).
 - `protocol.json`: every closed list and grammar, for code to load. `vectors.json` and `canonical-vectors.json`: the conformance vectors.
 
 ## Optional profiles

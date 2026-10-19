@@ -138,7 +138,7 @@ The fields each closed type may carry are in `protocol.json` (`fields`). A close
 
 Checks 1 to 4 read the bytes alone (no other block, no key of the author), so a block that fails one is refused at once, whatever it lacks.
 
-**`check(block, held)`**, the strict check, is `valid` without checks 5, 6 and 7 and without stopping at the first check that finds anything: it runs checks 1 to 4 and 8 and gives every code found, one per code, in the order of `protocol.json` (`refusals.codes.block`). `held` is read only by check 8 (a schema or parent grant the block names, the blocks `refs.after` names). Nodes use it to say everything wrong with a block's form at once; `valid` is what decides. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
+**`check(block, held)`**, the strict check, is `valid` without checks 5, 6 and 7 and without stopping at the first check that finds anything: it runs checks 1 to 4 and 8 and gives every code found, one per code, in the order of `protocol.json` (`refusals.codes.block`). `held` is read only by check 8 (a schema or parent grant the block names, the blocks `refs.after` names). A node also keeps the schemas it has seen: a closed block that names a schema the node does not hold is `undeclared_ref` (ask for it), and one that names a schema it holds may carry the `fields` and `roles` that schema declares. A checker with no schema store does not judge what a schema may declare. Nodes use it to say everything wrong with a block's form at once; `valid` is what decides. A block that passes may still count for nothing in a fold (folds.md). `valid` says only that the bytes are sound.
 
 ## 9. The invariants
 
