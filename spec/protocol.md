@@ -2,7 +2,7 @@
 
 Version 1.6 (2026-10-15). Year zero: there is no earlier version in the protocol.
 
-This is the index. The spec is one short core, thirteen modules, and a folder of optional profiles, plus a few data files. Where another document in this repository disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
+This is the index. The spec is one short core, eleven modules, and a folder of optional profiles, plus a few data files. Where another document in this repository disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
 
 ## Files
 
@@ -10,7 +10,6 @@ This is the index. The spec is one short core, thirteen modules, and a folder of
 - `canonical.md`: the one exact byte form of a block (RFC 8785 plus strict writing).
 - `modules/blocks.md`: the other fields a block carries, causal order, no clock, records, refusals.
 - `modules/identity.md`: keys, rotation, recovery, custody, contacts.
-- `modules/passkeys.md`: a passkey (WebAuthn) as a p256 key; the one signature form.
 - `modules/things.md`: things, transforms, transfers, schemas, truth.
 - `modules/promises.md`: sides, terms, relative time, answers, settling, claims, disputes.
 - `modules/authority.md`: grants, scope, the limit, withdrawal, acts that cannot be undone.
@@ -19,8 +18,7 @@ This is the index. The spec is one short core, thirteen modules, and a folder of
 - `modules/nodes.md`: messages, pull, push, admission, discovery, equivocation, finding.
 - `modules/folds.md`: folds and views, the orderer, ownership, the promise stage.
 - `modules/consent.md`: a human author for a first message to a stranger, consent as a block.
-- `modules/encoding.md`: bytes, shapes, limits, large content (the Merkle root), the other suites (`p256`, `sm`), the compact CBOR form.
-- `modules/peers.md`: micro, edge, node.
+- `modules/encoding.md`: bytes, shapes, limits, large content (the Merkle root), the other suites (`p256`, `sm`), the passkey form, the compact CBOR form.
 - `transport.md`: email and other envelopes. A convention beside the protocol.
 - `profiles/`: optional profiles (below).
 - `legacy/`: the one-time converter for old data. Not part of the protocol.
@@ -51,13 +49,18 @@ A profile is an extra rule set any peer may adopt. A node that has never heard o
 
 ## Which peer needs which module
 
-Core is always needed. Three peers: micro, edge, node. Two are variants: a micro that acts, and an index (a node that serves others' public records).
+Core is always needed. One protocol, three sizes of peer, by what they do (`protocol.json` `peers` lists what each does and which modules it needs). Optional profiles are a different thing: extra rules any peer may adopt.
+
+- **Micro**, the device: measures, signs, buffers and sends. It needs core.md, canonical.md, blocks.md and encoding.md, and it may use the compact form. A micro that acts in the world is a **micro that acts**: it adds authority.md, checks the grants it acts under and obeys a stop on arrival. It may have no clock (blocks.md, No clock) and leaves the `until` test to its edge.
+- **Edge**, the local operator: adds local discovery, Pull and Push with nearby peers, the promise fold for its own deals, and works offline. It reads devices that cannot sign, and signs what it read as its own `observe`, the device named as a thing in `refs.from`, so a stranger weighs the edge's word, not the device's. It times a clock-less micro's block with a `receipt` observe.
+- **Node**, held by a person or a machine: adds envelopes and commitments, serving Pull and Push to anyone, signed answers, internet discovery, and the folds for every record it holds. A node may also be an **index**, serving others' public records and every fold.
+
+Only people and machines hold nodes. A business, a household, a regulator or a community is a circle of them (circles.md): it has an id and a record, kept by its members' nodes, never a node of its own. A peer may run any size.
 
 | Module | Micro | Micro that acts | Edge | Node and index |
 |---|---|---|---|---|
 | blocks | yes | yes | yes | yes |
 | encoding | yes | yes | yes | yes |
-| peers | yes | yes | yes | yes |
 | identity | own keys | own keys | yes | yes |
 | things | the types it writes | the types it writes | yes | yes |
 | authority | | yes | yes | yes |
@@ -79,7 +82,7 @@ Core has 1 to 3 and 25. The rest are in the module that owns them, with the same
 | 6, 7, 9, 10, 23 | authority.md |
 | 27 | circles.md |
 | 8, 19 | identity.md |
-| 28 | passkeys.md |
+| 28 | encoding.md |
 | 11, 12, 13, 14, 15, 22 | promises.md |
 | 16, 20, 29 | consent.md |
 | 24 | things.md |
@@ -131,7 +134,7 @@ One line for each word a reader may trip on.
 - **Open type:** any type but the four closed ones. Stored and passed on; it grants no authority.
 - **Operator:** the author of an agent's or machine's operator grant. It answers for it.
 - **Orderer:** the one key that orders a record's binding blocks (folds.md).
-- **Passkey:** a key kept in a phone or computer and used with a fingerprint or face; its signature is the p256 passkey form (passkeys.md).
+- **Passkey:** a key kept in a phone or computer and used with a fingerprint or face; its signature is the p256 passkey form (encoding.md, Passkeys).
 - **Profile (optional):** an extra rule set in `profiles/`. **Peer:** micro, edge or node.
 - **Record:** a block and every version after it.
 - **Recovery key:** an offline key that outranks the others in its identity.

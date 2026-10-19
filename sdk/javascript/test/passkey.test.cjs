@@ -1,4 +1,4 @@
-// A passkey is a FoodBlock key (spec/modules/passkeys.md): a WebAuthn assertion from a test authenticator opens a block.
+// A passkey is a FoodBlock key (spec/modules/encoding.md, Passkeys): a WebAuthn assertion from a test authenticator opens a block.
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const crypto = require('crypto')

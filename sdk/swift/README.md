@@ -87,7 +87,7 @@ MIT
 
 ## FoodBlockWindow: the phone as a window onto its hosted node
 
-A second library in the same package (`import FoodBlockWindow`). The person's passkey is their FoodBlock key (spec/modules/passkeys.md): it never leaves the
+A second library in the same package (`import FoodBlockWindow`). The person's passkey is their FoodBlock key (spec/modules/encoding.md, Passkeys): it never leaves the
 phone and the host holds no key. `FoodBlockWindow` registers (the host proposes the genesis, the passkey signs its id), signs in by a passkey assertion over a
 server challenge, reads blocks and folds, and writes: the host proposes the block, the passkey signs its id, the host's core judges it. Offline it composes
 the block here, signs it, checks it with the bundled core and queues it in SQLite; `sync()` hands the queue over in order. `ApplePasskeys` is the platform

@@ -46,7 +46,7 @@ A **suite** names a hash, a signature algorithm and an envelope (key agreement a
 **How a signature is made.** The signed bytes are the UTF-8 canonical bytes (canonical.md) of what is signed; no hash is signed separately except as the algorithm says.
 - **Seed to key.** A test or device key is made from a 32-byte seed: the Ed25519 private key of RFC 8032. The public key is the SPKI hex of the table, built from the 32-byte RFC 8032 public key.
 - **Ed25519** is deterministic by RFC 8032 (pure Ed25519, the message is the bytes).
-- **Verifiers accept any valid signature.** A writer must derive its nonce as the suite says, so that two implementations given the same key and bytes write the same signature (the vectors check exact bytes). A signature made by a device that is not deterministic (a passkey, modules/passkeys.md) is still a valid signature.
+- **Verifiers accept any valid signature.** A writer must derive its nonce as the suite says, so that two implementations given the same key and bytes write the same signature (the vectors check exact bytes). A signature made by a device that is not deterministic (a passkey, modules/encoding.md, Passkeys) is still a valid signature.
 
 A post-quantum suite (ML-DSA, ML-KEM, SHA3-256) is one more row. It is noted in `protocol.json` as `future` and is not usable until its sizes are fixed in vectors. A signature is never longer than the block limit allows.
 

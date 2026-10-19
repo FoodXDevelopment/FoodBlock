@@ -179,7 +179,7 @@ function verifyBytes(bytes, sigHex, pubSpkiHex, suite) {
     return sm2Verify(bytes, rawPoint(pubSpkiHex), sigHex);
   } catch { return false; }
 }
-// ---- passkeys (modules/passkeys.md): a WebAuthn assertion as a p256 signature
+// ---- passkeys (modules/encoding.md, Passkeys): a WebAuthn assertion as a p256 signature
 // The challenge for signed bytes: base64url, no padding, of their SHA-256.
 const passkeyChallenge = bytes => crypto.createHash('sha256').update(bytes).digest('base64url');
 // Any repeated key, at any depth, in JSON text that already parsed.

@@ -1,4 +1,4 @@
-// Adds to spec/vectors.json the cases of modules/passkeys.md (a passkey IS the key): `node test/make-vectors-passkey.cjs`.
+// Adds to spec/vectors.json the cases of modules/encoding.md, Passkeys (a passkey IS the key): `node test/make-vectors-passkey.cjs`.
 // Idempotent: a case it made is replaced by name. The test authenticator is a fixed P-256 key that signs real-shaped
 // WebAuthn assertions (authenticatorData, clientDataJSON as Chrome writes it, an ASN.1 DER ES256 signature), the way
 // navigator.credentials.get() returns them. Every expectation is written here and checked against the Rust core first.

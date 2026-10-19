@@ -590,7 +590,7 @@ fn message_to_c(spec: &Spec, codec: &Codec, block: &Value) -> Result<C> {
         .get("signature")
         .and_then(Value::as_str)
         .ok_or_else(|| fail("a message carries the block's signature"))?;
-    // 64 bytes, or for a p256 key a passkey's longer form (modules/passkeys.md): the suite's own check says which opens.
+    // 64 bytes, or for a p256 key a passkey's longer form (modules/encoding.md, Passkeys): the suite's own check says which opens.
     let wide = block.get("suite").and_then(Value::as_str) == Some("p256") && sig.len() > 128;
     if !((sig.len() == 128 || wide) && sig.len() % 2 == 0 && unhex(sig).is_some()) {
         return Err(fail("the signature is 64 bytes, in hex (a passkey's, longer)"));

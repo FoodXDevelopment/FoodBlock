@@ -91,7 +91,7 @@ fn a_typed_code_names_a_block_the_way_a_person_types_it() {
     assert!(!strangers::code_matches("ZZZZ-ZZZZ", &id));
 }
 
-// A passkey (spec/modules/passkeys.md): a real-shaped WebAuthn assertion from a test P-256 key opens a block, and the
+// A passkey (spec/modules/encoding.md, Passkeys): a real-shaped WebAuthn assertion from a test P-256 key opens a block, and the
 // parts the protocol deliberately does not read (rpIdHash, origin, counter) change nothing.
 #[test]
 fn a_passkey_signs_a_block() {

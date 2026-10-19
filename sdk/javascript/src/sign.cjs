@@ -18,7 +18,7 @@ const verifyMessage = (part, publicKeyHex) => call('verify_message', part || {},
 
 /**
  * The challenge to ask a passkey to sign (navigator.credentials.get({ publicKey: { challenge } })): base64url of the
- * SHA-256 of the signed bytes, which for a block is its id. Takes a block, or a message part (modules/passkeys.md).
+ * SHA-256 of the signed bytes, which for a block is its id. Takes a block, or a message part (modules/encoding.md, Passkeys).
  */
 const passkeyChallenge = (blockOrPart) => call('passkey_challenge', blockOrPart)
 /**

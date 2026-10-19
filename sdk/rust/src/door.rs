@@ -169,7 +169,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "verify" => json!(crate::verify_in(&suite_of_key_arg(a.s(2)?), a.v(0), a.s(1)?, a.s(2)?)),
         "sign_message" => crate::sign::sign_message_in(a.opt(2).unwrap_or("std"), a.v(0), a.s(1)?)?,
         "verify_message" => json!(crate::sign::verify_message_in(&suite_of_key_arg(a.s(1)?), a.v(0), a.s(1)?)),
-        // A passkey (modules/passkeys.md): the challenge to ask it to sign for a block (or a message part), and its
+        // A passkey (modules/encoding.md, Passkeys): the challenge to ask it to sign for a block (or a message part), and its
         // answer written as a FoodBlock signature, which `verify` and `valid` then open like any other.
         "passkey_challenge" => json!(passkey_challenge(a.v(0))),
         "passkey_signature" => json!(passkey_signature(a.s(0)?, a.s(1)?, a.s(2)?)?),

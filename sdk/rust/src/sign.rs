@@ -323,7 +323,7 @@ fn base64url(bytes: &[u8]) -> String {
 }
 
 /// The challenge a passkey must be asked to sign for these signed bytes (a block's canonical bytes, or a message
-/// part's): base64url, no padding, of their SHA-256 (spec/modules/passkeys.md). For a block it is its id.
+/// part's): base64url, no padding, of their SHA-256 (spec/modules/encoding.md, Passkeys). For a block it is its id.
 pub fn passkey_challenge_of(bytes: &[u8]) -> String {
     use sha2::Digest;
     base64url(&sha2::Sha256::digest(bytes))
@@ -357,7 +357,7 @@ pub fn passkey_signature(authenticator_data: &str, client_data_json: &str, signa
 /// What a passkey signature (more than 64 bytes) really signed, and `r || s`: `authenticatorData || SHA-256(clientDataJSON)`.
 /// None unless the user was present (authenticator data flag `UP`), `clientDataJSON` is a JSON object with no repeated
 /// key whose `type` is `webauthn.get` and whose `challenge` is the challenge of `bytes`. Nothing else is read: not
-/// `rpIdHash`, not `origin`, not the counter (spec/modules/passkeys.md).
+/// `rpIdHash`, not `origin`, not the counter (spec/modules/encoding.md, Passkeys).
 #[cfg(feature = "suites")]
 fn passkey_message<'a>(bytes: &[u8], sig: &'a [u8]) -> Option<(Vec<u8>, &'a [u8])> {
     use sha2::Digest;

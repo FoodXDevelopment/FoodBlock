@@ -7,7 +7,7 @@ Bytes, shapes, limits and the compact CBOR form. Numbers, time and text rules ar
 Patterns are in `protocol.json` (`grammar`). Beyond them:
 - A hash is lowercase hex. A bare 64-hex id is SHA-256; any other hash has its name and a colon in front (core.md, Suites). Every hash in a row of `suites` is 32 bytes.
 - A salt is 16 random bytes in hex. A nonce is 16 random bytes in hex.
-- Signing keys, signatures and encryption keys follow the suite (core.md, Suites). Their patterns are in the suite's row in `protocol.json`. A `p256` signature is 64 bytes, or a passkey's longer form (passkeys.md); in CBOR it is a byte string of either length.
+- Signing keys, signatures and encryption keys follow the suite (core.md, Suites). Their patterns are in the suite's row in `protocol.json`. A `p256` signature is 64 bytes, or a passkey's longer form (encoding.md, Passkeys); in CBOR it is a byte string of either length.
 - `recovery_key_hash` is the identity's suite hash of the recovery key's SPKI hex, as UTF-8 text.
 
 ## Shapes
@@ -46,7 +46,65 @@ The door ops are `merkle_root`, `merkle_proof` and `merkle_verify` (`protocol.js
 - **ECDSA P-256.** `e` is SHA-256 of the bytes. The nonce `k` is derived by RFC 6979 section 3.2 with HMAC-SHA-256, the private scalar `d` and `h1` = the 32 bytes of `e`, no extra data; the first `k` in 1 to n-1 is used. `r` is the x coordinate of `kG` mod n, `s = k^-1 (e + r d) mod n`. `s` is not reduced to its low half. The signature is `r` then `s`, 32 bytes each, big-endian.
 - **SM2** is GM/T 0003.2-2012 with the user id `1234567812345678`. `ZA = SM3(ENTLA || ID || a || b || xG || yG || xA || yA)`, `ENTLA` the 16-bit big-endian bit length of the id, every number 32 bytes big-endian, `a`, `b`, `G` the curve `sm2p256v1` of GM/T 0003.5 and `A` the signer's public point. `e = SM3(ZA || bytes)` as a 256-bit integer. The nonce `k` is derived by RFC 6979 section 3.2 with HMAC-SM3, `d` and `h1` = the 32 bytes of `e`. `r = (e + x1) mod n` where `(x1, y1) = kG`, and `s = ((1 + d)^-1 (k - r d)) mod n`. A pair with `r = 0`, `r + k = n` or `s = 0` takes the next `k` of the RFC 6979 sequence. The signature is `r` then `s`, 32 bytes each.
 - SM3 is GM/T 0004-2012, SM4 is GM/T 0002-2012 (block cipher, 16-byte key), SM4-GCM is NIST SP 800-38D over SM4 with a 12-byte nonce, a 16-byte tag and no additional data, and HKDF-SM3 is HKDF of RFC 5869 with HMAC-SM3.
-- The `p256` signature has two forms: the 64-byte ECDSA signature, and a longer **passkey** form, a WebAuthn assertion that carries its own challenge (passkeys.md). A reader tells them apart by length. The passkey signature is made by the authenticator and is not deterministic.
+- The `p256` signature has two forms: the 64-byte ECDSA signature, and a longer **passkey** form, a WebAuthn assertion that carries its own challenge (Passkeys, below). A reader tells them apart by length. The passkey signature is made by the authenticator and is not deterministic.
+
+## Passkeys
+
+A passkey is a FoodBlock key. The phone's own sign-in, a fingerprint or a face, signs the block. No seed phrase, no key file, no app to install. This section is the one signature form that makes it so. It belongs to the `p256` suite (above).
+
+**The idea.** A passkey is a P-256 key that never leaves the person's device. To use it, a program asks the device to sign a *challenge*. The device signs a small package (WebAuthn, the browser standard for passkeys) that holds the challenge. FoodBlock sets the challenge to the hash of the block. So the signature on the package is a signature on the block, and anyone can check it with the key and the block alone.
+
+#### The key
+
+The key is an ordinary `p256` signing key (Other suites, above): `state.public_key_sign` in the genesis or a key grant, `state.suite: "p256"`. WebAuthn gives it as SPKI DER (`getPublicKey()` with algorithm ES256, -7), which is the same bytes. From a COSE key (`x`, `y`, 32 bytes each) it is the suite's SPKI prefix, then `04`, `x`, `y`. Nothing marks a key as a passkey: the same key signs either way. A passkey that signed the genesis is the identity.
+
+#### The signature
+
+The signature (hex) is these bytes, in this order:
+
+| Part | Bytes |
+|---|---|
+| `r` then `s` | 64. The ECDSA signature the device made, as the raw numbers (a device gives them as ASN.1 DER; the signer converts) |
+| length of `authenticatorData` | 2, big-endian |
+| `authenticatorData` | as long as the length says, at least 37 |
+| `clientDataJSON` | all the rest, at least 1 |
+
+A signature of exactly 64 bytes is the plain form (Other suites, above). One of more is the passkey form. It travels where a signature travels: in the message `signature`, in the CBOR byte string, in the store. No other field travels with the block, and a reader needs nothing but the block, the signature and the key.
+
+#### What was signed, and the challenge
+
+For the bytes `M` a signature covers (a block's canonical bytes; for a signed message part, canonical.md's bytes without `signature`):
+
+- **the challenge** is `base64url(SHA-256(M))`: URL-safe alphabet (`-` and `_`), no `=` padding, 43 characters. For a block, `SHA-256(M)` is its id (p256 hashes with SHA-256), so the challenge is the id in base64url.
+- **the device signs** `authenticatorData || SHA-256(clientDataJSON)` with ECDSA P-256 and SHA-256 (WebAuthn's ES256). So the verifier checks the ECDSA signature over exactly those bytes.
+
+#### The check
+
+`verify(M, signature, key)` is true when all of these hold; otherwise false, with no reason given:
+
+1. The key is a P-256 key (Other suites, above) and the signature is longer than 64 bytes and parses as the table says.
+2. Bit 0 of the flags byte of `authenticatorData` (byte 32) is set: the user was present (`UP`).
+3. `clientDataJSON` is UTF-8 JSON, an object, with no key repeated at any depth. Its `type` is the text `webauthn.get` and its `challenge` is the text above, byte for byte. No other member is read.
+4. The ECDSA signature `r`, `s` opens over `authenticatorData || SHA-256(clientDataJSON)` with the key.
+
+#### What is deliberately not checked
+
+The rule is: only what strangers must agree on. A stranger needs to know that the key held by the author approved these bytes. These parts of WebAuthn answer other questions, between the device and the site it works for, so the verifier ignores them:
+
+- **`rpIdHash` and `origin`.** They say which website asked. The block names no website, a stranger cannot know which one the author meant, and the device itself already refuses to use a passkey for a site that does not own it. A key that signed is the proof.
+- **The counter.** It exists so one site can notice a cloned key. The chain does it better: no two blocks of a key may name one `prev` (core.md, invariant 3). Synced passkeys keep it at 0.
+- **`UV`** (the user was verified, by fingerprint or PIN), `BE`, `BS`, extensions, and `crossOrigin`. Whether to demand `UV` is the author's policy for their own device and stays on their node.
+- **The attestation** made when the passkey was created. It says who made the device. The key alone is what a genesis carries.
+
+`rpId` and the credential id are what a client needs to *ask* the device. They are the author's business and stay on their node. Losing them loses nothing a reader needs.
+
+#### Recovery
+
+A passkey can be lost with its device. That is what the recovery key is for (identity.md). A key grant adds a second passkey on another device, and a rotation retires a lost one.
+
+**Invariant.**
+
+28. A passkey signature opens only for the key that made it, over the block it was asked to sign: it carries its own challenge, and a reader checks nothing but the block.
 
 ## The compact form (CBOR)
 

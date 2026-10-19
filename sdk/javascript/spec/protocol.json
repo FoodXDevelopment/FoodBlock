@@ -699,7 +699,6 @@
     "canonical",
     "blocks",
     "encoding",
-    "peers",
     "identity_own_keys",
     "things_written"
    ],
@@ -769,7 +768,6 @@
  "modules": [
   "blocks",
   "identity",
-  "passkeys",
   "things",
   "promises",
   "authority",
@@ -777,9 +775,8 @@
   "privacy",
   "nodes",
   "folds",
-  "consent",
-  "encoding",
-  "peers"
+  "strangers",
+  "encoding"
  ],
  "optional_profiles": {
   "about": "Optional. A node that has never heard of a profile still accepts every block in it.",
@@ -1362,7 +1359,7 @@
     "args": [
      "full_block"
     ],
-    "result": "the WebAuthn challenge for the block: base64url, no padding, of the 32 bytes of SHA-256 of its canonical bytes, which is its id for a std or p256 key (passkeys.md)"
+    "result": "the WebAuthn challenge for the block: base64url, no padding, of the 32 bytes of SHA-256 of its canonical bytes, which is its id for a std or p256 key (encoding.md, Passkeys)"
    },
    "passkey_signature": {
     "args": [
@@ -1370,7 +1367,7 @@
      "client_data_json hex",
      "signature: r then s, hex"
     ],
-    "result": "the passkey-form signature (passkeys.md)"
+    "result": "the passkey-form signature (encoding.md, Passkeys)"
    },
    "verify_message": {
     "args": [

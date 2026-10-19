@@ -23,4 +23,6 @@ The fields a block may carry beyond core.md, causal order, records and refusals.
 
 **Shared ref keys** are in `protocol.json` (`refs`): every type may use them, the seven verbs and `prev` and `after`. On a closed type, any other ref key must be declared by the block's schema.
 
+**Micro safety.** A micro keeps its `seq` counter and its last block's id in storage that survives power loss, and writes them before it sends. If it loses them, it asks its edge for its head. If it cannot learn its true head, it stops using that key: its operator rotates it with `counted_to` the last block anyone has (identity.md, Who may rotate). A block marked `skip` may jump `seq` forward when only the counter, not the head, was lost. So a lost counter never freezes an identity.
+
 **Refusals.** A node refuses a block that breaks a rule in the spec, and the refusal is final for those bytes. It is `{ hash, code, detail }`. `code` is from the closed list in `protocol.json` (`refusals.codes`), one code per rule, meaning the same on every node. `detail` is free text no node reads. A block that breaks several rules gets one entry per rule found, in the list's order. The list also names why a fold counts a block for nothing (`fold`) and why a node refuses a message (`message`).
