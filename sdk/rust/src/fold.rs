@@ -160,15 +160,24 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             }
         }
     }
-    let from = rs(&first, "from");
-    let to = rs(&first, "to");
+    // A side that names a thing is whoever owns the thing now (promises.md, Bearer): the ownership fold of the input.
+    let side_of_ref = |r: Option<&str>| -> Option<String> {
+        let r = r.filter(|r| !r.is_empty())?;
+        match index.get(r) {
+            Some(t) if type_of(t) == "thing" => ownership_in(r, &index).owner,
+            _ => Some(r.to_string()),
+        }
+    };
+    let (from_ref, to_ref) = (rs(&first, "from"), rs(&first, "to"));
+    let (from_id, to_id) = (side_of_ref(from_ref), side_of_ref(to_ref));
+    let (from, to) = (from_id.as_deref(), to_id.as_deref());
     let offerer_is_from = speaks_as(&first, from, &index, now);
     // A first promise that speaks for neither side is nobody's promise: it has no stage (folds.md, Who a block speaks for).
     if !offerer_is_from && !speaks_as(&first, to, &index, now) {
         return Value::Null;
     }
     let offerer = if offerer_is_from { from } else { to };
-    let other = if offerer_is_from { to } else { from };
+    let other = if offerer_is_from { to_ref } else { from_ref };
     let open = other.is_none_or(str::is_empty);
     let side_of = |b: &Value| -> Option<&'static str> {
         if speaks_as(b, from, &index, now) {
@@ -359,7 +368,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
             .unwrap_or(live[0]),
         _ => live[0],
     };
-    let sides = json!({ "from": from, "to": to });
+    let sides = json!({ "from": from_ref, "to": to_ref });
     // Every name the spec gives (§11, What each fold returns): a field that does not apply is null, or an empty list.
     let result = |stage: &str, more: Value| -> Value {
         // The offer the binding accept answers; with none, the live offer when there is only one.
@@ -427,7 +436,7 @@ pub fn promise_stage(first_block: &Value, blocks: &[Value], options: &StageOptio
         .or_else(|| terms.get("quantity").filter(|v| truthy(Some(v))).cloned());
     let other_side = if offerer_is_from { "to" } else { "from" };
     let receiver = |side: &str| -> Option<String> {
-        if let Some(r) = rs(&first, side).filter(|s| !s.is_empty()) {
+        if let Some(r) = if side == "from" { from } else { to } {
             return Some(r.to_string());
         }
         if side == other_side {

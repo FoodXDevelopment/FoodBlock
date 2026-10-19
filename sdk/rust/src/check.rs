@@ -978,11 +978,20 @@ impl<'a> Checker<'a> {
                     None => Some(vec![]),
                     Some(u) => u.as_str().and_then(|u| held.and_then(|h| h.get(u))).map(|gr| vec![rf(gr, "author"), rf(gr, "as")]),
                 };
-                let speaks = |side: Option<&Value>| {
+                let speaks_for = |side: Option<&Value>| {
                     side.is_some()
                         && (strict_eq(r("author"), side)
                             || strict_eq(r("as"), side)
                             || principals.as_ref().is_some_and(|p| p.iter().any(|x| strict_eq(*x, side))))
+                };
+                // A side that names a thing it holds is judged by the fold, not here: who owns the thing is not a block this one
+                // needs (promises.md, Bearer; core.md, invariant 25).
+                let speaks = |side: Option<&Value>| {
+                    speaks_for(side)
+                        || side
+                            .and_then(Value::as_str)
+                            .zip(held)
+                            .is_some_and(|(id, h)| h.get(id).is_some_and(|t| type_of(t) == "thing"))
                 };
                 let (from_speaks, to_speaks) = (speaks(r("from")), speaks(r("to")));
                 let asked = to_speaks && !from_speaks;

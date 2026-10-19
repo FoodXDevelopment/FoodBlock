@@ -133,6 +133,36 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   door('where_now: a move signed as the circle by an outsider does not count', 'where_now', [stock, s.held], { expect: [shelf.hash], exact: true })
 }
 
+// ---- 3. A bearer promise: refs.to names a thing, and its owner is that side ----
+{
+  const s = story(), lena = s.person('blena'), bo = s.person('bbo'), cy = s.person('bcy'), eve = s.person('beve')
+  const coffee = s.say(lena, 'thing', { kind: 'coffee' })
+  const voucher = s.say(lena, 'thing', { kind: 'voucher', name: 'one coffee' })
+  const promise = s.say(lena, 'promise', { terms: { quantity: fb.amount('1', '{cup}'), expires: LATER } }, { from: lena.id, to: voucher.hash, what: coffee.hash })
+  const pass = (from, to, thing) => { const t = s.say(from, 'transfer', {}, { what: thing.hash, to_owner: to.id }); s.say(to, 'transfer', { status: 'accepted' }, { answers: t.hash }); return t }
+  const answer = (who, state, extra) => s.say(who, 'promise', state, { answers: promise.hash, for: promise.hash, after: [promise.hash], ...extra })
+  pass(lena, bo, voucher)
+  stage('bearer: the holder of the voucher is the receiving side; until she answers, the promise is offered', promise, s.held, { stage: 'offered', sides: { to: voucher.hash } })
+  const outsider = answer(eve, { status: 'accepted' })
+  stage('bearer: an accept by someone who does not hold the voucher binds no one', promise, s.held, { stage: 'offered', accept: null })
+  const boAccept = answer(bo, { status: 'accepted' })
+  stage('bearer: the holder\'s accept binds (a side, not not_a_side)', promise, s.held, { stage: 'accepted', accept: boAccept.hash })
+  pass(bo, cy, voucher)
+  stage('bearer: the voucher passed on carries the promise: the earlier holder\'s accept counts for nothing', promise, s.held, { stage: 'offered', accept: null })
+  const cyAccept = answer(cy, { status: 'accepted' })
+  stage('bearer: the new holder answers it again and it binds', promise, s.held, { stage: 'accepted', accept: cyAccept.hash })
+  const cup = s.say(lena, 'thing', { kind: 'coffee', lot: 'C1', pack: fb.amount('1', '{cup}') }, { of: coffee.hash })
+  const handed = s.say(lena, 'transfer', {}, { what: cup.hash, to_owner: cy.id, for: promise.hash })
+  s.say(cy, 'transfer', { status: 'accepted' }, { answers: handed.hash, for: promise.hash })
+  stage('bearer: what is owed goes to the holder, who accepts it: done', promise, s.held, { stage: 'done' })
+  // a voucher with no owner (given to an open receiver) has no one to answer
+  const loose = s.say(lena, 'thing', { kind: 'voucher', name: 'dropped' })
+  const open = s.say(lena, 'transfer', { count: 1 }, { what: loose.hash, to_place: lena.id })
+  const bearer2 = s.say(lena, 'promise', { terms: { quantity: fb.amount('1', '{cup}'), expires: LATER } }, { from: lena.id, to: loose.hash, what: coffee.hash })
+  s.say(eve, 'promise', { status: 'accepted' }, { answers: bearer2.hash, for: bearer2.hash, after: [bearer2.hash] })
+  stage('bearer: a voucher nobody owns yet has no side that can answer', bearer2, s.held, { stage: 'offered', accept: null })
+}
+
 // ---- write ----
 fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

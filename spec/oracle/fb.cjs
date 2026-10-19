@@ -595,7 +595,9 @@ function closedFindings(b, ctx, add) {
     // With the grant not held (a write check with no context) the sides cannot be judged.
     const grantHeld = refs.under === undefined ? null : (isStr(refs.under) ? held.get(refs.under) : null);
     const principals = refs.under === undefined ? [] : grantHeld ? [grantHeld.refs.author, grantHeld.refs.as] : null;
-    const speaks = x => x !== undefined && (x === refs.author || x === refs.as || (principals || []).includes(x));
+    const speaksFor = x => x !== undefined && x !== null && (x === refs.author || x === refs.as || (principals || []).includes(x));
+    // a side that names a thing it holds is judged by the fold, not here: who owns the thing is not a block this one needs (promises.md, Bearer)
+    const speaks = x => speaksFor(x) || (isStr(x) && !!held.get(x) && held.get(x).type === 'thing');
     if (principals) {
       if (answer) {
         const target = held.get(refs.answers);
@@ -1696,7 +1698,9 @@ function promiseStage(firstIn, poolIn) {
   const P = pool.get(typeof firstIn === 'string' ? firstIn : firstIn.hash);
   if (!P) return null;
   const out = { stage: null, stop: null, from: null, offer: P.hash, accept: null, sides: { from: P.refs.from === undefined ? null : P.refs.from, to: P.refs.to === undefined ? null : P.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [] };
-  const from = P.refs.from, to = P.refs.to;
+  // a side that names a thing is whoever owns the thing now (promises.md, Bearer)
+  const sideOf = r => { if (r === undefined) return undefined; const t = pool.get(r); return t && t.type === 'thing' ? ownershipFold(t, pool).owner : r; };
+  const from = sideOf(P.refs.from), to = sideOf(P.refs.to);
   const all = pool.all().filter(b => counts(b, pool));
   // the deal: P, and every block that names P in for or answers a block in the deal. A promise with no answers is a new deal.
   const deal = new Map([[P.hash, P]]);
@@ -1733,7 +1737,7 @@ function promiseStage(firstIn, poolIn) {
   const quote = b => { const c = cover(b); return !!c && !c.covered; };
   const isSide = id => id !== null && id !== undefined && (id === from || id === to);
   if (!isSide(who(P))) return null; // a first promise that speaks for neither side is nobody's promise: no stage
-  const open = from === undefined || to === undefined;
+  const open = P.refs.from === undefined || P.refs.to === undefined;
   const self = from !== undefined && from === to && from === who(P);
   // ---- the live offers: P, or the latest counters between the same two sides, each signed by the side that did not sign the offer it answers
   // (not on an open offer). Two counters that cross both stand.
