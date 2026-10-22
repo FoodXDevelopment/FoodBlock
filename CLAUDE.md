@@ -4,7 +4,7 @@
 Always speak to me like I'm 15. My work is complex and I don't always fully get it, so break things down. Plain language, short sentences, no jargon without a one-line explanation, concrete examples over abstractions. Assume I'm smart but haven't heard the terminology before.
 
 ## Mission
-Organising and decentralising the world's food to increase economic freedom and social connection.
+To build the tools that increase economic freedom in the world's food economy.
 
 ## History of Food
 For most of history, we wandered in small bands, foraging and hunting. Then we learned to cultivate grain. Land was divided. Surplus was traded. It became our first industry. And from there, the wheel, roads, and ships followed. Our food is a thread that runs through our shared history. And the story is still being written by the people of today.
