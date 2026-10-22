@@ -8,7 +8,7 @@ use crate::js::{
     cmp16, get, hash_of, index_of, int, list, num, number_of, rf, rs, sorted_set, ss, st,
     strict_eq, text, truthy, type_of, unique, Index,
 };
-use crate::order::{causal_order_among, heads_among, past_in, sees_in};
+use crate::order::{causal_order_among, heads_among, sees_in};
 use crate::prelude::*;
 use core::cell::RefCell;
 
@@ -837,8 +837,11 @@ struct Circle<'a> {
     /// The circle's roles: `[(name, powers)]`, the founder holding the first.
     roles: Vec<(String, Vec<String>)>,
     removal_needed: f64,
+    /// The founder has answered no member grant, so in every fold of every past they hold exactly the first role.
+    founder_plain: bool,
     related: Vec<Value>,
-    memo: RefCell<Vec<(String, CircleState)>>,
+    /// The fold of the causal past of each block asked about (a block's past is fixed, so it is worked out once).
+    memo: RefCell<indexmap::IndexMap<String, CircleState, crate::js::BuildHasher>>,
 }
 
 impl<'a> Circle<'a> {
@@ -867,30 +870,24 @@ impl<'a> Circle<'a> {
         }
     }
     fn past_fold(&self, block: &Value) -> CircleState {
-        let past = past_in(block, self.index);
+        let key = hash_of(block);
+        if let Some(done) = self.memo.borrow().get(key) {
+            return done.clone();
+        }
+        // Held while it is worked out, so made-up data that names itself ends rather than recurses.
+        self.memo.borrow_mut().insert(key.to_string(), self.empty());
         let set: Vec<Value> = self
             .related
             .iter()
-            .filter(|b| past.contains(hash_of(b)))
+            .filter(|b| sees_in(block, hash_of(b), self.index))
             .cloned()
             .collect();
-        self.fold(&set)
+        let state = self.fold(&set);
+        self.memo.borrow_mut().insert(key.to_string(), state.clone());
+        state
     }
     fn fold(&self, set: &[Value]) -> CircleState {
-        let mut hashes: Vec<&str> = set.iter().map(hash_of).collect();
-        hashes.sort();
-        let key = hashes.join(",");
-        if let Some((_, s)) = self.memo.borrow().iter().find(|(k, _)| *k == key) {
-            return s.clone();
-        }
-        self.memo.borrow_mut().push((key.clone(), self.empty()));
-        let state = self.fold_now(set);
-        for entry in self.memo.borrow_mut().iter_mut() {
-            if entry.0 == key {
-                entry.1 = state.clone();
-            }
-        }
-        state
+        self.fold_now(set)
     }
     // One pass in causal order: each invitation, answer, change and removal applies where it falls, so a member
     // removed and later invited again is in, by the new grant; a grant once ended stays ended. A member may hold several
@@ -921,6 +918,9 @@ impl<'a> Circle<'a> {
         // A block signed as the circle by a member who holds a power in the fold of the block's causal past.
         let can = |b: &Value, power: &str| {
             rs(b, "as") == Some(id) && {
+                if self.founder_plain && rs(b, "author") == Some(founder) {
+                    return self.roles.first().is_some_and(|(_, powers)| powers.iter().any(|p| p == power));
+                }
                 let past = self.past_fold(b);
                 rs(b, "author")
                     .and_then(|a| past.members.get(a))
@@ -1227,21 +1227,24 @@ pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Op
         .cloned()
         .collect();
     // And every grant that answers or updates one of them (an acceptance, a leaving, a stop): it need carry no `kind` or `subject` of its own.
-    loop {
-        let known: Vec<String> = related.iter().map(|b| hash_of(b).to_string()).collect();
-        let more: Vec<Value> = read
-            .values()
-            .filter(|b| {
-                type_of(b) == "grant"
-                    && !known.iter().any(|k| k == hash_of(b))
-                    && list(rf(b, "answers")).iter().chain(list(rf(b, "updates")).iter()).any(|h| known.iter().any(|k| k == h))
-                    && crate::identity::counts_in(b, read)
-            })
+    // Round by round: the grants that name one found in the last round, in the order of the set.
+    let mut known: indexmap::IndexSet<String, crate::js::BuildHasher> = related.iter().map(|b| hash_of(b).to_string()).collect();
+    let mut last = known.clone();
+    while !last.is_empty() {
+        let mut places: Vec<usize> = last
+            .iter()
+            .flat_map(|h| read.naming("answers", h).into_iter().chain(read.naming("updates", h)))
+            .collect();
+        places.sort_unstable();
+        places.dedup();
+        let more: Vec<Value> = places
+            .into_iter()
+            .filter_map(|at| read.get_index(at).map(|(_, b)| b))
+            .filter(|b| type_of(b) == "grant" && !known.contains(hash_of(b)) && crate::identity::counts_in(b, read))
             .cloned()
             .collect();
-        if more.is_empty() {
-            break;
-        }
+        last = more.iter().map(|b| hash_of(b).to_string()).collect();
+        known.extend(last.iter().cloned());
         related.extend(more);
     }
     let needed = get(root, "state.removal.needed")
@@ -1271,8 +1274,9 @@ pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Op
         founder: founder.clone(),
         roles: roles.clone(),
         removal_needed: needed.unwrap_or(default_needed),
+        founder_plain: !related.iter().any(|b| rs(b, "author") == Some(founder.as_str()) && !list(rf(b, "answers")).is_empty()),
         related,
-        memo: RefCell::new(Vec::new()),
+        memo: RefCell::new(Default::default()),
     };
     let run = |c: &Circle| match within {
         Some(w) => c.past_fold(read.get(hash_of(w)).unwrap_or(w)),

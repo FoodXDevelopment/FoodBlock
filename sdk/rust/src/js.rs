@@ -5,7 +5,91 @@ use crate::prelude::*;
 use core::cmp::Ordering;
 
 /// A held set of blocks by hash, in the order they were first given (a later copy replaces the value, not the place).
-pub type Index = indexmap::IndexMap<String, Value, BuildHasher>;
+/// It remembers what it has worked out of its own causal order (order.rs), so a fold asks "does this see that" once per pair
+/// however often it asks; any change to the set forgets it.
+#[derive(Default)]
+pub struct Index {
+    map: indexmap::IndexMap<String, Value, BuildHasher>,
+    pub(crate) causal: core::cell::RefCell<crate::order::Causal>,
+    /// Which blocks name which: `"key value"` -> the places of the blocks whose `refs.key` is (or lists) that value.
+    named: core::cell::RefCell<Option<alloc::rc::Rc<indexmap::IndexMap<String, Vec<usize>, BuildHasher>>>>,
+}
+impl Index {
+    /// The blocks whose `refs.key` names `target` (a text, or in a list), by their place in the index and in that order. Built once
+    /// for the whole set on the first ask, so a fold that asks for many targets reads the set once.
+    pub fn naming(&self, key: &str, target: &str) -> Vec<usize> {
+        let table = {
+            let mut slot = self.named.borrow_mut();
+            slot.get_or_insert_with(|| {
+                let mut table: indexmap::IndexMap<String, Vec<usize>, BuildHasher> = Default::default();
+                for (at, block) in self.map.values().enumerate() {
+                    if let Some(Value::Object(refs)) = block.get("refs") {
+                        for (k, v) in refs {
+                            let mut add = |t: &str| {
+                                let places = table.entry(format!("{k} {t}")).or_default();
+                                if places.last() != Some(&at) {
+                                    places.push(at)
+                                }
+                            };
+                            match v {
+                                Value::String(t) => add(t),
+                                Value::Array(list) => list.iter().filter_map(Value::as_str).for_each(&mut add),
+                                _ => {}
+                            }
+                        }
+                    }
+                }
+                alloc::rc::Rc::new(table)
+            })
+            .clone()
+        };
+        table.get(format!("{key} {target}").as_str()).cloned().unwrap_or_default()
+    }
+}
+impl core::ops::Deref for Index {
+    type Target = indexmap::IndexMap<String, Value, BuildHasher>;
+    fn deref(&self) -> &Self::Target {
+        &self.map
+    }
+}
+impl core::ops::DerefMut for Index {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.causal.get_mut().forget();
+        *self.named.get_mut() = None;
+        &mut self.map
+    }
+}
+impl Clone for Index {
+    fn clone(&self) -> Self {
+        Index { map: self.map.clone(), ..Default::default() }
+    }
+}
+impl FromIterator<(String, Value)> for Index {
+    fn from_iter<I: IntoIterator<Item = (String, Value)>>(items: I) -> Self {
+        Index { map: items.into_iter().collect(), ..Default::default() }
+    }
+}
+impl Extend<(String, Value)> for Index {
+    fn extend<I: IntoIterator<Item = (String, Value)>>(&mut self, items: I) {
+        self.causal.get_mut().forget();
+        *self.named.get_mut() = None;
+        self.map.extend(items)
+    }
+}
+impl<'a> IntoIterator for &'a Index {
+    type Item = (&'a String, &'a Value);
+    type IntoIter = indexmap::map::Iter<'a, String, Value>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.iter()
+    }
+}
+impl IntoIterator for Index {
+    type Item = (String, Value);
+    type IntoIter = indexmap::map::IntoIter<String, Value>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.map.into_iter()
+    }
+}
 
 /// A fixed hasher, so the index needs no randomness (and works without the standard library).
 #[derive(Clone, Default)]
