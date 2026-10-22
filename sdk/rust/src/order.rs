@@ -34,153 +34,18 @@ pub fn causes_of(block: &Value) -> Vec<String> {
         }
     }
     // A rotation or removal sees the block it counts to (protocol.json `causal_state`): its causal past holds the chain it cuts.
-    if let Some(Value::Array(keys)) = crate::spec().protocol.get("causal_state") {
-        for key in keys.iter().filter_map(Value::as_str) {
-            if let Some(h) = block.get("state").and_then(|s| s.get(key)).and_then(Value::as_str) {
-                if is_hash(h) && !out.iter().any(|o| o == h) {
-                    out.push(h.to_string());
-                }
+    for key in crate::spec().list("causal_state") {
+        if let Some(h) = block.get("state").and_then(|s| s.get(&key)).and_then(Value::as_str) {
+            if is_hash(h) && !out.iter().any(|o| o == h) {
+                out.push(h.to_string());
             }
         }
     }
     out
 }
 
-/// What an index has worked out of its causal order. Each held block (by its place in the index) has a **row**: one bit for every
-/// block its causal past names, held or not (a name that is not held gets a bit after the held ones). A row is built once, from
-/// its causes' rows, so "does this see that" is a bit test. Past a size where the rows would cost too much memory the index
-/// answers by walking, as it always could.
-#[derive(Default)]
-pub struct Causal {
-    rows: Vec<Option<alloc::rc::Rc<Vec<u64>>>>,
-    names: indexmap::IndexSet<String, crate::js::BuildHasher>,
-}
-impl Causal {
-    pub(crate) fn forget(&mut self) {
-        self.rows.clear();
-        self.names.clear();
-    }
-}
-/// The most held blocks for which rows are kept (a row is one bit per block, so memory grows with the square).
-const ROWS_MAX: usize = 20_000;
-
-fn set_bit(row: &mut Vec<u64>, bit: usize) {
-    if row.len() <= bit / 64 {
-        row.resize(bit / 64 + 1, 0);
-    }
-    row[bit / 64] |= 1 << (bit % 64);
-}
-fn or_into(row: &mut Vec<u64>, other: &[u64]) {
-    if row.len() < other.len() {
-        row.resize(other.len(), 0);
-    }
-    for (a, b) in row.iter_mut().zip(other) {
-        *a |= *b;
-    }
-}
-/// The bit a name has in this index: its place if held, else the place it was given among the names not held.
-fn bit_of(index: &Index, causal: &mut Causal, name: &str) -> usize {
-    match index.get_index_of(name) {
-        Some(at) => at,
-        None => index.len() + causal.names.insert_full(name.to_string()).0,
-    }
-}
-fn fresh(index: &Index, causal: &mut Causal) {
-    if causal.rows.len() != index.len() {
-        causal.rows = vec![None; index.len()];
-    }
-}
-/// A block's row from the rows of the blocks it names (those are built first).
-fn row_from(index: &Index, causal: &mut Causal, block: &Value) -> alloc::rc::Rc<Vec<u64>> {
-    let mut row: Vec<u64> = Vec::new();
-    for cause in causes_of(block) {
-        let bit = bit_of(index, causal, &cause);
-        set_bit(&mut row, bit);
-        if let Some(Some(other)) = index.get_index_of(cause.as_str()).map(|at| causal.rows[at].clone()) {
-            or_into(&mut row, &other);
-        }
-    }
-    alloc::rc::Rc::new(row)
-}
-/// The row of the held block at `at`, building it and the rows of its causes that are not built (without recursion).
-fn row_at(index: &Index, at: usize) -> alloc::rc::Rc<Vec<u64>> {
-    let mut causal = index.causal.borrow_mut();
-    fresh(index, &mut causal);
-    let mut visiting: Vec<bool> = Vec::new();
-    let mut todo: Vec<(usize, bool)> = vec![(at, false)];
-    while let Some((here, built)) = todo.pop() {
-        if causal.rows[here].is_some() {
-            continue;
-        }
-        let block = &index[here];
-        if !built {
-            if visiting.is_empty() {
-                visiting = vec![false; index.len()];
-            }
-            visiting[here] = true;
-            todo.push((here, true));
-            for cause in causes_of(block) {
-                if let Some(next) = index.get_index_of(cause.as_str()) {
-                    if causal.rows[next].is_none() && !visiting[next] {
-                        todo.push((next, false));
-                    }
-                }
-            }
-        } else {
-            let row = row_from(index, &mut causal, block);
-            causal.rows[here] = Some(row);
-        }
-    }
-    causal.rows[at].clone().unwrap()
-}
-/// A block's row: its causal past among the held blocks (the block itself is not in it unless a cycle names it).
-fn row_of(block: &Value, index: &Index) -> alloc::rc::Rc<Vec<u64>> {
-    match index.get_index_of(crate::js::hash_of(block)) {
-        Some(at) => row_at(index, at),
-        None => {
-            // Not held: the rows of what it names are built first, then its own.
-            for cause in causes_of(block) {
-                if let Some(at) = index.get_index_of(cause.as_str()) {
-                    row_at(index, at);
-                }
-            }
-            let mut causal = index.causal.borrow_mut();
-            fresh(index, &mut causal);
-            row_from(index, &mut causal, block)
-        }
-    }
-}
-
-/// Every block in a block's causal past (the hashes; the block itself is not in it unless a cycle names it).
+/// Every held block in a block's causal past (the hashes; the block itself is not in it unless a cycle names it).
 pub fn past_in(block: &Value, index: &Index) -> BTreeSet<String> {
-    if index.len() > ROWS_MAX {
-        return past_walk(block, index);
-    }
-    let row = row_of(block, index);
-    let causal = index.causal.borrow();
-    let mut past = BTreeSet::new();
-    for (word, bits) in row.iter().enumerate() {
-        for bit in (0..64).filter(|b| bits >> b & 1 == 1) {
-            let at = word * 64 + bit;
-            past.insert(match index.get_index(at) {
-                Some((h, _)) => h.clone(),
-                None => causal.names[at - index.len()].clone(),
-            });
-        }
-    }
-    past
-}
-
-/// How many blocks a block's causal past names. A block that sees another has a strictly larger past, so this orders by causality.
-pub fn past_len(block: &Value, index: &Index) -> usize {
-    if index.len() > ROWS_MAX {
-        return past_walk(block, index).len();
-    }
-    row_of(block, index).iter().map(|w| w.count_ones() as usize).sum()
-}
-
-/// The walk, for an index too large for rows.
-fn past_walk(block: &Value, index: &Index) -> BTreeSet<String> {
     let mut past = BTreeSet::new();
     let mut todo = causes_of(block);
     while let Some(h) = todo.pop() {
@@ -202,21 +67,7 @@ pub fn past_of(block: &Value, blocks: &[Value]) -> BTreeSet<String> {
 
 /// Whether `later` has `earlier` (a hash) in its causal past.
 pub fn sees_in(later: &Value, earlier: &str, index: &Index) -> bool {
-    if earlier.is_empty() {
-        return false;
-    }
-    if index.len() > ROWS_MAX {
-        return past_walk(later, index).contains(earlier);
-    }
-    let row = row_of(later, index);
-    let bit = match index.get_index_of(earlier) {
-        Some(at) => at,
-        None => match index.causal.borrow().names.get_index_of(earlier) {
-            Some(g) => index.len() + g,
-            None => return false,
-        },
-    };
-    row.get(bit / 64).is_some_and(|w| w >> (bit % 64) & 1 == 1)
+    !earlier.is_empty() && past_in(later, index).contains(earlier)
 }
 
 /// Whether `later` has `earlier` in its causal past, among these blocks.
@@ -300,7 +151,7 @@ pub fn causal_order_in(index: &Index) -> Vec<Value> {
 /// subset's own refs cannot order it: that left the order to hash ties and made later blocks look as if they did not see earlier
 /// ones (found by the simulator). A block that sees another has a strictly larger causal past, so past size orders them; ties by hash.
 pub fn causal_order_among(subset: &Index, full: &Index) -> Vec<Value> {
-    let mut v: Vec<(usize, &String, &Value)> = subset.iter().map(|(h, b)| (past_len(b, full), h, b)).collect();
+    let mut v: Vec<(usize, &String, &Value)> = subset.iter().map(|(h, b)| (past_in(b, full).len(), h, b)).collect();
     v.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| cmp16(a.1, b.1)));
     v.into_iter().map(|(_, _, b)| b.clone()).collect()
 }

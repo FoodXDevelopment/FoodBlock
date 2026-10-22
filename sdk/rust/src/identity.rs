@@ -11,7 +11,7 @@ use crate::block::{create_in, hash_in};
 use crate::chain::{check_chain, next_link, Chain, Link};
 use crate::error::{Error, Result};
 use crate::js::{hash_of, index_of, int, rf, rs, ss, st, truthy, type_of, Index};
-use crate::order::{causal_order_among, past_len, sees_in};
+use crate::order::{causal_order_among, past_in, sees_in};
 use crate::prelude::*;
 use crate::sign::{sign_in, verify_in};
 use crate::time::add_duration;
@@ -243,24 +243,24 @@ pub fn key_grant_with(
 /// The pairs of blocks, among these, that one key of one author signed naming one `prev`: each pair sorted, and the
 /// list sorted.
 pub fn fork_pairs_in(index: &Index) -> Vec<[String; 2]> {
-    // Two blocks of one key naming one prev are two blocks of one author naming one prev: only authors with such a pair need their
-    // keys read (an honest set has none).
-    let mut by_prev: indexmap::IndexMap<(&str, &str), Vec<&Value>, crate::js::BuildHasher> = Default::default();
+    let mut by_slot: Vec<(String, Vec<String>)> = Vec::new();
+    let mut authors: Vec<&str> = Vec::new();
     for b in index.values() {
-        if let (Some(a), Some(p)) = (rs(b, "author").filter(|a| !a.is_empty()), rs(b, "prev")) {
-            by_prev.entry((a, p)).or_default().push(b);
+        if let Some(a) = rs(b, "author").filter(|a| !a.is_empty() && rs(b, "prev").is_some()) {
+            if !authors.contains(&a) {
+                authors.push(a);
+            }
         }
     }
-    let mut by_slot: indexmap::IndexMap<String, Vec<String>, crate::js::BuildHasher> = Default::default();
-    let mut keys_of_author: indexmap::IndexMap<&str, Vec<KeyEntry>, crate::js::BuildHasher> = Default::default();
-    for ((author, prev), blocks) in by_prev.iter().filter(|(_, blocks)| blocks.len() > 1) {
-        if !keys_of_author.contains_key(author) {
-            keys_of_author.insert(author, identity_in(author, index, None).keys);
-        }
-        let keys = &keys_of_author[author];
-        for b in blocks {
-            let Some(key) = signer_of(b, keys) else { continue };
-            by_slot.entry(format!("{author} {key} {prev}")).or_default().push(hash_of(b).to_string());
+    for author in authors {
+        let keys = identity_in(author, index, None).keys;
+        for b in index.values().filter(|b| rs(b, "author") == Some(author) && rs(b, "prev").is_some()) {
+            let Some(key) = signer_of(b, &keys) else { continue };
+            let slot = format!("{author} {key} {}", rs(b, "prev").unwrap_or(""));
+            match by_slot.iter_mut().find(|(s, _)| *s == slot) {
+                Some((_, group)) => group.push(hash_of(b).to_string()),
+                None => by_slot.push((slot, vec![hash_of(b).to_string()])),
+            }
         }
     }
     let mut pairs: Vec<[String; 2]> = Vec::new();
@@ -422,7 +422,7 @@ fn key_grants_of(id: &str, index: &Index, operators: &[(String, Vec<(String, Str
     // In causal order among the blocks of the whole record, not among the grants alone: one grant may follow another only
     // through blocks that are not grants (a new key's chain: a note, a thing, then a second grant), and ordering the grants
     // by themselves loses that. A block that sees another has a strictly larger causal past, so past size orders them.
-    let mut ordered: Vec<(usize, String, Value)> = mine.iter().map(|(h, b)| (past_len(b, index), h.clone(), b.clone())).collect();
+    let mut ordered: Vec<(usize, String, Value)> = mine.iter().map(|(h, b)| (past_in(b, index).len(), h.clone(), b.clone())).collect();
     ordered.sort_by(|a, b| (a.0, &a.1).cmp(&(b.0, &b.1)));
     ordered.into_iter().map(|(_, _, b)| b).collect()
 }
@@ -833,7 +833,7 @@ fn beyond_reach(block: &Value, rotation: &Rotation, cx: &Context) -> bool {
     let h = hash_of(block);
     let author = rf(block, "author");
     let users = cx.index.values().filter(|o| {
-        !crate::js::strict_eq(rf(o, "author"), author) && sees_in(o, h, cx.index)
+        !crate::js::strict_eq(rf(o, "author"), author) && past_in(o, cx.index).contains(h)
     });
     core::iter::once(block)
         .chain(users)
@@ -878,7 +878,7 @@ pub fn signed_by_author_in(block: &Value, index: &Index, arrived_at: ArrivedAt) 
     if let Some(ended) = &state.ended {
         if !ended
             .iter()
-            .any(|e| e == h || all.get(e).is_some_and(|b| sees_in(b, h, all)))
+            .any(|e| e == h || all.get(e).is_some_and(|b| past_in(b, all).contains(h)))
         {
             return false;
         }
@@ -918,7 +918,7 @@ pub fn key_speaks_for_header(entry: &KeyEntry, header: &Value, index: &Index, ar
     let state = identity_in(id, &all, arrived_at);
     let h = hash_of(header);
     if let Some(ended) = &state.ended {
-        if !ended.iter().any(|e| e == h || all.get(e).is_some_and(|b| sees_in(b, h, &all))) {
+        if !ended.iter().any(|e| e == h || all.get(e).is_some_and(|b| past_in(b, &all).contains(h))) {
             return false;
         }
     }
