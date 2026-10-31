@@ -1,6 +1,6 @@
 # Build from the repository root: docker build -f server/Dockerfile .
 # Node 24 (LTS); exactly the lockfile's dependencies, no install scripts; it runs as the unprivileged `node` user.
-FROM node:24-alpine
+FROM node:25-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 # The node depends on the SDK package (file:../sdk/javascript), which loads spec/protocol.json.
