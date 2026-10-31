@@ -4,22 +4,24 @@
 //
 //   sign-in      "Sign in with Google" (openid email profile only), and a reviewer sign-in for directory reviewers (a fixed passphrase, demo people)
 //   a person     one account -> one FoodBlock identity -> one hosted node. Their signing keys are kept sealed (AES-GCM under the operator's master
-//                secret): hosted custody, so the door can sign on their tap. Leaving is one pull from the host (the node is theirs).
-//   a token      belongs to one person AND one assistant (OAuth client), carries scopes foodblock:read / foodblock:draft, is kept only as a hash,
+//                secret): hosted custody, so the door can sign on their tap, and the genesis names the hub's own identity as `custodian`. She is shown her recovery key until she confirms she saved it, then the hub deletes its copy: with it she rotates FoodX out and leaves with her record.
+//   a token      belongs to one person AND one assistant (OAuth client), carries scopes foodblock:read / foodblock:draft / foodblock:talk, is kept only as a hash,
 //                and dies on revoke (the account page, or RFC 7009 /revoke). Binding authority is never a scope: it is a grant the person signs.
 //   the tap      a draft is approved on /approve/<id> by the signed-in person; the page of one person can never show or sign another's draft.
 // Everything durable (clients, tokens, sessions, accounts) is in one file on a durable disk (store.js). Nothing here imports the kernel:
 // the host is reached through `provision(genesis) -> { base, token }`, so a FoodOS host, a remote one, or a test stub all fit.
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import express from "express";
+import { z } from "zod";
 import { InvalidTokenError, InvalidGrantError, InvalidRequestError, InvalidClientMetadataError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { mcpAuthRouter, getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
-import { createDoor, newPerson } from "./door.js";
+import fb from "@foodxdev/foodblock";
+import { createDoor, newPerson, IDENTITY_AUDIENCE } from "./door.js";
 import { remoteNode } from "./remote.js";
 import { durableState, sealer } from "./store.js";
 
-export const SCOPES = ["foodblock:read", "foodblock:draft"];
+export const SCOPES = ["foodblock:read", "foodblock:draft", "foodblock:talk"];
 const ACCESS_S = 3600, REFRESH_S = 30 * 86400, CODE_MS = 5 * 60e3, SESSION_MS = 14 * 86400e3, PENDING_MS = 15 * 60e3;
 const secret = () => randomBytes(32).toString("base64url");
 const keyOf = (v) => createHash("sha256").update(String(v)).digest("hex");
@@ -28,6 +30,33 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const LOOPBACK = /^(localhost|127\.0\.0\.1|\[::1\])$/;
 
 export const ICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#14301f"/><rect x="14" y="14" width="16" height="16" rx="3" fill="#f2e8cf"/><rect x="34" y="14" width="16" height="16" rx="3" fill="#a7c957"/><rect x="14" y="34" width="16" height="16" rx="3" fill="#a7c957"/><rect x="34" y="34" width="16" height="16" rx="3" fill="#f2e8cf"/></svg>`;
+
+// ---- FoodX's face on the MCP server (server.js is neutral and names no one) ----
+// The name, icon, instructions and the one tool that talks to the person's own FoodX agent live here and nowhere else. The hub passes this brand to
+// the endpoint on every request; the door it makes is read-only (find, read), and anything that binds happens on the approval page the answer links to.
+const APP_MIME = "text/html;profile=mcp-app", APPROVAL_CARD_URI = "ui://foodx/approval-card";
+// The approval card, an MCP App: it draws the autonomous system's answer and, when there is an approval_url, one button to our own page. It binds nothing itself.
+const APPROVAL_CARD = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;margin:0;padding:12px"><div id="a"></div><p id="b"></p><p style="font-size:12px;opacity:.7">FoodX. Built on the open FoodBlock protocol.</p><script>
+const show=(r)=>{const o=r&&(r.structuredContent||(()=>{try{return JSON.parse(r.content[0].text)}catch{return null}})());if(!o)return;document.getElementById('a').textContent=o.answer||'';if(o.approval_url){const l=document.createElement('a');l.href=o.approval_url;l.target='_blank';l.rel='noopener';l.textContent='Review and say yes';l.style='display:inline-block;padding:8px 14px;border-radius:10px;background:#14301f;color:#fff;text-decoration:none';document.getElementById('b').replaceChildren(l)}};
+addEventListener('message',(e)=>{const m=e.data;if(m&&m.method==='ui/notifications/tool-result')show(m.params)});if(window.openai&&window.openai.toolOutput)show({structuredContent:window.openai.toolOutput});
+</script>`;
+export const FOODX_BRAND = {
+  title: "FoodX", websiteUrl: "https://foodx.network",
+  icons: [{ src: "https://mcp.foodx.network/icon.svg", mimeType: "image/svg+xml", sizes: ["any"] }],
+  instructions: "FoodX is the person's own food agent. When the person wants their FoodX agent, call ask_my_foodos with their words and give them its answer. FoodX also lets you find food offers and people and DRAFT asks for the person you serve. You never send or bind anything yourself: give the person the approval link a draft returns. There is no tool to move money.",
+  readOnly: (door) => Boolean(door.talk), // the host has the person's own agent: this door finds and reads, and the agent drafts
+  tools(server, tool, door) {
+    if (!door.talk) return;
+    // inside any assistant (ChatGPT, Claude, Meta AI, Siri...) the person's own FoodX autonomous system talks; the assistant relays the words and the answer
+    server.registerResource("approval-card", APPROVAL_CARD_URI, { title: "Approval card", description: "The one place a person says yes: shows the exact words and a button to our approval page.", mimeType: APP_MIME }, async () => ({ contents: [{ uri: APPROVAL_CARD_URI, mimeType: APP_MIME, text: APPROVAL_CARD }] }));
+    tool("ask_my_foodos", "Ask my FoodX agent", "Relay what the person says to their own FoodX agent and return its answer, word for word. This is the main tool: use it for anything about the person's food, record, sales or plans. The agent keeps one conversation with the person across every app and chat. Returns { answer, cards?, approval_url?, conversation }. If approval_url is present, give the person that link: nothing is sent to anyone or agreed until they say yes there.",
+      { message: z.string().min(1).max(4000).describe("the person's words, as they said them") }, { openWorldHint: false },
+      async ({ message }) => {
+        const got = await door.talk(message), out = typeof got === "string" ? { answer: got } : got;
+        return { ...out, conversation: createHash("sha256").update(door.person.id).digest("hex").slice(0, 16) };
+      }, "foodblock:talk", { ui: { resourceUri: APPROVAL_CARD_URI }, "openai/outputTemplate": APPROVAL_CARD_URI });
+  },
+};
 
 const STYLE = `:root{color-scheme:light dark;--bg:#faf8f2;--fg:#17211b;--mut:#5d675f;--line:#d9d5c7;--ac:#14301f;--acfg:#fff;--bad:#a4281c}@media(prefers-color-scheme:dark){:root{--bg:#101611;--fg:#ecebe3;--mut:#9aa59c;--line:#2a352d;--ac:#a7c957;--acfg:#101611;--bad:#ff8b7e}}
 body{font:17px/1.5 system-ui,sans-serif;background:var(--bg);color:var(--fg);max-width:34rem;margin:0 auto;padding:2rem 1rem}h1,h2{font-weight:600;line-height:1.2}a{color:inherit}
@@ -49,7 +78,9 @@ function limiter(now) {
   };
 }
 
-const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").split(/;\s*/).filter(Boolean).map((c) => { const i = c.indexOf("="); return [c.slice(0, i), decodeURIComponent(c.slice(i + 1))]; }));
+// a cookie that does not decode is no cookie (a malformed one gave a 500 page with a stack trace: door/t11)
+const decoded = (v) => { try { return decodeURIComponent(v); } catch { return null; } };
+const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").split(/;\s*/).filter(Boolean).map((c) => { const i = c.indexOf("="); return [c.slice(0, i), decoded(c.slice(i + 1))]; }).filter(([, v]) => v !== null));
 
 /**
  * @param stateFile   durable JSON file (EFS)            master  >=32-byte secret that seals people's keys
@@ -60,31 +91,68 @@ const cookies = (req) => Object.fromEntries(String(req.headers.cookie || "").spl
  */
 // `chat` (optional) is the person's own autonomous system on every chat door, from the FoodOS host: { custody(personId) -> { keys, encryption, genesis } | null (people who first wrote from a chat
 // are held by FoodX as custodian, and sign in here with a code sent to a chat they use), signin: { start(phone), check(phone, code) -> personId | null }, talk(personId, words) -> the autonomous system's answer }.
-export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null, draftsFor = null, chat = null }) {
+export function createHub({ stateFile, master, publicUrl, provision, index = null, google = null, reviewer = null, openaiChallenge = null, now = () => Date.now(), fetch: request = globalThis.fetch, mcp, limits = {}, extend = null, draftsFor = null, chat = null, trustProxy = ({ 1: true, 0: false })[process.env.FOODBLOCK_TRUST_PROXY], reach }) {
+  // the owner states whether a proxy in front sets the caller's address: with neither stated, every caller would be counted as one (or a header
+  // a client writes believed), so the hub does not start (release 51)
+  if (typeof trustProxy !== "boolean") throw new Error("createHub: trustProxy is required: true if a proxy you run sets x-foodos-ip, false if callers reach this hub directly (or FOODBLOCK_TRUST_PROXY=1 or 0)");
   const state = durableState(stateFile), seal = sealer(master), allow = limiter(now);
   const secure = publicUrl.startsWith("https:");
   const resourceUrl = new URL("/mcp", publicUrl).href;
-  const pending = new Map(), codes = new Map(), googleStates = new Map(), doors = new Map();
+  const wrongCodes = new Map(), pending = new Map(), codes = new Map(), googleStates = new Map(), doors = new Map();
   const cap = { mcp: limits.mcp ?? 120, register: limits.register ?? 20, signin: limits.signin ?? 30, token: limits.token ?? 60 };
-  const ip = (req) => String(req.headers["x-foodos-ip"] || req.socket?.remoteAddress || "?");
+  // the address a limit counts by is the socket's, unless this hub runs behind a proxy it trusts to set it (trustProxy): a header a client
+  // writes is never believed by default (door/t10, agents/t12)
+  const ip = (req) => String((trustProxy && req.headers["x-foodos-ip"]) || req.socket?.remoteAddress || "?");
   const tooMany = (res, r, json = true) => { res.status(429).set("retry-after", String(r.retry)); if (json) res.json({ error: "rate_limited", error_description: `slow down; retry in ${r.retry}s` }); else res.type("html").send(page("Slow down", `<h2>Too many tries</h2><p>Please wait ${r.retry} seconds and try again.</p>`).html); };
-  const send = (res, p) => res.status(p.status).type("html").set("cache-control", "no-store").send(p.html);
+  // a page of this hub is never framed (release 49; no form-action here: it would block the consent form's redirect back to the client)
+  const send = (res, p) => res.status(p.status).type("html").set({ "cache-control": "no-store", "x-frame-options": "DENY", "content-security-policy": "frame-ancestors 'none'" }).send(p.html);
 
-  state.clients.prune((c) => !c.last_used && c.client_id_issued_at * 1000 < now() - 7 * 86400e3);
-  state.access.prune((t) => t.expiresAt * 1000 < now());
-  state.refresh.prune((t) => t.expires < now());
-  state.sessions.prune((s) => s.expires < now());
+  // registrations nobody used in a week, tokens and sessions past their time: dropped at the start, every minute after (the timer never keeps the
+  // process alive), and at the start of every registration, so a stream of registrations never outlives its week (release 21)
+  const sweep = () => {
+    state.clients.prune((c) => !c.last_used && c.client_id_issued_at * 1000 < now() - 7 * 86400e3);
+    state.access.prune((t) => t.expiresAt * 1000 < now());
+    state.refresh.prune((t) => t.expires < now());
+    state.sessions.prune((s) => s.expires < now());
+  };
+  sweep();
+  setInterval(sweep, 60_000).unref();
 
   // ---- people ----
   /** The account for a sign-in identity ("google:<sub>", "reviewer:<name>"): made on first sign-in, the same one every time after. */
+  // FoodX's own identity as a custodian: made once, kept sealed in the durable state. People's genesis names it, so a key FoodX holds always says so.
+  const operator = (() => {
+    const sealed = state.operator.get("me");
+    if (sealed) return seal.open(sealed);
+    const keys = fb.generateKeypair(), genesis = fb.identity.genesis(keys, { kind: "machine", at: new Date(now()).toISOString(), audience: IDENTITY_AUDIENCE });
+    const made = { keys, genesis, id: genesis.hash };
+    state.operator.set("me", seal.seal(made));
+    return made;
+  })();
   function accountFor(key, profile) {
     let account = state.accounts.get(key);
     if (!account) {
-      const person = newPerson();
+      const person = newPerson("person", { custodian: operator.id, reach });
       state.identities.set(person.id, seal.seal({ keys: person.keys, encryption: person.encryption, genesis: person.genesis, recovery: person.recovery }));
       account = state.accounts.set(key, { person: person.id, email: profile.email || null, name: profile.name || null, created: new Date(now()).toISOString() });
     }
     return account;
+  }
+  /**
+   * A person made before FoodX named itself as custodian: the next time her identity is opened, a key grant brings in a new key (held by FoodX) that
+   * names FoodX as custodian and rotates the old, unmarked one out (identity.md, Held keys). If the host cannot be reached it waits for the next opening.
+   */
+  async function holdAsCustodian(door, person, saved) {
+    if (saved.genesis.state?.custodian || saved.granted) return;
+    await door.sync();
+    const old = saved.keys, link = fb.identity.nextLinkFor(person.id, old.public_key_sign, door.node.all());
+    const fresh = fb.generateKeypair();
+    const grant = fb.identity.keyGrant(person.id, fresh.public_key_sign, { private_key: old.private_key, last: link.prev }, { custodian: operator.id, replaces: old.public_key_sign, countedTo: link.prev, at: new Date(now()).toISOString() });
+    const result = door.node.push(grant);
+    if (!result.taken?.some((t) => t.hash === grant.hash)) throw new Error("the node did not take the custody grant");
+    await door.flush();
+    person.keys = fresh; person.chain.push(grant);
+    state.identities.set(person.id, seal.seal({ ...saved, keys: fresh, granted: grant.hash }));
   }
   /** The person's door (their node, their drafts), built once and kept; it holds nothing of anyone else. */
   function doorFor(personId) {
@@ -100,6 +168,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
         if (index) door.index = index;
         if (chat?.talk) door.talk = (words) => chat.talk(personId, words);
         door.base = publicUrl.replace(/\/$/, "");
+        if (sealed) await holdAsCustodian(door, person, saved).catch(() => {});
         return door;
       })();
       held.catch(() => doors.delete(personId));
@@ -149,8 +218,12 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   async function signedIn(res, id, key, profile) {
     const account = accountFor(key, profile);
     startSession(res, account.person);
+    // her recovery key is shown once, until she says she has saved it (then FoodX deletes its copy)
+    if (recoveryOf(account.person)) return res.redirect(302, `/recovery?request=${encodeURIComponent(id)}`);
     afterSignIn(res, id);
   }
+  /** The recovery key FoodX still holds for a person, or null (none was made here, or she confirmed she saved it). */
+  const recoveryOf = (personId) => { const sealed = state.identities.get(personId); return (sealed && seal.open(sealed).recovery) || null; };
 
   // ---- the consent page ----
   const consentPage = (held, id, session) => {
@@ -160,6 +233,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
       <p>This assistant would reach <b>only your own FoodX node</b>. It cannot send or bind anything for you: what it drafts waits for your tap, and binding for you needs a separate grant you sign.</p>
       <form method="post" action="/oauth/consent"><input type="hidden" name="request" value="${esc(id)}"><input type="hidden" name="csrf" value="${esc(session.csrf)}">
       <label><input type="checkbox" checked disabled> Find and read</label>
+      <label><input type="checkbox" name="talk" value="1" ${params.scopes.includes("foodblock:talk") ? "checked" : ""}> Send what you say to your FoodX agent, which may draft things for you to approve</label>
       <label><input type="checkbox" name="draft" value="1" ${params.scopes.includes("foodblock:draft") ? "checked" : ""}> Draft asks and pair itself (you still tap to send)</label>
       <p class="mut">It will return to ${esc(new URL(params.redirectUri).host || new URL(params.redirectUri).protocol)}.</p>
       <button name="do" value="allow">Connect</button> <button class="quiet" name="do" value="deny">Cancel</button></form>`);
@@ -179,6 +253,7 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     clientsStore: {
       getClient: (id) => state.clients.get(id),
       registerClient: (meta) => {
+        sweep();
         if (state.clients.size() > (limits.maxClients ?? 20000)) throw new InvalidClientMetadataError("registrations are full for now; try again later");
         for (const uri of meta.redirect_uris || []) {
           const u = new URL(uri);
@@ -306,13 +381,20 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   app.post("/signin/code", guarded("code", limits.code ?? 8, 600e3, false), form, async (req, res) => {
     const id = String(req.body?.request || ""), held = pending.get(id);
     if (!chat?.signin || !held || held.expires < now()) return send(res, page("Expired", "<p>This request has expired. Start again.</p>", 400));
-    const phone = String(req.body.phone || "").slice(0, 32);
+    const phone = String(req.body.phone || "").slice(0, 32), digits = phone.replace(/\D/g, "");
+    // by the number as well as by the caller's address: many addresses against one number are one attack (release 51)
+    const byNumber = allow(`phone:${digits}`, limits.phone ?? 12, 600e3);
+    if (!byNumber.ok) return tooMany(res, byNumber, false);
     if (req.body.code) {   // the second step: the code she was sent
-      const person = await chat.signin.check(phone, String(req.body.code).slice(0, 12)).catch(() => null);
-      if (!person) return send(res, { ...codePage(id, phone, "That code did not match or has run out."), status: 403 });
+      // a code is burnt after a few wrong tries: no more checks against it until a new code is asked for
+      const wrong = wrongCodes.get(digits) || 0;
+      const person = wrong >= (limits.wrongCodes ?? 5) ? null : await chat.signin.check(phone, String(req.body.code).slice(0, 12)).catch(() => null);
+      if (!person) { if (wrongCodes.size > 10000) wrongCodes.clear(); wrongCodes.set(digits, wrong + 1); return send(res, { ...codePage(id, phone, "That code did not match or has run out."), status: 403 }); }
+      wrongCodes.delete(digits);
       startSession(res, person);
       return afterSignIn(res, id);
     }
+    wrongCodes.delete(digits);
     await chat.signin.start(phone).catch(() => {});
     send(res, codePage(id, phone));   // the same page whether or not that number has an account: nothing says who is here
   });
@@ -336,10 +418,33 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     pending.delete(id);
     const back = (q) => { const url = new URL(held.params.redirectUri); Object.entries(q).forEach(([k, v]) => v != null && url.searchParams.set(k, v)); res.redirect(302, url.href); };
     if (req.body.do !== "allow") return back({ error: "access_denied", state: held.params.state });
-    const scopes = held.params.scopes.filter((s) => s === "foodblock:read" || (s === "foodblock:draft" && req.body.draft === "1"));
+    const scopes = held.params.scopes.filter((s) => s === "foodblock:read" || (s === "foodblock:draft" && req.body.draft === "1") || (s === "foodblock:talk" && req.body.talk === "1"));
     const code = secret();
     codes.set(keyOf(code), { client: held.client.client_id, person: session.person, challenge: held.params.codeChallenge, redirectUri: held.params.redirectUri, scopes, resource: held.params.resource, expires: now() + CODE_MS });
     back({ code, state: held.params.state });
+  });
+
+  // Her recovery key: shown until she confirms she saved it; then the hub's copy is deleted.
+  const recoveryPage = (session, request) => {
+    const key = recoveryOf(session.person);
+    return key ? page("Your recovery key", `<h2>Save your recovery key</h2>
+      <p>This key lets you take your FoodX identity for yourself. Keep it somewhere safe, like a password manager. FoodX will not show it again once you say you have saved it, and cannot recover it for you.</p>
+      <pre class="card" style="white-space:pre-wrap;word-break:break-all;user-select:all">${esc(JSON.stringify(key))}</pre>
+      <form method="post" action="/recovery"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><input type="hidden" name="request" value="${esc(request || "")}">
+      <button name="do" value="saved">I have saved it</button> <button class="quiet" name="do" value="later">Show me later</button></form>`)
+      : page("Your recovery key", `<p>You have confirmed your recovery key. FoodX no longer holds a copy.</p><p><a href="/account">Back to your account</a></p>`);
+  };
+  app.get("/recovery", (req, res) => {
+    const session = sessionOf(req);
+    if (!session) return ask(res, { kind: "next", next: "/recovery" }, "Sign in to see your recovery key.");
+    send(res, recoveryPage(session, String(req.query.request || "")));
+  });
+  app.post("/recovery", form, (req, res) => {
+    const session = sessionOf(req);
+    if (!session || !same(req.body?.csrf, session.csrf)) return send(res, page("Sign in again", "<p>Your sign-in is missing or old.</p>", 403));
+    if (req.body.do === "saved") { const sealed = state.identities.get(session.person); if (sealed) { const { recovery, ...rest } = seal.open(sealed); state.identities.set(session.person, seal.seal(rest)); } }
+    const id = String(req.body.request || "");
+    res.redirect(303, pending.get(id) ? `/oauth/continue?request=${encodeURIComponent(id)}` : "/account");
   });
 
   // The account page: who is signed in, which assistants hold a token for them, revoke.
@@ -350,14 +455,21 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
     for (const [, t] of [...state.refresh.entries(), ...state.access.entries()]) if (t.person === session.person) mine.set(t.clientId, [...new Set([...(mine.get(t.clientId) || []), ...t.scopes])]);
     const who = accountOfPerson(session.person);
     send(res, page("Your FoodX connections", `<h2>Your connections</h2><p class="mut">Signed in as ${esc(who?.email || who?.name || "you")}. Your node is <code>${esc(session.person.slice(0, 12))}</code>.</p>
+      <div class="card"><b>Who holds your keys</b><p class="mut">${state.identities.get(session.person) ? "FoodX holds your signing key as your custodian, and your identity says so. With your recovery key you can rotate FoodX out with any FoodBlock tool (for example <code>fb</code>): your record and your keys are yours, and you can leave at any time." : "FoodX does not hold a signing key for you here."}</p>
+      ${recoveryOf(session.person) ? `<p><b>You have not confirmed your recovery key yet.</b> <a href="/recovery">Show it and save it</a>. After you confirm, FoodX deletes its copy.</p>` : state.identities.get(session.person) ? `<p class="mut">You confirmed you saved your recovery key; FoodX holds no copy.</p>` : ""}</div>
       ${[...mine].map(([cid, sc]) => `<form class="card" method="post" action="/account/revoke"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><input type="hidden" name="client" value="${esc(cid)}"><b>${esc(state.clients.get(cid)?.client_name || "An assistant")}</b><div class="mut">${esc(sc.map((s) => s.replace("foodblock:", "")).join(", "))}</div><button class="quiet">Disconnect</button></form>`).join("") || "<p>No assistants are connected.</p>"}
       <form method="post" action="/account/signout"><input type="hidden" name="csrf" value="${esc(session.csrf)}"><button class="quiet">Sign out</button></form>`));
   });
   app.post("/account/revoke", form, (req, res) => {
     const session = sessionOf(req);
     if (!session || !same(req.body?.csrf, session.csrf)) return send(res, page("Sign in again", "<p>Your sign-in is missing or old.</p>", 403));
-    dropTokens(session.person, String(req.body.client || ""));
-    res.redirect(303, "/account");
+    const client = String(req.body.client || "");
+    dropTokens(session.person, client);
+    // Disconnect ends the assistant's authority too: the person's door signs a stop of every grant they gave that client's assistants,
+    // and its sessions are forgotten, so an old session id brings no assistant back (door/M4, agents/t10)
+    mcp?.forget?.(client, session.person);
+    Promise.resolve(doorFor(session.person)).then(async (door) => { await door.sync(); door.disconnect(client); await door.flush(); }).catch(() => {})
+      .finally(() => res.redirect(303, "/account"));
   });
   app.post("/account/signout", form, (req, res) => {
     const session = sessionOf(req);
@@ -410,11 +522,13 @@ export function createHub({ stateFile, master, publicUrl, provision, index = nul
   app.all("/mcp", (req, res, next) => bearer(req, res, next), express.json({ limit: "4mb" }), async (req, res) => {
     const person = req.auth?.extra?.person, r = allow(`mcp:${person}`, cap.mcp, 60e3);
     if (!r.ok) return tooMany(res, r);
-    try { const door = await doorFor(person); await mcp(req, res, req.method === "POST" ? req.body : undefined, req.auth, door, person); }
+    try { const door = await doorFor(person); await mcp(req, res, req.method === "POST" ? req.body : undefined, req.auth, door, person, FOODX_BRAND); }
     catch (error) { if (!res.headersSent) res.status(500).json({ error: "server_error", error_description: "the door could not serve this request" }); else res.end(); }
   });
   if (extend) extend({ app, express, send, page, esc, sessionOf, ask, requestGrant, custodyOf, doorFor, accountOfPerson, form, allow, ip });
   app.use((req, res) => res.status(404).end());
+  // anything that fails says only that the door could not answer: no stack, no path (door/t11)
+  app.use((error, req, res, next) => { if (res.headersSent) return next(error); res.status(500).type("text/plain").send("the door could not answer"); });
 
   return { app, state, doorFor, provider, accountFor, doors, custodyOf, requestGrant, linkGoogle };
 }

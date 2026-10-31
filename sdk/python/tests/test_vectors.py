@@ -193,7 +193,7 @@ class Envelopes(unittest.TestCase):
         for v in V["envelopes"]:
             with self.subTest(v["name"]):
                 m = fb.unwrap(fb.open(v["envelope"], V["keys"][v["recipient"]]["x25519_private"]))
-                self.assertEqual([m["hash"], m["signature"], m["version"]], [v["opens_to"]["hash"], v["opens_to"]["signature"], v["opens_to"]["version"]])
+                self.assertEqual([m["hash"], m["signature"]], [v["opens_to"]["hash"], v["opens_to"]["signature"]])
 
     def test_sealed(self):
         for v in SEALED["cases"]:
@@ -213,15 +213,15 @@ class Identities(unittest.TestCase):
     def test_identities(self):
         for v in V["identities"]:
             held = blocks_of(v["blocks"])
-            arrivals = v.get("arrivals")
+            arrivals, unknown = v.get("arrivals"), v.get("unknown_arrival")
             names = {b["hash"]: b["name"] for b in v["blocks"]}
             for b in held:
                 if b["hash"] in v["signed_by_author"]:
                     with self.subTest(f"{v['name']}: {names[b['hash']]}"):
-                        self.assertEqual(fb.identity.signed_by_author(b, held, arrivals), v["signed_by_author"][b["hash"]])
+                        self.assertEqual(fb.identity.signed_by_author(b, held, arrivals, unknown), v["signed_by_author"][b["hash"]])
             if "keys" in v:
                 with self.subTest(f"{v['name']}: the keys that speak"):
-                    self.assertEqual(sorted(fb.identity.keys_of(v["id"], held, arrivals)), v["keys"])
+                    self.assertEqual(sorted(fb.identity.keys_of(v["id"], held, arrivals, unknown)), v["keys"])
             if "frozen" in v:
                 with self.subTest(f"{v['name']}: the frozen keys"):
                     self.assertEqual(sorted(k["key"] for k in fb.identity.key_timeline(v["id"], held) if k["frozen"]), v["frozen"])
@@ -229,7 +229,7 @@ class Identities(unittest.TestCase):
                 with self.subTest(f"{v['name']}: its operators"):
                     self.assertEqual(fb.grant.operators_of(v["id"], held), v["operators"])
             with self.subTest(f"{v['name']}: the identity fold"):
-                state = fb.identity_state(v["id"], held, arrivals)
+                state = fb.identity_state(v["id"], held, arrivals, unknown)
                 self.assertEqual(state["keys"], v["keys"])
                 if v.get("frozen"):
                     self.assertEqual(state["frozen"], v["frozen"])
@@ -334,7 +334,7 @@ class Refusals(unittest.TestCase):
                     self.assertEqual(codes_of(fb.valid(c["block"], held)), c["codes"])
                 elif c["by"] == "accept":
                     incoming = c.get("inline") or [pool[h] for h in c["incoming"]]
-                    got = fb.sync.accept(incoming, held)
+                    got = fb.sync.accept(incoming, held, False)
                     if c.get("equivocations"):
                         # The second of a pair is neither taken nor refused: it is listed in its pair.
                         self.assertEqual([b["hash"] for b in got["taken"]], c["taken"])
@@ -390,7 +390,7 @@ class Messages(unittest.TestCase):
         # Every key is always there; each refusal is { hash, code, detail } with a code from protocol.json; each pair sorted.
         P = MS["push_answer"]["message"]
         known = {code for group in fb.CODES.values() for code in group}
-        self.assertEqual(list(P), fb.PROTOCOL["messages"]["push_answer"])
+        self.assertEqual(list(P), [k for k in fb.PROTOCOL["messages"]["push_answer"] if k in P or k not in fb.PROTOCOL["messages"]["push_answer_optional"]])
         self.assertTrue(all(list(r) == fb.PROTOCOL["messages"]["refusal"] and r["code"] in known for r in P["refused"]))
         self.assertTrue(all(pair == sorted(pair) for pair in P["equivocations"]))
         self.assertEqual(fb.sync.push_answer(P, node=P["node"], private_key=V["keys"][MS["node_signer"]]["private_key"]), P)

@@ -2,7 +2,6 @@
 //! hand in its own bytes ([`Spec::from_json`]); the repository's spec/protocol.json is built in as the default
 //! ([`spec`]), so the crate works on its own. There is no alias table: year zero (spec/legacy/converter.md).
 use crate::error::{Error, Result};
-use crate::js::text;
 use crate::prelude::*;
 use crate::regex::Regex;
 
@@ -24,6 +23,11 @@ pub struct SuiteInfo {
     pub sign_key_re: Option<Regex>,
     pub encrypt_key_re: Option<Regex>,
     pub signature_re: Option<Regex>,
+    /// The grammar of a passkey's longer signature, in a suite that has one (`signature.passkey.grammar`).
+    pub passkey_re: Option<Regex>,
+    /// How many bytes a signing key's raw point is (`sign_key.raw_key_bytes`) and a signature (`signature.bytes`).
+    pub raw_key_bytes: usize,
+    pub signature_bytes: usize,
 }
 
 /// protocol.json, read once, with the lists every module asks for.
@@ -37,7 +41,6 @@ pub struct Spec {
     pub ref_keys: Vec<String>,
     pub statuses: Vec<String>,
     pub stops: Vec<String>,
-    pub grant_kinds: Vec<String>,
     pub powers: Vec<String>,
     pub genesis_required: Vec<String>,
     pub genesis_optional: Vec<String>,
@@ -54,6 +57,14 @@ pub struct Spec {
     pub after_heads: usize,
     /// The most decimal places an issuer's own currency unit may name (limits.decimals_max).
     pub decimals_max: usize,
+    /// The most digits a decimal string names (limits.decimal_digits): exact arithmetic on it stays cheap.
+    pub decimal_digits: usize,
+    /// How deep a block nests (limits.depth): the block is 1, each object or array inside one more.
+    pub depth: usize,
+    /// The most positions a bound's ring names (limits.bound_points): the overlap of two bounds costs the product of their edges, so it is capped.
+    pub bound_points: usize,
+    /// How deep a reader reads what carries blocks (limits.depth_read), so a block deeper than `depth` is refused, never unreadable.
+    pub depth_read: usize,
     pub suites: Vec<SuiteInfo>,
     pub suite_default: String,
     grammar: Vec<(String, Regex)>,
@@ -64,13 +75,25 @@ pub fn strings_pub(value: Option<&Value>) -> Vec<String> {
 }
 fn strings(value: Option<&Value>) -> Vec<String> {
     match value {
-        Some(Value::Array(items)) => items.iter().map(|v| text(Some(v))).collect(),
+        Some(Value::Array(items)) => items.iter().filter_map(Value::as_str).map(String::from).collect(),
         Some(Value::Object(map)) => map.keys().cloned().collect(),
         _ => Vec::new(),
     }
 }
 
+/// The field names that protocol.json `field_shape` gives one shape (`time`, `date`, `duration`, `shape`), in the table's order.
+fn fields_of(protocol: &Value, shape: &str) -> Vec<String> {
+    match protocol.get("field_shape") {
+        Some(Value::Object(map)) => map.iter().filter(|(_, s)| s.as_str() == Some(shape)).map(|(k, _)| k.clone()).collect(),
+        _ => Vec::new(),
+    }
+}
+
 impl Spec {
+    /// The names a `field_shape` gives one shape: `time`, `date`, `duration` or `shape` (a field that holds exactly one keyed shape).
+    pub fn fields_of(&self, shape: &str) -> Vec<String> {
+        fields_of(&self.protocol, shape)
+    }
     /// Read protocol.json from bytes.
     pub fn from_json(protocol: &[u8]) -> Result<Spec> {
         let protocol: Value = serde_json::from_slice(protocol)?;
@@ -83,8 +106,8 @@ impl Spec {
         if let Some(Value::Object(map)) = p.get("grammar") {
             for (name, pattern) in map {
                 if let Some(pattern) = pattern.as_str() {
-                    // `*_note` entries are prose, not patterns.
-                    if name.ends_with("_note") {
+                    // `*_about` entries are prose, not patterns.
+                    if name.ends_with("_about") {
                         continue;
                     }
                     grammar.push((name.clone(), Regex::new(pattern)?));
@@ -120,6 +143,9 @@ impl Spec {
                     sign_key_re: Regex::new(&sk).ok(),
                     encrypt_key_re: Regex::new(&ek).ok(),
                     signature_re: Regex::new(&sg).ok(),
+                    passkey_re: crate::js::get(row, "signature.passkey.grammar").and_then(Value::as_str).and_then(|g| Regex::new(g).ok()),
+                    raw_key_bytes: crate::js::get(row, "sign_key.raw_key_bytes").and_then(Value::as_u64).unwrap_or(0) as usize,
+                    signature_bytes: crate::js::get(row, "signature.bytes").and_then(Value::as_u64).unwrap_or(0) as usize,
                     name: name.clone(),
                     hash: hash.to_string(),
                     sign: sign.to_string(),
@@ -143,26 +169,31 @@ impl Spec {
             ref_keys,
             statuses: list("statuses"),
             stops: list("stop"),
-            grant_kinds: list("grant_kinds"),
             powers: list("powers"),
             genesis_required: list("genesis.required"),
-            // A genesis may carry any key field but `roles` (a circle's), beyond what it requires.
+            // A genesis may carry any key field but `roles` (a circle's), and the recovery fields, beyond what it requires.
             genesis_optional: list("key_fields.fields")
                 .into_iter()
+                .chain(list("genesis.recovery"))
+                .chain(list("genesis.private"))
                 .filter(|f| f != "roles" && !list("genesis.required").contains(f))
                 .collect(),
             common: list("common"),
             terms: list("terms"),
             line: list("line"),
             scope: list("scope"),
-            time_fields: list("time_fields"),
-            date_fields: list("date_fields"),
+            time_fields: fields_of(p, "time"),
+            date_fields: fields_of(p, "date"),
             every: list("fields.every"),
             int_min: number("integers.min").unwrap_or(-9007199254740991.0),
             int_max: number("integers.max").unwrap_or(9007199254740991.0),
             block_bytes: number("limits.block_bytes").unwrap_or(65536.0) as usize,
             after_heads: number("limits.after_heads").unwrap_or(16.0) as usize,
             decimals_max: number("limits.decimals_max").unwrap_or(15.0) as usize,
+            decimal_digits: number("limits.decimal_digits").unwrap_or(40.0) as usize,
+            depth: number("limits.depth").unwrap_or(32.0) as usize,
+            bound_points: number("limits.bound_points").unwrap_or(256.0) as usize,
+            depth_read: number("limits.depth_read").unwrap_or(128.0) as usize,
             suites,
             suite_default,
             grammar,
@@ -176,6 +207,10 @@ impl Spec {
     }
     /// Whether text matches a grammar rule.
     pub fn is(&self, name: &str, text: &str) -> bool {
+        // a decimal names at most limits.decimal_digits digits (core.md section 3)
+        if name == "decimal" && text.bytes().filter(u8::is_ascii_digit).count() > self.decimal_digits {
+            return false;
+        }
         self.re(name).is_some_and(|r| r.test(text))
     }
     /// A list of protocol.json at a path (`shapes.amount`, `messages.pull`...).
@@ -227,6 +262,17 @@ pub fn spec() -> &'static Spec {
     DEFAULT.get_or_init(|| {
         Box::new(Spec::from_json(PROTOCOL_JSON).expect("the built-in protocol.json reads"))
     })
+}
+
+/// The suite a block or a call means when it names none (protocol.json `suites.default`): one name, read from the spec, never a
+/// second literal beside it.
+pub fn default_suite() -> &'static str {
+    spec().suite_default.as_str()
+}
+
+/// A suite name as a call gives it: the empty name is the default suite's (one place resolves it).
+pub fn suite_or_default(name: &str) -> &str {
+    if name.is_empty() { default_suite() } else { name }
 }
 
 impl From<&str> for Error {

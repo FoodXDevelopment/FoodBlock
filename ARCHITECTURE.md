@@ -1,7 +1,7 @@
 # Architecture
 
 How the parts of this repository fit together. The protocol itself is [`spec/protocol.md`](spec/protocol.md)
-(FoodBlock 1.6); this page only says where each rule lives in code.
+(FoodBlock 1.7); this page only says where each rule lives in code.
 
 ## One rule, one place
 
@@ -43,21 +43,21 @@ their copy byte for byte too, so a copy can never drift.
 
 The node, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev/foodblock":
 "file:../sdk/javascript"`), so `npm install` in each folder links it. Every version they report is the SDK's
-`VERSION`, read from `protocol.json`; their package versions start with it (`1.6.0`), and their tests check that.
+`VERSION`, read from `protocol.json`; their package versions start with it (`1.7.0`), and their tests check that.
 
 ## A block's life
 
 1. **Written.** The author's device composes it (`at`, `author`, `seq` and `prev` from their key's chain, what
    they had seen, who may see it), checks it, and signs it: `write` does all four. A private audience is written as
    salted commitments; each recipient's salt travels only to them.
-2. **Sent.** A public block travels as `{ version, block, signature }` (`wrap`). A private one travels as a sealed
+2. **Sent.** A public block travels as `{ block, signature }` (`wrap`). A private one travels as a sealed
    copy: its public header `{ author, seq, prev, hash }`, signed, beside an envelope only its audience can open
    (`sealCopy`). Email, a QR code or a link can carry either (`spec/transport.md`).
 3. **Taken in.** A node recomputes the hash, never trusting a sent one (`unwrap`). It keeps a block only if it is
    `valid`: a key that still speaks for its author signed it, it passes the checks of core.md, it fits its key's
    chain, and the owner's admission rule lets it in. A block whose previous block is missing waits, then expires.
-   Two blocks of one key naming one `prev` are kept and served together, as proof of a lie.
-4. **Kept.** Exactly as it arrived, numbered on arrival (`sql/schema.sql`). The node never updates or deletes a block.
+   Two blocks of one key naming one `prev` are kept and served together, as proof of a fork.
+4. **Kept.** Exactly as it arrived, numbered on arrival (`sql/schema.sql`). This node is append-only by its own choice: it never updates or deletes a block, so it cannot promise erasure (profiles/erasure.md). Another node may.
 5. **Read.** As it was signed. Old data from before 1.6 is converted once into fresh blocks that name the old hash in
    `derives_from`; nothing reads an older shape.
 
@@ -73,13 +73,7 @@ or a machine, and signs every answer with a device key of theirs, brought in by 
 | `GET /challenge` | | `{ challenge }`: issued once, used once |
 | `GET /.well-known/foodblock` | | `{ protocol, version, node, holds, speaks_for, admission, endpoints: { pull, push, challenge } }` |
 
-A pull's filter (`type`, `kind`, `author`, `hash`, `record`, `marks`, `refs`) matches exactly. An unsigned pull gets
-public blocks and the public headers of sealed ones; a signed pull also gets the copies sealed to its signer. A
-counter must be above the highest the node has seen from that signer; a challenge is answered once.
-
-The owner's admission rule is a block they publish and push to the node, named by `ADMISSION`: an `observe` of kind
-admission whose schema declares `parties` (ids always admitted) and `per_stranger` (blocks a day from anyone else).
-Blocks still waiting count against it.
+A pull's filter, the signed pull, the counter and the challenge, and the owner's admission rule are in `spec/modules/nodes.md`. The admission rule is a block the owner publishes and pushes to the node, named by `ADMISSION`. The limit of zero it applies when the rule names no `per_stranger` is this node's own choice (`software_chose` in its admission document), not the protocol's.
 
 The local announcement (`{ protocol, version, node, endpoints }`) is built from the discovery document; any local
 transport can carry it. This node prints it on start; it does not run an mDNS responder itself.
@@ -87,4 +81,4 @@ transport can carry it. This node prints it on start; it does not run an mDNS re
 ## What stays off the chain
 
 Drafts, goals, budgets, rankings and private rules stay on the person's own node (spec §12). Ranking happens only in
-the reader's node; a pull returns every match, so nobody can be paid to rank.
+the reader's node; a pull returns every match, unranked, so the protocol holds no ranking anyone could pay for.

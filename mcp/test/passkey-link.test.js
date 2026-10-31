@@ -40,7 +40,7 @@ describe('linking Google to a passkey person', { skip: !have && 'no foodx checko
       res.writeHead(200, { 'content-type': 'application/json' }).end(JSON.stringify({ id_token: `x.${b64(Buffer.from(JSON.stringify(claims)))}.y` }))
     }); after(() => fake.s.close())
     const front = await listen((req, res) => hub.app(req, res)); after(() => { front.s.close(); front.s.closeAllConnections?.() })
-    const hub = createHub({ stateFile: join(dir, 's.json'), master: randomBytes(40).toString('hex'), publicUrl: front.url, provision: async () => ({ base: '', token: '' }), mcp: mcpEndpoint(),
+    const hub = createHub({ reach: 'P30D', trustProxy: false, stateFile: join(dir, 's.json'), master: randomBytes(40).toString('hex'), publicUrl: front.url, provision: async () => ({ base: '', token: '' }), mcp: mcpEndpoint(),
       google: { clientId: 'gid', clientSecret: 'gs', redirectUri: `${front.url}/oauth/google/callback`, authUrl: `${fake.url}/auth`, tokenUrl: `${fake.url}/token` } })
     const run = async (url) => { let cookie = ''; let r = await fetch(url, { redirect: 'manual' }); for (let n = 0; n < 5 && r.status >= 300 && r.status < 400; n++) { for (const c of r.headers.getSetCookie?.() || []) cookie = c.split(';')[0]; r = await fetch(new URL(r.headers.get('location'), url), { redirect: 'manual', headers: { cookie } }) } return r }
 

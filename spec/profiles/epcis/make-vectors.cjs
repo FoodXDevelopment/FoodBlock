@@ -1,5 +1,5 @@
 // Makes spec/profiles/epcis/vectors.json: `node spec/profiles/epcis/make-vectors.cjs`.
-// A small leafy-greens and seafood supply chain, written as EPCIS 2.0 events, each turned into signed FoodBlock 1.6 blocks
+// A small leafy-greens and seafood supply chain, written as EPCIS 2.0 events, each turned into signed FoodBlock blocks
 // by the reference adapter (adapter.cjs), then turned back into the same event. Every expectation is checked here against
 // the SDK (the Rust core) before the file is written; run.cjs checks the file again. Test keys come from fixed seeds.
 const fs = require('fs')
@@ -23,7 +23,6 @@ const PEOPLE = {
   haulltd: { name: 'Haul Ltd', pgln: 'urn:epc:id:pgln:0614195.00000' },
   seabird: { name: 'FV Seabird', pgln: 'urn:epc:id:pgln:0614170.00000' },
   harbourfish: { name: 'Harbour Fish Landing', pgln: 'urn:epc:id:pgln:0614175.00000' },
-  profile: { name: 'the EPCIS profile', pgln: 'urn:epc:id:pgln:0000000.00000' },
   regulator: { name: 'a food safety regulator', pgln: 'urn:epc:id:pgln:0000001.00000' }
 }
 const keys = {}
@@ -82,20 +81,24 @@ const PRODUCTS = [
 const kind = {}
 for (const [key, name, lgtin, who] of PRODUCTS) kind[key] = say(`product kind: ${key}`, who, 'thing', { kind: 'product', name, marks: [{ scheme: 'gtin', value: A.gtinOf(lgtin) }] })
 const tote = say('container: a tote', 'cornermarket', 'thing', { kind: 'container', name: 'Produce tote', marks: [{ scheme: 'sscc', value: 'urn:epc:id:sscc:0614190.1000000017' }] }, { place: site.backroom.hash })
-// The profile's schema for the transfers (closed blocks need their fields declared, core.md section 7).
-const schema = say('schema: EPCIS transfers', 'profile', 'thing', {
-  kind: 'schema', name: 'EPCIS transfer fields', target: 'transfer',
-  fields: { biz_step: 'text', disposition: 'text', persistent_disposition: 'object', tz: 'text', action: 'text', epcis_id: 'text', biz_transactions: 'list', reference_document: 'object' }
-})
+// Each covered person that writes transfers publishes and signs its own schema for them (closed blocks need their fields declared,
+// core.md section 7). No one is the profile's author: a reader trusts whichever author it picks.
+const schemas = {}
+for (const who of ['fieldhouse', 'greenacres', 'metrofresh', 'cornermarket', 'harbourfish']) {
+  schemas[who] = say(`schema: EPCIS transfers (${who})`, who, 'thing', {
+    kind: 'schema', name: 'EPCIS transfer fields', target: 'transfer',
+    fields: { biz_step: 'text', disposition: 'text', persistent_disposition: 'object', tz: 'text', action: 'text', epcis_id: 'text', biz_transactions: 'list', reference_document: 'object' }
+  })
+}
 
 // ---- events ----
-const U = (who) => ({ ctx: { held, parties, me: ids[who], schema: schema.hash } })
+const U = (who) => ({ ctx: { held, parties, me: ids[who], schema: schemas[who].hash } })
 const events = []
 const lgtin = (company, item, lot) => `urn:epc:class:lgtin:${company}.${item}.${lot}`
 const bol = (n) => [{ type: `${P}btt:bol`, bizTransaction: `urn:epc:id:gdti:0614141.00007.BOL-${n}` }]
 function step(name, who, event, { roundtrip = true, extra = [], note } = {}) {
   const before = held.length
-  const drafts = A.fromEvent(event, { held, parties, schema: schema.hash })
+  const drafts = A.fromEvent(event, { held, parties, schema: schemas[who]?.hash })
   const made = {}
   const written = []
   for (const d of drafts) {
@@ -179,7 +182,7 @@ step('aggregation: the kits out of the tote', 'cornermarket', base('AggregationE
 // 15. Receiving from a source the rule exempts, with no code: the receiver assigns one
 const L4c = lgtin('0614180', '100059', 'CM-RX-0001')
 step('receiving from an exempt source: the receiver assigns the code', 'cornermarket', base('ObjectEvent', '2026-10-14T09:00:00.000Z', '-07:00', {
-  action: 'ADD', bizStep: A.STEP.receiving, 'fb:cte': 'receive', disposition: `${P}disp:in_progress`, ...loc('store'), quantityList: [{ epcClass: L4c, quantity: 90, uom: 'LBR' }], ilmd: { 'fb:commodity': 'Roma tomatoes' }
+  action: 'ADD', bizStep: A.STEP.receiving, 'fb:cte': 'first_receive', disposition: `${P}disp:in_progress`, ...loc('store'), quantityList: [{ epcClass: L4c, quantity: 90, uom: 'LBR' }], ilmd: { 'fb:commodity': 'Roma tomatoes' }
 }))
 
 // 16-18. Seafood: the catch, first land-based receiving, then a sale by invoice (a transaction)
@@ -240,8 +243,10 @@ assert.ok(fwd.lots.includes(L3.hash) && !fwd.lots.includes(L2.hash))
 trace('forward from the Green Acres lot', 'GA-285-B', 'forward')
 trace('backward from the fillets', 'HF-285-1', 'backward', 'The catch, the landing and the sale.')
 trace('forward from the tomatoes', 'CM-RX-0001', 'forward', 'A lot received from an exempt source: one row, the receiver\'s own.')
-// A recall: the regulator may ask for blocks whose marks match, and the holder answers inside a day.
-const recall = say('recall grant: Metro Fresh to the regulator', 'metrofresh', 'grant', { kind: 'recall', answer_within: 'PT24H', marks: [{ scheme: 'tlc', value: 'F-285-A' }, { scheme: 'tlc', value: 'DC-SK-1001' }] }, { to: ids.regulator })
+// A recall: the regulator may ask for blocks whose marks match, and the holder answers inside a day. A recall is an ordinary grant
+// (profile section 7): scope.acts pull and scope.until; the answer time and the marks it covers are fields of a schema the holder names.
+const recallFields = say('schema: recall answers (metrofresh)', 'metrofresh', 'thing', { kind: 'schema', name: 'recall answer time and marks', target: 'grant', fields: { answer_within: 'text', marks: 'list' } })
+const recall = say('recall grant: Metro Fresh to the regulator', 'metrofresh', 'grant', { kind: 'recall', scope: { acts: ['pull'], until: '2027-10-14T00:00:00.000Z' }, answer_within: 'PT24H', marks: [{ scheme: 'tlc', value: 'F-285-A' }, { scheme: 'tlc', value: 'DC-SK-1001' }] }, { to: ids.regulator, schema: recallFields.hash })
 const filter = { marks: { scheme: 'tlc', value: 'F-285-A' } }
 const pulls = [
   { name: 'a pull by lot code selects the lot', filter, block: L1, expect: true },
@@ -266,8 +271,8 @@ assert.deepEqual(negatives[0].codes, ['undeclared_field'])
 for (let i = 0; i < held.length; i++) assert.deepEqual(fb.refusals(held[i].type, held[i].state, held[i].refs, held.slice(0, i)).map((x) => x.code), [], `${blocks[i].name}: the write check`)
 
 fs.writeFileSync(FILE, JSON.stringify({
-  $comment: 'FoodBlock 1.6 profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event\'s own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event\'s block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator\'s grant and the pulls it allows. Test keys: never use them for anything real.',
+  $comment: 'FoodBlock profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event\'s own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event\'s block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator\'s grant and the pulls it allows. Test keys: never use them for anything real.',
   context: 'https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld', keys, parties: Object.fromEntries(Object.entries(PEOPLE).map(([who, p]) => [p.pgln, { signer: who, id: ids[who] }])),
-  schema: schema.hash, blocks, events, folds, negatives, traces, recall: { grant: recall.hash, filter, pulls: pulls.map((p) => ({ name: p.name, block: p.block.hash, expect: p.expect })), answer_within: 'PT24H' }
+  schemas: Object.fromEntries(Object.entries(schemas).map(([who, b]) => [who, b.hash])), blocks, events, folds, negatives, traces, recall: { grant: recall.hash, filter, pulls: pulls.map((p) => ({ name: p.name, block: p.block.hash, expect: p.expect })), answer_within: 'PT24H' }
 }, null, 1) + '\n')
 console.log(`${blocks.length} blocks, ${events.length} events, ${folds.length} folds, ${traces.length} traces -> ${path.relative(process.cwd(), FILE)}`)

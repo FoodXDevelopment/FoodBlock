@@ -60,7 +60,8 @@ pub fn proof(chunks: &[Vec<u8>], index: usize) -> Option<Vec<String>> {
 }
 
 /// Whether `proof` shows that `chunk` is chunk number `index` of `count` chunks under `root`.
-pub fn verify(root_hex: &str, chunk: &[u8], index: usize, count: usize, proof: &[String]) -> bool {
+/// `index` and `count` are 64-bit numbers on every build, so a 32-bit reader (WebAssembly) reads them as a 64-bit one does.
+pub fn verify(root_hex: &str, chunk: &[u8], index: u64, count: u64, proof: &[String]) -> bool {
     if count == 0 || index >= count {
         return false;
     }
@@ -86,7 +87,7 @@ pub fn verify(root_hex: &str, chunk: &[u8], index: usize, count: usize, proof: &
 /// The check a reader makes of a block that names a Merkle root: the block's `state.marks` holds exactly one mark
 /// `{ scheme: "merkle", value: <root> }` and its `state.chunks` is the signed count (an integer, at least 1). `proof` shows that `chunk`
 /// is chunk number `index` of that many chunks under that root. The count is never an argument: the one who offers the chunk cannot choose it.
-pub fn verify_block(block: &Value, chunk: &[u8], index: usize, proof: &[String]) -> bool {
+pub fn verify_block(block: &Value, chunk: &[u8], index: u64, proof: &[String]) -> bool {
     let Some(state) = block.get("state") else { return false };
     let roots: Vec<&Value> = state
         .get("marks")
@@ -99,5 +100,5 @@ pub fn verify_block(block: &Value, chunk: &[u8], index: usize, proof: &[String])
     ) else {
         return false;
     };
-    verify(root, chunk, index, count as usize, proof)
+    verify(root, chunk, index, count, proof)
 }

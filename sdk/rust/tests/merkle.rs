@@ -12,8 +12,8 @@ fn every_chunk_of_every_size_proves_itself() {
         let r = root(&c).unwrap();
         for i in 0..n {
             let p = proof(&c, i).unwrap();
-            assert!(verify(&r, &c[i], i, n, &p), "chunk {i} of {n}");
-            assert!(!verify(&r, b"other", i, n, &p), "a changed chunk {i} of {n}");
+            assert!(verify(&r, &c[i], i as u64, n as u64, &p), "chunk {i} of {n}");
+            assert!(!verify(&r, b"other", i as u64, n as u64, &p), "a changed chunk {i} of {n}");
         }
     }
 }

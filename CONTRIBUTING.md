@@ -27,7 +27,7 @@ Changes come as pull requests on GitHub. How a change is proposed and how versio
 - **The spec governs.** `spec/core.md` and `spec/modules/` are normative. A code change that disagrees with them is a bug in one or the other: change the spec first, in the same pull request.
 - **One rule, stated once.** A rule lives in one place. Closed lists live in `spec/protocol.json`, which code loads.
 - **The SDK decides.** The server, MCP server and CLI ask the SDK to check a block; they never check it themselves.
-- **Strict.** Write and read only 1.6 shapes. Never repair a block: refuse it.
+- **Strict.** Write and read only the current version's shapes. Never repair a block: refuse it.
 - **Plain writing.** Short sentences, simple words, no jargon without a one-line explanation.
 
-By contributing you agree that your contribution is released under the MIT License.
+By contributing you dedicate your contribution to the public domain under CC0 1.0, as the rest of FoodBlock is.

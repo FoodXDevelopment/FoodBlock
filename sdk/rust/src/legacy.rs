@@ -10,7 +10,59 @@
 use crate::block::{create_in, hash_hex};
 use crate::canonical::{js_number, nfc};
 use crate::error::Result;
-use crate::js::{get, hash_of, index_of, list, rf, rs, ss, st, strict_eq, text, truthy, type_of};
+use crate::js::{get, hash_of, index_of, list, rf, rs, ss, st, type_of};
+
+// Old data was written by JavaScript and is read once, untyped, by JavaScript's rules: what counts as present, how a value turns into
+// text, how two values compare. Only the converter reads that way; the protocol's own readings are typed (js.rs).
+fn truthy(value: Option<&Value>) -> bool {
+    match value {
+        None | Some(Value::Null) => false,
+        Some(Value::Bool(b)) => *b,
+        Some(Value::Number(n)) => n.as_f64().map(|f| f != 0.0 && !f.is_nan()).unwrap_or(false),
+        Some(Value::String(s)) => !s.is_empty(),
+        Some(_) => true,
+    }
+}
+fn strict_eq(a: Option<&Value>, b: Option<&Value>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(Value::Null), Some(Value::Null)) => true,
+        (Some(Value::Bool(x)), Some(Value::Bool(y))) => x == y,
+        (Some(Value::Number(x)), Some(Value::Number(y))) => x.as_f64() == y.as_f64(),
+        (Some(Value::String(x)), Some(Value::String(y))) => x == y,
+        _ => false,
+    }
+}
+fn number_of(value: Option<&Value>) -> f64 {
+    match value {
+        None => f64::NAN,
+        Some(Value::Null) => 0.0,
+        Some(Value::Bool(b)) => *b as u8 as f64,
+        Some(Value::Number(n)) => n.as_f64().unwrap_or(f64::NAN),
+        Some(Value::String(s)) => {
+            let t = s.trim();
+            if t.is_empty() {
+                0.0
+            } else if t.bytes().any(|b| b.is_ascii_alphabetic() && b != b'e' && b != b'E') {
+                f64::NAN
+            } else {
+                t.parse::<f64>().unwrap_or(f64::NAN)
+            }
+        }
+        Some(_) => f64::NAN,
+    }
+}
+fn text(value: Option<&Value>) -> String {
+    match value {
+        None => "undefined".to_string(),
+        Some(Value::Null) => "null".to_string(),
+        Some(Value::Bool(b)) => b.to_string(),
+        Some(Value::Number(n)) => crate::canonical::js_number(n.as_f64().unwrap_or(0.0)),
+        Some(Value::String(s)) => s.clone(),
+        Some(Value::Array(items)) => items.iter().map(|v| if v.is_null() { String::new() } else { text(Some(v)) }).collect::<Vec<_>>().join(","),
+        Some(Value::Object(_)) => "[object Object]".to_string(),
+    }
+}
 use crate::prelude::*;
 use crate::sign::{sign_in, Keypair};
 
@@ -369,29 +421,14 @@ fn walk(key: &str, v: &mut Value, times: &[String], dates: &[String]) {
     }
 }
 
-/// Times and dates to the 1.6 form (the fields are protocol.json's `time_fields` and `date_fields`), a confidence to a
-/// decimal string from 0 to 1. A confidence that is not a number from 0 to 1 (a label such as "verified") has no 1.6
-/// home: it is kept as `was_confidence`.
+/// Times and dates to the 1.6 form (the fields `field_shape` marks time and date). Nothing else is given a
+/// meaning: an old `confidence` is kept like any undeclared legacy field (converter.md, Nothing is undeclared; decision H4),
+/// never as a core-shaped number, for 1.7 has no `confidence` and a one-off has no probability.
 fn normalise(state: &mut Map<String, Value>) {
     let spec = crate::spec();
-    let (times, dates) = (spec.list("time_fields"), spec.list("date_fields"));
+    let (times, dates) = (spec.fields_of("time"), spec.fields_of("date"));
     for (k, v) in state.iter_mut() {
         walk(k, v, &times, &dates);
-    }
-    if let Some(c) = state.shift_remove("confidence") {
-        let x = match &c {
-            Value::Number(n) => n.as_f64(),
-            Value::String(s) => s.trim().parse::<f64>().ok(),
-            _ => None,
-        };
-        match x {
-            Some(x) if (0.0..=1.0).contains(&x) => {
-                state.insert("confidence".into(), Value::String(js_number(x)));
-            }
-            _ => {
-                state.insert("was_confidence".into(), c);
-            }
-        }
     }
 }
 
@@ -404,7 +441,8 @@ fn suite_for(alg: &str) -> Option<&'static str> {
     }
 }
 
-/// The final steps on a block already read through the table: refs.kind to refs.of, state.sequencer to state.orderer,
+/// The final steps on a block already read through the table: refs.kind to refs.of, state.sequencer dropped (1.7 has no
+/// orderer field: who may allocate is handed over by a grant),
 /// the alg fields to suite and recovery_suite, dkim and manifest dropped, then the clean-up that strict writing needs.
 pub fn reshape(read: &Value) -> Value {
     let mut state = read.get("state").and_then(Value::as_object).cloned().unwrap_or_default();
@@ -412,9 +450,7 @@ pub fn reshape(read: &Value) -> Value {
     if let Some(v) = refs.shift_remove("kind") {
         refs.entry("of".to_string()).or_insert(v);
     }
-    if let Some(v) = state.shift_remove("sequencer") {
-        state.entry("orderer".to_string()).or_insert(v);
-    }
+    state.shift_remove("sequencer");
     if let Some(a) = state.shift_remove("alg_sign") {
         if let Some(s) = suite_for(a.as_str().unwrap_or("")) {
             state.insert("suite".into(), json!(s));
@@ -461,10 +497,12 @@ pub struct ConvertOptions {
     /// Schemas already published (things of kind schema, with their `hash`): one that declares what a block needs is
     /// named in the block's `refs.schema` instead of writing a new one.
     pub schemas: Vec<Value>,
-    /// The key of a custodian that signs for every identity that has no key of its own (`{ public_key_sign,
+    /// The key of a custodian that signs for the identities named in `custodian_for` that have no key of its own (`{ public_key_sign,
     /// private_key, suite?, custodian, channel? }`, `custodian` being the custodian's own identity). Without it such an
     /// identity's blocks are reported in `skipped`.
     pub custodian_key: Option<Value>,
+    /// The old identities the custodian's key signs for (`custodian_key` applies to these and to no other).
+    pub custodian_for: Vec<String>,
 }
 
 /// What a run made.
@@ -559,6 +597,7 @@ fn findings_of(ty: &str, state: &Map<String, Value>, refs: &Map<String, Value>, 
 /// `observe` of kind `legacy` (`state.was` names the old type and kind) that carries everything it held.
 fn prepare(read: &Value, circle_roles: &Map<String, Value>, old_id: &str) -> Prepared {
     let mut shaped = reshape(read);
+    let mut circle_skip: Option<String> = None;
     if type_of(&shaped) == "actor" && ss(&shaped, "kind") == Some("circle") {
         let named: Vec<String> = circle_roles
             .get(old_id)
@@ -566,12 +605,22 @@ fn prepare(read: &Value, circle_roles: &Map<String, Value>, old_id: &str) -> Pre
             .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
             .unwrap_or_default();
         let signers: Vec<String> = list(st(read, "signers")).iter().map(|s| s.to_string()).collect();
-        let mut roles = vec![json!({ "name": "admin", "powers": ["sign", "admit", "remove"] })];
+        // Only the roles the old circle's own grants and signers showed. An old `admin` keeps its three powers.
+        let mut roles: Vec<Value> = Vec::new();
         for r in named.iter().chain(signers.iter()) {
-            if r != "admin" && !roles.iter().any(|x| x["name"] == json!(r)) {
-                let powers: Vec<&str> = if signers.contains(r) { vec!["sign"] } else { vec![] };
+            if !roles.iter().any(|x| x["name"] == json!(r)) {
+                let powers: Vec<&str> = if r == "admin" {
+                    vec!["sign", "admit", "remove"]
+                } else if signers.contains(r) {
+                    vec!["sign"]
+                } else {
+                    vec![]
+                };
                 roles.push(json!({ "name": r, "powers": powers }));
             }
+        }
+        if roles.is_empty() {
+            circle_skip = Some("the old circle showed no role: none is made up for it".to_string());
         }
         shaped["state"]["roles"] = json!(roles);
     }
@@ -604,8 +653,8 @@ fn prepare(read: &Value, circle_roles: &Map<String, Value>, old_id: &str) -> Pre
         (fields, roles)
     };
     let (mut fields, mut roles) = extras(&ty, &state, &refs);
-    let mut skip = None;
-    if !findings_of(&ty, &state, &refs, &fields, &roles).is_empty() {
+    let mut skip = circle_skip;
+    if skip.is_none() && !findings_of(&ty, &state, &refs, &fields, &roles).is_empty() {
         // No 1.6 shape of this type holds it: it is kept whole as an observe of kind `legacy`.
         state.insert("was".into(), json!(target));
         state.insert("kind".into(), json!("legacy"));
@@ -645,6 +694,17 @@ struct Signer {
     channel: Option<String>,
 }
 
+/// Why a held key cannot be used: a custodian signs only under a channel that was named (options or the key).
+fn channel_refused(options: &ConvertOptions, key: &Value) -> Option<String> {
+    let custodian = key.get("custodian").is_some_and(|c| !c.is_null());
+    let named = key.get("channel").and_then(Value::as_str).is_some_and(|c| !c.is_empty());
+    if custodian && options.channel.is_empty() && !named {
+        Some("a custodian holds its key and no channel was named".to_string())
+    } else {
+        None
+    }
+}
+
 fn signer_of(options: &ConvertOptions, key: &Value) -> Signer {
     let suite = text(key.get("suite")).replace("undefined", "");
     let suite = if suite.is_empty() { "std".to_string() } else { suite };
@@ -652,7 +712,7 @@ fn signer_of(options: &ConvertOptions, key: &Value) -> Signer {
     let channel = if !options.channel.is_empty() {
         Some(options.channel.clone())
     } else if custodian {
-        Some(key.get("channel").and_then(Value::as_str).filter(|c| !c.is_empty()).unwrap_or("import").to_string())
+        Some(key.get("channel").and_then(Value::as_str).unwrap_or_default().to_string())
     } else {
         None
     };
@@ -678,7 +738,13 @@ fn emit(
     refs.insert("prev".into(), json!(link.prev));
     state.insert("at".into(), json!(options.at));
     state.insert("seq".into(), json!(link.seq));
-    state.entry("audience".to_string()).or_insert(json!("public"));
+    // A block that named no audience is for its author alone; nothing makes it public.
+    if !state.contains_key("audience") {
+        let id = text(head.get("id"));
+        let aud = crate::audience::commit_in(&signer.suite, &[id.as_str()], &json!({}))?;
+        state.insert("audience".into(), json!(aud.audience));
+        state.insert("nonce".into(), json!(crate::audience::try_new_salt()?));
+    }
     if let Some(c) = &signer.channel {
         state.insert("channel".into(), json!(c));
     }
@@ -696,21 +762,25 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
         Some(a) => a.clone(),
         None => serde_json::from_slice(ALIASES_JSON)?,
     };
-    // Each old block with its old id.
-    let olds: Vec<Value> = old
-        .iter()
-        .map(|b| {
-            let mut b = b.clone();
-            if b.is_object() && hash_of(&b).is_empty() {
-                let h = old_hash(&b);
-                b["hash"] = json!(h);
+    // Each old block with its old id, computed from its content: a supplied `hash` that is not the hash of the block is a lie about which
+    // block this is, and the block is skipped (release 22: a supplied hash was trusted)
+    let mut skipped: Vec<(String, String)> = Vec::new();
+    let mut olds: Vec<Value> = Vec::new();
+    for b in old {
+        let mut b = b.clone();
+        if b.is_object() {
+            let h = old_hash(&b);
+            let given = hash_of(&b).to_string();
+            if !given.is_empty() && given != h {
+                skipped.push((given, "its supplied hash is not the hash of its content".to_string()));
+                continue;
             }
-            b
-        })
-        .collect();
+            b["hash"] = json!(h);
+        }
+        olds.push(b);
+    }
     let mut map = options.map.clone();
     let mut out: Vec<Value> = Vec::new();
-    let mut skipped: Vec<(String, String)> = Vec::new();
     let mut deliveries: Vec<Value> = Vec::new();
     let existing = index_of(options.existing.iter());
     let reads: Vec<Option<Value>> = olds.iter().map(|b| read_old(&aliases, b)).collect();
@@ -727,15 +797,29 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
             rs(b, "author").map(String::from)
         }
     };
-    // The key that signs for each identity: its own, else the custodian's (a held key, marked as such).
+    // The key that signs for each identity: its own, else the custodian's, but only for an identity the custodian
+    // names (`custodian_for`). A held key with no channel, and a genesis that was not public, are refused.
     let mut keys = options.keys.clone();
-    if let Some(fallback) = &options.custodian_key {
-        for b in &olds {
-            if let Some(id) = identity_of(b) {
-                if !keys.contains_key(&id) {
-                    keys.insert(id, fallback.clone());
-                }
+    if let Some(held) = &options.custodian_key {
+        for id in &options.custodian_for {
+            if !keys.contains_key(id) {
+                keys.insert(id.clone(), held.clone());
             }
+        }
+    }
+    let mut refused: Map<String, Value> = Map::new();
+    for id in keys.keys().cloned().collect::<Vec<_>>() {
+        let why = channel_refused(options, &keys[&id]).or_else(|| {
+            let genesis = read_of.get(&id).is_some_and(|r| type_of(r) == "actor" && ss(r, "public_key_sign").is_some() && rf(r, "updates").is_none());
+            if genesis && read_of.get(&id).and_then(|r| ss(r, "audience")) != Some("public") {
+                Some("its genesis named no public audience: a genesis cannot be for its author alone".to_string())
+            } else {
+                None
+            }
+        });
+        if let Some(w) = why {
+            keys.shift_remove(&id);
+            refused.insert(id, json!(w));
         }
     }
     // Roles each old circle's members were given, for the circle's new roles list.
@@ -814,8 +898,12 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
                     from.push(options.request_hash.clone());
                 }
                 let mut note = json!({
-                    "kind": "converted", "at": options.at, "seq": link.seq, "audience": "public",
+                    "kind": "converted", "at": options.at, "seq": link.seq,
                 });
+                // The link names the old hash: it is for the author alone, not public.
+                let aud = crate::audience::commit_in(&suite, &[n.as_str()], &json!({}))?;
+                note["audience"] = json!(aud.audience);
+                note["nonce"] = json!(crate::audience::try_new_salt()?);
                 if let Some(c) = &signer.channel {
                     note["channel"] = json!(c);
                 }
@@ -833,7 +921,7 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
         let mut last: Option<Value> = existing
             .values()
             .filter(|b| rs(b, "author") == Some(new_id.as_str()) && st(b, "seq").is_some())
-            .max_by_key(|b| crate::js::number_of(st(b, "seq")) as i64)
+            .max_by_key(|b| number_of(st(b, "seq")) as i64)
             .cloned();
         if last.is_none() {
             last = out.iter().rev().find(|b| rs(b, "author") == Some(new_id.as_str())).cloned();
@@ -895,7 +983,8 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
             continue;
         }
         if !heads.contains_key(&author_old) {
-            skipped.push((old_id, "no key was given for its author".into()));
+            let why = refused.get(&author_old).and_then(Value::as_str).unwrap_or("no key was given for its author");
+            skipped.push((old_id, why.into()));
             continue;
         }
         let Some(read) = read_of.get(&old_id) else {
@@ -949,7 +1038,11 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
                         h.to_string()
                     } else {
                         let need = needs.get(&key).cloned().unwrap_or_else(|| json!({ "fields": {}, "roles": [] }));
-                        let state = json!({ "kind": "schema", "target": p.target, "fields": need["fields"], "roles": need["roles"] });
+                        let mut state = json!({ "kind": "schema", "target": p.target, "fields": need["fields"], "roles": need["roles"] });
+                        // The schema is public only when the block that needs it is; else it is its author's alone.
+                        if matches!(p.state.get("audience"), Some(Value::String(a)) if a == "public") {
+                            state["audience"] = json!("public");
+                        }
                         let made = emit(&mut heads, &mut out, options, &author_old, &signer, "thing", state.as_object().unwrap().clone(), Map::new())?;
                         let h = hash_of(&made).to_string();
                         own_schemas.insert(key, json!(h));
@@ -971,7 +1064,6 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
         let mut gifts: Option<(crate::audience::Audience, Vec<String>)> = None;
         match state.get("audience").cloned() {
             Some(Value::String(s)) if s == "public" => {}
-            Some(Value::Null) | None => {}
             other => {
                 let named: Vec<String> = match &other {
                     Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).filter_map(|r| recipient_id(r, &map)).collect(),
@@ -998,7 +1090,7 @@ pub fn convert(old: &[Value], options: &ConvertOptions) -> Result<Converted> {
                 let enc_suite = genesis.and_then(|g| ss(g, "suite")).unwrap_or("std").to_string();
                 let sealed = match key {
                     Some(k) if !to.contains('#') => {
-                        crate::write::seal_copy(&signed, &[k.as_str()], &reveals, &signer.private_key, None, &enc_suite).unwrap_or(Value::Null)
+                        crate::write::seal_copy(&signed, &[k.as_str()], &reveals, &signer.private_key, None, &enc_suite, if signer.suite.is_empty() { "std" } else { signer.suite.as_str() }).unwrap_or(Value::Null)
                     }
                     _ => Value::Null,
                 };

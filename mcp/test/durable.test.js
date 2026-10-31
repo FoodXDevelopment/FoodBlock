@@ -14,7 +14,7 @@ import { sealer, durableDrafts, durableSessions } from '../store.js'
 describe('durable drafts and sessions', () => {
   it('survives a restart', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'dur-')); after(() => rmSync(dir, { recursive: true, force: true }))
-    const seal = sealer(randomBytes(40).toString('hex')), person = newPerson(), code = 'ABCDE-12345'
+    const seal = sealer(randomBytes(40).toString('hex')), person = newPerson('person', { reach: 'P30D' }), code = 'ABCDE-12345'
     const boot = () => {
       const door = createDoor({ person, code, drafts: durableDrafts(join(dir, 'drafts'), seal)(person.id) })
       door.base = 'https://x.test'
@@ -29,7 +29,7 @@ describe('durable drafts and sessions', () => {
     const client = new Client({ name: 't', version: '1' })
     await client.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${server.address().port}/mcp`)))
     const call = async (name, args = {}) => JSON.parse((await client.callTool({ name, arguments: args })).content[0].text)
-    const grant = await call('foodblock_connect', { acts: ['promise'] })
+    const grant = await call('foodblock_connect', { audience: 'public', acts: ['promise'] })
     assert.equal(grant.status, 'pending')
 
     await life.mcp.drain(); life = boot()                              // the restart: new door, new endpoint, same disk

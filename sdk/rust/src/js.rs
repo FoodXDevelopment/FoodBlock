@@ -1,11 +1,10 @@
-//! Reading JSON the way the reference SDK reads it. The protocol was first written in JavaScript, so a few of its
-//! rules are JavaScript's: what counts as "present" (truthy), how a value turns into text, how numbers compare. These
-//! helpers say each once, so every module reads blocks the same way.
+//! Reading blocks. A fold reads only blocks that pass the write check (folds.md), so every field is read as the shape the check
+//! proved: an id or a name as text, a whole number as a number, a decimal exactly (decimal.rs). A value of any other shape is
+//! absent. Beside them: the held index, the needs, and JavaScript's string order (the order the protocol sorts text in).
 use crate::prelude::*;
 use core::cmp::Ordering;
 
-/// A held set of blocks by hash, in the order they were first given (a later copy replaces the value, not the place).
-pub type Index = indexmap::IndexMap<String, Value, BuildHasher>;
+pub use crate::index::{Index, Past};
 
 /// A fixed hasher, so the index needs no randomness (and works without the standard library).
 #[derive(Clone, Default)]
@@ -33,6 +32,11 @@ impl core::hash::Hasher for Fnv {
 pub fn index_of<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     let mut index = Index::default();
     for block in blocks {
+        // A block with no author has no key whose signature vouches for its id, so its id must be the hash of its bytes: one that claims
+        // another's cannot take another's place in the index (release 1).
+        if block.get("type").is_some() && rs(block, "author").is_none() && !hash_of(block).is_empty() && hash_of(block) != crate::block::rehash(block) {
+            continue;
+        }
         index.insert(str_of(block.get("hash")).to_string(), block.clone());
     }
     index
@@ -86,43 +90,92 @@ pub fn unmet_in(block: &Value, index: &Index) -> Vec<String> {
     out
 }
 
-fn is_read(block: &Value) -> bool {
-    block.get("state").is_some_and(Value::is_object) && block.get("refs").is_some_and(Value::is_object)
+// Whether a block is valid against the blocks a fold reads (core.md section 8: the write check, checks 1 to 4 and 8, with their
+// schemas as the schema store, and checks 6 and 7 on what it rests on): what a node would take into a store that holds them. A block that fails it counts for nothing
+// (folds.md). A sealed block held by its public header alone has no body to check (no `type`): it meets needs and no fold reads it.
+/// Whether a block a fold is asked about, but that its input does not hold, could be read with that input: valid on what it rests on
+/// (its needs held, the write check and checks 6 and 7). A block the input left out, or one no node would take, is read as no word.
+pub(crate) fn readable(block: &Value, index: &Index) -> bool {
+    let schemas: Index = index
+        .iter()
+        .filter(|(_, b)| type_of(b) == "thing" && get(b, "state.kind").and_then(Value::as_str) == Some("schema"))
+        .map(|(h, b)| (h.clone(), b.clone()))
+        .collect();
+    unmet_in(block, index).is_empty() && well_formed(block, index, &schemas)
 }
 
-/// The largest part of an index in which every block's needs are present: the blocks a fold may read. Borrowed, when nothing
-/// has to go (the common case: a node's own store is whole).
-pub fn closed_ref(index: &Index) -> alloc::borrow::Cow<'_, Index> {
+fn well_formed(block: &Value, index: &Index, schemas: &Index) -> bool {
+    let (Some(state), Some(refs)) = (block.get("state").filter(|s| s.is_object()), block.get("refs").filter(|r| r.is_object())) else { return false };
+    if block.get("type").is_none() {
+        return true;
+    }
+    let options = crate::check::CheckOptions { schemas: Some(schemas), held: Some(index) };
+    if !crate::check::findings_with(crate::spec(), type_of(block), state, refs, options).is_empty() {
+        return false;
+    }
+    // checks 6 and 7, read from what the block rests on alone (valid.rs): a block no node would take counts for nothing in a fold
+    if crate::identity::is_genesis(block) || (type_of(block) == "actor" && state.get("public_key_sign").is_some()) {
+        return crate::identity::genesis_opens(Some(block)) && (hash_of(block).is_empty() || hash_of(block) == crate::block::hash_suite(&crate::identity::suite_named(block), type_of(block), state, refs));
+    }
+    crate::valid::signature_refusals(block, index).is_empty()
+}
+
+// The blocks of an index that cannot be read in it: those the write check refuses against it, and every block that needs one of them
+// or a block it does not hold.
+fn unread(index: &Index) -> alloc::collections::BTreeSet<&str> {
     let mut gone: alloc::collections::BTreeSet<&str> = Default::default();
+    let schemas: Index = index
+        .iter()
+        .filter(|(_, b)| type_of(b) == "thing" && get(b, "state.kind").and_then(Value::as_str) == Some("schema"))
+        .map(|(h, b)| (h.clone(), b.clone()))
+        .collect();
     for (h, b) in index {
-        if !is_read(b) {
+        if !well_formed(b, index, &schemas) {
             gone.insert(h);
         }
     }
-    loop {
-        let before = gone.len();
-        for (h, b) in index {
-            if gone.contains(h.as_str()) {
-                continue;
+    // A block that needs one gone, or one not held, goes too: a worklist over who needs whom, each block visited once (release 45; it had
+    // been a pass over every block, again and again until nothing more went).
+    let mut needed_by: alloc::collections::BTreeMap<&str, Vec<&str>> = Default::default();
+    let mut work: Vec<&str> = gone.iter().copied().collect();
+    for (h, b) in index {
+        each_need(b, &mut |n| {
+            if index.contains_key(n) {
+                needed_by.entry(index.get_key_value(n).map_or("", |(k, _)| k.as_str())).or_default().push(h.as_str());
+            } else if gone.insert(h) {
+                work.push(h);
             }
-            let mut unmet = false;
-            each_need(b, &mut |n| {
-                if !index.contains_key(n) || gone.contains(n) {
-                    unmet = true;
-                }
-            });
-            if unmet {
-                gone.insert(h);
+        });
+    }
+    while let Some(g) = work.pop() {
+        for d in needed_by.get(g).into_iter().flatten() {
+            if gone.insert(d) {
+                work.push(d);
             }
-        }
-        if gone.len() == before {
-            break;
         }
     }
+    gone
+}
+
+/// The largest part of an index in which every block passes the write check against that part and has every need in it: the
+/// blocks a fold may read (folds.md). Leaving a block out can leave another without the block its check read (a parent grant,
+/// a schema), so the part is read again until nothing more goes. Borrowed, when nothing has to go (the common case: a node's own
+/// store is whole and well-formed).
+pub fn closed_ref(index: &Index) -> alloc::borrow::Cow<'_, Index> {
+    let gone = unread(index);
     if gone.is_empty() {
         return alloc::borrow::Cow::Borrowed(index);
     }
-    alloc::borrow::Cow::Owned(index.iter().filter(|(h, _)| !gone.contains(h.as_str())).map(|(h, b)| (h.clone(), b.clone())).collect())
+    let mut kept: Index = index.iter().filter(|(h, _)| !gone.contains(h.as_str())).map(|(h, b)| (h.clone(), b.clone())).collect();
+    // what is left is read once more: a block's write check read other blocks that may have gone (a parent grant, a schema), and the part is
+    // read again until nothing more goes (the common case: once)
+    loop {
+        let gone: alloc::collections::BTreeSet<String> = unread(&kept).into_iter().map(String::from).collect();
+        if gone.is_empty() {
+            return alloc::borrow::Cow::Owned(kept);
+        }
+        kept.retain(|h, _| !gone.contains(h));
+    }
 }
 
 /// `closed_ref`, owned (the index itself when nothing has to go).
@@ -183,27 +236,9 @@ pub fn list(value: Option<&Value>) -> Vec<&str> {
     }
 }
 
-/// JavaScript truthiness.
-pub fn truthy(value: Option<&Value>) -> bool {
-    match value {
-        None | Some(Value::Null) => false,
-        Some(Value::Bool(b)) => *b,
-        Some(Value::Number(n)) => n.as_f64().map(|f| f != 0.0 && !f.is_nan()).unwrap_or(false),
-        Some(Value::String(s)) => !s.is_empty(),
-        Some(_) => true,
-    }
-}
-
-/// JavaScript `===` on JSON values: undefined equals undefined; objects and arrays are never equal.
-pub fn strict_eq(a: Option<&Value>, b: Option<&Value>) -> bool {
-    match (a, b) {
-        (None, None) => true,
-        (Some(Value::Null), Some(Value::Null)) => true,
-        (Some(Value::Bool(x)), Some(Value::Bool(y))) => x == y,
-        (Some(Value::Number(x)), Some(Value::Number(y))) => x.as_f64() == y.as_f64(),
-        (Some(Value::String(x)), Some(Value::String(y))) => x == y,
-        _ => false,
-    }
+/// Whether two values are the same text: two units, two line ids (a value that is not text matches nothing).
+pub fn same_str(a: Option<&Value>, b: Option<&Value>) -> bool {
+    matches!((a, b), (Some(Value::String(x)), Some(Value::String(y))) if x == y)
 }
 
 /// Whether a value is a plain object.
@@ -219,6 +254,26 @@ pub fn int(value: Option<&Value>) -> Option<f64> {
     }
 }
 
+/// count_stated: a number a rule asks the author to state (`needed`: how many must agree): a whole number of at least 1, and no more
+/// than the voices there are (`most`, when the set has a size). The protocol fills in none: not stated, it is None.
+pub fn count_stated(value: Option<&Value>, most: Option<usize>) -> Option<f64> {
+    int(value).filter(|n| *n >= 1.0 && most.is_none_or(|m| *n <= m as f64))
+}
+
+/// quorum(voices, needed): `needed` different voices have each spoken. A set of voices with no number stated (None) never makes one.
+/// Reads voices lazily and stops at the number, so a caller may make each voice's proof costly.
+pub fn quorum<T: Ord>(voices: impl IntoIterator<Item = T>, needed: Option<f64>) -> bool {
+    let Some(needed) = needed else { return false };
+    let mut seen = alloc::collections::BTreeSet::new();
+    if seen.len() as f64 >= needed {
+        return true;
+    }
+    voices.into_iter().any(|v| {
+        seen.insert(v);
+        seen.len() as f64 >= needed
+    })
+}
+
 /// Whether a number is whole and finite (`Number.isInteger`), without the standard library's float methods.
 pub fn is_whole(f: f64) -> bool {
     if !f.is_finite() {
@@ -226,19 +281,6 @@ pub fn is_whole(f: f64) -> bool {
     }
     // Every float at or beyond 2^52 is whole.
     f.abs() >= 4_503_599_627_370_496.0 || (f as i64) as f64 == f
-}
-
-/// `Math.floor`, without the standard library.
-pub fn floor(x: f64) -> f64 {
-    if !x.is_finite() || x.abs() >= 4_503_599_627_370_496.0 {
-        return x;
-    }
-    let t = (x as i64) as f64;
-    if t > x {
-        t - 1.0
-    } else {
-        t
-    }
 }
 
 /// A number as JSON: a whole number is written as an integer.
@@ -249,62 +291,6 @@ pub fn num(f: f64) -> Value {
         Value::Number(n)
     } else {
         Value::Null
-    }
-}
-
-/// `Number(text)` for the decimal strings the protocol writes.
-pub fn number(text: &str) -> f64 {
-    let t = text.trim();
-    if t.is_empty() {
-        return 0.0;
-    }
-    if t.bytes()
-        .any(|b| b.is_ascii_alphabetic() && b != b'e' && b != b'E')
-    {
-        return f64::NAN;
-    }
-    t.parse::<f64>().unwrap_or(f64::NAN)
-}
-/// `Number(value)` for any JSON value.
-pub fn number_of(value: Option<&Value>) -> f64 {
-    match value {
-        None => f64::NAN,
-        Some(Value::Null) => 0.0,
-        Some(Value::Bool(b)) => *b as u8 as f64,
-        Some(Value::Number(n)) => n.as_f64().unwrap_or(f64::NAN),
-        Some(Value::String(s)) => number(s),
-        Some(_) => f64::NAN,
-    }
-}
-
-/// `String(value)`.
-pub fn text(value: Option<&Value>) -> String {
-    match value {
-        None => "undefined".to_string(),
-        Some(Value::Null) => "null".to_string(),
-        Some(Value::Bool(b)) => b.to_string(),
-        Some(Value::Number(n)) => crate::canonical::js_number(n.as_f64().unwrap_or(0.0)),
-        Some(Value::String(s)) => s.clone(),
-        Some(Value::Array(items)) => items
-            .iter()
-            .map(|v| {
-                if v.is_null() {
-                    String::new()
-                } else {
-                    text(Some(v))
-                }
-            })
-            .collect::<Vec<_>>()
-            .join(","),
-        Some(Value::Object(_)) => "[object Object]".to_string(),
-    }
-}
-/// `String(value || '')`.
-pub fn text_or_empty(value: Option<&Value>) -> String {
-    if truthy(value) {
-        text(value)
-    } else {
-        String::new()
     }
 }
 
@@ -347,20 +333,4 @@ pub fn keys_within(value: &Value, allowed: &[String]) -> bool {
         .as_object()
         .map(|m| m.keys().all(|k| allowed.iter().any(|a| a == k)))
         .unwrap_or(false)
-}
-
-/// Deep equality as the conformance runner uses it (`assert.deepEqual`): numbers compare by value.
-pub fn deep_eq(a: &Value, b: &Value) -> bool {
-    match (a, b) {
-        (Value::Number(x), Value::Number(y)) => x.as_f64() == y.as_f64(),
-        (Value::Array(x), Value::Array(y)) => {
-            x.len() == y.len() && x.iter().zip(y).all(|(p, q)| deep_eq(p, q))
-        }
-        (Value::Object(x), Value::Object(y)) => {
-            x.len() == y.len()
-                && x.iter()
-                    .all(|(k, v)| y.get(k).map(|w| deep_eq(v, w)).unwrap_or(false))
-        }
-        _ => a == b,
-    }
 }

@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 
-// FoodBlock 1.6 (core.md, The chain): a key's own chain. A skip may jump seq forward; two blocks naming one prev are an equivocation.
+// FoodBlock 1.7 (core.md, The chain): a key's own chain. A skip may jump seq forward; two blocks naming one prev are an equivocation.
 const block = (hash, seq, prev, extra = {}) => ({ hash, type: 'observe', state: { seq, ...extra }, refs: { prev } })
 const g = 'g'.repeat(64)
 

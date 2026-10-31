@@ -7,7 +7,7 @@ import "time"
 // PullRequest is a pull: { since (exclusive arrival number, 0 from the start), limit, filter, heads }. Keys outside
 // protocol.json's pull message are dropped; a missing since is 0.
 func PullRequest(request map[string]any) map[string]any {
-	return must[map[string]any]("pull_request", orEmpty(request))
+	return doorPullRequest[map[string]any](orEmpty(request))
 }
 
 // SignOptions: who signs (Signer), which node it is for, the signer's private key and its Suite, and exactly one proof
@@ -35,16 +35,16 @@ func (o SignOptions) json() map[string]any {
 // SignPull is a signed pull: the request, plus signer, node and one proof against replay, signed by one of the
 // signer's keys.
 func SignPull(request map[string]any, o SignOptions) (map[string]any, error) {
-	return ask[map[string]any]("sign_pull", orEmpty(request), o.json())
+	return doorSignPull[map[string]any](orEmpty(request), o.json())
 }
 
 // SignPush is a signed push: the push, plus signer, node and one proof against replay.
 func SignPush(push map[string]any, o SignOptions) (map[string]any, error) {
-	return ask[map[string]any]("sign_push", orEmpty(push), o.json())
+	return doorSignPush[map[string]any](orEmpty(push), o.json())
 }
 
 // NewChallenge is a new challenge value a node hands out at its `challenge` endpoint.
-func NewChallenge() string { return must[string]("new_challenge") }
+func NewChallenge() string { return sure(doorNewChallenge()) }
 
 // PullCheck is what a node remembers: Node (its id), Keys (the signer's live signing keys), Highest (the highest
 // counter seen from the signer; nil when none) and Issued (challenges issued and not yet used). No clock.
@@ -65,32 +65,22 @@ func (o PullCheck) json() map[string]any {
 
 // PullRefusals is why a node refuses a signed pull: none when it may be answered.
 func PullRefusals(message map[string]any, o PullCheck) []Finding {
-	return plural(must[[]Finding]("pull_refusals", orEmpty(message), o.json()))
+	return doorPullRefusals(orEmpty(message), o.json())
 }
 
 // PushRefusals is why a node refuses a signed push: none when it may be taken.
 func PushRefusals(message map[string]any, o PullCheck) []Finding {
-	return plural(must[[]Finding]("push_refusals", orEmpty(message), o.json()))
-}
-
-// PullErrors is what is wrong with a signed pull, in plain words: none when it may be answered.
-func PullErrors(message map[string]any, o PullCheck) []string {
-	return plural(must[[]string]("pull_errors", orEmpty(message), o.json()))
-}
-
-// PushErrors is what is wrong with a signed push, in plain words.
-func PushErrors(message map[string]any, o PullCheck) []string {
-	return plural(must[[]string]("push_errors", orEmpty(message), o.json()))
+	return doorPushRefusals(orEmpty(message), o.json())
 }
 
 // Matches is whether a block matches a pull filter: every key, ANDed; `record` resolved
 // among held.
 func Matches(b Block, filter map[string]any, held []Block) bool {
-	return must[bool]("matches", b, filter, plural(held))
+	return doorMatches(b, filter, held)
 }
 
 // HeadsOf are the blocks no other block among them names.
-func HeadsOf(blocks []Block) []Block { return plural(must[[]Block]("heads_of", plural(blocks))) }
+func HeadsOf(blocks []Block) []Block { return doorHeadsOf(blocks) }
 
 // Arrival is one block a node holds: its arrival number N (1, 2, 3 as blocks were taken in, never reused), the sealed
 // copies by recipient id, and a sealed block's signed header.
@@ -103,10 +93,13 @@ type Arrival struct {
 }
 
 // AnswerOptions: the node's id and private key (the answer is unsigned without one) and its Suite; Signer (default
-// the request's); Cap, the node's own limit (default 500); Held (blocks that sealed copies are checked against).
+// the request's); Cap, the node's own limit (required, 1 or more: there is no default cap); ServesPairs (required choice:
+// true sends a fork's other half with its proof, false only what matches); Held (blocks that sealed copies are checked
+// against). A zero Cap is refused by the core.
 type AnswerOptions struct {
 	Node, PrivateKey, Signer, Suite string
 	Cap                             int64
+	ServesPairs                     bool
 	Held                            []Block
 }
 
@@ -125,31 +118,18 @@ func AnswerPull(log []Arrival, request map[string]any, o AnswerOptions) (map[str
 		}
 		entries = append(entries, entry)
 	}
-	cap := o.Cap
-	if cap == 0 {
-		cap = 500
-	}
-	var key any
-	if o.PrivateKey != "" {
-		key = o.PrivateKey
-	}
-	var signer, held any
-	if o.Signer != "" {
-		signer = o.Signer
-	}
-	if o.Held != nil {
-		held = o.Held
-	}
-	return ask[map[string]any]("answer_pull", entries, orEmpty(request), o.Node, key, cap, signer, held, suiteOf([]string{o.Suite}))
+	choices := map[string]any{"cap": o.Cap, "serves_pairs": o.ServesPairs}
+	return doorAnswerPull[map[string]any](entries, orEmpty(request), o.Node, o.PrivateKey, choices, o.Signer, o.Held, o.Suite, nil)
 }
 
 // AnswerSignedBy is whether a node's answer (pull or push) is signed by one of the node's keys.
 func AnswerSignedBy(answer map[string]any, nodeKeys []string) bool {
-	return must[bool]("answer_signed_by", answer, plural(nodeKeys))
+	return doorAnswerSignedBy(answer, nodeKeys)
 }
 
 // PushRequest is a push: { messages, for }.
 func PushRequest(messages []any, forWhom map[string]any) map[string]any {
+	// messages are not all Blocks (a sealed one is a header and its copy), so this one is not the typed door function
 	return must[map[string]any]("push_request", plural(messages), forWhom)
 }
 
@@ -174,31 +154,42 @@ type Accepted struct {
 	Equivocations [][]string
 }
 
-// AcceptOptions: ArrivedAt (this node's arrival log) and Schemas (hash -> schema block).
+// AcceptOptions: TakesPairs (the node's choice: false leaves both blocks of a pair arriving together out of Taken,
+// listed in Equivocations; true takes them too) and Schemas (hash -> schema block). Validity reads no arrival (core.md,
+// section 8).
 type AcceptOptions struct {
-	ArrivedAt ArrivedAt
-	Schemas   map[string]Block
+	TakesPairs bool
+	Schemas    map[string]Block
 }
 
 // Accept is what a node takes of a push (incoming, blocks off the wire) given what it holds.
-func Accept(incoming, held []Block, options ...AcceptOptions) Accepted {
-	var o AcceptOptions
-	if len(options) > 0 {
-		o = options[0]
-	}
-	r := must[struct {
+func Accept(incoming, held []Block, o AcceptOptions) Accepted {
+	r := doorAccept[struct {
 		Taken         []string   `json:"taken"`
 		Waiting       []Waiting  `json:"waiting"`
 		Refused       []Refusal  `json:"refused"`
 		Equivocations [][]string `json:"equivocations"`
-	}]("accept", plural(incoming), plural(held), arrivals(o.ArrivedAt, append(append([]Block{}, incoming...), held...)), blockList(o.Schemas))
+	}](incoming, held, map[string]any{"takes_pairs": o.TakesPairs}, blockList(o.Schemas))
 	byHash := map[string]Block{}
 	for _, b := range incoming {
 		byHash[b.id()] = b
 	}
 	out := Accepted{Taken: []Block{}, Waiting: plural(r.Waiting), Refused: plural(r.Refused), Equivocations: plural(r.Equivocations)}
+	// the core names what it took by the id it computed, in the suite of the key that signed it (core.md, section 2): a key's
+	// first block after a move to a suite of another hash has an id its bytes alone do not show, so a block is found by that id too
+	all := append(append([]Block{}, held...), incoming...)
 	for _, h := range r.Taken {
-		out.Taken = append(out.Taken, byHash[h])
+		b, found := byHash[h]
+		if !found {
+			for _, one := range incoming {
+				if doorIdOf(one, all) == h {
+					b, found = one, true
+					b.Hash = h
+					break
+				}
+			}
+		}
+		out.Taken = append(out.Taken, b)
 	}
 	return out
 }
@@ -206,17 +197,13 @@ func Accept(incoming, held []Block, options ...AcceptOptions) Accepted {
 // AcceptSealed is what a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that
 // speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. incoming are
 // sealed messages { header, header_signature, ... }; held whole blocks, sealed messages or their headers. Taken are the hashes.
-func AcceptSealed(incoming, held []Block, arrivedAt ...ArrivedAt) map[string]any {
-	var at ArrivedAt
-	if len(arrivedAt) > 0 {
-		at = arrivedAt[0]
-	}
-	return must[map[string]any]("accept_sealed", plural(incoming), plural(held), arrivals(at, nil))
+func AcceptSealed(incoming, held []Block, takesPairs bool) map[string]any {
+	return doorAcceptSealed[map[string]any](incoming, held, map[string]any{"takes_pairs": takesPairs})
 }
 
 // WaitedTooLong is whether a waiting block has waited past the node's own time to live since it arrived.
 func WaitedTooLong(since, now string, ttl time.Duration) bool {
-	return must[bool]("waited_too_long", since, now, ttl.Milliseconds())
+	return doorWaitedTooLong(since, now, ttl.Milliseconds())
 }
 
 // PushAnswer is a node's signed answer to a push: { node, taken, waiting, refused: [{ hash, code, detail }],
@@ -230,18 +217,23 @@ func PushAnswer(result Accepted, node, privateKey string, suite ...string) (map[
 		waiting = append(waiting, w.Hash)
 	}
 	parts := map[string]any{"taken": taken, "waiting": waiting, "refused": plural(result.Refused), "equivocations": plural(result.Equivocations)}
-	return ask[map[string]any]("push_answer", parts, node, privateKey, suiteOf(suite))
+	return doorPushAnswer[map[string]any](parts, node, privateKey, suiteArg(suite))
 }
 
 // AdmissionRefusals is what a node's admission and consent rules refuse of a block for a person: not_admitted,
-// not_human. admission is the node's admission rules (JSON); strangersToday counts strangers already taken today.
+// not_human. admission is the rule's state, or nil for no rule (stated, not filled in); strangersToday counts strangers
+// already taken today.
 func AdmissionRefusals(b Block, receiver string, blocks []Block, admission map[string]any, strangersToday int) []Finding {
-	return plural(must[[]Finding]("admission_refusals", b, receiver, plural(blocks), orEmpty(admission), strangersToday))
+	var rule any
+	if admission != nil {
+		rule = admission
+	}
+	return doorAdmissionRefusals(b, receiver, blocks, rule, int64(strangersToday))
 }
 
 // ResidencyRefusals is a block that stays in regions its node does not hold in (profiles/residency.md).
 func ResidencyRefusals(b Block, holdsIn []string) []Finding {
-	return plural(must[[]Finding]("residency_refusals", b, plural(holdsIn)))
+	return doorResidencyRefusals(b, holdsIn)
 }
 
 // Discovery is what a node publishes at `.well-known/foodblock`. Admission is the hash of its owner's admission block,
@@ -254,23 +246,19 @@ type Discovery struct {
 
 // WellKnown is the `.well-known/foodblock` document.
 func WellKnown(d Discovery) map[string]any {
-	var admission any
-	if d.Admission != "" {
-		admission = d.Admission
+	endpoints := d.Endpoints
+	if endpoints == nil {
+		endpoints = map[string]string{}
 	}
-	endpoints := map[string]any{}
-	for k, v := range d.Endpoints {
-		endpoints[k] = v
-	}
-	return must[map[string]any]("well_known", d.Node, plural(d.Holds), plural(d.SpeaksFor), admission, endpoints)
+	return doorWellKnown[map[string]any](d.Node, d.Holds, d.SpeaksFor, d.Admission, endpoints)
 }
 
 // Announcement is a local announcement (mDNS / DNS-SD or a short-range link): { protocol, version, node, endpoints }.
 func Announcement(doc map[string]any) map[string]any {
-	return must[map[string]any]("announcement", doc)
+	return doorAnnouncement[map[string]any](doc)
 }
 
 // WellKnownErrors is what is wrong with a `.well-known/foodblock` document, in plain words.
 func WellKnownErrors(doc map[string]any) []string {
-	return plural(must[[]string]("well_known_errors", doc))
+	return doorWellKnownErrors(doc)
 }

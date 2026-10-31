@@ -1,8 +1,8 @@
-// The FoodBlock 1.6 reference SDK: its whole API. Every closed list comes from spec/protocol.json (PROTOCOL). There is no
+// The FoodBlock 1.7 reference SDK: its whole API. Every closed list comes from spec/protocol.json (PROTOCOL). There is no
 // earlier version in the protocol: old data enters once, through `legacy.convert`. The names match the other SDKs:
 // `sign` signs, `seal` encrypts.
 const spec = require('./spec.cjs')
-const { create, hash } = require('./block.cjs')
+const { create, hash, idOf } = require('./block.cjs')
 const { canonical, canonicalJSON } = require('./canonical.cjs')
 const sign = require('./sign.cjs')
 const envelope = require('./envelope.cjs')
@@ -27,7 +27,7 @@ module.exports = {
   FIELDS: protocol.FIELDS, PEERS: spec.PEERS,
 
   // A block: its canonical form and its id
-  create, hash, canonical, canonicalJSON,
+  create, hash, idOf, canonical, canonicalJSON,
 
   // Signing and encryption, by suite (std: Ed25519 and X25519; p256; sm)
   generateKeypair: sign.generateKeypair, keypairFromSeed: sign.keypairFromSeed, sign: sign.sign, verify: sign.verify,
@@ -40,13 +40,13 @@ module.exports = {
 
   // Writing: compose, check, sign, chain (`write` does all four); the wire
   PUBLIC: write.PUBLIC, compose: write.compose, write: write.write, check: protocol.check, refusals: protocol.refusals, valid: protocol.valid, strictText: protocol.strictText, CODES: protocol.CODES,
-  amount: protocol.amount, money: protocol.money, confidence: protocol.confidence, terms: protocol.terms, isTime: protocol.isTime, isDate: protocol.isDate,
+  amount: protocol.amount, money: protocol.money, terms: protocol.terms, isTime: protocol.isTime, isDate: protocol.isDate,
   wrap: write.wrap, unwrap: write.unwrap, header: write.header, sealCopy: write.sealCopy, openCopy: write.openCopy, headerSignedBy: write.headerSignedBy,
 
   // The compact form: a public block as CBOR for small links (the id is still the hash of the canonical JSON)
   cbor,
 
-  // Strangers, short form, tasks and deposits (the small rules)
+  // Strangers, short form, tasks and earnest (the small rules)
   strangers, receiptCode: strangers.receiptCode, codeMatches: strangers.codeMatches,
 
   // The one-time converter for pre-1.6 data (not part of the protocol)

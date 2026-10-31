@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 
-// FoodBlock 1.6 (privacy.md, Envelope): the envelope names no recipient; a sealed copy carries its signed public header;
+// FoodBlock 1.7 (privacy.md, Envelope): the envelope names no recipient; a sealed copy carries its signed public header;
 // the suite names the key agreement and the cipher.
 const vectors = require('../../../spec/vectors.json')
 

@@ -235,7 +235,7 @@ class VectorsTest {
         for (c in v.f("envelopes").arr()) {
             val want = c.f("opens_to")
             val got = runCatching { FoodBlock.unwrap(FoodBlock.open(c.f("envelope").o(), key(c.f("recipient").s(), "x25519_private")).o()) }
-            r.ok(got.getOrNull()?.let { m -> m.f("hash") == want.f("hash") && m.f("signature") == want.f("signature") && m.f("version") == want.f("version") } ?: false,
+            r.ok(got.getOrNull()?.let { m -> m.f("hash") == want.f("hash") && m.f("signature") == want.f("signature") } ?: false,
                 "envelope: ${c.f("name").s()}") { got.exceptionOrNull()?.message ?: "" }
         }
         for (c in v.f("sealed").f("cases").arr()) {
@@ -269,16 +269,17 @@ class VectorsTest {
         for (c in v.f("identities").arr()) {
             val held = blocksOf(c.f("blocks"))
             val arrivals = arrivalsOf(c.f("arrivals"))
+            val unknown = c.f("unknown_arrival").s().ifEmpty { null }
             val name = c.f("name").s()
             val id = c.f("id").s()
             for (b in held) {
                 val want = c.f("signed_by_author").f(b.f("hash").s())
                 if (want is JsonNull) continue
                 val label = c.f("blocks").arr().firstOrNull { it.f("hash") == b.f("hash") }.f("name").s()
-                r.ok(Identity.signedByAuthor(b, held, arrivals) == want.bool(), "$name: $label ${if (want.bool()) "stands" else "is void"}")
+                r.ok(Identity.signedByAuthor(b, held, arrivals, unknown) == want.bool(), "$name: $label ${if (want.bool()) "stands" else "is void"}")
             }
             if (c.f("keys") !is JsonNull) {
-                val got = Identity.keysOf(id, held, arrivals).sorted()
+                val got = Identity.keysOf(id, held, arrivals, unknown).sorted()
                 r.ok(texts(got) == c.f("keys"), "$name: the keys that speak") { got.toString() }
             }
             if (c.f("frozen") !is JsonNull) {
@@ -287,7 +288,7 @@ class VectorsTest {
             }
             if (c.f("operators") !is JsonNull) r.ok(texts(Grant.operatorsOf(id, held)) == c.f("operators"), "$name: its operators")
             run {
-                val state = Identity.identityState(id, held, arrivals)
+                val state = Identity.identityState(id, held, arrivals, unknown)
                 val signed = state.f("signed_by_author").o()
                 val ok = deepEq(state.f("keys"), c.f("keys")) && (c.f("frozen") is JsonNull || deepEq(state.f("frozen"), c.f("frozen"))) &&
                     (c.f("signed_by_author") as? JsonObject)?.all { (h, want) -> signed[h]?.let { it == want } ?: true } ?: true
@@ -427,7 +428,7 @@ class VectorsTest {
                 }
                 "accept" -> if (!edge) excluded(name, "edge") else {
                     val incoming = if (c.f("inline") is JsonArray) c.f("inline").arr().map { it.o() } else c.f("incoming").arr().map(get)
-                    val got = Sync.accept(incoming, held)
+                    val got = Sync.accept(incoming, held, takesPairs = false)
                     val refused = got.f("refused").arr()
                     val ok = when {
                         // The second of a pair is neither taken nor refused: it is listed in its pair.
@@ -492,7 +493,7 @@ class VectorsTest {
         r.ok(Sync.answerSignedBy(push, listOf(nodeKey)), "a push answer is signed by the node")
         val spec = load("spec/protocol.json").f("messages")
         val known = load("spec/protocol.json").f("refusals").f("codes").o().values.flatMap { it.o().keys }.toSet()
-        r.ok(push.keys.toList() == spec.f("push_answer").arr().map { it.s() } &&
+        r.ok(push.keys.toList() == spec.f("push_answer").arr().map { it.s() }.filter { it in push.keys || it !in spec.f("push_answer_optional").arr().map { k -> k.s() } } &&
             push.f("refused").arr().all { it.o().keys.toList() == spec.f("refusal").arr().map { k -> k.s() } && it.f("code").s() in known } &&
             push.f("equivocations").arr().all { pair -> pair.arr().map { it.s() } == pair.arr().map { it.s() }.sorted() },
             "a push answer carries every key, refusals as { hash, code, detail }, equivocations as sorted pairs")

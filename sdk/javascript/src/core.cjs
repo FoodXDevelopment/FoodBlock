@@ -44,6 +44,18 @@ function finite(key, value) {
   return value
 }
 
+// JSON.stringify writes -0 as 0, so the core would never see it. -0 is refused (core.md section 3), so it travels as the text
+// -0: a marker no caller can guess stands in for it, then becomes -0 in the text.
+const negativeZero = '\u0000fb-0-' + Math.random().toString(36).slice(2) + '\u0000'
+function wire(args) {
+  let seen = false
+  const text = JSON.stringify(args, (key, value) => {
+    if (Object.is(value, -0)) { seen = true; return negativeZero }
+    return finite(key, value)
+  })
+  return seen ? text.split(JSON.stringify(negativeZero)).join('-0') : text
+}
+
 const encoder = new TextEncoder(), decoder = new TextDecoder()
 
 /** A refusal or failure from the core. `kind`: argument, json, refused, crypto, profile or internal. */
@@ -69,7 +81,7 @@ function call(op, ...args) {
   if (!instance) throw new Error('foodblock: the core is not loaded; in a browser call `await init(url)` first')
   let answer
   try {
-    const [o, ol] = put(op), [a, al] = put(JSON.stringify(args, finite))
+    const [o, ol] = put(op), [a, al] = put(wire(args))
     const out = instance.exports.fb_call(o, ol, a, al), length = instance.exports.fb_out_len()
     answer = JSON.parse(decoder.decode(memory().slice(out, out + length)))
     instance.exports.fb_dealloc(out, length)

@@ -23,10 +23,12 @@ A block is three fields, signed by its author on their own device:
 ```
 
 This is an offer: it is signed by its `from` side. Its id is the hash of its canonical form (one exact way of writing
-it as text: RFC 8785). The author signs the same bytes with Ed25519 (the default suite; `p256` and `sm` are two more). Nobody's clock decides who has authority. The
-other side can check that authority. Nothing can be lost or forged without it showing.
+it as text: RFC 8785). The author signs the same bytes with Ed25519 (the suite `std`; `p256` and `sm` are two more). Nobody's clock decides who has authority. The
+other side can check that authority. Without the author's key no one can make a block that counts as theirs, or change one without
+changing its id, and a key that signs two versions of its history leaves the proof. What the protocol cannot do (keep a lost key safe,
+stop a custodian who holds your key, see inside a sealed block it was not sent) is in the [threat model](spec/THREAT-MODEL.md) (a draft).
 
-- **The spec:** [`spec/protocol.md`](spec/protocol.md), FoodBlock 1.6 (revised 2026-10-19). It is normative: where anything else here
+- **The spec:** [`spec/protocol.md`](spec/protocol.md), FoodBlock 1.7 (2026-10-27; it adds to 1.6, except the few deletions the CHANGELOG lists). It is normative: where anything else here
   disagrees, it governs. Beside it: [`protocol.json`](spec/protocol.json) (every list, for code to load), the
   [canonical form](spec/canonical.md), [transport](spec/transport.md) (email is the envelope, FoodBlock the
   letter) and the [conformance vectors](spec/vectors.json). There is no earlier version in the protocol: 1.6 is
@@ -54,27 +56,14 @@ other side can check that authority. Nothing can be lost or forged without it sh
 `for`, `derives_from`, `same_as`. `prev` and `after` say what came before.
 
 **Strict.** Only four types carry authority and are closed (`actor`, `promise`, `transfer`, `grant`); any other word
-is an open type that a node stores and passes on. A node writes and reads only 1.6 shapes: no nulls, no floats
+is an open type that a node stores and passes on. A node writes and reads only the current version's shapes: no nulls, no floats
 (money is `{ minor, currency }`, an amount `{ value, unit }` with a decimal string), exact UTC times, sets written
 sorted, every block in its key's chain (`state.seq`, `refs.prev`). It never repairs a block: it refuses it, and the
 author signs a new one.
 
 ## Three sizes of peer
 
-Every peer speaks the protocol itself: a phone, a robot kitchen, a delivery van, a drone, a smart fridge, a
-sensor. Machines are peers like people. Any food machine can take an SDK, make its own identity, and act within the
-grants it holds. Each peer is one of three sizes (`protocol.json` `peers`):
-
-- **Micro**, a device: a soil or fridge sensor, a scale, an oven, a robot's body. It needs the canonical form,
-  SHA-256, Ed25519, the write check, its own chain, and the vectors for these. One that acts in the world also
-  checks its grants and stops the moment a stop arrives.
-- **Edge**, the local operator: the computer at a farm, in a kitchen, in a van or a shop. It adds local discovery,
-  pull and push with the peers near it, the promise fold for its own deals, and it keeps working offline.
-- **Node**, the lasting level: adds sealed envelopes and commitments, serving pull and push to anyone, signed
-  answers, internet discovery, and the folds for every record it holds.
-
-Only people and machines hold nodes. A business, a household or a community is a **circle** of them: it has an id
-and a record, kept by its members' nodes, never a node of its own.
+Every peer speaks the protocol itself: a phone, a robot kitchen, a van, a sensor. Machines are peers like people. There are three sizes (`protocol.json` `peers`, and `spec/protocol.md`): **micro** (a device that measures and signs), **edge** (the local operator, works offline) and **node** (the lasting level, serves pull and push to anyone). Only people and machines hold nodes. A business, a household or a community is a **circle** of them, never a node of its own.
 
 ## What is here
 
@@ -107,8 +96,8 @@ FoodBlock is built for people, autonomous systems and machines to use together. 
 ```js
 const fb = require('@foodxdev/foodblock') // in this repository: require('./sdk/javascript/src/index.cjs')
 const keys = fb.generateKeypair()                  // one key is the whole ceremony
-const me = fb.identity.genesis(keys)               // who you are: its hash is your id
-const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, held: [me] })
+const me = fb.identity.genesis(keys, { kind: 'person', at: '2026-10-15T09:00:00.000Z', audience: 'public' })  // who you are: its hash is your id; kind, at and audience are yours to state
+const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, held: [me], at: '2026-10-15T09:01:00.000Z', audience: 'public' })
 fb.valid(eggs, [me])                               // [] : sound, signed by a key of its author, in its chain
 ```
 
@@ -116,23 +105,13 @@ From a terminal:
 
 ```bash
 cd cli && npm install
-node bin/fb.js init me.json
+node bin/fb.js init me.json --kind person --audience public --reach P30D
 node bin/fb.js create thing eggs --state '{"name":"Free-range eggs"}' --identity me.json
 ```
 
 ## Between nodes
 
-Anyone can leave a node with everything they signed. Peers swap blocks with two messages (`spec/modules/nodes.md`):
-
-- **Pull** `{ since, limit, filter, heads }`: every match since an arrival number, oldest first, never ranked.
-  `heads: true` gives only the latest blocks. A signed pull also proves who is asking, so it gets the copies sealed
-  to them.
-- **Push** `{ messages, for }`: the node keeps what its authors signed and what the owner's admission rule lets in.
-  A block whose previous block is missing waits. Two blocks of one key naming one `prev` prove a lie.
-- A signed request carries a `counter` or a `challenge` (`GET /challenge`) and no time.
-- Every answer is signed by a key of the node's holder (a person or a machine).
-- **Discovery:** `.well-known/foodblock` says who the node is, what it holds, who it speaks for and its admission
-  rule. On a local network it can be announced in a shorter form.
+Anyone can leave a node with everything they signed. Peers swap blocks with two messages, **pull** and **push**, and every answer is signed by a key of the node's holder (`spec/modules/nodes.md`). `.well-known/foodblock` says who the node is, what it holds and its admission rule.
 
 Run one with `docker compose -f server/docker-compose.yml up`, or `cd server && npm install && npm start` with a
 Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
@@ -159,8 +138,8 @@ Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 
 ## Licence
 
-MIT. Copyright FOODX WORLD LIMITED (England and Wales, company 16406719), which owns this repository. The protocol
-needs no one's permission to implement.
+Public domain (CC0 1.0; decided 2026-10-29, replacing MIT). FOODX WORLD LIMITED (England and Wales, company 16406719), which
+wrote it and runs this repository, waived its copyright: the protocol needs no one's permission to implement, copy or change.
 
 How a change is proposed and how versions work: [`GOVERNANCE.md`](GOVERNANCE.md). How we treat each other, and what content is not allowed: [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). Reporting a
 weakness: [`SECURITY.md`](SECURITY.md).

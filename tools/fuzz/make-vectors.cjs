@@ -5,7 +5,7 @@
 // tools/fuzz/run-vectors.cjs (the oracle and the Rust core, both) and by sdk/rust/tests/fuzz_vectors.rs (the core alone).
 const fs = require('fs'), path = require('path');
 const fb = require('../../spec/oracle/fb.cjs');
-const { World, rng } = require('./world.cjs');
+const { World, rng, kindOf } = require('./world.cjs');
 
 const out = [];
 const add = (name, op, args, expect, extra = {}) => out.push({ name, op, args, expect, ...extra });
@@ -44,27 +44,32 @@ const mk = (seed, suites = ['std', 'std', 'std']) => {
 // 4/5. Only a side answers a deal; only the author stops an open offer.
 {
   const { w, people } = mk(4, ['std', 'std', 'std', 'std']);
-  const [s, buyer, thief] = people;
-  const thing = w.post(s, 'thing', { kind: 'eggs', name: 'Eggs' });
+  const [s, buyer, thief, stranger] = people;
+  const thing = w.post(s, 'thing', { kind: 'eggs', name: 'Eggs' }, { of: kindOf('eggs') }); // an instance, as the generators write one (things.md)
   const offer = w.post(s, 'promise', { terms: { price: { minor: 100, currency: 'GBP' }, quantity: { value: '6', unit: '{egg}' }, expires: '2026-10-20T00:00:00.000Z' } }, { from: s.id, to: buyer.id, what: thing.hash });
   const held = w.blocks.slice();
   const steal = w.post(thief, 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash, after: [offer.hash] });
-  add('an accept by someone who is not a side of the deal is not_a_side', 'valid', [steal, held], ['not_a_side'], { by: 'first_code' });
+  // whether the signer is a side is the fold's (clean round 2: a side may name a thing whose owner the check cannot know): the accept is
+  // valid, and binds nothing
+  add('an accept by someone who is not a side of the deal is valid: the bytes are sound (clean round 2)', 'valid', [steal, held], [], { by: 'first_code' });
+  add('and it binds nothing: the offer stays offered', 'promise_stage', [offer, [...held, steal], {}], { stage: 'offered' }, { by: 'subset' });
   const open = w.post(s, 'promise', { terms: { price: { minor: 100, currency: 'GBP' }, quantity: { value: '6', unit: '{egg}' }, expires: '2026-10-20T00:00:00.000Z' } }, { from: s.id, what: thing.hash });
   const held2 = w.blocks.slice();
-  const stop = w.post(thief, 'promise', { status: 'stopped', stop: 'before' }, { updates: open.hash, for: open.hash, after: [open.hash] });
-  add('only the author stops an open offer: a stop by anyone else is not_a_side', 'valid', [stop, held2], ['not_a_side'], { by: 'first_code' });
+  // the stop is signed by someone whose chain holds no refused block: a fold and a node read only blocks that pass the check (folds.md),
+  // so a chain that rests on the thief's refused accept is unmet, whatever else is wrong with it
+  const stop = w.post(stranger, 'promise', { status: 'stopped', stop: 'before' }, { updates: open.hash, for: open.hash, after: [open.hash] });
+  add('a stop of an open offer by anyone but its author is valid (clean round 2): it counts for nothing in the fold', 'valid', [stop, held2], [], { by: 'first_code' });
   add('the stranger\'s stop does not stop the offer in the fold', 'promise_stage', [open, [...held2, stop], {}], { stage: 'offered' }, { by: 'subset' });
   const good = w.post(s, 'promise', { status: 'stopped', stop: 'before' }, { updates: open.hash, for: open.hash, after: [open.hash] });
   add('the author\'s own stop does', 'promise_stage', [open, [...held2, good], {}], { stage: 'stopped' }, { by: 'subset' });
 }
 // 6. Money, a price, an amount: an object with its keys, never a bare value.
 {
-  add('a transfer whose money is a bare number has no shape', 'refusals', ['transfer', { money: 5 }, { to_owner: 'a'.repeat(64) }, {}], ['shape'], { by: 'includes_code' });
-  add('a thing whose pack is a bare number has no shape', 'refusals', ['thing', { pack: 5 }, {}, {}], ['shape'], { by: 'includes_code' });
+  add('a transfer whose money is a bare number has no shape', 'refusals', ['transfer', { money: 5 }, { to_owner: 'a'.repeat(64) }, []], ['shape'], { by: 'includes_code' });
+  add('a thing whose pack is a bare number has no shape', 'refusals', ['thing', { pack: 5 }, {}, []], ['shape'], { by: 'includes_code' });
 }
 // 7. An actor with no author is a genesis (core.md 4), even with no key: bad_genesis, not a chain error.
-add('an actor with no author and no key is a malformed genesis', 'refusals', ['actor', { kind: 'person', at: '2026-10-15T09:00:00.000Z', audience: 'public' }, {}, {}], ['bad_genesis'], { by: 'includes_code' });
+add('an actor with no author and no key is a malformed genesis', 'refusals', ['actor', { kind: 'person', at: '2026-10-15T09:00:00.000Z', audience: 'public' }, {}, []], ['bad_genesis'], { by: 'includes_code' });
 // 8. An id of another hash is an id: causal edges run through `sm3:` ids.
 {
   const { w, people } = mk(5, ['sm', 'sm']);
@@ -77,7 +82,7 @@ add('an actor with no author and no key is a malformed genesis', 'refusals', ['a
   const { w, people } = mk(6);
   const v = people[0];
   const good = w.post(v, 'observe', { kind: 'note', text: 'good' });
-  const last = w.post(v, 'thing', { kind: 'eggs', name: 'Stock' });
+  const last = w.post(v, 'thing', { kind: 'eggs', name: 'Stock' }); // bare on purpose: a thing with no kind named stays valid
   const early = w.post(v, 'observe', { kind: 'note', text: 'before the last good block' });
   const nk = fb.keypair(w.r.hex(64), 'std');
   const rot = w.post({ ...v, id: v.id, head: v.id, seq: 0 }, 'grant', { kind: 'key', public_key_sign: nk.public_key_sign, replaces: v.key, counted_to: early.hash, recovery_key: v.recovery.public_key_sign }, { subject: v.id }, { signer: { ...v.recovery, suite: 'std' }, seq: 1, prev: v.id, keepHead: true });
@@ -107,7 +112,7 @@ add('an actor with no author and no key is a malformed genesis', 'refusals', ['a
   add('a block at seq 2^53 - 1 makes a chain that is not ok, without a list of 9e15 gaps', 'check_chain', [[far], id], { ok: false }, { by: 'subset' });
 }
 // 12. A very long string where an id belongs is a grammar error, not a stack overflow in the grammar matcher.
-add('a 70 KB string where an id belongs is refused', 'refusals', ['thing', {}, { of: 'a'.repeat(70000) }, {}], ['grammar'], { by: 'includes_code' });
+add('a 70 KB string where an id belongs is refused', 'refusals', ['thing', {}, { of: 'a'.repeat(70000) }, []], ['grammar'], { by: 'includes_code' });
 fs.writeFileSync(path.join(__dirname, '../../spec/fuzz-vectors.json'), JSON.stringify({
   $comment: 'Minimal reproducers found by the differential fuzzer (tools/fuzz) and the world simulator (tools/sim). Blocks are made and signed by the spec-only oracle. `by` says how `expect` is read: first_code (the first refusal), includes_code, codes (exactly these, in order), subset (every key of expect matches), exact.',
   vectors: out,

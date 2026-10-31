@@ -40,7 +40,7 @@ for (const e of V.events) {
   const own = e.blocks.map((h) => held.find((b) => b.hash === h))
   const before = held.slice(0, e.before)
   attempt(`EPCIS to FoodBlock: ${e.name}`, () => {
-    const drafts = A.fromEvent(e.event, { held: before, parties, schema: V.schema })
+    const drafts = A.fromEvent(e.event, { held: before, parties, schema: V.schemas[e.signer] })
     const made = {}
     drafts.forEach((d, i) => { made[d.role] = own[i].hash })
     const resolve = (v) => (typeof v === 'string' && v.startsWith('$') ? made[v.slice(1)] : Array.isArray(v) ? v.map(resolve) : v)
@@ -82,6 +82,7 @@ attempt('recall: the grant is valid and answers inside a day', () => {
   const i = held.findIndex((b) => b.hash === V.recall.grant)
   assert.deepEqual(fb.valid(held[i], held.slice(0, i)), [])
   assert.equal(held[i].state.kind, 'recall')
+  assert.deepEqual(held[i].state.scope.acts, ['pull'])
   assert.equal(held[i].state.answer_within, V.recall.answer_within)
   assert.equal(call('compare_durations', V.recall.answer_within, 'P1D', '2026-10-14T00:00:00.000Z'), 0)
 })

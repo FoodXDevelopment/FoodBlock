@@ -23,26 +23,38 @@ const acceptProj = a => ({
   refused: Object.entries((a.refused || []).reduce((m, r) => { (m[r.hash] = m[r.hash] || new Set()).add(r.code); return m; }, {})).map(([hash, c]) => ({ hash, codes: [...c].sort() })).sort(byHash),
   equivocations: (a.equivocations || []).map(p => [...p].sort()).sort(),
 });
-const members = s => s && Object.fromEntries(Object.entries(s.members || {}).map(([k, m]) => [k, [...(m.roles || [])].sort()]));
-// Each op: how to call the oracle, and how to project both answers to what the spec decides.
+const members = s => s && Object.fromEntries(Object.entries(s.members || {}).map(([k, m]) => [k, { roles: [...(m.roles || [])].sort(), grant: m.grant, counted_to: m.counted_to }]));
+const sorted = l => [...l].sort();
+// Each op: how to call the oracle, and how to project both answers to what the spec decides. The one table every checker reads: this
+// fuzzer, the audit (test/audit/run.cjs) and the simulation check (tools/sim/oracle-check.cjs) ask every fold of protocol.json `folds`
+// through folds.cjs and compare through `compare` below; a fold with no entry here fails them all.
 const ORDER = Object.keys(require('../../spec/protocol.json').refusals.codes.block);
-const VALUES = ['not_canonical', 'float', 'integer_range', 'decimal', 'grammar', 'time', 'calendar', 'shape', 'type_name'];
-const ORDER_ONLY = new Map();
 const OPS = {
   valid: { oracle: (b, held) => fb.valid(b, held), proj: l => codes(l) }, // core.md section 8: the refusal is every code of the first check that finds anything, in list order
   strict_text: { oracle: t => fb.strictText(t), proj: l => codes(l) }, // strict_text is what the bytes alone say: the first failing check of core.md section 8, then a closed type's own
-  check_chain: { oracle: (blocks, id) => fb.chainFold(blocks, id), proj: c => ({ ...pick(c, ['ok', 'gaps', 'skips']), equivocations: (c.equivocations || []).map(p => [...p].sort()).sort() }) },
+  check_chain: { oracle: (blocks, id) => fb.chainFold(blocks, id), proj: c => ({ ...pick(c, ['head', 'length', 'ok', 'gaps', 'skips', 'broken']), equivocations: (c.equivocations || []).map(p => [...p].sort()).sort() }) },
+  next_link: { oracle: (last, id) => fb.door('next_link', last, id), proj: x => x },
   fork_pairs: { oracle: blocks => fb.forkPairs(blocks), proj: l => l.map(p => [...p].sort()).sort() },
+  identity_state: { oracle: (id, held) => { const o = fb.identityFold(id, held); return { keys: o.keys.map(k => k.key || k), frozen: [...o.frozen], operators: [...fb.operatorsOf(id, held)] }; }, proj: s => ({ keys: sorted(s.keys), frozen: sorted(s.frozen), operators: sorted(s.operators) }) },
   key_timeline: { oracle: (id, held) => fb.identityFold(id, held).timeline, proj: l => l.map(k => ({ ...pick(k, ['key', 'suite', 'frozen']), void: !!k.void })).sort((a, b) => (a.key < b.key ? -1 : 1)) },
-  promise_stage: { oracle: (b, held, o) => fb.promiseStage(b, held), proj: s => pick(s, ['stage', 'sides', 'stop', 'forks', 'offer', 'accept', 'live', 'takers']) },
-  promise_view: { oracle: (b, held, o) => fb.promiseView(b, held, o), proj: s => pick(s, ['stage']) },
-  consent: { oracle: (p, s, held, under) => fb.consentFold(p, s, held, under), proj: c => pick(c, ['word', 'block']) },
+  promise_stage: { oracle: (b, held, o) => fb.promiseStage(b, held), proj: s => s },
+  promise_view: { oracle: (b, held, o) => fb.promiseView(b, held, o), proj: s => s },
+  consent: { oracle: (p, s, held, block) => fb.consentFold(p, s, held, block), proj: c => pick(c, ['word', 'block']) },
   circle_state: { oracle: (id, held) => fb.circleState(id, held), proj: s => s && s.founder && { founder: s.founder, members: members(s), removed: Object.fromEntries(Object.entries(s.removed || {}).sort()) } },
+  members_then: { oracle: (b, who, held) => fb.membersThen(b, who, held), proj: sorted },
   may_act_as: { oracle: (b, id, held) => fb.mayActAs(b, id, held), proj: x => !!x },
   ownership: { oracle: (t, held) => fb.ownershipFold(t, held), proj: o => ({ owner: (o && o.owner) || null, conflict: (o && o.conflict) || null }) },
-  where_now: { oracle: (t, held) => fb.whereNow(t, held), proj: l => [...l].sort() },
-  accept: { oracle: (inc, held) => fb.accept(inc, held), proj: acceptProj },
-  accept_sealed: { oracle: (inc, held) => fb.door('accept_sealed', inc, held), proj: acceptProj },
+  where_now: { oracle: (t, held) => fb.whereNow(t, held), proj: sorted },
+  shares_on: { oracle: (t, held) => fb.door('shares_on', t, held), proj: x => x },
+  pot: { oracle: (b, held, now) => fb.door('pot', b, held, now), proj: x => x },
+  release_shown: { oracle: (b, held) => fb.door('release_shown', b, held), proj: x => x },
+  bids_shown: { oracle: (b, held) => fb.door('bids_shown', b, held), proj: x => x },
+  not_free_shown: { oracle: (b, held) => fb.door('not_free_shown', b, held), proj: x => x },
+  invasion_shown: { oracle: (b, held) => fb.door('invasion_shown', b, held), proj: x => x },
+  use_shown: { oracle: (t, held, keepers) => fb.door('use_shown', t, held, keepers), proj: x => x },
+  accept: { oracle: (inc, held, choices) => fb.door('accept', inc, held, choices), proj: acceptProj }, // choices { takes_pairs }: the node's own, both values drawn
+  answer_pull: { oracle: (...a) => fb.door('answer_pull', ...a), proj: a => ({ n: a.blocks.map(x => x.n), next: a.next }) }, // choices { cap, serves_pairs }
+  accept_sealed: { oracle: (inc, held, choices) => fb.door('accept_sealed', inc, held, choices), proj: acceptProj },
   admission_refusals: { oracle: (...a) => fb.admissionRefusals(...a), proj: codes },
   refusals: { oracle: (t, s, r) => fb.refusals(t, s, r), proj: codes },
   hash: { oracle: (t, s, r) => fb.hashOfBlock({ type: t, state: s, refs: r }, 'std'), proj: x => x },
@@ -83,6 +95,7 @@ function compare(req, ans) {
     if (rustErr && o.err !== undefined) return null; // both refuse: the ops give errors for bad arguments; the message is not spec text
     return { kind: 'ERROR', detail: `rust ${rustErr ? ans.error + ' ' + (ans.code || ans.message) : 'ok ' + canon(ans.ok).slice(0, 200)} | oracle ${o.err !== undefined ? (o.thrown ? 'THROWS ' : '') + o.err : 'ok ' + canon(o.v).slice(0, 200)}` };
   }
+  if (req.op === 'ownership' && ans.ok) { const why = require('./owners.cjs').ownersHaveReasons(req.args[0], req.args[1], ans.ok); if (why) return { kind: 'PROPERTY', detail: 'invariant 32: ' + why }; }
   let r;
   try { r = spec.proj(RUST_FIX[req.op] ? RUST_FIX[req.op](ans.ok) : ans.ok); } catch (e) { return { kind: 'SHAPE', detail: String(e.message) }; }
   if (canon(r) !== canon(o.v)) return { kind: 'DIFF', detail: `rust ${canon(r).slice(0, 400)} | oracle ${canon(o.v).slice(0, 400)}` };
@@ -123,9 +136,9 @@ function casesOf(seed, size) {
     cases.push({ op: 'key_timeline', args: [a.id, heldFor(null)], world: seed });
     for (const s of w.actors) if (r.coin(0.3)) {
       cases.push({ op: 'consent', args: [a.id, s.id, heldFor(null)], world: seed });
-      // consent follows the principal: the sender acts under a grant, and a word about the grantor is a word about the sender
-      const under = r.pick(everything.filter(x => x.type === 'grant' && x.refs && x.refs.to === s.id).map(x => x.hash).concat([undefined]));
-      if (under) cases.push({ op: 'consent', args: [a.id, s.id, heldFor(null), under], world: seed });
+      // consent follows the principal: the sender's block acts under a grant, and a word about the grantor is a word about the sender
+      const sent = everything.filter(x => x.refs && x.refs.author === s.id && x.refs.under);
+      if (sent.length) cases.push({ op: 'consent', args: [a.id, s.id, heldFor(null), r.pick(sent)], world: seed });
     }
   }
   // the compact form: the same bytes from both, and the same verdict on bytes that were bent
@@ -150,10 +163,14 @@ function casesOf(seed, size) {
   cases.push({ op: 'circle_state', args: [g.circle.hash, heldFor(null)], world: seed });
   for (const b of r.shuffle(all).slice(0, 8)) { const blk = { ...b, refs: { ...b.refs, as: g.circle.hash } }; cases.push({ op: 'may_act_as', args: [blk, g.circle.hash, [blk, ...heldFor(b)]], world: seed }); }
   for (const t of g.things.filter(t => !fb.valid(t, all.filter(x => x !== t)).length).slice(0, 6)) { cases.push({ op: 'ownership', args: [t, [t, ...heldFor(t)]], world: seed }); cases.push({ op: 'where_now', args: [t, [t, ...heldFor(t)]], world: seed }); }
+  // every fold of protocol.json the cases above do not reach is asked of the whole valid world (folds.cjs), so a new fold is fuzzed at once
+  const reached = new Set(cases.map(c => c.op));
+  for (const q of require('./folds.cjs').askAll(all)) if (!reached.has(q.op)) cases.push({ op: q.op, args: q.args, world: seed });
   for (let k = 0; k < 4; k++) {
     const inc = r.shuffle(all).filter(() => r.coin(0.6)), held = r.shuffle(closure(all.filter(() => r.coin(0.3)), all));
     const has = new Set(held.map(x => x.hash));
-    const seen = new Set(); cases.push({ op: 'accept', args: [[...inc, ...g.incoming].filter(x => !has.has(x.hash) && !seen.has(x.hash) && seen.add(x.hash)), held], world: seed });
+    const seen = new Set(), arriving = [...inc, ...g.incoming].filter(x => !has.has(x.hash) && !seen.has(x.hash) && seen.add(x.hash));
+    for (const takes_pairs of [false, true]) cases.push({ op: 'accept', args: [arriving, held, { takes_pairs }], world: seed });
   }
   // signed pulls and pushes: valid, replayed, for another node, altered after signing, signed by a key that is not live
   for (const kind of ['pull_refusals', 'push_refusals']) for (let k = 0; k < 8; k++) {
@@ -186,6 +203,12 @@ function casesOf(seed, size) {
       m => ({ ...m, ...(kind === 'pull_refusals' ? { since: (m.since || 0) + 1 } : { for: { z: [] } }) })];
     for (const f of alt) add(JSON.parse(JSON.stringify(f(good))));
   }
+  // a node answers a pull with its own choices { cap, serves_pairs }: both values of serves_pairs, a small and a large cap
+  for (let k = 0; k < 4; k++) {
+    const log = r.shuffle(all).slice(0, 2 + r.int(25)).map((block, i) => ({ n: i + 1, block })), held = log.map(e => e.block);
+    const request = { since: r.int(5), ...(r.coin(0.5) ? { limit: 1 + r.int(6) } : {}), ...(r.coin(0.3) ? { heads: true } : {}), ...(r.coin(0.3) ? { filter: { type: r.pick(['observe', 'transfer', 'promise', 'actor']) } } : {}) };
+    for (const serves_pairs of [false, true]) cases.push({ op: 'answer_pull', args: [log, request, r.pick(w.actors).id, null, { cap: r.pick([1, 3, 100]), serves_pairs }, null, held, null, null], world: seed });
+  }
   // sealed blocks arrive as their signed public header: right ones, wrong keys, wrong links, rivals, a header for a body held
   {
     const headerMsg = (b, tweak = {}, signer = null) => {
@@ -193,7 +216,7 @@ function casesOf(seed, size) {
       if (!who || !b.refs || !b.state) return null;
       const h = { author: b.refs.author, seq: b.state.seq, prev: b.refs.prev, hash: b.hash, ...tweak };
       if (b.state.skip === true) h.skip = true;
-      try { const signed = fb.signMessage(h, who.private_key, who.suite); const { signature, ...header } = signed; return { version: '1.6', header, header_signature: signature }; } catch { return null; }
+      try { const signed = fb.signMessage(h, who.private_key, who.suite); const { signature, ...header } = signed; return { header, header_signature: signature }; } catch { return null; }
     };
     const chained = all.filter(b => b.refs && b.refs.prev && b.refs.author && Number.isInteger(b.state && b.state.seq));
     for (let k = 0; k < 6; k++) {
@@ -207,8 +230,11 @@ function casesOf(seed, size) {
         if (m) msgs.push(r.coin(0.05) ? { ...m, header_signature: r.hex(128) } : m);
       }
       const held = r.shuffle(closure(all.filter(() => r.coin(0.5)), all));
-      cases.push({ op: 'accept_sealed', args: [msgs, held, null], world: seed });
-      cases.push({ op: 'accept', args: [r.shuffle(all).filter(() => r.coin(0.2)), held.filter(() => r.coin(0.7)).concat(msgs.filter(() => r.coin(0.5)))], world: seed }); // bodies for headers held
+      const bodies = r.shuffle(all).filter(() => r.coin(0.2)), headersHeld = held.filter(() => r.coin(0.7)).concat(msgs.filter(() => r.coin(0.5)));
+      for (const takes_pairs of [false, true]) {
+        cases.push({ op: 'accept_sealed', args: [msgs, held, { takes_pairs }], world: seed });
+        cases.push({ op: 'accept', args: [bodies, headersHeld, { takes_pairs }], world: seed }); // bodies for headers held
+      }
     }
   }
   // The door takes JSON text, and JSON text has no lone surrogate (an escape like \\ud83c alone is not JSON). Those never reach the core.
@@ -301,4 +327,6 @@ function main() {
   });
   process.exit((baselineFile ? fresh : list).length ? 1 : 0);
 }
-if (require.main === module) main(); else module.exports = { oracleRun, OPS, casesOf, runRust, compare };
+// A fold of protocol.json that nothing here can ask is a hole in every checker: fail, never skip it.
+const unaskable = () => ['folds', 'views'].flatMap(k => Object.entries(require('../../spec/protocol.json')[k]).filter(([, f]) => f && f.over && f.ops.some(o => !OPS[o])).map(([n]) => n));
+if (require.main === module) { const hole = unaskable(); if (hole.length) { console.log('no OPS entry for the fold(s) ' + hole.join(', ')); process.exit(1); } main(); } else module.exports = { oracleRun, OPS, casesOf, runRust, compare, unaskable };

@@ -24,6 +24,16 @@ updates:
     schedule: { interval: weekly }
     groups:
       gomod: { patterns: ['*'] }
+  - package-ecosystem: docker
+    directory: /server
+    schedule: { interval: weekly }
+    groups:
+      docker: { patterns: ['*'] }
+  - package-ecosystem: gradle
+    directory: /sdk/kotlin
+    schedule: { interval: weekly }
+    groups:
+      gradle: { patterns: ['*'] }
   - package-ecosystem: pip
     directory: /sdk/python
     schedule: { interval: weekly }

@@ -16,20 +16,20 @@ fn each_suite_signs_and_opens() {
     for suite in suites() {
         let k = keypair_from_seed_in(suite, &"11".repeat(32)).unwrap();
         println!("{suite} {} {}", k.public_key_sign, k.private_key);
-        let g = identity::genesis(&k, &identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), ..Default::default() }).unwrap();
+        let g = identity::genesis(&k, &identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), audience: Some(foodblock::Readers::Public), ..Default::default() }).unwrap();
         println!("{}", g);
         assert!(identity::genesis_opens(Some(&g)), "{suite}");
         let held = js::index_of([&g]);
-        let r = valid::valid(&g, &js::Index::default(), None, None);
+        let r = valid::valid(&g, &js::Index::default(), None);
         assert!(r.is_empty(), "{suite}: {r:?}");
         let id = js::hash_of(&g).to_string();
         let b = write("observe", &json!({"text":"hi"}), &json!({}), &WriteOptions {
-            compose: ComposeOptions { author: id.clone(), at: Some("2026-10-15T09:01:00.000Z".into()), ..Default::default() },
+            compose: ComposeOptions { author: id.clone(), at: Some("2026-10-15T09:01:00.000Z".into()), audience: Some(foodblock::Readers::Public), ..Default::default() },
             key: Some(&k), held: std::slice::from_ref(&g), schemas: None }).unwrap();
-        let r = valid::valid(&b, &held, None, None);
+        let r = valid::valid(&b, &held, None);
         assert!(r.is_empty(), "{suite}: {r:?}");
         let mut bad = b.clone(); bad["state"]["text"] = json!("ho");
-        assert!(!valid::valid(&bad, &held, None, None).is_empty());
+        assert!(!valid::valid(&bad, &held, None).is_empty());
     }
 }
 
@@ -122,4 +122,59 @@ fn a_passkey_signs_a_block() {
 }
 fn unhex_32(h: &str) -> [u8; 32] {
     block::unhex(h).unwrap().try_into().unwrap()
+}
+
+#[test]
+fn writing_fills_nothing_in_the_authors_silence() {
+    let author = "a".repeat(64);
+    let says = |audience: Option<Readers>, at: Option<&str>, clockless: bool| {
+        compose("observe", &json!({ "kind": "note" }), &json!({}), &ComposeOptions { author: author.clone(), audience, at: at.map(String::from), clockless, ..Default::default() })
+    };
+    let at = Some("2026-10-15T09:00:00.000Z");
+    assert!(says(None, at, false).unwrap_err().message.contains("audience"), "no audience: refused, not made public");
+    assert!(says(Some(Readers::Public), None, false).unwrap_err().message.contains("`at`"), "no time: refused, not read from a clock");
+    assert!(says(Some(Readers::To(vec![])), at, false).is_err(), "an empty list of recipients is not a way to say public");
+    assert_eq!(says(Some(Readers::Public), at, false).unwrap()["state"]["audience"], "public");
+    assert!(says(Some(Readers::Public), None, true).unwrap()["state"].get("at").is_none(), "clockless states that there is no time");
+}
+
+#[test]
+fn a_genesis_states_its_kind_time_and_audience() {
+    let k = keypair_from_seed(&"11".repeat(32)).unwrap();
+    let full = identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), audience: Some(Readers::Public), ..Default::default() };
+    assert!(identity::genesis(&k, &full).is_ok());
+    for (name, bad) in [
+        ("kind", identity::GenesisOptions { kind: "", ..full.clone() }),
+        ("at", identity::GenesisOptions { at: String::new(), ..full.clone() }),
+        ("audience", identity::GenesisOptions { audience: None, ..full.clone() }),
+    ] {
+        assert!(identity::genesis(&k, &bad).unwrap_err().message.contains(name), "{name} is stated");
+    }
+    let private = identity::GenesisOptions { audience: Some(Readers::To(vec!["b".repeat(64)])), ..full };
+    let g = identity::genesis(&k, &private).unwrap();
+    assert!(g["state"]["audience"].is_array() && g["state"]["nonce"].is_string() && g["salts"].is_object());
+}
+
+#[test]
+fn a_message_has_no_version() {
+    let k = keypair_from_seed(&"11".repeat(32)).unwrap();
+    let g = identity::genesis(&k, &identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), audience: Some(Readers::Public), ..Default::default() }).unwrap();
+    let message = wrap(&g);
+    assert_eq!(message.as_object().unwrap().keys().collect::<Vec<_>>(), ["block", "signature"]);
+    assert_eq!(unwrap(&message).unwrap()["hash"], g["hash"]);
+    let mut old = message.clone();
+    old["version"] = json!("1.7");
+    assert_eq!(unwrap(&old).unwrap_err().code.as_deref(), Some("shape"));
+}
+
+// Judging a block under a grant signed as a circle once marked a copy of every held block again for each block it asked about, so five
+// such blocks took 12 to 39 s (fold-fuzz seed 72000097). The marks are read once per set of blocks now; the answers are unchanged.
+#[test]
+fn a_block_under_a_circle_grant_is_judged_fast() {
+    let w: serde_json::Value = serde_json::from_str(include_str!("fixtures/deep-grants.json")).unwrap();
+    let held: Vec<serde_json::Value> = w["held"].as_array().unwrap().clone();
+    let start = std::time::Instant::now();
+    let answers: Vec<bool> = w["asked"].as_array().unwrap().iter().map(|a| grant::why_not_under(&a["block"], &held, None).is_empty()).collect();
+    assert_eq!(answers, vec![false, false, false, false, true]);
+    assert!(start.elapsed().as_secs() < 10, "took {:?}", start.elapsed());
 }

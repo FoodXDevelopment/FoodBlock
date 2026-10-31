@@ -1,81 +1,52 @@
 """The folds and views (modules/folds.md): thin calls into the Rust core."""
 
-from ._core import call
+from . import _door as door
 from .identity import _arrived
 
-
-def promise_stage(first_block, blocks, confirmers=()) -> dict:
-    """A promise's stage, from its first promise and every block in its deal. No clock."""
-    return call("promise_stage", first_block, list(blocks), {"confirmers": list(confirmers or [])})
-
-
-def promise_view(first_block, blocks, now=None, confirmers=()) -> dict:
-    """The same answer with stage `expired` once the reader's `now` passes `expires` and nothing binds."""
-    return call("promise_view", first_block, list(blocks), {"now": now, "confirmers": list(confirmers or [])})
-
-
-def circle_state(circle, blocks, within=None):
-    return call("circle_state", circle, list(blocks), within)
+circle_state = door.circle_state
+may_act_as = door.may_act_as
+members_then = door.members_then
+where_now = door.where_now
+ownership = door.ownership
+owner_of = door.owner_of
+receiver_of = door.receiver_of
+consent = door.consent  # a person's live word about a sender (or none): { word, block }; the 4th argument is the sender's block (or None)
+live_grant = door.live_grant
+circle_key = door.circle_key
 
 
-def may_act_as(block, circle, blocks, role=None) -> bool:
-    return call("may_act_as", block, circle, list(blocks), role)
+def promise_stage(first_block, blocks) -> dict:
+    """A promise's stage, from its first promise and every block in its deal: a function of the blocks alone. No clock."""
+    return door.promise_stage(first_block, blocks, {})
 
 
-def members_then(block, recipient, blocks) -> list:
-    return call("members_then", block, recipient, list(blocks))
-
-
-def where_now(thing, blocks) -> list:
-    return call("where_now", thing, list(blocks))
-
-
-def ownership(instance, blocks) -> dict:
-    return call("ownership", instance, list(blocks))
-
-
-def owner_of(instance, blocks):
-    return call("owner_of", instance, list(blocks))
-
-
-def receiver_of(promise, blocks):
-    return call("receiver_of", promise, list(blocks))
-
-
-def orderer_of(record):
-    return call("orderer_of", record)
-
-
-def consent(person, sender, blocks, under=None) -> dict:
-    """A person's live word about a sender (or none): { word, block }. `under`: the grant the sender's block acts under; a word
-    about its grantor is a word about the sender (consent follows the principal)."""
-    return call("consent", person, sender, list(blocks), under)
-
-
-def live_grant(act, grants, now):
-    return call("live_grant", act, list(grants), now)
+def promise_view(first_block, blocks, now=None, arrivals=None, unknown_arrival=None) -> dict:
+    """The same answer with stage `expired` once the reader's `now` passes `expires` and nothing binds. `unknown_arrival`
+    ("inside" or "outside") is required whenever `arrivals` ({ hash: time }) is given."""
+    options = {"now": now, "arrivals": arrivals, "unknown_arrival": unknown_arrival}
+    return door.promise_view(first_block, blocks, {k: v for k, v in options.items() if v is not None})
 
 
 def withdrawal_seen(withdrawal, block, blocks, arrived_at=None):
-    return call("withdrawal_seen", withdrawal, block, list(blocks), _arrived(arrived_at, list(blocks) + [withdrawal, block]))
+    return door.withdrawal_seen(withdrawal, block, blocks, _arrived(arrived_at, list(blocks) + [withdrawal, block]))
 
 
 def due(promise, arrived_at=None):
     """`arrived_at` is { hash: time } data, or a function over the blocks it needs (the promise)."""
-    return call("due", promise, _arrived(arrived_at, [promise]))
+    return door.due(promise, _arrived(arrived_at, [promise]))
 
 
-def recovery_reach(rotation, blocks, arrived_at=None):
-    return call("recovery_reach", rotation, list(blocks), _arrived(arrived_at, list(blocks) + [rotation]))
+def recovery_reach(rotation, blocks, arrived_at=None, unknown_arrival=None):
+    return door.recovery_reach(rotation, blocks, _arrived(arrived_at, list(blocks) + [rotation]), unknown_arrival)
+
+
+def ownership_view(instance, blocks, arrived_at=None, unknown_arrival=None):
+    return door.ownership_view(instance, blocks, _arrived(arrived_at, blocks), unknown_arrival)
 
 
 def successor_view(grant, blocks, now=None, arrived_at=None) -> dict:
-    return call("successor_view", grant, list(blocks), now, _arrived(arrived_at, blocks))
-
-
-def circle_key(circle, blocks) -> dict:
-    return call("circle_key", circle, list(blocks))
+    return door.successor_view(grant, blocks, now, _arrived(arrived_at, blocks))
 
 
 def counted_in(result, commitment, counter) -> bool:
-    return call("counted_in", result, str(commitment), str(counter))
+    return door.counted_in(result, str(commitment), str(counter))

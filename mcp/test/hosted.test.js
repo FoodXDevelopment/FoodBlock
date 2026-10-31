@@ -33,11 +33,11 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
     const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
 
     // The host keeps the person's node; the seller's blocks are there as if synced in.
-    const person = newPerson(), seller = newPerson()
+    const person = newPerson('person', { reach: 'P30D' }), seller = newPerson('person', { reach: 'P30D' })
     const host = new Host()
     await host.join(person.genesis)
     const hosted = host.node(person.id)
-    const say = async (type, state, refs) => { const s = fb.write(type, state, refs, { author: seller.id, key: seller.keys, held: seller.chain }); seller.chain.push(s); const r = await hosted.ingest([s]); assert.deepEqual(r.refused, [], JSON.stringify(r.refused)); return s }
+    const say = async (type, state, refs) => { const s = fb.write(type, state, refs, { author: seller.id, key: seller.keys, held: seller.chain, at: new Date().toISOString(), audience: 'public' }); seller.chain.push(s); const r = await hosted.ingest([s]); assert.deepEqual(r.refused, [], JSON.stringify(r.refused)); return s }
     await hosted.ingest([seller.genesis])
     const place = await say('thing', { kind: 'place', name: 'Hartley Mill' }, {})
     const flour = await say('thing', { kind: 'flour', name: 'Strong white flour' }, { place: place.hash })
@@ -48,8 +48,8 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
 
     // The door holds the person's key (it signs on the person's tap) and reaches the node through the window credential.
     // The seller also publishes to the open index (public blocks); the door's find asks it, over HTTP, and verifies the signed answer.
-    const merchant = newPerson() // another seller, public on the index (the host's seller chain holds private blocks the index never takes)
-    const pub = (type, state, refs) => { const s = fb.write(type, { ...state, audience: 'public' }, refs, { author: merchant.id, key: merchant.keys, held: merchant.chain }); merchant.chain.push(s); return s }
+    const merchant = newPerson('person', { reach: 'P30D' }) // another seller, public on the index (the host's seller chain holds private blocks the index never takes)
+    const pub = (type, state, refs) => { const s = fb.write(type, { ...state, audience: 'public' }, refs, { author: merchant.id, key: merchant.keys, held: merchant.chain, at: new Date().toISOString(), audience: 'public' }); merchant.chain.push(s); return s }
     const pPlace = pub('thing', { kind: 'place', name: 'Hartley Mill', fields: { lat: '51.5010', lon: '-0.1250' } }, {})
     const pFlour = pub('thing', { kind: 'flour', name: 'flour' }, { place: pPlace.hash })
     const pOffer = pub('promise', { what: 'flour', terms: { price: { money: fb.money(150, 'GBP'), per: fb.amount('1', 'kg') }, expires: '2099-01-01T00:00:00.000Z' } }, { from: merchant.id, what: pFlour.hash, place: pPlace.hash })
@@ -64,7 +64,7 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
     const lies = (change) => remoteIndex({ base: `${served.url}/index`, fetch: async (url, opts) => { const r = await fetch(url, opts); const b = await r.json(); if (url.endsWith('/find')) change(b); return { ok: r.ok, status: r.status, json: async () => b } } })
     await assert.rejects(() => lies((a) => { a.blocks.find((b) => b.hash === pOffer.hash).state.what = 'free gold' }).offers({ what: 'flour' }), /does not hold/)
     await assert.rejects(() => lies((a) => { a.results.reverse(); a.query.what = 'fish' }).offers({ what: 'flour' }), /does not hold/)
-    await assert.rejects(() => remoteIndex({ base: `${served.url}/index`, key: newPerson().keys.public_key_sign }).offers({ what: 'flour' }), /did not sign/)
+    await assert.rejects(() => remoteIndex({ base: `${served.url}/index`, key: newPerson('person', { reach: 'P30D' }).keys.public_key_sign }).offers({ what: 'flour' }), /did not sign/)
 
     const token = host.credential(person.id, { scopes: ['read', 'write'] })
     const node = remoteNode({ base: `${served.url}/${person.id}`, token })
@@ -125,7 +125,7 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
     assert.deepEqual((await use(claude, 'foodblock_find', { kind: 'things', what: 'flour' })).value.length > 0, true, 'things and peers still read the host')
 
     // 4. Ask is a draft; the person's tap (approval page) signs with their key and the block lands on the HOST.
-    const draft = (await use(claude, 'foodblock_ask', { offer: offer.hash, quantity: { value: '5', unit: 'kg' } })).value
+    const draft = (await use(claude, 'foodblock_ask', { audience: 'public', offer: offer.hash, quantity: { value: '5', unit: 'kg' } })).value
     assert.deepEqual([draft.status, draft.bound], ['pending', false])
     assert.ok(!(await hosted.blocks()).some((b) => b.type === 'promise' && b.refs.to === person.id), 'nothing on the host before the tap')
     const tap = (url, code, action) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ code, ...(action ? { do: action } : {}) }) })
@@ -138,14 +138,14 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
     assert.equal((await use(claude, 'foodblock_read', { hash: ask.hash })).value.promise.stage, 'asked')
 
     // 5. A grant by the person's tap; the seller says yes and counters; the assistant binds, and its block is relayed under the grant.
-    const none = (await use(claude, 'foodblock_accept', { promise: offer.hash })).value
+    const none = (await use(claude, 'foodblock_accept', { audience: 'public', promise: offer.hash })).value
     assert.equal(none.bound, false, 'no grant, no binding')
-    const pairing = (await use(claude, 'foodblock_connect', { acts: ['promise'], days: 7, limit: { minor: 2000, currency: 'GBP' } })).value
+    const pairing = (await use(claude, 'foodblock_connect', { audience: 'public', acts: ['promise'], days: 7, limit: { minor: 2000, currency: 'GBP' } })).value
     assert.match(pairing.summary, /may bind you on: promise/)
     assert.equal((await tap(pairing.approve_at, CODE)).status, 200)
     await say('observe', { kind: 'consent', word: 'yes' }, { subject: person.id })
     const counter = await say('promise', { terms: { price: { money: fb.money(140, 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: flour.hash, answers: ask.hash, for: ask.hash })
-    const bound = (await use(claude, 'foodblock_accept', { promise: counter.hash })).value
+    const bound = (await use(claude, 'foodblock_accept', { audience: 'public', promise: counter.hash })).value
     assert.equal(bound.bound, true, JSON.stringify(bound))
     const onHost = (await hosted.blocks()).find((b) => b.hash === bound.block)
     assert.ok(onHost?.refs.under, 'the assistant\'s block is on the host, naming the grant')
@@ -161,7 +161,7 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
     })()
     const narrow = await open(reader)
     assert.equal((await use(narrow, 'foodblock_find', { what: 'flour' })).error, false)
-    assert.equal((await use(narrow, 'foodblock_ask', { offer: offer.hash })).error, true, 'read-only token cannot draft')
+    assert.equal((await use(narrow, 'foodblock_ask', { audience: 'public', offer: offer.hash })).error, true, 'read-only token cannot draft')
     host.revoke(token)
     const gone = await use(claude, 'foodblock_find', { what: 'flour' })
     assert.equal(gone.error, true); assert.match(gone.value.error.message, /credential|401/)

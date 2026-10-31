@@ -31,10 +31,26 @@ enum Core {
         if let code = answer["code"] as? String { throw FoodBlockError.coded(code, message) }
         throw FoodBlockError.invalid(message)
     }
-    /// For questions that cannot fail (a yes or no, a list): a failure reads as the empty answer.
-    static func maybe(_ op: String, _ args: Any?...) -> Any? { try? call(op, args) }
-    static func bool(_ op: String, _ args: Any?...) -> Bool { (try? call(op, args)) as? Bool ?? false }
-    static func strings(_ op: String, _ args: Any?...) -> [String] { (try? call(op, args)) as? [String] ?? [] }
+    /// For questions that cannot fail (a yes or no, a list). A failure throws: it never reads as the empty answer, because
+    /// the empty answer ("no refusals", "live", false) is often the permissive one (security J).
+    static func maybe(_ op: String, _ args: Any?...) throws -> Any? { try call(op, args) }
+    /// A list of blocks or findings. An answer that is not a list throws: it never reads as the empty list.
+    static func list(_ op: String, _ args: Any?...) throws -> [JSON] {
+        let v = try call(op, args)
+        if v == nil { return [] }
+        guard let list = v as? [JSON] else { throw FoodBlockError.invalid("foodblock: \(op) gave no list") }
+        return list
+    }
+    static func bool(_ op: String, _ args: Any?...) throws -> Bool {
+        guard let v = try call(op, args) as? Bool else { throw FoodBlockError.invalid("foodblock: \(op) gave no yes or no") }
+        return v
+    }
+    static func strings(_ op: String, _ args: Any?...) throws -> [String] {
+        let v = try call(op, args)
+        if v == nil { return [] }
+        guard let list = v as? [String] else { throw FoodBlockError.invalid("foodblock: \(op) gave no list of text") }
+        return list
+    }
     static func json(_ op: String, _ args: Any?...) throws -> JSON {
         guard let v = try call(op, args) as? JSON else { throw FoodBlockError.invalid("foodblock: \(op) gave no object") }
         return v

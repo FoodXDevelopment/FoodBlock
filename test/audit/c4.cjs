@@ -1,9 +1,9 @@
-const { fb, oracle, World } = require('./lib.cjs')
+const { fb, oracle, World, kindOf } = require('./lib.cjs')
 const GBP = (m) => ({ minor: m, currency: 'GBP' })
 const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
 const w = new World('case4 market maker')
 const maya = w.person('maya'), t1 = w.person('t1'), t2 = w.person('t2'), t3 = w.person('t3')
-const eggs = w.w(maya, 'thing', { kind: 'eggs' }, {}, 'eggs')
+const eggs = w.w(maya, 'thing', { kind: 'eggs' }, { of: kindOf('eggs') }, 'eggs')
 const both = (label, first) => { const s = fb.promiseStage(first, w.blocks), o = oracle.door('promise_stage', first, w.blocks); if (JSON.stringify([s.stage, s.accept, s.takers.map(t => t.allocation), s.forks, s.live]) !== JSON.stringify([o.stage, o.accept, o.takers.map(t => t.allocation), o.forks, o.live])) w.problems.push('stage differs: ' + label + ' sdk ' + s.stage + ' oracle ' + o.stage); return s }
 // open standing offer, limit 100
 const O = w.w(maya, 'promise', { terms: { price: { money: GBP(300), per: { value: '1', unit: 'egg' } }, quantity: { value: '100', unit: 'egg' }, expires: '2027-01-01T00:00:00.000Z' } }, { from: maya.id, what: eggs.hash }, 'standing open offer 100 eggs @3.00/egg(minor)')

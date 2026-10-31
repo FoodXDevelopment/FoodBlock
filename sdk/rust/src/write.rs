@@ -1,9 +1,9 @@
 //! Writing a block and carrying it (core.md sections 5 and 6, modules/privacy.md). `compose` stamps an author's words with
 //! what every block carries (who, when, its place in the signing key's chain, what was seen, who may see it); `write`
-//! is the one path every writer shares: compose, check, sign, chain. On the wire a public block is
-//! `{ version, block, signature }`; a sealed one is `{ version, header, header_signature, envelope }`.
+//! is the one path every writer shares: compose, check, sign, chain. It fills nothing in the author's silence: the audience and the time
+//! are stated. On the wire a public block is `{ block, signature }`; a sealed one is `{ header, header_signature, envelope }`.
 use crate::audience::{commit_in, try_new_salt};
-use crate::block::{create_in, hash_suite, suite_of};
+use crate::block::{create_in, hash_suite};
 use crate::canonical::canonical;
 use crate::chain::Link;
 use crate::check::{refusals, CheckOptions};
@@ -16,18 +16,26 @@ use crate::sign::{sign_in, verify_message_in, Keypair};
 
 pub const PUBLIC: &str = "public";
 
+/// Who may read a block, as its author states it (privacy.md). Nothing fills it in: a block with no stated audience is refused.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Readers {
+    Public,
+    /// Recipients (people, circles, `circle#role`), written as commitments with a nonce. Never empty.
+    To(Vec<String>),
+}
+
 /// What every block carries beside its author's words.
 #[derive(Debug, Clone, Default)]
 pub struct ComposeOptions {
     /// The author's id (the hash of their genesis).
     pub author: String,
-    /// Recipients (people, circles, `circle#role`), written as commitments with a nonce. Empty: public.
-    pub audience: Vec<String>,
+    /// Who may read it: stated, never filled in (None is refused).
+    pub audience: Option<Readers>,
     /// Heads the author had seen (at most 16).
     pub after: Vec<String>,
-    /// When it was said (UTC, `YYYY-MM-DDTHH:MM:SS.sssZ`). None: now (std only).
+    /// When it was said (UTC, `YYYY-MM-DDTHH:MM:SS.sssZ`): stated, never read from a clock here (None without `clockless` is refused).
     pub at: Option<String>,
-    /// A micro with no clock leaves out `at` (blocks.md, No clock); only an observe, transform or transfer may.
+    /// A micro with no clock states so and gives no `at` (blocks.md, No clock); only an observe, transform or transfer may.
     /// The write check refuses it on any other type (`at_missing`).
     pub clockless: bool,
     /// Its place in the signing key's chain. `write` finds it from the held blocks when None.
@@ -42,16 +50,6 @@ pub struct ComposeOptions {
     pub skip: bool,
 }
 
-fn at_or_now(at: &Option<String>) -> Result<String> {
-    match at {
-        Some(a) => Ok(a.clone()),
-        #[cfg(feature = "std")]
-        None => Ok(crate::time::now()),
-        #[cfg(not(feature = "std"))]
-        None => Err(Error::new("write: this build has no clock; give `at`")),
-    }
-}
-
 /// A block as its author says it, stamped with author, at, audience, seq/prev and after. A private block comes back
 /// with its salts beside it (`salts`), never signed.
 pub fn compose(
@@ -63,7 +61,14 @@ pub fn compose(
     if options.author.is_empty() {
         return Err(Error::new("write: a block names its author"));
     }
-    let at = if options.clockless && options.at.is_none() { None } else { Some(at_or_now(&options.at)?) };
+    let at = match (&options.at, options.clockless) {
+        (Some(a), _) => Some(a.clone()),
+        (None, true) => None,
+        (None, false) => return Err(Error::new("write: `at` is stated (a time), or the block is `clockless`: nothing reads a clock for the author")),
+    };
+    let Some(audience) = &options.audience else {
+        return Err(Error::new("write: `audience` is stated (\"public\" or a list of recipients): nothing fills it in for the author"));
+    };
     if at.as_deref().is_some_and(|a| crate::time::parse(a).is_none()) {
         return Err(Error::new("write: at is a time"));
     }
@@ -74,13 +79,16 @@ pub fn compose(
     if let Some(at) = at {
         state.insert("at".into(), Value::String(at));
     }
-    if options.audience.is_empty() {
-        state.insert("audience".into(), Value::String(PUBLIC.into()));
-    } else {
-        let who: Vec<&str> = options.audience.iter().map(String::as_str).collect();
+    if let Readers::To(list) = audience {
+        if list.is_empty() {
+            return Err(Error::new("write: an audience that is a list names at least one recipient; for everyone, state \"public\""));
+        }
+        let who: Vec<&str> = list.iter().map(String::as_str).collect();
         let written = commit_in(&options.suite, &who, &options.salts)?;
         state.insert("audience".into(), json!(written.audience));
         salts = Some(written.salts_json());
+    } else {
+        state.insert("audience".into(), Value::String(PUBLIC.into()));
     }
     if let Some(link) = &options.link {
         state.insert("seq".into(), json!(link.seq));
@@ -160,39 +168,48 @@ pub fn write(
     }
     let signature = sign_in(&key.suite, &block, &key.private_key)?;
     block["signature"] = Value::String(signature);
+    // what the writer signed, judged as a node would (core.md, section 8) on what it holds: a writer never signs a block valid() refuses
+    // (a key grant that rotates another key of the author: not_own_rotation). A block whose needs the writer does not hold is judged by
+    // the node that holds them.
+    let mut judged = block.clone();
+    if let Value::Object(m) = &mut judged {
+        m.shift_remove("salts");
+    }
+    let found = crate::valid::valid_in_closed(&judged, &held, options.schemas);
+    if !found.is_empty() && !found.iter().all(|r| r.code == "unmet") {
+        return Err(Error::refused(found));
+    }
     Ok(block)
 }
 
 // ---- Messages ----
-/// A signed public block as it travels: `{ version, block, signature }`, and `suite` when it is not `std`. Never the
-/// hash: readers recompute it.
+/// A signed public block as it travels: `{ block, signature }`. Never the hash, and never a suite: a reader recomputes
+/// the id in the suite of the key that signed it (core.md, sections 2 and 6).
 pub fn wrap(signed: &Value) -> Value {
-    let mut out = json!({
-        "version": crate::spec().version,
+    json!({
         "block": { "type": signed.get("type"), "state": signed.get("state"), "refs": signed.get("refs") },
         "signature": signed.get("signature"),
-    });
-    let suite = suite_of(signed);
-    if !suite.is_empty() && suite != "std" {
-        out["suite"] = json!(suite);
-    }
-    out
+    })
 }
 
-/// A block off the wire: its hash recomputed from its content in the message's suite, its signature and version kept
-/// beside. A suite the reader does not know is refused (`unknown_suite`).
+/// A block off the wire: its hash recomputed from its content (in the suite the block itself shows: `block::suite_from_block`;
+/// a reader that holds the author's keys computes it in the signing key's, `identity::id_in`), its signature kept
+/// beside. A message that names a suite is refused (`bad_hash`): no label may give one signed block a second id. A message that
+/// carries a `version` is refused (`shape`): a message has no version.
 pub fn unwrap(message: &Value) -> Result<Value> {
     let inner = message.get("block");
     let type_name = inner.and_then(|b| b.get("type")).and_then(Value::as_str);
     let signature = message.get("signature").and_then(Value::as_str);
     let (Some(type_name), Some(signature)) = (type_name, signature) else {
         return Err(Error::new(
-            "write: a message is { version, block, signature }",
+            "write: a message is { block, signature }",
         ));
     };
-    let suite = message.get("suite").and_then(Value::as_str).unwrap_or("std");
-    if crate::spec().suite(suite).is_none() {
-        return Err(Error::coded("unknown_suite", format!("write: the suite {suite} is not one this reader knows")));
+    if message.get("version").is_some() {
+        return Err(Error::coded("shape", "write: a message carries no version: it is { block, signature }"));
+    }
+    if message.get("suite").is_some() {
+        return Err(Error::coded("bad_hash", "write: a message names no suite: a block is hashed in the suite of the key that signed it"));
     }
     let state = inner
         .and_then(|b| b.get("state"))
@@ -209,16 +226,14 @@ pub fn unwrap(message: &Value) -> Result<Value> {
             format!("write: a block is at most {limit} bytes"),
         ));
     }
+    let suite = crate::block::suite_from_block(&json!({ "type": type_name, "state": state, "refs": refs }));
     let mut out = json!({
-        "hash": hash_suite(suite, type_name, &state, &refs), "type": type_name, "state": state, "refs": refs,
-        "signature": signature, "version": message.get("version"),
+        "hash": hash_suite(&suite, type_name, &state, &refs), "type": type_name, "state": state, "refs": refs,
+        "signature": signature,
     });
-    if suite != "std" {
-        out["suite"] = json!(suite);
-    }
     if let Some(r) = message
         .get("reveals")
-        .filter(|r| crate::js::truthy(Some(r)))
+        .filter(|r| !r.is_null())
     {
         out["reveals"] = r.clone();
     }
@@ -243,7 +258,7 @@ pub fn header(block: &Value) -> Value {
         .map(String::from)
         .unwrap_or_else(|| crate::block::rehash(block));
     out.insert("hash".into(), Value::String(h));
-    // A safety report made under a law may leave its subject out of the audience: its header says so (privacy.md).
+    // A block whose author left its subject out of the audience says so, and its header repeats it (privacy.md, decision F8).
     if st(block, "withheld") == Some(&Value::Bool(true)) {
         out.insert("withheld".into(), Value::Bool(true));
     }
@@ -256,7 +271,7 @@ pub fn header(block: &Value) -> Value {
 
 /// Whether a sealed copy's header is signed by this key (the key that signed the block).
 pub fn header_signed_by(message: &Value, public_key: &str) -> bool {
-    let suite = crate::sign::suite_of_key(public_key).unwrap_or_else(|| "std".to_string());
+    let suite = crate::sign::suite_named_by(public_key);
     let mut part = message.get("header").cloned().unwrap_or_else(|| json!({}));
     if let Value::Object(m) = &mut part {
         m.insert(
@@ -270,9 +285,9 @@ pub fn header_signed_by(message: &Value, public_key: &str) -> bool {
     verify_message_in(&suite, &part, public_key)
 }
 
-/// A sealed copy: `{ version, header, header_signature, envelope }`. The plaintext `{ version, block, signature,
+/// A sealed copy: `{ header, header_signature, envelope }`. The plaintext `{ block, signature,
 /// reveals }` is sealed to `keys` (public encryption keys of the suite `enc_suite`, hex). A copy with reveals goes to one recipient, or to several
-/// who share every reveal. `private_key` is the key that signed the block.
+/// who share every reveal. `private_key` is the key that signed the block, in `sign_suite` (its own suite).
 #[cfg(feature = "envelope")]
 pub fn seal_copy(
     signed: &Value,
@@ -281,9 +296,10 @@ pub fn seal_copy(
     private_key: &str,
     fixed: Option<&crate::envelope::Fixed>,
     enc_suite: &str,
+    sign_suite: &str,
 ) -> Result<Value> {
     let top = header(signed);
-    let header_signature = sign_message_in(suite_of(signed), &top, private_key)?
+    let header_signature = sign_message_in(sign_suite, &top, private_key)?
         .get("signature")
         .cloned()
         .unwrap_or(Value::Null);
@@ -295,7 +311,7 @@ pub fn seal_copy(
     };
     let envelope = crate::envelope::seal_with(&plaintext, keys, enc_suite, fixed)?;
     Ok(
-        json!({ "version": crate::spec().version, "header": top, "header_signature": header_signature, "envelope": envelope }),
+        json!({ "header": top, "header_signature": header_signature, "envelope": envelope }),
     )
 }
 
@@ -307,13 +323,16 @@ pub fn open_copy(message: &Value, x25519_private: &str) -> Result<Value> {
         message.get("envelope").unwrap_or(&Value::Null),
         x25519_private,
     )?;
+    if message.get("version").is_some() {
+        return Err(Error::coded("shape", "write: a sealed copy carries no version: it is { header, header_signature, envelope }"));
+    }
     let fields = crate::spec().list("messages.plaintext");
     if !fields
         .iter()
         .all(|k| k == "reveals" || plaintext.get(k).is_some())
     {
         return Err(Error::new(
-            "write: a plaintext is { version, block, signature, reveals }",
+            "write: a plaintext is { block, signature, reveals }",
         ));
     }
     let mut inside = unwrap(&plaintext)?;
@@ -321,10 +340,19 @@ pub fn open_copy(message: &Value, x25519_private: &str) -> Result<Value> {
         if h.get("hash") != inside.get("hash") {
             return Err(Error::new("write: the header names another block"));
         }
+        // the public header describes the body exactly (privacy.md): an author cannot show nodes one place in the chain and the
+        // recipients another (security20 privacy/r3)
+        let same = h.get("author") == inside.get("refs").and_then(|r| r.get("author"))
+            && h.get("seq") == inside.get("state").and_then(|s| s.get("seq"))
+            && h.get("prev") == inside.get("refs").and_then(|r| r.get("prev"))
+            && ["skip", "withheld"].iter().all(|f| h.get(*f).is_some_and(|v| v == &Value::Bool(true)) == inside.get("state").and_then(|s| s.get(*f)).is_some_and(|v| v == &Value::Bool(true)));
+        if !same {
+            return Err(Error::new("write: the header does not describe the block inside it (author, seq, prev, skip, withheld)"));
+        }
     }
     inside["reveals"] = plaintext
         .get("reveals")
-        .filter(|r| crate::js::truthy(Some(r)))
+        .filter(|r| !r.is_null())
         .cloned()
         .unwrap_or_else(|| json!([]));
     Ok(inside)

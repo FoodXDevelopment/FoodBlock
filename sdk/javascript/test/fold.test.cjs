@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 
-// FoodBlock 1.6 (folds.md), as spec/vectors.json states them (spec/run-vectors.cjs runs every case; these name the
+// FoodBlock 1.7 (folds.md), as spec/vectors.json states them (spec/run-vectors.cjs runs every case; these name the
 // rules that matter most).
 const vectors = require('../../../spec/vectors.json')
 const held = (v) => v.blocks.map((b) => ({ hash: b.hash, ...b.block, signature: b.signature }))

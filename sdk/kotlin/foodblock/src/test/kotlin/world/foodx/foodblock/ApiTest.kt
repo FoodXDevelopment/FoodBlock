@@ -1,5 +1,7 @@
 package world.foodx.foodblock
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -18,7 +20,7 @@ class ApiTest {
     private val me = Identity.genesis(
         keys, kind = "sensor", recoveryKey = recovery.publicKeySign, reach = "P30D",
         encryptionKey = "0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",
-        at = "2026-10-15T09:00:00.000Z",
+        at = "2026-10-15T09:00:00.000Z", audience = listOf(PUBLIC),
     )
     private val id = me["hash"]!!.jsonPrimitive.content
 
@@ -26,7 +28,7 @@ class ApiTest {
         "observe",
         buildJsonObject { put("kind", "reading"); put("amount", FoodBlock.amount(celsius, "Cel")) },
         buildJsonObject { put("subject", id) },
-        WriteOptions(author = id, key = keys, held = held, at = at),
+        WriteOptions(author = id, key = keys, held = held, at = at, audience = listOf(PUBLIC)),
     )
     private fun JsonObject.at(part: String, key: String) = this[part]!!.jsonObject[key]!!.jsonPrimitive.content
 
@@ -43,6 +45,7 @@ class ApiTest {
         assertTrue(FoodBlock.checkChain(listOf(first, second), id).ok, "one line, no gaps")
         assertEquals(FoodBlock.hash(first), first["hash"]!!.jsonPrimitive.content)
         val wire = FoodBlock.wrap(first)
+        assertTrue("version" !in wire, "a message carries no version")
         assertEquals(first["hash"], FoodBlock.unwrap(wire)["hash"])
     }
 
@@ -57,10 +60,25 @@ class ApiTest {
     @Test fun aBrokenBlockIsRefusedWithEveryReason() {
         val e = assertFailsWith<RefusedException> {
             FoodBlock.write("observe", buildJsonObject { put("amount", 3.9) }, buildJsonObject {},
-                WriteOptions(author = id, key = keys, held = listOf(me), at = "2026-10-15T09:01:00.000Z"))
+                WriteOptions(author = id, key = keys, held = listOf(me), at = "2026-10-15T09:01:00.000Z", audience = listOf(PUBLIC)))
         }
         assertTrue(e.reasons.isNotEmpty(), "the reasons come back")
         println("refused: ${e.refusals.ifEmpty { e.reasons }}")
+    }
+
+    @Test fun aMissingChoiceIsRefusedNotFilled() {
+        val note = buildJsonObject { put("kind", "note"); put("text", "hi") }
+        val at = "2026-10-15T09:01:00.000Z"
+        // no audience, no at: the core refuses; the SDK fills neither
+        assertFailsWith<FoodBlockException> { FoodBlock.write("observe", note, buildJsonObject {}, WriteOptions(author = id, key = keys, held = listOf(me), at = at)) }
+        assertFailsWith<FoodBlockException> { FoodBlock.write("observe", note, buildJsonObject {}, WriteOptions(author = id, key = keys, held = listOf(me), audience = listOf(PUBLIC))) }
+        assertFailsWith<FoodBlockException> { Identity.genesis(keys, kind = "sensor", at = at, audience = emptyList()) }
+        // the node's own pair choice is stated; none is an argument error
+        assertFailsWith<FoodBlockException> { FoodBlock.call("accept", JsonArray(emptyList()), JsonArray(emptyList()), JsonNull) }
+        assertFailsWith<FoodBlockException> { FoodBlock.call("admission_refusals", me, JsonPrimitive("x"), JsonArray(emptyList())) }
+        // arrivals without unknown_arrival are refused
+        assertFailsWith<FoodBlockException> { Identity.keysOf(id, listOf(me), mapOf(me["hash"]!!.jsonPrimitive.content to at)) }
+        Identity.keysOf(id, listOf(me), mapOf(me["hash"]!!.jsonPrimitive.content to at), "inside")
     }
 
     @Test fun aSealedValueOpensOnlyForItsRecipient() {
@@ -77,11 +95,11 @@ class ApiTest {
         for (suite in listOf("std", "p256", "sm")) {
             val k = FoodBlock.generateKeypair(suite)
             assertEquals(suite, FoodBlock.suiteOfKey(k.publicKeySign) ?: "std")
-            val genesis = Identity.genesis(k, kind = "sensor", at = "2026-10-15T09:00:00.000Z")
+            val genesis = Identity.genesis(k, kind = "sensor", at = "2026-10-15T09:00:00.000Z", audience = listOf(PUBLIC))
             val gid = genesis["hash"]!!.jsonPrimitive.content
             val block = FoodBlock.write(
                 "observe", buildJsonObject { put("kind", "note"); put("text", "hi") }, buildJsonObject {},
-                WriteOptions(author = gid, key = k, held = listOf(genesis), at = "2026-10-15T09:01:00.000Z"),
+                WriteOptions(author = gid, key = k, held = listOf(genesis), at = "2026-10-15T09:01:00.000Z", audience = listOf(PUBLIC)),
             )
             assertTrue(FoodBlock.valid(block, listOf(genesis)).isEmpty(), "$suite: valid")
             assertEquals(block["hash"]!!.jsonPrimitive.content, FoodBlock.hash(block))
@@ -100,7 +118,7 @@ class ApiTest {
     @Test fun badInputIsAnErrorNotACrash() {
         val e = assertFailsWith<FoodBlockException> { FoodBlock.sign(buildJsonObject { put("type", "thing") }, "not hex") }
         assertTrue(e.kind == "crypto" || e.kind == "argument", e.kind)
-        assertEquals("1.6", FoodBlock.VERSION)
+        assertEquals("1.7", FoodBlock.VERSION)
         assertEquals(64, FoodBlock.hash("thing", buildJsonObject { put("kind", JsonPrimitive("eggs")) }, buildJsonObject {}).length)
     }
 }

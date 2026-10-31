@@ -42,7 +42,7 @@ fn find<'a>(blocks: &'a [Value], h: &str) -> Option<&'a Value> {
     blocks.iter().find(|b| b["hash"] == json!(h))
 }
 
-const BINDING: [&str; 4] = ["accepted", "underway", "done", "reversed"];
+const BINDING: [&str; 5] = ["accepted", "underway", "breached", "done", "reversed"];
 
 fn stage_of(root: &Value, blocks: &[Value]) -> Value {
     foodblock::fold::promise_stage(root, blocks, &foodblock::fold::StageOptions::default())
@@ -148,7 +148,7 @@ fn verdicts(u: &[Value], full: &foodblock::js::Index) -> BTreeMap<String, Vec<St
     for b in u {
         let h = World::hash(b);
         let blk = held.swap_remove(&h).unwrap_or_else(|| b.clone());
-        out.insert(h.clone(), foodblock::valid(&blk, &held, None, None).into_iter().map(|x| x.code).collect());
+        out.insert(h.clone(), foodblock::valid(&blk, &held, None).into_iter().map(|x| x.code).collect());
         held.insert(h, blk);
     }
     out
@@ -219,8 +219,9 @@ pub fn check(w: &mut World) -> Vec<String> {
         }
     }
     trace("// 3. Convergence");
-    // 3. Convergence: after every message arrived, nodes hold the same blocks. A block one node refused for want of context that
-    //    another took is a verdict that depended on arrival order.
+    // 3. Convergence is equal verdicts, never equal holdings (nodes.md: a node may refuse any push, and has no duty to store).
+    //    A node is flagged only for a block its own `accept` over its own store would take and it still lacks: a verdict that
+    //    depended on arrival order. A block it would not take (waiting for context it never got, refused) is its right.
     let sound = sound_set(&u, &full, &verdict);
     let reference: Vec<Value> = u.iter().filter(|b| sound.contains(b["hash"].as_str().unwrap())).cloned().collect();
     let mut shown = 0;
@@ -235,16 +236,19 @@ pub fn check(w: &mut World) -> Vec<String> {
             if !counts {
                 continue;
             }
+            let acc = foodblock::sync::accept(&[b.clone()], &n.store, n.takes_pairs, None);
+            if !acc.taken.iter().any(|t| t["hash"] == json!(h)) {
+                continue;
+            }
             shown += 1;
             if shown <= 4 {
-                let acc = foodblock::sync::accept(&[b.clone()], &n.store, None, None);
                 let why = n.refused.get(h).cloned().unwrap_or_else(|| if n.pending.iter().any(|p| p["hash"] == json!(h)) { "(waiting for its prev)".into() } else { "(never reached)".into() });
-                v.push(format!("{} lacks a block that counts: {} {} (refused as {}); with its full record now: {}", n.name, b["type"], b["state"]["kind"], why, acc.to_json()));
+                v.push(format!("{} lacks a block that counts and that its own accept would take: {} {} (refused as {}); with its full record now: {}", n.name, b["type"], b["state"]["kind"], why, acc.to_json()));
             }
         }
     }
     if shown > 4 {
-        v.push(format!("... {} more blocks that count are missing from nodes", shown - 4));
+        v.push(format!("... {} more blocks that nodes would take are missing from them", shown - 4));
     }
     // 4. Every node folds the same blocks to the same answers, whatever order it took them in.
     let base = fold_digest(w, &reference);
@@ -260,9 +264,14 @@ pub fn check(w: &mut World) -> Vec<String> {
             continue;
         }
         {
+            // the folds over the blocks this node holds, in the order it took them, equal the folds over the same blocks read in
+            // the record's order (it need not hold the rest)
+            let held: BTreeSet<&str> = n.store.iter().filter_map(|b| b["hash"].as_str()).collect();
+            let same: Vec<Value> = u.iter().filter(|b| held.contains(b["hash"].as_str().unwrap_or(""))).cloned().collect();
             let d = fold_digest(w, &n.store);
-            if d != base {
-                v.push(format!("{} folds what it holds differently from the whole record: {}", n.name, first_diff(&d, &base)));
+            let e = fold_digest(w, &same);
+            if d != e {
+                v.push(format!("{} folds what it holds differently from the same blocks read in the record's order: {}", n.name, first_diff(&d, &e)));
             }
         }
     }
@@ -292,21 +301,24 @@ pub fn check(w: &mut World) -> Vec<String> {
         }
     }
     trace("// 6. No double");
-    // 6. No double allocation: an open offer never binds more than it offers, and only what its owner allocated.
+    // 6. Allocations: every allocation the offerer signed binds its taker, and only what she allocated binds.
+    let mut owed = 0i64;
     for o in &w.truth.opens {
         let Some(root) = find(&u, &o.root) else { continue };
         let s = stage_of(root, &u);
         let takers = s["takers"].as_array().cloned().unwrap_or_default();
         let sum: i64 = takers.iter().map(|t| t["quantity"]["value"].as_str().and_then(|x| x.parse::<i64>().ok()).unwrap_or(0)).sum();
         let allocated: i64 = o.allocated.iter().map(|(_, q)| q).sum();
-        if sum > o.offered {
-            v.push(format!("open offer {} binds {} against {} offered (double allocation)", &o.root[..8], sum, o.offered));
+        // Every allocation the offerer signed binds her; what is past the offer is her own broken promise, owed to each taker
+        // (promises.md, Who may bind; decision C2, invariant 11). It is reported, never a violation.
+        if sum > o.offered && sum == allocated {
+            owed += sum - o.offered;
         }
         if sum > allocated {
             v.push(format!("open offer {} binds {} but only {} was allocated", &o.root[..8], sum, allocated));
         }
-        if allocated <= o.offered && sum < allocated {
-            v.push(format!("open offer {} binds {} of {} allocated within the offer", &o.root[..8], sum, allocated));
+        if sum < allocated {
+            v.push(format!("open offer {} binds {} of {} allocated, though every allocation she signed binds her", &o.root[..8], sum, allocated));
         }
         for t in &takers {
             let req = t["request"].as_str().unwrap_or("");
@@ -315,6 +327,7 @@ pub fn check(w: &mut World) -> Vec<String> {
             }
         }
     }
+    w.stats.owed_past_offer += owed;
     trace("// 7. Ownership");
     // 7. Ownership: only the owner moves it, only the receiver's yes completes it, crossing moves are named.
     for (thing, owner, conflict) in &w.truth.owners {
@@ -331,6 +344,12 @@ pub fn check(w: &mut World) -> Vec<String> {
         if !(full.contains_key(a) && full.contains_key(b)) {
             continue;
         }
+        // a pair is two blocks that both count in the identity fold (folds.md, A fork is a burden): one signed by a key the recovery
+        // rotation cut off is no word of its author's, so it pairs with nothing (the chain still lists it)
+        let counts = |h: &String| find(&u, h).map_or(false, |x| foodblock::identity::signed_by_author(x, &u, None));
+        if !(counts(a) && counts(b)) {
+            continue;
+        }
         let mut want = [a.clone(), b.clone()];
         want.sort();
         if !pairs.iter().any(|p| p[0] == want[0] && p[1] == want[1]) {
@@ -344,7 +363,10 @@ pub fn check(w: &mut World) -> Vec<String> {
     }
     for h in &w.truth.after_fork {
         if let Some(b) = find(&u, h) {
-            if !foodblock::identity::forked(b, &u) {
+            // only after a pair that counts: the author has one whose two blocks are both her word
+            let author = b["refs"]["author"].clone();
+            let paired = w.truth.pairs.iter().any(|(who, x, y)| json!(who) == author && [x, y].iter().all(|k| find(&u, k).map_or(false, |z| foodblock::identity::signed_by_author(z, &u, None))));
+            if paired && !foodblock::identity::forked(b, &u) {
                 v.push(format!("a block after an equivocating pair is not marked forked: {}", &h[..8]));
             }
         }
@@ -373,7 +395,7 @@ pub fn check(w: &mut World) -> Vec<String> {
     // 10. STOPs are honoured; only the person lifts one.
     for (p, s, word) in &w.truth.consents {
         let c = foodblock::strangers::consent(p, Some(s), &u, None);
-        if c["word"] != json!(word) && c["word"].is_null() == (*word != "none") {
+        if c["word"] != json!(word) {
             v.push(format!("consent of {} about {}: the fold says {}, expected {}", name(p), name(s), c["word"], word));
         }
     }
@@ -389,7 +411,7 @@ pub fn check(w: &mut World) -> Vec<String> {
         }
         let mut held = full.clone();
         held.shift_remove(&World::hash(first));
-        let bad = foodblock::valid(first, &held, None, None);
+        let bad = foodblock::valid(first, &held, None);
         if bad.iter().any(|x| x.code == "unmet" || x.code == "chain") {
             v.push(format!("the block sent despite the STOP of {} is not judged on itself and what it rests on: {:?}", name(person), bad.iter().map(|x| x.code.clone()).collect::<Vec<_>>()));
         }
@@ -426,7 +448,7 @@ pub fn check(w: &mut World) -> Vec<String> {
         let mut held = full.clone();
         held.shift_remove(h);
         let parent_held = held.contains_key(child["refs"]["parent"].as_str().unwrap_or(""));
-        let r = foodblock::valid(child, &held, None, None);
+        let r = foodblock::valid(child, &held, None);
         if parent_held && !r.iter().any(|x| x.code == "wider_than_parent") {
             v.push(format!("a grant wider than its parent is valid: {:?}", r.iter().map(|x| x.code.clone()).collect::<Vec<_>>()));
         }

@@ -9,7 +9,7 @@
 //   node tools/necessity.cjs --full     re-measure everything and fail if spec/NECESSITY.md is not exactly the result
 //
 // How. For every listed thing in spec/protocol.json (every field, term, line field, scope field, key field, verb, ref
-// key, closed type, status, stop kind, grant kind, power and single-id ref) the tool makes a scratch copy of the spec,
+// key, closed type, status, stop kind, power and single-id ref) the tool makes a scratch copy of the spec,
 // deletes that one thing from protocol.json, and runs two engines against every vector: the spec-only oracle
 // (`spec/oracle/run.cjs`, with the audit worlds `test/audit/run.cjs`, where the SDK and the oracle must agree) and the
 // Rust core (`cargo test --test vectors`, built from the mutated list). What fails is the evidence: a vector id or an
@@ -21,8 +21,8 @@
 //   UNTESTED  when code reads it and no vector carries it (add a vector);
 //   DEAD      when nothing in this repository reads it and no vector carries it (delete it, unless KEPT);
 //   STRUCTURAL when the engine cannot start without it.
-// The numbered invariants are listed with the vectors that state each one (a hand-kept map, `INVARIANTS` below, which
-// this tool checks against the vector ids and the module text, so it cannot rot unseen).
+// The numbered invariants are listed with the vectors that state each one: a vector says so itself, `invariants: [n]`
+// (spec/vectors.json; a section may say it once for all its cases). This tool checks the numbers against the module text.
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
@@ -42,7 +42,7 @@ const add = (kind, jsonPath, name, scan) => things.push({ kind, path: jsonPath, 
 function get(p, o = P) { return p.reduce((x, k) => (x == null ? x : x[k]), o) }
 const listAt = (p) => { const v = get(p); return Array.isArray(v) ? v : Object.keys(v) }
 
-for (const t of Object.keys(P.fields).filter((k) => k !== 'note')) for (const n of P.fields[t]) add(t === 'every' ? 'field (every closed type)' : `field (${t})`, ['fields', t], n, { state: n })
+for (const t of Object.keys(P.fields).filter((k) => k !== 'about')) for (const n of P.fields[t]) add(t === 'every' ? 'field (every closed type)' : `field (${t})`, ['fields', t], n, { state: n })
 for (const n of P.key_fields.fields) add('key field (actor, grant)', ['key_fields', 'fields'], n, { state: n })
 for (const n of P.terms) add('term', ['terms'], n, { terms: n })
 for (const n of P.line) add('line field', ['line'], n, { line: n })
@@ -53,9 +53,11 @@ for (const g of ['who_and_where', 'what_and_which']) for (const n of P.refs[g]) 
 for (const n of P.closed_types) add('closed type', ['closed_types'], n, { type: n })
 for (const n of P.statuses) add('status', ['statuses'], n, { status: n })
 for (const n of Object.keys(P.stop)) add('stop kind', ['stop'], n, { stop: n })
-for (const n of P.grant_kinds) add('grant kind', ['grant_kinds'], n, { grantKind: n })
 for (const n of P.powers) add('power', ['powers'], n, { power: n })
 for (const n of P.refs_single) add('single-id ref', ['refs_single'], n, null)
+for (const n of P.circle.needed) add('power many hands may need', ['circle', 'needed'], n, { needed: n })
+for (const n of P.repeat.keys) add('event repeat field', ['repeat', 'keys'], n, { repeatEvent: n })
+for (const n of P.optional_profiles.successor.fields.grant) add('field (successor grant)', ['optional_profiles', 'successor', 'fields', 'grant'], n, { state: n })
 
 // ---------------------------------------------------------------- the vectors that carry a thing
 const used = new Map() // scan key -> Set of vector ids
@@ -67,12 +69,13 @@ function scanBlock(b, id) {
   for (const k of Object.keys(s)) mark(`state:${k}`, id)
   if (typeof s.status === 'string') mark(`status:${s.status}`, id)
   if (s.stop !== undefined) mark(`stop:${typeof s.stop === 'string' ? s.stop : Object.keys(s.stop)[0]}`, id)
-  if (b.type === 'grant' && typeof s.kind === 'string') mark(`grantKind:${s.kind}`, id)
+  for (const k of Object.keys(s.needed && typeof s.needed === 'object' ? s.needed : {})) mark(`needed:${k}`, id)
   const scope = s.scope || {}
   for (const k of Object.keys(scope)) mark(`scope:${k}`, id)
   for (const r of Array.isArray(s.roles) ? s.roles : []) for (const pw of r.powers || []) mark(`power:${pw}`, id)
   const terms = s.terms || {}
   for (const k of Object.keys(terms)) mark(`terms:${k}`, id)
+  if (terms.repeat && typeof terms.repeat === 'object') for (const k of Object.keys(terms.repeat)) mark(`repeatEvent:${k}`, id)
   for (const l of Array.isArray(terms.lines) ? terms.lines : []) for (const k of Object.keys(l)) mark(`line:${k}`, id)
 }
 function walk(node, id) {
@@ -93,10 +96,10 @@ function scanVectors() {
   for (const [k, v] of sections) visit(v, k, null)
 }
 scanVectors()
-const scanKey = (s) => s && (s.state ? `state:${s.state}` : s.terms ? `terms:${s.terms}` : s.line ? `line:${s.line}` : s.scope ? `scope:${s.scope}` : s.refs ? `refs:${s.refs}` : s.type ? `type:${s.type}` : s.status ? `status:${s.status}` : s.stop ? `stop:${s.stop}` : s.grantKind ? `grantKind:${s.grantKind}` : s.power ? `power:${s.power}` : null)
+const scanKey = (s) => s && (s.state ? `state:${s.state}` : s.terms ? `terms:${s.terms}` : s.line ? `line:${s.line}` : s.scope ? `scope:${s.scope}` : s.refs ? `refs:${s.refs}` : s.type ? `type:${s.type}` : s.status ? `status:${s.status}` : s.stop ? `stop:${s.stop}` : s.power ? `power:${s.power}` : s.reason ? `reason:${s.reason}` : s.needed ? `needed:${s.needed}` : s.repeatEvent ? `repeatEvent:${s.repeatEvent}` : null)
 
 // ---------------------------------------------------------------- scratch copies and the runs
-const COPY = [['spec', (n) => n !== 'ietf'], ['test/audit'], ['sdk/javascript/src'], ['sdk/javascript/core'], ['sdk/javascript/spec'], ['sdk/javascript/package.json']]
+const COPY = [['spec', (n) => n !== 'ietf'], ['test/audit'], ['tools/fuzz', (n) => n !== 'target'], ['sdk/javascript/src'], ['sdk/rust/src', (n) => n !== 'target'], ['sdk/javascript/core'], ['sdk/javascript/spec'], ['sdk/javascript/package.json']]
 function copyTo(dir) {
   for (const [rel, keep] of COPY) {
     const from = path.join(ROOT, rel), to = path.join(dir, rel)
@@ -122,7 +125,7 @@ function without(p, name) {
 }
 // Ref keys the folds read by name, not through a list: for these the oracle is also made blind to the key (every
 // `.key` and `'key'` in its source renamed), which is what deleting the verb from the protocol means for a fold.
-const BLIND = new Set(['occurrences', 'updates', 'answers', 'confirms', 'defeats', 'derives_from', 'same_as', 'for_whom', 'to_holder', 'to_owner', 'to_place', 'under'])
+const BLIND = new Set(P.read_by_name)
 const ORACLE = (dir) => path.join(dir, 'spec', 'oracle', 'fb.cjs')
 async function oracleFails(dir, protocolText, withAudit, blind) {
   fs.writeFileSync(path.join(dir, 'spec', 'protocol.json'), protocolText)
@@ -158,7 +161,7 @@ async function coreFails(dir, target, protocolText) {
     c.stdout.on('data', (d) => (out += d)); c.stderr.on('data', (d) => (out += d))
     c.on('close', () => {
       const m = out.match(/(\d+) passed, (\d+) failed:\s*([^\n]*)/)
-      if (m) return resolve({ fails: Number(m[2]) ? [`core ${m[2]} vectors, first: ${m[3].replace(/\s+/g, ' ').slice(0, 80).replace(/\|/g, '/')}`] : [], started: true })
+      if (m) return resolve({ fails: Number(m[2]) ? [`core ${m[2]} vectors, first: ${m[3].replace(/\s+None\s*$/, '').replace(/\s+/g, ' ').slice(0, 80).replace(/\|/g, '/')}`] : [], started: true })
       resolve({ fails: [], started: /test result: ok/.test(out) })
     })
   })
@@ -214,68 +217,34 @@ const readers = (name) => {
 }
 
 // ---------------------------------------------------------------- the invariants
-// number -> [the words the invariant begins with in the module text (checked), a pattern over vector ids "section: name"
-// (checked to match at least one case)]. A hand-kept map: it shows which cases state each invariant, it is not a mutation.
-const INVARIANTS = {
-  1: ['A block\'s identity is the hash', /^(canonical|hashes): /],
-  2: ['A block never changes', /^bad_signatures: |tamper|altered/],
-  3: ['A key\'s blocks form one chain', /equivoc|fork|same prev|naming one prev|name one prev/],
-  4: ['A record\'s binding blocks', /orderer|do not see each other|binding blocks/],
-  5: ['An instance has at most one owner', /owner|conflict/],
-  6: ['Nothing that gives, takes or orders authority', /clock|arrival|reader's own/],
-  7: ['No tie on authority', /\btie\b/],
-  8: ['A key speaks only while', /rotation|counted_to|void/],
-  9: ['A grant is live only while', /ancestor|parent/],
-  10: ['A child grant\'s scope', /subset|wider|narrower|child grant|scope/],
-  11: ['What is bound from an offer', /exceed|more than|open offer|allocation/],
-  12: ['A block counts in a deal only if', /speaks for|signed as|as a circle|not a side/],
-  13: ['A promise is settled only by', /defeat|confirmer|dispute|settle/],
-  14: ['An unanswered ask', /unanswered|binds no one|declin/],
-  15: ['`answers` is the only consent', /counter|terms are fixed|fixed once|answers/],
-  16: ['Every message to a stranger', /not_human|human/],
-  17: ['Nothing outside the audience', /audience|recipient|sealed/],
-  18: ['Every node answer a reader relies on', /^messages: /],
-  19: ['A key held by someone else', /custod|held key|assisted/],
-  20: ['Consent is a block', /stop|consent|yes/],
-  21: ['The ask is ordinary', /receipt|pitch/],
-  22: ['A background ask never binds', /quote request/],
-  23: ['An act that moves things', /undone|undo|irreversible/],
-  24: ['A model\'s reading', /reading/],
-  25: ['Authority depends on blocks', /unmet|waits|rests on|needs/],
-  26: ['A fold reads only whole input', /any order|whole input|same blocks|order/],
-  27: ['A removed member\'s blocks', /removed|after the cut|\bcut\b/],
-  28: ['A passkey signature opens only', /passkey|webauthn/],
-  29: ['Validity is about the block alone', /despite|sent despite/],
-  30: ['A first ask to someone off the network', /off the network|code of|YES/],
-  31: ['A block speaks for one party', /speaks for|signed as|as a circle/],
-}
-// Every named case of the vectors, as "section: name" (a keyed message part is named by its key).
-function vectorIds() {
-  const ids = []
-  const visit = (n, label, id, top) => {
-    if (Array.isArray(n)) { n.forEach((x) => visit(x, label, id, false)); return }
-    if (n === null || typeof n !== 'object') return
-    if (!id && typeof n.name === 'string') { ids.push(`${label}: ${n.name}`); id = `${label}: ${n.name}` }
-    for (const [k, v] of Object.entries(n)) visit(v, label, id, false)
+// A vector states the invariants it carries itself (`invariants: [n]` on the case; a section such as `messages` may carry one for
+// all its parts). The numbers stated in the module text are the ones under an Invariants heading, and every number a vector carries
+// must be stated there as a numbered line.
+function carriers() {
+  const by = new Map() // n -> [case ids]
+  const take = (list, id) => { for (const n of list) { if (!by.has(n)) by.set(n, []); by.get(n).push(id) } }
+  const visit = (node, label, id) => {
+    if (Array.isArray(node)) { node.forEach((x) => visit(x, label, id)); return }
+    if (node === null || typeof node !== 'object') return
+    if (!id && typeof node.name === 'string') { id = `${label}: ${node.name}`; if (Array.isArray(node.invariants)) take(node.invariants, id) }
+    for (const [k, v] of Object.entries(node)) visit(v, label, id)
   }
   for (const [k, v] of Object.entries(V)) {
     if (k === '$comment' || k === 'keys') continue
-    if (k === 'messages') { for (const m of Object.keys(v)) ids.push(`messages: ${m}`); continue }
-    visit(v, k, null, true)
+    if (Array.isArray(v.invariants)) take(v.invariants, k)
+    visit(v, k, null)
   }
-  return ids
+  return by
 }
 function invariantRows() {
-  const text = fs.readdirSync(path.join(ROOT, 'spec', 'modules')).map((f) => fs.readFileSync(path.join(ROOT, 'spec', 'modules', f), 'utf8')).join('\n') + fs.readFileSync(path.join(ROOT, 'spec', 'core.md'), 'utf8')
-  const ids = vectorIds()
-  const rows = []
-  for (const n of Object.keys(INVARIANTS).map(Number)) {
-    const [begins, rx] = INVARIANTS[n]
-    const stated = new RegExp(`^${n}\\. ${begins.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'm').test(text)
-    const matching = ids.filter((id) => rx.test(id))
-    rows.push({ n, stated, begins, count: matching.length, examples: matching.slice(0, 2) })
-  }
-  return rows
+  const files = ['core.md', ...fs.readdirSync(path.join(ROOT, 'spec', 'modules')).map((f) => path.join('modules', f))]
+  const text = files.map((f) => fs.readFileSync(path.join(ROOT, 'spec', f), 'utf8')).join('\n')
+  const stated = new Set()
+  let under = false
+  for (const line of text.split('\n')) { if (/^## /.test(line)) under = /nvariants/.test(line); else if (under) { const m = line.match(/^(\d+)\. /); if (m) stated.add(Number(m[1])) } }
+  const by = carriers()
+  const numbers = [...new Set([...stated, ...by.keys()])].sort((a, b) => a - b)
+  return numbers.map((n) => ({ n, stated: new RegExp(`^${n}\\. `, 'm').test(text), count: (by.get(n) || []).length, examples: (by.get(n) || []).slice(0, 2) }))
 }
 
 // ---------------------------------------------------------------- the table
@@ -317,7 +286,7 @@ function render(rows, inv) {
     }
     lines.push('')
   }
-  lines.push('## Invariants', '', 'Each invariant is stated in a module (the number and its first words are checked against the text). The cases listed state it: a hand-kept pattern over vector names in `tools/necessity.cjs` (not a mutation), checked so that every invariant is stated in the spec and matches at least one case.', '', '| Invariant | Stated in the spec | Matching vector cases | Examples |', '|---|---|---|---|')
+  lines.push('## Invariants', '', 'Each invariant is stated in a module (the number and its first words are checked against the text). The cases listed state it: each says so in its own `invariants` field (not a mutation), and every invariant is stated in the spec and carried by at least one case.', '', '| Invariant | Stated in the spec | Vector cases that carry it | Examples |', '|---|---|---|---|')
   for (const i of inv) lines.push(`| ${i.n} | ${i.stated ? 'yes' : 'NO'} | ${i.count} | ${i.examples.map(cell).join('; ')} |`)
   lines.push('')
   return lines.join('\n')
@@ -342,14 +311,14 @@ function checkFast() {
     if (!row) { say(`missing from spec/NECESSITY.md: ${t.kind} ${t.name} (run node tools/necessity.cjs)`); continue }
     const key = scanKey(t.scan)
     const n = key && used.has(key) ? used.get(key).size : 0
-    if (n !== row.used) say(`the vectors that carry ${t.kind} ${t.name} changed (${row.used} then, ${n} now): run node tools/necessity.cjs`)
+    if ((n > 0) !== (row.used > 0)) say(`${n ? 'a vector now carries' : 'no vector carries'} ${t.kind} ${t.name} (the table says otherwise): run node tools/necessity.cjs`)
     if ((row.verdict === 'DEAD' || row.verdict === 'UNTESTED') && !KEPT[t.id]) say(`${row.verdict}: ${t.kind} ${t.name}`)
     if (row.verdict === 'COVERED' || row.verdict === 'USED') { if (!n && row.verdict === 'USED') say(`${t.kind} ${t.name} is USED but no vector carries it now`) }
   }
   const have = new Set(things.map((t) => `${title(t.kind)}|${t.name}`))
   for (const k of rows.keys()) if (!have.has(k) && !k.startsWith('Invariants')) say(`spec/NECESSITY.md lists a thing protocol.json no longer has: ${k.replace('|', ' ')}`)
   for (const i of invariantRows()) if (!i.stated || !i.count) say(`invariant ${i.n}: ${i.stated ? 'no vector' : 'not stated in the spec'}`)
-  console.log(wrong ? `${wrong} problems` : `necessity table current: ${things.length} things, ${Object.keys(INVARIANTS).length} invariants, none dead or untested`)
+  console.log(wrong ? `${wrong} problems` : `necessity table current: ${things.length} things, ${invariantRows().length} invariants, none dead or untested`)
   process.exit(wrong ? 1 : 0)
 }
 

@@ -73,7 +73,7 @@ def alloc_universe():
       B('AL1', author='S', key='kS', kind='alloc', prev='O',  answers='A1', q=1),
       B('AL2', author='S', key='kS', kind='alloc', prev='AL1',answers='A2', q=1),
       B('AL2f',author='S', key='kS', kind='alloc', prev='AL1',answers='A2', q=1),  # equivocation with AL2
-      B('AL3', author='S', key='kS', kind='alloc', prev='AL2',answers='A1', q=1),  # would exceed the offer
+      B('AL3', author='S', key='kS', kind='alloc', prev='AL2',answers='A1', q=1),  # past the offer: binds all the same (her own debt)
       B('FAKE',author='B1',key='kB1',kind='alloc', prev='A1', answers='A1', q=2),  # a buyer "allocates" to itself
       B('BADS',author='S', key='kB2',kind='alloc', prev='O',  answers='A1', q=1),  # wrong signing key
     ]
@@ -235,22 +235,20 @@ def consent_oracle(a, T):
 
 # ---------------------------------------------------------------- allocation fold
 def alloc_fold(S, byid):
+    """Every allocation the orderer signed binds its taker: past the offer, or in a fork, it is her own debt, never erased
+    (promises.md, Who may bind; folds.md, Equivocations). Only the orderer's own allocations bind."""
     if 'O' not in S: return ()
-    orderer = byid['O']['key']; cap = byid['O']['q']
-    eq = equivocated(S, byid)
-    chain, cur, total = [], 'O', 0
-    while True:
-        nxt = [i for i in S if byid[i]['prev'] == cur and byid[i]['kind'] == 'alloc' and byid[i]['key'] == orderer and i not in eq]
+    orderer = byid['O']['key']
+    chain, frontier = [], ['O']
+    while frontier:
+        cur = frontier.pop()
+        nxt = [i for i in S if byid[i]['prev'] == cur and byid[i]['kind'] == 'alloc' and byid[i]['key'] == orderer]
         if MUT == 'nonorderer_binds':
-            nxt += [i for i in S if byid[i]['kind'] == 'alloc' and byid[i]['key'] != orderer and i not in chain]
-        if not nxt: break
-        i = sorted(nxt)[0]
-        if i in chain: break
-        q = byid[i]['q']
-        if MUT != 'overbind' and total + q > cap: break
-        chain.append(i); total += q; cur = i
-        if MUT == 'nonorderer_binds' and byid[i]['key'] != orderer: cur = 'O'
-    return tuple(chain)
+            nxt += [i for i in S if byid[i]['kind'] == 'alloc' and byid[i]['key'] != orderer]
+        for i in sorted(nxt):
+            if i not in chain:
+                chain.append(i); frontier.append(i)
+    return tuple(sorted(chain))
 
 # ---------------------------------------------------------------- the node
 class Comp:
@@ -329,10 +327,12 @@ def invariants(c, st):
         if 'REC' in store and ('x1' in counted): errs.append('gX block survived recovery')
     if c.name == 'allocation':
         bound = c.fold(S, byid)
-        if sum(byid[i]['q'] for i in bound) > 2: errs.append('bound more than offered')
         for i in bound:
             if byid[i]['key'] != byid['O']['key']: errs.append('bound by non-orderer')
-        if 'AL2' in store and 'AL2f' in store and ({'AL2','AL2f','AL3'} & set(bound)): errs.append('forked allocation bound')
+        for i in store:   # every allocation the orderer signed binds its taker, forked or past the offer
+            b = byid[i]
+            if b['kind'] == 'alloc' and b['key'] == byid['O']['key'] and (b['prev'] == 'O' or b['prev'] in bound) and i not in bound:
+                errs.append('an allocation the orderer signed does not bind: ' + i)
         if 'BADS' in store: errs.append('badly signed block stored')
     return errs
 

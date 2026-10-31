@@ -12,11 +12,14 @@ public enum Cbor {
         return out
     }
     /// A signed public block as the CBOR message [t, block, signature].
-    public static func encode(_ block: JSON, short: Bool = false) throws -> Data { bytes(try Core.string("cbor_encode", block, short)) }
+    public static func encode(_ block: JSON, short: Bool = false) throws -> Data { bytes(try Door.cborEncode(block, short)) }
     /// The block a CBOR message carries, its hash taken from its canonical JSON. Throws on floats, tags, null, indefinite lengths and duplicate keys.
-    public static func decode(_ data: Data) throws -> JSON { try Core.json("cbor_decode", hex(data)) }
-    public static func encodePush(_ blocks: [JSON], short: Bool = false) throws -> Data { bytes(try Core.string("cbor_encode_push", blocks, short)) }
-    public static func decodePush(_ data: Data) throws -> [JSON] { (try Core.call("cbor_decode_push", [hex(data)]) as? [JSON]) ?? [] }
-    public static func encodeHeader(_ header: JSON, short: Bool = false) throws -> Data { bytes(try Core.string("cbor_encode_header", header, short)) }
-    public static func decodeHeader(_ data: Data) throws -> JSON { try Core.json("cbor_decode_header", hex(data)) }
+    /// With `held` (the author's blocks) the id is taken in the suite of the key that signed it (core.md, section 2).
+    public static func decode(_ data: Data, held: [JSON]? = nil) throws -> JSON {
+        try Door.cborDecode(hex(data), held)
+    }
+    public static func encodePush(_ blocks: [JSON], short: Bool = false) throws -> Data { bytes(try Door.cborEncodePush(blocks, short)) }
+    public static func decodePush(_ data: Data) throws -> [JSON] { try Door.cborDecodePush(hex(data)) }
+    public static func encodeHeader(_ header: JSON, short: Bool = false) throws -> Data { bytes(try Door.cborEncodeHeader(header, short)) }
+    public static func decodeHeader(_ data: Data) throws -> JSON { try Door.cborDecodeHeader(hex(data)) }
 }

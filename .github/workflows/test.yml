@@ -67,15 +67,23 @@ jobs:
       - run: python3 tools/tla/run-tlc.py ${{ matrix.part }}
 
   wasm-core:
-    name: JS core (Rust built to WebAssembly) is current
+    name: JS and Go core (Rust built to WebAssembly) is the Rust source, rebuilt byte for byte
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          node-version: 24
+      # the one compiler the core is built with (sdk/javascript/scripts/build-wasm.cjs, RUSTC)
+      - run: rustup toolchain install 1.94.1 --profile minimal --target wasm32-unknown-unknown
       - run: node scripts/build-wasm.cjs --check
         working-directory: sdk/javascript
+      # the shipped bytes must be what this source builds to (security M): a swapped core/foodblock.wasm fails here, whatever BUILD.json says
+      - run: node --test test/core.test.cjs
+        working-directory: sdk/javascript
+        env:
+          FOODBLOCK_REBUILD: '1'
+      - run: cmp sdk/javascript/core/foodblock.wasm sdk/go/foodblock.wasm
 
   python-sdk:
     name: Python SDK (over the Rust core)

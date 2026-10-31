@@ -12,6 +12,7 @@ fn main() -> Result<(), foodblock::Error> {
         &GenesisOptions {
             kind: "sensor",
             at: "2026-10-15T09:00:00.000Z".into(),
+            audience: Some(foodblock::Readers::Public),
             encryption_key: "0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",
             recovery_key: &recovery.public_key_sign,
             reach: "P30D",
@@ -25,6 +26,7 @@ fn main() -> Result<(), foodblock::Error> {
         compose: ComposeOptions {
             author: id.clone(),
             at: Some("2026-10-15T09:01:00.000Z".into()),
+            audience: Some(foodblock::Readers::Public),
             ..Default::default()
         },
         key: Some(&keys),

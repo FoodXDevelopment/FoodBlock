@@ -1,4 +1,4 @@
-const { fb, oracle, World } = require('./lib.cjs')
+const { fb, oracle, World, kindOf } = require('./lib.cjs')
 const w = new World('case2 lending')
 const pat = w.person('pat'), lena = w.person('lena'), bo = w.person('bo'), cy = w.person('cy')
 const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
@@ -28,19 +28,9 @@ const d3 = mkDeal('d3 walked', '2026-10-06T00:00:00.000Z'); w.w(pat, 'promise', 
 const d4 = mkDeal('d4 delivered then defeated', '2026-10-07T00:00:00.000Z'); const i4 = inst('L4')
 const t4 = w.w(pat, 'transfer', {}, { what: i4.hash, to_owner: lena.id, for: d4.hash }, 'd4 deliver'); w.w(lena, 'transfer', { status: 'accepted' }, { answers: t4.hash, for: d4.hash }, 'd4 accepted')
 w.w(lena, 'observe', { kind: 'complaint', text: 'eggs were off' }, { defeats: t4.hash, for: d4.hash }, 'd4 lena defeats delivery')
-const NOW = '2026-12-01T00:00:00.000Z'
-const classify = (first) => {
-  const s = cmpStage(first.hash.slice(0, 6), first)
-  const by = first.state.terms && first.state.terms.deliver_by
-  let cls = s.stage
-  if (s.stage === 'done') cls = 'kept'
-  else if ((s.stage === 'accepted' || s.stage === 'underway') && by && by < NOW) cls = 'broken(late)'
-  else if (s.stage === 'stopped') cls = 'withdrawn(' + s.stop + ')'
-  return { id: first.hash.slice(0, 6), stage: s.stage, cls }
-}
-const history = (authorId) => w.blocks.filter(b => b.type === 'promise' && b.refs.answers === undefined && b.refs.author === authorId && b.refs.from === authorId).map(classify)
-show('pat history (reader-computed)', history(pat.id))
-show('fold/view for kept-vs-broken exposed by SDK?', Object.keys(fb.fold).filter(k => /kept|broken|history|record|track|reput/i.test(k)))
+// facts only, never a verdict: each promise of Pat's with its stage and the date it names
+const promises = (authorId) => w.blocks.filter(b => b.type === 'promise' && b.refs.answers === undefined && b.refs.author === authorId && b.refs.from === authorId).map(first => ({ id: first.hash.slice(0, 6), stage: cmpStage(first.hash.slice(0, 6), first).stage, by: first.state.terms && first.state.terms.deliver_by }))
+show('pat promises (stage and by)', promises(pat.id))
 // the defeat: no fold looks at defeats of a transfer
 // 5 loan
 const loanSchema = w.w(lena, 'thing', { kind: 'schema', target: 'promise.loan', fields: { principal: 'money', rate: 'decimal' }, name: 'loan' }, {}, 'loan schema')
@@ -56,7 +46,7 @@ s = cmpStage(loan, loan); show('loan after repayment accepted stage', s.stage, '
 const wk = w.w(lena, 'observe', { kind: 'work', text: 'advanced 100 GBP' }, { for: loan.hash, derives_from: adv.hash }, 'lena work: advance'); w.w(bo, 'observe', { status: 'accepted' }, { answers: wk.hash, for: loan.hash }, 'bo accepts the advance as work')
 s = cmpStage(loan, loan); show('loan after advance-as-work accepted + repaid', s.stage, s.paid)
 // 6 bearer note
-const note = w.w(lena, 'thing', { kind: 'iou-note', name: 'note for 20 GBP' }, {}, 'bearer note thing')
+const note = w.w(lena, 'thing', { kind: 'iou-note', name: 'note for 20 GBP' }, { of: kindOf('iou-note') }, 'bearer note thing')
 const bearer = w.w(lena, 'promise', { what: 'pay the holder 20 GBP', terms: { price: GBP(2000), expires: '2027-06-01T00:00:00.000Z' } }, { from: lena.id, to: note.hash }, 'bearer promise (to = the note thing)')
 const tn = w.w(lena, 'transfer', {}, { what: note.hash, to_owner: bo.id }, 'lena gives note to bo'); w.w(bo, 'transfer', { status: 'accepted' }, { answers: tn.hash }, 'bo accepts note')
 const tn2 = w.w(bo, 'transfer', {}, { what: note.hash, to_owner: cy.id }, 'bo passes note to cy'); w.w(cy, 'transfer', { status: 'accepted' }, { answers: tn2.hash }, 'cy accepts note')

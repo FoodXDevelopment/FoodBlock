@@ -1,76 +1,32 @@
 """Authority (modules/authority.md): thin calls into the Rust core."""
 
-from ._core import call
+from . import _door as door
+
+operators_of = door.operators_of
+why_not_under = door.why_not_under
+why_not_live = door.why_not_live
+is_live = door.is_live
+ancestors = door.ancestors
+why_not_live_undo = door.why_not_live_undo  # why an act that cannot be undone is not live: [] when it has a specific accepted ask or a grant that names it with a limit
+act_name = door.act_name  # the act a block is, named `type.kind`
+limit_fence = door.limit_fence  # the observe of kind limit for a grant, to hand to `write`: sealed to the agent alone; `salt` opens the grant's `scope.limit_commitment`; `each` caps any single act
+limit_commitment = door.limit_commitment  # the commitment to a limit and a cap on each act, for the grant's `scope.limit_commitment`
+limit_opens = door.limit_opens  # whether the limit observe opens the grant's `scope.limit_commitment`
+scope_within = door.scope_within
+scope_refusals = door.scope_refusals
+compare_durations = door.compare_durations
 
 
-def operators_of(agent, blocks, now=None) -> list:
-    return call("operators_of", agent, list(blocks), now)
-
-
-def why_not_under(block, blocks, now=None) -> list:
-    return call("why_not_under", block, list(blocks), now)
-
-
-def why_not_live(grant, blocks, now=None) -> list:
-    return call("why_not_live", grant, list(blocks), now)
-
-
-def is_live(grant, blocks, now=None) -> bool:
-    return call("is_live", grant, list(blocks), now)
-
-
-def ancestors(grant, blocks) -> list:
-    return call("ancestors", grant, list(blocks))
-
-
-def why_not_live_undo(block, blocks) -> list:
-    """Why an act that cannot be undone (its schema says `undo: never`) is not live: [] when it has a specific accepted
-    ask or a grant that names it with a limit."""
-    return call("why_not_live_undo", block, list(blocks))
-
-
-def act_name(block) -> str:
-    """The act a block is, named `type.kind`."""
-    return call("act_name", block)
-
-
-def limit_fence(grant_hash, agent, limit, per=None, salt=None) -> dict:
-    """The observe of kind limit for a grant, to hand to `write`: sealed to the agent alone (its whole audience). With a
-    `salt` it carries the salt that opens the grant's `scope.limit_commitment`."""
-    return call("limit_fence", grant_hash, agent, limit, per, salt)
-
-
-def limit_commitment(limit, per, salt, suite=None) -> str:
-    """The commitment to a limit, for the grant's `scope.limit_commitment` (authority.md)."""
-    return call("limit_commitment", limit, per, salt, suite)
-
-
-def limit_opens(grant, fence, suite=None) -> bool:
-    """Whether the limit observe opens the grant's `scope.limit_commitment`."""
-    return call("limit_opens", grant, fence, suite)
-
-
-def within_limit(limit, money, spent=0) -> bool:
-    """Whether spending `money` stays inside a limit (the limit observe, its state, or the money); `spent` is what the
-    principal's node has counted in the period, in minor units."""
-    return call("within_limit", limit, money, spent)
-
-
-def scope_within(child, parent) -> list:
-    return call("scope_within", child, parent)
-
-
-def scope_refusals(child, parent) -> list:
-    return call("scope_refusals", child, parent)
+def within_limit(limit, value, spent) -> bool:
+    """Whether one act of `value` (money or an amount) stays inside a limit (the limit observe, its state, or the limit);
+    `spent` is what the principal's node has counted in the period: minor units, or the amount's value (a whole number or
+    a decimal string), compared exactly."""
+    return door.within_limit(limit, value, spent)
 
 
 def parse_duration(text):
-    return call("parse_duration", text if isinstance(text, str) else None)
+    return door.parse_duration(text if isinstance(text, str) else None)
 
 
 def add_duration(time, duration, sign=1):
-    return call("add_duration", str(time), str(duration), sign)
-
-
-def compare_durations(a, b, from_) -> int:
-    return call("compare_durations", a, b, from_)
+    return door.add_duration(str(time), str(duration), sign)

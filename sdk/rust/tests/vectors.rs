@@ -192,7 +192,7 @@ fn every_vector_section() {
     for c in v["envelopes"].as_array().unwrap() {
         let inside = ok("open", json!([c["envelope"], key(c["recipient"].as_str().unwrap(), "x25519_private")]));
         let m = ok("unwrap", json!([inside]));
-        t.check(m["hash"] == c["opens_to"]["hash"] && m["signature"] == c["opens_to"]["signature"] && m["version"] == c["opens_to"]["version"], format!("envelope: {}", c["name"]));
+        t.check(m["hash"] == c["opens_to"]["hash"] && m["signature"] == c["opens_to"]["signature"], format!("envelope: {}", c["name"]));
     }
     for c in v["sealed"]["cases"].as_array().unwrap() {
         let m = ok("open_copy", json!([c["message"], key(c["recipient"].as_str().unwrap(), "x25519_private")]));
@@ -210,13 +210,14 @@ fn every_vector_section() {
     for c in v["identities"].as_array().unwrap() {
         let held = blocks_of(&c["blocks"]);
         let arrivals = c.get("arrivals").cloned().unwrap_or(Value::Null);
+        let unknown = c.get("unknown_arrival").cloned().unwrap_or(Value::Null);
         for e in c["blocks"].as_array().unwrap() {
             if let Some(want) = c["signed_by_author"].get(e["hash"].as_str().unwrap()) {
-                let got = ok("signed_by_author", json!([full(e), held, arrivals]));
+                let got = ok("signed_by_author", json!([full(e), held, arrivals, unknown]));
                 t.check(&got == want, format!("identity: {}: {} stands={want}", c["name"], e["name"]));
             }
         }
-        let keys = sorted(strs(&ok("keys_of", json!([c["id"], held, arrivals]))));
+        let keys = sorted(strs(&ok("keys_of", json!([c["id"], held, arrivals, unknown]))));
         t.check(json!(keys) == c["keys"], format!("identity: {}: keys", c["name"]));
         if let Some(f) = c.get("frozen") {
             let timeline = ok("key_timeline", json!([c["id"], held, Value::Null]));
@@ -226,7 +227,7 @@ fn every_vector_section() {
         if let Some(o) = c.get("operators") {
             t.check(&ok("operators_of", json!([c["id"], held, Value::Null])) == o, format!("identity: {}: operators", c["name"]));
         }
-        let state = ok("identity_state", json!([c["id"], held, arrivals]));
+        let state = ok("identity_state", json!([c["id"], held, arrivals, unknown]));
         let all_stand = c["signed_by_author"].as_object().unwrap().iter().all(|(h, want)| state["signed_by_author"].get(h).is_none_or(|g| g == want));
         t.check(state["keys"] == c["keys"] && all_stand && c.get("frozen").is_none_or(|f| &state["frozen"] == f), format!("identity: {}: the fold", c["name"]));
         if let Some(f) = c.get("fence") {
@@ -321,7 +322,7 @@ fn every_vector_section() {
                     Some(i) => i.as_array().unwrap().clone(),
                     None => c["incoming"].as_array().unwrap().iter().map(|h| refusal_blocks[h.as_str().unwrap()].clone()).collect(),
                 };
-                let got = ok("accept", json!([incoming, held, Value::Null, Value::Null]));
+                let got = ok("accept", json!([incoming, held, { "takes_pairs": false }, Value::Null]));
                 if let Some(e) = c.get("equivocations") {
                     got["taken"] == c["taken"] && got["refused"].as_array().unwrap().is_empty() && &got["equivocations"] == e
                 } else if let Some(w) = c.get("waiting") {

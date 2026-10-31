@@ -22,7 +22,7 @@ int main() {
     const std::string public_key = field(keys, "public_key_sign");
 
     // Who the sensor is: its genesis. Its hash is the sensor's id.
-    const std::string me = foodblock::genesis(keys, R"({"kind":"sensor","at":"2026-10-15T09:00:00.000Z",)"
+    const std::string me = foodblock::genesis(keys, R"({"kind":"sensor","at":"2026-10-15T09:00:00.000Z","audience":"public",)"
         R"("encryption_key":"0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",)"
         R"("recovery_key":")" + field(recovery, "public_key_sign") + R"(","reach":"P30D"})");
     const std::string id = field(me, "hash");
@@ -31,7 +31,7 @@ int main() {
     // A reading: 3.9 degrees Celsius, as a decimal string (signed content holds no floats). write() composes it,
     // runs the write check, signs it, and puts it at seq 1 in the sensor's own chain.
     const std::string options = R"({"author":")" + id + R"(","key":)" + keys + R"(,"held":[)" + me +
-                                R"(],"at":"2026-10-15T09:01:00.000Z"})";
+                                R"(],"at":"2026-10-15T09:01:00.000Z","audience":"public"})";
     const std::string reading = foodblock::write("observe", R"({"kind":"reading","amount":{"value":"3.9","unit":"Cel"}})",
                                                  R"({"subject":")" + id + R"("})", options);
     std::cout << "reading        " << reading << "\n";

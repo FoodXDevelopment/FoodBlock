@@ -7,21 +7,15 @@ import (
 
 // The protocol's lists and grammars: protocol.json, carried by the Rust core and read through it.
 var (
-	both = func() map[string]any {
-		out, err := ask[map[string]any]("spec")
-		if err != nil {
-			panic("foodblock: " + err.Error())
-		}
-		return out
-	}()
+	both = doorSpec[map[string]any]()
 
 	// Protocol is spec/protocol.json as a plain JSON value. There is no alias table: year zero.
 	Protocol = obj(both["protocol"])
 
-	// Version is the protocol version these rules are ("1.6").
+	// Version is the protocol version these rules are ("1.7").
 	Version = str(Protocol["version"])
-	// Types are the seven 1.6 type names, in protocol.json's order.
-	Types = must[[]string]("types")
+	// Types are the seven type names, in protocol.json's order.
+	Types = doorTypes()
 	// Verbs are the seven verbs.
 	Verbs = list(Protocol["verbs"])
 	// RefKeys are the shared ref keys every type may use.
@@ -30,7 +24,7 @@ var (
 	Fields = func() map[string][]string {
 		out := map[string][]string{}
 		for _, t := range Types {
-			out[t] = must[[]string]("base_fields", t)
+			out[t] = doorBaseFields[[]string](t)
 		}
 		return out
 	}()
@@ -60,7 +54,7 @@ var (
 	RefusalCodes = func() map[string][]string {
 		out := map[string][]string{}
 		for group := range obj(obj(Protocol["refusals"])["codes"]) {
-			out[group] = must[[]string]("spec_list", "refusals.codes."+group)
+			out[group] = doorSpecList[[]string]("refusals.codes." + group)
 		}
 		return out
 	}()
@@ -75,7 +69,7 @@ func formatTime(t time.Time) string { return t.UTC().Format(timeLayout) }
 func now() string                   { return formatTime(time.Now()) }
 
 // matchesGrammar is a grammar test by name (protocol.json `grammar`).
-func matchesGrammar(name string, v any) bool { return must[bool]("grammar", name, v) }
+func matchesGrammar(name string, v any) bool { return doorGrammar(name, v) }
 
 // messageKeys are the key names of one message in protocol.json `messages` (pull, push, refusal, ...).
 func messageKeys(name string) []string { return list(obj(Protocol["messages"])[name]) }

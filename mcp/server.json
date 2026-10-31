@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.FoodXDevelopment/foodblock-mcp",
-  "description": "FoodBlock 1.6 for any AI agent: write signed, checked food blocks and read every earlier shape.",
+  "description": "FoodBlock for any AI agent: write signed, checked food blocks and read every earlier shape.",
   "repository": {
     "url": "https://github.com/FoodXDevelopment/FoodBlock",
     "source": "github"
   },
-  "version": "1.6.0",
+  "version": "1.7.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "foodblock-mcp",
-      "version": "1.6.0",
+      "version": "1.7.0",
       "transport": {
         "type": "stdio"
       },

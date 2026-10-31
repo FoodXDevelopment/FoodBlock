@@ -17,7 +17,7 @@ ONLY_MACOS=0; [ "${1:-}" = "--macos" ] && ONLY_MACOS=1
 
 build() { # one Rust target -> its static library
   rustup target list --installed | grep -qx "$1" || { echo "missing Rust target $1: rustup target add $1" >&2; exit 1; }
-  (cd "$RUST" && cargo rustc --release --features ffi --crate-type staticlib --target "$1" 2>&1 | tail -1) >&2
+  (cd "$RUST" && cargo rustc --locked --release --features ffi --crate-type staticlib --target "$1" 2>&1 | tail -1) >&2
   echo "$RUST/target/$1/release/libfoodblock.a"
 }
 rm -rf "$WORK" "$OUT"; mkdir -p "$WORK/headers" "$WORK/ios" "$WORK/sim" "$WORK/mac"

@@ -22,7 +22,7 @@ func newPerson(t *testing.T) *person {
 	keys, _ := GenerateKeypair()
 	enc, _ := GenerateEncryptionKeypair()
 	recovery, _ := GenerateKeypair()
-	g, err := Genesis(keys, GenesisOptions{EncryptionKey: enc.PublicKeyEncrypt, RecoveryKey: recovery.PublicKeySign, Reach: "P30D", At: "2026-10-15T09:00:00.000Z"})
+	g, err := Genesis(keys, GenesisOptions{EncryptionKey: enc.PublicKeyEncrypt, RecoveryKey: recovery.PublicKeySign, Reach: "P30D", At: "2026-10-15T09:00:00.000Z", Kind: "person", Audience: []string{Public}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,6 +34,9 @@ func newPerson(t *testing.T) *person {
 
 func (p *person) say(t *testing.T, typ string, state, refs map[string]any, audience ...string) Block {
 	t.Helper()
+	if len(audience) == 0 {
+		audience = []string{Public}
+	}
 	p.n++
 	b, err := Write(typ, state, refs, WriteOptions{ComposeOptions: ComposeOptions{Author: p.genesis.Hash, Audience: audience,
 		At: formatTime(time.Date(2026, 10, 15, 9, 0, p.n, 0, time.UTC))}, Key: p.keys, Held: p.held})
@@ -52,24 +55,24 @@ func TestWriteChainsChecksAndSigns(t *testing.T) {
 	if seq, _ := intOf(offer.State["seq"]); seq != 2 || offer.Refs["prev"] != eggs.Hash {
 		t.Errorf("the offer follows the eggs in the key's chain: %v %v", offer.State["seq"], offer.Refs["prev"])
 	}
-	if !SignedByAuthor(offer, ann.held, nil) {
+	if !SignedByAuthor(offer, ann.held, nil, "") {
 		t.Error("signed by its author")
 	}
 	if s := PromiseStage(offer, ann.held); s.Stage != "offered" {
 		t.Errorf("stage %s", s.Stage)
 	}
 	_, err := Write("thing", map[string]any{"kind": "flour", "amount": map[string]any{"value": 1.5, "unit": "kg"}}, nil,
-		WriteOptions{ComposeOptions: ComposeOptions{Author: ann.genesis.Hash}, Key: ann.keys, Held: ann.held})
+		WriteOptions{ComposeOptions: ComposeOptions{Author: ann.genesis.Hash, Audience: []string{Public}, At: "2026-10-15T09:00:00.000Z"}, Key: ann.keys, Held: ann.held})
 	var refused *Refused
 	if !errors.As(err, &refused) || len(refused.Refusals) == 0 || refused.Refusals[0].Code != "float" {
 		t.Errorf("a float is refused: %v", err)
 	}
 	// Year zero: a genesis needs only kind, at, audience and the key.
-	plain, err := Genesis(ann.keys, GenesisOptions{At: "2026-10-15T09:00:00.000Z"})
+	plain, err := Genesis(ann.keys, GenesisOptions{Kind: "person", Audience: []string{Public}, At: "2026-10-15T09:00:00.000Z"})
 	if err != nil || plain.State["audience"] != "public" {
 		t.Errorf("a plain genesis: %v", err)
 	}
-	if _, err := Genesis(ann.keys, GenesisOptions{RecoveryKey: ann.keys.PublicKeySign, At: "2026-10-15T09:00:00.000Z"}); err == nil {
+	if _, err := Genesis(ann.keys, GenesisOptions{Kind: "person", Audience: []string{Public}, RecoveryKey: ann.keys.PublicKeySign, At: "2026-10-15T09:00:00.000Z"}); err == nil {
 		t.Error("the recovery key comes with its reach")
 	}
 }
@@ -134,18 +137,18 @@ func TestPullAndPush(t *testing.T) {
 	ann, node := newPerson(t), newPerson(t)
 	one := ann.say(t, "observe", map[string]any{"kind": "note", "text": "two trays"}, nil)
 	two := ann.say(t, "observe", map[string]any{"kind": "note", "text": "one tray"}, nil)
-	early := Accept([]Block{ann.genesis, two}, nil)
+	early := Accept([]Block{ann.genesis, two}, nil, AcceptOptions{})
 	if len(early.Waiting) != 1 || early.Waiting[0].Hash != two.Hash || early.Waiting[0].Needs[0] != one.Hash {
 		t.Errorf("a block whose prev is missing waits: %+v", early)
 	}
-	late := Accept([]Block{one, two}, []Block{ann.genesis})
+	late := Accept([]Block{one, two}, []Block{ann.genesis}, AcceptOptions{})
 	if len(late.Taken) != 2 {
 		t.Errorf("taken once the prev is here: %+v", late.Refused)
 	}
 	link := Link{1, ann.genesis.Hash}
 	other, _ := Write("observe", map[string]any{"kind": "note", "text": "five trays"}, nil,
-		WriteOptions{ComposeOptions: ComposeOptions{Author: ann.genesis.Hash, Link: &link, At: "2026-10-15T09:10:00.000Z"}, Key: ann.keys, Held: ann.held})
-	lie := Accept([]Block{other}, []Block{ann.genesis, one})
+		WriteOptions{ComposeOptions: ComposeOptions{Author: ann.genesis.Hash, Link: &link, Audience: []string{Public}, At: "2026-10-15T09:10:00.000Z"}, Key: ann.keys, Held: ann.held})
+	lie := Accept([]Block{other}, []Block{ann.genesis, one}, AcceptOptions{})
 	// The second of a pair is neither taken nor refused: only listed with the first.
 	if len(lie.Equivocations) != 1 || len(lie.Refused) != 0 || len(lie.Taken) != 0 {
 		t.Errorf("two blocks from one key with one seq prove a lie: %+v", lie)
@@ -158,20 +161,20 @@ func TestPullAndPush(t *testing.T) {
 	request, _ := SignPull(map[string]any{"filter": map[string]any{"author": ann.genesis.Hash}, "heads": true}, SignOptions{Signer: ann.genesis.Hash, Node: node.genesis.Hash, PrivateKey: ann.keys.PrivateKey, Counter: 5})
 	four, five := int64(4), int64(5)
 	check := PullCheck{Node: node.genesis.Hash, Keys: []string{ann.keys.PublicKeySign}, Highest: &four}
-	if wrong := PullErrors(request, check); len(wrong) > 0 || request["at"] != nil {
+	if wrong := PullRefusals(request, check); len(wrong) > 0 || request["at"] != nil {
 		t.Error(wrong)
 	}
 	check.Highest = &five
-	if len(PullErrors(request, check)) == 0 {
+	if len(PullRefusals(request, check)) == 0 {
 		t.Error("a counter that is not above the highest seen is a replay")
 	}
 	challenge := NewChallenge()
 	asked, _ := SignPull(nil, SignOptions{Signer: ann.genesis.Hash, Node: node.genesis.Hash, PrivateKey: ann.keys.PrivateKey, Challenge: challenge})
-	if len(PullErrors(asked, PullCheck{Node: node.genesis.Hash, Keys: check.Keys, Issued: []string{challenge}})) > 0 || len(PullErrors(asked, PullCheck{Node: node.genesis.Hash, Keys: check.Keys})) == 0 {
+	if len(PullRefusals(asked, PullCheck{Node: node.genesis.Hash, Keys: check.Keys, Issued: []string{challenge}})) > 0 || len(PullRefusals(asked, PullCheck{Node: node.genesis.Hash, Keys: check.Keys})) == 0 {
 		t.Error("a challenge the node issued is taken, any other is a replay")
 	}
 	log := []Arrival{{N: 1, Block: ann.genesis}, {N: 2, Block: one}, {N: 3, Block: two}}
-	pulled, _ := AnswerPull(log, request, AnswerOptions{Node: node.genesis.Hash, PrivateKey: node.keys.PrivateKey})
+	pulled, _ := AnswerPull(log, request, AnswerOptions{Node: node.genesis.Hash, PrivateKey: node.keys.PrivateKey, Cap: 100, ServesPairs: true})
 	blocks, _ := arr(pulled["blocks"])
 	if len(blocks) != 1 || !AnswerSignedBy(pulled, []string{node.keys.PublicKeySign}) {
 		t.Errorf("heads only, signed: %v", pulled)
@@ -197,7 +200,7 @@ func TestKeyGrantAndGrammar(t *testing.T) {
 		t.Fatal(err, Check(grant.Type, grant.State, grant.Refs))
 	}
 	held := append(ann.held, grant)
-	if keys := KeysOf(ann.genesis.Hash, held, nil); len(keys) != 2 {
+	if keys := KeysOf(ann.genesis.Hash, held, nil, ""); len(keys) != 2 {
 		t.Errorf("the phone's key speaks: %v", keys)
 	}
 	for text, ok := range map[string]bool{"P30D": true, "PT5M": true, "P1Y2M": true, "P": false, "PT": false, "P1DT": false, "P1.5D": false} {
@@ -205,8 +208,8 @@ func TestKeyGrantAndGrammar(t *testing.T) {
 			t.Errorf("duration %s", text)
 		}
 	}
-	if AddDuration("2026-01-31T00:00:00.000Z", "P1M", 1) != "2026-03-03T00:00:00.000Z" {
-		t.Error("months count by the UTC calendar, as JavaScript's Date")
+	if AddDuration("2026-01-31T00:00:00.000Z", "P1M", 1) != "2026-02-28T00:00:00.000Z" {
+		t.Error("months count by the UTC calendar: a day past the month's end is its last day")
 	}
 }
 
@@ -217,8 +220,64 @@ func TestCustodyTheLimitFence(t *testing.T) {
 		t.Error("spent and asked together stay within the limit, or not")
 	}
 	keys, _ := GenerateKeypair()
-	g, err := Genesis(keys, GenesisOptions{RecoveryKey: keys.PublicKeySign, Reach: "P30D", At: "2026-10-15T09:00:00.000Z", Custodian: strings.Repeat("c", 64)})
+	g, err := Genesis(keys, GenesisOptions{RecoveryKey: keys.PublicKeySign, Reach: "P30D", Kind: "person", Audience: []string{Public}, At: "2026-10-15T09:00:00.000Z", Custodian: strings.Repeat("c", 64)})
 	if err != nil || g.State["custodian"] != strings.Repeat("c", 64) {
 		t.Errorf("a custodial genesis names its custodian: %v", err)
+	}
+}
+
+// Nothing a signer left out is filled in: a missing audience, at, kind or choice is refused.
+func TestMissingChoicesAreRefused(t *testing.T) {
+	ann := newPerson(t)
+	const at = "2026-10-15T09:00:00.000Z"
+	write := func(o ComposeOptions) error {
+		o.Author = ann.genesis.Hash
+		_, err := Write("thing", map[string]any{"kind": "eggs"}, nil, WriteOptions{ComposeOptions: o, Key: ann.keys, Held: ann.held})
+		return err
+	}
+	if write(ComposeOptions{At: at}) == nil {
+		t.Error("a missing audience is refused")
+	}
+	if write(ComposeOptions{Audience: []string{Public}}) == nil {
+		t.Error("a missing at is refused")
+	}
+	if write(ComposeOptions{Audience: []string{Public}, At: at}) != nil {
+		t.Error("audience and at stated: written")
+	}
+	for name, o := range map[string]GenesisOptions{
+		"kind":     {At: at, Audience: []string{Public}},
+		"at":       {Kind: "person", Audience: []string{Public}},
+		"audience": {Kind: "person", At: at},
+	} {
+		if _, err := Genesis(ann.keys, o); err == nil {
+			t.Errorf("a genesis with no %s is refused", name)
+		}
+	}
+	phone, _ := GenerateKeypair()
+	if _, err := KeyGrant(ann.genesis.Hash, phone.PublicKeySign, KeySigner{PrivateKey: ann.keys.PrivateKey}, KeyGrantOptions{}); err == nil {
+		t.Error("a key grant with no at is refused")
+	}
+	// the node's choices
+	log := []Arrival{{N: 1, Block: ann.genesis}}
+	for name, o := range map[string]AnswerOptions{"cap": {ServesPairs: true}} {
+		o.Node, o.PrivateKey = ann.genesis.Hash, ann.keys.PrivateKey
+		if _, err := AnswerPull(log, map[string]any{}, o); err == nil {
+			t.Errorf("an answer with no %s is refused", name)
+		}
+	}
+	if _, err := AnswerPull(log, map[string]any{}, AnswerOptions{Node: ann.genesis.Hash, PrivateKey: ann.keys.PrivateKey, Cap: 10}); err != nil {
+		t.Errorf("a cap and a refusal to serve pairs, both stated: %v", err)
+	}
+	// a reader with an arrival log says how it reads a block whose arrival it does not know
+	arrived := func(string) string { return "2026-10-15T09:00:00.000Z" }
+	if _, err := ask[any]("keys_of", ann.genesis.Hash, ann.held, arrivals(arrived, ann.held), nil); err == nil {
+		t.Error("arrivals without unknown_arrival are refused")
+	}
+	if len(KeysOf(ann.genesis.Hash, ann.held, arrived, Inside)) != 1 {
+		t.Error("arrivals with unknown_arrival: read")
+	}
+	// the wire carries no version
+	if _, has := Wrap(ann.genesis)["version"]; has {
+		t.Error("a wrapped block carries no version")
 	}
 }

@@ -75,12 +75,38 @@ pub fn hash(type_name: &str, state: &Value, refs: &Value) -> String {
     hash_hex(&canonical(type_name, state, refs))
 }
 
-/// The suite a block in memory carries (`suite` beside `hash`; none means `std`).
-pub fn suite_of(block: &Value) -> &str {
-    block.get("suite").and_then(Value::as_str).unwrap_or("")
+/// The suite whose hash an id names, by its prefix (`sm3:` names sm); a bare hash is SHA-256, which `std` names. Only the hash
+/// matters here: `std` and `p256` share SHA-256.
+pub fn suite_of_id(id: &str) -> String {
+    let spec = crate::spec();
+    match id.split_once(':') {
+        Some((prefix, _)) => spec
+            .suites
+            .iter()
+            .find(|s| spec.hash_prefix(&s.hash) == format!("{prefix}:"))
+            .map(|s| s.name.clone())
+            .unwrap_or_else(|| spec.suite_default.clone()),
+        None => spec.suite_default.clone(),
+    }
 }
 
-/// A new block, unsigned: `{ hash, type, state, refs }` (and `suite` when it is not `std`). Strict writing: it is
+/// The suite a block is hashed in, read from the block alone (core.md, section 2: the suite of the key that signed it; no
+/// label names it): a genesis names its own (`state.suite`), and a key's later block is hashed as its `prev` is. A key's first
+/// block after a move to a suite of another hash (and the recovery key's first block, in a `recovery_suite` of another hash) is
+/// the one place this differs from the signing key's: a reader that holds the author's keys reads it there
+/// (`identity::signed_suite_in`).
+pub fn suite_from_block(block: &Value) -> String {
+    let refs = block.get("refs");
+    if crate::js::type_of(block) == "actor" && refs.and_then(|r| r.get("author")).is_none() {
+        return crate::identity::suite_named(block);
+    }
+    match refs.and_then(|r| r.get("prev")).and_then(Value::as_str) {
+        Some(prev) => suite_of_id(prev),
+        None => crate::spec().suite_default.clone(),
+    }
+}
+
+/// A new block, unsigned: `{ hash, type, state, refs }`, its id in the hash of `suite` (the signing key's). Strict writing: it is
 /// built as given and the strict check refuses what breaks it, so a null, a float or an unsorted set is an error here,
 /// never silently repaired. Each ref is a hash or a list of hashes (text).
 pub fn create_in(suite: &str, type_name: &str, state: &Value, refs: &Value) -> Result<Value> {
@@ -113,16 +139,12 @@ pub fn create_in(suite: &str, type_name: &str, state: &Value, refs: &Value) -> R
         return Err(Error::refused(crate::check::ordered(strict, "block")));
     }
     let h = hash_suite(suite, type_name, &state, &refs);
-    let mut block = json!({ "hash": h, "type": type_name, "state": state, "refs": refs });
-    if !suite.is_empty() && suite != "std" {
-        block["suite"] = json!(suite);
-    }
-    Ok(block)
+    Ok(json!({ "hash": h, "type": type_name, "state": state, "refs": refs }))
 }
 
 /// A new `std` block, unsigned.
 pub fn create(type_name: &str, state: &Value, refs: &Value) -> Result<Value> {
-    create_in("std", type_name, state, refs)
+    create_in(crate::spec::default_suite(), type_name, state, refs)
 }
 
 /// The `{ type, state, refs }` of a block, for hashing and signing.
@@ -135,8 +157,9 @@ pub fn parts(block: &Value) -> (&str, &Value, &Value) {
     )
 }
 
-/// A block's hash, recomputed from its content in its suite (never trusted from a sender).
+/// A block's hash, recomputed from its content (never trusted from a sender), in the suite the block itself shows
+/// (`suite_from_block`).
 pub fn rehash(block: &Value) -> String {
     let (t, s, r) = parts(block);
-    hash_suite(suite_of(block), t, s, r)
+    hash_suite(&suite_from_block(block), t, s, r)
 }

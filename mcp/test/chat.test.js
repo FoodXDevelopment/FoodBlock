@@ -9,6 +9,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { createHub } from '../hosted.js'
 import { createServer, mcpEndpoint } from '../server.js'
+import { FOODX_BRAND } from '../hosted.js'
 import { createDoor } from '../door.js'
 
 // A person who first wrote from a chat signs in to the app with a code sent to a chat she uses, and inside any assistant her own agent talks.
@@ -25,7 +26,7 @@ describe('the chat door on the hub', () => {
     }
     let hub; const server = http.createServer((req, res) => hub.app(req, res)); await new Promise((d) => server.listen(0, '127.0.0.1', d)); after(() => { server.close(); server.closeAllConnections?.() })
     const base = `http://127.0.0.1:${server.address().port}`
-    hub = createHub({ stateFile: join(dir, 'state.json'), master: randomBytes(40).toString('hex'), publicUrl: base, provision: async () => ({ base: 'http://127.0.0.1:9/p', token: 't' }), mcp: mcpEndpoint(), chat })
+    hub = createHub({ reach: 'P30D', trustProxy: false, stateFile: join(dir, 'state.json'), master: randomBytes(40).toString('hex'), publicUrl: base, provision: async () => ({ base: 'http://127.0.0.1:9/p', token: 't' }), mcp: mcpEndpoint(), chat })
     const page = await (await fetch(`${base}/account`)).text()
     assert.match(page, /Sign in to FoodX/); assert.match(page, /A code in your chat/); assert.match(page, /Built on the open FoodBlock protocol/); assert.ok(!/Sign in to FoodBlock/.test(page))
     const request = /name="request" value="([^"]+)"/.exec(page)[1]
@@ -39,18 +40,22 @@ describe('the chat door on the hub', () => {
   })
 
   it('offers ask_my_foodos first, relays the words, and returns the agent\'s answer', async () => {
-    const door = createDoor(); const heard = []
+    const door = createDoor({ reach: 'P30D' }); const heard = []
     door.talk = async (words) => { heard.push(words); return 'Sales: 3.' }
     const [a, b] = InMemoryTransport.createLinkedPair()
-    await createServer({ door }).connect(b)
+    await createServer({ door, brand: FOODX_BRAND }).connect(b)
     const client = new Client({ name: 'chatgpt', version: '1' }); await client.connect(a)
     const tools = (await client.listTools()).tools
     assert.equal(tools[0].name, 'ask_my_foodos'); assert.deepEqual(tools.map((t) => t.name).sort(), ['ask_my_foodos', 'foodblock_find', 'foodblock_read'], 'a hosted door finds and reads; binding is on the approval page, not a tool')
-    assert.deepEqual(tools[0]._meta.securitySchemes, [{ type: 'oauth2', scopes: ['foodblock:read'] }], 'each tool names its own scope'); assert.equal(tools[0]._meta.ui.resourceUri, 'ui://foodx/approval-card')
+    assert.deepEqual(tools[0]._meta.securitySchemes, [{ type: 'oauth2', scopes: ['foodblock:talk'] }], 'each tool names its own scope'); assert.equal(tools[0]._meta.ui.resourceUri, 'ui://foodx/approval-card')
     const card = await client.readResource({ uri: 'ui://foodx/approval-card' }); assert.equal(card.contents[0].mimeType, 'text/html;profile=mcp-app'); assert.match(card.contents[0].text, /approval_url/)
     const r = await client.callTool({ name: 'ask_my_foodos', arguments: { message: 'what did I sell?' } })
     const out = JSON.parse(r.content[0].text); assert.equal(out.answer, 'Sales: 3.'); assert.match(out.conversation, /^[0-9a-f]{16}$/); assert.deepEqual(heard, ['what did I sell?'])
-    const bare = new Client({ name: 'x', version: '1' }); const [c, d] = InMemoryTransport.createLinkedPair(); await createServer({ door: createDoor() }).connect(d); await bare.connect(c)
-    assert.ok(!(await bare.listTools()).tools.some((t) => t.name === 'ask_my_foodos'), 'no agent on this host, no talk tool')
+    const bare = new Client({ name: 'x', version: '1' }); const [c, d] = InMemoryTransport.createLinkedPair(); await createServer({ door: createDoor({ reach: 'P30D' }) }).connect(d); await bare.connect(c)
+    const neutral = (await bare.listTools()).tools.map((t) => t.name).sort()
+    assert.ok(!neutral.includes('ask_my_foodos'), 'a neutral server has no one\'s agent to talk to')
+    assert.deepEqual(neutral, ['foodblock_accept', 'foodblock_ask', 'foodblock_connect', 'foodblock_find', 'foodblock_promise', 'foodblock_read'])
+    assert.equal(bare.getServerVersion().title, 'FoodBlock'); assert.ok(!bare.getServerVersion().icons && !bare.getServerVersion().websiteUrl && !/FoodX/.test(bare.getInstructions()), 'the neutral server names no product')
+    assert.equal(client.getServerVersion().title, 'FoodX')
   })
 })

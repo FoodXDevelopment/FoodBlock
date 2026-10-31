@@ -17,7 +17,7 @@ function assertion(challenge, flags = 0x05) {
 }
 
 test('a passkey signs a genesis and a note, and the plain form of the same key still works', () => {
-  const g0 = fb.identity.genesis(key, { kind: 'person', at: '2026-10-16T12:00:00.000Z' })
+  const g0 = fb.identity.genesis(key, { audience: 'public', kind: 'person', at: '2026-10-16T12:00:00.000Z' })
   assert.equal(fb.passkeyChallenge(g0), Buffer.from(g0.hash, 'hex').toString('base64url'))
   const genesis = { ...g0, signature: assertion(fb.passkeyChallenge(g0)) }
   assert.ok(fb.verify(g0, genesis.signature, key.public_key_sign))

@@ -50,7 +50,7 @@ pub fn next_link(last: Option<&Value>, brought_in: Option<&str>) -> Result<Link>
 pub struct Chain {
     /// The latest block, when one block is the latest.
     pub head: Option<Value>,
-    /// The blocks counted: those that are not part of an equivocation or after one.
+    /// The blocks counted: those that are not part of an equivocation pair.
     pub length: i64,
     /// The seq numbers missing that no skip block explains.
     pub gaps: Vec<i64>,
@@ -74,7 +74,7 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
     let mut by_seq: alloc::collections::BTreeMap<i64, Vec<&Value>> = Default::default();
     for block in blocks {
         let Some(seq) = int(st(block, "seq")) else { continue };
-        if seq < 1.0 {
+        if seq < 1.0 || hash_of(block) == brought_in {
             continue;
         }
         let here = by_seq.entry(seq as i64).or_default();
@@ -82,38 +82,53 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
             here.push(block);
         }
     }
+    let mine: alloc::collections::BTreeMap<&str, &Value> = by_seq.values().flatten().map(|b| (hash_of(b), *b)).collect();
+    let is_skip = |b: &Value| st(b, "skip") == Some(&Value::Bool(true));
+    let seq_of = |b: &Value| int(st(b, "seq")).unwrap_or(0.0) as i64;
+    // The place each block takes (core.md, invariant 3): its prev, or, for a first block of the key, the key's root. A first block names
+    // the block that brought the key in (`brought_in`), or, at seq 1, a block that is none of the key's: another block that brought it in.
+    let first = |b: &Value| rs(b, "prev").is_some_and(|p| p == brought_in || (!mine.contains_key(p) && seq_of(b) == 1));
     let mut by_prev: alloc::collections::BTreeMap<String, Vec<String>> = Default::default();
-    for here in by_seq.values() {
-        for b in here {
-            if let Some(p) = rs(b, "prev") {
-                by_prev.entry(p.to_string()).or_default().push(hash_of(b).to_string());
-            }
+    for b in mine.values() {
+        let slot = if first(b) { Some("^first") } else { rs(b, "prev") };
+        if let Some(p) = slot {
+            by_prev.entry(p.to_string()).or_default().push(hash_of(b).to_string());
         }
     }
+    // Each group of blocks taking one place proves the lie by a star: every block of it paired with the group's lowest hash (folds.md,
+    // chain), so a key that signs a thousand blocks on one prev lists 999 pairs, never half a million.
     let mut equivocations: Vec<[String; 2]> = Vec::new();
+    let mut in_pair: alloc::collections::BTreeSet<String> = Default::default();
     for (_, mut group) in by_prev {
         group.sort();
         group.dedup();
-        for i in 0..group.len() {
-            for j in i + 1..group.len() {
-                equivocations.push([group[i].clone(), group[j].clone()]);
-            }
+        if group.len() > 1 {
+            in_pair.extend(group.iter().cloned());
+        }
+        for other in group.iter().skip(1) {
+            equivocations.push([group[0].clone(), other.clone()]);
         }
     }
     equivocations.sort();
-    let in_pair: Vec<&String> = equivocations.iter().flatten().collect();
-    let is_skip = |b: &Value| st(b, "skip") == Some(&Value::Bool(true));
-    let mut skips: Vec<String> = by_seq
+    let mut skips: Vec<String> = mine.values().filter(|b| is_skip(b)).map(|b| hash_of(b).to_string()).collect();
+    skips.sort();
+    // A block is broken when its prev does not name the block before it: the block that brought the key in, at seq 1 (or a skip), or
+    // a block of the key one seq lower (any lower, for a skip). Read from each block and its prev alone, never from the order given.
+    let mut broken: Vec<String> = mine
         .values()
-        .flatten()
-        .filter(|b| is_skip(b))
+        .filter(|b| match rs(b, "prev") {
+            Some(p) if p == brought_in => !(seq_of(b) == 1 || is_skip(b)),
+            Some(p) => match mine.get(p) {
+                Some(q) => !(if is_skip(b) { seq_of(b) > seq_of(q) } else { seq_of(b) == seq_of(q) + 1 }),
+                None => true,
+            },
+            None => true,
+        })
         .map(|b| hash_of(b).to_string())
         .collect();
-    skips.sort();
-    let (mut gaps, mut broken) = (Vec::new(), Vec::new());
-    // Walk the seqs in order: each block's prev is the block at the nearest lower seq (the one that brought the key
-    // in, before the first); a gap is explained when the block after it is a skip.
-    let mut before: Option<Vec<&Value>> = None;
+    broken.sort();
+    // A gap: a seq missing before a block that is not a skip.
+    let mut gaps = Vec::new();
     let mut last_seq = 0i64;
     for (seq, here) in &by_seq {
         let explained = here.iter().all(|b| is_skip(b));
@@ -124,38 +139,12 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
             let end = (last_seq + 1).saturating_add(room).min(*seq);
             gaps.extend(last_seq + 1..end);
         }
-        for b in here {
-            let want: Option<Vec<&str>> = match &before {
-                None => Some(vec![brought_in]),
-                Some(prev) if prev.len() == 1 => Some(vec![hash_of(prev[0])]),
-                Some(_) => None,
-            };
-            if let Some(want) = want {
-                if rs(b, "prev").is_none_or(|p| !want.contains(&p)) {
-                    broken.push(hash_of(b).to_string());
-                }
-            }
-        }
-        before = Some(here.clone());
         last_seq = *seq;
     }
     let top = by_seq.values().next_back();
     let head = top.filter(|t| t.len() == 1).map(|t| t[0].clone());
-    // Blocks counted: not a member of a pair, and not after one (a block naming a member, or a block after that).
-    let mut uncounted: Vec<String> = in_pair.iter().map(|h| (*h).clone()).collect();
-    loop {
-        let more: Vec<String> = by_seq
-            .values()
-            .flatten()
-            .filter(|b| !uncounted.iter().any(|u| u == hash_of(b)) && rs(b, "prev").is_some_and(|p| uncounted.iter().any(|u| u == p)))
-            .map(|b| hash_of(b).to_string())
-            .collect();
-        if more.is_empty() {
-            break;
-        }
-        uncounted.extend(more);
-    }
-    let length = by_seq.values().flatten().filter(|b| !uncounted.iter().any(|u| u == hash_of(b))).count() as i64;
+    // Blocks counted: those that are not a member of a pair. A later block of the key is counted (A fork is a burden).
+    let length = by_seq.values().flatten().filter(|b| !in_pair.contains(hash_of(b))).count() as i64;
     let ok = gaps.is_empty() && equivocations.is_empty() && broken.is_empty();
     Chain {
         head,

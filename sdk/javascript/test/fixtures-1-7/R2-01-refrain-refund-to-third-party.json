@@ -1,0 +1,527 @@
+{
+ "name": "findings/R2-01-refrain-refund-to-third-party.json",
+ "note": "Refrain promise (price 1000, payer c pays 100 to d). d then sends 5000 to b, a third party, b accepts, 'for' the promise. promise_stage: core underway (a refund must go to the paying side, fold.rs:589-594); oracle reversed (fb.cjs:2073: any money transfer whose to_owner is not the from side is a refund, even to a stranger; and a refrain whose price is only partly paid is reversed). folds.md stage 1/3 say 'transfers back' without saying to whom.",
+ "fuzz_seed": 7005298,
+ "calls": [
+  {
+   "op": "promise_stage",
+   "args": [
+    {
+     "hash": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+     "type": "promise",
+     "state": {
+      "terms": {
+       "expires": "2028-06-01T00:00:00.000Z",
+       "refrain": true,
+       "until": "2026-10-31T22:33:00.000Z",
+       "price": {
+        "minor": 1000,
+        "currency": "GBP"
+       }
+      },
+      "at": "2026-10-30T04:58:00.000Z",
+      "audience": "public",
+      "seq": 1
+     },
+     "refs": {
+      "from": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+      "to": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+      "what": "8db9894cd4d34f1292d988de649900d6375ff51bc1f9b1e0d2d3bf7db3966624",
+      "schema": "fe74a34db95e2e3b60c3ae5ee0acc79eabecf420d698ae4cffe203f62364daee",
+      "author": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+      "prev": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f"
+     },
+     "signature": "0b544c61c321458a15b714f42470dfe4ebcb9caa3584830376f2c30db0c1309796a4c828e9d87e27a3b3d2a6c7ee2dd778fa71d562f2033ab3f4f693e0fee20f"
+    },
+    [
+     {
+      "hash": "76f820f23edce6c23b7246b8b0b1fc8dcc922f2c762d5c4228b03a4d41eaa1d9",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:54:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b657003210031828f6852b9920124de36ef6fb280044725e71b25b3b9f1440d202d23510760"
+      },
+      "refs": {},
+      "signature": "4b9079f1b4c1227515abfc89cef3a6ae8d0de53f210b94d596adcc937afb55ba7274956d1f59c2b69f4718638bfca5230a1f5f9b70b0b05bf51d38ec6f20f70f"
+     },
+     {
+      "hash": "c8254a4df57b0ba5f465bc3999a1fd77c84cc052518a13abe8619c7436db9189",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T14:18:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100fd5c025b4bb2a7640cb5c79a568287487f0c1179a2cdf64ff4f4b8e39c8b0046"
+      },
+      "refs": {},
+      "signature": "cb1ce82e7555f63958afe3cc9d037eecc3fd462459c0d8be81ddb496258758b426419f6c90d71423584bdbe43551ad72356b1add4e958056678205e04f1a9907"
+     },
+     {
+      "hash": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T15:45:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100496bfbfc09c15bbaf16edcff255756a675ce408a0530a5839ddb1731d2b9e914"
+      },
+      "refs": {},
+      "signature": "cc3373f818419b2aa0590336935bb91467df5afb84b65d1f82361819b9e61eff271fd8e0b0b34b66bd5cc09ee785dbfc22009e63ebd86bdffad2691697e0a207"
+     },
+     {
+      "hash": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T16:25:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100dd7cb8cb40da529fb9ad809e07980a0e237ad50cd51344d6dd627142536ecc1b"
+      },
+      "refs": {},
+      "signature": "33611f79b1f6d70d7f046152d757681525baf1079b44d655ae7fbae3a2c1b1577e730b7b49240d4520c376eb1b8cff9bd57d5614d88dba0f30587ea5487fda0a"
+     },
+     {
+      "hash": "add5e205adea256d4599f342b5fd29467e2b5f7918dfa72510c3248afe34fa18",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T17:38:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100c6af86ad0ceaf4001baef3d7a2ebd2ccac9e840f1d2719a59b53feca299d04f5"
+      },
+      "refs": {},
+      "signature": "2d899515d219f64ee96a296d0f60c136a4c8c408f85ff4804f3e5b728dce785b66ec123feb482ff2be754309dc91ff5b50e730f5011bc18ead7fb0d6e9b14909"
+     },
+     {
+      "hash": "8db9894cd4d34f1292d988de649900d6375ff51bc1f9b1e0d2d3bf7db3966624",
+      "type": "thing",
+      "state": {
+       "kind": "flour",
+       "at": "2026-10-27T21:11:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "76f820f23edce6c23b7246b8b0b1fc8dcc922f2c762d5c4228b03a4d41eaa1d9",
+       "prev": "76f820f23edce6c23b7246b8b0b1fc8dcc922f2c762d5c4228b03a4d41eaa1d9"
+      },
+      "signature": "8f5cf22ac686293ef32432122abb586e9947c74f8cc74a2975231bf659909f943804f309923ddfa2427c6119164a8dcce292b87f23c674fb83c0a345eb96260e"
+     },
+     {
+      "hash": "fe74a34db95e2e3b60c3ae5ee0acc79eabecf420d698ae4cffe203f62364daee",
+      "type": "thing",
+      "state": {
+       "kind": "schema",
+       "target": "promise",
+       "grounds": {
+        "event": "residue",
+        "confirmers": [
+         "add5e205adea256d4599f342b5fd29467e2b5f7918dfa72510c3248afe34fa18"
+        ]
+       },
+       "at": "2026-10-30T04:33:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "author": "76f820f23edce6c23b7246b8b0b1fc8dcc922f2c762d5c4228b03a4d41eaa1d9",
+       "prev": "8db9894cd4d34f1292d988de649900d6375ff51bc1f9b1e0d2d3bf7db3966624"
+      },
+      "signature": "ebf4ab0eabf3a7a85e4e971f9f5ab224e250169fe86d3ff0106dd20679ad93b5a948c07a88f094d847e7d1c4926180b7571c48863943718ce96a443f68b21e0d"
+     },
+     {
+      "hash": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+      "type": "promise",
+      "state": {
+       "terms": {
+        "expires": "2028-06-01T00:00:00.000Z",
+        "refrain": true,
+        "until": "2026-10-31T22:33:00.000Z",
+        "price": {
+         "minor": 1000,
+         "currency": "GBP"
+        }
+       },
+       "at": "2026-10-30T04:58:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "from": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+       "to": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+       "what": "8db9894cd4d34f1292d988de649900d6375ff51bc1f9b1e0d2d3bf7db3966624",
+       "schema": "fe74a34db95e2e3b60c3ae5ee0acc79eabecf420d698ae4cffe203f62364daee",
+       "author": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+       "prev": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f"
+      },
+      "signature": "0b544c61c321458a15b714f42470dfe4ebcb9caa3584830376f2c30db0c1309796a4c828e9d87e27a3b3d2a6c7ee2dd778fa71d562f2033ab3f4f693e0fee20f"
+     },
+     {
+      "hash": "24afb45614b2f172832ba80b28d33d0990db7ed9935ece02bc2a5122005ba7d5",
+      "type": "promise",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-30T05:40:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "for": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "author": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+       "prev": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+       "after": [
+        "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+        "fe74a34db95e2e3b60c3ae5ee0acc79eabecf420d698ae4cffe203f62364daee"
+       ]
+      },
+      "signature": "f799aac2d75b934b3288b28b15680d6501db585f8cc2e93ef7bec1f3699f72642748c70cda69f8cc8ba4608cc40bc84ac8c50ec1427ac332cd133d46258cb404"
+     },
+     {
+      "hash": "3f9c76fef5cdd93d74f3a2a32cc7f13dca3ce5c2d32b034ee28712f4028150e0",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 100,
+        "currency": "GBP"
+       },
+       "at": "2026-10-30T07:21:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "what": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+       "to_owner": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+       "for": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "author": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89",
+       "prev": "24afb45614b2f172832ba80b28d33d0990db7ed9935ece02bc2a5122005ba7d5",
+       "after": [
+        "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5"
+       ]
+      },
+      "signature": "055d8f1b32e28657eea7d1e5b1793b31b736e2bac67dcd7f29a5acda5edf376691e278e16843da64f21b02e9de725f8ea2f2ea55a0a8e26e6f7a73c5e384c400"
+     },
+     {
+      "hash": "037ca30027ffb4695c23c5f976aa30f42ad6e31dd876f10b71c5b0c9c53c883c",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-30T07:32:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "answers": "3f9c76fef5cdd93d74f3a2a32cc7f13dca3ce5c2d32b034ee28712f4028150e0",
+       "for": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "author": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+       "prev": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "after": [
+        "3f9c76fef5cdd93d74f3a2a32cc7f13dca3ce5c2d32b034ee28712f4028150e0"
+       ]
+      },
+      "signature": "a27eb16fbeb4e9e7da31019f719bb2f3b4af4188a0de76641035520b9ce22b8a09c5b836633d9dabba5003d40aa5bf0ce2c9a63c00ae9b210ae447d7aca69b0b"
+     },
+     {
+      "hash": "123c5c3daed44a96bf53141bf3db6b0811ca58625deba0900e689762f34a3f92",
+      "type": "transfer",
+      "state": {
+       "money": {
+        "minor": 5000,
+        "currency": "GBP"
+       },
+       "at": "2026-10-30T08:14:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "what": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+       "to_owner": "c8254a4df57b0ba5f465bc3999a1fd77c84cc052518a13abe8619c7436db9189",
+       "for": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "author": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+       "prev": "037ca30027ffb4695c23c5f976aa30f42ad6e31dd876f10b71c5b0c9c53c883c",
+       "after": [
+        "037ca30027ffb4695c23c5f976aa30f42ad6e31dd876f10b71c5b0c9c53c883c",
+        "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+        "fe74a34db95e2e3b60c3ae5ee0acc79eabecf420d698ae4cffe203f62364daee"
+       ]
+      },
+      "signature": "a57e3aa843d09a2d4dbc4728d2b0d1460d9732cac11ef6b00d4b4328d81f5b2c149e566ad5c87528765664473cca533b5a1d830ddb982cd4cff613028ee94e07"
+     },
+     {
+      "hash": "f4ad0261dd8f846ce417f6db072bf2a8254cbdfe0218f658046cecc9069bf1fb",
+      "type": "transfer",
+      "state": {
+       "status": "accepted",
+       "at": "2026-10-30T08:54:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "123c5c3daed44a96bf53141bf3db6b0811ca58625deba0900e689762f34a3f92",
+       "for": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+       "author": "c8254a4df57b0ba5f465bc3999a1fd77c84cc052518a13abe8619c7436db9189",
+       "prev": "c8254a4df57b0ba5f465bc3999a1fd77c84cc052518a13abe8619c7436db9189",
+       "after": [
+        "123c5c3daed44a96bf53141bf3db6b0811ca58625deba0900e689762f34a3f92"
+       ]
+      },
+      "signature": "1633d1fceaf537947eb8b52b5a3f55b9c7507ea88267fdab6d4cc12fe38e6429f044204c621540e115a200366a68de0de6f8352c344a4be896cecbbc0b147f00"
+     }
+    ],
+    {}
+   ],
+   "core": {
+    "ok": {
+     "stage": "underway",
+     "stop": null,
+     "from": null,
+     "by": null,
+     "offer": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+     "live": [
+      "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5"
+     ],
+     "accept": "24afb45614b2f172832ba80b28d33d0990db7ed9935ece02bc2a5122005ba7d5",
+     "sides": {
+      "from": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+      "to": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89"
+     },
+     "quantity": null,
+     "takers": [],
+     "forks": [],
+     "lines": [
+      {
+       "id": null,
+       "needed": null,
+       "moved": 0
+      }
+     ],
+     "total": {
+      "minor": 1000,
+      "currency": "GBP"
+     },
+     "paid": {
+      "minor": 100,
+      "currency": "GBP"
+     },
+     "stopped": []
+    }
+   },
+   "oracle": {
+    "ok": {
+     "stage": "reversed",
+     "stop": null,
+     "from": null,
+     "by": null,
+     "offer": "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5",
+     "accept": "24afb45614b2f172832ba80b28d33d0990db7ed9935ece02bc2a5122005ba7d5",
+     "sides": {
+      "from": "60d6e91ab859d5f4c158778a0a23ecaadf9f7ab7fe9b9bd132c7fdc049af7f3f",
+      "to": "70caf4b6abbef86f645c0ba477ae9bd04503dfdbae77690ec91edb3cf1540e89"
+     },
+     "quantity": null,
+     "takers": [],
+     "forks": [],
+     "lines": [
+      {
+       "id": null,
+       "needed": null,
+       "moved": 0
+      }
+     ],
+     "total": {
+      "minor": 1000,
+      "currency": "GBP"
+     },
+     "paid": {
+      "minor": 100,
+      "currency": "GBP"
+     },
+     "stopped": [],
+     "live": [
+      "cc8fe6a1fdd3896278b70e8eef2cdb78bf9ca6efa483a8bfd4e06b794084bba5"
+     ]
+    }
+   }
+  }
+ ],
+ "story_recipe": [
+  {
+   "who": "a",
+   "genesis": "person",
+   "at": "2026-10-27T12:54:00.000Z",
+   "refs": {},
+   "state": {},
+   "after": []
+  },
+  {
+   "who": "b",
+   "genesis": "person",
+   "at": "2026-10-27T14:18:00.000Z",
+   "refs": {},
+   "state": {},
+   "after": []
+  },
+  {
+   "who": "c",
+   "genesis": "person",
+   "at": "2026-10-27T15:45:00.000Z",
+   "refs": {},
+   "state": {},
+   "after": []
+  },
+  {
+   "who": "d",
+   "genesis": "person",
+   "at": "2026-10-27T16:25:00.000Z",
+   "refs": {},
+   "state": {},
+   "after": []
+  },
+  {
+   "who": "e",
+   "genesis": "person",
+   "at": "2026-10-27T17:38:00.000Z",
+   "refs": {},
+   "state": {},
+   "after": []
+  },
+  {
+   "who": "a",
+   "type": "thing",
+   "state": {
+    "kind": "flour"
+   },
+   "refs": {},
+   "after": [],
+   "at": "2026-10-27T21:11:00.000Z"
+  },
+  {
+   "who": "a",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "target": "promise",
+    "grounds": {
+     "event": "residue",
+     "confirmers": [
+      "@4"
+     ]
+    }
+   },
+   "refs": {},
+   "after": [],
+   "at": "2026-10-30T04:33:00.000Z"
+  },
+  {
+   "who": "d",
+   "type": "promise",
+   "state": {
+    "terms": {
+     "expires": "2028-06-01T00:00:00.000Z",
+     "refrain": true,
+     "until": "2026-10-31T22:33:00.000Z",
+     "price": {
+      "minor": 1000,
+      "currency": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "from": "@3",
+    "to": "@2",
+    "what": "@5",
+    "schema": "@6"
+   },
+   "after": [],
+   "at": "2026-10-30T04:58:00.000Z"
+  },
+  {
+   "who": "c",
+   "type": "promise",
+   "state": {
+    "status": "accepted"
+   },
+   "refs": {
+    "answers": "@7",
+    "for": "@7"
+   },
+   "after": [
+    7,
+    6
+   ],
+   "at": "2026-10-30T05:40:00.000Z"
+  },
+  {
+   "who": "c",
+   "type": "transfer",
+   "state": {
+    "money": {
+     "minor": 100,
+     "currency": "GBP"
+    }
+   },
+   "refs": {
+    "what": "@2",
+    "to_owner": "@3",
+    "for": "@7"
+   },
+   "after": [
+    7
+   ],
+   "at": "2026-10-30T07:21:00.000Z"
+  },
+  {
+   "who": "d",
+   "type": "transfer",
+   "state": {
+    "status": "accepted"
+   },
+   "refs": {
+    "answers": "@9",
+    "for": "@7"
+   },
+   "after": [
+    9
+   ],
+   "at": "2026-10-30T07:32:00.000Z"
+  },
+  {
+   "who": "d",
+   "type": "transfer",
+   "state": {
+    "money": {
+     "minor": 5000,
+     "currency": "GBP"
+    }
+   },
+   "refs": {
+    "what": "@3",
+    "to_owner": "@1",
+    "for": "@7"
+   },
+   "after": [
+    7,
+    6,
+    10
+   ],
+   "at": "2026-10-30T08:14:00.000Z"
+  },
+  {
+   "who": "b",
+   "type": "transfer",
+   "state": {
+    "status": "accepted"
+   },
+   "refs": {
+    "answers": "@11",
+    "for": "@7"
+   },
+   "after": [
+    11
+   ],
+   "at": "2026-10-30T08:54:00.000Z"
+  }
+ ]
+}

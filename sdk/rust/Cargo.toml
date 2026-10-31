@@ -1,9 +1,9 @@
 [package]
 name = "foodblock"
-version = "1.6.0"
+version = "1.7.0"
 edition = "2021"
-license = "MIT"
-description = "FoodBlock 1.6 for robots, vehicles, sensors and nodes: canonical form, SHA-256, Ed25519, the write check, chains, envelopes and folds, with a C ABI and a C++ layer."
+license = "CC0-1.0"
+description = "FoodBlock for robots, vehicles, sensors and nodes: canonical form, SHA-256, Ed25519, the write check, chains, envelopes and folds, with a C ABI and a C++ layer."
 repository = "https://github.com/FoodXDevelopment/FoodBlock"
 homepage = "https://www.foodx.network/developers"
 authors = ["FoodX <developers@foodx.com>"]
@@ -13,7 +13,7 @@ categories = ["cryptography", "embedded", "no-std", "encoding"]
 include = ["src/**", "spec/**", "include/**", "README.md", "LICENSE", "Cargo.toml"]
 
 [features]
-default = ["std", "node", "suites", "successor", "ballots", "rekeys", "deposits", "door", "legacy"]
+default = ["std", "node", "suites", "successor", "ballots", "rekeys", "earnest", "door", "legacy"]
 # The standard library: OS randomness for new keys, salts and envelopes. Without it the crate is no_std + alloc, and
 # the caller hands in random bytes.
 std = ["dep:getrandom", "serde_json/std"]
@@ -32,29 +32,31 @@ suites = ["dep:p256", "dep:sm2", "dep:sm3", "dep:sm4", "dep:elliptic-curve", "de
 successor = ["folds"]
 ballots = ["folds"]
 rekeys = ["folds"]
-deposits = []
+earnest = []
 # The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol.
 legacy = ["envelope"]
 # The JSON door (src/door.rs): one call, one data shape, shared by every language binding.
 door = ["std", "node"]
 # The C ABI (include/foodblock.h), JSON in and JSON out.
-ffi = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "deposits", "legacy"]
+ffi = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "earnest", "legacy"]
 # The WebAssembly door for the JavaScript SDK (sdk/javascript/core): the JSON door as plain exports; the host gives
 # randomness and the clock. Build: node sdk/javascript/scripts/build-wasm.cjs
-wasm = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "deposits", "legacy", "getrandom/custom"]
+wasm = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "earnest", "legacy", "getrandom/custom"]
 # The JNI door for Kotlin (sdk/kotlin): one native call, JSON in and out. Pick the profile beside it.
-jni = ["door", "std", "dep:jni", "suites", "successor", "ballots", "rekeys", "deposits", "legacy"]
+jni = ["door", "std", "dep:jni", "suites", "successor", "ballots", "rekeys", "earnest", "legacy"]
 
 [dependencies]
 serde = { version = "1", default-features = false, features = ["alloc"] }
-serde_json = { version = "1.0.120", default-features = false, features = ["alloc", "preserve_order", "float_roundtrip"] }
+serde_json = { version = "1.0.120", default-features = false, features = ["alloc", "preserve_order", "float_roundtrip", "unbounded_depth"] }
 indexmap = { version = "2", default-features = false }
 sha2 = { version = "0.10", default-features = false }
-ed25519-dalek = { version = "2.1", default-features = false }
+ed25519-dalek = { version = "2.1", default-features = false, features = ["zeroize"] }
 unicode-normalization = { version = "0.1.23", default-features = false }
 once_cell = { version = "1.19", default-features = false, features = ["race", "alloc"] }
 getrandom = { version = "0.2", optional = true }
-x25519-dalek = { version = "2", default-features = false, features = ["static_secrets"], optional = true }
+# buffers that held a key or a plaintext are overwritten before they are freed (release 46)
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "zeroize"], optional = true }
 aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"], optional = true }
 hkdf = { version = "0.12", default-features = false, optional = true }
 jni = { version = "0.21", optional = true }
@@ -95,7 +97,7 @@ required-features = ["node", "suites"]
 
 [[test]]
 name = "vectors"
-required-features = ["door", "legacy", "successor", "ballots", "rekeys", "deposits", "suites"]
+required-features = ["door", "legacy", "successor", "ballots", "rekeys", "earnest", "suites"]
 
 [[test]]
 name = "legacy"

@@ -2,13 +2,14 @@
 
 Open work, with enough context to pick up.
 
-- **Waiting blocks are asked for only from whoever pushed them** (spec §10). A push carries no identity, so the
-  node cannot tell who pushed; it retries waiting blocks on every push and drops them after `WAIT_TTL`.
+- **Waiting blocks are asked for only from whoever signed the push** (nodes.md, Push). An unsigned push carries no
+  identity, so its waiting blocks are never fetched, only kept until they expire. The node tries a waiting block again
+  only when a block it waits for arrives, never with every push.
 - **Local discovery.** The node builds its local announcement but runs no mDNS / DNS-SD responder or short-range
   link; a transport that carries it is still to be added.
 - **A node that holds many blocks.** A pull reads every block since `since` before filtering, which is fine for one
   person's node; an index needs the filter and `heads` in SQL.
-- **Publishing 1.6.** See `DISTRIBUTION.md`.
+- **Publishing 1.7.** See `DISTRIBUTION.md`.
 - Decide before the freeze: rename the actor kind value `agent` (needs FoodOS change).
 - EPCIS profile vectors not yet written: AssociationEvent, SensorElement, ErrorDeclaration, a circle as covered person (spec/profiles/foodblock-profile-epcis.md §9).
 - Passkeys: a real device's assertion has not been tried (the vectors use a test authenticator that writes the same shapes); the Kotlin tests need a JDK.

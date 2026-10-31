@@ -18,7 +18,8 @@ function rec(section, name, ok, detail) {
   lines.push((ok ? 'ok   ' : 'FAIL ') + section + ': ' + name);
   if (!ok) fails.push({ section, name, detail });
 }
-const attempt = (section, name, fn) => { try { const out = fn(); rec(section, name, out !== false, out === false ? undefined : undefined); } catch (e) { rec(section, name, false, String(e && e.message).split('\n')[0]); } };
+// a case passes only when its check returns exactly true: undefined, null, 0 or '' is a check that said nothing, and fails
+const attempt = (section, name, fn) => { try { const out = fn(); rec(section, name, out === true, out === true ? undefined : `returned ${JSON.stringify(out)}`); } catch (e) { rec(section, name, false, String(e && e.message).split('\n')[0]); } };
 const sortKeys = x => Array.isArray(x) ? x.map(sortKeys) : x && typeof x === 'object' ? Object.fromEntries(Object.keys(x).sort().map(k => [k, sortKeys(x[k])])) : x;
 const same = (a, b) => JSON.stringify(sortKeys(a)) === JSON.stringify(sortKeys(b));
 // subset: every key given in want must match; arrays must have the same length and match element by element
@@ -31,8 +32,11 @@ const pub = signer => V.keys[signer].public_key_sign;
 const bare = b => ({ type: b.type, state: b.state, refs: b.refs });
 
 // ---------------------------------------------------------------- canonical-vectors.json
+const CHECKED = ['same_as', 'not_same_as', 'canonical_contains', 'canonical', 'refused'];
 for (const v of CV.vectors) {
   const h = b => fb.hashOfBlock(b, 'std'), c = b => fb.canonOf(b);
+  // a case that names none of the checked keys checks nothing: it fails, never passes by default
+  if (!CHECKED.some(k => k in v)) { rec('canonical-vectors', v.name, false, `checks nothing: it names none of ${CHECKED.join(', ')}`); continue; }
   const ok = !(v.same_as && h(v.block) !== h(v.same_as)) && !(v.not_same_as && h(v.block) === h(v.not_same_as)) && !(v.canonical_contains && !c(v.block).includes(v.canonical_contains))
     && !(v.canonical && c(v.block) !== v.canonical) && !(v.refused && !v.refused.every(code => codesOf(fb.refusals(v.block.type, v.block.state, v.block.refs)).includes(code)));
   rec('canonical-vectors', v.name, ok, c(v.block));
@@ -81,14 +85,15 @@ for (const [group, name, list] of stories) {
   rec('stories', `${group}: ${name}: ${list.length} blocks hash, verify and pass the check`, !wrong.length, wrong.join(' | '));
 }
 // protocol.md, Conformance: every block in a story passes `valid` against the other blocks of its story, except a block the story marks void on purpose
-// (signed_by_author false in an identities case: a frozen or rotated-out key).
+// (signed_by_author false in an identities case: a frozen or rotated-out key). Only the vector excuses a block, never the oracle's own fold: a fold that
+// wrongly voided a block would otherwise excuse itself. (A block that only the arrivals view rescues would need naming here by its vector; today every
+// such block is valid, so none is listed.)
 for (const [group, name, list] of stories) {
   if (group === 'refusal') continue;
-  // intended void: the case says so (signed_by_author false), or only the arrivals view rescues the block (valid reads no clock, so the pure fold voids it)
   const intended = new Set();
   if (group === 'identity') {
     const v = V.identities.find(x => x.name === name);
-    for (const b of list) { const pure = fb.identityFold(b.block.refs.author || b.hash, list.map(full)).signed_by_author[b.hash]; if (v.signed_by_author[b.hash] === false || pure === false) intended.add(b.hash); }
+    for (const b of list) if (v.signed_by_author[b.hash] === false) intended.add(b.hash);
   }
   const wrong = [];
   for (const b of list) { // the context is the whole story: a story is a set of blocks, and a later block may settle an earlier one
@@ -104,7 +109,7 @@ for (const v of V.bad_signatures) rec('bad_signatures', v.name, !opens(v));
 // ---------------------------------------------------------------- envelopes, sealed copies, public headers
 for (const v of V.envelopes) attempt('envelopes', v.name, () => {
   const m = fb.open(v.envelope, V.keys[v.recipient].x25519_private);
-  return fb.hashOfBlock(m.block, 'std') === v.opens_to.hash && m.signature === v.opens_to.signature && m.version === v.opens_to.version;
+  return fb.hashOfBlock(m.block, 'std') === v.opens_to.hash && m.signature === v.opens_to.signature;
 });
 for (const v of V.sealed.cases) attempt('sealed', v.name, () => {
   const m = fb.openCopy(v.message, V.keys[v.recipient].x25519_private);
@@ -119,11 +124,11 @@ for (const v of V.identities) {
   // the view adds the reader's arrivals: a recovery rotation may not void what another identity built on before the reach began
   const viewOf = (id) => {
     const fold = fb.identityFold(id, held), out = { ...fold.signed_by_author };
-    if (v.arrivals) for (const r of held) if (r.type === 'grant' && r.state.kind === 'key' && r.state.recovery_key && fold.signed_by_author[r.hash]) for (const h of fb.recoveryReachView(r, held, v.arrivals)) out[h] = true;
+    if (v.arrivals) for (const r of held) if (r.type === 'grant' && r.state.kind === 'key' && r.state.recovery_key && fold.signed_by_author[r.hash]) for (const h of fb.recoveryReachView(r, held, fb.reachArrivals(v.arrivals, v.unknown_arrival))) out[h] = true;
     return out;
   };
   const viewSigned = viewOf(v.id);
-  for (const b of v.blocks) if (b.hash in v.signed_by_author) { const got = viewOf(b.block.refs.author || b.hash)[b.hash]; rec('identity', `${v.name}: ${b.name} ${v.signed_by_author[b.hash] ? 'stands' : 'is void'}`, got === v.signed_by_author[b.hash], `got ${got}`); }
+  for (const b of v.blocks) if (b.hash in v.signed_by_author) { const got = viewOf(b.block.refs.author || b.hash)[b.hash] === true; rec('identity', `${v.name}: ${b.name} ${v.signed_by_author[b.hash] ? 'stands' : 'is void'}`, got === v.signed_by_author[b.hash], `got ${got}`); }
   if (v.keys) rec('identity', `${v.name}: the keys that speak`, same(f.keys, v.keys), JSON.stringify(f.keys.map(k => k.slice(-6))));
   if (v.frozen) rec('identity', `${v.name}: the frozen keys`, same(f.frozen, v.frozen));
   if (v.operators) rec('identity', `${v.name}: its operators`, same(fb.operatorsOf(v.id, held), v.operators));
@@ -201,7 +206,7 @@ attempt('messages', 'a push answer is signed by the node', () => fb.answerSigned
 {
   const Pm = MS.push_answer.message, known = new Set(Object.values(fb.P.refusals.codes).flatMap(Object.keys));
   attempt('messages', 'a push answer carries every key, refusals as { hash, code, detail }, equivocations as sorted pairs', () =>
-    same(Object.keys(Pm).sort(), [...fb.P.messages.push_answer].sort()) && Pm.refused.every(r => same(Object.keys(r).sort(), [...fb.P.messages.refusal].sort()) && known.has(r.code)) && Pm.equivocations.every(pair => same(pair, [...pair].sort())));
+    same(Object.keys(Pm).sort(), fb.P.messages.push_answer.filter(k => k in Pm || !fb.P.messages.push_answer_optional.includes(k)).sort()) && Pm.refused.every(r => same(Object.keys(r).sort(), [...fb.P.messages.refusal].sort()) && known.has(r.code)) && Pm.equivocations.every(pair => same(pair, [...pair].sort())));
   attempt('messages', 'the push answer rebuilds byte for byte', () => same(fb.pushAnswer(Pm, { node: Pm.node, privateKey: V.keys[MS.node_signer].private_key }), Pm));
   const Q = MS.push;
   attempt('messages', 'a push names the list of ids each sealed copy is for', () => same(fb.pushRequest(Q.request.messages, Q.request.for), Q.request) && same(Q.request.for[Q.hash], Q.recipients) && Q.recipients.length === 2);
@@ -232,9 +237,9 @@ for (const d of V.door) {
   if (d.oracle === false) { skipped++; continue; }
   attempt('door', `${d.op}: ${d.name}`, () => {
     let got;
-    if (d.op === 'sign') { // a signature is not reproduced (the nonce is the signer's choice): the oracle's own signature must open, and so must the vector's
+    if (d.op === 'sign') { // a signature is reproduced byte for byte (the nonce is the suite's: RFC 6979 for p256 and sm), and it opens
       const key = fb.keypair(d.args[1], d.args[2]).public_key_sign;
-      return fb.verifyBlock(d.args[0], fb.door('sign', ...d.args), key) && fb.verifyBlock(d.args[0], d.expect, key);
+      return fb.door('sign', ...d.args) === d.expect && fb.verifyBlock(d.args[0], d.expect, key);
     }
     try { got = fb.door(d.op, ...d.args); } catch (e) {
       if (!d.error) throw e;

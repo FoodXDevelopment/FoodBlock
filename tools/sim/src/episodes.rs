@@ -192,7 +192,7 @@ impl World {
         let later = self.make(b, "observe", json!({ "kind": "note", "text": "after the fork" }), json!({}));
         self.send(b, &later);
         self.truth.after_fork.push(Self::hash(&later));
-        self.truth.deals.push(Deal { root: oh, buyer: self.id(b), seller: self.id(s), expect: Expect::NotBinding, why: "the accept is one of an equivocating pair", answer: None });
+        self.truth.deals.push(Deal { root: oh, buyer: self.id(b), seller: self.id(s), expect: Expect::Binding, why: "a fork voids what the forker claims, never what she owes: the accept still binds the buyer", answer: None });
     }
 
     /// Blocks an attacker sends that no node may take or that bind nobody.
@@ -309,6 +309,16 @@ impl World {
         self.truth.counted.push((id.clone(), Self::hash(&after)));
         self.truth.owners.push((counted_to_thing(&self.truth, &fraud), id, false));
         self.actors[v].recovery = None;
+        // identity.md, Rotation and A fork: a recovery rotation decides a pair it saw. The half on its counted line counts, the
+        // other half is off the line and void, and "a void block forms no pair". So a key that had already forked is no longer an
+        // equivocator once the recovery key has spoken: no pair to detect, nothing after it marked forked. (What she owes on the
+        // accept that stays on the line still binds: the deal's expectation is unchanged.)
+        if self.actors[v].forked {
+            let me = self.id(v);
+            self.truth.pairs.retain(|(a, _, _)| *a != me);
+            let created = &self.created;
+            self.truth.after_fork.retain(|h| !created.iter().any(|b| b["hash"] == json!(h) && b["refs"]["author"] == json!(me)));
+        }
     }
 
     /// A SIM swap: the custodian, fooled by a voice that is not hers, signs a rotation to the thief's key. The person
@@ -404,7 +414,7 @@ impl World {
         let o = self.pick(Role::Person);
         let mid = self.id(m);
         let op = self.make(o, "grant", json!({ "kind": "operator" }), json!({ "to": mid }));
-        let scope = json!({ "acts": ["observe.note", "promise"], "limit": money(5000), "per": "P7D", "until": "2027-06-30T00:00:00.000Z" });
+        let scope = json!({ "acts": ["observe.note", "promise"], "parties": [self.id(o)], "limit": money(5000), "every": "P7D", "until": "2027-06-30T00:00:00.000Z" });
         let g = self.make(o, "grant", json!({ "kind": "shop", "scope": scope.clone() }), json!({ "to": mid }));
         self.send(o, &op);
         self.send(o, &g);
@@ -413,7 +423,9 @@ impl World {
         let outside = self.make(m, "transfer", json!({}), json!({ "to_owner": mid, "under": gh, "what": gh }));
         self.send(m, &inside);
         self.send(m, &outside);
-        self.truth.under.push((inside, true));
+        // an act dated at or after the grant's `until` is outside it, whoever's clock dated it (authority.md, Whose clock tests `until`): a skewed clock can date it so
+        let in_time = inside["state"]["at"].as_str().unwrap_or("") < "2027-06-30T00:00:00.000Z";
+        self.truth.under.push((inside, in_time));
         self.truth.under.push((outside, false));
         // passed on wider than received: more acts, a later end. The receiver of a grant is the one who passes it on, so the
         // attacker is given one too and signs the wide child on its own chain (a refused block would stall a chain it sat in).
@@ -421,12 +433,12 @@ impl World {
         let (p2, _) = self.two_persons();
         let g2 = self.make(o, "grant", json!({ "kind": "shop", "scope": scope.clone() }), json!({ "to": self.id(x) }));
         self.send(o, &g2);
-        let wide = json!({ "acts": ["observe.note", "promise", "transfer"], "limit": money(9000), "per": "P7D", "until": "2028-01-01T00:00:00.000Z" });
+        let wide = json!({ "acts": ["observe.note", "promise", "transfer"], "parties": [self.id(o)], "limit": money(9000), "every": "P7D", "until": "2028-01-01T00:00:00.000Z" });
         let child = self.make(x, "grant", json!({ "kind": "shop", "scope": wide }), json!({ "to": self.id(p2), "parent": Self::hash(&g2) }));
         self.send(x, &child);
         self.truth.wider.push(child);
         // and one inside: a narrower scope passes on fine
-        let narrow = json!({ "acts": ["observe.note"], "limit": money(1000), "per": "P7D", "until": "2027-01-01T00:00:00.000Z" });
+        let narrow = json!({ "acts": ["observe.note"], "limit": money(1000), "every": "P7D", "until": "2027-01-01T00:00:00.000Z" });
         let ok_child = self.make(m, "grant", json!({ "kind": "shop", "scope": narrow }), json!({ "to": self.id(p2), "parent": gh }));
         self.send(m, &ok_child);
     }

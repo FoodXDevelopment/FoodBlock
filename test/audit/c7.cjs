@@ -16,7 +16,7 @@ const recipe1 = w.w(learner, 'thing', { kind: 'recipe', name: 'my sourdough' }, 
 w.w(teacher, 'transform', { status: 'accepted' }, { answers: tf.hash }, 'teacher answers transform (holder consents to being an input)')
 show('shares valid? (sum etc.)', w.log.filter(l => l.note.startsWith('learner transform')).map(l => l.sdk))
 // bad share shape probes
-const probe = (label, shares) => { try { const b = fb.write('transform', { kind: 'adapt', shares }, { derives_from: recipe0.hash }, { author: learner.id, key: learner.keys, held: w.blocks, at: '2026-10-09T00:00:00.000Z' }); show(label, 'accepted by write check') } catch (e) { show(label, 'refused', e.refused && e.refused.map(x => x.code)) } }
+const probe = (label, shares) => { try { const b = fb.write('transform', { kind: 'adapt', shares }, { derives_from: recipe0.hash }, { author: learner.id, key: learner.keys, held: w.blocks, audience: 'public', at: '2026-10-09T00:00:00.000Z' }); show(label, 'accepted by write check') } catch (e) { show(label, 'refused', e.refused && e.refused.map(x => x.code)) } }
 probe('shares sum 3.0 (impossible)', [{ from: recipe0.hash, share: '3.0' }])
 probe('share names non-input', [{ from: 'a'.repeat(64), share: '0.5' }])
 probe('share 1.5 negative-ish', [{ from: recipe0.hash, share: '-1' }])

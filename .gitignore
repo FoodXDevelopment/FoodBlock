@@ -54,3 +54,6 @@ tools/*/target/
 # SwiftPM at the repository root
 /.build/
 tools/tla/.cache/
+
+# Agent worktrees (full copies of the repo; never part of it)
+.claude/worktrees/

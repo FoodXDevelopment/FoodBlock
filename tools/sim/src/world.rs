@@ -44,6 +44,7 @@ pub struct Stats {
     pub pairs: u64,
     pub peers: u64,
     pub store: u64,
+    pub owed_past_offer: i64, // what open offerers bound past their offer: their own debt, reported, not a violation
 }
 impl Stats {
     pub fn add(&mut self, o: &Stats) {
@@ -55,6 +56,7 @@ impl Stats {
         self.pairs += o.pairs;
         self.peers += o.peers;
         self.store += o.store;
+        self.owed_past_offer += o.owed_past_offer;
         for (k, v) in &o.episodes {
             *self.episodes.entry(k).or_default() += v;
         }
@@ -64,8 +66,8 @@ impl Stats {
     }
     pub fn line(&self) -> String {
         format!(
-            "peers {} blocks {} delivered {} lost {} dup {} offline {} pairs {} episodes {:?} refused {:?}",
-            self.peers, self.blocks, self.delivered, self.lost, self.duplicated, self.offline_spells, self.pairs, self.episodes, self.refused
+            "peers {} blocks {} delivered {} lost {} dup {} offline {} pairs {} owed-past-offer {} episodes {:?} refused {:?}",
+            self.peers, self.blocks, self.delivered, self.lost, self.duplicated, self.offline_spells, self.pairs, self.owed_past_offer, self.episodes, self.refused
         )
     }
 }
@@ -121,6 +123,8 @@ pub struct Business {
 pub struct Node {
     pub name: String,
     pub index: bool,
+    /// The node's own choice (nodes.md, Push): it takes the blocks of a forked pair or not. Half the nodes each way.
+    pub takes_pairs: bool,
     pub store: Vec<Value>,
     pub have: BTreeSet<String>,
     pub pending: Vec<Value>,
@@ -271,7 +275,7 @@ impl World {
 
     fn setup(&mut self) {
         for i in 0..self.cfg.nodes {
-            self.nodes.push(Node { name: format!("node{i}"), index: i < 2, ..Default::default() });
+            self.nodes.push(Node { name: format!("node{i}"), index: i < 2, takes_pairs: i % 2 == 1, ..Default::default() });
         }
         let n = self.cfg.peers;
         let custodians = (n / 20).max(1);
@@ -337,7 +341,7 @@ impl World {
         let cust_id = custodian.map(|c: usize| self.actors.get(c).map(|a| a.id.clone()).unwrap_or_default()).unwrap_or_default();
         let g = genesis(
             &kp,
-            &GenesisOptions { kind, at, recovery_key: &rpub, reach: if rpub.is_empty() { "" } else { "P30D" }, custodian: &cust_id, ..Default::default() },
+            &GenesisOptions { kind, at, audience: Some(foodblock::write::Readers::Public), recovery_key: &rpub, reach: if rpub.is_empty() { "" } else { "P30D" }, custodian: &cust_id, ..Default::default() },
         )
         .expect("a genesis");
         let id = g["hash"].as_str().unwrap().to_string();
@@ -390,6 +394,12 @@ impl World {
         let mut rf = json!({ "author": id, "prev": prev });
         for (k, v) in refs.as_object().cloned().unwrap_or_default() {
             rf[k] = v;
+        }
+        // A thing is owned only once its own record shows it is an instance (things.md): the sim's things name their kind.
+        if typ == "thing" && ["of", "derives_from", "subject", "place"].iter().all(|k| rf.get(*k).is_none()) {
+            if let Some(kind) = st.get("kind").and_then(|k| k.as_str()) {
+                rf["of"] = json!(foodblock::block::hash_hex(&format!("kind: {kind}")));
+            }
         }
         let suite = key.suite().to_string();
         let mut block = foodblock::create_in(&suite, typ, &st, &rf).unwrap_or_else(|e| panic!("sim built a bad {typ}: {e:?} {st} {rf}"));
@@ -456,7 +466,7 @@ impl World {
         }
         self.stats.delivered += incoming.len() as u64;
         let t0 = std::time::Instant::now();
-        let acc = foodblock::sync::accept(&incoming, &node.store, None, None);
+        let acc = foodblock::sync::accept(&incoming, &node.store, node.takes_pairs, None);
         if std::env::var("FBSIM_TRACE").is_ok() {
             eprintln!("accept node{n} incoming {} held {} -> {:?}", incoming.len(), node.store.len(), t0.elapsed());
         }
@@ -597,7 +607,7 @@ impl World {
 
     fn new_business(&mut self, b: usize, founder: usize, persons: &[usize]) {
         let roles = json!([{ "name": "admin", "powers": ["sign", "admit", "remove"] }, { "name": "orders", "powers": ["sign"] }, { "name": "speak", "powers": [] }]);
-        let c = self.make(founder, "actor", json!({ "kind": "circle", "name": format!("Bakery {b}"), "roles": roles }), json!({}));
+        let c = self.make(founder, "actor", json!({ "kind": "circle", "name": format!("Bakery {b}"), "roles": roles, "removal": { "needed": 1 } }), json!({}));
         self.send(founder, &c);
         let circle = Self::hash(&c);
         let mut members = vec![founder];

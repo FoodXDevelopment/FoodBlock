@@ -14,7 +14,9 @@ const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 const { recoveryKeyHash, genesis, keyGrant, signedByAuthor } = fb.identity
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const INVARIANTS = fs.existsSync(FILE) ? vectorsFile.load().tags : new Map()
 const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex')
 const keys = {}
 const keyOf = (name, suite = 'std') => {
@@ -104,7 +106,7 @@ canon('nested keys sort at every depth', { type: 'thing', state: { b: { z: 1, a:
 // ---- Hashes: one block of every type, in 1.6 shapes, written by ann and checked as a chain ----
 function ledger() {
   const s = story(), ann = s.person('ann'), bob = s.person('bob')
-  const circle = s.say(ann, 'a circle: the founder holds the first role', 'actor', { kind: 'circle', name: 'Elm St co-op', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'cook', powers: ['sign'] }, { name: 'guest', powers: [] }], public_key_encrypt: keyOf('circle').public_key_encrypt })
+  const circle = s.say(ann, 'a circle: the founder holds the first role', 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Elm St co-op', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'cook', powers: ['sign'] }, { name: 'guest', powers: [] }], public_key_encrypt: keyOf('circle').public_key_encrypt })
   const contact = s.say(ann, 'a contact: someone with no keys, marked by a phone number', 'actor', { kind: 'contact', name: 'Joseph', marks: [{ scheme: 'tel', value: '+254700000000' }] })
   const eggs = s.say(ann, 'a thing that is a kind', 'thing', { kind: 'eggs', name: 'Eggs', marks: [{ scheme: 'gtin', value: '05012345678900' }] })
   const tray = s.say(ann, 'a thing that is one of the kind (refs.of)', 'thing', { lot: 'L-1', use_by: '2026-11-01', pack: A('30', '{egg}') }, { of: eggs.hash })
@@ -189,8 +191,10 @@ function identityVectors() {
     const fromSecond = s.say(jo, 'the second thief key speaks: void', 'observe', { kind: 'note', text: 'pay me' }, {}, { key: 'jud_thief2', link: { seq: 1, prev: broughtOn.hash } })
     const fresh = keyOf('jud_new')
     s.keep('the rotation by the key itself, naming its counted_to block', keyGrant(jo.id, fresh.public_key_sign, { private_key: jo.key.private_key, last: brought }, { replaces: jo.key.public_key_sign, countedTo: good.hash, at: at() }), 'jud')
+    // decision C1 (2026-10-29): a key's own rotation voids nothing it signed, so here nothing is void; make-vectors-1-7.cjs retires this
+    // name and twins it with a recovery rotation (section 25)
     const got = record('a key brought in by a void block is void, and so is every key it brought in', s, jo.id)
-    assert.deepEqual([got[brought.hash], got[broughtOn.hash], got[fromSecond.hash]], [false, false, false])
+    assert.deepEqual([got[brought.hash], got[broughtOn.hash], got[fromSecond.hash]], [true, true, true])
   }
   {
     // A key is rotated only by itself, by the recovery key, or by an operator.
@@ -268,7 +272,8 @@ function identityVectors() {
     assert.deepEqual([got[said.hash], got[moved.hash], got[own.hash]], [true, true, true])
   }
   {
-    // Two blocks of one key naming one prev: both the author's in the identity fold; neither counts elsewhere.
+    // Two blocks of one key naming one prev: both the author's in the identity fold. A fork voids what the forker claims, never what they owe
+    // (decision M5, 2026-10-28): the accept still binds walt, and so does his accept after the fork (make-vectors-1-7.cjs section 18).
     const s = story(), ann = s.person('vera'), bob = s.person('walt')
     const eggs = s.say(ann, 'the kind: eggs', 'thing', { kind: 'eggs' }), milk = s.say(ann, 'the kind: milk', 'thing', { kind: 'milk' })
     const offer = s.say(ann, 'the offer: a tray for 4.50', 'promise', { terms: { price: M(450), quantity: A('1', '{tray}'), expires: DAY } }, { from: ann.id, to: bob.id, what: eggs.hash })
@@ -277,15 +282,12 @@ function identityVectors() {
     const no = s.say(bob, 'walt declines the eggs, naming the same prev: a fork', 'promise', { status: 'declined' }, { answers: offer.hash, for: offer.hash }, { after: [offer.hash], link: { seq: yes.state.seq, prev: yes.refs.prev } })
     const later = s.say(bob, 'walt accepts the milk after the fork: it counts for nothing', 'promise', { status: 'accepted' }, { answers: offer2.hash, for: offer2.hash }, { after: [offer2.hash], link: { seq: yes.state.seq + 1, prev: yes.hash } })
     const stage = (first) => fb.promiseStage(s.held.find((b) => b.hash === first), s.held)
-    assert.deepEqual([stage(offer.hash).stage, stage(offer.hash).accept, stage(offer2.hash).stage], ['offered', null, 'offered'])
+    assert.deepEqual([stage(offer.hash).stage, stage(offer.hash).accept, stage(offer2.hash).stage], ['accepted', yes.hash, 'accepted'])
     const got = fb.sync.accept([no], s.held.filter((block) => block !== no))
     const pair = [yes.hash, no.hash].sort()
     assert.deepEqual([got.taken, got.refused, got.equivocations], [[], [], [pair]])
     const signed = record('two blocks of one key that name one prev are both the author\'s in the identity fold', s, bob.id)
     assert.deepEqual([signed[yes.hash], signed[no.hash], signed[later.hash]], [true, true, true])
-    V.folds.promises.push(
-      { name: 'two blocks of one key naming one prev: neither binds anyone else, so the offer stands unanswered', blocks: blocksOf(s), first: offer.hash, expected: { stage: 'offered', accept: null } },
-      { name: 'a later block of a key that signed two naming one prev counts for nothing', blocks: blocksOf(s), first: offer2.hash, expected: { stage: 'offered', accept: null } })
     V.refusals.cases.push({ name: 'the second of two blocks naming one prev is neither taken nor refused: it is listed in its pair', by: 'accept', incoming: [no.hash], held: s.held.filter((block) => block !== no).map((block) => block.hash), codes: [], taken: [], equivocations: [pair] })
     V.refusals.blocks.push(...blocksOf(s))
     door('the chain fold lists the pair that names one prev', 'check_chain', [s.held.filter((b) => b.refs.author === bob.id && fb.identity.signerOf(b, [{ key: bob.key.public_key_sign, suite: 'std' }])), bob.id], { expect: { equivocations: [pair], ok: false, length: 0 } })
@@ -319,7 +321,7 @@ function identityVectors() {
     assert.ok(Object.values(signed).every(Boolean))
   }
   {
-    // The admission rule may carry the profile field deposit; a limit observe is sealed to the agent (the fence).
+    // The admission rule may carry the profile field earnest; a limit observe is sealed to the agent (the fence).
     const s = story(), opal = s.person('opal'), bot = s.person('opal_agent', { kind: 'agent' })
     s.say(opal, 'opal answers for her agent', 'grant', { kind: 'operator' }, { to: bot.id })
     const grant = s.say(opal, 'what the agent may do: the visible scope, with no limit in it', 'grant', { kind: 'shop', scope: { acts: ['observe.note'], until: '2026-12-31T00:00:00.000Z' } }, { to: bot.id })
@@ -343,7 +345,7 @@ function identityVectors() {
       fence: { block: limit.hash, grant: grant.hash, agent: bot.id, principal: opal.id, salt: salts[bot.id], limit: fence.state.limit, per: fence.state.per, within }, history: st.history })
   }
 }
-function fixedFor(label, count) { return { ephemeral: sha(`${label} ephemeral`), contentKey: sha(`${label} content key`), nonce: sha(`${label} nonce`).slice(0, 24), keyNonces: Array.from({ length: count }, (_, i) => sha(`${label} key nonce ${i}`).slice(0, 24)) } }
+function fixedFor(label, count) { return { vectorsOnly: true, ephemeral: sha(`${label} ephemeral`), contentKey: sha(`${label} content key`), nonce: sha(`${label} nonce`).slice(0, 24), keyNonces: Array.from({ length: count }, (_, i) => sha(`${label} key nonce ${i}`).slice(0, 24)) } }
 identityVectors()
 
 // ---- Deals, circles and the folds. A circle lists its roles as data: [{ name, powers }]; the founder holds the first. ----
@@ -364,7 +366,7 @@ function dealVector() {
 function circleVector() {
   const s = story()
   const rae = s.person('rae'), sol = s.person('sol')
-  const circle = s.say(rae, 'the circle', 'actor', { kind: 'circle', name: 'Elm St co-op', roles: [ROLES.admin, ROLES.orders, ROLES.speak], public_key_encrypt: keyOf('circle').public_key_encrypt })
+  const circle = s.say(rae, 'the circle', 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Elm St co-op', roles: [ROLES.admin, ROLES.orders, ROLES.speak], public_key_encrypt: keyOf('circle').public_key_encrypt })
   const invitation = s.say(rae, 'the invitation', 'grant', { kind: 'member', roles: ['orders'] }, { subject: circle.hash, as: circle.hash, to: sol.id })
   const answer = s.say(sol, 'the answer', 'grant', { kind: 'member', status: 'accepted' }, { answers: invitation.hash, subject: circle.hash }, { after: [invitation.hash] })
   s.say(rae, 'the end: an updates with status stopped', 'grant', { kind: 'member', status: 'stopped', stop: 'onward', counted_to: answer.hash }, { updates: invitation.hash, subject: circle.hash, as: circle.hash }, { after: [answer.hash] })
@@ -513,7 +515,7 @@ function promiseFolds() {
 function circleFolds() {
   const s = story()
   const gus = s.person('wes'), hal = s.person('xia'), jon = s.person('yan'), kim = s.person('zed'), lee = s.person('abe'), mia = s.person('bea'), ivy = s.person('cal')
-  const C = s.say(gus, 'the circle', 'actor', { kind: 'circle', name: 'The bakery', roles: [ROLES.admin, ROLES.orders, ROLES.speak] })
+  const C = s.say(gus, 'the circle', 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'The bakery', roles: [ROLES.admin, ROLES.orders, ROLES.speak] })
   const invite = (by, who, roles, label, after = []) => s.say(by, label, 'grant', { kind: 'member', roles }, { subject: C.hash, as: C.hash, to: who.id }, { after })
   const yes = (who, grant, label) => s.say(who, label, 'grant', { kind: 'member', status: 'accepted' }, { answers: grant.hash, subject: C.hash }, { after: [grant.hash] })
   const halInvite = invite(gus, hal, ['orders'], 'hal invited, orders'); const halYes = yes(hal, halInvite, 'hal says yes')
@@ -645,7 +647,7 @@ function successorFolds() {
 }
 function rekeyFolds() {
   const s = story(), gus = s.person('kai'), jon = s.person('lia')
-  const C = s.say(gus, 'the circle, its key at epoch 0', 'actor', { kind: 'circle', name: 'Allotment', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove', 'rekey'] }], public_key_encrypt: keyOf('kai_circle0').public_key_encrypt })
+  const C = s.say(gus, 'the circle, its key at epoch 0', 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Allotment', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove', 'rekey'] }], public_key_encrypt: keyOf('kai_circle0').public_key_encrypt })
   const inv = s.say(gus, 'lia invited as admin', 'grant', { kind: 'member', roles: ['admin'] }, { subject: C.hash, as: C.hash, to: jon.id })
   const yes = s.say(jon, 'lia says yes', 'grant', { kind: 'member', status: 'accepted' }, { answers: inv.hash, subject: C.hash }, { after: [inv.hash] })
   const rekey = (who, label, epoch, name, after) => s.say(who, label, 'grant', { kind: 'key', epoch, public_key_encrypt: keyOf(name).public_key_encrypt, keys: { sealed_to_members: 'opaque' } }, { subject: C.hash, as: C.hash }, { after })
@@ -763,7 +765,7 @@ V.folds.ballots.push(...ballotFolds())
   {
     // Roles with powers: sign, admit, remove. The founder holds the first role. A role's name is never read.
     const s = story(), eve = s.person('eve'), fay = s.person('fay'), gus = s.person('gus'), hal = s.person('hal'), ivy = s.person('ivy')
-    const C = s.say(eve, 'the circle: roles are data, [{ name, powers }]', 'actor', { kind: 'circle', name: 'Night kitchen', roles: [{ name: 'chef', powers: ['sign', 'admit', 'remove'] }, { name: 'cook', powers: ['sign'] }, { name: 'guest', powers: [] }] })
+    const C = s.say(eve, 'the circle: roles are data, [{ name, powers }]', 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Night kitchen', roles: [{ name: 'chef', powers: ['sign', 'admit', 'remove'] }, { name: 'cook', powers: ['sign'] }, { name: 'guest', powers: [] }] })
     const join = (who, roles, label, by = eve, after = []) => { const g = s.say(by, `${label}: invited`, 'grant', { kind: 'member', roles }, { subject: C.hash, as: C.hash, to: who.id }, { after }); const y = s.say(who, `${label}: says yes`, 'grant', { kind: 'member', status: 'accepted' }, { answers: g.hash, subject: C.hash }, { after: [g.hash] }); return { g, y } }
     const f = join(fay, ['cook'], 'fay is a cook'), g = join(gus, ['guest'], 'gus is a guest'), h = join(hal, ['chef'], 'hal is a chef')
     // A cook holds no admit: her invitation of ivy does not count. A chef's does.
@@ -861,7 +863,7 @@ function refusals() {
   check('a promise carrying a status without answering', base({ status: 'accepted' }, { from: ann.id, to: bob.id, what: h1 }, 'promise'), ['status_not_answer'])
   check('a status outside the three', base({ status: 'delivered' }, { answers: h1, for: h1 }, 'promise'), ['bad_status'])
   check('an ask with no expires', base({ what: 'eggs' }, { to: ann.id }, 'promise'), ['ask_without_expires'])
-  check('a promise signed by neither side', base({ terms: { expires: '2026-10-20T00:00:00.000Z' } }, { from: bob.id, what: h1 }, 'promise'), ['not_a_side'])
+  // a promise signed by neither side is valid (clean round 2): whether its signer is a side is the fold's (make-vectors-1-7.cjs, section 24)
   check('an answer that does not name its deal in for', base({ status: 'accepted' }, { answers: h1 }, 'promise'), ['deal_not_named'])
   check('a grant others act under with no scope.until', base({ kind: 'shop', scope: { acts: ['promise'] } }, { to: bob.id }, 'grant'), ['scope_until'])
   check('a key grant with a scope.until', base({ kind: 'key', public_key_sign: keyOf('mae').public_key_sign, scope: { until: '2026-12-31T00:00:00.000Z' } }, { subject: ann.id }, 'grant'), ['scope_until'])
@@ -1016,7 +1018,7 @@ function messages() {
   const message2 = fb.sealCopy(note2, { keys: [rae.key.public_key_encrypt, sol.key.public_key_encrypt], reveals: [fb.revealFor(salts2, rae.id), fb.revealFor(salts2, sol.id)], privateKey: quin.key.private_key, fixed: fixedFor('quin push', 2) })
   for (const who of [rae, sol]) V.sealed.cases.push({ name: `a copy sealed to two recipients opens for ${who.name}`, recipient: who.name, signer: 'quin', message: message2, opens_to: { hash: note2.hash, signature: note2.signature, reveals: [fb.revealFor(salts2, rae.id), fb.revealFor(salts2, sol.id)] } })
   V.sealed.blocks.push(...blocksOf(s))
-  // Headers: author, seq, prev, hash; withheld says a safety report was made under a law with its subject left out.
+  // Headers: author, seq, prev, hash; withheld says the author left the block's subject out of its audience (privacy.md, decision F8).
   const headers = blocksOf(s).filter((b) => b.block.state.seq !== undefined).map((b) => ({ name: b.name, hash: b.hash, header: fb.header({ hash: b.hash, ...b.block }), signer: b.signer, header_signature: fb.signMessage(fb.header({ hash: b.hash, ...b.block }), keyOf(b.signer).private_key).signature }))
   V.headers = headers
   const withheld = s.say(ivy, 'a safety report with its subject left out: the header repeats withheld', 'observe', { kind: 'report', text: 'listeria', withheld: true }, { under: sha('a food safety law') })
@@ -1378,12 +1380,12 @@ function doorVectors() {
     door('residency: a node that holds in the EU takes a block that stays in the EU', 'residency_refusals', [stays, ['EU']], { codes: [] })
     door('residency: a node that holds elsewhere refuses it', 'residency_refusals', [stays, ['US']], { codes: ['residency'] })
     door('residency: a block with no stays_in goes anywhere', 'residency_refusals', [s.held[0], ['US']], { codes: [] })
-    door('deposits: an admission deposit is { money, holder }', 'deposit_shape_ok', [{ money: M(100), holder: me.id }], { expect: true })
-    door('deposits: without the holder it is not', 'deposit_shape_ok', [{ money: M(100) }], { expect: false })
-    const ask = s.say(me, 'an ask that needs a deposit', 'promise', { what: 'a table for six', terms: { expires: DAY } }, { to: me.id })
-    const dep = s.say(me, 'the deposit paid to the holder', 'transfer', { money: M(100) }, { to_owner: s.held[0].hash, for: ask.hash })
-    door('deposits: a transfer for the ask of at least the deposit to the holder pays it', 'deposit_paid', [ask, { money: M(100), holder: s.held[0].hash }, s.held], { expect: true })
-    door('deposits: not enough', 'deposit_paid', [ask, { money: M(200), holder: s.held[0].hash }, s.held], { expect: false })
+    door('earnest: an admission earnest is { money, holder }', 'earnest_shape_ok', [{ money: M(100), holder: me.id }], { expect: true })
+    door('earnest: without the holder it is not', 'earnest_shape_ok', [{ money: M(100) }], { expect: false })
+    const ask = s.say(me, 'an ask that needs earnest', 'promise', { what: 'a table for six', terms: { expires: DAY } }, { to: me.id })
+    const dep = s.say(me, 'the earnest paid to the holder', 'transfer', { money: M(100) }, { to_owner: s.held[0].hash, for: ask.hash })
+    door('earnest: a transfer for the ask of at least the earnest to the holder pays it', 'earnest_paid', [ask, { money: M(100), holder: s.held[0].hash }, s.held], { expect: true })
+    door('earnest: not enough', 'earnest_paid', [ask, { money: M(200), holder: s.held[0].hash }, s.held], { expect: false })
     void dep
     // A model's reading is not a person's observation until the person confirms it.
     const agent = s.person('reader', { kind: 'agent' })
@@ -1435,6 +1437,7 @@ function doorVectors() {
     assert.deepEqual(codesOf(fb.valid(out.blocks[2], [out.blocks[0], out.blocks[1]])), [])
     assert.ok(out.blocks[2].refs.derives_from.includes(noteHash))
     assert.equal(out.blocks[2].state.weight, '1.5', 'a float becomes a decimal string')
+    assert.ok(Array.isArray(out.blocks[2].state.audience) && Array.isArray(out.blocks[1].state.audience), 'a block that named no audience is its author\'s alone, never public')
     assert.equal(out.blocks[2].state.gone, undefined, 'a null is dropped')
     const again = call('convert', [g, note], { keys: { [gHash]: { public_key_sign: aKey.public_key_sign, private_key: aKey.private_key } }, at: '2026-10-15T13:00:00.000Z', map: out.map, existing: out.blocks })
     assert.deepEqual(again.blocks, [], 'running again with the same map changes nothing')
@@ -1447,10 +1450,10 @@ doorVectors()
 
 // ---- Write the file ----
 const ordered = {
-  $comment: 'FoodBlock 1.6 conformance vectors (spec/protocol.md, Conformance). Built by the reference SDK (sdk/javascript/test/make-vectors.cjs) from fixed seeds and times, every expectation written by hand and checked against the Rust core before this file is written; spec/run-vectors.cjs checks every section, and the oracle (spec/oracle), written from the spec text alone, checks it again. Test keys come from fixed seeds: never use them for anything real. A `seed` is the Ed25519 seed (std) or the private scalar d, 32 bytes big-endian (p256, sm); core.md section 2 gives the public key, and fixes the signature nonce (RFC 6979), so every signature here can be reproduced byte for byte. Placeholder ids are sha256 of a label. A block in a story is { name, hash, signer, block: { type, state, refs }, signature } (and suite when it is not std); `signer` names a key in `keys`. Sections: keys; canonical; hashes (one block of every type) and ledger (its genesis blocks); audience; signatures; bad_signatures; envelopes; sealed; headers; identities; deals; circles; folds (promises, circles, audience, things, successors, rekeys, ballots); refusals (each case with the codes from protocol.json refusals.codes: by check, valid, accept, fold, may_act_as, under, open); messages; cbor (key table 1); door (an op of the core, its arguments, and what it gives: `expect` is a subset match, `codes` the refusal codes, `error` a failure; a case with oracle false is outside the spec text).',
+  $comment: 'FoodBlock conformance vectors (spec/protocol.md, Conformance). Built by the reference SDK (sdk/javascript/test/make-vectors.cjs) from fixed seeds and times, every expectation written by hand and checked against the Rust core before this file is written; spec/run-vectors.cjs checks every section, and the oracle (spec/oracle), written from the spec text alone, checks it again. Test keys come from fixed seeds: never use them for anything real. A `seed` is the Ed25519 seed (std) or the private scalar d, 32 bytes big-endian (p256, sm); core.md section 2 gives the public key, and fixes the signature nonce (RFC 6979), so every signature here can be reproduced byte for byte. Placeholder ids are sha256 of a label. A block in a story is { name, hash, signer, block: { type, state, refs }, signature } (and suite when it is not std); `signer` names a key in `keys`. Sections: keys; canonical; hashes (one block of every type) and ledger (its genesis blocks); audience; signatures; bad_signatures; envelopes; sealed; headers; identities; deals; circles; folds (promises, circles, audience, things, successors, rekeys, ballots); refusals (each case with the codes from protocol.json refusals.codes: by check, valid, accept, fold, may_act_as, under, open); messages; cbor (key table 1); door (an op of the core, its arguments, and what it gives: `expect` is a subset match, `codes` the refusal codes, `error` a failure; a case with oracle false is outside the spec text).',
   keys: V.keys, canonical: V.canonical, hashes: V.hashes, ledger: V.ledger, audience: V.audience, signatures: V.signatures, bad_signatures: V.bad_signatures, envelopes: V.envelopes,
   sealed: V.sealed, headers: V.headers, identities: V.identities, deals: V.deals, circles: V.circles, folds: V.folds, refusals: V.refusals, messages: V.messages, cbor: V.cbor, door: V.door
 }
-fs.writeFileSync(FILE, JSON.stringify(ordered, null, 1) + '\n')
+vectorsFile.save(ordered, INVARIANTS)
 const count = (x) => Array.isArray(x) ? x.length : Object.values(x).reduce((n, y) => n + (Array.isArray(y) ? y.length : 0), 0)
 console.log(`wrote ${FILE}: ${Object.entries(ordered).filter(([k]) => k !== '$comment').map(([k, v]) => `${k} ${v && typeof v === 'object' ? (k === 'refusals' ? v.cases.length : count(v)) : ''}`).join(', ')}`)

@@ -1,4 +1,4 @@
-# A FoodBlock 1.6 node and its Postgres: docker compose -f server/docker-compose.yml up
+# A FoodBlock node and its Postgres: docker compose -f server/docker-compose.yml up
 services:
   db:
     image: postgres:16-alpine
@@ -26,7 +26,16 @@ services:
       - NODE_KEY=/keys/node-key.json
       - NODE_URL=${NODE_URL:-}
       - SPEAKS_FOR=${SPEAKS_FOR:-}
-      - ADMISSION=${ADMISSION:-}
+      # The owner states these nine; the node refuses to start without them (no defaults).
+      - ADMISSION=${ADMISSION:?the hash of the admission block, or none}
+      - STRANGERS_PER_DAY=${STRANGERS_PER_DAY:?blocks a day from all strangers together; 0 refuses strangers}
+      - PER_STRANGER=${PER_STRANGER:?blocks a day from each stranger; 0 refuses strangers}
+      - PULL_CAP=${PULL_CAP:?most blocks in one pull answer}
+      - SERVES_PAIRS=${SERVES_PAIRS:?true or false}
+      - TAKES_PAIRS=${TAKES_PAIRS:?true or false}
+      - WAITING_PER_AUTHOR=${WAITING_PER_AUTHOR:?blocks that may wait for one author; 0 keeps none}
+      - COPY_RECIPIENTS=${COPY_RECIPIENTS:?most recipients of one sealed block; 0 keeps no copies}
+      - COPY_BYTES=${COPY_BYTES:?most bytes of sealed copies in one push; 0 keeps none}
     # The node's key file, made by `fb key node-key.json --identity me.json`.
     volumes:
       - ${NODE_KEY_FILE:-./node-key.json}:/keys/node-key.json:ro

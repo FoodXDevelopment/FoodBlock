@@ -9,16 +9,16 @@ const { replay } = require('../tools/replay-check.cjs')
 
 const keys = fb.keypairFromSeed('a1'.repeat(32), 'std')
 const at = (n) => new Date(Date.UTC(2026, 9, 19, 12, 0, n)).toISOString()
-const g = fb.identity.genesis(keys, { kind: 'person', at: at(0) })
+const g = fb.identity.genesis(keys, { kind: 'person', at: at(0), audience: 'public' })
 const held = [g]
 const w1 = fb.write('observe', { kind: 'note' }, {}, { author: g.hash, key: keys, held, at: at(1), audience: 'public' }); held.push(w1)
 const w2 = fb.write('observe', { kind: 'note' }, {}, { author: g.hash, key: keys, held, at: at(2), audience: 'public' }); held.push(w2)
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fb-replay-'))
-const msg = (b) => ({ version: '1.6', block: { type: b.type, state: b.state, refs: b.refs }, signature: b.signature })
+const msg = (b) => ({ version: '1.7', block: { type: b.type, state: b.state, refs: b.refs }, signature: b.signature })
 // two as messages, the genesis as a signed block; one tampered (its state changed after signing); one line that is not JSON
 const tampered = msg(w2); tampered.block = { ...tampered.block, state: { ...tampered.block.state, kind: 'note-changed' } }
-const lines = [JSON.stringify(g), JSON.stringify(msg(w1)), JSON.stringify(tampered), 'not json {', JSON.stringify({ version: '1.6', header: {}, header_signature: 'ab' })]
+const lines = [JSON.stringify(g), JSON.stringify(msg(w1)), JSON.stringify(tampered), 'not json {', JSON.stringify({ version: '1.7', header: {}, header_signature: 'ab' })]
 fs.writeFileSync(path.join(dir, 'a.jsonl'), lines.join('\n') + '\n')
 
 const r = replay(dir)

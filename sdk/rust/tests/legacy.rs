@@ -38,7 +38,7 @@ fn the_final_steps_make_a_block_strict() {
     let out = reshape(&read);
     assert_eq!(out["state"]["weight"], "1.5");
     assert_eq!(out["state"]["n"], 3);
-    assert_eq!(out["state"]["orderer"], "k");
+    assert!(out["state"].get("orderer").is_none() && out["state"].get("sequencer").is_none());
     assert!(out["state"].get("gone").is_none() && out["state"].get("dkim").is_none() && out["state"].get("manifest").is_none() && out["state"].get("alg_sign").is_none());
     assert_eq!(out["state"]["s"], "caf\u{e9}");
     assert_eq!(out["refs"]["of"], "k1");
@@ -62,15 +62,15 @@ fn an_old_record_becomes_fresh_blocks_and_running_again_adds_nothing() {
     assert_eq!(done.map[&gh], g["hash"]);
     assert_eq!(done.map[&nh], n["hash"]);
     // Fresh 1.6 blocks, valid, chained from the new genesis, deriving from the old hash, the old time in `when`.
-    assert!(valid::valid(g, &js::Index::default(), None, None).is_empty());
+    assert!(valid::valid(g, &js::Index::default(), None).is_empty());
     // The genesis has no refs, so the old identity is named by the first block of the new chain.
     assert_eq!(link["state"]["kind"], "converted");
     assert_eq!(link["refs"]["derives_from"], json!([gh]));
     assert_eq!(link["state"]["seq"], 1);
     let index = js::index_of([g]);
-    assert!(valid::valid(link, &index, None, None).is_empty());
+    assert!(valid::valid(link, &index, None).is_empty());
     let index = js::index_of([g, link]);
-    let wrong = valid::valid(n, &index, None, None);
+    let wrong = valid::valid(n, &index, None);
     assert!(wrong.is_empty(), "{wrong:?}");
     assert_eq!(n["refs"]["author"], g["hash"]);
     assert_eq!(n["refs"]["prev"], link["hash"]);
@@ -82,6 +82,27 @@ fn an_old_record_becomes_fresh_blocks_and_running_again_adds_nothing() {
     // The same map and the blocks already written: nothing is added.
     let again = ConvertOptions { map: done.map.clone(), existing: done.blocks.clone(), at: "2026-10-16T12:00:00.000Z".into(), keys: options.keys.clone(), ..Default::default() };
     assert!(convert(&[genesis, note], &again).unwrap().blocks.is_empty());
+}
+
+#[test]
+fn a_supplied_old_hash_that_is_not_the_hash_of_the_block_is_skipped() {
+    // release 22: the converter computes the old id from the content; a hash someone supplied is not trusted
+    let owner = keypair_from_seed(&"22".repeat(32)).unwrap();
+    let genesis = json!({ "type": "actor.foodie", "state": { "name": "Ann", "public_key_sign": owner.public_key_sign, "at": "2024-01-01T00:00:00.000Z", "audience": "public" }, "refs": {} });
+    let gh = old_hash(&genesis);
+    let note = json!({ "type": "observe.received", "state": { "text": "two trays", "at": "2024-01-02T00:00:00.000Z" }, "refs": { "author": gh, "kind": "a".repeat(64) } });
+    let mut lying = note.clone();
+    lying["hash"] = json!("f".repeat(64));
+    let mut honest = note.clone();
+    honest["hash"] = json!(old_hash(&note));
+    let mut keys = serde_json::Map::new();
+    keys.insert(gh.clone(), owner.to_json());
+    let options = ConvertOptions { keys, at: "2026-10-15T12:00:00.000Z".into(), ..Default::default() };
+    let done = convert(&[genesis.clone(), lying], &options).unwrap();
+    assert!(done.skipped.iter().any(|(h, _)| h == &"f".repeat(64)), "{:?}", done.skipped);
+    assert!(!done.map.contains_key(&"f".repeat(64)));
+    let done = convert(&[genesis, honest], &options).unwrap();
+    assert!(done.skipped.is_empty(), "{:?}", done.skipped);
 }
 
 #[test]
@@ -137,7 +158,7 @@ fn all_valid(done: &foodblock::legacy::Converted) {
     for b in &done.blocks {
         let mut others = held.clone();
         others.shift_remove(js::hash_of(b));
-        let wrong = valid::valid(b, &others, Some(&schema_index), None);
+        let wrong = valid::valid(b, &others, Some(&schema_index));
         assert!(wrong.is_empty(), "{} {}: {wrong:?}", b["type"], b["state"]["kind"]);
     }
 }
@@ -166,7 +187,7 @@ fn a_plain_audience_becomes_commitments_each_recipient_can_open() {
     let done = done.0;
     assert!(done.skipped.is_empty(), "{:?}", done.skipped);
     all_valid(&done);
-    let block = done.blocks.iter().find(|x| x["state"]["audience"].is_array()).unwrap();
+    let block = done.blocks.iter().find(|x| x["state"]["text"] == "for Bob").unwrap();
     // One commitment per recipient with a new id (the unknown recipient is left out), sorted, and a nonce.
     let audience = block["state"]["audience"].as_array().unwrap();
     assert_eq!(audience.len(), 2);
@@ -238,7 +259,7 @@ fn what_a_closed_type_does_not_declare_goes_under_a_schema() {
     assert!(block["refs"].get("from").is_none());
     assert_eq!(block["state"]["was_from"], format!("message:{}", "e".repeat(64)));
     // Without the schema in hand, the check refuses the same block.
-    let wrong = valid::valid(block, &js::index_of(done.blocks.iter().filter(|b| *b != block)), Some(&js::Index::default()), None);
+    let wrong = valid::valid(block, &js::index_of(done.blocks.iter().filter(|b| *b != block)), Some(&js::Index::default()));
     assert!(wrong.iter().any(|r| r.code == "undeclared_ref"));
     // A schema already published that declares everything is named instead of writing another.
     let known = json!({ "type": "thing", "hash": "9".repeat(64), "state": { "kind": "schema", "target": "grant", "fields": { "instance_id": "text", "group_name": "text", "nested": "object", "was_from": "text" }, "roles": ["witness"] }, "refs": {} });
@@ -285,6 +306,7 @@ fn an_author_with_no_key_is_signed_for_by_the_custodian_or_reported() {
     let held = json!({ "public_key_sign": custodian.public_key_sign, "private_key": custodian.private_key, "custodian": ch, "channel": "import" });
     let (done, _) = world(vec![g, note], &[(&ch, &custodian)], |o| {
         o.custodian_key = Some(held);
+        o.custodian_for = vec![ghost.clone()];
         o.request_hash = request.clone();
     });
     let done = done.0;
@@ -297,4 +319,114 @@ fn an_author_with_no_key_is_signed_for_by_the_custodian_or_reported() {
     assert_eq!(block["state"]["channel"], "import");
     assert_eq!(block["refs"]["author"], genesis["hash"]);
     assert!(block["refs"]["derives_from"].as_array().unwrap().iter().any(|h| *h == nh));
+}
+
+// ---- Silence only narrows: the converter fills nothing a signer left out ----
+
+#[test]
+fn a_block_that_named_no_audience_is_for_its_author_alone() {
+    let ann = key("41");
+    let g = old_person(&ann, None);
+    let gh = old_hash(&g);
+    let note = json!({ "type": "observe.note", "state": { "text": "mine" }, "refs": { "author": gh } });
+    let (done, _) = world(vec![g, note], &[(&gh, &ann)], |_| {});
+    let done = done.0;
+    assert!(done.skipped.is_empty(), "{:?}", done.skipped);
+    all_valid(&done);
+    let new_ann = done.map[&gh].as_str().unwrap();
+    let block = done.blocks.iter().find(|x| x["state"]["text"] == "mine").unwrap();
+    // Before: audience "public". After: one commitment, and it opens only for the author.
+    assert!(block["state"]["audience"].is_array() && block["state"]["audience"].as_array().unwrap().len() == 1);
+    assert_eq!(done.deliveries.len(), 1);
+    assert_eq!(done.deliveries[0]["to"], new_ann);
+    // The genesis is public (the old one said so); the link back is not.
+    assert_eq!(done.blocks[0]["state"]["audience"], "public");
+    assert!(done.blocks[1]["state"]["audience"].is_array(), "the converted note is its author's alone");
+}
+
+#[test]
+fn a_genesis_that_named_no_public_audience_is_not_converted() {
+    let ann = key("42");
+    let mut g = old_person(&ann, None);
+    g["state"].as_object_mut().unwrap().remove("audience");
+    let gh = old_hash(&g);
+    let note = json!({ "type": "observe.note", "state": { "text": "x", "audience": "public" }, "refs": { "author": gh } });
+    let (done, _) = world(vec![g, note], &[(&gh, &ann)], |_| {});
+    let done = done.0;
+    assert!(done.blocks.is_empty(), "nothing is made public for her");
+    assert_eq!(done.skipped.len(), 2);
+    assert!(done.skipped.iter().all(|(_, why)| why.contains("genesis")), "{:?}", done.skipped);
+}
+
+fn old_circle(owner: &str, signers: Option<&str>) -> Value {
+    let mut state = json!({ "name": "Club", "kind": "circle", "at": "2024-01-01T00:00:00.000Z", "audience": "public" });
+    if let Some(s) = signers {
+        state["signers"] = json!([s]);
+    }
+    json!({ "type": "actor", "state": state, "refs": { "author": owner } })
+}
+
+#[test]
+fn a_circle_gets_only_the_roles_its_own_data_showed() {
+    let ann = key("43");
+    let g = old_person(&ann, None);
+    let gh = old_hash(&g);
+    // No grant and no signers: nothing shows a role, so no admin is made up and the circle is skipped.
+    let bare = old_circle(&gh, None);
+    let bh = old_hash(&bare);
+    let (done, _) = world(vec![g.clone(), bare], &[(&gh, &ann)], |_| {});
+    let done = done.0;
+    assert!(done.skipped.iter().any(|(h, why)| *h == bh && why.contains("role")), "{:?}", done.skipped);
+    assert!(!done.blocks.iter().any(|b| b["state"]["kind"] == "circle"));
+    // A circle whose signers name a role keeps that role, with only the sign power: no admin appears.
+    let named = old_circle(&gh, Some("editor"));
+    let (done, _) = world(vec![g.clone(), named], &[(&gh, &ann)], |_| {});
+    let done = done.0;
+    assert!(done.skipped.is_empty(), "{:?}", done.skipped);
+    let circle = done.blocks.iter().find(|b| b["state"]["kind"] == "circle").unwrap();
+    assert_eq!(circle["state"]["roles"], json!([{ "name": "editor", "powers": ["sign"] }]));
+    // An old admin role the data really has is still read as sign, admit, remove. The old data never gave a removal count and none is
+    // made up: the circle is kept without one, and nothing that needs it holds (folds.md, Counts).
+    let admin = old_circle(&gh, Some("admin"));
+    let (done, _) = world(vec![g, admin], &[(&gh, &ann)], |_| {});
+    let kept = done.0.blocks.iter().find(|b| b["state"]["kind"] == "circle").unwrap();
+    assert_eq!(kept["state"]["roles"], json!([{ "name": "admin", "powers": ["sign", "admit", "remove"] }]));
+    assert!(kept["state"].get("removal").is_none());
+}
+
+#[test]
+fn a_custodian_key_signs_only_for_the_identities_it_names_and_only_under_a_channel() {
+    let custodian = key("44");
+    let g = old_person(&custodian, None);
+    let ch = old_hash(&g);
+    let named = "d".repeat(64);
+    let other = "e".repeat(64);
+    let n1 = json!({ "type": "observe.note", "state": { "text": "named" }, "refs": { "author": named } });
+    let n2 = json!({ "type": "observe.note", "state": { "text": "other" }, "refs": { "author": other } });
+    let (h1, h2) = (old_hash(&n1), old_hash(&n2));
+    let held = |channel: Option<&str>| {
+        let mut k = json!({ "public_key_sign": custodian.public_key_sign, "private_key": custodian.private_key, "custodian": ch });
+        if let Some(c) = channel {
+            k["channel"] = json!(c);
+        }
+        k
+    };
+    // Before: the key signed for every identity. After: only for the one named; the other is reported.
+    let (done, _) = world(vec![g.clone(), n1.clone(), n2.clone()], &[(&ch, &custodian)], |o| {
+        o.custodian_key = Some(held(Some("batch")));
+        o.custodian_for = vec![named.clone()];
+    });
+    let done = done.0;
+    assert!(done.blocks.iter().any(|b| b["state"]["text"] == "named"));
+    assert!(!done.blocks.iter().any(|b| b["state"]["text"] == "other"));
+    assert_eq!(done.skipped.len(), 1);
+    assert_eq!(done.skipped[0].0, h2);
+    // No channel anywhere: the custodian's identities are reported, nothing is signed under a made-up `import`.
+    let (done, _) = world(vec![g, n1], &[(&ch, &custodian)], |o| {
+        o.custodian_key = Some(held(None));
+        o.custodian_for = vec![named.clone()];
+    });
+    let done = done.0;
+    assert!(!done.blocks.iter().any(|b| b["state"]["text"] == "named"));
+    assert!(done.skipped.iter().any(|(h, why)| *h == h1 && why.contains("channel")), "{:?}", done.skipped);
 }

@@ -36,6 +36,8 @@ pub extern "C" fn fb_alloc(len: usize) -> *mut u8 {
 /// `ptr` and `len` come from `fb_alloc`.
 #[no_mangle]
 pub unsafe extern "C" fn fb_dealloc(ptr: *mut u8, len: usize) {
+    // the buffer may have held a key or a plaintext: it is overwritten before it is freed (release 46)
+    zeroize::Zeroize::zeroize(core::slice::from_raw_parts_mut(ptr, len));
     drop(Vec::from_raw_parts(ptr, 0, len.max(1)));
 }
 

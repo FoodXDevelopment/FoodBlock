@@ -7,11 +7,11 @@
     { "name": "time as milliseconds since the epoch", "state": { "when": 1790000000123 }, "becomes": { "when": "2026-09-21T14:13:20.123Z" } },
     { "name": "a time field nested in terms", "state": { "terms": { "deliver_by": "2026-09-26T10:48:30Z", "expires": "2026-09-27" } }, "becomes": { "terms": { "deliver_by": "2026-09-26T10:48:30.000Z", "expires": "2026-09-27T00:00:00.000Z" } } },
     { "name": "a date field", "state": { "use_by": "2026-10-01T09:00:00Z" }, "becomes": { "use_by": "2026-10-01" } },
-    { "name": "a whole confidence", "state": { "confidence": 1 }, "becomes": { "confidence": "1" } },
-    { "name": "a fractional confidence", "state": { "confidence": 0.8 }, "becomes": { "confidence": "0.8" } },
-    { "name": "a confidence as numeric text", "state": { "confidence": "0.25" }, "becomes": { "confidence": "0.25" } },
-    { "name": "a confidence that is a label has no 1.6 home", "state": { "confidence": "verified" }, "becomes": { "was_confidence": "verified" } },
-    { "name": "a confidence above 1 has no 1.6 home", "state": { "confidence": 7 }, "becomes": { "was_confidence": 7 } },
+    { "name": "H4: a confidence is kept like any undeclared legacy field: a whole number stays a number", "state": { "confidence": 1 }, "becomes": { "confidence": 1 } },
+    { "name": "H4: a fractional confidence is a decimal like any other float, never given a meaning", "state": { "confidence": 0.8 }, "becomes": { "confidence": "0.8" } },
+    { "name": "H4: a confidence as numeric text stays as written", "state": { "confidence": "0.25" }, "becomes": { "confidence": "0.25" } },
+    { "name": "H4: a confidence that is a label stays as written (no was_confidence)", "state": { "confidence": "verified" }, "becomes": { "confidence": "verified", "was_confidence": null } },
+    { "name": "H4: a confidence above 1 stays as written (no was_confidence)", "state": { "confidence": 7 }, "becomes": { "confidence": 7, "was_confidence": null } },
     { "name": "a decimal is a string", "state": { "weight": 1.5, "n": 3.0, "big": 12345678901234567000.0 }, "becomes": { "weight": "1.5", "n": 3, "big": "12345678901234567000" } }
   ]
 }

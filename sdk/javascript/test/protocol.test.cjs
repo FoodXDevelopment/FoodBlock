@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 const protocolJson = require('../../../spec/protocol.json')
 
-// FoodBlock 1.6: one source for lists, the strict write check, the one write path, valid(block, context), year zero.
+// FoodBlock 1.7: one source for lists, the strict write check, the one write path, valid(block, context), year zero.
 const vectors = require('../../../spec/vectors.json')
 const ledger = (name) => vectors.hashes.find((v) => v.name.startsWith(name)).block
 const jo = 'a'.repeat(64), tom = 'b'.repeat(64), genesisOfJo = 'e'.repeat(64)
@@ -21,13 +21,13 @@ test('the package carries spec/protocol.json exactly (and no alias table)', () =
 test('times and dates are real calendar values; a micro genesis may leave out its encryption key and its recovery', () => {
   for (const bad of ['2026-02-30T12:00:00.000Z', '2026-10-15T24:00:00.000Z', '2025-02-29T00:00:00.000Z', '2026-13-01T00:00:00.000Z', '2026-10-15T12:60:00.000Z']) assert.equal(fb.isTime(bad), false, bad)
   for (const good of ['2024-02-29T00:00:00.000Z', '2026-10-15T23:59:59.999Z']) assert.equal(fb.isTime(good), true, good)
-  const g = fb.identity.genesis(fb.generateKeypair(), { kind: 'machine' })
+  const g = fb.identity.genesis(fb.generateKeypair(), { audience: 'public', at: '2026-10-15T09:00:00.000Z', kind: 'machine' })
   assert.equal(g.state.public_key_encrypt, undefined)
   assert.deepEqual(fb.check(g.type, g.state, g.refs), [])
 })
 
-test('this SDK speaks and writes 1.6, read from protocol.json', () => {
-  assert.equal(fb.VERSION, '1.6')
+test('this SDK speaks and writes 1.7, read from protocol.json', () => {
+  assert.equal(fb.VERSION, '1.7')
   assert.deepEqual(fb.TYPES, Object.keys(protocolJson.types))
   assert.equal(fb.TYPES.length, 7)
   assert.deepEqual(fb.VERBS, protocolJson.verbs)
@@ -42,19 +42,21 @@ test('compose: when, who, its place in the chain, what was seen and for whom, in
   assert.deepEqual([block.state.at, block.state.seq, block.refs.prev, block.refs.author, block.refs.after], ['2026-10-15T09:00:00.000Z', 1, genesisOfJo, jo, ['c'.repeat(64)]])
   assert.equal(block.state.audience.includes(tom), false, 'recipients are never written in the clear')
   assert.equal(fb.findsSelf(block, tom, block.salts[tom]), true)
+  // a salt outside the grammar opens nothing: salt and value are one text, so a longer salt would open one commitment to two values
+  assert.equal(fb.findsSelf(block, tom.slice(4), block.salts[tom] + tom.slice(0, 4)), false)
   assert.deepEqual(strict(block.type, block.state, block.refs), [])
 })
 
 test('write: compose, check, sign and chain in one step; a refused block is never repaired', () => {
   const keys = fb.generateKeypair(), recovery = fb.generateKeypair()
-  const me = fb.identity.genesis(keys, { encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt, recoveryKey: recovery.public_key_sign, reach: 'P30D' })
-  const first = fb.write('thing', { kind: 'eggs', name: 'Eggs' }, {}, { author: me.hash, key: keys, held: [me] })
+  const me = fb.identity.genesis(keys, { kind: 'person', audience: 'public', at: '2026-10-15T09:00:00.000Z', encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt, recoveryKey: recovery.public_key_sign, reach: 'P30D' })
+  const first = fb.write('thing', { kind: 'eggs', name: 'Eggs' }, {}, { audience: 'public', at: '2026-10-15T09:00:00.000Z', author: me.hash, key: keys, held: [me] })
   assert.deepEqual([first.state.seq, first.refs.prev, fb.verify(first, first.signature, keys.public_key_sign)], [1, me.hash, true])
-  const second = fb.write('observe', { kind: 'note', text: 'laid today' }, { subject: first.hash }, { author: me.hash, key: keys, held: [me, first] })
+  const second = fb.write('observe', { kind: 'note', text: 'laid today' }, { subject: first.hash }, { audience: 'public', at: '2026-10-15T09:00:00.000Z', author: me.hash, key: keys, held: [me, first] })
   assert.deepEqual([second.state.seq, second.refs.prev], [2, first.hash])
-  assert.throws(() => fb.write('observe', { kind: 'note', weight: 1.5 }, {}, { author: me.hash, key: keys, held: [me] }), /float/)
-  assert.throws(() => fb.write('observe', { kind: 'note', weight: null }, {}, { author: me.hash, key: keys, held: [me] }), /not_canonical|null/)
-  assert.throws(() => fb.write('observe', { kind: 'note' }, { subject: [tom, jo] }, { author: me.hash, key: keys, held: [me] }), /set/)
+  assert.throws(() => fb.write('observe', { kind: 'note', weight: 1.5 }, {}, { audience: 'public', at: '2026-10-15T09:00:00.000Z', author: me.hash, key: keys, held: [me] }), /float/)
+  assert.throws(() => fb.write('observe', { kind: 'note', weight: null }, {}, { audience: 'public', at: '2026-10-15T09:00:00.000Z', author: me.hash, key: keys, held: [me] }), /not_canonical|null/)
+  assert.throws(() => fb.write('observe', { kind: 'note' }, { subject: [tom, jo] }, { audience: 'public', at: '2026-10-15T09:00:00.000Z', author: me.hash, key: keys, held: [me] }), /set/)
   assert.deepEqual(fb.valid(second, [me, first]), [])
 })
 
@@ -90,7 +92,8 @@ test('promises: no status on an offer or ask, three answers with stop scopes, fo
   const refs = { author: jo, prev: genesisOfJo, from: jo, to: tom, what: 'c'.repeat(64) }
   assert.deepEqual(strict('promise', offer, refs), [])
   assert.match(strict('promise', { ...offer, status: 'offered' }, refs).join(), /carries a status/)
-  assert.match(strict('promise', offer, { ...refs, from: tom, to: undefined }).join(), /signed by a side/)
+  // whether its signer is a side is the fold's (a side may name a thing whose owner the check cannot know): the bytes are sound
+  assert.deepEqual(strict('promise', offer, { ...refs, from: tom, to: undefined }), [])
   const answer = (state, more = {}) => strict('promise', { seq: 1, at: '2026-10-15T09:00:05.000Z', audience: 'public', ...state }, { author: tom, prev: genesisOfJo, answers: 'd'.repeat(64), for: 'd'.repeat(64), ...more })
   assert.deepEqual(answer({ status: 'accepted' }), [])
   assert.deepEqual(answer({ status: 'stopped', stop: 'onward' }), [])
@@ -104,9 +107,10 @@ test('promises: no status on an offer or ask, three answers with stop scopes, fo
   assert.match(strict('promise', { ...offer, terms: { ...offer.terms, repeat: 'every friday' } }, refs).join(), /RRULE/)
   assert.match(strict('promise', { ...offer, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY' } }, refs).join(), /state.when/)
   assert.deepEqual(strict('promise', { ...offer, when: { after: 'f'.repeat(64), wait: 'PT30M' } }, refs), [], 'a relative when')
-  assert.deepEqual(strict('promise', { ...offer, when: { from: '2026-10-16T09:00:00.000Z', to: '2026-10-16T10:00:00.000Z' }, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY;BYDAY=FR', price: fb.money(6, 'GBP') } }, refs), [])
+  assert.deepEqual(strict('promise', { ...offer, when: { from: '2026-10-16T09:00:00.000Z', to: '2026-10-16T10:00:00.000Z' }, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY;BYDAY=FR', zone: 'UTC', price: fb.money(6, 'GBP') } }, refs), [])
+  assert.match(strict('promise', { ...offer, when: { from: '2026-10-16T09:00:00.000Z', to: '2026-10-16T10:00:00.000Z' }, terms: { ...offer.terms, repeat: 'FREQ=WEEKLY;BYDAY=FR' } }, refs).join(), /terms.zone/, 'a calendar repeat names its zone: none is filled in')
   assert.deepEqual(strict('promise', { ...offer, terms: { ...offer.terms, price: { share: '0.06', of: 'f'.repeat(64) } } }, refs).length > 0, true, 'a share is no price: nothing evaluates it')
-  assert.match(strict('promise', { seq: 1, at: offer.at, audience: 'public', what: 'eggs' }, { author: tom, prev: genesisOfJo, to: tom }).join(), /expires/)
+  assert.deepEqual(strict('promise', { seq: 1, at: offer.at, audience: 'public', what: 'eggs' }, { author: tom, prev: genesisOfJo, to: tom }), [], 'an ask may carry no expires: it lasts until its author stops it (decision H11)')
 })
 
 test('transfers: what changed, or how many received; money with marks and no thing; a split for several promises', () => {
@@ -121,7 +125,7 @@ test('transfers: what changed, or how many received; money with marks and no thi
 test('grants: the kinds the protocol reads, a profile\'s kinds, and a child never wider than its parent', () => {
   const base = { seq: 6, at: '2026-10-15T09:00:10.000Z', audience: 'public' }, refs = { author: jo, prev: genesisOfJo }
   assert.deepEqual(strict('grant', { ...base, kind: 'licence', scope: { acts: ['copy'], until: '2027-01-01T00:00:00.000Z' } }, refs), [], 'an open grant: a public licence')
-  assert.match(strict('grant', { ...base, kind: 'licence', scope: { acts: ['copy'] } }, refs).join(), /scope.until/)
+  assert.deepEqual(strict('grant', { ...base, kind: 'licence', scope: { acts: ['copy'] } }, refs), [], 'a grant may carry no until: it lasts until its author stops it (decision H11)')
   assert.deepEqual(strict('grant', { ...base, kind: 'successor', witnesses: ['c'.repeat(64), 'd'.repeat(64)], needed: 2, wait: 'P30D', keys: { sealed: 'x' } }, { ...refs, to: tom }), [], 'a successor grant (a profile) has no until')
   assert.match(strict('grant', { ...base, kind: 'member', roles: ['admin'] }, { ...refs, subject: 'c'.repeat(64), to: tom }).join(), /signed as the circle/)
   assert.deepEqual(strict('grant', { ...base, kind: 'key', public_key_encrypt: 'f'.repeat(64) }, { ...refs, subject: jo }), [], 'an encryption-only key grant')
@@ -137,8 +141,11 @@ test('grants: the kinds the protocol reads, a profile\'s kinds, and a child neve
 
 test('circles list their roles as data: [{ name, powers }], the founder holds the first', () => {
   const base = { seq: 9, at: '2026-10-15T09:00:13.000Z', audience: 'public' }, refs = { author: jo, prev: genesisOfJo }
-  const circle = (roles) => codes('actor', { ...base, kind: 'circle', name: 'Co-op', roles }, refs)
+  const circle = (roles, removal = { needed: 1 }) => codes('actor', { ...base, kind: 'circle', name: 'Co-op', roles, ...(removal ? { removal } : {}) }, refs)
   assert.deepEqual(circle([{ name: 'chef', powers: ['sign', 'admit', 'remove'] }, { name: 'guest', powers: [] }]), [])
+  // a circle that states no removal rule is valid: nothing that needs one holds (folds.md, Counts)
+  assert.deepEqual(circle([{ name: 'chef', powers: ['sign', 'admit', 'remove'] }], null), [])
+  assert.deepEqual(circle([{ name: 'voice', powers: ['sign'] }], null), [])
   assert.deepEqual(circle([{ name: 'chef', powers: ['fly'] }]), ['bad_roles'])
   assert.deepEqual(circle([]), ['bad_roles'])
   assert.deepEqual(circle(undefined), ['bad_roles'])
@@ -147,7 +154,9 @@ test('circles list their roles as data: [{ name, powers }], the founder holds th
 })
 
 test("a schema's fields and roles are declared for a closed block: a reader holding the schema accepts them", () => {
-  const schema = { hash: 'c'.repeat(64), type: 'thing', state: { kind: 'schema', target: 'promise', fields: { hens: 'text' }, roles: ['farm'] } }
+  // a block with no author has no signature to vouch for its id, so the id is the hash of its bytes (release 1)
+  const body = { kind: 'schema', target: 'promise', fields: { hens: 'text' }, roles: ['farm'] }
+  const schema = { hash: fb.hash('thing', body, {}), type: 'thing', state: body, refs: {} }
   const promise = { seq: 1, at: '2026-10-15T09:00:00.000Z', audience: 'public', what: 'eggs', hens: 'free range' }
   const refs = { author: jo, prev: genesisOfJo, from: jo, schema: schema.hash, farm: tom }
   assert.deepEqual(strict('promise', promise, refs, { schemas: new Map([[schema.hash, schema]]) }), [])
@@ -162,7 +171,7 @@ test('ids are bare (SHA-256) or name:hex; the suites name their hashes and keys'
   assert.match(fb.hash('thing', {}, {}, 'p256'), /^[0-9a-f]{64}$/)
 })
 
-test('the converter turns old blocks into fresh 1.6 blocks; nothing else reads an older shape', () => {
+test('the converter turns old blocks into fresh blocks; nothing else reads an older shape', () => {
   const keys = fb.generateKeypair()
   const g = { type: 'actor.foodie', state: { name: 'Ann', public_key_sign: keys.public_key_sign, at: '2024-01-01T00:00:00.000Z', audience: 'public' }, refs: {} }
   const id = fb.legacy.oldHash(g)
@@ -176,4 +185,19 @@ test('the converter turns old blocks into fresh 1.6 blocks; nothing else reads a
   assert.equal(done.blocks[2].state.weight, '1.5')
   assert.deepEqual(done.blocks[2].refs.derives_from, [fb.legacy.oldHash(note)])
   assert.match(strict('observe.received', {}, {}).join(), /not a type name/, 'a dotted old type is refused')
+})
+
+test('writing fills nothing in the author\'s silence: audience and at are stated, a genesis states its kind, at and audience; a message has no version', () => {
+  const keys = fb.generateKeypair(), at = '2026-10-15T09:00:00.000Z'
+  assert.throws(() => fb.identity.genesis(keys, { at, audience: 'public' }), /kind/)
+  assert.throws(() => fb.identity.genesis(keys, { kind: 'person', audience: 'public' }), /`at`/)
+  assert.throws(() => fb.identity.genesis(keys, { kind: 'person', at }), /audience/)
+  const me = fb.identity.genesis(keys, { kind: 'person', at, audience: 'public' })
+  const options = { author: me.hash, key: keys, held: [me] }
+  assert.throws(() => fb.write('observe', { kind: 'note' }, {}, { ...options, at }), /audience/, 'no audience: refused, not made public')
+  assert.throws(() => fb.write('observe', { kind: 'note' }, {}, { ...options, audience: 'public' }), /`at`/, 'no time: refused, not read from a clock')
+  assert.ok(fb.write('observe', { kind: 'note' }, {}, { ...options, audience: 'public', at }).signature)
+  const message = fb.wrap(me)
+  assert.deepEqual(Object.keys(message).sort(), ['block', 'signature'])
+  assert.throws(() => fb.unwrap({ ...message, version: '1.7' }), /version/)
 })

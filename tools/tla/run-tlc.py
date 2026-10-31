@@ -21,7 +21,7 @@ URL = 'https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar
 SHA = '936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88'
 PARTS = ['identity', 'consent', 'allocation']
 MUTANTS = [('judge_by_store', 'identity'), ('refuse_stop', 'consent'),
-           ('nonorderer_binds', 'allocation'), ('overbind', 'allocation')]
+           ('nonorderer_binds', 'allocation')]
 
 def jar():
     if not os.path.exists(JAR) or hashlib.sha256(open(JAR, 'rb').read()).hexdigest() != SHA:

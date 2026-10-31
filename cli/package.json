@@ -1,7 +1,7 @@
 {
   "name": "foodblock-cli",
-  "version": "1.6.0",
-  "description": "CLI for the FoodBlock 1.6 protocol: make an identity and device keys, write signed blocks in its key chain, check, read and verify",
+  "version": "1.7.0",
+  "description": "CLI for the FoodBlock 1.7 protocol: make an identity and device keys, write signed blocks in its key chain, check, read and verify",
   "type": "module",
   "bin": {
     "fb": "./bin/fb.js",
@@ -13,7 +13,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test test/cli.test.js"
+    "test": "node --test test/cli.test.js",
+    "prepublishOnly": "node -e \"const p=require('./package.json');const bad=Object.entries({...p.dependencies,...p.optionalDependencies}).filter(([,v])=>/^(file|link|git|https?):/.test(v));if(bad.length){console.error('refusing to publish with local dependencies: '+bad.map(([k,v])=>k+'@'+v).join(', '));process.exit(1)}\""
   },
   "dependencies": {
     "@foodxdev/foodblock": "file:../sdk/javascript"
@@ -26,7 +27,7 @@
     "provenance",
     "supply-chain"
   ],
-  "license": "MIT",
+  "license": "CC0-1.0",
   "author": "FoodX <developers@foodx.com>",
   "repository": {
     "type": "git",
@@ -41,6 +42,7 @@
     "url": "https://github.com/FoodXDevelopment/FoodBlock/issues"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

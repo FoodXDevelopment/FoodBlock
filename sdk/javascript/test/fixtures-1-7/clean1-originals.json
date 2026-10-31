@@ -1,0 +1,268 @@
+{
+ "about": "The 1.6 maker's cases clean round 1 flipped, kept as they were (they are retired from spec/vectors.json); section 23 of make-vectors-1-7.cjs twins them.",
+ "door": [
+  {
+   "name": "p256: a changed block is not",
+   "op": "valid",
+   "args": [
+    {
+     "type": "observe",
+     "state": {
+      "kind": "note",
+      "text": "bye",
+      "at": "2026-10-15T12:08:10.000Z",
+      "audience": "public",
+      "seq": 1
+     },
+     "refs": {
+      "author": "42887befbdec39c54fea4f2664077b9ee96822012920aed6dc70b11083cdb91b",
+      "prev": "42887befbdec39c54fea4f2664077b9ee96822012920aed6dc70b11083cdb91b"
+     },
+     "suite": "p256",
+     "signature": "1d7699bd3af130dca2d9d4165cd3043432a6f7e4df314b8f5d4d57f0f83aa493c4ded9fe3726fefdefa73ccd4169626e312639a2fdf991d36bbbfeaba6fca982"
+    },
+    [
+     {
+      "hash": "42887befbdec39c54fea4f2664077b9ee96822012920aed6dc70b11083cdb91b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-15T12:08:08.000Z",
+       "audience": "public",
+       "public_key_sign": "3059301306072a8648ce3d020106082a8648ce3d03010703420004a9340db35bac3ea50509bd4ddc4166c757a9270642605fc8a24aaa476c7c3cd300e3b3f5e4e586203d0b1e704fb07fd1e5366dc65152a4193820db0e5661597f",
+       "suite": "p256",
+       "public_key_encrypt": "04aff4dfb3ce0a103a96312544847f780dcc898530801c5df2c31501c25fb8a2d7098984953cc155e6709f493989bb4e81133f704476aa4a16579ab700d8d855ce",
+       "recovery_key_hash": "fcc103597f5ae5b878b1ba80f85f698453afc484cc886bfcee2fad6b550e7cb1",
+       "recovery_reach": "P30D"
+      },
+      "refs": {},
+      "suite": "p256",
+      "signature": "4529df5acf2f2cbdd112fb14cec8f6dd1debb3ec79473ae1883d7df66e3d76fc8e9c128a776e472bbcf956cc71382ed8ee8d59795b8df77a7b20cab2c57e76e2"
+     }
+    ]
+   ],
+   "codes": [
+    "bad_signature"
+   ]
+  },
+  {
+   "name": "p256: another identity's key does not open it",
+   "op": "valid",
+   "args": [
+    {
+     "hash": "e1e87139e0e53b6851bda944dc2aea2b63319a9477347ab3bc60209f390cea06",
+     "type": "observe",
+     "state": {
+      "kind": "note",
+      "text": "hello",
+      "at": "2026-10-15T12:08:10.000Z",
+      "audience": "public",
+      "seq": 1
+     },
+     "refs": {
+      "author": "42887befbdec39c54fea4f2664077b9ee96822012920aed6dc70b11083cdb91b",
+      "prev": "42887befbdec39c54fea4f2664077b9ee96822012920aed6dc70b11083cdb91b"
+     },
+     "suite": "p256",
+     "signature": "b2c95d49dcd294225b5e95aa7947c79e22d3c1faf101144a03ebeee7c6073010b74f06368aedaccb43879e512fa04eee2356c15d4c1e6015677f5aaed621efff"
+    },
+    [
+     {
+      "hash": "42887befbdec39c54fea4f2664077b9ee96822012920aed6dc70b11083cdb91b",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-15T12:08:08.000Z",
+       "audience": "public",
+       "public_key_sign": "3059301306072a8648ce3d020106082a8648ce3d03010703420004a9340db35bac3ea50509bd4ddc4166c757a9270642605fc8a24aaa476c7c3cd300e3b3f5e4e586203d0b1e704fb07fd1e5366dc65152a4193820db0e5661597f",
+       "suite": "p256",
+       "public_key_encrypt": "04aff4dfb3ce0a103a96312544847f780dcc898530801c5df2c31501c25fb8a2d7098984953cc155e6709f493989bb4e81133f704476aa4a16579ab700d8d855ce",
+       "recovery_key_hash": "fcc103597f5ae5b878b1ba80f85f698453afc484cc886bfcee2fad6b550e7cb1",
+       "recovery_reach": "P30D"
+      },
+      "refs": {},
+      "suite": "p256",
+      "signature": "4529df5acf2f2cbdd112fb14cec8f6dd1debb3ec79473ae1883d7df66e3d76fc8e9c128a776e472bbcf956cc71382ed8ee8d59795b8df77a7b20cab2c57e76e2"
+     }
+    ]
+   ],
+   "codes": [
+    "bad_signature"
+   ]
+  },
+  {
+   "name": "needs: an observe rests on its prev alone, whatever else it names",
+   "op": "needs",
+   "args": [
+    {
+     "hash": "60834ce8fac206d23441afe111cb50a623a0d48aef3f08e09b84bd12f89f25c0",
+     "type": "observe",
+     "state": {
+      "kind": "eggs",
+      "at": "2026-10-16T12:00:03.000Z",
+      "audience": "public",
+      "seq": 1
+     },
+     "refs": {
+      "author": "1286e1ddbb6c0b51158f3666bc57133ad4847ccff61e2943bbf7dce0718df7f7",
+      "prev": "1286e1ddbb6c0b51158f3666bc57133ad4847ccff61e2943bbf7dce0718df7f7",
+      "under": "9cfb6b640c4d0a5dde13c9e31c591bb7c378cf348bd18c2de8fbcb63c69ed1e6"
+     },
+     "signature": "272087427f0605b12e9c54055ff7dcde4cf6d23e0fd5bc68cd8755895b4a33f35f8467a3d63427234c477b16f94aaa408a7b1aa745721b844e960d6a26854900"
+    }
+   ],
+   "expect": [
+    "1286e1ddbb6c0b51158f3666bc57133ad4847ccff61e2943bbf7dce0718df7f7"
+   ],
+   "exact": true
+  },
+  {
+   "name": "needs: a grant passed on rests on its parent",
+   "op": "needs",
+   "args": [
+    {
+     "hash": "af33e83346bc564dca2d306c80401d748afd5265df25c466a24a19405e413250",
+     "type": "grant",
+     "state": {
+      "kind": "shop",
+      "scope": {
+       "acts": [
+        "promise"
+       ],
+       "until": "2026-10-20T00:00:00.000Z"
+      },
+      "at": "2026-10-16T12:00:11.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "to": "bf80f9dd26466c2f0af68b70f53a8f434eeb28b7e2691db99e6e6ac471a89478",
+      "parent": "9cfb6b640c4d0a5dde13c9e31c591bb7c378cf348bd18c2de8fbcb63c69ed1e6",
+      "author": "db56601562b2cd26c0518dcf79224e51dcd920bf9ab3469723dd832a532cee5f",
+      "prev": "a5fd5e479ebaae3c731b8703b77ad5f9a0779432dba32d921895ec7ec7d2d612"
+     },
+     "signature": "9e6a73974ff9150ac08a36c9c3c019ce851d0f420d54824222796e16116925b4a40e66eef6880a784cac9b4587774c3725e54b248b1ddcc08da2357f0c037a08"
+    }
+   ],
+   "expect": [
+    "9cfb6b640c4d0a5dde13c9e31c591bb7c378cf348bd18c2de8fbcb63c69ed1e6",
+    "a5fd5e479ebaae3c731b8703b77ad5f9a0779432dba32d921895ec7ec7d2d612"
+   ],
+   "exact": true
+  }
+ ],
+ "identity": {
+  "name": "a rotation by another of the id's keys is not counted: its key never comes in",
+  "id": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+  "blocks": [
+   {
+    "name": "kit: genesis",
+    "hash": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+    "signer": "kit",
+    "block": {
+     "type": "actor",
+     "state": {
+      "kind": "person",
+      "at": "2026-10-15T12:00:32.000Z",
+      "audience": "public",
+      "public_key_sign": "302a300506032b657003210064bd89cc1be2a5ef4d5ab1d43a08d90d87c3bd9c63047410cc0b901bdc69edba",
+      "public_key_encrypt": "3b441b3ffed1835804edcb093b7efdad84c93df2da4f75fbca4fc59d7ce0d775",
+      "recovery_key_hash": "0067dcaadfb962e75b74bbb84df9e9d14b52436d1548cf30f6429dab71fa6147",
+      "recovery_reach": "P30D"
+     },
+     "refs": {}
+    },
+    "signature": "0eaed4e1873ab4f7db00f243a98b70ff655dcb588395e2ac70214f66ddfbf6e296b59fc4537a7675a76ba0215aa7bf1856ee21ce79b81d81a7a7a0ff67452d07"
+   },
+   {
+    "name": "a device key",
+    "hash": "b08b676ad332660724cfdb2370cd7f6287f4505ba413fdfd5ef755d9680752ab",
+    "signer": "kit",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-15T12:00:33.000Z",
+      "audience": "public",
+      "kind": "key",
+      "public_key_sign": "302a300506032b6570032100e0698e87ceee7f6b52f498732eb6509410aa37e7e2619bed185093e53a143a56"
+     },
+     "refs": {
+      "author": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+      "subject": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+      "prev": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9"
+     }
+    },
+    "signature": "6b907c7604ed4bacb865570d305e7d2b70c4b75de1e3c210a54514e21f883f503ddba27626f87faf43723672fcdbf1fca196af1170397c41ef19043adc570908"
+   },
+   {
+    "name": "the laptop key tries to rotate the genesis key: not counted",
+    "hash": "c3facc66749fbb1ab02d2b9f4a87c905c4d0615f8d375763f5b792c18969714d",
+    "signer": "kit_laptop",
+    "block": {
+     "type": "grant",
+     "state": {
+      "seq": 1,
+      "at": "2026-10-15T12:00:34.000Z",
+      "audience": "public",
+      "kind": "key",
+      "public_key_sign": "302a300506032b6570032100cbfdd35e06a0d7c061eeb8d11125b2d4ce750b6e82d996fdac01b0a513c8250b",
+      "replaces": "302a300506032b657003210064bd89cc1be2a5ef4d5ab1d43a08d90d87c3bd9c63047410cc0b901bdc69edba",
+      "counted_to": "b08b676ad332660724cfdb2370cd7f6287f4505ba413fdfd5ef755d9680752ab"
+     },
+     "refs": {
+      "author": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+      "subject": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+      "prev": "b08b676ad332660724cfdb2370cd7f6287f4505ba413fdfd5ef755d9680752ab"
+     }
+    },
+    "signature": "a255d28a7c9fd5737d445164f8806498d2180d4f83d8d1e2aac7e74d517c4e2f0f267ee938d25255146c3eeaeb783ae190c28a440ecaf52120d882c978aa7603"
+   },
+   {
+    "name": "the genesis key still speaks",
+    "hash": "cdbcdab617849509dcee5540e57bc2be1874c25fe2bb99f32e33dc845d2b2b27",
+    "signer": "kit",
+    "block": {
+     "type": "observe",
+     "state": {
+      "kind": "note",
+      "text": "still me",
+      "at": "2026-10-15T12:00:35.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "author": "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9",
+      "prev": "b08b676ad332660724cfdb2370cd7f6287f4505ba413fdfd5ef755d9680752ab"
+     }
+    },
+    "signature": "23089e45e92548695e68ebff0eb9fddcbe58d2ae36e0ba125a6ac7bce7c1096a02e72d0d859c513480c57d52d226c85b1718e4bf1347451535b18bbe2bff1108"
+   }
+  ],
+  "signed_by_author": {
+   "60e8aeb83943fd9ce3f5c6df5d086d8d8bba7e32dd5a3636c9e1e4d20d47a6d9": true,
+   "b08b676ad332660724cfdb2370cd7f6287f4505ba413fdfd5ef755d9680752ab": true,
+   "c3facc66749fbb1ab02d2b9f4a87c905c4d0615f8d375763f5b792c18969714d": true,
+   "cdbcdab617849509dcee5540e57bc2be1874c25fe2bb99f32e33dc845d2b2b27": true
+  },
+  "keys": [
+   "302a300506032b657003210064bd89cc1be2a5ef4d5ab1d43a08d90d87c3bd9c63047410cc0b901bdc69edba",
+   "302a300506032b6570032100e0698e87ceee7f6b52f498732eb6509410aa37e7e2619bed185093e53a143a56"
+  ]
+ },
+ "refusal": {
+  "name": "a block signed by a frozen key: a key of its author that does not speak",
+  "by": "accept",
+  "incoming": [
+   "da9c8a80a01ce79d78e3dc631ad5c8326cfc4cc144f3d6963d6da3b44feac584"
+  ],
+  "held": [
+   "c7bb20c894f1b1fa5d300c789fdc3e498446161104076fe7c613d7b5c98a502b",
+   "248982b82d36aa317bf2c69d995e494aa6b9d6cbaeef2e48aa150d1db89db505",
+   "d52ef919cb321d4e8bc719a1c8adfa31fe965d333e94584df9f0f0583577b54f"
+  ],
+  "codes": [
+   "void_key"
+  ]
+ }
+}

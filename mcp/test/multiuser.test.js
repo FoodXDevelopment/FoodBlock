@@ -62,16 +62,17 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
     const front = await listen((req, res) => hub.app(req, res)); after(() => { front.s.close(); front.s.closeAllConnections?.() })
     hubBase = front.url
     const build = (extra = {}) => {
-      const hub = createHub({ stateFile, master, publicUrl: front.url, provision, index: remoteIndex({ base: `${served.url}/index` }),
+      const hub = createHub({ reach: 'P30D', trustProxy: false, stateFile, master, publicUrl: front.url, provision, index: remoteIndex({ base: `${served.url}/index` }),
         google: { clientId: 'gid', clientSecret: 'gsecret', redirectUri: `${front.url}/oauth/google/callback`, authUrl: `${fake.url}/auth`, tokenUrl: `${fake.url}/token` },
         reviewer: { passphrase: 'open-sesame' }, mcp: mcpEndpoint(), ...extra })
       return hub
     }
     let hub = build()
+    const shown = []
 
     // the open index has one public offer to find
-    const merchant = (await import('../door.js')).newPerson(), fb = (await import('@foodxdev/foodblock')).default
-    const pub = (type, state, refs) => { const s = fb.write(type, { ...state, audience: 'public' }, refs, { author: merchant.id, key: merchant.keys, held: merchant.chain }); merchant.chain.push(s); return s }
+    const merchant = (await import('../door.js')).newPerson('person', { reach: 'P30D' }), fb = (await import('@foodxdev/foodblock')).default
+    const pub = (type, state, refs) => { const s = fb.write(type, { ...state, audience: 'public' }, refs, { author: merchant.id, key: merchant.keys, held: merchant.chain, at: new Date().toISOString(), audience: 'public' }); merchant.chain.push(s); return s }
     const pPlace = pub('thing', { kind: 'place', name: 'Hartley Mill', fields: { lat: '51.5010', lon: '-0.1250' } }, {})
     const pFlour = pub('thing', { kind: 'flour', name: 'flour' }, { place: pPlace.hash })
     const pOffer = pub('promise', { what: 'flour', terms: { price: { money: fb.money(150, 'GBP'), per: fb.amount('1', 'kg') }, expires: '2099-01-01T00:00:00.000Z' } }, { from: merchant.id, what: pFlour.hash, place: pPlace.hash })
@@ -110,7 +111,13 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
           assert.equal(r.status, 302); html = await (await web.go(new URL(r.headers.get('location'), base))).text()
         }
       }
-      assert.match(html, /Connect /); assert.match(html, /only your own FoodX node/); assert.match(html, /Built on the open FoodBlock protocol/)
+      if (/Save your recovery key/.test(html)) {   // a new person is shown her recovery key once; saying she saved it makes the hub delete its copy
+        shown.push(JSON.parse(/<pre[^>]*>([^<]+)<\/pre>/.exec(html)[1].replace(/&quot;/g, '"')))
+        const rcsrf = /name="csrf" value="([^"]+)"/.exec(html)[1], rreq = /name="request" value="([^"]*)"/.exec(html)[1]
+        const done = await web.go(`${base}/recovery`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ csrf: rcsrf, request: rreq, do: 'saved' }) })
+        assert.equal(done.status, 303); html = await (await web.go(new URL(done.headers.get('location'), base))).text()
+      }
+      assert.match(html, /Connect /); assert.match(html, /FoodX agent, which may draft things for you to approve/); assert.match(html, /only your own FoodX node/); assert.match(html, /Built on the open FoodBlock protocol/)
       const csrf = /name="csrf" value="([^"]+)"/.exec(html)[1]; request = /name="request" value="([^"]+)"/.exec(html)[1]
       const yes = await web.go(`${base}/oauth/consent`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ request, csrf, do: 'allow', ...(drawing ? { draft: '1' } : {}) }) })
       assert.equal(yes.status, 302)
@@ -127,7 +134,17 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
     const b1 = await connect({ name: 'Claude (Bob)', as: bob })
     const c1 = await connect({ name: 'Reviewer assistant', as: { sub: 'reviewer-one', pass: 'open-sesame' }, via: 'reviewer' })
     assert.equal(hub.state.accounts.size(), 3, 'alice signed in twice and is one person')
+    assert.equal(shown.length, 3, 'each new person was shown her recovery key once')
+    for (const [key, who] of [['google:g-alice', 0], ['google:g-bob', 1]]) {
+      const person = hub.state.accounts.get(key).person, kept = hub.custodyOf(person)
+      const genesis = (await hub.doorFor(person)).person.genesis
+      assert.ok(genesis.state.custodian, 'the genesis names FoodX as the custodian')
+      assert.ok(kept.keys && !('recovery' in kept), 'after she confirmed, the hub holds no recovery key')
+      assert.ok(shown[who].private_key && shown[who].public_key_sign)
+    }
     assert.equal(host.people().length, 3, 'three people, three nodes on the host')
+    const account = await (await a1.web.go(`${base}/account`)).text()
+    assert.match(account, /holds your signing key as your custodian/); assert.match(account, /rotate FoodX out/); assert.match(account, /recovery key/)
 
     // tools: every one has a title and an honest annotation
     const tools = (await a1.mcp.listTools()).tools
@@ -139,8 +156,8 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
     // 1. every person finds the open index; each asks; each draft is their own
     const found = (await use(a1.mcp, 'foodblock_find', { what: 'flour' })).value
     assert.deepEqual(found.map((o) => o.offer), [pOffer.hash])
-    const dA = (await use(a1.mcp, 'foodblock_ask', { offer: pOffer.hash, quantity: { value: '5', unit: 'kg' } })).value
-    const dB = (await use(b1.mcp, 'foodblock_ask', { offer: pOffer.hash, quantity: { value: '9', unit: 'kg' } })).value
+    const dA = (await use(a1.mcp, 'foodblock_ask', { audience: 'public', offer: pOffer.hash, quantity: { value: '5', unit: 'kg' } })).value
+    const dB = (await use(b1.mcp, 'foodblock_ask', { audience: 'public', offer: pOffer.hash, quantity: { value: '9', unit: 'kg' } })).value
     assert.equal(dA.bound, false)
     // the second assistant of the same person sees the person's drafts (one node, one person) but Bob's assistant never sees Alice's
     assert.equal((await use(a2.mcp, 'foodblock_read', { hash: dA.draft })).error, false, 'alice\'s other assistant is still alice')
@@ -179,7 +196,7 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
     const ro = await connect({ name: 'Read-only (Bob)', as: bob, drawing: false })
     assert.equal(ro.tokens.scope, 'foodblock:read')
     assert.equal((await use(ro.mcp, 'foodblock_find', { what: 'flour' })).error, false)
-    const denied = await use(ro.mcp, 'foodblock_ask', { offer: pOffer.hash }); assert.equal(denied.error, true); assert.equal(denied.value.error.code, 'insufficient_scope')
+    const denied = await use(ro.mcp, 'foodblock_ask', { audience: 'public', offer: pOffer.hash }); assert.equal(denied.error, true); assert.equal(denied.value.error.code, 'insufficient_scope')
 
     // 5. a restart: new hub, same file, same host; old tokens still open the door, the same person comes back to the same node
     hub = build()
@@ -218,7 +235,7 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
     const notReviewer = await w.go(`${base}/signin/reviewer`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ request: rid, name: 'alice', passphrase: 'open-sesame' }) })
     assert.equal(notReviewer.status, 403, 'the reviewer passphrase opens only reviewer-* demo people')
     assert.equal((await fetch(meta.registration_endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ client_name: 'evil', redirect_uris: ['javascript:alert(1)'], token_endpoint_auth_method: 'none' }) })).status, 400)
-    const tight = createHub({ stateFile: join(dir, 'tight.json'), master, publicUrl: front.url, provision, mcp: mcpEndpoint(), limits: { mcp: 2 } })
+    const tight = createHub({ reach: 'P30D', trustProxy: false, stateFile: join(dir, 'tight.json'), master, publicUrl: front.url, provision, mcp: mcpEndpoint(), limits: { mcp: 2 } })
     const noGoogle = await fetch(`${base}/signin/google?request=none`); assert.ok([400, 404].includes(noGoogle.status))
     assert.ok(tight.app)
     for (const x of [a1, aliceBack, b1, c1]) await x.mcp.close().catch(() => {})
@@ -232,7 +249,7 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
     const host = new Host(), served = await serveHost({ host }); after(() => served.close())
     const provision = async ({ id, genesis }) => { if (!host.tenants.has(id)) await host.join(genesis); return { base: `${served.url}/${id}`, token: host.credential(id, { scopes: ['read', 'write'] }) } }
     const front = await listen((req, res) => hub.app(req, res)); after(() => { front.s.close(); front.s.closeAllConnections?.() })
-    const hub = createHub({ stateFile: join(dir, 's.json'), master: randomBytes(40).toString('hex'), publicUrl: front.url, provision, mcp: mcpEndpoint(), limits: { mcp: 3 } })
+    const hub = createHub({ reach: 'P30D', trustProxy: false, stateFile: join(dir, 's.json'), master: randomBytes(40).toString('hex'), publicUrl: front.url, provision, mcp: mcpEndpoint(), limits: { mcp: 3 } })
     const call = async (person) => { const t = secretToken(hub, person); return fetch(`${front.url}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', authorization: `Bearer ${t}` }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }) }) }
     const one = hub.accountFor('reviewer:reviewer-a', {}).person, two = hub.accountFor('reviewer:reviewer-b', {}).person
     const statuses = []; for (let i = 0; i < 5; i++) statuses.push((await call(one)).status)

@@ -1,8 +1,8 @@
 // Deterministic JSON for hashing and signing (spec/canonical.md). The rules run in the Rust core (core.cjs).
-const { call } = require('./core.cjs')
+const door = require('./door.cjs')
 
-const canonical = (type, state, refs) => call('canonical', type, state, refs)
+const canonical = door.canonical
 // A signed message part (spec/protocol.md, Encoding: Messages) is signed over its canonical JSON by the same rules.
-const canonicalJSON = (value) => call('canonical_json', value)
+const canonicalJSON = door.canonicalJson
 
 module.exports = { canonical, canonicalJSON }

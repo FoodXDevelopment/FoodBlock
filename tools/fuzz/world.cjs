@@ -49,6 +49,7 @@ function mutate(r, value, ids) {
   return out;
 }
 
+const kindOf = word => require('crypto').createHash('sha256').update('kind: ' + word, 'utf8').digest('hex');
 const BASE = Date.parse('2026-10-15T09:00:00.000Z');
 class World {
   constructor(r, opts = {}) {
@@ -104,7 +105,7 @@ function makeWorld(seed, size = 30) {
   const agent = w.newActor('agent');
   const contact = w.post(people[1], 'actor', { kind: 'contact', name: 'Joseph', marks: [{ scheme: 'tel', value: '+254700000000' }] }, {});
   const founder = people[0];
-  const circle = w.post(founder, 'actor', { kind: 'circle', name: 'Co-op', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }, { name: 'speak', powers: [] }] }, {});
+  const circle = w.post(founder, 'actor', { kind: 'circle', name: 'Co-op', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }, { name: 'speak', powers: [] }], removal: { needed: 1 } }, {}); // a circle whose roles carry admit or remove states its removal rule (decision F2)
   const things = [], promises = [], transfers = [], grants = [];
   const ids = () => w.blocks.map(b => b.hash);
   const person = () => r.pick(people);
@@ -122,7 +123,14 @@ function makeWorld(seed, size = 30) {
     const act = r.int(24);
     const asset = things.length ? r.pick(things) : null;
     try {
-      if (act === 0 || !things.length) { const t = w.post(a, 'thing', { kind: r.pick(['eggs', 'milk', 'truck', 'crate', 'market']), name: 'Thing' + i }, r.coin(0.3) && things.length ? { of: r.pick(things).hash } : {}); things.push(maybe(t, a)); }
+      if (act === 0 || !things.length) {
+        // A thing is written the way real people write one (things.md): an instance names its kind (`of`: the hash of "kind: <word>", the rule of kindOf
+        // in test/audit/lib.cjs, or another thing), was made from something (`derives_from`), or names a place. A small share stays bare on purpose:
+        // a description has no owner, and that path stays covered.
+        const kind = r.pick(['eggs', 'milk', 'truck', 'crate', 'market']), how = r.next();
+        const refs = how < 0.62 ? { of: kindOf(kind) } : how < 0.72 && things.length ? { of: r.pick(things).hash } : how < 0.8 && things.length ? { derives_from: r.pick(things).hash } : how < 0.86 && things.length ? { place: r.pick(things).hash } : {};
+        const t = w.post(a, 'thing', { kind, name: 'Thing' + i }, refs); things.push(maybe(t, a));
+      }
       else if (act === 1) w.post(a, 'observe', { kind: 'note', text: 'n' + i }, r.coin(0.3) ? { under: r.pick(ids()) } : {});
       else if (act === 2) {
         const to = person();
@@ -155,13 +163,13 @@ function makeWorld(seed, size = 30) {
         const g = r.pick(grants); w.post(r.coin(0.7) ? founder : a, 'grant', { kind: 'member', status: 'stopped', stop: r.pick(['before', 'onward']) }, { updates: g.hash, subject: circle.hash, as: circle.hash, after: [g.hash] });
       } else if (act === 12) { // an agent for a person: operator grant, then a scoped grant, then the agent acts under it
         const op = w.post(a, 'grant', { kind: 'operator' }, { to: agent.id });
-        const sc = w.post(a, 'grant', { kind: 'shop', scope: { acts: ['observe.note', 'promise'], limit: { minor: 5000, currency: 'GBP' }, per: 'P7D', until: '2026-12-31T00:00:00.000Z' } }, { to: agent.id });
+        const sc = w.post(a, 'grant', { kind: 'shop', scope: { acts: ['observe.note', 'promise'], parties: people.map(p => p.id), limit: { minor: 5000, currency: 'GBP' }, every: 'P7D', until: '2026-12-31T00:00:00.000Z' } }, { to: agent.id });
         grants.push(sc);
         w.post(agent, r.pick(['observe', 'promise', 'transfer', 'thing']), r.coin(0.5) ? { kind: 'note', text: 'agent' } : { terms: { expires: new Date(BASE + 86400000).toISOString() }, what: 'x' }, { under: sc.hash });
         if (r.coin(0.4)) { // a grant wider than its parent
-          w.post(agent, 'grant', { kind: 'shop', scope: { acts: ['observe.note', 'promise', 'transfer'], limit: { minor: r.pick([5000, 9000]), currency: 'GBP' }, per: 'P7D', until: r.pick(['2026-12-31T00:00:00.000Z', '2027-06-01T00:00:00.000Z']) } }, { to: person().id, under: sc.hash });
+          w.post(agent, 'grant', { kind: 'shop', scope: { acts: ['observe.note', 'promise', 'transfer'], parties: people.slice(0, 1 + r.int(people.length)).map(p => p.id), limit: { minor: r.pick([5000, 9000]), currency: 'GBP' }, every: 'P7D', until: r.pick(['2026-12-31T00:00:00.000Z', '2027-06-01T00:00:00.000Z']) } }, { to: person().id, under: sc.hash });
         }
-        void op;
+        if (r.coin(0.4)) w.post(a, 'grant', { kind: 'key', public_key_sign: fb.keypair(r.hex(64), 'std').public_key_sign }, { subject: agent.id, under: op.hash }); // the operator brings in a key of the agent: it names its operator grant
       } else if (act === 13) { // equivocation: two blocks naming one prev
         const prev = a.head, seq = a.seq + 1;
         w.post(a, 'observe', { kind: 'note', text: 'one' }, {}, { keepHead: true, prev, seq });
@@ -175,17 +183,17 @@ function makeWorld(seed, size = 30) {
         a.rotated = { nk, rot };
       } else if (act === 19) { // a key grant for a device
         const nk = fb.keypair(r.hex(64), 'std'); w.post(a, 'grant', { kind: 'key', public_key_sign: nk.public_key_sign }, { subject: a.id });
-      } else if (act === 20 && things.length) { w.post(a, 'observe', { kind: 'confirm', confidence: r.pick(['0.9', '1', '0.5']) }, { [r.pick(['confirms', 'defeats'])]: r.pick(ids()) }); }
+      } else if (act === 20 && things.length) { w.post(a, 'observe', { kind: 'confirm' }, { [r.pick(['confirms', 'defeats'])]: r.pick(ids()) }); }
       else if (act === 21) { w.post(a, 'observe', { kind: 'note', text: 'about a contact' }, { subject: contact.hash }); }
       else if (act === 22) { // consent: a person's own word about a sender (an agent, a person), or about every sender
-        const subject = r.pick([agent.id, person().id, undefined]);
-        w.post(a, 'observe', { kind: 'consent', word: r.pick(['yes', 'stop', 'keep', 'move']) }, { ...(subject ? { subject } : {}) });
+        const word = r.pick(['yes', 'stop', 'keep', 'move']), subject = r.pick([agent.id, person().id, ...(word === 'yes' ? [] : [undefined])]); // a yes names whom it is about
+        w.post(a, 'observe', { kind: 'consent', word }, { ...(subject ? { subject } : {}) });
       } else if (act === 23) { // a recorder writes down someone else's word
-        const subject = r.pick([agent.id, a.id, person().id, undefined]);
-        w.post(a, 'observe', { kind: 'consent', word: r.pick(['yes', 'stop']) }, { from: person().id, ...(subject ? { subject } : {}), ...(r.coin(0.3) && ids().length ? { derives_from: r.pick(ids()) } : {}) });
+        const word = r.pick(['yes', 'stop']), subject = r.pick([agent.id, a.id, person().id, ...(word === 'yes' ? [] : [undefined])]);
+        w.post(a, 'observe', { kind: 'consent', word }, { from: person().id, ...(subject ? { subject } : {}), ...(r.coin(0.3) && ids().length ? { derives_from: r.pick(ids()) } : {}) });
       }
     } catch (e) { if (process.env.WORLD_DEBUG) console.error('world:', e.stack); }
   }
   return { w, r, people, agent, circle, things, promises, transfers, grants, incoming };
 }
-module.exports = { rng, mutate, World, makeWorld, nodes, at };
+module.exports = { rng, mutate, World, makeWorld, nodes, at, kindOf };

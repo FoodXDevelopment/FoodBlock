@@ -11,8 +11,9 @@ const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 const { genesis } = fb.identity
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const { V, tags: INVARIANTS } = vectorsFile.load()
 const made = new Set()
 const subset = (a, b) => (Array.isArray(b) && Array.isArray(a) && a.length === b.length ? b.every((v, i) => subset(a[i], v)) : (b && typeof b === 'object' && !Array.isArray(b)) ? b !== null && Object.entries(b).every(([k, v]) => subset(a && a[k], v)) : (assert.deepEqual(a, b), true))
 
@@ -186,5 +187,5 @@ for (const [n, i] of [[2, 1], [3, 2], [3, 0], [5, 4], [5, 2], [7, 6], [7, 3]]) {
 }
 
 // ---- write ----
-fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
+vectorsFile.save(V, INVARIANTS)
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

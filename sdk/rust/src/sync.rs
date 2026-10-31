@@ -7,8 +7,8 @@
 use crate::canonical::canonical_json;
 use crate::check::ordered;
 use crate::error::{Refusal, Result};
-use crate::identity::{key_timeline_in, signer_of, ArrivedAt};
-use crate::js::{hash_of, index_of, list, rf, rs, ss, st, truthy, Index};
+use crate::identity::{key_timeline_in, signer_of};
+use crate::js::{hash_of, index_of, list, rf, rs, st, Index};
 use crate::order::causal_order;
 use crate::prelude::*;
 use crate::sign::{sign_message_in, verify_message_in};
@@ -30,7 +30,8 @@ fn pick(object: &Value, keys: &[String]) -> Value {
 // ---- Pull ----
 /// A pull: `{ since, limit, filter, heads }` (since: the exclusive arrival number, 0 from the start).
 pub fn pull_request(request: &Value) -> Value {
-    let mut r = request.clone();
+    // anything but an object is a pull of everything from the start (a request is an object; a bare value names nothing)
+    let mut r = if request.is_object() { request.clone() } else { json!({}) };
     if r.get("since").is_none() {
         r["since"] = json!(0);
     }
@@ -53,6 +54,9 @@ pub struct Signer<'a> {
 }
 
 fn stamp(mut message: Value, role: &str, signer: &Signer) -> Result<Value> {
+    if !message.is_object() {
+        return Err(crate::Error::new("sync: a request to sign is an object"));
+    }
     message[role] = json!(signer.who);
     message["node"] = json!(signer.node);
     match (&signer.counter, &signer.challenge) {
@@ -110,8 +114,11 @@ pub fn message_refusals(message: &Value, fields: &str, f: &Freshness) -> Vec<Ref
     let (counter, challenge) = (message.get("counter"), message.get("challenge"));
     match (counter, challenge) {
         (Some(c), None) => {
+            // an integer of signed content runs to 2^53 - 1 (core.md, section 3): past it the signed text writes many counters one way,
+            // so one signature would answer for them all
             let above = c
                 .as_u64()
+                .filter(|c| *c <= 9_007_199_254_740_991)
                 .is_some_and(|c| f.highest.is_none_or(|h| c > h));
             if !above {
                 wrong.push(Refusal::new("replay", "its counter is not above the highest seen from this signer"));
@@ -128,16 +135,13 @@ pub fn message_refusals(message: &Value, fields: &str, f: &Freshness) -> Vec<Ref
         )),
     }
     let opens = f.keys.iter().any(|k| {
-        let suite = crate::sign::suite_of_key(k).unwrap_or_else(|| "std".to_string());
+        let suite = crate::sign::suite_named_by(k);
         verify_message_in(&suite, message, k)
     });
     if !opens {
         wrong.push(Refusal::new("bad_signature", "it is not signed by its signer"));
     }
     ordered(wrong, "message")
-}
-fn details(refused: Vec<Refusal>) -> Vec<String> {
-    refused.into_iter().map(|one| one.detail).collect()
 }
 fn rs_top<'a>(v: &'a Value, key: &str) -> Option<&'a str> {
     v.get(key).and_then(Value::as_str)
@@ -148,28 +152,28 @@ pub fn pull_refusals(message: &Value, freshness: &Freshness) -> Vec<Refusal> {
     message_refusals(message, "messages.signed_pull", freshness)
 }
 
-/// What is wrong with a signed pull, in plain words, for the node `node` whose clock reads `now`: empty when it may be
-/// answered.
-pub fn pull_errors(message: &Value, freshness: &Freshness) -> Vec<String> {
-    details(pull_refusals(message, freshness))
-}
-
-/// Every first version a block is a version of (itself, and back through `updates`).
+/// Every first version a block is a version of (itself, and back through `updates`). One walk with a set of what was seen: no block is
+/// copied and none is visited twice (release 16: a filter on a record was cubic).
 pub fn record_of(block: &Value, held: &Index) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
-    let mut todo = vec![block.clone()];
+    let mut seen: alloc::collections::BTreeSet<&str> = Default::default();
+    let mut todo: Vec<&Value> = vec![block];
     while let Some(one) = todo.pop() {
-        let h = hash_of(&one).to_string();
-        if out.contains(&h) {
+        let h = hash_of(one);
+        if !seen.insert(h) {
             continue;
         }
-        out.push(h);
-        for u in list(rf(&one, "updates")).into_iter().rev() {
-            todo.push(
-                held.get(u)
-                    .cloned()
-                    .unwrap_or_else(|| json!({ "hash": u, "refs": {} })),
-            );
+        out.push(h.to_string());
+        for u in list(rf(one, "updates")).into_iter().rev() {
+            match held.get(u) {
+                Some(b) => todo.push(b),
+                None => {
+                    // named but not held: it is a version all the same, with no further updates
+                    if seen.insert(u) {
+                        out.push(u.to_string());
+                    }
+                }
+            }
         }
     }
     out
@@ -179,9 +183,20 @@ pub fn record_of(block: &Value, held: &Index) -> Vec<String> {
 /// first hash: every version), `marks` (`{ scheme, value }`: the block carries that exact mark) and `refs`
 /// (`{ key: hash }`). `held` resolves records.
 pub fn matches(block: &Value, filter: &Value, held: &Index) -> bool {
-    let Some(f) = filter.as_object().filter(|f| !f.is_empty()) else {
+    // no filter matches every block; a filter that is not an object matches none (a filter never fails open)
+    if filter.is_null() {
         return true;
+    }
+    let Some(f) = filter.as_object() else {
+        return false;
     };
+    if f.is_empty() {
+        return true;
+    }
+    // a key the filter does not know matches nothing: a filter never fails open (nodes.md, Pull; divergence R4)
+    if f.keys().any(|k| !["type", "kind", "author", "hash", "record", "marks", "refs"].contains(&k.as_str())) {
+        return false;
+    }
     if f.get("type").is_some_and(|t| Some(t) != block.get("type")) {
         return false;
     }
@@ -221,7 +236,8 @@ pub fn matches(block: &Value, filter: &Value, held: &Index) -> bool {
         Some(Value::Object(refs)) => refs
             .iter()
             .all(|(k, h)| h.as_str().is_some_and(|h| list(rf(block, k)).contains(&h))),
-        _ => true,
+        None => true,
+        Some(_) => false,
     }
 }
 
@@ -250,20 +266,43 @@ pub struct Arrival {
     pub copies: Vec<(String, Value)>,
 }
 
+/// Whether a block travels whole to anyone: its audience is not a list.
+fn is_public(block: &Value) -> bool {
+    !st(block, "audience").is_some_and(Value::is_array)
+}
+
+/// A non-public block as one who may not see it knows it: the entry of its public header (`header`, `header_entry`), nothing else.
+fn header_view(block: &Value) -> Value {
+    header_entry(&json!({ "header": crate::write::header(block) })).unwrap_or(Value::Null)
+}
+
+/// What a node promises when it answers a pull (nodes.md, A node's promise): each is its own stated choice, with no default.
+#[derive(Debug, Clone, Copy)]
+pub struct PullChoices {
+    /// The most blocks one answer carries (at least 1); a pull's own `limit` is cut to it.
+    pub cap: u64,
+    /// Whether the node sends the other half of a forked pair with any answer that includes one (the proof of the fork).
+    pub serves_pairs: bool,
+}
+
 /// Answer a pull from a node's arrival log. A public block travels whole; a sealed one as its header or, to a signed
 /// pull's asker, the copy sealed to them. Signed by the node: `{ node, request, blocks: [{ n, message }], next,
-/// signature }`. `cap` is the responder's own limit; `asker` overrides the pull's own; `held` is what a filter's record
-/// is read from (the log's own blocks when none).
+/// signature }`. `choices` are the responder's own (its cap and whether it serves a pair's proof); `asker` overrides the pull's own; `held` is what a filter's record
+/// is read from (the log's own blocks when none). `through` is the last arrival number the node read to answer (a node reads a
+/// bounded window for a filtered pull): an answer that is not full says to go on from there, never from its last match.
+#[allow(clippy::too_many_arguments)]
 pub fn answer_pull(
     log: &[Arrival],
     request: &Value,
     node: &str,
     private_key: Option<&str>,
-    cap: u64,
+    choices: PullChoices,
     asker: Option<&str>,
     held: Option<&Index>,
     suite: &str,
+    through: Option<u64>,
 ) -> Result<Value> {
+    let cap = choices.cap;
     let since = request.get("since").and_then(Value::as_f64).unwrap_or(0.0) as u64;
     let limit = request
         .get("limit")
@@ -273,15 +312,40 @@ pub fn answer_pull(
         .unwrap_or(cap)
         .min(cap);
     let asker = asker.or_else(|| request.get("signer").and_then(Value::as_str));
-    let own = index_of(log.iter().map(|e| &e.block));
-    let held = held.unwrap_or(&own);
+    let own;
+    let held = match held {
+        Some(h) => h,
+        None => {
+            own = index_of(log.iter().map(|e| &e.block));
+            &own
+        }
+    };
     let filter = request.get("filter").cloned().unwrap_or(Value::Null);
+    // A filter reads only what the asker may see (security K): a public block whole, a non-public one whole only by an asker
+    // it has a copy for, and otherwise its public header alone (author, prev, seq, hash). A private block a node holds in the
+    // clear is never an oracle on its kind, its marks or whom it names.
+    let seen_by_asker = |e: &Arrival| -> bool {
+        is_public(&e.block) || asker.is_some_and(|a| e.copies.iter().any(|(who, _)| who == a))
+    };
+    // A genesis has no public header (decision H10): to an asker outside its audience nothing of a sealed genesis is sent.
     let mut found: Vec<&Arrival> = log
         .iter()
-        .filter(|e| e.n > since && matches(&e.block, &filter, held))
+        .filter(|e| {
+            e.n > since
+                && if seen_by_asker(e) {
+                    matches(&e.block, &filter, held)
+                } else {
+                    !crate::identity::is_genesis(&e.block) && matches(&header_view(&e.block), &filter, held)
+                }
+        })
         .collect();
     found.sort_by_key(|e| e.n);
-    if truthy(request.get("heads")) {
+    // only the rows the node read answer the pull; a rival row beyond them rides below as a proof, after `next` is known (release 5: it had
+    // pushed `next` past rows nobody had sent)
+    if let Some(t) = through {
+        found.retain(|e| e.n <= t);
+    }
+    if request.get("heads") == Some(&Value::Bool(true)) {
         let blocks: Vec<Value> = found.iter().map(|e| e.block.clone()).collect();
         let heads: Vec<String> = heads_of(&blocks)
             .iter()
@@ -289,31 +353,34 @@ pub fn answer_pull(
             .collect();
         found.retain(|e| heads.iter().any(|h| h == hash_of(&e.block)));
     }
-    found.truncate(limit as usize);
-    // The next number is where the matches end; the proofs below may sit beyond it and are sent again then.
-    let next = found.last().map(|e| e.n).unwrap_or(since);
-    // Lies travel with their proof (nodes.md, Pull): a block of a pair that one key signed naming one `prev` is never
-    // answered without the other, whether or not the other matches, was asked for, or came before `since`.
+    let full = found.len() as u64 >= limit;
+    found.truncate(usize::try_from(limit).unwrap_or(usize::MAX));
+    // The next number is where the matches end; the proofs below may sit beyond it and are sent again then. An answer that is not full
+    // goes on from the last arrival the node read (`through`), so a filter that matches nothing in a window still moves on.
+    let last = found.last().map(|e| e.n).unwrap_or(since);
+    let next = match through {
+        Some(t) if !full => last.max(t),
+        _ => last,
+    };
+    // A node that serves a pair's proof (its own choice) sends the other half of a pair that one key signed naming one `prev`
+    // with any answer that includes one, whether or not the other matches, was asked for, or came before `since`.
     let mut proofs: Vec<&Arrival> = Vec::new();
-    for e in &found {
-        // cheap first: only blocks of the same author naming the same prev can be a pair
-        let rivals: Vec<&Arrival> = log
-            .iter()
-            .filter(|o| {
-                hash_of(&o.block) != hash_of(&e.block)
-                    && rs(&o.block, "author").is_some()
-                    && rs(&o.block, "author") == rs(&e.block, "author")
-                    && rs(&o.block, "prev").is_some()
-                    && rs(&o.block, "prev") == rs(&e.block, "prev")
-                    && !found.iter().chain(proofs.iter()).any(|x| hash_of(&x.block) == hash_of(&o.block))
-            })
-            .collect();
-        if rivals.is_empty() {
-            continue;
+    // cheap first: only blocks of the same author naming the same prev can be a pair, found through one map of the log
+    let mut by_place: alloc::collections::BTreeMap<(&str, &str), Vec<&Arrival>> = Default::default();
+    let mut by_author: alloc::collections::BTreeMap<&str, Vec<&Arrival>> = Default::default();
+    for o in log {
+        if let (Some(a), Some(p)) = (rs(&o.block, "author"), rs(&o.block, "prev")) {
+            by_place.entry((a, p)).or_default().push(o);
+            by_author.entry(a).or_default().push(o);
         }
+    }
+    let mut sent: alloc::collections::BTreeSet<&str> = found.iter().map(|x| hash_of(&x.block)).collect();
+    for e in found.iter().filter(|_| choices.serves_pairs) {
         let Some(at) = place_of(&e.block, held) else { continue };
-        for other in rivals {
-            if place_of(&other.block, held).is_some_and(|p| same_place(&p, &at)) {
+        let candidates = if at.prev == "^first" { by_author.get(at.author.as_str()) } else { by_place.get(&(at.author.as_str(), at.prev.as_str())) };
+        let unsent = candidates.into_iter().flatten().copied().filter(|o| !sent.contains(hash_of(&o.block))).map(|o| (&o.block, o));
+        for other in rivals_of(hash_of(&e.block), &at, unsent, held) {
+            if sent.insert(hash_of(&other.block)) {
                 proofs.push(other);
             }
         }
@@ -321,9 +388,7 @@ pub fn answer_pull(
     found.extend(proofs);
     found.sort_by_key(|e| e.n);
     let message_of = |e: &Arrival| -> Value {
-        let public = st(&e.block, "audience").and_then(Value::as_str) == Some("public")
-            || !st(&e.block, "audience").is_some_and(Value::is_array);
-        if public {
+        if is_public(&e.block) {
             return wrap(&e.block);
         }
         if let Some(copy) = asker
@@ -333,7 +398,6 @@ pub fn answer_pull(
             return copy;
         }
         json!({
-            "version": crate::spec().version,
             "header": e.header.clone().unwrap_or_else(|| crate::write::header(&e.block)),
             "header_signature": e.header_signature,
         })
@@ -353,7 +417,7 @@ pub fn answer_pull(
 /// Whether a node's answer (pull or push) is signed by one of the node's keys (any live key of its holder).
 pub fn answer_signed_by(answer: &Value, node_keys: &[String]) -> bool {
     node_keys.iter().any(|k| {
-        let suite = crate::sign::suite_of_key(k).unwrap_or_else(|| "std".to_string());
+        let suite = crate::sign::suite_named_by(k);
         verify_message_in(&suite, answer, k)
     })
 }
@@ -394,11 +458,6 @@ pub fn push_refusals(message: &Value, freshness: &Freshness) -> Vec<Refusal> {
     message_refusals(message, "messages.signed_push", freshness)
 }
 
-/// What is wrong with a signed push, in plain words: empty when it may be taken in.
-pub fn push_errors(message: &Value, freshness: &Freshness) -> Vec<String> {
-    details(push_refusals(message, freshness))
-}
-
 /// One block a node refused: its hash, a code from protocol.json's `refusals.codes`, and free text for people.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Refused {
@@ -418,6 +477,9 @@ pub struct Accepted {
     /// Pairs of blocks from one key at one seq, each sorted: the second is neither taken nor refused; the node keeps
     /// both and serves them together.
     pub equivocations: Vec<[String; 2]>,
+    /// Hashes held as a sealed block's public header that a whole block taken under the same hash proves false: the header
+    /// names another author, `seq` or `prev` (privacy.md). The body is self-certifying, so the node keeps it in the header's place.
+    pub false_headers: Vec<String>,
 }
 
 impl Accepted {
@@ -428,6 +490,7 @@ impl Accepted {
             "waiting": self.waiting.iter().map(|(h, n)| json!({ "hash": h, "needs": n })).collect::<Vec<_>>(),
             "refused": self.refused.iter().map(|r| json!({ "hash": r.hash, "code": r.code, "detail": r.detail })).collect::<Vec<_>>(),
             "equivocations": self.equivocations,
+            "false_headers": self.false_headers,
         })
     }
 }
@@ -437,12 +500,17 @@ impl Accepted {
 /// `None` when it cannot be told.
 fn signing_key(block: &Value, known: &Index) -> Option<String> {
     let author = rs(block, "author")?;
-    let keys = key_timeline_in(author, known, None);
     if block.get("type").is_some() {
-        // The recovery key is a signer of its own (identity.md): its first block names the genesis, as the first key's
-        // does, and the two are not a pair. Only the same key with the same `prev` is.
+        // The key check 6 reads from what the block rests on (a block held or judged has its needs held), never a guess among keys:
+        // two different keys never share a place. The recovery key is a signer of its own (identity.md): its first block names the
+        // genesis, as the first key's does, and the two are not a pair. Only the same key with the same `prev` is.
+        if let Some(s) = crate::identity::signer_in(block, known) {
+            return Some(s.key);
+        }
+        let keys = key_timeline_in(author, known, None);
         return signer_of(block, &keys).or_else(|| crate::identity::recovery_signer_of(block, author, known));
     }
+    let keys = key_timeline_in(author, known, None);
     let message = json!({ "header": crate::write::header(block), "header_signature": block.get("header_signature").cloned().unwrap_or(Value::Null) });
     keys.iter().find(|e| crate::write::header_signed_by(&message, &e.key)).map(|e| e.key.clone())
 }
@@ -455,30 +523,69 @@ struct Place {
     key: Option<String>,
 }
 fn place_of(block: &Value, known: &Index) -> Option<Place> {
-    Some(Place { author: rs(block, "author")?.to_string(), prev: rs(block, "prev")?.to_string(), key: signing_key(block, known) })
+    let prev = rs(block, "prev")?.to_string();
+    let key = signing_key(block, known);
+    // a key's first block takes the key's root (identity::chain_slot): two first blocks of one key are a pair
+    let prev = match crate::identity::signer_in(block, known) {
+        Some(s) if key.as_deref() == Some(s.key.as_str()) => crate::identity::chain_slot(block, &s),
+        _ => prev,
+    };
+    Some(Place { author: rs(block, "author")?.to_string(), prev, key })
 }
 fn same_place(a: &Place, b: &Place) -> bool {
     a.author == b.author && a.prev == b.prev && (a.key.is_none() || b.key.is_none() || a.key == b.key)
 }
 
+/// The blocks of `store` that take the same place as a block (hash `hash`, place `at`) in its key's chain: the rivals it forms a pair
+/// with. A key's first block rivals every other first block of that key, whatever bringer it names (identity::chain_slot). Each
+/// item of `store` is a block and what the caller wants back for it. Read by `answer_pull` (a fork travels with its proof) and by
+/// `take_in` (a fork is listed as a pair).
+fn rivals_of<'a, T>(hash: &str, at: &Place, store: impl Iterator<Item = (&'a Value, T)>, known: &Index) -> Vec<T> {
+    store
+        .filter(|(o, _)| hash_of(o) != hash && rs(o, "author") == Some(at.author.as_str()) && (at.prev == "^first" || rs(o, "prev") == Some(at.prev.as_str())))
+        .filter(|(o, _)| place_of(o, known).is_some_and(|p| same_place(&p, at)))
+        .map(|(_, t)| t)
+        .collect()
+}
+
 /// The rounds shared by `accept` and `accept_sealed`. `pending` are the incoming entries, `judge` says what is wrong with one
 /// whose needs are held (empty: take it). A block waits until every block it needs is held and is then judged once;
 /// the blocks of a round are all judged against the store as it stood when the round began, so the answer never depends on the
-/// order of a push. Two blocks of one key naming one `prev` are both kept and listed as a pair; neither block of a pair that
-/// arrives in one round is taken, and the later block of a pair is not taken.
-fn take_in(mut pending: Vec<Value>, known: &mut Index, judge: &dyn Fn(&Value, &Index) -> Vec<Refusal>) -> Accepted {
+/// order of a push. Two blocks of one key naming one `prev` are both kept and listed as a pair; whether a pair's blocks are taken
+/// is the node's own choice (`takes_pairs`): if not, neither block of a pair that arrives in one round is taken, and the later block of a pair is not.
+fn take_in(mut pending: Vec<Value>, known: &mut Index, takes_pairs: bool, judge: &dyn Fn(&Value, &Index) -> Vec<Refusal>) -> Accepted {
+    let _scope = crate::identity::scoped::Scope::new();
     let mut out = Accepted::default();
     let mut pairs: alloc::collections::BTreeSet<[String; 2]> = Default::default();
+    // Each waiting block is filed under the blocks it still needs, and looked at again only when one of them is taken (nodes.md: a
+    // waiting block is tried again when a block it waits for arrives), so a long chain pushed at once costs one look per link, never
+    // a scan of every waiting block every round (security I).
+    let mut slots: Vec<Option<Value>> = pending.drain(..).map(Some).collect();
+    let mut waits_on: alloc::collections::BTreeMap<String, Vec<usize>> = Default::default();
+    let mut next: Vec<usize> = Vec::new();
+    for (i, b) in slots.iter().enumerate() {
+        let unmet = crate::js::unmet_in(b.as_ref().unwrap(), known);
+        if unmet.is_empty() {
+            next.push(i);
+        }
+        for n in unmet {
+            waits_on.entry(n).or_default().push(i);
+        }
+    }
     loop {
-        let (ready, rest): (Vec<Value>, Vec<Value>) = pending.into_iter().partition(|b| crate::js::unmet_in(b, known).is_empty());
-        pending = rest;
+        let ready: Vec<Value> = next.drain(..).filter_map(|i| slots[i].take()).collect();
         if ready.is_empty() {
             break;
         }
-        // every block of the round is judged against the store as it stood when the round began
+        // every block of the round is judged against the store as it stood when the round began. Its id is the one a reader that holds
+        // its author's keys computes, in the suite of the key that signed it (core.md, section 2): what it rests on is held now.
         let mut good: Vec<(Value, Option<Place>)> = Vec::new();
-        let mut ready = ready;
-        ready.sort_by(|a, b| hash_of(a).cmp(hash_of(b)));
+        let mut ready: Vec<Value> = ready.into_iter().map(|b| crate::identity::with_id_in(&b, known)).collect();
+        // copies of one block (one id once computed so: a copy that came with another id is the same block) are taken once, the one
+        // with the lowest signature only to name one; a block whose body is held is nothing new
+        ready.sort_by(|a, b| (hash_of(a), a.get("signature").and_then(Value::as_str)).cmp(&(hash_of(b), b.get("signature").and_then(Value::as_str))));
+        ready.dedup_by(|b, a| hash_of(a) == hash_of(b));
+        ready.retain(|b| b.get("type").is_none() || !holds_body(known, hash_of(b)));
         for block in ready {
             let wrong = judge(&block, known);
             for one in &wrong {
@@ -490,34 +597,69 @@ fn take_in(mut pending: Vec<Value>, known: &mut Index, judge: &dyn Fn(&Value, &I
             }
         }
         let mut forked: Vec<String> = Vec::new();
+        // The store as it stands once the round is taken: a block the round voids (an old key's sibling off the counted line of a
+        // rotation that arrives now: identity.md, Rotation) speaks for no one there, and forms no pair.
+        let mut after: Option<Index> = None;
+        let speaking: core::cell::RefCell<alloc::collections::BTreeMap<String, bool>> = Default::default();
         for (block, at) in &good {
             let Some(at) = at else { continue };
             let h = hash_of(block);
             // every block already held, or arriving in this round, that takes the same place in the same key's chain
-            let mut others: Vec<String> = known
-                .iter()
-                .filter(|(k, held)| k.as_str() != h && rs(held, "author") == Some(at.author.as_str()) && rs(held, "prev") == Some(at.prev.as_str()))
-                .filter(|(_, held)| place_of(held, known).is_some_and(|p| same_place(&p, at)))
-                .map(|(k, _)| k.clone())
-                .collect();
-            others.extend(good.iter().filter(|(o, oat)| hash_of(o) != h && oat.as_ref().is_some_and(|p| same_place(p, at))).map(|(o, _)| hash_of(o).to_string()));
+            let store = known.values().map(|v| (v, hash_of(v).to_string())).chain(good.iter().map(|(o, _)| (o, hash_of(o).to_string())));
+            let others: Vec<String> = rivals_of(h, at, store, known);
+            if others.is_empty() {
+                continue;
+            }
+            // read closed, as every fold reads (folds.md): a block the folds cannot read speaks for no one, so it forms no pair
+            let after = after.get_or_insert_with(|| {
+                let mut a = known.clone();
+                for (g, _) in &good {
+                    a.insert(hash_of(g).to_string(), g.clone());
+                }
+                crate::js::closed(a)
+            });
+            // whether each block speaks for its author once the round is taken: read once per block (asked again for every block of its place)
+            let speaks = |x: &str| {
+                if let Some(v) = speaking.borrow().get(x) {
+                    return *v;
+                }
+                let v = after.get(x).is_some_and(|b| b.get("type").is_none() || crate::identity::signed_by_author_in(b, after, None));
+                speaking.borrow_mut().insert(x.to_string(), v);
+                v
+            };
+            if !speaks(h) {
+                continue;
+            }
+            let others: Vec<String> = others.into_iter().filter(|o| speaks(o)).collect();
             if !others.is_empty() {
                 forked.push(h.to_string());
-                for other in others {
-                    let mut pair = [other, h.to_string()];
-                    pair.sort();
-                    pairs.insert(pair);
+                // a star (nodes.md): the block paired with the lowest hash of its place; the lowest, with each of the others
+                let lowest = others.iter().min().cloned().unwrap_or_default();
+                if lowest.as_str() < h {
+                    pairs.insert([lowest, h.to_string()]);
+                } else {
+                    for other in others {
+                        pairs.insert([h.to_string(), other]);
+                    }
                 }
             }
         }
         for (block, _) in good {
             let h = hash_of(&block).to_string();
             known.insert(h.clone(), block.clone());
-            if !forked.contains(&h) {
+            // what waited on this block is looked at again: it joins the next round once nothing it needs is missing
+            for i in waits_on.remove(&h).unwrap_or_default() {
+                if slots[i].as_ref().is_some_and(|b| crate::js::unmet_in(b, known).is_empty()) && !next.contains(&i) {
+                    next.push(i);
+                }
+            }
+            if takes_pairs || !forked.contains(&h) {
                 out.taken.push(block);
             }
         }
+        next.sort_unstable();
     }
+    let mut pending: Vec<Value> = slots.into_iter().flatten().collect();
     pending.sort_by(|a, b| hash_of(a).cmp(hash_of(b)));
     for block in pending {
         out.waiting.push((hash_of(&block).to_string(), crate::js::unmet_in(&block, known)));
@@ -526,10 +668,14 @@ fn take_in(mut pending: Vec<Value>, known: &mut Index, judge: &dyn Fn(&Value, &I
     out
 }
 
-/// What a store holds, read as blocks: a sealed message (`{ version, header, header_signature }`) is read as the entry of its public
+/// What a store holds, read as blocks: a sealed message (`{ header, header_signature }`) is read as the entry of its public
 /// header (`header_entry`); anything else is itself.
 fn normalised(held: &[Value]) -> Vec<Value> {
-    held.iter().map(|h| if h.get("header").is_some() && h.get("type").is_none() { header_entry(h).unwrap_or(Value::Null) } else { h.clone() }).collect()
+    let out: Vec<Value> = held.iter().map(|h| if h.get("header").is_some() && h.get("type").is_none() { header_entry(h).unwrap_or(Value::Null) } else { h.clone() }).collect();
+    // a header held beside the whole block of its hash adds nothing: the body is held, so the block is held, in whatever order
+    // the store lists them (nodes.md, Rounds: a block whose body is held is nothing new)
+    let whole: alloc::collections::BTreeSet<String> = out.iter().filter(|h| h.get("type").is_some()).map(|h| hash_of(h).to_string()).collect();
+    out.into_iter().filter(|h| h.get("type").is_some() || !whole.contains(hash_of(h))).collect()
 }
 
 /// Whether the store holds a whole block under this hash (a sealed block is held by its public header alone, which has no
@@ -538,29 +684,62 @@ fn holds_body(known: &Index, hash: &str) -> bool {
     known.get(hash).is_some_and(|b| b.get("type").is_some())
 }
 
+/// A block with no author string whose id is not the hash of its bytes: the index reads it as nobody's (js.rs, `index_of`), so `accept` must
+/// refuse it by its bytes rather than lose it.
+fn unreadable_id(b: &Value) -> bool {
+    rs(b, "author").is_none() && !hash_of(b).is_empty() && hash_of(b) != crate::block::rehash(b)
+}
+
 /// What a node takes of a push (`incoming`, blocks off the wire) given what it holds (read closed). A block waits until
 /// every block it needs is held (its `prev`, the offer it answers, the grant it acts under or passes on, the block it counts
 /// to: protocol.json `needs`) and is then judged once by `valid` (valid.rs): refused with each code it breaks, or taken.
 /// Blocks are judged in rounds against the same store, so the answer never depends on the order of a push. Two blocks of one
 /// key naming one `prev` prove a lie: every such pair is listed in `equivocations` (each pair sorted, the list sorted), both
-/// blocks are kept, and neither block of a pair that arrives together is taken (the later of a pair is not taken). A block
+/// blocks are kept, and, unless the node chose to take pairs (`takes_pairs`), neither block of a pair that arrives together is taken
+/// (the later of a pair is not taken). A block
 /// whose hash is held only as a sealed public header is a body arriving for its header: the other half, taken and judged like
 /// any other, never a duplicate. Any type is taken (open types are stored and passed on): the check reads only what core.md fixes.
-pub fn accept(
-    incoming: &[Value],
-    held: &[Value],
-    arrived_at: ArrivedAt,
-    schemas: Option<&Index>,
-) -> Accepted {
+pub fn accept(incoming: &[Value], held: &[Value], takes_pairs: bool, schemas: Option<&Index>) -> Accepted {
     let normal = normalised(held);
-    let mut known = crate::js::held_index(normal.iter());
-    let pending: Vec<Value> = causal_order(incoming).into_iter().filter(|b| !holds_body(&known, hash_of(b))).collect();
-    take_in(pending, &mut known, &|block, known| crate::valid::valid_in_closed(block, known, schemas, arrived_at))
+    // a header held under a hash whose body arrives, naming another author, seq or prev, was a lie about that hash (security K:
+    // a stranger's header pre-registered on a victim's hash dropped the victim's block): it is read as never held, so the body
+    // and what follows it are judged as if it were not there
+    let lie = |h: &Value| {
+        h.get("type").is_none()
+            && incoming.iter().any(|b| {
+                hash_of(b) == hash_of(h) && b.get("type").is_some() && (rs(h, "author") != rs(b, "author") || st(h, "seq") != st(b, "seq") || rs(h, "prev") != rs(b, "prev"))
+            })
+    };
+    let lies: Vec<String> = normal.iter().filter(|h| lie(h)).map(|h| hash_of(h).to_string()).collect();
+    let mut known = crate::js::held_index(normal.iter().filter(|h| !lie(h)));
+    // a block whose `state` or `refs` is not an object is refused by its bytes (core.md, check 1): failure is out loud, never a silent drop
+    // The same for every check that reads the bytes alone (checks 1 to 4): such a block is refused at once, whatever it rests on, and never waits.
+    let (whole, ill): (Vec<&Value>, Vec<&Value>) = incoming.iter().partition(|b| {
+        b.get("state").is_some_and(Value::is_object)
+            && b.get("refs").is_some_and(Value::is_object)
+            && (b.get("type").is_none() || (crate::js::unmet_in(b, &known).is_empty() && !unreadable_id(b)) || crate::valid::bytes_findings(b, schemas).is_empty())
+    });
+    let whole: Vec<Value> = whole.into_iter().cloned().collect();
+    let pending: Vec<Value> = causal_order(&whole).into_iter().filter(|b| !holds_body(&known, hash_of(b))).collect();
+    let mut out = take_in(pending, &mut known, takes_pairs, &|block, known| crate::valid::valid_in_closed(block, known, schemas));
+    for b in ill.into_iter().filter(|b| b.get("type").is_some()) {
+        let id = crate::block::hash(crate::js::type_of(b), b.get("state").unwrap_or(&Value::Null), b.get("refs").unwrap_or(&Value::Null));
+        let found = crate::valid::bytes_findings(b, schemas);
+        if found.is_empty() {
+            out.refused.push(Refused { hash: id.clone(), code: "not_canonical".into(), detail: "a block is exactly { type, state, refs }, state and refs objects".into() });
+        }
+        for one in found {
+            out.refused.push(Refused { hash: id.clone(), code: one.code.clone(), detail: one.detail.clone() });
+        }
+    }
+    out.false_headers = out.taken.iter().map(|b| hash_of(b).to_string()).filter(|h| lies.contains(h)).collect();
+    out.false_headers.sort();
+    out
 }
 
 /// The pseudo-block a sealed block is held as: its public header (`{ author, seq, prev, hash, withheld?, skip? }`) and its
 /// signature, in the shape of a block without a `type` and without a body. `message` is a sealed message
-/// (`{ version, header, header_signature }`).
+/// (`{ header, header_signature }`).
 pub fn header_entry(message: &Value) -> Option<Value> {
     let header = message.get("header")?;
     let mut state = serde_json::Map::new();
@@ -590,7 +769,7 @@ pub fn header_entry(message: &Value) -> Option<Value> {
 /// key of its author that speaks for it and opens its signature, and the link in that key's chain (same key, the next `seq`
 /// or a skip, or `seq` 1 on the block that brought the key in). The body stays sealed: opening it and checking it is the
 /// recipients' to do, with `valid`. `entry` is `header_entry`'s answer.
-fn judge_header(entry: &Value, known: &Index, arrived_at: ArrivedAt) -> Vec<Refusal> {
+fn judge_header(entry: &Value, known: &Index) -> Vec<Refusal> {
     let sp = crate::spec();
     let (state, refs) = (entry.get("state").unwrap_or(&Value::Null), entry.get("refs").unwrap_or(&Value::Null));
     let seq = state.get("seq").and_then(Value::as_i64).filter(|n| *n >= 1);
@@ -601,60 +780,51 @@ fn judge_header(entry: &Value, known: &Index, arrived_at: ArrivedAt) -> Vec<Refu
     if seq.is_none() || !ids_ok || !flags_ok || entry.get("bad_header").is_some() || !entry.get("header_signature").is_some_and(Value::is_string) {
         return vec![Refusal::new("shape", "a sealed block's header is { author, seq, prev, hash } and its signature; withheld and skip only true")];
     }
-    let (author, prev_hash) = (rs(entry, "author").unwrap_or(""), rs(entry, "prev").unwrap_or(""));
-    let timeline = key_timeline_in(author, known, arrived_at);
-    if timeline.is_empty() {
+    let author = rs(entry, "author").unwrap_or("");
+    if !crate::identity::genesis_opens(known.get(author)) {
         return vec![Refusal::new("bad_signature", "the author's genesis is not held, so no key of the author can open the header")];
     }
-    let message = json!({ "header": crate::write::header(entry), "header_signature": entry.get("header_signature") });
-    let Some(signer) = timeline.iter().find(|e| crate::write::header_signed_by(&message, &e.key)) else {
-        return vec![Refusal::new("bad_signature", "the header is not signed by a key of its author")];
-    };
-    if !crate::identity::key_speaks_for_header(signer, entry, known, arrived_at) {
-        return vec![Refusal::new("void_key", "signed by a key of its author that does not speak for it: void, frozen, or rotated past counted_to")];
-    }
-    let Some(p) = known.get(prev_hash) else {
+    if !known.contains_key(rs(entry, "prev").unwrap_or("")) {
         return vec![Refusal::new("chain", "refs.prev is not held")];
+    }
+    // the header's signer, read from what it rests on alone, as for a whole block (core.md, checks 6 and 7)
+    let Some(signer) = crate::identity::signer_in(entry, known) else {
+        return vec![Refusal::new("bad_signature", "the header is not signed by a key of its author that what it rests on brought in")];
     };
     let seq = seq.unwrap_or(0) as f64;
     let skip = state.get("skip") == Some(&Value::Bool(true));
-    let prev_seq = crate::js::int(st(p, "seq"));
-    let same_key = rs(p, "author") == Some(author)
-        && match signing_key(p, known) {
-            Some(k) => k == signer.key,
-            // a sealed block held without its header's signature: its key cannot be told, and it is in this author's chain
-            None => p.get("type").is_none(),
-        };
-    if same_key {
-        let ok = prev_seq.is_some_and(|b| (!skip && seq == b + 1.0) || (skip && seq > b));
-        if !ok {
-            return vec![Refusal::new("chain", "state.seq is one more than the previous block's (or a skip that jumps forward)")];
-        }
-    } else {
-        let brought = ss(p, "public_key_sign") == Some(signer.key.as_str());
-        if !brought {
-            return vec![Refusal::new("chain", "refs.prev is neither the key's previous block nor the block that brought the key in")];
-        }
-        if !(seq == 1.0 || (skip && seq >= 1.0)) {
-            return vec![Refusal::new("chain", "a key's first block has seq 1")];
-        }
+    let prev_seq = known.get(rs(entry, "prev").unwrap_or("")).and_then(|p| crate::js::int(st(p, "seq")));
+    let fits = if signer.first { seq == 1.0 || (skip && seq >= 1.0) } else { prev_seq.is_some_and(|b| (!skip && seq == b + 1.0) || (skip && seq > b)) };
+    if !fits {
+        let why = if signer.first { "a key's first block has seq 1" } else { "state.seq is one more than the previous block's (or a skip that jumps forward)" };
+        return vec![Refusal::new("chain", why)];
     }
     vec![]
 }
 
-/// What a node takes of the sealed blocks of a push (`incoming`: sealed messages `{ version, header, header_signature,
+/// What a node takes of the sealed blocks of a push (`incoming`: sealed messages `{ header, header_signature,
 /// envelope }`) given what it holds: whole blocks, sealed blocks held by their public header (a block without a `type`), or
 /// sealed messages. A header is judged by `judge_header` after the blocks it needs, in rounds, and equivocation works as for
 /// `accept`. A header whose hash is held as a whole block is the other half of it: taken when it matches the body (same author,
 /// `seq` and `prev`), refused (`bad_hash`) when it does not. A header already held is nothing new.
-pub fn accept_sealed(incoming: &[Value], held: &[Value], arrived_at: ArrivedAt) -> Accepted {
+pub fn accept_sealed(incoming: &[Value], held: &[Value], takes_pairs: bool) -> Accepted {
     let normal = normalised(held);
     let mut known = crate::js::held_index(normal.iter());
     let mut out_early = Accepted::default();
     let mut pending: Vec<Value> = Vec::new();
     for message in incoming {
+        if message.get("version").is_some() {
+            out_early.refused.push(Refused { hash: String::new(), code: "shape".into(), detail: "a sealed block carries no version: it is { header, header_signature, envelope }".into() });
+            continue;
+        }
         let Some(entry) = header_entry(message) else {
-            out_early.refused.push(Refused { hash: String::new(), code: "shape".into(), detail: "a sealed block is { version, header, header_signature, envelope }".into() });
+            // a genesis has no public header (decision H10): it travels whole, to whom its author shows it
+            let detail = if message.get("header").is_some_and(|h| h.get("hash").is_some() && h.get("author").is_none()) {
+                "a genesis has no public header: it travels whole, to whom its author shows it"
+            } else {
+                "a sealed block is { header, header_signature, envelope }"
+            };
+            out_early.refused.push(Refused { hash: String::new(), code: "shape".into(), detail: detail.into() });
             continue;
         };
         let h = hash_of(&entry).to_string();
@@ -671,7 +841,7 @@ pub fn accept_sealed(incoming: &[Value], held: &[Value], arrived_at: ArrivedAt) 
             None => pending.push(entry),
         }
     }
-    let mut out = take_in(pending, &mut known, &|entry, known| judge_header(entry, known, arrived_at));
+    let mut out = take_in(pending, &mut known, takes_pairs, &|entry, known| judge_header(entry, known));
     out_early.taken.sort_by(|a, b| hash_of(a).cmp(hash_of(b)));
     out_early.refused.sort_by(|a, b| a.hash.cmp(&b.hash));
     out.taken.splice(0..0, out_early.taken);
@@ -686,7 +856,7 @@ pub fn push_answer(accepted: &Accepted, node: &str, private_key: &str, suite: &s
     push_answer_of(&accepted.to_json(), node, private_key, suite)
 }
 
-/// A node's signed answer to a push, from its parts `{ taken, waiting, refused, equivocations }` (each taken or waiting
+/// A node's signed answer to a push, from its parts `{ taken, waiting, refused, equivocations, held?, at? }` (each taken or waiting
 /// entry a hash or `{ hash, ... }`, each refusal `{ hash, code, detail }`; a part left out is empty).
 pub fn push_answer_of(parts: &Value, node: &str, private_key: &str, suite: &str) -> Result<Value> {
     let items = |key: &str| {
@@ -698,17 +868,29 @@ pub fn push_answer_of(parts: &Value, node: &str, private_key: &str, suite: &str)
     };
     let hash_or_self = |v: &Value| v.get("hash").cloned().unwrap_or_else(|| v.clone());
     let field = |v: &Value, k: &str| v.get(k).cloned().unwrap_or(Value::Null);
-    let answer = json!({
+    let mut answer = json!({
         "node": node,
         "taken": items("taken").iter().map(hash_or_self).collect::<Vec<_>>(),
         "waiting": items("waiting").iter().map(hash_or_self).collect::<Vec<_>>(),
         "refused": items("refused").iter().map(|r| json!({ "hash": field(r, "hash"), "code": field(r, "code"), "detail": field(r, "detail") })).collect::<Vec<_>>(),
         "equivocations": items("equivocations").iter().map(|pair| {
             let mut p: Vec<Value> = pair.as_array().cloned().unwrap_or_default();
-            p.sort_by(|a, b| crate::js::text(Some(a)).cmp(&crate::js::text(Some(b))));
+            p.sort_by(|a, b| crate::js::str_of(Some(a)).cmp(crate::js::str_of(Some(b))));
             Value::Array(p)
         }).collect::<Vec<_>>(),
     });
+    // the blocks of the push the node already held, when it chooses to say so (nodes.md, decision F7): its own word, binding it
+    // alone, so a pusher who lost the first answer learns they got there; no node must give it
+    if let Some(held) = parts.get("held").and_then(Value::as_array) {
+        let mut hs: Vec<String> = held.iter().map(hash_or_self).filter_map(|v| v.as_str().map(String::from)).collect();
+        hs.sort();
+        hs.dedup();
+        answer["held"] = json!(hs);
+    }
+    // the node's own time it took the push, when it gives one: a receipt its pusher may carry into a deal (promises.md, Who may bind)
+    if let Some(at) = parts.get("at").filter(|t| crate::time::is_time(Some(t))) {
+        answer["at"] = at.clone();
+    }
     sign_message_in(
         suite,
         &pick(&answer, &crate::spec().list("messages.push_answer")),
@@ -734,7 +916,7 @@ pub fn well_known(
     json!({
         "protocol": "foodblock", "version": crate::spec().version, "node": node, "holds": holds, "speaks_for": speaks_for,
         "admission": admission,
-        "endpoints": Value::Object(keys.iter().map(|k| (k.clone(), endpoints.get(k).cloned().filter(|v| truthy(Some(v))).unwrap_or(Value::Null))).collect()),
+        "endpoints": Value::Object(keys.iter().map(|k| (k.clone(), endpoints.get(k).filter(|v| v.as_str().is_some_and(|s| !s.is_empty())).cloned().unwrap_or(Value::Null))).collect()),
     })
 }
 
@@ -761,7 +943,7 @@ pub fn local_service(doc: &Value) -> (String, Vec<(String, String)>) {
             let v = if k == "path" {
                 path.to_string()
             } else {
-                crate::js::text_or_empty(doc.get(&k))
+                crate::js::str_of(doc.get(&k)).to_string()
             };
             (k, v)
         })

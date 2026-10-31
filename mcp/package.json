@@ -1,7 +1,7 @@
 {
   "name": "foodblock-mcp",
-  "version": "1.6.0",
-  "description": "MCP server for the FoodBlock 1.6 protocol: any AI agent reads and writes signed FoodBlocks",
+  "version": "1.7.0",
+  "description": "MCP server for the FoodBlock 1.7 protocol: any AI agent reads and writes signed FoodBlocks",
   "type": "module",
   "main": "server.js",
   "bin": {
@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "start": "node server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "prepublishOnly": "node -e \"const p=require('./package.json');const bad=Object.entries({...p.dependencies,...p.optionalDependencies}).filter(([,v])=>/^(file|link|git|https?):/.test(v));if(bad.length){console.error('refusing to publish with local dependencies: '+bad.map(([k,v])=>k+'@'+v).join(', '));process.exit(1)}\""
   },
   "keywords": [
     "mcp",
@@ -53,11 +54,12 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT",
+  "license": "CC0-1.0",
   "bugs": {
     "url": "https://github.com/FoodXDevelopment/FoodBlock/issues"
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }

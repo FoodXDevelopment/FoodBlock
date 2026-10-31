@@ -19,15 +19,13 @@ In products, the best are built from simple primitives. LEGO scales because one 
 As we attempt to solve problems, we find underlying primitives. Compress the primitive, and the creativity of individuals and the forces of natural selection do the rest.
 
 ## The Loop
-The economy inside FoodX must be circular. Every action a user takes should naturally lead to the next — not as a funnel, but as a closed loop where output becomes input. A producer grows ingredients, a maker turns them into food, a storefront sells it, a foodie eats it, a review feeds back to the producer. Surplus flows to the sustainer, who redistributes it, creating new transactions. A recipe shared by a creator inspires a maker, whose product gets rated, whose rating surfaces the venue, which draws more foodies.
+Value circulates because every signed block is useful to someone else's free choice. A grower's harvest record becomes a miller's provenance; a sale becomes the buyer's history and the seller's proof; a review becomes the next reader's evidence; surplus becomes someone's meal. The same holds inside one person's life: what she cooked, bought and shared becomes what she can do next. Nothing is a dead end.
 
-This works between users — but also within a single person. One user discovers a dish, saves the recipe, buys the ingredients, cooks it, shares what they made, gets feedback, discovers something new from that feedback. Their own activity loops back on itself, each action naturally prompting the next. The individual loop and the collective loop are the same structure at different scales.
-
-Nothing is a dead end. Every FoodBlock created generates signal that feeds other FoodBlocks. The system should feel like a living economy — energy circulating, not dissipating. When designing any feature, ask: what does the user do *after* this? If the answer is "leave the app," the loop is broken.
+Nothing is a trap either. The loop holds because each step pays the person who takes it, never because leaving is made hard: exit is always a valid next step, and a design that keeps people by making leaving costly is broken. When designing any feature, ask: what can the person do after this, by their own choice, with what they now hold?
 
 ## What this repository is
 
-The FoodBlock protocol, version 1.6 (revised 2026-10-19), and the code that speaks it. A block is `{ type, state, refs }`, signed by its
+The FoodBlock protocol, version 1.7 (2026-10-27; 1.6 is year zero, and 1.7 adds to it except the few deletions CHANGELOG.md lists), and the code that speaks it. A block is `{ type, state, refs }`, signed by its
 author; its identity is the SHA-256 of its canonical form. Seven types (`actor`, `thing`, `observe`, `transform`,
 `transfer`, `promise`, `grant`) and seven verbs (`updates`, `answers`, `confirms`, `defeats`, `for`, `derives_from`,
 `same_as`); `prev` and `after` are causal metadata. Every place is a `thing`, and so is a schema (kind schema).
@@ -39,9 +37,10 @@ v1.6 paper, kept as the paper; where it and the spec differ, the spec is current
 
 ## Principles
 
+- **The premise is anarcho-capitalist, the Austrian branch:** rights derived by reason from self-ownership and property (Rothbard, Hoppe, Kinsella), economics from praxeology. Other schools (David Friedman's utilitarian kind, the individualist anarchists, rational-choice accounts of private order) may illustrate, never decide. In spec text, give each rule an Austrian-branch ground. A signed word binds only its signer: their name to its truth, their property to its condition, their consent to another acting for them, never their body (title transfer: a body was never acquired, so no word hands it on; Kinsella, revising Rothbard). The protocol defines what words mean, never what anyone must do: it holds no defaults and fills in no one's silence, no one governs it, and it is CC0, because an idea is not property. Only what strangers' computers must compute alike belongs in it; a duty on a node, a custodian or anyone else exists only where they signed it.
 - **Compress, don't expand.** Every change should make the system simpler.
 - **The SDK decides; everything else asks it.** The server, MCP server and CLI never check a block themselves.
-- **Strict.** Year zero: there is no earlier version in the protocol. Write and read only 1.6 shapes. Never change
+- **Strict.** Year zero: there is no earlier version in the protocol. Write and read only the current version's shapes. Never change
   signed content: refuse it, and the author re-signs. Old data enters once, through the converter outside the protocol
   (`fb convert`, `sdk/rust` feature `legacy`, `spec/legacy/`); it writes fresh blocks that name the old hash.
 - **Append-only.** A stored block is never updated or deleted. A change is a new block that `updates` the old one.
@@ -54,7 +53,7 @@ v1.6 paper, kept as the paper; where it and the spec differ, the spec is current
 ## Layout
 
 ```
-spec/core.md, modules/  the protocol (1.6, normative; protocol.md is the index); profiles/ (optional); protocol.json
+spec/core.md, modules/  the protocol (1.7, normative; protocol.md is the index); profiles/ (optional); protocol.json
                         (every list), canonical.md, transport.md, vectors.json beside it; legacy/ is the one-time converter's data
 spec/oracle/            an implementation written from the spec text alone; `node spec/oracle/run.cjs` checks the vectors
 spec/schemas/           the base schemas as signed things with stable ids (`schemas.json` is the source, `published.json` the result; `node sdk/javascript/test/make-schemas.cjs`)
@@ -67,7 +66,7 @@ server/                 a node: node.js (store + signed pull / push / .well-know
 sql/schema.sql          the node's store: append-only, each block kept exactly as it arrived
 mcp/                    the MCP door: six tools (find, read, ask, promise, accept, connect); the autonomous system drafts, the person signs
 cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
-test/vectors.json       cross-language canonical vectors (they hash the same under 1.6)
+test/vectors.json       cross-language canonical vectors (they hash the same under the current version)
 test/audit/             the audit's worlds as permanent tests: every fold computed by the core and the oracle must be identical (`run.cjs`)
 test/necessity.cjs      spec/NECESSITY.md is current and nothing listed in protocol.json is dead or untested (`node tools/necessity.cjs` measures it by deleting each thing in turn)
 tools/replay-check.cjs  judges exported stored blocks with the current core: counts and reason codes only (DISTRIBUTION.md)
@@ -94,4 +93,4 @@ Run only what you changed, plus the vectors if you touched hashing or the canoni
 ## Publishing
 
 Nothing is published, committed or pushed unless Patrick asks in that message. See `DISTRIBUTION.md` for what is
-published today and what publishing 1.6 needs.
+published today and what publishing 1.7 needs.

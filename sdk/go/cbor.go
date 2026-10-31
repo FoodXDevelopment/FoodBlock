@@ -18,29 +18,29 @@ func fromHex(h string, err error) ([]byte, error) {
 
 // CborEncode is a signed public block as the CBOR message [t, block, signature].
 func CborEncode(b Block, short bool) ([]byte, error) {
-	return fromHex(ask[string]("cbor_encode", b, short))
+	return fromHex(doorCborEncode(b, short))
 }
 
 // CborDecode is the block a CBOR message carries, its hash taken from its canonical JSON. It refuses floats, tags, null,
-// indefinite lengths and duplicate keys.
-func CborDecode(data []byte) (Block, error) {
-	return ask[Block]("cbor_decode", hex.EncodeToString(data))
+// indefinite lengths and duplicate keys. With held (the author's blocks) the id is taken in the suite of the key that signed it.
+func CborDecode(data []byte, held ...Block) (Block, error) {
+	return doorCborDecode[Block](hex.EncodeToString(data), held)
 }
 
 // CborEncodePush is a push of several blocks: an array of messages.
 func CborEncodePush(blocks []Block, short bool) ([]byte, error) {
-	return fromHex(ask[string]("cbor_encode_push", blocks, short))
+	return fromHex(doorCborEncodePush(blocks, short))
 }
 
 func CborDecodePush(data []byte) ([]Block, error) {
-	return ask[[]Block]("cbor_decode_push", hex.EncodeToString(data))
+	return doorCborDecodePush(hex.EncodeToString(data))
 }
 
 // CborEncodeHeader is a chain header { author, seq, prev, hash }.
 func CborEncodeHeader(header map[string]any, short bool) ([]byte, error) {
-	return fromHex(ask[string]("cbor_encode_header", header, short))
+	return fromHex(doorCborEncodeHeader(header, short))
 }
 
 func CborDecodeHeader(data []byte) (map[string]any, error) {
-	return ask[map[string]any]("cbor_decode_header", hex.EncodeToString(data))
+	return doorCborDecodeHeader[map[string]any](hex.EncodeToString(data))
 }

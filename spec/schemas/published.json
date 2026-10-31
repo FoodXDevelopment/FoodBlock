@@ -11,8 +11,8 @@
   "state": {
    "kind": "publisher",
    "at": "2026-10-19T00:00:00.000Z",
-   "audience": "public",
-   "public_key_sign": "302a300506032b6570032100e1ba70fb8788cec658b0e7b655e1dc91080eff9f7f33abc7bd45d6d25dea66e5"
+   "public_key_sign": "302a300506032b6570032100e1ba70fb8788cec658b0e7b655e1dc91080eff9f7f33abc7bd45d6d25dea66e5",
+   "audience": "public"
   },
   "refs": {},
   "signature": "fcb25cf67dbac0ecf5dda2b104200075189dcd07f3db6bb387425fdc762e1019e8ae4b115449c44bf7af8640c20f8e6b80d7e751c88837e1e821236862815101"
@@ -29,16 +29,40 @@
   "work",
   "attestation",
   "share_vote",
-  "kept_promises",
   "person_confirmed",
   "sensor_confirmed",
   "teach",
   "loan",
-  "payout"
+  "payout",
+  "pledge",
+  "pledge_close",
+  "not_free",
+  "invasion",
+  "ruling",
+  "loyalty",
+  "vouch",
+  "payback",
+  "refusal",
+  "pool",
+  "link",
+  "rulebook",
+  "glossary",
+  "grader",
+  "release",
+  "bid",
+  "reliance",
+  "price_reading",
+  "keeping",
+  "loss",
+  "place_use",
+  "shareback",
+  "rebate",
+  "draw",
+  "bounded_change"
  ],
  "schemas": {
   "thing": {
-   "hash": "5118875d2aa8a8f7fc7c8d300ee5e4b259233ba9b614a120148c26042dd16bbe",
+   "hash": "9bbec9502d7bb1a3bba0d174bb83959ede079332a71e6b581514d47545abdb10",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -51,7 +75,9 @@
      "lot": "the lot code",
      "use_by": "a date",
      "pack": "an amount: what one instance holds",
-     "amount": "an amount"
+     "amount": "an amount",
+     "walk": "a place's bound as a walk of named marks, in order: [{ kind, words, photo }] (a tree, a stream, a wall; photo a hash). Beside or instead of state.bound; most smallholders have no coordinates",
+     "count": "a whole number: how many a counted lot holds (a herd). A tally is an observe of kind tally with a count, countersigned by the other side"
     },
     "at": "2026-10-19T00:00:01.000Z",
     "audience": "public",
@@ -61,10 +87,10 @@
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
     "prev": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9"
    },
-   "signature": "8d59eb8cca1cd24c88d00080619b308d18b98dbdbaffb5ac0f8d095ca1430ace1a1e47226a9f5603e23ee790464f2901c76f2bf3e81dff106e346b21a5f0160b"
+   "signature": "8c4ddee072dfa7aa8b5c99f934bdda94545e58797076e7baa4eb8528f72634fcccb074838e3fafc7cd71c5c129034840d5f5ff0d5d02e666b3371f44eacb6d0b"
   },
   "schema": {
-   "hash": "05f9dcf0a3157187668f8a2112a63cb20840dca6b50c0a87f2f42efdd2b0c75b",
+   "hash": "402b10b0750ea3780db2e506b9d42a33156af11518c490c88930a58fa8a99904",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -73,8 +99,9 @@
     "fields": {
      "target": "the type, or type.kind, it is for",
      "fields": "{ name: hint }",
+     "terms": "{ name: hint }: the terms a promise naming it may carry beyond the protocol's own",
      "roles": "the ref keys it declares beyond the shared ones",
-     "grounds": "{ event, confirms, defeats, confirmers }",
+     "grounds": "{ event, confirms, defeats, confirmers, needed, wait }",
      "undo": "never or ok",
      "labels": "{ lang: { name: label } }"
     },
@@ -84,12 +111,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "5118875d2aa8a8f7fc7c8d300ee5e4b259233ba9b614a120148c26042dd16bbe"
+    "prev": "9bbec9502d7bb1a3bba0d174bb83959ede079332a71e6b581514d47545abdb10"
    },
-   "signature": "049a562e0304f4ddddaf4ef48392c9157536aef41c64873080dfc3cb7dc3f6df9461328d1b7ac5b1fd9231c084b34ccaef4662a6ac8324ae7cf959e570177d04"
+   "signature": "7fe0889874bf3101bd503aed68a4d5cf52420fcb6590a75a98a5664795e1a4380d842744d44998a7351cb09b9a2529c09e96ebf499b3e7c2996d3193823cbc06"
   },
   "make": {
-   "hash": "dbf1780cad14565c5d44406515a4982267c7db2e6159025f3141686cccc3ea4d",
+   "hash": "2426c6e49de3ba39d4f75342ff45e758ac81e7a2c90bf933e99933f982b0bb25",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -104,12 +131,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "05f9dcf0a3157187668f8a2112a63cb20840dca6b50c0a87f2f42efdd2b0c75b"
+    "prev": "402b10b0750ea3780db2e506b9d42a33156af11518c490c88930a58fa8a99904"
    },
-   "signature": "d01e3db81c081bbd757dee54ae9579d09e8b101376d071bc060bd02a17942d05944015d0245d263eb470de2fa5190641d0d45de31462115ed49cf3fe1bb1b50a"
+   "signature": "af68badebb6319ad7430fa13d540de6975b7a00574fa8e6b7d4403ac7dd68e62fbc93ffd1f8ca27bcfacb76e791af2b5d7acf070152ac8063fbfcc4de785bd05"
   },
   "observation": {
-   "hash": "03e7f60d4861d0a1c90ea05ada990743620ac3ae4a93e2538cd8fabf6a949ea1",
+   "hash": "06829373039f56bffd1f0fcd98f6436cd2ecaa7ee82a46e11b69cefd92160e07",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -125,12 +152,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "dbf1780cad14565c5d44406515a4982267c7db2e6159025f3141686cccc3ea4d"
+    "prev": "2426c6e49de3ba39d4f75342ff45e758ac81e7a2c90bf933e99933f982b0bb25"
    },
-   "signature": "8227845f8a7749a74e9fe980d65527970fe3facb27231a422445830d8eebf6ff6d79881e6ee45334ba55f11c75666b6b4b1cdf8da56b145c2b956a3c92699b07"
+   "signature": "e66482e29cfe93c877db6b6131eb4183139d810927a0ec1017b92c81d6e9d3add9d0f927c73dd4c5bfbc8cc7cba6a56aa5f86a0257467685587d80df81f07207"
   },
   "admission": {
-   "hash": "a47259772570c15ef5b20c497e6d25e3c1b1968830fb7d7aa54d3ef259837826",
+   "hash": "b0f77b7613a3ecfd16ba00c7d5a50af64e82d8b6a77169af77c2b49103ef82fa",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -147,12 +174,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "03e7f60d4861d0a1c90ea05ada990743620ac3ae4a93e2538cd8fabf6a949ea1"
+    "prev": "06829373039f56bffd1f0fcd98f6436cd2ecaa7ee82a46e11b69cefd92160e07"
    },
-   "signature": "8e115536723bc95bc9cd85885dc472fb206a7ce6d21f98a5305eff5bd64f4df43f2e2f42db6cfbe0b5456116f35a7b0ae70ee55eb2fdcb38198b9b6b60c6e508"
+   "signature": "4e76ec92f1c41ac0a2d1d28c87e425fce5404fcf98ee131d7033fd5d9a162842c64f8917cff2c37b3f038047ef84313699982d50c5dae025c2060892a301990a"
   },
   "limit": {
-   "hash": "dc1b3b8034777ff8c96ce1f9bb337e51882f33ec8de85d4d1215bc16473e68b7",
+   "hash": "2e9d4b59fef90f0836c250ca47c8b7be20f36f8c69bbac1d21fcf3efca36a1d6",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -160,7 +187,7 @@
     "target": "observe.limit",
     "fields": {
      "limit": "money: the most the agent may spend",
-     "per": "a duration: the period the limit covers"
+     "every": "a duration: the period the limit renews over (scope.every)"
     },
     "grounds": {
      "event": "the principal set the fence on the grant named in refs.for"
@@ -171,19 +198,19 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "a47259772570c15ef5b20c497e6d25e3c1b1968830fb7d7aa54d3ef259837826"
+    "prev": "b0f77b7613a3ecfd16ba00c7d5a50af64e82d8b6a77169af77c2b49103ef82fa"
    },
-   "signature": "6914d7e9c2c5477d54cc324061a6c2195141b15dd7a468ea87db3a0e5cc2a6f25a41caa1abf67277367d6913fdd3ce5de57aa52c4e865a1bf5826d5225135e0c"
+   "signature": "9ec014c89623de27d07cd04b226b181279808a43310b9c08c12d57224f5166e96d309ca90cd40ddc44f889ee4bf2c506360d475b14580d055df5c59632a30502"
   },
   "consent": {
-   "hash": "29ffd8bfb9ac3da3191982617bb2c5c34cb1273ccbefd393429a30a53565ea28",
+   "hash": "a4b482551b6dcc0a981c8220f05297e0335f363cba4067c4e619830b49d07ac2",
    "type": "thing",
    "state": {
     "kind": "schema",
     "name": "consent",
     "target": "observe.consent",
     "fields": {
-     "word": "yes, stop, keep or move",
+     "word": "yes (it names whom it is about in refs.subject), stop, keep or move",
      "to": "for move: the custodian or node (an id)"
     },
     "grounds": {
@@ -195,12 +222,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "dc1b3b8034777ff8c96ce1f9bb337e51882f33ec8de85d4d1215bc16473e68b7"
+    "prev": "2e9d4b59fef90f0836c250ca47c8b7be20f36f8c69bbac1d21fcf3efca36a1d6"
    },
-   "signature": "50ef008b4894ff9833089663f2294adeb0d172d33653690bef57a8ce39e2c2a2aa313f701437334167cc6cf0077689132282ea8b26f73e0b55607ae0a41a090f"
+   "signature": "87d7a5fd0309056e6ead2626aed4bbdf2031b4d8a51277e5087ff7f6dcc83c1a1fd3e9bb14996da5160e2c251dabb5566d7005e0e7488bd0fd3f96185dad9409"
   },
   "reading": {
-   "hash": "ce14c863a4c0f400f018706c7e87aaaa4f29264fa3e5e623c4b195ea784ec7e3",
+   "hash": "39127c3f3146ef9f6431029a9d461a420f4b671df1362ee8b6e84b96deaf39f3",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -211,7 +238,10 @@
      "text": "what was read, in words",
      "accuracy": "an amount, in the unit of the reading",
      "coverage": "a decimal from 0 to 1: how much was seen",
-     "method": "how: sensor, import, or a model's name"
+     "method": "how: sensor, import, or a model's name",
+     "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+     "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+     "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional"
     },
     "grounds": {
      "event": "the sensor, or a reader of evidence, saw it; refs.from names the sensor"
@@ -222,12 +252,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "29ffd8bfb9ac3da3191982617bb2c5c34cb1273ccbefd393429a30a53565ea28"
+    "prev": "a4b482551b6dcc0a981c8220f05297e0335f363cba4067c4e619830b49d07ac2"
    },
-   "signature": "41ed96958335a38ac8d4743348990f411856fefd61c86c0c3f3de177edf6aa3c1fa96eae7b6f4a38c46ea511c6ed2c7e5bcb96cad57a58372d445bf4dd188a0a"
+   "signature": "ed3d16d5916954a3b4b81e8be6ba7c787c19a43bbd18bf0c2387a7703d684ce573b688f11568f58f0cde1a005749deaf54570ca804c3bfa54dcd77792d3c6a0f"
   },
   "work": {
-   "hash": "e166a26bce9cf5b2aa304ba4dc86bc6e2bad120a80a879da4f16e8a875b67a0e",
+   "hash": "5665a7f21e22c915edbc14a4fe9852cf23ed8c50e6c9241d031a13c337a67943",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -250,21 +280,24 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "ce14c863a4c0f400f018706c7e87aaaa4f29264fa3e5e623c4b195ea784ec7e3"
+    "prev": "39127c3f3146ef9f6431029a9d461a420f4b671df1362ee8b6e84b96deaf39f3"
    },
-   "signature": "ef3b4b43b19a9d419f092a200ab37b1301b9aaf767b2dd6bfe994445ae1a975a6e4f040cc2d98e27ac760747c1e7358b6fd353e4494051923d98e6777c4cc508"
+   "signature": "591a75c2e9891307e17325188ba1e80bd1d4b0c81f740f73a684177ed75bd7baec336e15d7881d1a7be96a9b8b48d05848de870a572c193c61713f6587b3d206"
   },
   "attestation": {
-   "hash": "93c19d1062d277419cb95091b045adbd94c6701ef604063707a3dc5526487bef",
+   "hash": "f8c4cb2626286cf8c2194793ee4b4a83cdf5cc30f209e1e4f9ecc95313c375af",
    "type": "thing",
    "state": {
     "kind": "schema",
     "name": "attestation",
     "target": "observe.attestation",
     "fields": {
-     "scheme": "the register: eudi, cnpj, rfc, abn, uscc, national_id, device",
+     "scheme": "the register the issuer checked, named by the issuer",
      "value": "the number, or a commitment to it",
-     "kind_of": "person, business or device"
+     "kind_of": "person, business or device",
+     "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+     "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+     "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional"
     },
     "grounds": {
      "event": "the issuer checked the register or the maker's record"
@@ -275,12 +308,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "e166a26bce9cf5b2aa304ba4dc86bc6e2bad120a80a879da4f16e8a875b67a0e"
+    "prev": "5665a7f21e22c915edbc14a4fe9852cf23ed8c50e6c9241d031a13c337a67943"
    },
-   "signature": "054011437970a649a3a2595edcbc383ab98813850342f4cf8c251ee459d44dbd630783a6ff2f200f01988d752e1769b200394251446ed1abdcde56c6fc659d05"
+   "signature": "d1775a96b931780df4f8fec4aaf48a3455606bfb0beb18020286e18a6de265554971ef7db550b2f0c9d5ce3ead12cff6592f80ec8024c3807f2b89a78d24540d"
   },
   "share_vote": {
-   "hash": "28a05db1065e6bac9754bb6bd88445fd2b2fbd8c74ee531a0969f42a48d9591d",
+   "hash": "1d4e3e3b8a14f36ef64a96cdc912958c9e6b70c8894f08a1d6bace5882458404",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -298,37 +331,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "93c19d1062d277419cb95091b045adbd94c6701ef604063707a3dc5526487bef"
+    "prev": "f8c4cb2626286cf8c2194793ee4b4a83cdf5cc30f209e1e4f9ecc95313c375af"
    },
-   "signature": "f3f36f3a0655f9db7b97323a12b1dfbc7833efc71f470fd6a91caeaef02247437ae1e654beeca53ca04b1ad55c3937e75c5da800456102146e530789743cf90f"
-  },
-  "kept_promises": {
-   "hash": "e287e90581a9475f808323e4f8710b746f5c44fade81b9db85b14672a9462dec",
-   "type": "thing",
-   "state": {
-    "kind": "schema",
-    "name": "kept_promises",
-    "target": "observe.kept",
-    "fields": {
-     "kept": "an integer: promises whose stage is done",
-     "broken": "an integer: promises stopped, declined or expired after a binding accept, or reversed",
-     "open": "an integer: the rest"
-    },
-    "grounds": {
-     "event": "the promise stages of refs.subject, read by the writer; a reader recomputes them from the promises named in derives_from (folds.md, Kept and broken)"
-    },
-    "at": "2026-10-19T00:00:12.000Z",
-    "audience": "public",
-    "seq": 12
-   },
-   "refs": {
-    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "28a05db1065e6bac9754bb6bd88445fd2b2fbd8c74ee531a0969f42a48d9591d"
-   },
-   "signature": "348632354e1a0421606a80d5bfac2ec343d6d1f87fc18d6b4938754860cbcd327b59065854732c0d0674fc5c9c35d2871511a7b6d4e5369666095e497586be0d"
+   "signature": "8ddb1d8bef75aa6eee8993060ef766103d52ad35ed38f9540b160718d659ae4f5f0fb166147a7f207ed5fd87c06d998474e59bb13218156ea1f8434c501c480f"
   },
   "person_confirmed": {
-   "hash": "ba7c6d19e2da4313746fed094c7232c28ea227052b5cc9c49259efdaa38148bf",
+   "hash": "3eeb350c2ab73aae8c45243a7576089683dc571954f751738d2a17a3b0c73bdc",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -342,18 +350,18 @@
      ]
     },
     "undo": "ok",
-    "at": "2026-10-19T00:00:13.000Z",
+    "at": "2026-10-19T00:00:12.000Z",
     "audience": "public",
-    "seq": 13
+    "seq": 12
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "e287e90581a9475f808323e4f8710b746f5c44fade81b9db85b14672a9462dec"
+    "prev": "1d4e3e3b8a14f36ef64a96cdc912958c9e6b70c8894f08a1d6bace5882458404"
    },
-   "signature": "dcd78f7ef0276207e1aa89e0a18188eccc5d1ac17c5441e072b71c0ded3cd66ab2bbd4ca7c1ee483f94ad3e3e6e61200ebc52613e6be6d6877e93bff8a0f1f02"
+   "signature": "d13189379c6f69eab80eea44454bd7cd1a6a976c43280b0c6f9aa7ff2a55c2ad4a463bdab42d2f670da72b90aa8e839a47bfb46a01ae64031cb2a8939393c802"
   },
   "sensor_confirmed": {
-   "hash": "b7de0fa2b2dc71ef335df9585b19ae6847e27486ada3aef662594a62025fae75",
+   "hash": "797c88b325899fc12587d6f67d4b4fcfd034c260cd5a93fa3ca5779a2c303a0d",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -367,18 +375,18 @@
      ]
     },
     "undo": "ok",
-    "at": "2026-10-19T00:00:14.000Z",
+    "at": "2026-10-19T00:00:13.000Z",
     "audience": "public",
-    "seq": 14
+    "seq": 13
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "ba7c6d19e2da4313746fed094c7232c28ea227052b5cc9c49259efdaa38148bf"
+    "prev": "3eeb350c2ab73aae8c45243a7576089683dc571954f751738d2a17a3b0c73bdc"
    },
-   "signature": "3eec11386887c0c3bbb1307c4aa2ea1e0c228c028f787c4f15a7d6543fe26245aaf7396d5a9fc36f1c1b8746937ab0cbbf050d5ca8dd8d47bb2fff528ab4d403"
+   "signature": "e81e70e499754e825d57831b8ebad7cc1dbbdb2e95c0e1409924cb6ba16083d53faad553ce63fd4b26282c8627fa498be98ffd7d535bb4455c5f12ed54b4070b"
   },
   "teach": {
-   "hash": "5d869e97c3519f6a2dd4bda7ddc771527f97f24a4934903469b43b983b704a9e",
+   "hash": "1ca3d4f5ba3d7bee4211a3d46c77cd16e696d85435955c70c423c4e1a495de4b",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -392,18 +400,18 @@
      ]
     },
     "undo": "ok",
-    "at": "2026-10-19T00:00:15.000Z",
+    "at": "2026-10-19T00:00:14.000Z",
     "audience": "public",
-    "seq": 15
+    "seq": 14
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "b7de0fa2b2dc71ef335df9585b19ae6847e27486ada3aef662594a62025fae75"
+    "prev": "797c88b325899fc12587d6f67d4b4fcfd034c260cd5a93fa3ca5779a2c303a0d"
    },
-   "signature": "8f8beb824368df8815ce9da50c58d57116439c5466e425bba0b7a19fdfd258e862308c6d76703eb3feeef1697ec3d9c33a999fc960a52a67f755c37340d3e208"
+   "signature": "d796824f2709310bb35fab484b4296f0f1efb4a8ff71e6d16204e0106db4cdbe24f69f8a4a96a26cb1eeb8ca6999ab82fb8e00c12818c6f91bf9c53f6a5bf60e"
   },
   "loan": {
-   "hash": "98fd57c992c274588822f5a4a2a82f30cfae5e8a1fd6147caf9bf43244667d56",
+   "hash": "3f2f7c1a882172599cdd766d7d4f7e7ae41e7699746a7ecb486d06d9ce095f5d",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -420,18 +428,18 @@
      ]
     },
     "undo": "never",
-    "at": "2026-10-19T00:00:16.000Z",
+    "at": "2026-10-19T00:00:15.000Z",
     "audience": "public",
-    "seq": 16
+    "seq": 15
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "5d869e97c3519f6a2dd4bda7ddc771527f97f24a4934903469b43b983b704a9e"
+    "prev": "1ca3d4f5ba3d7bee4211a3d46c77cd16e696d85435955c70c423c4e1a495de4b"
    },
-   "signature": "76661613081ef26e35b6c6a7723768dcd1f66492428f1f97571ac9c1479a8556ffe37abd38a77056b7ba72d6091421d15d055e92d74c1409f848b6ecefd20907"
+   "signature": "822b06d4654acccd99398f900a13c7b1dbf101a63b93d10c08607a67b2608d8bb0d478dfe8144076079baf62e16492e1734aac669c5778d06df5fca646f56f0c"
   },
   "payout": {
-   "hash": "4fc15a0b29326a34c69620fffff5f044826291fcedb1285ed12537188bbbb1a1",
+   "hash": "76e428a11b5b128b4bb566c09e7d767fc183ff1bcf3b56792ccfc1440a0c6ecc",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -447,15 +455,691 @@
       "observe"
      ]
     },
+    "at": "2026-10-19T00:00:16.000Z",
+    "audience": "public",
+    "seq": 16
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "3f2f7c1a882172599cdd766d7d4f7e7ae41e7699746a7ecb486d06d9ce095f5d"
+   },
+   "signature": "d536dd5d6d7b2ff3e29d7fbb6ffc23cb30f3f4e02f7adce21d519486c1ec25e4477d7039dcde3e972c1d3d43338359870c00273ab11c20957133239aca86b609"
+  },
+  "pledge": {
+   "hash": "7551d496bccf9719e527e1e771e20f0ff85e874093c2ddc54d3bc019d96fe5f9",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "pledge",
+    "target": "promise",
+    "fields": {},
+    "grounds": {
+     "event": "the organiser named in refs.from signed a pledge_close that names this pledge in derives_from and is dated no later than terms.expires, and the pledges it binds that name this plan in refs.what total at least terms.condition.pledged, in its currency (profiles/pledges.md); then the pledger owes terms.price. The price may be an amount (a village's haul call, 200 kg by Friday), and the threshold then an amount of the same unit: only one unit adds. A held stake names its release, or the reader shows release not named. Each pledger counts for herself, never per group"
+    },
+    "undo": "ok",
     "at": "2026-10-19T00:00:17.000Z",
     "audience": "public",
     "seq": 17
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "98fd57c992c274588822f5a4a2a82f30cfae5e8a1fd6147caf9bf43244667d56"
+    "prev": "76e428a11b5b128b4bb566c09e7d767fc183ff1bcf3b56792ccfc1440a0c6ecc"
    },
-   "signature": "428b83804b730a13d1c3a1824107c3745d4b8c9f791e43cb858cc683429184e045e6ff005c9040e30f26da19cf078f0bb21e5a85034f6f22e68e017bce555407"
+   "signature": "b0387240a95f3d9e7244bb6d2848cc00fece9a2226732852ff0bef3d4f2e2b5a9a1d5bd9974276f5494382b9c6a487a94d816e5ff56295e93e222ff78626d80b"
+  },
+  "pledge_close": {
+   "hash": "48139491bef9b5890ae7d860123ff50d212f5fe0abe878c1e0ff40dfe4919f5e",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "pledge_close",
+    "target": "observe",
+    "fields": {},
+    "grounds": {
+     "event": "the organiser counted the pledges it names in derives_from; it binds those that are live, name her in refs.from and expire no earlier than its at, less any whose threshold the rest do not meet (profiles/pledges.md)"
+    },
+    "undo": "never",
+    "at": "2026-10-19T00:00:18.000Z",
+    "audience": "public",
+    "seq": 18
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "7551d496bccf9719e527e1e771e20f0ff85e874093c2ddc54d3bc019d96fe5f9"
+   },
+   "signature": "6ea33b324896cbf1772de5ef8acd2ce262a431e30df78d56ff64a5955001f7e0a0b00e00c71404b54b6aa679c630839a5afdcbc9b75127e41621b2a87a15520d"
+  },
+  "not_free": {
+   "hash": "f24cc9b57543b9b1b62bbe29aac33ceb35f6174be40820bd4c350d9bf1440330",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "not_free",
+    "target": "observe.not_free",
+    "fields": {
+     "reason": "compelled (signed under force: a physical attack or the threat of one, never a hard bargain, a refusal to deal or scarcity; a boss's order alone is no threat), not_me (my key was taken; I did not sign it) or could_not_understand (only a person who can reason consents)",
+     "threat": "for compelled: what the threat was, in words"
+    },
+    "grounds": {
+     "event": "the signer of the block named in refs.subject says it was not her free word; only her own block counts as hers, it may be sealed to any audience she picks, it has no time limit, and she cannot take it back. It is a claim, never a verdict: only the deal's referee rules, by a defeats of the block on that ground"
+    },
+    "undo": "never",
+    "at": "2026-10-19T00:00:19.000Z",
+    "audience": "public",
+    "seq": 19
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "48139491bef9b5890ae7d860123ff50d212f5fe0abe878c1e0ff40dfe4919f5e"
+   },
+   "signature": "d057da487a9e5a81fa6affb716f0bc467fd9638a4e632a44291159f882954b6f98c1c0061ce18adc530f9d6e8ce210c82a7de18ebc6eb9c73f9bf09835efa003"
+  },
+  "invasion": {
+   "hash": "e2ed8c01bd86a655ee496261170767a58c385cb48a5c2de34fb0e5b0a33bfb66",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "invasion",
+    "target": "observe.invasion",
+    "fields": {
+     "text": "what crossed into what, in words",
+     "asks": "stop, or pay N (money): what the claim asks. Data only; FoodBlock enforces neither"
+    },
+    "grounds": {
+     "event": "a physical crossing into a person, place or thing with no deal behind it: refs.to the accused (one or several), refs.subject what was crossed, derives_from the evidence. Lost sales, a lower price or a true review cross nothing"
+    },
+    "at": "2026-10-19T00:00:20.000Z",
+    "audience": "public",
+    "seq": 20
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "f24cc9b57543b9b1b62bbe29aac33ceb35f6174be40820bd4c350d9bf1440330"
+   },
+   "signature": "08f944235954c475278c9430195135be6133473cfb1087f2bf708c6646fca24504976ae3f5c82e767c8ed52c7a3916b89e12480edc9554260bf70f60826b5f00"
+  },
+  "ruling": {
+   "hash": "fcad166a8b602951f502e422e3d3a58f98c3632a34fd43ac4fb92f7578f7b5dd",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "ruling",
+    "target": "observe.ruling",
+    "fields": {
+     "text": "the referee's remark, in words: it binds nobody and moves nothing",
+     "up_to": "money or an amount: on a confirms of a claim of invasion, the harm the ruling finds. A fact; no fold moves anything because of it",
+     "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+     "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+     "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional",
+     "rule": "a hash: the text of the rule the ruling applied (a thing, also named in derives_from), so readers can see whether two judges who disagree used the same code"
+    },
+    "grounds": {
+     "event": "a referee wrote a remark beside her ruling (her confirms or defeats), or the harm she finds"
+    },
+    "at": "2026-10-19T00:00:21.000Z",
+    "audience": "public",
+    "seq": 21
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "e2ed8c01bd86a655ee496261170767a58c385cb48a5c2de34fb0e5b0a33bfb66"
+   },
+   "signature": "fbcefe4774cf8d182db1ea89b8eafd2e8e7834d4f0b30fb3ef40e9f953e4457c70fbbc1292e5cc24782bc702bb503e3c81176abd26b20105f86b54e77b11d107"
+  },
+  "loyalty": {
+   "hash": "24b6117bcd40a7af5ace3664c364a49ce67e5027ea7a9501df56bf7374231950",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "loyalty",
+    "target": "promise.loyalty",
+    "fields": {
+     "what": "what the one acting does for the one acted for, in words"
+    },
+    "grounds": {
+     "event": "the one acting (refs.from) takes nothing from anyone else about what he does for the one acted for (refs.to, a person or circle): a refrain with terms.until, an optional price (the one acted for pays it; it is owed back if the promise is broken) and a referee named in the deal's own schema or by a referee grant. The payer is never marked: only what the agent signed is read"
+    },
+    "terms": {
+     "stake": "{ times, of }: a stake as a multiple of a named value, read by a referee; no fold moves it"
+    },
+    "at": "2026-10-19T00:00:22.000Z",
+    "audience": "public",
+    "seq": 22
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "fcad166a8b602951f502e422e3d3a58f98c3632a34fd43ac4fb92f7578f7b5dd"
+   },
+   "signature": "ef48b1b9b23e49a8ef88b39bfecd370bca40668e899dbc9326edb496751a583ecffb7af69ae151c21f2a4210a7b3fe1aae0685d3bcf6c342ea11c6b50ecbf30c"
+  },
+  "vouch": {
+   "hash": "51ee9b96c1830fa23002beb138d61a1a0252d9412adaf088370e3b1436003d3a",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "vouch",
+    "target": "promise.vouch",
+    "fields": {
+     "what": "whom or what the voucher stands behind, in words"
+    },
+    "roles": [
+     "subject"
+    ],
+    "grounds": {
+     "event": "the voucher stands behind refs.subject (a person, or a thing such as a lot of goats) for up to terms.backing, to refs.to (a person, a circle, a thing whose owner is the receiver, or the worker for whom a backer stands behind the curtain; left out, any who deal with the subject). The cap is money or a count of one named kind (an amount: up to 2 heifers). The condition is a signal by the referee the voucher names: the subject failed a deal, the subject delivered (a letter of credit paid on a weigher's signal), or another owner has a better claim to the thing. A receiver may also be whoever owns a thing made from the lot, read along the makes. Each payment is the voucher's transfer for the vouch with the deal paid for in derives_from; the fold `pot` shows what is paid and what is left. Payments past the backing count for nothing against it. A held stake names its release, or the reader shows release not named"
+    },
+    "terms": {
+     "fraction": "a decimal from 0 to 1: the share of each loss the voucher bears, so the receiver keeps a reason to screen. With none, all of it up to the cap. Optional, never a default",
+     "until_reads": "occurrence or claims_made: what the vouch's `until` bounds. `occurrence`: deals made before D. `claims_made`: failures claimed before D. Required of a vouch that has an `until`; silence never widens it. A stranger is covered only if her deal names the vouch in its refs (her naming it is her accept of the open offer). A vouch may also name the rulebook of what it backs in refs.schema's deal terms, and write its cap out as `cap: all` (shown as \"no limit\")",
+     "cap": "`all`, written out and never a default: all the voucher owns on the day a claim is read, the referee fixing the sum. It reaches property only, never her body or labour. A vouch with it carries no `backing`, and the card prints \"no limit\"",
+     "demand": "`first` or `after_failure`: whether the receiver may claim on her own first demand (the condition is her signal) or only after the referee signs that the subject failed. Optional, never a default",
+     "liability": "`joint` or `several`: with co-vouchers, whether each answers for the whole claim or only for her share. Optional, never a default; a debt has one amount, and any payment lowers it for all (promises.md, Settling)",
+     "contribution": "none, or the hash of the `shareback` the co-vouchers signed to each other. With none, no co-voucher owes another anything"
+    },
+    "at": "2026-10-19T00:00:23.000Z",
+    "audience": "public",
+    "seq": 23
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "24b6117bcd40a7af5ace3664c364a49ce67e5027ea7a9501df56bf7374231950"
+   },
+   "signature": "b4b49e5ca6036df23c10324d639781afdd9f0d0f5dd6c316ed286a681a2f822eea465373b678d88e012bdc4747ca96c0da7ea3be1df393b6e81a9f1e16df2707"
+  },
+  "payback": {
+   "hash": "d3bb6e152cb2dcb34b90088e64fe5537299b541cf33e94ad17c409b3c0b42c10",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "payback",
+    "target": "promise.payback",
+    "fields": {
+     "what": "what is owed back, in words"
+    },
+    "grounds": {
+     "event": "the one vouched for (refs.from) promises the voucher (refs.to): if you pay for me under that vouch, that amount, plus an optional fee, of mine becomes yours. Its condition is a deed or settled of the voucher's payment"
+    },
+    "at": "2026-10-19T00:00:24.000Z",
+    "audience": "public",
+    "seq": 24
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "51ee9b96c1830fa23002beb138d61a1a0252d9412adaf088370e3b1436003d3a"
+   },
+   "signature": "0e91ee38139c18f240e2ee24190346e87b00db7c72a669bcce16bab0f90410032b481ed4bf395f2a7d9560f4268d379f984994dab3a5cd3661fd708da3c92108"
+  },
+  "refusal": {
+   "hash": "92a62c438bc042878136cdf1cac977fe3f8d4026aeb142d88d9c70fe45779432",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "refusal",
+    "target": "promise.refusal",
+    "fields": {
+     "what": "whom the signer will not deal with, in words"
+    },
+    "grounds": {
+     "event": "each signer (refs.from) promises the other signers, the circle (refs.to), not to deal with the one named in refs.subject until it ends: a refrain with terms.until, made to the circle and ruled on only by the referee the circle's grounds name, so a signer who deals with him has broken his own word to them, shown, and a non-signer who deals with him has broken nothing. It binds once enough signers have signed: a signal of that kind by holders of the named circle#role, counted by distinct signing keys, never by bare keys. When it names a person, derives_from holds the deal it falls under and the notice the creditor sent first, with a receipt that it reached him; without that receipt it counts for no signer. A signal about anything else counts for nothing. It names only the one who signed the deal (or the circle, if the circle did), never his fellow members or kin. It ends when the deal is settled, the creditor withdraws her signal, or the deal's referee defeats the signal. The circle's grounds may say that a member's open signal toward someone already refused does not count toward the refusal of that member; that never touches the refused one's own claim. A refrain that names no one needs no cause: refusing to sell is every owner's right"
+    },
+    "terms": {
+     "strikes": "a whole number: how many open signals, from distinct deals, make the refusal bind. The circle's choice; with none, nothing is filled in",
+     "window": "a duration: the period those signals must fall in",
+     "cure": "a duration: days a debtor has to settle before a signal counts (the rulebook term of the same name, profiles/rulebooks.md)",
+     "release": "who besides the debtor's payment may lift it: ids or circle#role. Each refuser lifts only her own refusal",
+     "stake": "{ times, of }: a stake as a multiple of a named value (an entry on the circle's table, by hash). Read by a referee; no fold moves it"
+    },
+    "at": "2026-10-19T00:00:25.000Z",
+    "audience": "public",
+    "seq": 25
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "d3bb6e152cb2dcb34b90088e64fe5537299b541cf33e94ad17c409b3c0b42c10"
+   },
+   "signature": "18bfd5c81b27715b1fc02dd439898ffc70c08cc066c7a448b517a3484ef58d5ea6ccc79f31b92efb19f5a2671447c02ffdbcac7d823c8be52d51492bb84d940b"
+  },
+  "pool": {
+   "hash": "bf46365b28ee780d06131999e47b001000a7198c8370e3c3fb1598a3d18c03db",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "pool",
+    "target": "promise.pool",
+    "fields": {
+     "what": "what the members pool against, in words"
+    },
+    "terms": {
+     "ceiling": "money: the most the pot may hold",
+     "above": "what happens to pay-ins above the ceiling, in words (for example: back to payers in proportion to what each paid in)",
+     "if_short": "the order payouts are paid in if the pot runs short, in words; with none, a payout past the pot counts for nothing",
+     "rank": "a whole number: the place in the payout order a member's own signed promise names for herself, with its own premium. No default order exists",
+     "premium": "money: what that rank costs her",
+     "first_loss": "money or a fraction: a first part of any loss she bears herself",
+     "pay_in": "kept or held: whether each pay-in is a premium that is kept (leaving takes nothing back) or money held (it comes back in full and is never paid out while held). One unit of money cannot be both. With neither said, the card shows \"pay-in: not said\" and nothing is filled in",
+     "loads_dues": "`true` or `false`: whether a claim paid out raises the members' dues. Signed at founding, never a default; with neither said, the card shows \"dues: not said\""
+    },
+    "grounds": {
+     "event": "the holder (a circle or a named holder, the head's signer) holds the pot. Members pay in by transfers for the pool, each of their own choosing and never forced equal. A payout is the holder's transfer conditioned on a signal by the confirmers the schema names, naming the event. It never counts past what was paid in, less what was paid out (the fold `pot`). What voids a payout is the member's own conduct, each a refrain that member signed. A new ceiling is a new schema hash, which each payer signs for their own pay-ins. A member's own promise to the holder may carry rank, premium and first_loss; a share-out is paid per signer, never per circle (paying per group makes groups split to collect more)"
+    },
+    "at": "2026-10-19T00:00:26.000Z",
+    "audience": "public",
+    "seq": 26
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "92a62c438bc042878136cdf1cac977fe3f8d4026aeb142d88d9c70fe45779432"
+   },
+   "signature": "31453650af10f7f2655942c1dedca1d3f8ca9564e76f8657552acaa71411cbead6f2bfb8d3b79ef72953f3817ee105d89060342217202b094f14a850c5f83e03"
+  },
+  "link": {
+   "hash": "87f0a6b94b0d5f6d90ff923d0a098e13951d18219499df6f8f03d631ea7ad8b8",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "link",
+    "target": "observe.link",
+    "fields": {
+     "text": "what the two keys say, in words"
+    },
+    "grounds": {
+     "event": "the signer says refs.same_as is another key of hers. It weighs as one hand only when the other key has countersigned: an observe of kind link signed by that key, naming this block in confirms and the first key in same_as. One signature is only its author's word. It may be sealed to one reader (privacy.md, Audiences). A third party's same_as stays only its author's word"
+    },
+    "undo": "never",
+    "at": "2026-10-19T00:00:27.000Z",
+    "audience": "public",
+    "seq": 27
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "bf46365b28ee780d06131999e47b001000a7198c8370e3c3fb1598a3d18c03db"
+   },
+   "signature": "f9e636bcbdbbdf593a45a752938ad30d88cbe8e1292a4bfa926816a712cb218911bdbd6fc6fc03066597ff5f43fb6c986c7d80711a0df683ad47569d83ab0e06"
+  },
+  "rulebook": {
+   "hash": "06ed9ccda4517349d565f2ab6b4d2767ef758b928c92dcf2713e9ac0c0e49f57",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "rulebook",
+    "target": "thing.schema",
+    "fields": {
+     "glossary": "the id of the glossary its words are defined in",
+     "deadlines": "{ name: duration }: the dates a deal under it keeps",
+     "text": "the rules, in words"
+    },
+    "terms": {
+     "cover": "{ quotes, within, take }: take is lowest or highest. Each quote is an observe by its giver for the deal; the claim is the gap between the deal price and the chosen quote, and the referee checks the arithmetic",
+     "cure": "{ within }: after a lot is found short, the seller may replace it within this duration",
+     "allowance": "a fraction or an amount: what the grader may find the lot worth less, if both sides signed it",
+     "sample": "{ holder, deadline, fee }: a sealed sample the grade is read from. Who holds it, until when, and who pays the fee, each signed",
+     "appeal": "the id of the appeal grader both sides named in advance; her later reading on the same lot supersedes the first grader's",
+     "fallback": "{ source, date, chooser }: a cash price for a debt in goods, only if signed. `source` names the price reading, `date` the day it is read, `chooser` is payer, payee or neither. With none signed, the debt stays in goods and failing to deliver is a breach, never a quiet conversion at one side's price",
+     "claim_within": "a duration: a claim after this is not heard by this referee. Never \"extinguished\": the claimant may name another judge, and it never touches first use, which time does not lose",
+     "lot": "{ size, up_to }: a step in a price table. From `size` units up to `up_to` units, the line beside it carries that step's price (\"12 crates, 90; 13-24, 85 each\"). Read like any term",
+     "index": "{ goods, grade, weights, average }: what a price that follows an index is of. It names the goods, the grade, the weights and the kind of average, by hash. There is no default index and no default average"
+    },
+    "grounds": {
+     "event": "a circle publishes its terms, referee panel and deadlines as a schema; a deal names it by hash in refs.schema, so both sides sign it by naming it. A new version is a new hash and old deals stay under the old hash. Its grounds may carry reads (the block kinds the referee considers), due_in (the time she has), fee (and who gets it back) and blind (names hidden in the bundle). A rulebook or custom binds only its signers and never excuses an invasion of someone who never signed it. A price table in it binds only the deals that name it"
+    },
+    "at": "2026-10-19T00:00:28.000Z",
+    "audience": "public",
+    "seq": 28
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "87f0a6b94b0d5f6d90ff923d0a098e13951d18219499df6f8f03d631ea7ad8b8"
+   },
+   "signature": "c27df06446374a677d9711300a4212c388b17819520823ff60d75460ea9592781cae7ab64c8f8e97d2462725be7f1644301e35cc154d1ad32deab9b5c8ea4509"
+  },
+  "glossary": {
+   "hash": "7137179a99d62fa7a8e5409f0374265991a70be185bf994ab68b775b475eadfc",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "glossary",
+    "target": "thing.glossary",
+    "fields": {
+     "entries": "[{ word, meaning, check, unit, measure, tolerance }]: what each word means, how it is checked, the unit, its measure and its tolerance. The protocol keeps no list of units. A bare noun (\"a bag\") is not a unit: `measure` says whose scale or tin and where (\"50 kg on the warehouse weighbridge, ticket signed by both\"). `tolerance` is a signed number or \"none\"; silence there is where the fights are. `check` is a test the sides can run (a unit, a count, a reading) or \"a referee's judgment\", a term both signed knowing a judge will weigh it"
+    },
+    "grounds": {
+     "event": "a circle or a deal defines its words; a rulebook or deal names it by hash"
+    },
+    "at": "2026-10-19T00:00:29.000Z",
+    "audience": "public",
+    "seq": 29
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "06ed9ccda4517349d565f2ab6b4d2767ef758b928c92dcf2713e9ac0c0e49f57"
+   },
+   "signature": "72811d5a0cf5fb74a91d483c6958f15ea7be5f0fdaa6fcbc82058a79f145d47a6626608dccb180e95cd19262e01de93f1f43615b4517251be1fcc0e60c3dbb0f"
+  },
+  "grader": {
+   "hash": "74cb2f579e292421df5c4c0456a2fd4477eb03d56fbdf8d877812e59c057a4a8",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "grader",
+    "target": "observe.grade",
+    "fields": {
+     "match": "yes or no: does the lot match the description?",
+     "allowance": "a fraction or an amount, only if the sides signed an allowance term; the cover reads it",
+     "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+     "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+     "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional",
+     "bond": "money: if a referee finds my rejection wrong, up to this much of mine becomes the seller's. Signed by the grader before inspecting; consent to be inspected is the owner's, so she may make it conditional"
+    },
+    "grounds": {
+     "event": "the confirmer the schema names inspected the lot named in refs.subject. She answers only whether it matches the description. With no allowance term signed, she says nothing of price. Her reading is a fact on the lot, fixed once from the sealed sample the deal names; a later reading by the appeal grader both sides named supersedes it",
+     "confirms": [
+      "observe"
+     ]
+    },
+    "at": "2026-10-19T00:00:30.000Z",
+    "audience": "public",
+    "seq": 30
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "7137179a99d62fa7a8e5409f0374265991a70be185bf994ab68b775b475eadfc"
+   },
+   "signature": "474e0b4b520115a0bda7a0bff2bdee15a50c1e627a596657784ff2b2faba8a9f695088d3de738cc11b2fdee3078e2cfeefdb6ce3100d09d390b9e32bd3bbfa09"
+  },
+  "release": {
+   "hash": "f3b0399ce30006d02218745142c1b36a14cd5cc8314b8b7a51fa54f8159bf4e3",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "release",
+    "target": "observe.release",
+    "fields": {
+     "text": "what is let go, in words",
+     "except": "[hash]: the deals (first promises) that stay open though the rest is let go"
+    },
+    "grounds": {
+     "event": "the signer lets go of her own claims, and only hers (it binds only its signer). With refs.subject (a deal or a thing) she lets go of her claims on that; without it, of her claims on every deal with refs.to whose first promise this block has in its causal past, except the deals in state.except, which stay open. A mutual release is one from each side. The fold `release_shown` shows what was let go and what stayed open"
+    },
+    "undo": "never",
+    "at": "2026-10-19T00:00:31.000Z",
+    "audience": "public",
+    "seq": 31
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "74cb2f579e292421df5c4c0456a2fd4477eb03d56fbdf8d877812e59c057a4a8"
+   },
+   "signature": "f88b9e7f48b5acbdb3dd111cb645df3579acdd64bfc2f6d752ce3e392f48e98c01693d6dcd6d29c40fb2e74eb016606ac8b16ba76e7d7da30fbaa03ad3d4f50a"
+  },
+  "bid": {
+   "hash": "972fe12297429ae7f91448778cb08397206661357cb4746fc294e48b3f3b4973",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "bid",
+    "target": "observe.bid",
+    "fields": {
+     "commitment": "a commitment (privacy.md) to the signer's number: whole minor units, as text",
+     "deadline": "a time: when both bids and both openings must have reached the named clock",
+     "keepers": "the named clock, { names, needed }",
+     "currency": "the currency the numbers are in"
+    },
+    "grounds": {
+     "event": "the signer, a side of the deal named in refs.subject, commits to the most she would pay (the paying side) or the least she would take (the paid side) for that quarrel. Each side signs one bid and states the same deadline, clock and currency. Both then open by a block carrying state.opening. The fold `bids_shown` shows only whether the numbers overlap, and then their middle"
+    },
+    "undo": "never",
+    "at": "2026-10-19T00:00:32.000Z",
+    "audience": "public",
+    "seq": 32
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "f3b0399ce30006d02218745142c1b36a14cd5cc8314b8b7a51fa54f8159bf4e3"
+   },
+   "signature": "3d97e2fc2bca4827a66b63c55bcd707b703b7ea2a2bfa0dae598c74673b19c0495cee10314a4aff52fa8ecf01177f88f28d2700656bdf16f8a597cbf81bb380f"
+  },
+  "reliance": {
+   "hash": "bca936b1f30cbda05e4c1c4d9240708e61c84aeb3815a6c076d474d52e16fac7",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "reliance",
+    "target": "observe.relies",
+    "fields": {
+     "of": "the kind of thing the issuer is relied on for, in words",
+     "reliance": "relied on, or on conditions (then say the conditions in text)",
+     "text": "the conditions, in words"
+    },
+    "grounds": {
+     "event": "the signer relies on refs.subject (an issuer) for things of kind `of`. It is her own reading and binds only her; a follower adopts it by choice. There is no rejected status: not being on her list is silence, and silence is never a no. She withdraws it by a stop (an updates with status stopped)"
+    },
+    "at": "2026-10-19T00:00:33.000Z",
+    "audience": "public",
+    "seq": 33
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "972fe12297429ae7f91448778cb08397206661357cb4746fc294e48b3f3b4973"
+   },
+   "signature": "cd95a13de0485097af6a5d9697be2a8f8ebf02e1dbf1fab91d8b6164f28b045d7f45f692e9177d9e680e8015c8f00ce5fcd0861f477f16583619681ee734ca01"
+  },
+  "price_reading": {
+   "hash": "8feb452848390d13abca186d86038f98d42f695aefcc0dbed3bfc8b139c52ef0",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "price_reading",
+    "target": "observe.price",
+    "fields": {
+     "good": "the kind of good, in words or a thing hash",
+     "grade": "its quality class, named in a glossary both read",
+     "place": "where: a thing or words",
+     "date": "the day the price was read",
+     "price": "money per unit: { money, per }, per an amount",
+     "paid_by": "optional, as every confirmer states it",
+     "funded_by": "optional",
+     "pay_depends_on_result": "optional"
+    },
+    "grounds": {
+     "event": "the signer (the assessor) says what a good of that grade fetched at that place on that date. It is a fact she signed, never a verdict on any deal and never a price anyone must pay; it moves nothing. A price fixed later (promises.md, Terms) may cite it in derives_from"
+    },
+    "at": "2026-10-19T00:00:34.000Z",
+    "audience": "public",
+    "seq": 34
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "bca936b1f30cbda05e4c1c4d9240708e61c84aeb3815a6c076d474d52e16fac7"
+   },
+   "signature": "bc08fe451a2b343f19ffc8632dbb90e8718c8bb9630e1cf35638c86f54073861b86b5df95a3267e20953c499a2a2255d26564ae254152de201c65c347393c201"
+  },
+  "keeping": {
+   "hash": "f013dea2907ade8ba019ef863faa2a755ac063fe54e4c6899f9368046194990d",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "keeping",
+    "target": "promise.keeping",
+    "fields": {
+     "what": "what is kept, in words"
+    },
+    "terms": {
+     "loss_band": "a decimal from 0 to 1: the share of the lot whose loss is the owner's when the holder signs a `loss` in time. Beyond it, or with no `loss`, the holder restores its value",
+     "loss_within": "a duration on a named clock: how long after knowing of a loss the holder has to sign the `loss`"
+    },
+    "grounds": {
+     "event": "the holder of the goods (refs.from) promises the owner (refs.to): if a thing in my keeping is lost I sign a `loss`, with evidence, within loss_within of knowing; a loss up to loss_band of the lot is yours; beyond that, or with no `loss`, I restore its value. loss_band is this schema's own term, never a change to the catch-weight band"
+    },
+    "at": "2026-10-19T00:00:35.000Z",
+    "audience": "public",
+    "seq": 35
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "8feb452848390d13abca186d86038f98d42f695aefcc0dbed3bfc8b139c52ef0"
+   },
+   "signature": "59ff817bf744920c478454d7fa14e33a068f73fed56208205993ef603cad4ddba164a4e43334b801e26043c3bfc7f1f2e0c406fce1efc1c25dd624ba655e6102"
+  },
+  "loss": {
+   "hash": "800cc74f13b5f7cd5c62f99eaedda9f844ee822264685049d0e276c470074b96",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "loss",
+    "target": "observe.loss",
+    "fields": {
+     "text": "what was lost and how, in words",
+     "amount": "an amount: how much of the lot"
+    },
+    "grounds": {
+     "event": "the holder signs that a thing in his keeping (refs.subject) was lost, with the evidence in derives_from. It is his own word and binds his name to its truth; it moves nothing by itself"
+    },
+    "at": "2026-10-19T00:00:36.000Z",
+    "audience": "public",
+    "seq": 36
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "f013dea2907ade8ba019ef863faa2a755ac063fe54e4c6899f9368046194990d"
+   },
+   "signature": "a5d61a0a6a633a32ebce8411aa65d868e779f4ed552ff4e4724d3ec7f13609872165336e3e511dc4e4a3462f299eb9f95f43a19769a41a03e2459a9e7416f803"
+  },
+  "place_use": {
+   "hash": "2211fc8b0c7c571b680f8ffeccafe8732035198d94d3e1e839cb6c0c4e571f4b",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "place_use",
+    "target": "transform.use",
+    "fields": {
+     "use": "what was done, in words (cleared, planted, harvested, drew water, fenced, built, kept)",
+     "bound": "a polygon, GeoJSON-shaped: one closed ring of at least four [lon, lat] positions, each a decimal string (things.md, Uses of a place)",
+     "layer": "optional words: which layer of the place (the roof deck, above the ovens, summer cropping, winter grazing). Data; two uses over one bound that name different acts or layers are not rival claims",
+     "rate": "an amount per time (20 litres per second): a water draw is a rate, beside the optional bound. A part of a rate may be sold as a share",
+     "resting": "a time: the user's own word that the place rests until then; shown, never read as ending anything"
+    },
+    "grounds": {
+     "event": "the user did it on the place named in refs.subject, making nothing from anything (no derives_from). The dated record is evidence a referee reads, never title"
+    },
+    "at": "2026-10-19T00:00:37.000Z",
+    "audience": "public",
+    "seq": 37
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "800cc74f13b5f7cd5c62f99eaedda9f844ee822264685049d0e276c470074b96"
+   },
+   "signature": "c517ebb2482dab2778e38f4b6d19f117c507e49a25e9282eedd38662c42bb4fdf06d8fe9f4ee87732679c72e128936214ce7e1cff7aa21e9fd4f9222a6f2a10c"
+  },
+  "shareback": {
+   "hash": "2aafbcb3ca72e921e635eb4b76cd4b52ff45502357d3a6dfd6a8e6ebeab37a64",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "shareback",
+    "target": "promise.shareback",
+    "fields": {
+     "what": "which vouch it is under, in words"
+    },
+    "terms": {
+     "shares": "[{ who, share }]: the co-vouchers' own list, each share a decimal from 0 to 1, adding to 1. There is no default equal split"
+    },
+    "grounds": {
+     "event": "one co-voucher (refs.from) promises another (refs.to), under the vouch both signed: if you pay more than your share of a claim under our vouch, my share of the excess becomes yours. Its condition is a deed of the other's payment, and its price is her share of the excess. It binds only the one who signed it; a co-voucher who never signed one owes nobody anything. The claim itself is covered once, whoever pays it (promises.md, Settling)"
+    },
+    "at": "2026-10-19T00:00:38.000Z",
+    "audience": "public",
+    "seq": 38
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "2211fc8b0c7c571b680f8ffeccafe8732035198d94d3e1e839cb6c0c4e571f4b"
+   },
+   "signature": "da60be49f12fffa4c03fdcc8a35453bf29b78eb470b48c6ec6cc173678ed2392aa82c02ed94f83a5006457ee27bdc5cd2d356307ce739f47ee3c35f037891e0d"
+  },
+  "rebate": {
+   "hash": "dd73c62901d5680e0c03ef1759193a3a04774af09fd8c3d80b10c7594f555b4d",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "rebate",
+    "target": "promise.rebate",
+    "fields": {
+     "what": "what the rebate is paid on, in words"
+    },
+    "terms": {
+     "order": "words: the order the circle pays in (interest first, then the rebate), as the circle signed it. No default order"
+    },
+    "grounds": {
+     "event": "the circle (refs.from) promises each buyer (refs.to): your settled purchases, times a figure the named bookkeeper signs, become yours. The price is a figure fixed later (promises.md, Terms) signed by the bookkeeper, with the transfers counted in derives_from. With no figure the stage shows \"figure not signed\" and nothing is owed. It is a promise of its own, never a term of each sale"
+    },
+    "at": "2026-10-19T00:00:39.000Z",
+    "audience": "public",
+    "seq": 39
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "2aafbcb3ca72e921e635eb4b76cd4b52ff45502357d3a6dfd6a8e6ebeab37a64"
+   },
+   "signature": "a8a68380a9fd9ae7d207991c042b496fc14ce4139743a3928f01ae97a09cdaf78cf57ff7e89ae43ec31acac4a3b128c0c7207830b7dcce21e93ed082be553b09"
+  },
+  "draw": {
+   "hash": "65d891743483dd53cfddb191019a964a7f4d3fe10a19087ec05d3aa18f6bd441",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "draw",
+    "target": "promise.draw",
+    "fields": {
+     "what": "what is drawn for (the turns of a rotating pot), in words"
+    },
+    "terms": {
+     "commitment": "the member's commitment to her salt and her reveal (privacy.md, A commitment), written before the close. The reveal is a block with state.opening that opens it",
+     "recipe": "the hash of the ranking recipe: the order is the hash of all the reveals, ranked as the recipe says. Named by hash, so every member reads the same order",
+     "reveal_by": "a time: the deadline for a reveal, read on the named clock `keepers`",
+     "keepers": "a named clock (blocks.md, A named clock) that receives the reveals",
+     "if_withheld": "`last`: a member who has not revealed by the deadline takes the last turns, by her own signed term. Her silence moves no one else's place"
+    },
+    "grounds": {
+     "event": "each member (refs.from) promises the circle (refs.to): before the close I commit to a salt, and I reveal it by the deadline. A commitment is privacy.md's, and a reveal is a block with state.opening that opens it (promises.md, Conditions, `opened`). Turns belong only to member keys the circle admitted, never to bare keys, and one person with many keys is named in the threat model. It binds only the member who signed it"
+    },
+    "at": "2026-10-19T00:00:40.000Z",
+    "audience": "public",
+    "seq": 40
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "dd73c62901d5680e0c03ef1759193a3a04774af09fd8c3d80b10c7594f555b4d"
+   },
+   "signature": "2f35bb9c7a2944ff7836fab7971cf28c6030aa970a2f5b37d7f297ec30654a765af42346b2c748f6a4675e5fb382bc5d80b8675ec0f1e60aa7e1233f2c15df05"
+  },
+  "bounded_change": {
+   "hash": "b99b56c70e184e7503c7116a667c8a8c3205e54d96d37230950e1ba9a2030fb9",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "bounded_change",
+    "target": "promise.bounded_change",
+    "fields": {
+     "what": "what may change (the dues, the payout), in words"
+    },
+    "terms": {
+     "change_needed": "a count of the members whose signatures change it: a whole number or { of_members: \"p/q\" }",
+     "change_up_to": "money or an amount: the most the figure may become. A change past it binds her to nothing",
+     "change_notice": "a duration: a change takes effect no sooner than this after it is signed, so she may leave with what is hers before it does"
+    },
+    "grounds": {
+     "event": "a member (refs.from) promises the circle (refs.to), when she joins: my dues may change by the count named, up to the figure named. It binds her only within the bound she signed, as a visible limit does (authority.md), and she may leave with what is hers before a change takes effect. A rule that says \"whatever the majority decides\" binds nothing past what it names. The circle's `needed` and its removal rule may carry such a bounded change"
+    },
+    "at": "2026-10-19T00:00:41.000Z",
+    "audience": "public",
+    "seq": 41
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "65d891743483dd53cfddb191019a964a7f4d3fe10a19087ec05d3aa18f6bd441"
+   },
+   "signature": "d0785787c0f442bf390a954d3506ead0565549a551ef88836f5968e02b44761f10935eceed1a528bfb222ed4aecff453685a90d843bdb89f19245fd946723e02"
   }
  }
 }

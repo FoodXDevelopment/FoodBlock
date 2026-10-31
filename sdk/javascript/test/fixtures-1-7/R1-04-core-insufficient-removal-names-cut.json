@@ -1,0 +1,215 @@
+{
+ "name": "R1-04-core-insufficient-removal-names-cut",
+ "note": "removal.needed is 2. bea leaves (own stop, no counted_to). ann, alone, also stops bea's grant naming counted_to = bea's genesis: one remover is not N, so it removes no one. Oracle: removed[bea] = null (bea's leave took the last head). Core: removed[bea] = bea's genesis when ann's stop has the lower hash (a later stop of an already ended grant is pushed to `ends` without the removal.needed or power check, fold.rs:1190-1198, the `ended.contains(&grant)` branch). Same story with the other hash order agrees.",
+ "steps": 8,
+ "calls": [
+  {
+   "op": "circle_state",
+   "args": [
+    "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+    [
+     {
+      "hash": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b6570032100bb55e1415a772b093c333173ae3739bee09ad9b4007e50eea90c1f1888b09caf"
+      },
+      "refs": {},
+      "signature": "08403df63fd213d3444439f3f719b7050d9cfb32084421ee1617e764b7d69d075f66344a61bf4f8c3a572ce3073c3dfda1d1ef49d1b655977235d94c384fb90e"
+     },
+     {
+      "hash": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:02:00.000Z",
+       "audience": "public",
+       "public_key_sign": "302a300506032b65700321009ccd755b686b68d4b417a701a0815045304c0ee5181ba6feeb1e8191c6e076b6"
+      },
+      "refs": {},
+      "signature": "1b723da05d2fd15a672e7c77dbd40460dedcd5f4d62e491201c3ccdc9c9a8ab3ea61bdaab618b6f71c79d8d4db4be92dcea59d26988e048bc0202a0326ad7506"
+     },
+     {
+      "hash": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+      "type": "actor",
+      "state": {
+       "kind": "circle",
+       "name": "Club",
+       "roles": [
+        {
+         "name": "host",
+         "powers": [
+          "sign",
+          "admit",
+          "remove"
+         ]
+        }
+       ],
+       "removal": {
+        "needed": 2
+       },
+       "at": "2026-10-27T12:03:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+       "prev": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7"
+      },
+      "signature": "5964512beddd7b2a113e55e46b2150b124407cbe79f1eca4b6a1a9ccd073c46bd12da7781ac23cf2da08361e0738c345072dee496cd620d3edaea689f09a0c0b"
+     },
+     {
+      "hash": "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "roles": [
+        "host"
+       ],
+       "at": "2026-10-27T12:04:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "subject": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "to": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2",
+       "as": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "author": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+       "prev": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "after": [
+        "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4"
+       ]
+      },
+      "signature": "6c0b630177e295494ee19255755df6df82c9140d44dd3fe01105aafd873edd0f6bca7e4d6f61cbaef2b6be26100ccee89fd90aadb2b4ff1cef4bfbe89efecd03"
+     },
+     {
+      "hash": "5d7c0c104c20c47daac70215ca66e6797adfb6a38fda6540fe4d280a63bb3199",
+      "type": "grant",
+      "state": {
+       "status": "accepted",
+       "kind": "member",
+       "at": "2026-10-27T12:05:00.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5",
+       "subject": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "author": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2",
+       "prev": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2",
+       "after": [
+        "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5"
+       ]
+      },
+      "signature": "2d5723a11f29f5fca4a3c99935d96ffbc9ed12a5bc51f5fd67125ed26fda1ab475f3ecd8cf35ce6133ebd977e5815573af4975112f815b250318ae12595ef50e"
+     },
+     {
+      "hash": "e380f81953b02be1bcaf51824dc13fc7dca52c70e94c48aacafa8366ba32f500",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-27T12:06:00.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "updates": "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5",
+       "subject": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "as": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "author": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2",
+       "prev": "5d7c0c104c20c47daac70215ca66e6797adfb6a38fda6540fe4d280a63bb3199",
+       "after": [
+        "5d7c0c104c20c47daac70215ca66e6797adfb6a38fda6540fe4d280a63bb3199"
+       ]
+      },
+      "signature": "eb9b189320998607d2fabf5f3b948fd017e4ac2ad3af66cc44567c3406c4284a177da31a83bcc7ad980b2f8fe28ebc242d54819b8901556e174df403c7619d0c"
+     },
+     {
+      "hash": "f53038fb632f70c3d21a63cb1a5cfd73f8853bb00d08535f686d79dcbaa22a58",
+      "type": "observe",
+      "state": {
+       "kind": "note",
+       "text": "x",
+       "at": "2026-10-27T12:07:00.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "author": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+       "prev": "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5"
+      },
+      "signature": "c5ed47b5c7863c633a0d0a5e0e0bb3479e26d1b251ff2320eb789ea29e3aebb871ee3945070ac1ad325382526091183365bea2e91403373f59d1d09cc9bcca07"
+     },
+     {
+      "hash": "33bc9986415a0d82e41be2ef61a4c7ab59f1ef9b574ba10d0c22412e96e1f482",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "status": "stopped",
+       "stop": "onward",
+       "counted_to": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2",
+       "at": "2026-10-27T12:08:00.000Z",
+       "audience": "public",
+       "seq": 4
+      },
+      "refs": {
+       "updates": "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5",
+       "subject": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "as": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "author": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+       "prev": "f53038fb632f70c3d21a63cb1a5cfd73f8853bb00d08535f686d79dcbaa22a58",
+       "after": [
+        "02f936166ef82aef7b9d316065934ce359b935484c9a759b90c6579c659d9cb5",
+        "5d7c0c104c20c47daac70215ca66e6797adfb6a38fda6540fe4d280a63bb3199"
+       ]
+      },
+      "signature": "d87d2b0335cbb3d6bc624030604698dd155235d829294fc1aedc5d83f109bf61892dcf826796509a0c49b8dea0051bd38b942678fb6491011c15d5185bb3ad0b"
+     }
+    ],
+    null
+   ],
+   "core": {
+    "ok": {
+     "founder": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+     "members": {
+      "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7": {
+       "roles": [
+        "host"
+       ],
+       "grant": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "counted_to": null
+      }
+     },
+     "removed": {
+      "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2": "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2"
+     }
+    }
+   },
+   "oracle": {
+    "ok": {
+     "founder": "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7",
+     "members": {
+      "54317128357c7b83bfd3c3ad65d7303730aea6244fd3608cdbdf49f886b048f7": {
+       "roles": [
+        "host"
+       ],
+       "grant": "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4",
+       "counted_to": null,
+       "grants": [
+        "123697371e9b48de710f61c3b12b6fe61020a2d06904beccf38c7094341ed0e4"
+       ]
+      }
+     },
+     "removed": {
+      "2f915e7e73d1f83b83c8e68b2bdc97643d725ee5dbbad0159765a158915444d2": null
+     }
+    }
+   }
+  }
+ ]
+}

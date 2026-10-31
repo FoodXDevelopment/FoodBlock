@@ -1,0 +1,20 @@
+// Case 13: the signer's word and a claim of invasion (promises.md, Disputes). Facts shown beside blocks; nothing moves.
+const { World } = require('./lib.cjs')
+const w = new World('case13 notes and claims of invasion')
+const mo = w.person('mo'), ned = w.person('ned'), jo = w.person('jo'), kai = w.person('kai'), pia = w.person('pia')
+const bed = w.w(mo, 'thing', { kind: 'carrot bed' }, {}, 'Mo\'s carrot bed')
+const photo = w.w(mo, 'observe', { kind: 'reading', text: 'spray on the leaves' }, { subject: bed.hash }, 'the photo')
+const claim = w.w(mo, 'observe', { kind: 'invasion', text: 'his spray drifted onto my carrots' }, { to: ned.id, subject: bed.hash, derives_from: photo.hash }, 'Mo claims an invasion')
+const named = w.w(mo, 'grant', { kind: 'referee', scope: { until: '2027-12-31T00:00:00.000Z' } }, { to: jo.id, subject: claim.hash }, 'Mo names Jo as judge')
+w.w(jo, 'observe', { kind: 'ruling', up_to: { minor: 30000, currency: 'GBP' } }, { confirms: claim.hash, derives_from: photo.hash, after: [named.hash] }, 'Jo confirms, finding 300')
+w.w(ned, 'grant', { status: 'accepted' }, { answers: named.hash }, 'Ned answers accepted')
+const own = w.w(ned, 'grant', { kind: 'referee', scope: { until: '2027-12-31T00:00:00.000Z' } }, { to: kai.id, subject: claim.hash }, 'Ned names Kai')
+w.w(kai, 'observe', { kind: 'ruling' }, { defeats: claim.hash, after: [own.hash] }, 'Kai defeats the claim')
+w.w(mo, 'observe', { kind: 'ruling' }, { confirms: claim.hash }, 'Mo rules her own claim')
+const hand = w.w(mo, 'transfer', {}, { what: claim.hash, to_owner: pia.id }, 'Mo hands the claim to Pia')
+w.w(pia, 'transfer', { status: 'accepted' }, { answers: hand.hash }, 'Pia accepts it')
+const note = w.w(ned, 'observe', { kind: 'not_free', reason: 'compelled', threat: 'a stick' }, { subject: own.hash }, 'Ned\'s note on his own block')
+w.w(mo, 'observe', { kind: 'not_free', reason: 'not_me' }, { subject: own.hash }, 'Mo\'s note on Ned\'s block (not hers)')
+void note
+w.report()
+module.exports = { w }

@@ -1,0 +1,1 @@
+{"name": "F12b-within-limit-empty-fence", "note": "within_limit with a fence that has neither limit nor each: core false, oracle throws \"not JSON\" (jcs(undefined)).", "calls": [{"op": "within_limit", "args": [{}, {"minor": 1, "currency": "GBP"}, 0], "core": {"ok": false}, "oracle": {"err": "THROW not JSON"}}]}

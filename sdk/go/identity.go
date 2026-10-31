@@ -5,8 +5,17 @@ package foodblock
 // ArrivedAt is when this reader first held a block (a time), or "" when it keeps no arrival log.
 type ArrivedAt func(hash string) string
 
+// UnknownArrival is what a reader reads a block as whose arrival it does not know: "inside" or "outside". It is
+// required whenever the reader keeps an arrival log; nothing fills it.
+type UnknownArrival string
+
+const (
+	Inside  UnknownArrival = "inside"
+	Outside UnknownArrival = "outside"
+)
+
 // arrivals is the arrival log as data { hash: at }; nil when the reader keeps none.
-func arrivals(arrivedAt ArrivedAt, blocks []Block) any {
+func arrivals(arrivedAt ArrivedAt, blocks []Block) map[string]string {
 	if arrivedAt == nil {
 		return nil
 	}
@@ -19,17 +28,29 @@ func arrivals(arrivedAt ArrivedAt, blocks []Block) any {
 	return out
 }
 
-// RecoveryKeyHash is the hash a genesis writes for its recovery key, in a suite (std when none is given).
-func RecoveryKeyHash(publicKeyHex string, suite ...string) string {
-	return must[string]("recovery_key_hash", publicKeyHex, suiteOf(suite))
+// unknownFor is the unknown-arrival choice to pass: with no arrival log there is nothing to read it for.
+func unknownFor(arrivedAt ArrivedAt, unknown UnknownArrival) string {
+	if arrivedAt == nil {
+		return ""
+	}
+	return string(unknown)
 }
 
-// GenesisOptions: Kind (default person), At (default now), EncryptionKey (the public encryption key, if it will
+// RecoveryKeyHash is the hash a genesis writes for its recovery key, in a suite (std when none is given).
+func RecoveryKeyHash(publicKeyHex string, suite ...string) string {
+	return doorRecoveryKeyHash(publicKeyHex, suiteArg(suite))
+}
+
+// GenesisOptions: Kind, At and Audience (all required: "public" or a non-empty list of recipients; nothing is filled in),
+// EncryptionKey (the public encryption key, if it will
 // receive sealed blocks), RecoveryKey and Reach (they come as a pair or not at all; RecoverySuite when the recovery
 // key is not std) and Custodian (the id of whoever holds the key for the person, if anyone). The keys' own Suite is
 // the genesis's suite.
 type GenesisOptions struct {
 	Kind, At, EncryptionKey, RecoveryKey, Reach, RecoverySuite, Custodian string
+	Audience                                                              []string // recipients; or Public
+	Salts                                                                 map[string]string
+	Nonce                                                                 string
 }
 
 // Genesis is a new person, autonomous system, machine or signing circle: their genesis, signed. It needs only kind, at, audience
@@ -41,14 +62,23 @@ func Genesis(keys Keypair, o GenesisOptions) (Block, error) {
 			given[k] = v
 		}
 	}
-	return ask[Block]("genesis", keys, given)
+	if a := audienceJSON(o.Audience); a != nil {
+		given["audience"] = a
+	}
+	if len(o.Salts) > 0 {
+		given["salts"] = o.Salts
+	}
+	if o.Nonce != "" {
+		given["nonce"] = o.Nonce
+	}
+	return doorGenesis[Block](keys, given)
 }
 
 // IsGenesis is whether a block is a genesis.
-func IsGenesis(b Block) bool { return must[bool]("is_genesis", b) }
+func IsGenesis(b Block) bool { return doorIsGenesis(b) }
 
 // GenesisOpens is whether a genesis is opened by its own key.
-func GenesisOpens(b Block) bool { return must[bool]("genesis_opens", b) }
+func GenesisOpens(b Block) bool { return doorGenesisOpens(b) }
 
 // KeySigner signs a key grant: a key the id holds (PrivateKey and its Suite, its Last block, the block that brought it
 // in), or the recovery key (PrivateKey and RecoveryKey, its public key), whose chain starts at the genesis.
@@ -57,14 +87,13 @@ type KeySigner struct {
 	Last                                      *Block
 }
 
-// KeyGrantOptions: a rotation names the key it Replaces and that key's CountedTo block; Suite is the new key's; Skip
-// is a deliberate skip in the chain; Encrypt brings in an encryption key; Recovery adds recovery (once); Custodian
-// names who holds the key for the person.
+// KeyGrantOptions: At is required; a rotation names the key it Replaces and that key's CountedTo block; Suite is the new key's; Skip
+// is a deliberate skip in the chain; Encrypt brings in an encryption key; Custodian names who holds the key for the
+// person. The recovery pair is named only in a genesis.
 type KeyGrantOptions struct {
 	Replaces, CountedTo, At, Encrypt, Custodian, Suite string
 	Skip                                               bool
 	After                                              []string
-	Recovery                                           *struct{ Key, Reach string }
 }
 
 // KeyGrant is a key grant, signed: brings newPublicKey into the id.
@@ -91,40 +120,32 @@ func KeyGrant(id, newPublicKey string, signer KeySigner, o KeyGrantOptions) (Blo
 			opts[k] = v
 		}
 	}
-	if o.Recovery != nil {
-		opts["recovery"] = map[string]any{"key": o.Recovery.Key, "reach": o.Recovery.Reach}
-	}
-	var key any
-	if newPublicKey != "" {
-		key = newPublicKey
-	}
-	return ask[Block]("key_grant", id, key, s, opts)
+	return doorKeyGrant[Block](id, newPublicKey, s, opts)
 }
 
 // KeyEntry is one key an id has held: who brought it in (By), which key signed that (Signer: a key, "recovery", or ""
-// for the genesis), whether it is void or frozen, and its Suite.
+// for the genesis), whether it is frozen, and its Suite. A void key is never listed.
 type KeyEntry struct {
 	Suite  string `json:"suite"`
 	Key    string `json:"key"`
 	By     string `json:"by"`
 	Signer string `json:"signer"`
-	Void   bool   `json:"void"`
 	Frozen bool   `json:"frozen"`
 }
 
 // KeyTimeline is every key an id has held, in the order they came in.
-func KeyTimeline(id string, blocks []Block, arrivedAt ArrivedAt) []*KeyEntry {
-	return must[[]*KeyEntry]("key_timeline", id, plural(blocks), arrivals(arrivedAt, blocks))
+func KeyTimeline(id string, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) []*KeyEntry {
+	return doorKeyTimeline[[]*KeyEntry](id, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown))
 }
 
 // KeysOf are the id's keys that are not void.
-func KeysOf(id string, blocks []Block, arrivedAt ArrivedAt) []string {
-	return plural(must[[]string]("keys_of", id, plural(blocks), arrivals(arrivedAt, blocks)))
+func KeysOf(id string, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) []string {
+	return plural(doorKeysOf[[]string](id, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown)))
 }
 
 // SignedByAuthor is whether a block is signed by a key that speaks for its author at the time.
-func SignedByAuthor(b Block, blocks []Block, arrivedAt ArrivedAt) bool {
-	return must[bool]("signed_by_author", b, plural(blocks), arrivals(arrivedAt, blocks))
+func SignedByAuthor(b Block, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) bool {
+	return doorSignedByAuthor(b, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown))
 }
 
 // IdentityState is the identity fold: signed_by_author (hash -> bool), keys, frozen, and operators (sorted).
@@ -136,19 +157,19 @@ type IdentityState struct {
 }
 
 // IdentityStateOf is who an id is among these blocks.
-func IdentityStateOf(id string, blocks []Block, arrivedAt ArrivedAt) IdentityState {
-	return must[IdentityState]("identity_state", id, plural(blocks), arrivals(arrivedAt, blocks))
+func IdentityStateOf(id string, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) IdentityState {
+	return doorIdentityState[IdentityState](id, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown))
 }
 
 // Forked is whether a block's key signed two blocks at one seq.
-func Forked(b Block, blocks []Block) bool { return must[bool]("forked", b, plural(blocks)) }
+func Forked(b Block, blocks []Block) bool { return doorForked(b, blocks) }
 
 // ForkPairs are the pairs of blocks one key signed naming one prev.
 func ForkPairs(blocks []Block) [][]string {
-	return plural(must[[][]string]("fork_pairs", plural(blocks)))
+	return plural(doorForkPairs[[][]string](blocks))
 }
 
 // NextLinkFor is where an id's next block goes for one of its keys.
 func NextLinkFor(id, publicKey string, blocks []Block) (Link, error) {
-	return ask[Link]("next_link_for", id, publicKey, plural(blocks))
+	return doorNextLinkFor[Link](id, publicKey, blocks)
 }

@@ -52,7 +52,7 @@ func items(v any) []map[string]any {
 
 func blockOf(v map[string]any) Block {
 	inner := obj(v["block"])
-	return Block{Hash: str(v["hash"]), Type: str(inner["type"]), State: orEmpty(obj(inner["state"])), Refs: orEmpty(obj(inner["refs"])), Suite: str(v["suite"]), Signature: str(v["signature"])}
+	return Block{Hash: str(v["hash"]), Type: str(inner["type"]), State: orEmpty(obj(inner["state"])), Refs: orEmpty(obj(inner["refs"])), Signature: str(v["signature"])}
 }
 
 func blocksOf(v any) []Block {
@@ -307,18 +307,16 @@ func TestVectors(t *testing.T) {
 		for _, c := range items(s.blocks) {
 			b := blockOf(c)
 			byHash[b.Hash] = b
-			if h, _ := Hash(b.Type, b.State, b.Refs, b.Suite); h != b.Hash {
-				wrong = append(wrong, str(c["name"])+": hash")
-			}
-			if !Verify(b, b.Signature, pub(t, c["signer"])) {
-				wrong = append(wrong, str(c["name"])+": signature")
-			}
+			// the suite comes from the key that signed the block
 			open := str(key(t, c["signer"])["suite"])
 			if open == "" {
 				open = "std"
 			}
-			if open != suiteOf([]string{b.Suite}) {
-				wrong = append(wrong, str(c["name"])+": suite")
+			if h, _ := Hash(b.Type, b.State, b.Refs, open); h != b.Hash {
+				wrong = append(wrong, str(c["name"])+": hash")
+			}
+			if !Verify(b, b.Signature, pub(t, c["signer"])) {
+				wrong = append(wrong, str(c["name"])+": signature")
 			}
 			if found := Refusals(b.Type, b.State, b.Refs); len(found) > 0 {
 				wrong = append(wrong, str(c["name"])+": "+strings.Join(codesOf(found), ", "))
@@ -350,7 +348,7 @@ func TestVectors(t *testing.T) {
 			}
 			m, err := Unwrap(opened)
 			want := obj(c["opens_to"])
-			return err == nil && m.Hash == str(want["hash"]) && m.Signature == str(want["signature"]) && m.Version == str(want["version"])
+			return err == nil && m.Hash == str(want["hash"]) && m.Signature == str(want["signature"])
 		})
 	}
 	for _, c := range items(sealed["cases"]) {
@@ -370,18 +368,19 @@ func TestVectors(t *testing.T) {
 	for _, c := range items(v["identities"]) {
 		held := blocksOf(c["blocks"])
 		arrived := arrivalsOf(obj(c["arrivals"]))
+		unknown := UnknownArrival(str(c["unknown_arrival"]))
 		id := str(c["id"])
 		for _, b := range held {
 			if want, ok := obj(c["signed_by_author"])[b.Hash]; ok {
-				r.report(SignedByAuthor(b, held, arrived) == want, fmt.Sprintf("identity: %s: %s", c["name"], b.Hash[:8]))
+				r.report(SignedByAuthor(b, held, arrived, unknown) == want, fmt.Sprintf("identity: %s: %s", c["name"], b.Hash[:8]))
 			}
 		}
 		if c["keys"] != nil {
-			r.report(eq(sorted(KeysOf(id, held, arrived)), c["keys"]), fmt.Sprintf("identity: %s: the keys that speak", c["name"]))
+			r.report(eq(sorted(KeysOf(id, held, arrived, unknown)), c["keys"]), fmt.Sprintf("identity: %s: the keys that speak", c["name"]))
 		}
 		if c["frozen"] != nil {
 			frozen := []string{}
-			for _, e := range KeyTimeline(id, held, nil) {
+			for _, e := range KeyTimeline(id, held, nil, "") {
 				if e.Frozen {
 					frozen = append(frozen, e.Key)
 				}
@@ -392,7 +391,7 @@ func TestVectors(t *testing.T) {
 			r.report(eq(OperatorsOf(id, held), c["operators"]), fmt.Sprintf("identity: %s: its operators", c["name"]))
 		}
 		{
-			state := IdentityStateOf(id, held, arrived)
+			state := IdentityStateOf(id, held, arrived, unknown)
 			ok := eq(state.Keys, c["keys"]) && (c["frozen"] == nil || eq(state.Frozen, c["frozen"]))
 			for h, want := range obj(c["signed_by_author"]) {
 				if got, there := state.SignedByAuthor[h]; there {
@@ -545,7 +544,7 @@ func TestVectors(t *testing.T) {
 				} else {
 					incoming = pickBlocks(c["incoming"])
 				}
-				got := Accept(incoming, held)
+				got := Accept(incoming, held, AcceptOptions{TakesPairs: false})
 				// The second of a pair is neither taken nor refused: it is listed in its pair.
 				if c["equivocations"] != nil {
 					return eq(hashesOfBlocks(got.Taken), c["taken"]) && len(got.Refused) == 0 && eq(got.Equivocations, c["equivocations"])
@@ -621,7 +620,7 @@ func TestVectors(t *testing.T) {
 		spHighest, _ := intOf(sp["highest"])
 		r.report(len(PushRefusals(obj(sp["message"]), PullCheck{Node: node, Keys: []string{pub(t, sp["signer"])}, Highest: &spHighest})) == 0, "message: a signed push")
 	}
-	r.report(contains(KeysOf(node, blocksOf(sealed["blocks"]), nil), nodeKey), "message: the node key is a key of its holder, brought in by a key grant")
+	r.report(contains(KeysOf(node, blocksOf(sealed["blocks"]), nil, ""), nodeKey), "message: the node key is a key of its holder, brought in by a key grant")
 	pa := obj(M["pull_answer"])
 	paBlocks, _ := arr(obj(pa["message"])["blocks"])
 	matchesN, _ := intOf(pa["matches"])
@@ -639,7 +638,13 @@ func TestVectors(t *testing.T) {
 		for k := range push {
 			keys = append(keys, k)
 		}
-		ok := eq(sorted(keys), sorted(messageKeys("push_answer")))
+		want := []string{}
+		for _, k := range messageKeys("push_answer") {
+			if _, has := push[k]; has || !contains(messageKeys("push_answer_optional"), k) {
+				want = append(want, k)
+			}
+		}
+		ok := eq(sorted(keys), sorted(want))
 		rebuilt := Accepted{}
 		for _, h := range list(push["taken"]) {
 			rebuilt.Taken = append(rebuilt.Taken, Block{Hash: h})
@@ -768,7 +773,10 @@ func TestVectors(t *testing.T) {
 func TestKeysRebuildFromSeeds(t *testing.T) {
 	for name, k := range obj(vectors(t)["keys"]) {
 		k := obj(k)
-		suite := suiteOf([]string{str(k["suite"])})
+		suite := str(k["suite"])
+		if suite == "" {
+			suite = "std"
+		}
 		kp, err := KeypairFromSeed(str(k["seed"]), suite)
 		if err != nil || kp.PublicKeySign != str(k["public_key_sign"]) || kp.PrivateKey != str(k["private_key"]) || SuiteOfKey(kp.PublicKeySign) != suite {
 			t.Errorf("%s: the signing key from its seed", name)

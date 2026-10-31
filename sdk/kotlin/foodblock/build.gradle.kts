@@ -18,9 +18,9 @@ publishing {
             artifactId = "foodblock"
             pom {
                 name.set("FoodBlock")
-                description.set("FoodBlock 1.6 for the JVM: a thin layer over the one Rust core.")
+                description.set("FoodBlock for the JVM: a thin layer over the one Rust core.")
                 url.set("https://www.foodx.network/developers")
-                licenses { license { name.set("MIT License"); url.set("https://opensource.org/licenses/MIT") } }
+                licenses { license { name.set("CC0 1.0 Universal"); url.set("https://creativecommons.org/publicdomain/zero/1.0/") } }
                 developers { developer { id.set("foodx"); name.set("FoodX"); email.set("developers@foodx.com") } }
                 scm {
                     url.set("https://github.com/FoodXDevelopment/FoodBlock")
@@ -56,7 +56,7 @@ val libName = when {
 val cargoHost = tasks.register<Exec>("cargoHost") {
     description = "Builds the Rust core (sdk/rust) with --features jni for this computer."
     workingDir = rust
-    commandLine("cargo", "rustc", "--release", "--no-default-features", "--features", "jni,$profile", "--crate-type", "cdylib")
+    commandLine("cargo", "rustc", "--locked", "--release", "--no-default-features", "--features", "jni,$profile", "--crate-type", "cdylib")
     inputs.dir(rust.resolve("src"))
     inputs.dir(rust.resolve("spec"))
     inputs.file(rust.resolve("Cargo.toml"))

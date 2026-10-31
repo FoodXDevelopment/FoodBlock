@@ -1,11 +1,11 @@
 ------------------------------ MODULE FoodBlock ------------------------------
-(* FoodBlock 1.6: what a node takes in, refuses, holds back and folds.
+(* FoodBlock: what a node takes in, refuses, holds back and folds.
 
    One honest node per element of Nodes. A node is pushed small batches of blocks, in any order.
    It models, for the three independent parts of the protocol that carry authority:
      - identity   : key chains, equivocation, rotation, conflict, recovery rotation   (identity.md, nodes.md)
      - consent    : YES / STOP, consent follows the principal; a block sent despite a STOP is kept and read as stopped (consent.md)
-     - allocation : an open offer, bound only by the orderer's own allocation          (promises.md, folds.md)
+     - allocation : an open offer: every allocation the orderer signed binds its taker; no one else's does         (promises.md, folds.md)
    and, for all of them, authority dependencies that wait like `prev` (core.md check 5; `needs`).
 
    The block table T is generated from tools/tla/check.py (python3 tools/tla/check.py --emit-tla), the
@@ -19,7 +19,7 @@ EXTENDS Naturals, FiniteSets, TLC
 CONSTANTS Nodes,    \* honest nodes
           Active,   \* the blocks of the part being checked (a subset of DOMAIN T)
           Mut       \* "none" for the protocol as written; otherwise one deliberate bug that some invariant must catch:
-                   \*   "refuse_stop" | "judge_by_store" | "nonorderer_binds" | "overbind"  (the same names as check.py --mutate)
+                   \*   "refuse_stop" | "judge_by_store" | "nonorderer_binds"  (the same names as check.py --mutate)
 
 T ==
   ("Xg" :> [comp |-> "identity", author |-> "X", key |-> "gX", kind |-> "genesis", prev |-> "none", counted_to |-> "none", under |-> "none", answers |-> "none", replaces |-> "none", newkey |-> "none", word |-> "none", subject |-> "none", person |-> "none", q |-> "none", recovery |-> FALSE]) @@
@@ -138,16 +138,15 @@ Oracle(a, S) == IF a \in {"ASK", "ASK0", "ASK2"} THEN "STOP" \in S /\ "YES" \not
                 ELSE FALSE
 
 \* ---------------------------------------------------------------- allocation fold (promises.md, folds.md)
-Cap == T["O"].q
+\* Every allocation the orderer signed binds its taker: past the offer, or in a fork, it is her own debt, never erased
+\* (promises.md, Who may bind; folds.md, Equivocations: a fork voids what the forker claims, never what she owes).
 RECURSIVE Chain(_, _, _)
-Chain(S, cur, total) ==
-  LET nxt == {i \in S : /\ T[i].kind = "alloc" /\ i \notin Equivocated(S)
+Chain(S, cur, V) ==
+  LET nxt == {i \in S : /\ T[i].kind = "alloc"
                        /\ IF Mut = "nonorderer_binds" THEN (T[i].key # T["O"].key \/ T[i].prev = cur)   \* the bug: anyone's allocation binds
-                                                       ELSE (T[i].prev = cur /\ T[i].key = T["O"].key)}
-  IN IF nxt = {} THEN {}
-     ELSE LET i == CHOOSE x \in nxt : TRUE        \* nxt has at most one member: a fork is excluded above
-          IN IF total + T[i].q > Cap /\ Mut # "overbind" THEN {} ELSE {i} \cup Chain(S, i, total + T[i].q)
-Bound(S) == IF "O" \in S THEN Chain(S, "O", 0) ELSE {}
+                                                       ELSE (T[i].prev = cur /\ T[i].key = T["O"].key)} \ V      \* V: already followed, so the bug's wide set still ends
+  IN IF nxt = {} THEN {} ELSE nxt \cup UNION {Chain(S, i, V \cup nxt) : i \in nxt}
+Bound(S) == IF "O" \in S THEN Chain(S, "O", {"O"}) ELSE {}
 
 \* ---------------------------------------------------------------- judging
 SimpleKey == [Q |-> "kQ", P |-> "kP", A |-> "kA", R |-> "kR", Z |-> "kZ", S |-> "kS", B1 |-> "kB1", B2 |-> "kB2"]
@@ -212,13 +211,12 @@ RightSigner == \A n \in Nodes :
      \A b \in c : T[b].key \in Keys(store[n]) \/ (T[b].recovery /\ T[b].kind = "keygrant")
 FrozenSilent == \A n \in Nodes : \A b \in Counted(store[n]) : T[b].key \notin Frozen(store[n])
 NoForgeStored == \A n \in Nodes : {"FR", "PR", "BADS"} \cap store[n] = {}
-RECURSIVE SumQ(_)
-SumQ(s) == IF s = {} THEN 0 ELSE LET x == CHOOSE y \in s : TRUE IN T[x].q + SumQ(s \ {x})
-\* Allocation: only the orderer binds, never more than offered, a forked allocation binds nothing.
+\* Allocation: only the orderer binds; every allocation she signed binds its taker, forked or past the offer.
 AllocationSafe == \A n \in Nodes :
   /\ \A i \in Bound(store[n]) : T[i].key = T["O"].key
-  /\ SumQ(Bound(store[n])) <= Cap                              \* all bound allocations together never exceed the offer
-\* Two honest nodes that were given the same blocks hold the same blocks, refuse the same, and fold the same.
+  /\ \A i \in store[n] : (T[i].kind = "alloc" /\ T[i].key = T["O"].key /\ (T[i].prev = "O" \/ T[i].prev \in Bound(store[n]))) => i \in Bound(store[n])
+\* Equal verdicts, not a duty to store (nodes.md: a node may refuse any push): two nodes given the same blocks and the same rule
+\* judge them the same, so what each took, refused and folded is equal. A node that chose to refuse a push is outside this model.
 Converge == \A m, n \in Nodes : seen[m] = seen[n] =>
               /\ store[m] = store[n]
               /\ refused[m] = refused[n] /\ waiting[m] = waiting[n]

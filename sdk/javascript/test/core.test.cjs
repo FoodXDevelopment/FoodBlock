@@ -35,8 +35,8 @@ test('the door says what went wrong as an error with the core\'s refusals', () =
   assert.throws(() => core.call('no_such_op'), /not in this build/)
   assert.throws(() => core.call('hash', 5), /argument 0 is text/)
   const fb = require('../src/index.cjs'), keys = fb.generateKeypair()
-  const me = fb.identity.genesis(keys, { recoveryKey: fb.generateKeypair().public_key_sign, reach: 'P30D' })
-  assert.throws(() => fb.write('thing', { kind: 'eggs', price: 1.5 }, {}, { author: me.hash, key: keys, held: [me] }),
+  const me = fb.identity.genesis(keys, { kind: 'person', audience: 'public', at: '2026-10-15T09:00:00.000Z', recoveryKey: fb.generateKeypair().public_key_sign, reach: 'P30D' })
+  assert.throws(() => fb.write('thing', { kind: 'eggs', price: 1.5 }, {}, { audience: 'public', at: '2026-10-15T09:00:00.000Z', author: me.hash, key: keys, held: [me] }),
     (error) => /^write: refused: /.test(error.message) && error.refused.some((one) => one.code === 'float') && error.wrong.length === error.refused.length)
 })
 
@@ -55,7 +55,7 @@ test('a sealed limit: the commitment in the grant, the salt in the observe that 
   const limit = { minor: 5000, currency: 'GBP' }, salt = 'ab'.repeat(16)
   const commitment = fb.grant.limitCommitment(limit, 'P1D', salt)
   const grant = { hash: 'a'.repeat(64), type: 'grant', state: { kind: 'authority', scope: { acts: ['transfer'], limit_commitment: commitment } }, refs: {} }
-  const fence = fb.grant.limitFence(grant.hash, 'b'.repeat(64), { limit, per: 'P1D', salt })
+  const fence = fb.grant.limitFence(grant.hash, 'b'.repeat(64), { limit, every: 'P1D', salt })
   assert.equal(fb.grant.limitOpens(grant, { type: fence.type, state: fence.state, refs: fence.refs }), true)
   assert.equal(fb.grant.limitOpens(grant, { type: fence.type, state: { ...fence.state, limit: { minor: 9000, currency: 'GBP' } }, refs: fence.refs }), false)
 })

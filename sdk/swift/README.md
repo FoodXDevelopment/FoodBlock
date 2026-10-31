@@ -1,6 +1,6 @@
 # FoodBlock (Swift)
 
-FoodBlock 1.6 for Swift (iOS 16+, macOS 13+). The protocol is [`spec/protocol.md`](../../spec/protocol.md). This
+FoodBlock for Swift (iOS 16+, macOS 13+). The protocol is [`spec/protocol.md`](../../spec/protocol.md). This
 package is a thin layer over the one Rust core ([`../rust`](../rust)): every rule (canonical form, hashing, Ed25519,
 the write check, chains, identities, envelopes, folds, messages between nodes, and protocol.json itself) lives there
 once, and Swift calls it through the core's single JSON door (`fb_call`, in the C ABI
@@ -14,7 +14,7 @@ a plain JSON dictionary (`JSON`, `[String: Any]`): `{ hash, type, state, refs, s
 SwiftPM reads `Package.swift` at the **repository root** (not in this folder):
 
 ```swift
-.package(url: "https://github.com/FoodXDevelopment/foodblock", from: "1.6.0")
+.package(url: "https://github.com/FoodXDevelopment/foodblock", from: "1.7.0")
 ```
 
 The Rust core comes as a binary target, `CFoodBlock.xcframework` (iOS device, iOS simulator, macOS; static libraries,
@@ -36,7 +36,7 @@ exists the root manifest uses it; otherwise it uses the release download.
 ## Profile
 
 The core is built with the node profile (micro, edge and node; protocol.json `peers`), so a phone, a robot kitchen
-or a fridge with an Apple chip is a full peer. A call a smaller build lacks throws with kind `profile`. Serving pull and
+or a fridge with an Apple chip is a full peer. A call a smaller build lacks throws with kind `profile`. Every call that asks the core throws when the core fails, so a failed `valid` or `whyNotLive` is never read as an empty, permissive answer (security J). Serving pull and
 push over a network is the app's job; this package makes and checks the messages. There is no keystore: keeping keys on
 a device is the product's job.
 
@@ -51,23 +51,27 @@ A signed pull or push carries exactly one of `counter` or `challenge` and no tim
 | `generateKeypair`, `keypairFromSeed`, `sign`, `verify`, `signMessage`, `verifyMessage`, `suiteOfKey` | Signing by suite (std Ed25519, p256, sm). A key names its `suite`; `sign` signs |
 | `generateEncryptionKeypair`, `encryptionKeyOf`, `seal`, `open` | Envelopes by suite (std: X25519, HKDF-SHA256, AES-256-GCM). `seal` encrypts |
 | `newSalt`, `saltedHash`, `commit`, `findsSelf`, `revealFor` | The commitment: audiences, personal fields, ballots |
-| `compose`, `write`, `check`, `valid`, `strictText`, `receiptCode`, `amount`, `money`, `confidence`, `terms` | Writing. `write` is compose, check, sign, chain; it throws `.refused` with every reason |
+| `compose`, `write`, `check`, `valid`, `strictText`, `receiptCode`, `amount`, `money`, `terms` | Writing. `write` is compose, check, sign, chain; it throws `.refused` with every reason |
 | `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy` | The wire |
 | `Legacy.convert`, `oldHash` | The one-time converter for pre-1.6 data (not part of the protocol) |
 | `nextLink`, `checkChain`, `causalOrder`, `sees` | Chains and causal order |
 | `Identity.genesis`, `keyGrant`, `keyTimeline`, `keysOf`, `signedByAuthor`, `identityState`, `counts`, `nextLinkFor`, `recoveryKeyHash`, `forked`, `forkPairs`, `recoveryReach` | Who someone is |
 | `Grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `scopeRefusals`, `whyNotLiveUndo`, `actName` | Authority |
-| `Fold.promiseStage`, `promiseView`, `consent`, `liveGrant`, `withdrawalSeen`, `due`, `ordererOf`, `circleState`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `successorView`, `circleKey`, `countedIn` | The folds |
-| `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullErrors`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `depositShapeOk`, `depositPaid`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
+| `Fold.promiseStage`, `promiseView`, `consent`, `liveGrant`, `withdrawalSeen`, `due`, `circleState`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `successorView`, `circleKey`, `countedIn` | The folds |
+| `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestShapeOk`, `earnestPaid`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
 
 ```swift
 import FoodBlock
 
 let keys = FoodBlock.generateKeypair()
-let me = try Identity.genesis(keys, encryptionKey: FoodBlock.generateEncryptionKeypair().publicKeyEncrypt,
-                              recoveryKey: FoodBlock.generateKeypair().publicKeySign)
-let eggs = try FoodBlock.write("thing", ["kind": "eggs", "name": "Free-range eggs"], [:], author: me["hash"] as! String, key: keys, held: [me])
-let message = FoodBlock.wrap(eggs)   // { version, block, signature }
+// Nothing is filled in for you: say the kind, the time and who may read.
+let me = try Identity.genesis(keys, kind: "person", at: "2026-10-15T09:00:00.000Z", audience: .public,
+                              encryptionKey: FoodBlock.generateEncryptionKeypair().publicKeyEncrypt)
+let eggs = try FoodBlock.write("thing", ["kind": "eggs", "name": "Free-range eggs"], [:], author: me["hash"] as! String, key: keys, held: [me],
+                               audience: .public, when: .at("2026-10-15T09:00:01.000Z"))
+let message = try FoodBlock.wrap(eggs)   // { block, signature }
+// A node states its own choices: Sync.answerPull(..., cap: 500, servesPairs: true), Sync.accept(..., takesPairs: false),
+// Strangers.admissionRefusals(..., admission: nil, strangersToday: 0).
 ```
 
 ## Test
@@ -83,13 +87,8 @@ sealed copies, pull and push.
 
 ## Licence
 
-MIT
+Public domain (CC0 1.0).
 
-## FoodBlockWindow: the phone as a window onto its hosted node
+## The window
 
-A second library in the same package (`import FoodBlockWindow`). The person's passkey is their FoodBlock key (spec/modules/encoding.md, Passkeys): it never leaves the
-phone and the host holds no key. `FoodBlockWindow` registers (the host proposes the genesis, the passkey signs its id), signs in by a passkey assertion over a
-server challenge, reads blocks and folds, and writes: the host proposes the block, the passkey signs its id, the host's core judges it. Offline it composes
-the block here, signs it, checks it with the bundled core and queues it in SQLite; `sync()` hands the queue over in order. `ApplePasskeys` is the platform
-passkey (`ASAuthorizationPlatformPublicKeyCredentialProvider`; add the Associated Domains entitlement `webcredentials:foodx.network`). Tests:
-`swift test --filter FoodBlockWindowTests` (the end-to-end ones start a local host from the Backend checkout, `FOODOS_BACKEND`, and skip without it).
+The phone as a window onto a hosted node is FoodX's product, not part of the protocol: it lives in FoodX (`foodx/native/window/swift`), a package that depends on this one.

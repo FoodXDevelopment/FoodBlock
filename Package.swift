@@ -7,7 +7,7 @@ import PackageDescription
 //   * built here:    sdk/swift/scripts/build-xcframework.sh   (used when sdk/swift/CFoodBlock.xcframework exists)
 //   * from a release: the zip below, which a release uploads and whose checksum is the one the script prints.
 // No unsafe build flags, so the package can be a dependency of other packages.
-let version = "1.6.0"                                                                         // tools/version-sync.cjs
+let version = "1.7.0"                                                                         // tools/version-sync.cjs
 let checksum = "0000000000000000000000000000000000000000000000000000000000000000"             // set at release
 let local = Context.packageDirectory + "/sdk/swift/CFoodBlock.xcframework"
 
@@ -22,15 +22,11 @@ let package = Package(
     platforms: [.iOS(.v16), .macOS(.v13)],
     products: [
         .library(name: "FoodBlock", targets: ["FoodBlock"]),
-        .library(name: "FoodBlockWindow", targets: ["FoodBlockWindow"]),
     ],
     targets: [
         core,
         .target(name: "FoodBlock", dependencies: ["CFoodBlock"], path: "sdk/swift/Sources/FoodBlock",
                 linkerSettings: [.linkedFramework("Security"), .linkedFramework("CoreFoundation")]),
-        .target(name: "FoodBlockWindow", dependencies: ["FoodBlock"], path: "sdk/swift/Sources/FoodBlockWindow",
-                linkerSettings: [.linkedLibrary("sqlite3")]),
-        .testTarget(name: "FoodBlockWindowTests", dependencies: ["FoodBlockWindow", "FoodBlock"], path: "sdk/swift/WindowTests"),
         .testTarget(name: "FoodBlockTests", dependencies: ["FoodBlock"], path: "sdk/swift/Tests"),
     ]
 )

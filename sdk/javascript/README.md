@@ -1,6 +1,6 @@
 # @foodxdev/foodblock
 
-The JavaScript reference SDK for the FoodBlock protocol, version 1.6 (`spec/core.md` and `spec/modules/`, normative).
+The JavaScript reference SDK for the FoodBlock protocol, version 1.7 (`spec/core.md` and `spec/modules/`, normative).
 A block is `{ type, state, refs }`, signed by its author's key; its identity is the hash of its canonical form (RFC
 8785), in the hash of the suite of the key that signed it (`std`: SHA-256 and Ed25519; `p256`; `sm`). Every closed
 list (types, verbs, ref keys, statuses, terms, grammar, limits, suites) is read from `spec/protocol.json`. Nothing is
@@ -31,12 +31,12 @@ const fb = require('@foodxdev/foodblock')
 
 // Who you are: a genesis needs only kind, at, audience and one key. Its hash is your id.
 const keys = fb.generateKeypair()                       // { public_key_sign, private_key }
-const me = fb.identity.genesis(keys)                    // a recovery key (with its reach) and an encryption key are optional
+const me = fb.identity.genesis(keys, { kind: 'person', at: '2026-10-15T09:00:00.000Z', audience: 'public' })  // kind, at and audience are stated, never filled in; a recovery key (with its reach) and an encryption key are optional
 
 // The one write path: compose, check, sign, chain. Money is { minor, currency }; amounts are decimal strings.
-const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, held: [me] })
+const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, held: [me], at: '2026-10-15T09:01:00.000Z', audience: 'public' })  // audience ('public' or recipients) and at are stated too
 const offer = fb.write('promise', { terms: { price: fb.money(450, 'GBP'), quantity: fb.amount('2', '{tray}'), expires: '2026-10-20T00:00:00.000Z' } },
-  { from: me.hash, what: eggs.hash }, { author: me.hash, key: keys, held: [me, eggs] })
+  { from: me.hash, what: eggs.hash }, { author: me.hash, key: keys, held: [me, eggs], at: '2026-10-15T09:02:00.000Z', audience: 'public' })
 
 fb.promiseStage(offer, [me, eggs, offer]).stage   // 'offered'
 fb.valid(offer, [me, eggs])                        // []: sound, signed by a key of its author, in its chain
@@ -59,22 +59,23 @@ with no authority. A schema is a `thing` of kind schema. The verbs: `updates`, `
 - Encryption: `generateEncryptionKeypair(suite)`, `encryptionKeyOf`, `seal(value, keys, { suite })`, `open(envelope, private)`, `ALG`.
 - The commitment: `newSalt`, `saltedHash`, `commit`, `findsSelf`, `revealFor`.
 - Writing: `compose`, `write`, `valid(block, held)` (core.md section 8), `check`, `refusals`, `strictText`, `amount`, `money`,
-  `confidence`, `terms`.
+  `terms`.
 - The wire: `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy`.
 - The compact form: `cbor.encode(block, { short })`, `cbor.decode(bytes)`, `encodePush`, `decodePush`, `encodeHeader`, `decodeHeader`
   (a signed public block as CBOR; the id is still the hash of the canonical JSON).
-- Strangers and small profiles: `strangers.receiptCode`, `readingIsPersonsClaim`, `readingConditionHolds`, `depositPaid`.
+- Strangers and small profiles: `strangers.receiptCode`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestPaid`.
 - The one-time converter (not protocol): `legacy.convert(oldBlocks, { keys, at })`, `legacy.oldHash`.
 - Chains and order: `nextLink`, `checkChain`, `causalOrder`, `pastOf`, `sees`.
 - Identity: `identity.genesis`, `keyGrant`, `identityOf`, `keyTimeline`, `keysOf`, `signedByAuthor`, `chainsOf`,
   `nextLinkFor`, `recoveryKeyHash`, `forkPairs`. A rotation names `countedTo`.
 - Authority: `grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration`.
 - Folds: `fold.promiseStage`, `circleState`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `receiverOf`, `whereNow`,
-  `consent`, `orderer`; views: `promiseView`, `liveGrant`, `withdrawalSeen`, `due`, `recoveryReach`; profiles: `successorView`,
+  `consent`; views: `promiseView`, `liveGrant`, `withdrawalSeen`, `due`, `recoveryReach`; profiles: `successorView`,
   `circleKey`, `countedIn`.
 - Between nodes: `sync.pullRequest`, `signPull`/`signPush` (a `counter` or a `challenge`; no time), `newChallenge`, `pullRefusals`,
   `pushRefusals`, `matches`, `answerPull`, `answerSignedBy`, `accept`, `admissionRefusals`, `residencyRefusals`, `pushAnswer`,
-  `waitedTooLong`, `wellKnown`, `announcement`, `wellKnownErrors`.
+  `waitedTooLong`, `wellKnown`, `announcement`, `wellKnownErrors`. A node's own choices are stated, never filled in: `answerPull` takes `cap` and
+  `servesPairs`, `accept` and `acceptSealed` take `takesPairs`, `admissionRefusals` takes the rule's state or an explicit `null`, and today's count.
 
 ## Tests
 
@@ -83,4 +84,4 @@ rebuilds `spec/vectors.json` from fixed seeds and times, every expectation writt
 
 ## License
 
-MIT
+Public domain (CC0 1.0).

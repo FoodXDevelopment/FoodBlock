@@ -1,7 +1,7 @@
 const { fb, oracle, World } = require('./lib.cjs')
 const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
 const w = new World('case6 device reading')
-const inst = w.person('installer'), mfr = w.person('manufacturer', 'business'), dev = w.person('device', 'machine'), rogue = w.person('rogue-device', 'machine'), edge = w.person('edge')
+const inst = w.person('installer'), mfr = w.person('manufacturer'), dev = w.person('device', 'machine'), rogue = w.person('rogue-device', 'machine'), edge = w.person('edge')
 const bed = w.w(inst, 'thing', { kind: 'bed', name: 'bed 3', where: { lat: '51.5', lon: '-0.1' } }, {}, 'bed')
 const sensor = w.w(inst, 'thing', { kind: 'sensor', name: 'soil probe', marks: [{ scheme: 'serial', value: 'SP-77' }] }, { place: bed.hash }, 'sensor thing (placed in bed 3)')
 const op = w.w(inst, 'grant', { kind: 'operator' }, { to: dev.id, subject: sensor.hash }, 'operator grant: installer answers for device (subject = sensor)')

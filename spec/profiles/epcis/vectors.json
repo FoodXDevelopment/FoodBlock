@@ -1,5 +1,5 @@
 {
- "$comment": "FoodBlock 1.6 profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event's own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event's block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator's grant and the pulls it allows. Test keys: never use them for anything real.",
+ "$comment": "FoodBlock profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event's own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event's block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator's grant and the pulls it allows. Test keys: never use them for anything real.",
  "context": "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
  "keys": {
   "fieldhouse": {
@@ -37,11 +37,6 @@
    "private_key": "302e020100300506032b657004220420ceb5005e2925d8a749d231eda102975a5531f8a1a0e64fb182a5ee499259df3b",
    "public_key_sign": "302a300506032b65700321003524fbe1b6bf0e9ec69f0a9626011406d5014f7aef1d2307e317040c084e181f"
   },
-  "profile": {
-   "seed": "bc39776d98debea8a1ffe0940bd33f56d400d8fe2248f860cd016f8271ea3b00",
-   "private_key": "302e020100300506032b657004220420bc39776d98debea8a1ffe0940bd33f56d400d8fe2248f860cd016f8271ea3b00",
-   "public_key_sign": "302a300506032b6570032100b11bc939cfe876a4428c39248af1f92107949ea438d88ed05d3267e90f9a622c"
-  },
   "regulator": {
    "seed": "9a2a746a1c705c410685bfe2dea0cf8889726abe1c1df501e9dc96b9010bd91e",
    "private_key": "302e020100300506032b6570042204209a2a746a1c705c410685bfe2dea0cf8889726abe1c1df501e9dc96b9010bd91e",
@@ -77,16 +72,18 @@
    "signer": "harbourfish",
    "id": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c"
   },
-  "urn:epc:id:pgln:0000000.00000": {
-   "signer": "profile",
-   "id": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723"
-  },
   "urn:epc:id:pgln:0000001.00000": {
    "signer": "regulator",
-   "id": "84420e82bfc71db94e5ca8c1042fbf3a5093d5bf4e165d004ed2d460079ff6cb"
+   "id": "f7d8c9b8d8b6fdb801991d7c0480bee30ec7fc7019b36d04306437f3309a34ed"
   }
  },
- "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+ "schemas": {
+  "fieldhouse": "e408efaf41988acfd6a2599dc65baf83206117cb5b226be5ec362acc8948ee35",
+  "greenacres": "1082dc9da986095b198cbcf8109b68062976e23b9fa5d3016f43bee90cf4a29b",
+  "metrofresh": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
+  "cornermarket": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
+  "harbourfish": "4080813ff20741723872e76d8a450c11cd6135d3e260b957a2db2536940eafdd"
+ },
  "blocks": [
   {
    "name": "fieldhouse: genesis",
@@ -201,41 +198,25 @@
    "signature": "a20fa005d4bc15ea287f9cb57ee0acdc57c372b54e11de2a5cc55459a12bbe2c71a0e6081f3f6fc947efcbb604af96303f42122263d43f18ec19a54791b9f20b"
   },
   {
-   "name": "profile: genesis",
-   "signer": "profile",
-   "hash": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723",
+   "name": "regulator: genesis",
+   "signer": "regulator",
+   "hash": "f7d8c9b8d8b6fdb801991d7c0480bee30ec7fc7019b36d04306437f3309a34ed",
    "block": {
     "type": "actor",
     "state": {
      "kind": "person",
      "at": "2026-10-11T12:00:07.000Z",
      "audience": "public",
-     "public_key_sign": "302a300506032b6570032100b11bc939cfe876a4428c39248af1f92107949ea438d88ed05d3267e90f9a622c"
-    },
-    "refs": {}
-   },
-   "signature": "257d79a402d4a8f8446efe9ef04c0eaf1d97e63ef69c998c841a079e425cfb5dc6eb1d14b5cb6693ed0284ed76006f64c31ba85f43900133c74a92e976b5730b"
-  },
-  {
-   "name": "regulator: genesis",
-   "signer": "regulator",
-   "hash": "84420e82bfc71db94e5ca8c1042fbf3a5093d5bf4e165d004ed2d460079ff6cb",
-   "block": {
-    "type": "actor",
-    "state": {
-     "kind": "person",
-     "at": "2026-10-11T12:00:08.000Z",
-     "audience": "public",
      "public_key_sign": "302a300506032b65700321004c4ca25a4d73e058b31cebcbc650b9ada62b08a0b0b40b47778e759776e9d69f"
     },
     "refs": {}
    },
-   "signature": "e708deace9515a9980fa7ecd2ad08d61eae934114d3d14e2a32846839a078badf994f8c6ee8b4c4e63c0cd20849ec3a7251fecbc5d9f8713fb0306375fb3a703"
+   "signature": "44dde9689fe7fd1c07747bbc47d42142a28ae6f3efc265669ce84fcfb43deb347b665cb103ac1867bb2c4f0fdff3495ef3563836590cef4d64e437288f3eb904"
   },
   {
    "name": "site: field_a",
    "signer": "fieldhouse",
-   "hash": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07",
+   "hash": "cf0637cf0bb057287214c387ae4e68a72ca697e8f200bfa66ea032b8706235a2",
    "block": {
     "type": "thing",
     "state": {
@@ -263,7 +244,7 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:09.000Z",
+     "at": "2026-10-11T12:00:08.000Z",
      "audience": "public",
      "seq": 1
     },
@@ -272,12 +253,12 @@
      "prev": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620"
     }
    },
-   "signature": "08534a7799fd764ca4906edd0b09674b60db2f37c07e21e0b89413451ae4847502fb3333dcdd8d4528f76ce00b329218e14e9812e04642ffff7920dcb590660f"
+   "signature": "39648ea48628942a846ee9569b90ab611a2ce9d617e35f10dc2f9aabe0290f0506285b5db5a4db9e38d674148fdafb594ecb153cf5c1f6709b18627a7ee0930a"
   },
   {
    "name": "site: ff_packhouse",
    "signer": "fieldhouse",
-   "hash": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+   "hash": "053ae63535a813582086324a9ff1f64effb0a96fe75451fdec994f3fe1429738",
    "block": {
     "type": "thing",
     "state": {
@@ -305,21 +286,21 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:10.000Z",
+     "at": "2026-10-11T12:00:09.000Z",
      "audience": "public",
      "seq": 2
     },
     "refs": {
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07"
+     "prev": "cf0637cf0bb057287214c387ae4e68a72ca697e8f200bfa66ea032b8706235a2"
     }
    },
-   "signature": "64350789f167b53b1ddd4997bb7dad5d372f671f2be4a1f712600a8c8699d160f2cbdc4a342266c927c2bf14eef0a43e97741436fa9d44bad6c91cf194890800"
+   "signature": "de6d4176cdd9ef1c9be519908399a61de73842abf737343f045ec8f28dfe124993a3eb02e7a9a70eb83073a38bee86b7e2ff1423de3e666ae38e5776fd89f001"
   },
   {
    "name": "site: ga_field",
    "signer": "greenacres",
-   "hash": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f",
+   "hash": "53ce402e263672352e76fccb341acd943c5ba5da997e7524be753fb8464a34de",
    "block": {
     "type": "thing",
     "state": {
@@ -347,7 +328,7 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:11.000Z",
+     "at": "2026-10-11T12:00:10.000Z",
      "audience": "public",
      "seq": 1
     },
@@ -356,12 +337,12 @@
      "prev": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59"
     }
    },
-   "signature": "a70e3d635a79b66bdd7df4d2fb2d02cc34650d4c6fc3e7fb7699927f1ed55b88ccc3ad50c2b493f9e50e142ceaf30a82b4a1bf04f542b83a9fbe333327f65c0f"
+   "signature": "ddd162120bdb370575f977bd00b9db639f3b5193143dd41bb3b4995196d874c9509fba44e55d5d12e6249338e136690573a537c5bc0a777e0d25a295adfe5609"
   },
   {
    "name": "site: ga_packhouse",
    "signer": "greenacres",
-   "hash": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+   "hash": "5eb31a2d8c1c38060677e90beb8eb052b2481ab39f6c9da770f7975236e72b20",
    "block": {
     "type": "thing",
     "state": {
@@ -389,21 +370,21 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:12.000Z",
+     "at": "2026-10-11T12:00:11.000Z",
      "audience": "public",
      "seq": 2
     },
     "refs": {
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f"
+     "prev": "53ce402e263672352e76fccb341acd943c5ba5da997e7524be753fb8464a34de"
     }
    },
-   "signature": "9acf862f9f03d97705fc715858fe2ab327b6565c1b804a30f4398d37eaaa9b0a0cd14f9aa9e8ad789761e2e62b8ea8f38d37849598dff7f36dd54001cd713c0c"
+   "signature": "a632e46bd13c59796e0f0c7c12292f1e69bb25ba0f5415587e8b3469bc88170e38c1928a5b00fc411ce1e37bfac551b1c0327bb6d98164d87ccecf839fb1ad09"
   },
   {
    "name": "site: dc",
    "signer": "metrofresh",
-   "hash": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+   "hash": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
    "block": {
     "type": "thing",
     "state": {
@@ -431,7 +412,7 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:13.000Z",
+     "at": "2026-10-11T12:00:12.000Z",
      "audience": "public",
      "seq": 1
     },
@@ -440,12 +421,12 @@
      "prev": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca"
     }
    },
-   "signature": "19934b199ae0f04c72635e2e34f2e1ef1bbf3fde1978cedcab2badca30fb84cbf92e22dcf137a1e7ca55be04a1fdad2afef2c926501d80f09305674d2aeb4203"
+   "signature": "e0a7959fab553ba509cbd61fbcca1f3da0dcd9260cdb9729756aaedb199f3bef8a94a31b30709e886b9f9db61778d0af5c681ac1bfacca0e94fa1caae48e770f"
   },
   {
    "name": "site: store",
    "signer": "cornermarket",
-   "hash": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+   "hash": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
    "block": {
     "type": "thing",
     "state": {
@@ -473,7 +454,7 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:14.000Z",
+     "at": "2026-10-11T12:00:13.000Z",
      "audience": "public",
      "seq": 1
     },
@@ -482,12 +463,12 @@
      "prev": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913"
     }
    },
-   "signature": "1701380a365de3af2b5f5fce93ec9d621667a4a5e8975329004a297389a97e703774221ed4cc1bd73039405dfa8d0ba36540250bb8308bda03a5e0aaa3d16709"
+   "signature": "ee54257f8c5e541efe38250efbe1a066e528645c7ab67a1b9650a108efa92b96abcd167136d27d543d120ef8c3b2d066855f4f1219a70d04896a115b5c092f0e"
   },
   {
    "name": "site: backroom",
    "signer": "cornermarket",
-   "hash": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
+   "hash": "d9e2d290541bfd59f95928b7a5438de1eb69448ca42ffc0b084a8be2ab5bb198",
    "block": {
     "type": "thing",
     "state": {
@@ -515,21 +496,21 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:15.000Z",
+     "at": "2026-10-11T12:00:14.000Z",
      "audience": "public",
      "seq": 2
     },
     "refs": {
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d"
+     "prev": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc"
     }
    },
-   "signature": "86d102d5c0f4b38252dc25d8a5b1302496f45313be492400dc29a0799a6595a82bbfdf2d92f67d7a4082bbebefea99e44d9a128c58de3ed3332c3303fe831307"
+   "signature": "19f9e80c1f742516fbbef87631e93b6c5aadc7b8f0d4cf758fb1cdd6075347f7ca52d03d654929e2ff00e3e889a3f7fe108a507fa4e5bdeb7bc775eea2d48906"
   },
   {
    "name": "site: floor",
    "signer": "cornermarket",
-   "hash": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d",
+   "hash": "e6ae7de7d5561964f221f6ea6cd58ca679cc10590e32221f4b03ef89e4b47ed9",
    "block": {
     "type": "thing",
     "state": {
@@ -557,21 +538,21 @@
       "country": "US"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:16.000Z",
+     "at": "2026-10-11T12:00:15.000Z",
      "audience": "public",
      "seq": 3
     },
     "refs": {
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac"
+     "prev": "d9e2d290541bfd59f95928b7a5438de1eb69448ca42ffc0b084a8be2ab5bb198"
     }
    },
-   "signature": "e32d0f455a5cc6cd5addb9812be16d00404f19c9de69e839a9985ff5d7556cd86a0ca79ea6ec0b34830bcb7eef14dff7031e40add81a6aa46b5ebd7efcbce602"
+   "signature": "6cabf1d47abd30882cd4ec437ef89e01dfb22e9897d856931557bda74629b9ef1999cd1c5333c69928fbcd5aa9939df4d7d4dbe0bec87030745a054630b19600"
   },
   {
    "name": "site: sea",
    "signer": "seabird",
-   "hash": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1",
+   "hash": "8465c405cc4c7d4ee395c7cfc41c72a3d7c8f55a0197f045cfad83c82a852ba8",
    "block": {
     "type": "thing",
     "state": {
@@ -599,7 +580,7 @@
       "country": "GB"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:17.000Z",
+     "at": "2026-10-11T12:00:16.000Z",
      "audience": "public",
      "seq": 1
     },
@@ -608,12 +589,12 @@
      "prev": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293"
     }
    },
-   "signature": "35a201839dcd8df35c14b131b98a7287d10b5d109ab1b00ea6e3940d37adf7a735cf924eb890aef292d40caf98576268df221d6a7db540dd42c92afc400a0c09"
+   "signature": "bb892d486810416d7472760f7a341622c0c543794b7ffd8c9bf1e58c0a437ad2ea706d3cbf172aeb214db5ae0bbd8eafcca4a3ee9d40bc6dcbcc0d45c6c70d03"
   },
   {
    "name": "site: dock",
    "signer": "harbourfish",
-   "hash": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb",
+   "hash": "6eeca5f6498fef2c196fd306cf2a98445dd11872fc8a4a86b5fbc6b43718fdac",
    "block": {
     "type": "thing",
     "state": {
@@ -641,7 +622,7 @@
       "country": "GB"
      },
      "phone": "+1 555 0100",
-     "at": "2026-10-11T12:00:18.000Z",
+     "at": "2026-10-11T12:00:17.000Z",
      "audience": "public",
      "seq": 1
     },
@@ -650,12 +631,12 @@
      "prev": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c"
     }
    },
-   "signature": "262df95519f2ef3685423504da67c79dd20f58ca028c161ba814608b345dbeded2a4be0fa36f9561483deebbe39861a017c4ec757a7dc8cf34e72ace114a9801"
+   "signature": "70d17fb546704a3d5bd8c8ae6aceee947168837e5d8f6c76e76b42d3e352d83576faaecb4bb0807e1cf1aa62c1390a21850403c6eb048881f6444a7ee026910b"
   },
   {
    "name": "product kind: romaine",
    "signer": "fieldhouse",
-   "hash": "58e46d7352001c18e64f700c132957ba05749f043c0a4c3daa018fba11d66da6",
+   "hash": "b77efc96a4ab43878b27cb2bbba8e98b179877734c533eb7dc920b913298a7a7",
    "block": {
     "type": "thing",
     "state": {
@@ -667,21 +648,21 @@
        "value": "10614141073464"
       }
      ],
-     "at": "2026-10-11T12:00:19.000Z",
+     "at": "2026-10-11T12:00:18.000Z",
      "audience": "public",
      "seq": 3
     },
     "refs": {
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a"
+     "prev": "053ae63535a813582086324a9ff1f64effb0a96fe75451fdec994f3fe1429738"
     }
    },
-   "signature": "cc294d4ec6bc3c3d4106ad44ac008cec060501948af3c35438d12b27b433f47f48e3cfea6234728185eed7da208aa7b4e32aaba5a3b5132be96f69cc50b88805"
+   "signature": "7ed4fc6fe28dd17248907c28aab506b134422317ffbd8dc50cdfc531d7e69023d53e26aae764c195d9d409196603bae02d2c4828c74459697792284d4cac6c0c"
   },
   {
    "name": "product kind: romaine_pack",
    "signer": "fieldhouse",
-   "hash": "74a6c3b578076d9a41382f047bb9e831e3e1fc53197bc801c9a08945284b645b",
+   "hash": "0db3802a1d125b00a7817270ea0b0e88051ba53b6a1dfeb7d6464c2c93c0c2c1",
    "block": {
     "type": "thing",
     "state": {
@@ -693,21 +674,21 @@
        "value": "10614141073532"
       }
      ],
-     "at": "2026-10-11T12:00:20.000Z",
+     "at": "2026-10-11T12:00:19.000Z",
      "audience": "public",
      "seq": 4
     },
     "refs": {
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "58e46d7352001c18e64f700c132957ba05749f043c0a4c3daa018fba11d66da6"
+     "prev": "b77efc96a4ab43878b27cb2bbba8e98b179877734c533eb7dc920b913298a7a7"
     }
    },
-   "signature": "bd865e2a6669a6efe4eabfa95843abbfd98f9cfd36fbfbf5f31bb229a975343567a684c93afd00cc6ed8bedc84f7373611b8765d732973e36ea0195a59d5560e"
+   "signature": "7d688fc1c6abe47a054dfcfd850234df610b596a3151de9ebeb2763bc42bf1a5c46ebabe34ae5597eb298109f4d0cd07fb28ad15fdbf2f81872e351d78ae860f"
   },
   {
    "name": "product kind: romaine_ga",
    "signer": "greenacres",
-   "hash": "6cc9f99776a8e9a27d4d37c8f8f8e4d523e8070c92f8ebd750f68de77587602b",
+   "hash": "efeeac92590c74c4f2b43d12bd3484ec7a71768e397b152cf3c72ec9dc1c26c5",
    "block": {
     "type": "thing",
     "state": {
@@ -719,21 +700,21 @@
        "value": "10614155073405"
       }
      ],
-     "at": "2026-10-11T12:00:21.000Z",
+     "at": "2026-10-11T12:00:20.000Z",
      "audience": "public",
      "seq": 3
     },
     "refs": {
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598"
+     "prev": "5eb31a2d8c1c38060677e90beb8eb052b2481ab39f6c9da770f7975236e72b20"
     }
    },
-   "signature": "0af9a6d18f045fd4722413d1650ce01b236049eacddff2f81e0bda8de53fafe65b0fa1b2d1cdd71e82b99dec77b3862b9034fb3094becf2c1a5962a97c34e903"
+   "signature": "f8a7b530e4835822a87a23da651b06462198d9cc3d8ca0fa02391d772a2a95a53bdf74f525c37486d5520b67636ecc37c8128f643e661a4df62e7b2bf807640e"
   },
   {
    "name": "product kind: romaine_ga_pack",
    "signer": "greenacres",
-   "hash": "6b1bcdeac45119042b9aaaffd8c6d443bd6c8f09e49c96bf8ca63fdf618bc46a",
+   "hash": "cbbace2f046cbc344248cbfb8f56eb026c18fcd43fb5e39fcc978f2056f266e1",
    "block": {
     "type": "thing",
     "state": {
@@ -745,21 +726,21 @@
        "value": "10614155073573"
       }
      ],
-     "at": "2026-10-11T12:00:22.000Z",
+     "at": "2026-10-11T12:00:21.000Z",
      "audience": "public",
      "seq": 4
     },
     "refs": {
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "6cc9f99776a8e9a27d4d37c8f8f8e4d523e8070c92f8ebd750f68de77587602b"
+     "prev": "efeeac92590c74c4f2b43d12bd3484ec7a71768e397b152cf3c72ec9dc1c26c5"
     }
    },
-   "signature": "387aad5ee2ad96e239db7195dd429d7f4ee8220a1b07871fe7c3f9548e3509bd1a3bea843d5e747cf68fc324e07fecbe807df5aa91be5a0236a7aaf330de6703"
+   "signature": "8458b96c171dcfe79648ff6e09c1b48e2e44ad803dbcca88b70047c9e055e4721e84d20702e7b9af8deb6867c30f48028bed8856b7cfcbe8fd7fcb31b2f6b406"
   },
   {
    "name": "product kind: salad_kit",
    "signer": "metrofresh",
-   "hash": "c3e39048189d2b802aaa0144a184a0df59684aeb10826cf092a73dd9f280cf50",
+   "hash": "fb1b57ff366f3d49554214cffd1e8b89615d9e9edd0a0776da1ce7bfab089f2e",
    "block": {
     "type": "thing",
     "state": {
@@ -771,21 +752,21 @@
        "value": "10614160000113"
       }
      ],
-     "at": "2026-10-11T12:00:23.000Z",
+     "at": "2026-10-11T12:00:22.000Z",
      "audience": "public",
      "seq": 2
     },
     "refs": {
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8"
+     "prev": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6"
     }
    },
-   "signature": "14bcfe44ab17c602b28c3c9f28940a3f28d2363630f5e871cb7edf9cb19dddc0ce0339fc93a96030751a382649dc16ad98372c1517f0b875e1beb3c84358a802"
+   "signature": "a439ef448fcf418921f50896910dccd593a489d908daaea7444a9a1be7d9ceee93e708e5a7bba65acc4a915d3843754e41f60af38f29f69ca5bfa37d9d325c08"
   },
   {
    "name": "product kind: tomatoes",
    "signer": "cornermarket",
-   "hash": "e8189344300b2c8b90f7fe1e0c5d42899e999278a40b14ceaad63e3f1f326b7a",
+   "hash": "f0075301cdc7371e08c1df37fbd4c42f7550cf76cc5ae2bb7c3d6365ce2f6a18",
    "block": {
     "type": "thing",
     "state": {
@@ -797,21 +778,21 @@
        "value": "10614180000599"
       }
      ],
-     "at": "2026-10-11T12:00:24.000Z",
+     "at": "2026-10-11T12:00:23.000Z",
      "audience": "public",
      "seq": 4
     },
     "refs": {
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d"
+     "prev": "e6ae7de7d5561964f221f6ea6cd58ca679cc10590e32221f4b03ef89e4b47ed9"
     }
    },
-   "signature": "31ed82cbffb8b28dce4cdad2bc10d39caa40e360e8e3df0d212a95cdd02581af71fbcbb5b5117b8328c78634b2384090fa1fd79edf1df91172923081dea9b103"
+   "signature": "7222f935dc3339cd350ff48c9bd992a7f90379ac35010d2a55e7bb639dd7980aaeac78237f9b318e527279ab5e1e227b693ec65c6f6f292909e355d2b0d3fd03"
   },
   {
    "name": "product kind: cod_catch",
    "signer": "seabird",
-   "hash": "b769b6645de5342317707989fa45254666be397acff9e5f9a8c8395000cb8a16",
+   "hash": "b254040efc6f6c353d32b4a1e6415ddd4d7f6d452dd8d424a366125be4bced97",
    "block": {
     "type": "thing",
     "state": {
@@ -823,21 +804,21 @@
        "value": "10614170000226"
       }
      ],
-     "at": "2026-10-11T12:00:25.000Z",
+     "at": "2026-10-11T12:00:24.000Z",
      "audience": "public",
      "seq": 2
     },
     "refs": {
      "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
-     "prev": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1"
+     "prev": "8465c405cc4c7d4ee395c7cfc41c72a3d7c8f55a0197f045cfad83c82a852ba8"
     }
    },
-   "signature": "8ed9e1bfabac8d3556116bfd6d65f9f2b3ac45daaca0dd9da494607764daaa1e8cb9547d5cc60702e87607a7a0fde5dde2040ac6f33abdd2a80a0c865dd4ac0e"
+   "signature": "57860704339375e360b171fc7a1b5ed1fc342613c0f7ba8bb4bbd278380ea20f1204b6bc2a3aadc24decb125bc8a9ed88b9e93f7fc992c94be38bcbc7c00f208"
   },
   {
    "name": "product kind: cod_fillet",
    "signer": "harbourfish",
-   "hash": "b4ae846e030b48af827f8355c28cd3499def6ff16252a47c2546c3f67d1adf0f",
+   "hash": "c6fa996f31c5a70711785bc2aeac5e962e5af59d386f43ea01d5766085f8d413",
    "block": {
     "type": "thing",
     "state": {
@@ -849,21 +830,21 @@
        "value": "10614175000399"
       }
      ],
-     "at": "2026-10-11T12:00:26.000Z",
+     "at": "2026-10-11T12:00:25.000Z",
      "audience": "public",
      "seq": 2
     },
     "refs": {
      "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
-     "prev": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb"
+     "prev": "6eeca5f6498fef2c196fd306cf2a98445dd11872fc8a4a86b5fbc6b43718fdac"
     }
    },
-   "signature": "82cbd4cf814f7e39af1ede7e061c54d5e2158954848ba5f797ed10f43e51aa066508d99f38334ea01f9cbb7143bf7888d6451c9196f4c566d5d20d55019a970e"
+   "signature": "82f2710e6106ee786b2924909aec29f449b7975a550d0ee95958d2b3f220738bed6eac7838ca88cc994b3fe998ce066684e4c170c9148e446b96e409a50d5e02"
   },
   {
    "name": "container: a tote",
    "signer": "cornermarket",
-   "hash": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+   "hash": "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d",
    "block": {
     "type": "thing",
     "state": {
@@ -875,22 +856,53 @@
        "value": "urn:epc:id:sscc:0614190.1000000017"
       }
      ],
+     "at": "2026-10-11T12:00:26.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "place": "d9e2d290541bfd59f95928b7a5438de1eb69448ca42ffc0b084a8be2ab5bb198",
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "f0075301cdc7371e08c1df37fbd4c42f7550cf76cc5ae2bb7c3d6365ce2f6a18"
+    }
+   },
+   "signature": "f9fc63305b2815d2a050b08bc407d179c198ae9492decfe44e363648dea454fe5e9f9bf816d2b409485fc092a38e970c7aa5a364f112045bcd0c9180a60b780e"
+  },
+  {
+   "name": "schema: EPCIS transfers (fieldhouse)",
+   "signer": "fieldhouse",
+   "hash": "e408efaf41988acfd6a2599dc65baf83206117cb5b226be5ec362acc8948ee35",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "schema",
+     "name": "EPCIS transfer fields",
+     "target": "transfer",
+     "fields": {
+      "biz_step": "text",
+      "disposition": "text",
+      "persistent_disposition": "object",
+      "tz": "text",
+      "action": "text",
+      "epcis_id": "text",
+      "biz_transactions": "list",
+      "reference_document": "object"
+     },
      "at": "2026-10-11T12:00:27.000Z",
      "audience": "public",
      "seq": 5
     },
     "refs": {
-     "place": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
-     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "e8189344300b2c8b90f7fe1e0c5d42899e999278a40b14ceaad63e3f1f326b7a"
+     "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
+     "prev": "0db3802a1d125b00a7817270ea0b0e88051ba53b6a1dfeb7d6464c2c93c0c2c1"
     }
    },
-   "signature": "dfc255f2b42a1447e004e9dcff87e126d138687c86450ae60e62ceb675688620fa159fd92fe31ec525c02f810ddfd9a719eb8da4e6c3911e4207e424ec20e90c"
+   "signature": "2742a2c798a90b3b55e7cf964a6e14a85839c33ebaeb95e86dbe6a8efb506c8ce0a60d06651f144e67f55fad74e86203eec078516679f9c42542e80f8733c00a"
   },
   {
-   "name": "schema: EPCIS transfers",
-   "signer": "profile",
-   "hash": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+   "name": "schema: EPCIS transfers (greenacres)",
+   "signer": "greenacres",
+   "hash": "1082dc9da986095b198cbcf8109b68062976e23b9fa5d3016f43bee90cf4a29b",
    "block": {
     "type": "thing",
     "state": {
@@ -909,19 +921,112 @@
      },
      "at": "2026-10-11T12:00:28.000Z",
      "audience": "public",
-     "seq": 1
+     "seq": 5
     },
     "refs": {
-     "author": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723",
-     "prev": "d6388c5d88e93a8e9ea881716b78907501c088cc227c6635c2e010166903b723"
+     "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
+     "prev": "cbbace2f046cbc344248cbfb8f56eb026c18fcd43fb5e39fcc978f2056f266e1"
     }
    },
-   "signature": "2bf9493b1d83be2d2d4759548aa9cb69aaa1d26b869cbe276f2879424ed7a7081a547c7a989e879f8fe7b39621a09a2e842d5ee6b3f6fe1f4773d5d670ef2309"
+   "signature": "a3de3acefa2bf8a1b3ba94a0b87a3da4063b6c4e09888a868e42e3141580a7eefc434c1c9a3cd07d4bda262bf8393e36d64b12341b1bfe320dc55e3fc88bc80f"
+  },
+  {
+   "name": "schema: EPCIS transfers (metrofresh)",
+   "signer": "metrofresh",
+   "hash": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "schema",
+     "name": "EPCIS transfer fields",
+     "target": "transfer",
+     "fields": {
+      "biz_step": "text",
+      "disposition": "text",
+      "persistent_disposition": "object",
+      "tz": "text",
+      "action": "text",
+      "epcis_id": "text",
+      "biz_transactions": "list",
+      "reference_document": "object"
+     },
+     "at": "2026-10-11T12:00:29.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "fb1b57ff366f3d49554214cffd1e8b89615d9e9edd0a0776da1ce7bfab089f2e"
+    }
+   },
+   "signature": "67586f87ce3587c360cd49057f3157fc67fcc57653e016c0bab8b993581103cbd1b4825f191d6bc54e8718e29089d63e5654e413bb9bd61589099381d3328009"
+  },
+  {
+   "name": "schema: EPCIS transfers (cornermarket)",
+   "signer": "cornermarket",
+   "hash": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "schema",
+     "name": "EPCIS transfer fields",
+     "target": "transfer",
+     "fields": {
+      "biz_step": "text",
+      "disposition": "text",
+      "persistent_disposition": "object",
+      "tz": "text",
+      "action": "text",
+      "epcis_id": "text",
+      "biz_transactions": "list",
+      "reference_document": "object"
+     },
+     "at": "2026-10-11T12:00:30.000Z",
+     "audience": "public",
+     "seq": 6
+    },
+    "refs": {
+     "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
+     "prev": "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d"
+    }
+   },
+   "signature": "180e3cac2b6dda39652fb34507350d83ed6ea6dc8eb58548b14889bb1cfb37ad81ed16699e9fd8e44f9591101d979921ed7bf6833ef4de115649dfa0bfef6d0f"
+  },
+  {
+   "name": "schema: EPCIS transfers (harbourfish)",
+   "signer": "harbourfish",
+   "hash": "4080813ff20741723872e76d8a450c11cd6135d3e260b957a2db2536940eafdd",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "schema",
+     "name": "EPCIS transfer fields",
+     "target": "transfer",
+     "fields": {
+      "biz_step": "text",
+      "disposition": "text",
+      "persistent_disposition": "object",
+      "tz": "text",
+      "action": "text",
+      "epcis_id": "text",
+      "biz_transactions": "list",
+      "reference_document": "object"
+     },
+     "at": "2026-10-11T12:00:31.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
+     "prev": "c6fa996f31c5a70711785bc2aeac5e962e5af59d386f43ea01d5766085f8d413"
+    }
+   },
+   "signature": "d88ca7560d2da0ece4b8afae88471ca83d09c9b462b164e56999298e1bef21a2f739425ed52dd748683ef51db30a7f2c245eeeab4b485c1e257486bb0b49fb07"
   },
   {
    "name": "harvesting: Field A",
    "signer": "fieldhouse",
-   "hash": "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822",
+   "hash": "49bc87d1f2288519c362cd3f7cc41aa9d4fa275bd3f3d4af1db736fb8d69dcd6",
    "block": {
     "type": "transform",
     "state": {
@@ -934,20 +1039,20 @@
      "epcis_id": "ni:///sha-256;7c1f2a?ver=CBV2.0",
      "at": "2026-10-12T05:33:00.000Z",
      "audience": "public",
-     "seq": 5
+     "seq": 6
     },
     "refs": {
-     "place": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07",
+     "place": "cf0637cf0bb057287214c387ae4e68a72ca697e8f200bfa66ea032b8706235a2",
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "74a6c3b578076d9a41382f047bb9e831e3e1fc53197bc801c9a08945284b645b"
+     "prev": "e408efaf41988acfd6a2599dc65baf83206117cb5b226be5ec362acc8948ee35"
     }
    },
-   "signature": "ec61f1393fa77ef92eefe89c7fbdffe12e8a36bf42e26f6fd368ce011804cc122351bb7b9654be59f88d0bd0ba14db3598d7b92f738bfb56760020b83d69360b"
+   "signature": "3d4249cad88eb8a71d8c71dbfe28f2184da061b4f6fe631a261952ab0148a998bf730bbd59bc363e016e86387c6b6ffbc10161d244559f08d6e7b53fb4fef308"
   },
   {
    "name": "harvesting: Field A (out0)",
    "signer": "fieldhouse",
-   "hash": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
+   "hash": "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c",
    "block": {
     "type": "thing",
     "state": {
@@ -967,24 +1072,24 @@
      "field_name": "Field A",
      "at": "2026-10-12T05:33:00.000Z",
      "audience": "public",
-     "seq": 6
+     "seq": 7
     },
     "refs": {
-     "of": "58e46d7352001c18e64f700c132957ba05749f043c0a4c3daa018fba11d66da6",
+     "of": "b77efc96a4ab43878b27cb2bbba8e98b179877734c533eb7dc920b913298a7a7",
      "derives_from": [
-      "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822"
+      "49bc87d1f2288519c362cd3f7cc41aa9d4fa275bd3f3d4af1db736fb8d69dcd6"
      ],
-     "place": "b465659402b0f4af2ba4e54c42aeb9f9c726c2eb36abba9c4af16905aa16cc07",
+     "place": "cf0637cf0bb057287214c387ae4e68a72ca697e8f200bfa66ea032b8706235a2",
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822"
+     "prev": "49bc87d1f2288519c362cd3f7cc41aa9d4fa275bd3f3d4af1db736fb8d69dcd6"
     }
    },
-   "signature": "ac7f88d971583ba92057c8b1f88730bd2f94abc9d92de8233a1c274b2aedb81fdac894e5e4440d4be313edc0c0a0d96fed715b4028ecbffa6df02aee527ef80b"
+   "signature": "bf6f63903f6cb2a964a37ec01daee5926c35e1012a9310f64cd1c1744014ff6d3ad71105aa4c8b9f226580124fdfcaa4db7d2dd426ea9e8f598e8b21015b530e"
   },
   {
    "name": "cooling: the packhouse cooler",
    "signer": "fieldhouse",
-   "hash": "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5",
+   "hash": "50b556642e6cb900636101e7db3aa7e47ffd0b1a80f6da890700590cc3a5b6c7",
    "block": {
     "type": "transform",
     "state": {
@@ -996,21 +1101,21 @@
      "action": "OBSERVE",
      "at": "2026-10-12T09:03:00.000Z",
      "audience": "public",
-     "seq": 7
+     "seq": 8
     },
     "refs": {
-     "subject": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
-     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "subject": "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c",
+     "place": "053ae63535a813582086324a9ff1f64effb0a96fe75451fdec994f3fe1429738",
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b"
+     "prev": "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c"
     }
    },
-   "signature": "4e516d22f19693005e9e635940b58d0c33ccb28aae4bcf6d210c5c61855546e727692ed1a67108f81a5940ad46108dd22400f557d10d5ab71c399d142af84900"
+   "signature": "e91222f24c9aed73ab6db4c3d2ee2148eec56fa81db397ddeb561bbda89ecd0038f81a2053de23e7329cd52dfefe7510357af8ecc9378b970d6c344f99c30e08"
   },
   {
    "name": "initial packing: romaine hearts",
    "signer": "fieldhouse",
-   "hash": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
+   "hash": "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25",
    "block": {
     "type": "transform",
     "state": {
@@ -1021,23 +1126,23 @@
      "disposition": "urn:epcglobal:cbv:disp:in_progress",
      "at": "2026-10-12T14:03:00.000Z",
      "audience": "public",
-     "seq": 8
+     "seq": 9
     },
     "refs": {
      "derives_from": [
-      "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b"
+      "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c"
      ],
-     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "place": "053ae63535a813582086324a9ff1f64effb0a96fe75451fdec994f3fe1429738",
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5"
+     "prev": "50b556642e6cb900636101e7db3aa7e47ffd0b1a80f6da890700590cc3a5b6c7"
     }
    },
-   "signature": "93e0f897384b7b7d9d1d8752e7427e842b5d1165c19f1ebf2cf52bf5f6e1c0166994695b088f48c06c79e2fc99029f8b537d14276de86b0bf68a499baba3ec05"
+   "signature": "7210630c9a68c11dc8b820c34afe1aff08b205e784e9fb24e49c8c3e92678a963b41e81f9f50a7510e3c5c0683676bbf888aae370387560afb6fd900c6b0720b"
   },
   {
    "name": "initial packing: romaine hearts (out0)",
    "signer": "fieldhouse",
-   "hash": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+   "hash": "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
    "block": {
     "type": "thing",
     "state": {
@@ -1063,24 +1168,24 @@
      "use_by": "2026-10-22",
      "at": "2026-10-12T14:03:00.000Z",
      "audience": "public",
-     "seq": 9
+     "seq": 10
     },
     "refs": {
-     "of": "74a6c3b578076d9a41382f047bb9e831e3e1fc53197bc801c9a08945284b645b",
+     "of": "0db3802a1d125b00a7817270ea0b0e88051ba53b6a1dfeb7d6464c2c93c0c2c1",
      "derives_from": [
-      "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+      "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25"
      ],
-     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
+     "place": "053ae63535a813582086324a9ff1f64effb0a96fe75451fdec994f3fe1429738",
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+     "prev": "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25"
     }
    },
-   "signature": "86709508ce4fb8e042a48fb2aa69d6b80f1d6739f0d0fc4d3d1fea30ddf7e0a3d353d02c261c9ab728e737634ce0be8b6d6ddfdae565a9dd2cffda8e09ff410f"
+   "signature": "886b0a0cd79bc6537069fadc355bcfa3c2ae90a4c114144bbb0d7a96cccc8944dd072657ed7885197932654e410fa89df0850df4d4a7aa16400761c0c7483f03"
   },
   {
    "name": "harvesting: Green Acres Field B",
    "signer": "greenacres",
-   "hash": "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0",
+   "hash": "c0ed058547c50a8e30ad863805f50f4afa7dffaca2872c00bc4891e132ff4af5",
    "block": {
     "type": "transform",
     "state": {
@@ -1092,20 +1197,20 @@
      "action": "ADD",
      "at": "2026-10-12T06:13:00.000Z",
      "audience": "public",
-     "seq": 5
+     "seq": 6
     },
     "refs": {
-     "place": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f",
+     "place": "53ce402e263672352e76fccb341acd943c5ba5da997e7524be753fb8464a34de",
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "6b1bcdeac45119042b9aaaffd8c6d443bd6c8f09e49c96bf8ca63fdf618bc46a"
+     "prev": "1082dc9da986095b198cbcf8109b68062976e23b9fa5d3016f43bee90cf4a29b"
     }
    },
-   "signature": "7f65e46970b3bd2df63059cdf178fd5b739857076e0090f604fffadd8522fa2af2c1aaded3b4c10609105cf8bf4bd585582d02f4d164586fb0dc84bf9571f408"
+   "signature": "fc178d763223c0b5555ffeb6b7c67f7f8c1ccd8ce9d81556ed04759d29ef976dcf16a61fbd9aadbfeb414b4d5c057635bd975e81a63f230dd198532e7dd90f0d"
   },
   {
    "name": "harvesting: Green Acres Field B (out0)",
    "signer": "greenacres",
-   "hash": "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549",
+   "hash": "622e420c2ab7f547b22eb1ca795197e827cabd387ef165421160344d1a7f9ddd",
    "block": {
     "type": "thing",
     "state": {
@@ -1125,24 +1230,24 @@
      "field_name": "Field B",
      "at": "2026-10-12T06:13:00.000Z",
      "audience": "public",
-     "seq": 6
+     "seq": 7
     },
     "refs": {
-     "of": "6cc9f99776a8e9a27d4d37c8f8f8e4d523e8070c92f8ebd750f68de77587602b",
+     "of": "efeeac92590c74c4f2b43d12bd3484ec7a71768e397b152cf3c72ec9dc1c26c5",
      "derives_from": [
-      "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0"
+      "c0ed058547c50a8e30ad863805f50f4afa7dffaca2872c00bc4891e132ff4af5"
      ],
-     "place": "66563e4ce83278cf5409a79e061f856f6c3a2295411f992f84ecd876ef9bb49f",
+     "place": "53ce402e263672352e76fccb341acd943c5ba5da997e7524be753fb8464a34de",
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0"
+     "prev": "c0ed058547c50a8e30ad863805f50f4afa7dffaca2872c00bc4891e132ff4af5"
     }
    },
-   "signature": "338acb2dfa48d729c91b32ef90b3ac495f5ad8cd052ffbdf60c24dae79d21dc07f653a9179721a4b619cfdea2687387c45afda968079e86bb2da7575714ad608"
+   "signature": "e70998541bea3a4f9bf5fd19241deee239cd7552976feaa67dbd2004b056612a6659ec0178105fef82ede89fefe90788e9803820c9ab35bd863680823d44fe04"
   },
   {
    "name": "initial packing: trimmed romaine",
    "signer": "greenacres",
-   "hash": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
+   "hash": "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2",
    "block": {
     "type": "transform",
     "state": {
@@ -1153,23 +1258,23 @@
      "disposition": "urn:epcglobal:cbv:disp:in_progress",
      "at": "2026-10-12T13:23:00.000Z",
      "audience": "public",
-     "seq": 7
+     "seq": 8
     },
     "refs": {
      "derives_from": [
-      "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549"
+      "622e420c2ab7f547b22eb1ca795197e827cabd387ef165421160344d1a7f9ddd"
      ],
-     "place": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+     "place": "5eb31a2d8c1c38060677e90beb8eb052b2481ab39f6c9da770f7975236e72b20",
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549"
+     "prev": "622e420c2ab7f547b22eb1ca795197e827cabd387ef165421160344d1a7f9ddd"
     }
    },
-   "signature": "a4c1eb88ee88136b369651a3dca20ee10a631b0c40cde76cdba628242a1540d91375378b9704f7ffe19d1264640b3c0ed65434f04b4dfcad804991d0e6b79f01"
+   "signature": "90550a83502e2506e3ddfd62e03225610e0904a3fdd0aa3e02420ac5be521da646d61df6a7377a0400903bef4964c655871240ef0a5e28416d745949e22e9f00"
   },
   {
    "name": "initial packing: trimmed romaine (out0)",
    "signer": "greenacres",
-   "hash": "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+   "hash": "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3",
    "block": {
     "type": "thing",
     "state": {
@@ -1194,24 +1299,24 @@
      ],
      "at": "2026-10-12T13:23:00.000Z",
      "audience": "public",
-     "seq": 8
+     "seq": 9
     },
     "refs": {
-     "of": "6b1bcdeac45119042b9aaaffd8c6d443bd6c8f09e49c96bf8ca63fdf618bc46a",
+     "of": "cbbace2f046cbc344248cbfb8f56eb026c18fcd43fb5e39fcc978f2056f266e1",
      "derives_from": [
-      "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+      "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2"
      ],
-     "place": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
+     "place": "5eb31a2d8c1c38060677e90beb8eb052b2481ab39f6c9da770f7975236e72b20",
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+     "prev": "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2"
     }
    },
-   "signature": "4e156e8ce3d2b260b2016aa3ce63784f1bd313b420c69b4ec36615c143f443959c7c259f03ca38141c031f8cb3229ed9e6500d2069572223d2a5ea92f44d0602"
+   "signature": "7f356c1eeff70909cb365abd7657fc2f61499308c73de4cf28c878c19dc140bd04df37e93ce4e5e18dfdbfda8a8b07231cecb1174bd28fedb6952adff3fb8701"
   },
   {
    "name": "shipping: Fieldhouse to Metro Fresh",
    "signer": "fieldhouse",
-   "hash": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+   "hash": "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
    "block": {
     "type": "transfer",
     "state": {
@@ -1229,27 +1334,27 @@
      ],
      "at": "2026-10-13T06:03:00.000Z",
      "audience": "public",
-     "seq": 10
+     "seq": 11
     },
     "refs": {
      "what": [
-      "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+      "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153"
      ],
      "to_owner": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "place": "466653cca10f05ecf6ec75993c479a15e39c2c2f941d681cf815ce78994f209a",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "place": "053ae63535a813582086324a9ff1f64effb0a96fe75451fdec994f3fe1429738",
+     "schema": "e408efaf41988acfd6a2599dc65baf83206117cb5b226be5ec362acc8948ee35",
      "to_holder": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
-     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "to_place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
      "author": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-     "prev": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+     "prev": "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153"
     }
    },
-   "signature": "240564e2486039f6a5f89d3b81c471806170490c736295df104cabf5137f623d86c2f4b5bba86ae562fc9b375617a558e3aa24ef654bdf40b3914dd0d34ab800"
+   "signature": "febd1574ad62843c8751b2ef9f4c0fa7af2e5b4b67beaa6bbad4defbd2b4bb2f4ad336237ae4d0b25e2efd33d48b8893e2172646344479821532e0f437666f03"
   },
   {
    "name": "shipping: Green Acres to Metro Fresh",
    "signer": "greenacres",
-   "hash": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+   "hash": "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b",
    "block": {
     "type": "transfer",
     "state": {
@@ -1267,27 +1372,27 @@
      ],
      "at": "2026-10-13T05:03:00.000Z",
      "audience": "public",
-     "seq": 9
+     "seq": 10
     },
     "refs": {
      "what": [
-      "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+      "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3"
      ],
      "to_owner": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "place": "e8fa4d14396dfd24f7dc9430ba585fcaa093edcff611462fdd80090f20c34598",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "place": "5eb31a2d8c1c38060677e90beb8eb052b2481ab39f6c9da770f7975236e72b20",
+     "schema": "1082dc9da986095b198cbcf8109b68062976e23b9fa5d3016f43bee90cf4a29b",
      "to_holder": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
-     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "to_place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
      "author": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-     "prev": "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+     "prev": "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3"
     }
    },
-   "signature": "493152886288102443a0d133f90c7bf362ea9d22c24c7b9363dc6b24cd15cc85c94a480d0b07c5608988169d56fe5ad2338a4d6141698eb0b61aa0a3b71fcb00"
+   "signature": "f10899e3cc193f09bfc84d61ba6c9587a256bd9991b78361eef137564cf455e24f654ca9b5e6cf26eb3e4e839ac2bc1178359bc29e3c94f5dfd73673a34a790f"
   },
   {
    "name": "receiving: Metro Fresh takes the Green Acres lot",
    "signer": "metrofresh",
-   "hash": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+   "hash": "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
    "block": {
     "type": "transfer",
     "state": {
@@ -1306,25 +1411,25 @@
      ],
      "at": "2026-10-13T08:18:00.000Z",
      "audience": "public",
-     "seq": 3
+     "seq": 4
     },
     "refs": {
-     "answers": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "answers": "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "schema": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "c3e39048189d2b802aaa0144a184a0df59684aeb10826cf092a73dd9f280cf50",
+     "prev": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
      "after": [
-      "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935"
+      "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b"
      ]
     }
    },
-   "signature": "dd1f9e729cb5699461071a93cc366ff6d34deed1bc6e555d47b5746bd26c4308a192b65132f741477fb8be3171a1a46bc3036873c0e6a703ee991d80a8ff7502"
+   "signature": "aaab06aaf6081aaa28684c1f3fb5b3eef866fe20fc1086beb303660a9de8bdba24d4f5ffa28195b62c7f882813267be49333888f43010da27857a3dda7d01900"
   },
   {
    "name": "receiving: Metro Fresh takes the Green Acres lot (arrive)",
    "signer": "metrofresh",
-   "hash": "9b68811552581f532740fbd3c42e216efe0fc3a66a8981befbe10f93292f36d9",
+   "hash": "8fbd955a455ba39bb7e4cf1192349f32d603e6c49ad77d91abbaf3358cbe8fa7",
    "block": {
     "type": "transfer",
     "state": {
@@ -1333,28 +1438,28 @@
      "tz": "-07:00",
      "at": "2026-10-13T08:18:00.000Z",
      "audience": "public",
-     "seq": 4
+     "seq": 5
     },
     "refs": {
      "what": [
-      "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+      "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3"
      ],
-     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "to_place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "schema": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+     "prev": "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
      "after": [
-      "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016"
+      "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985"
      ]
     }
    },
-   "signature": "64c2d88c0482aba461ccad83b7e01cf41a2dc84eadb44970753544549b91cbcefe0e383abc8d77f86f396c25683402d8a5d97d40138e7b70857c25af95c99905"
+   "signature": "5df27c3b61d3fbb941a3365bde13a4ec3cba6905f327458568faa3af49600ad94faa5908bfd0792c657e5a78ed60ff6f8cbd26624f73190add45fd082013ad08"
   },
   {
    "name": "receiving: Metro Fresh takes the Fieldhouse lot",
    "signer": "metrofresh",
-   "hash": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+   "hash": "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
    "block": {
     "type": "transfer",
     "state": {
@@ -1373,25 +1478,25 @@
      ],
      "at": "2026-10-13T09:33:00.000Z",
      "audience": "public",
-     "seq": 5
+     "seq": 6
     },
     "refs": {
-     "answers": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "answers": "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "schema": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "9b68811552581f532740fbd3c42e216efe0fc3a66a8981befbe10f93292f36d9",
+     "prev": "8fbd955a455ba39bb7e4cf1192349f32d603e6c49ad77d91abbaf3358cbe8fa7",
      "after": [
-      "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21"
+      "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca"
      ]
     }
    },
-   "signature": "9765de7c565a081e1954dfbff8cd0972b1a58a9e92906f0b46dd377cd48fc90c85c49389b62f0acf4d4e08d5c98d881d12e7bf40866d7c4284dddb3367982f07"
+   "signature": "ae313ffd51d62b90cc603c4544be0c2bbace3684e99af85ba58b8f7ab35440622c06f9a28c3ca9c65bc9c8f40e6aa6b150823f1c737bb88a27775c2c646d2808"
   },
   {
    "name": "receiving: Metro Fresh takes the Fieldhouse lot (arrive)",
    "signer": "metrofresh",
-   "hash": "0938a8c0473fccf0d2d83f05d45966a6b0495e6b313dc103fcf6e9cd729116c8",
+   "hash": "13db0ade29738e5f97160429d56cde137b12789a5c06ad1f8c5f568a51dbc949",
    "block": {
     "type": "transfer",
     "state": {
@@ -1400,28 +1505,28 @@
      "tz": "-07:00",
      "at": "2026-10-13T09:33:00.000Z",
      "audience": "public",
-     "seq": 6
+     "seq": 7
     },
     "refs": {
      "what": [
-      "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+      "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153"
      ],
-     "to_place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "to_place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "schema": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+     "prev": "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
      "after": [
-      "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065"
+      "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086"
      ]
     }
    },
-   "signature": "f239c891c875bd841a302492aa38858f884e02ba22518c2205771329d7a1af42f13417aab2edc3176be80bb26114fc9fee33fad9f32a7d64789ae94807a3bd08"
+   "signature": "ce027b775d27aa0849365ae4ae1d8b7ca1be62ddbe362f565f861f0afc799dff229497847efaa9dfc3e655be78a3694060146be6a902a8adf46a5c256589e006"
   },
   {
    "name": "transformation: salad kits",
    "signer": "metrofresh",
-   "hash": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
+   "hash": "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63",
    "block": {
     "type": "transform",
     "state": {
@@ -1432,24 +1537,24 @@
      "disposition": "urn:epcglobal:cbv:disp:in_progress",
      "at": "2026-10-13T11:03:00.000Z",
      "audience": "public",
-     "seq": 7
+     "seq": 8
     },
     "refs": {
      "derives_from": [
-      "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
-      "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+      "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
+      "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3"
      ],
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "0938a8c0473fccf0d2d83f05d45966a6b0495e6b313dc103fcf6e9cd729116c8"
+     "prev": "13db0ade29738e5f97160429d56cde137b12789a5c06ad1f8c5f568a51dbc949"
     }
    },
-   "signature": "79785301d6401d604f463f71ad5dc4bd3d94e514b283e1a63179d9da602ecd73c259e5b6a4dc417d22c6539d6e8f03749a184a0e04434da10cd41cea373a7903"
+   "signature": "bb0c80a4b55c4c02d1d775933c614289c60f27bcf8a0f5c081704c2235f252b1f85e1fbfd152a4af727f6bc5415f6b56c7c714ae4c9f0b02bab0f8d3869dff0a"
   },
   {
    "name": "transformation: salad kits (out0)",
    "signer": "metrofresh",
-   "hash": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "hash": "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802",
    "block": {
     "type": "thing",
     "state": {
@@ -1475,24 +1580,24 @@
      "use_by": "2026-10-20",
      "at": "2026-10-13T11:03:00.000Z",
      "audience": "public",
-     "seq": 8
+     "seq": 9
     },
     "refs": {
-     "of": "c3e39048189d2b802aaa0144a184a0df59684aeb10826cf092a73dd9f280cf50",
+     "of": "fb1b57ff366f3d49554214cffd1e8b89615d9e9edd0a0776da1ce7bfab089f2e",
      "derives_from": [
-      "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+      "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63"
      ],
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+     "prev": "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63"
     }
    },
-   "signature": "d314e5bb357a3b8c72b53b840e8bba5e9a8fde55fdf76504197b31201b48f081bf9e34e8679119d1ebc238a4e07f08f90635d4c7ad279fbf050f2aaeed1f9009"
+   "signature": "5012300e122f29cdf396c106725a5fb2fe80eafa0170efaaa521419e36f96f6346c58802a4629d8f1f85f4a5d667651add52b4b11f9fbef651830dea0263630f"
   },
   {
    "name": "shipping: Metro Fresh to Corner Market",
    "signer": "metrofresh",
-   "hash": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+   "hash": "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
    "block": {
     "type": "transfer",
     "state": {
@@ -1510,27 +1615,27 @@
      ],
      "at": "2026-10-14T04:33:00.000Z",
      "audience": "public",
-     "seq": 9
+     "seq": 10
     },
     "refs": {
      "what": [
-      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+      "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
      ],
      "to_owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "place": "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "place": "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6",
+     "schema": "f08b2da0ddba25ba8adcc7dbaee02eefbcc6bdbef6f6941be437b4004f23fabc",
      "to_holder": "5fed130a67ca845a420fcd60281046a9d4d9f1bbf8a6d91acc0836c98cd2fc50",
-     "to_place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "to_place": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+     "prev": "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
     }
    },
-   "signature": "9ef2919e0bf4b0b67b7222383297c4a73b99f0e552b0964f3561f4da5c5de878104edbb5e2943e69b5f08b96a07236454ebbf4142e7fb45b6a96f7ae6c56d008"
+   "signature": "49d24659b8025aa2c0203483d674ca64c4cf19cf2623740b4dc0e3986320bca92166fc7b78fa2946d8046868204822a720672514fba43e619182d4480f297d0f"
   },
   {
    "name": "receiving: Corner Market takes the kits",
    "signer": "cornermarket",
-   "hash": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+   "hash": "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
    "block": {
     "type": "transfer",
     "state": {
@@ -1549,25 +1654,25 @@
      ],
      "at": "2026-10-14T07:48:00.000Z",
      "audience": "public",
-     "seq": 6
+     "seq": 7
     },
     "refs": {
-     "answers": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
-     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "answers": "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
+     "place": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
+     "schema": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
+     "prev": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
      "after": [
-      "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+      "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e"
      ]
     }
    },
-   "signature": "bea52fc98385a690aef23a96e37374802b821c0695b658698d82105d5e096da727c473f0768b1f2109f124e4a404c2f88a862e0e950853feea36b6fdd159e002"
+   "signature": "9ff2b2cd3747967c975bcbbff9519b489950c6cd811154b4efcce293b603daa57a6baa91071977b1247d660c1ab8ca74a7112e1ebc8e436287b3f1962462f403"
   },
   {
    "name": "receiving: Corner Market takes the kits (arrive)",
    "signer": "cornermarket",
-   "hash": "bd6c9fd40e61b9843c6c3e46a0d013f02ef4fe9ecf4515d227df7a8d69b0f178",
+   "hash": "c2306c12c76c4fdfbccd6aed050f43ffa246e60cfd44d997083851c4b51c76ca",
    "block": {
     "type": "transfer",
     "state": {
@@ -1576,28 +1681,28 @@
      "tz": "-07:00",
      "at": "2026-10-14T07:48:00.000Z",
      "audience": "public",
-     "seq": 7
+     "seq": 8
     },
     "refs": {
      "what": [
-      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+      "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
      ],
-     "to_place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
-     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "to_place": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
+     "place": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
+     "schema": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+     "prev": "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
      "after": [
-      "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d"
+      "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195"
      ]
     }
    },
-   "signature": "d67cb9bab6cc1b96e907bda2dc5f4ec0e0c6339e70b466618a8dd72865b207838b8df462a0faff804e481653d8c48ed82fba99a2f454403b1537e0ffec7b1c00"
+   "signature": "838242cbe520e454c3b12b9d9ed69dd8dcfd264e8ef7235c7a1b6bab97a07603d3fa57846673562b914d7aea6b7a2ec4e5a178f3fefb9dabe971d160d1e2240d"
   },
   {
    "name": "aggregation: the kits into a tote",
    "signer": "cornermarket",
-   "hash": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
+   "hash": "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf",
    "block": {
     "type": "transfer",
     "state": {
@@ -1608,26 +1713,26 @@
      "action": "ADD",
      "at": "2026-10-14T08:23:00.000Z",
      "audience": "public",
-     "seq": 8
+     "seq": 9
     },
     "refs": {
      "what": [
-      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+      "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
      ],
-     "subject": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
-     "to_place": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
-     "place": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "subject": "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d",
+     "to_place": "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d",
+     "place": "d9e2d290541bfd59f95928b7a5438de1eb69448ca42ffc0b084a8be2ab5bb198",
+     "schema": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "bd6c9fd40e61b9843c6c3e46a0d013f02ef4fe9ecf4515d227df7a8d69b0f178"
+     "prev": "c2306c12c76c4fdfbccd6aed050f43ffa246e60cfd44d997083851c4b51c76ca"
     }
    },
-   "signature": "cc7e99af5821004cb58d4d149dad86b6731ccd38ee1bd4e8814ac4df036502c7a5010eaba892dbfb36478e56e72e5f9ce4093dabe0e22acec406dd2a481f2b0f"
+   "signature": "2f5ebbaa5dbe71834ddb6f5595a5399cf2b4fa6b124323ee3a38ebf95e6f5dcef5b25ecfc5c229b558db09b1f9f497364fe2e5b6cadeb588aa8c3b906bfd1106"
   },
   {
    "name": "aggregation: the kits out of the tote",
    "signer": "cornermarket",
-   "hash": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+   "hash": "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856",
    "block": {
     "type": "transfer",
     "state": {
@@ -1638,30 +1743,30 @@
      "action": "DELETE",
      "at": "2026-10-14T16:03:00.000Z",
      "audience": "public",
-     "seq": 9
+     "seq": 10
     },
     "refs": {
      "what": [
-      "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+      "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
      ],
-     "subject": "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
-     "to_place": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d",
-     "place": "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "subject": "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d",
+     "to_place": "e6ae7de7d5561964f221f6ea6cd58ca679cc10590e32221f4b03ef89e4b47ed9",
+     "place": "e6ae7de7d5561964f221f6ea6cd58ca679cc10590e32221f4b03ef89e4b47ed9",
+     "schema": "58249e1d397165369803fb00eb9509f0340aee9d2c173aaae3caeb7b6493b826",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+     "prev": "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf"
     }
    },
-   "signature": "5fd783115f70e8e9bedc568cc3e2955297e831c3e059bf04a1301751fcc782fed9f0aa401353eea738f29253e1b7dbb007c88aefe67501662b34fe711ad75200"
+   "signature": "221ffa4a745e8ab4b7d97bd236091745a3367fa6e39ef03751c7cadb225107856cad75568ec25c1963a87eb9e4327d3698c422da41724692f0e4514d49c60104"
   },
   {
    "name": "receiving from an exempt source: the receiver assigns the code",
    "signer": "cornermarket",
-   "hash": "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c",
+   "hash": "e855afdbbab7a30a9b42cb7fa4078bde685a6d80fa5f5a1a35b81b17e1e1a107",
    "block": {
     "type": "transform",
     "state": {
-     "kind": "receive",
+     "kind": "first_receive",
      "when": "2026-10-14T09:00:00.000Z",
      "tz": "-07:00",
      "biz_step": "urn:epcglobal:cbv:bizstep:receiving",
@@ -1669,20 +1774,20 @@
      "action": "ADD",
      "at": "2026-10-14T09:03:00.000Z",
      "audience": "public",
-     "seq": 10
+     "seq": 11
     },
     "refs": {
-     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "place": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+     "prev": "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856"
     }
    },
-   "signature": "d428b4510b2713a7830436f4a0011ccc486f47d2ad7af12c7343fa353f590dfe78af90f4fa8b704badbecf9294cf4282f155d32bd44eb01036bc040cd905700c"
+   "signature": "eed822c9595ffb636dd9b57ea0af392d397d68e95d1a633aec2bb466bd1621ed5368f045e8b9ddaaeafac3daaac585a7b4faca9eef808581fabedd0aff32c80e"
   },
   {
    "name": "receiving from an exempt source: the receiver assigns the code (out0)",
    "signer": "cornermarket",
-   "hash": "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1",
+   "hash": "bf0bd5da35c7bfc636f3cc4f1e3460af2cd3239b2179e16d00c4d77dabcc2af3",
    "block": {
     "type": "thing",
     "state": {
@@ -1708,24 +1813,24 @@
      "commodity": "Roma tomatoes",
      "at": "2026-10-14T09:03:00.000Z",
      "audience": "public",
-     "seq": 11
+     "seq": 12
     },
     "refs": {
-     "of": "e8189344300b2c8b90f7fe1e0c5d42899e999278a40b14ceaad63e3f1f326b7a",
+     "of": "f0075301cdc7371e08c1df37fbd4c42f7550cf76cc5ae2bb7c3d6365ce2f6a18",
      "derives_from": [
-      "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+      "e855afdbbab7a30a9b42cb7fa4078bde685a6d80fa5f5a1a35b81b17e1e1a107"
      ],
-     "place": "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d",
+     "place": "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+     "prev": "e855afdbbab7a30a9b42cb7fa4078bde685a6d80fa5f5a1a35b81b17e1e1a107"
     }
    },
-   "signature": "8e885207ba0657bd9785f566970e8ae6fb90910fa9a16830d74351e2e5a3ab85fa7f1d263491756190dfcc5e19175c5a9d8b5c6f9441be8c58f89424008ab40e"
+   "signature": "69d3334a803e2a34b376ceea0f02ec18b55beaf404536c30d4a1a2a7bbaca7b9798255588ff43432721c24800132b9b1c7d5a5696592967b36ee4a2ae344580c"
   },
   {
    "name": "harvesting: the catch",
    "signer": "seabird",
-   "hash": "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72",
+   "hash": "6791c6b7484f7317a70566e59cfe056d65bca4764b183ab633d3ad6ab0c6df5c",
    "block": {
     "type": "transform",
     "state": {
@@ -1740,17 +1845,17 @@
      "seq": 3
     },
     "refs": {
-     "place": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1",
+     "place": "8465c405cc4c7d4ee395c7cfc41c72a3d7c8f55a0197f045cfad83c82a852ba8",
      "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
-     "prev": "b769b6645de5342317707989fa45254666be397acff9e5f9a8c8395000cb8a16"
+     "prev": "b254040efc6f6c353d32b4a1e6415ddd4d7f6d452dd8d424a366125be4bced97"
     }
    },
-   "signature": "e45d3c250d998c97f58d0da7fd12a87fd69b8ce6ed4db182149106bd09adc0468b57e3583c18c4876e81d5b3d56328f916c84dad94286460e43c4e5d391e4906"
+   "signature": "b9489dfb8379f1ec34d2cedda3a6f45964ddf386221d8d3639c6303d87374b731a2f0ec2eb84353200ca58421ed4c444d61f560919c64d20855c8c4e42465c0f"
   },
   {
    "name": "harvesting: the catch (out0)",
    "signer": "seabird",
-   "hash": "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716",
+   "hash": "9203368acdb17c2c89695e1a2deaa64962624b9e58ba9fc8a085467e5a9f3161",
    "block": {
     "type": "thing",
     "state": {
@@ -1773,21 +1878,21 @@
      "seq": 4
     },
     "refs": {
-     "of": "b769b6645de5342317707989fa45254666be397acff9e5f9a8c8395000cb8a16",
+     "of": "b254040efc6f6c353d32b4a1e6415ddd4d7f6d452dd8d424a366125be4bced97",
      "derives_from": [
-      "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72"
+      "6791c6b7484f7317a70566e59cfe056d65bca4764b183ab633d3ad6ab0c6df5c"
      ],
-     "place": "192616d1f9171d4dc992e6692c94ac2195013eda6c6ee030ffa7ee974dd7a0b1",
+     "place": "8465c405cc4c7d4ee395c7cfc41c72a3d7c8f55a0197f045cfad83c82a852ba8",
      "author": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
-     "prev": "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72"
+     "prev": "6791c6b7484f7317a70566e59cfe056d65bca4764b183ab633d3ad6ab0c6df5c"
     }
    },
-   "signature": "53be1a4d8b434d7d1a8900ae2a90dda0baf7395c7ee94599016273e72fa00b2be2565bfd86e7c1c2c31c3e2371fd912fbce6dcb13179184e81a64aa32a02fa09"
+   "signature": "1554e19c5a9ac1e7dc570ac2c4456814725fdff9350e52730f305de5dfee24a7a92b3f7f4cfdbaa6a58db2f761c44cb5cb431fc41d97c6defbede2c6c897b202"
   },
   {
    "name": "first land-based receiving: the dock fillets the catch",
    "signer": "harbourfish",
-   "hash": "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802",
+   "hash": "5d69b8aec0aa53e852e6342ef05c853c3bf27b74e4d2beb62c95b9339f26237f",
    "block": {
     "type": "transform",
     "state": {
@@ -1798,23 +1903,23 @@
      "disposition": "urn:epcglobal:cbv:disp:in_progress",
      "at": "2026-10-12T06:03:00.000Z",
      "audience": "public",
-     "seq": 3
+     "seq": 4
     },
     "refs": {
      "derives_from": [
-      "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716"
+      "9203368acdb17c2c89695e1a2deaa64962624b9e58ba9fc8a085467e5a9f3161"
      ],
-     "place": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb",
+     "place": "6eeca5f6498fef2c196fd306cf2a98445dd11872fc8a4a86b5fbc6b43718fdac",
      "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
-     "prev": "b4ae846e030b48af827f8355c28cd3499def6ff16252a47c2546c3f67d1adf0f"
+     "prev": "4080813ff20741723872e76d8a450c11cd6135d3e260b957a2db2536940eafdd"
     }
    },
-   "signature": "95b518945a63849641fcf5139ca13640f91fbeac1a110b03fea73147f06ec134feb9289bc29837e4bcce356ba61981f8dcce63d6288b43bd905b1939bdc20908"
+   "signature": "7a5fe0060a1efe24e2502acc21f77c2a2e01c17658dbf78f9451597bbfa89e86ce0b58be4ebe42170f6cbda280de8cc38446e02be3566fc99a7da6ac298b3f00"
   },
   {
    "name": "first land-based receiving: the dock fillets the catch (out0)",
    "signer": "harbourfish",
-   "hash": "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0",
+   "hash": "3ced2f8f45e5aa58a5c7bb6c3088087daba37c1d66788d3ba81f645b1c499f9b",
    "block": {
     "type": "thing",
     "state": {
@@ -1839,24 +1944,24 @@
      ],
      "at": "2026-10-12T06:03:00.000Z",
      "audience": "public",
-     "seq": 4
+     "seq": 5
     },
     "refs": {
-     "of": "b4ae846e030b48af827f8355c28cd3499def6ff16252a47c2546c3f67d1adf0f",
+     "of": "c6fa996f31c5a70711785bc2aeac5e962e5af59d386f43ea01d5766085f8d413",
      "derives_from": [
-      "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802"
+      "5d69b8aec0aa53e852e6342ef05c853c3bf27b74e4d2beb62c95b9339f26237f"
      ],
-     "place": "a2480307ee2eb1639977da6e1338e498cc46d7cca3341650dc6479b30d0349cb",
+     "place": "6eeca5f6498fef2c196fd306cf2a98445dd11872fc8a4a86b5fbc6b43718fdac",
      "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
-     "prev": "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802"
+     "prev": "5d69b8aec0aa53e852e6342ef05c853c3bf27b74e4d2beb62c95b9339f26237f"
     }
    },
-   "signature": "16a3778786f671c13f77758734a2abc12d74461fdc436201e94b7c4db023196de8d007289dd44be7eb3f9754459ac1a35f73c92c6985770cbea914bd68df2600"
+   "signature": "43898f80bbb310946454843cdce7d96d1a56ade09b07cd23b9b20e74e435e360e22b4fd496b6134f0d9f964f66b8ec7dc9b1acc99d02ddab34d648c93384dc04"
   },
   {
    "name": "transaction: the fillets sold on invoice",
    "signer": "harbourfish",
-   "hash": "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+   "hash": "fa5727347e2aa38a4ad69dbaa8978b68d25c1bd33d7620ee9e049c9f8c40448a",
    "block": {
     "type": "transfer",
     "state": {
@@ -1873,46 +1978,46 @@
      ],
      "at": "2026-10-12T10:03:00.000Z",
      "audience": "public",
-     "seq": 5
+     "seq": 6
     },
     "refs": {
      "what": [
-      "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0"
+      "3ced2f8f45e5aa58a5c7bb6c3088087daba37c1d66788d3ba81f645b1c499f9b"
      ],
      "to_owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "schema": "89b5b3a94eb6f66b474241f2b8196c4811f41b47171b6ce477dadcaaf4b5701e",
+     "schema": "4080813ff20741723872e76d8a450c11cd6135d3e260b957a2db2536940eafdd",
      "author": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
-     "prev": "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0"
+     "prev": "3ced2f8f45e5aa58a5c7bb6c3088087daba37c1d66788d3ba81f645b1c499f9b"
     }
    },
-   "signature": "21a88cf3ebd70ce56247bbfc1d72ae440d77485673898ef981c9615d627b4d8d04ba4ceaefc2bf39928e3c42e56f25f7ef2b33384997df90a2605d83a9a1f209"
+   "signature": "d44b705a9c5b814678f3d52f77d5d98c1c7ff00bd39ea69f2c502715d22143e33b3ab9f577ca5ebd8a4750c6770ba575acfe40ca42ebf2a2e5f82b0a42567207"
   },
   {
    "name": "transaction: Corner Market accepts the fillets",
    "signer": "cornermarket",
-   "hash": "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682",
+   "hash": "05e2b7761c6a9db7a1ab25f976e6af5e9efd0eedf91ea02f80a3cb21b1522eb1",
    "block": {
     "type": "transfer",
     "state": {
      "kind": "receive",
      "status": "accepted",
      "when": "2026-10-12T10:20:00.000Z",
-     "at": "2026-10-11T12:00:29.000Z",
+     "at": "2026-10-11T12:00:32.000Z",
      "audience": "public",
-     "seq": 12
+     "seq": 13
     },
     "refs": {
-     "answers": "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+     "answers": "fa5727347e2aa38a4ad69dbaa8978b68d25c1bd33d7620ee9e049c9f8c40448a",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1"
+     "prev": "bf0bd5da35c7bfc636f3cc4f1e3460af2cd3239b2179e16d00c4d77dabcc2af3"
     }
    },
-   "signature": "742f1959f0abaa8c9b82bc0db7b8db967f1e9d3179bcab66779f22e83530da8439495d36626d2ada5f0890a9473d21409e23b67f55f7c063fe3f6ab2f2453d08"
+   "signature": "7f7ab89a65e9f4c3e16f6bb6d11b8665c0e727372aeff51d4ec34bf5987b2f4c1ef9912b8b8008347172575909a33863339424b82d7632ffe9684253a7724705"
   },
   {
    "name": "escape hatch: storing, which no row maps",
    "signer": "cornermarket",
-   "hash": "8d9e353fdbe2dc25de2da5a6e838351f1a399aa72fb8ccbdbfcffc9496a81882",
+   "hash": "ccd036370438b266b6e2c395c2a6f12bab42ffd92ec509e39e841eb4302e57ad",
    "block": {
     "type": "observe",
     "state": {
@@ -1923,24 +2028,55 @@
      "raw": "53bdc40afd128342b6584fe8207c22c34f23caf5c3a2cc570c78e3234182ada6",
      "at": "2026-10-14T12:03:00.000Z",
      "audience": "public",
-     "seq": 13
+     "seq": 14
     },
     "refs": {
-     "place": "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac",
+     "place": "d9e2d290541bfd59f95928b7a5438de1eb69448ca42ffc0b084a8be2ab5bb198",
      "author": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-     "prev": "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+     "prev": "05e2b7761c6a9db7a1ab25f976e6af5e9efd0eedf91ea02f80a3cb21b1522eb1"
     }
    },
-   "signature": "5d9936c5156902950283afe0cd025bc48dbe85fc4daa665435f5342de875c989e8c054a36e3765fb79206bb3c2a177260f203c10ad2a97378408f2240951a609"
+   "signature": "32ed237d34c2eb948256d4a34782eccebbb0501814cd3b659660a9acbed3d7591027f101d23cf462572115214b6ea00ba4c10dfabeebaaac4f4754efe219ed0a"
+  },
+  {
+   "name": "schema: recall answers (metrofresh)",
+   "signer": "metrofresh",
+   "hash": "e1f336e82086a361ca86b9ea8e3892253a8faa9fb6221abf4efb097460f0fb80",
+   "block": {
+    "type": "thing",
+    "state": {
+     "kind": "schema",
+     "name": "recall answer time and marks",
+     "target": "grant",
+     "fields": {
+      "answer_within": "text",
+      "marks": "list"
+     },
+     "at": "2026-10-11T12:00:33.000Z",
+     "audience": "public",
+     "seq": 11
+    },
+    "refs": {
+     "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
+     "prev": "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e"
+    }
+   },
+   "signature": "73a8bdbcec6e3e3482a2fa3f76fd3f7b2a8a7c19125a0f9a34384491d87b7890c8f6a57d444ebd6a4f9324fcee7bcaf128ac844dc7409239965f25cd817d4f0a"
   },
   {
    "name": "recall grant: Metro Fresh to the regulator",
    "signer": "metrofresh",
-   "hash": "ad0e7e0e46cb2709ec5e28e643f6a5d17067341a39936f8d20a55a96c5c2886e",
+   "hash": "67482d8070ac767c29f98f18392abf2122ff2770978876d78355a71aa6e1d15e",
    "block": {
     "type": "grant",
     "state": {
      "kind": "recall",
+     "scope": {
+      "acts": [
+       "pull"
+      ],
+      "until": "2027-10-14T00:00:00.000Z"
+     },
      "answer_within": "PT24H",
      "marks": [
       {
@@ -1952,24 +2088,25 @@
        "value": "DC-SK-1001"
       }
      ],
-     "at": "2026-10-11T12:00:30.000Z",
+     "at": "2026-10-11T12:00:34.000Z",
      "audience": "public",
-     "seq": 10
+     "seq": 12
     },
     "refs": {
-     "to": "84420e82bfc71db94e5ca8c1042fbf3a5093d5bf4e165d004ed2d460079ff6cb",
+     "to": "f7d8c9b8d8b6fdb801991d7c0480bee30ec7fc7019b36d04306437f3309a34ed",
+     "schema": "e1f336e82086a361ca86b9ea8e3892253a8faa9fb6221abf4efb097460f0fb80",
      "author": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-     "prev": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+     "prev": "e1f336e82086a361ca86b9ea8e3892253a8faa9fb6221abf4efb097460f0fb80"
     }
    },
-   "signature": "c70581b12c800f106f79370f8f050fae397881e9fbf491d363974137b18d011c0270af4dd527ac8fad9a05ab2af05b6ac3ea7e8254591a4868796873e7d10505"
+   "signature": "d8b450b8ea32507c6912f9217018bab55dc09d42fc4022aca8f98826096ef67b8ba8228e81f85f01cc10947e81b1723abf302e9810d8c09861449c58f7ae3802"
   }
  ],
  "events": [
   {
    "name": "harvesting: Field A",
    "signer": "fieldhouse",
-   "before": 29,
+   "before": 32,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-12T05:30:00.000Z",
@@ -2000,15 +2137,15 @@
     }
    },
    "blocks": [
-    "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822",
-    "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b"
+    "49bc87d1f2288519c362cd3f7cc41aa9d4fa275bd3f3d4af1db736fb8d69dcd6",
+    "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c"
    ],
    "roundtrip": true
   },
   {
    "name": "cooling: the packhouse cooler",
    "signer": "fieldhouse",
-   "before": 31,
+   "before": 34,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-12T09:00:00.000Z",
@@ -2033,14 +2170,14 @@
     ]
    },
    "blocks": [
-    "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5"
+    "50b556642e6cb900636101e7db3aa7e47ffd0b1a80f6da890700590cc3a5b6c7"
    ],
    "roundtrip": true
   },
   {
    "name": "initial packing: romaine hearts",
    "signer": "fieldhouse",
-   "before": 32,
+   "before": 35,
    "event": {
     "type": "TransformationEvent",
     "eventTime": "2026-10-12T14:00:00.000Z",
@@ -2073,15 +2210,15 @@
     }
    },
    "blocks": [
-    "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
-    "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+    "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25",
+    "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153"
    ],
    "roundtrip": true
   },
   {
    "name": "harvesting: Green Acres Field B",
    "signer": "greenacres",
-   "before": 34,
+   "before": 37,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-12T06:10:00.000Z",
@@ -2111,15 +2248,15 @@
     }
    },
    "blocks": [
-    "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0",
-    "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549"
+    "c0ed058547c50a8e30ad863805f50f4afa7dffaca2872c00bc4891e132ff4af5",
+    "622e420c2ab7f547b22eb1ca795197e827cabd387ef165421160344d1a7f9ddd"
    ],
    "roundtrip": true
   },
   {
    "name": "initial packing: trimmed romaine",
    "signer": "greenacres",
-   "before": 36,
+   "before": 39,
    "event": {
     "type": "TransformationEvent",
     "eventTime": "2026-10-12T13:20:00.000Z",
@@ -2149,15 +2286,15 @@
     ]
    },
    "blocks": [
-    "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
-    "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333"
+    "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2",
+    "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3"
    ],
    "roundtrip": true
   },
   {
    "name": "shipping: Fieldhouse to Metro Fresh",
    "signer": "fieldhouse",
-   "before": 38,
+   "before": 41,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-13T06:00:00.000Z",
@@ -2208,14 +2345,14 @@
     ]
    },
    "blocks": [
-    "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21"
+    "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca"
    ],
    "roundtrip": true
   },
   {
    "name": "shipping: Green Acres to Metro Fresh",
    "signer": "greenacres",
-   "before": 39,
+   "before": 42,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-13T05:00:00.000Z",
@@ -2266,14 +2403,14 @@
     ]
    },
    "blocks": [
-    "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935"
+    "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b"
    ],
    "roundtrip": true
   },
   {
    "name": "receiving: Metro Fresh takes the Green Acres lot",
    "signer": "metrofresh",
-   "before": 40,
+   "before": 43,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-13T08:15:00.000Z",
@@ -2315,15 +2452,15 @@
     ]
    },
    "blocks": [
-    "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
-    "9b68811552581f532740fbd3c42e216efe0fc3a66a8981befbe10f93292f36d9"
+    "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
+    "8fbd955a455ba39bb7e4cf1192349f32d603e6c49ad77d91abbaf3358cbe8fa7"
    ],
    "roundtrip": true
   },
   {
    "name": "receiving: Metro Fresh takes the Fieldhouse lot",
    "signer": "metrofresh",
-   "before": 42,
+   "before": 45,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-13T09:30:00.000Z",
@@ -2365,15 +2502,15 @@
     ]
    },
    "blocks": [
-    "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
-    "0938a8c0473fccf0d2d83f05d45966a6b0495e6b313dc103fcf6e9cd729116c8"
+    "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
+    "13db0ade29738e5f97160429d56cde137b12789a5c06ad1f8c5f568a51dbc949"
    ],
    "roundtrip": true
   },
   {
    "name": "transformation: salad kits",
    "signer": "metrofresh",
-   "before": 44,
+   "before": 47,
    "event": {
     "type": "TransformationEvent",
     "eventTime": "2026-10-13T11:00:00.000Z",
@@ -2411,15 +2548,15 @@
     }
    },
    "blocks": [
-    "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
-    "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89"
+    "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63",
+    "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
    ],
    "roundtrip": true
   },
   {
    "name": "shipping: Metro Fresh to Corner Market",
    "signer": "metrofresh",
-   "before": 46,
+   "before": 49,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-14T04:30:00.000Z",
@@ -2470,14 +2607,14 @@
     ]
    },
    "blocks": [
-    "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+    "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e"
    ],
    "roundtrip": true
   },
   {
    "name": "receiving: Corner Market takes the kits",
    "signer": "cornermarket",
-   "before": 47,
+   "before": 50,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-14T07:45:00.000Z",
@@ -2519,15 +2656,15 @@
     ]
    },
    "blocks": [
-    "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
-    "bd6c9fd40e61b9843c6c3e46a0d013f02ef4fe9ecf4515d227df7a8d69b0f178"
+    "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
+    "c2306c12c76c4fdfbccd6aed050f43ffa246e60cfd44d997083851c4b51c76ca"
    ],
    "roundtrip": true
   },
   {
    "name": "aggregation: the kits into a tote",
    "signer": "cornermarket",
-   "before": 49,
+   "before": 52,
    "event": {
     "type": "AggregationEvent",
     "eventTime": "2026-10-14T08:20:00.000Z",
@@ -2551,14 +2688,14 @@
     ]
    },
    "blocks": [
-    "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+    "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf"
    ],
    "roundtrip": true
   },
   {
    "name": "aggregation: the kits out of the tote",
    "signer": "cornermarket",
-   "before": 50,
+   "before": 53,
    "event": {
     "type": "AggregationEvent",
     "eventTime": "2026-10-14T16:00:00.000Z",
@@ -2582,14 +2719,14 @@
     ]
    },
    "blocks": [
-    "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+    "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856"
    ],
    "roundtrip": true
   },
   {
    "name": "receiving from an exempt source: the receiver assigns the code",
    "signer": "cornermarket",
-   "before": 51,
+   "before": 54,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-14T09:00:00.000Z",
@@ -2597,7 +2734,7 @@
     "eventTimeZoneOffset": "-07:00",
     "action": "ADD",
     "bizStep": "urn:epcglobal:cbv:bizstep:receiving",
-    "fb:cte": "receive",
+    "fb:cte": "first_receive",
     "disposition": "urn:epcglobal:cbv:disp:in_progress",
     "readPoint": {
      "id": "urn:epc:id:sgln:0614190.00001.0"
@@ -2617,15 +2754,15 @@
     }
    },
    "blocks": [
-    "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c",
-    "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1"
+    "e855afdbbab7a30a9b42cb7fa4078bde685a6d80fa5f5a1a35b81b17e1e1a107",
+    "bf0bd5da35c7bfc636f3cc4f1e3460af2cd3239b2179e16d00c4d77dabcc2af3"
    ],
    "roundtrip": true
   },
   {
    "name": "harvesting: the catch",
    "signer": "seabird",
-   "before": 53,
+   "before": 56,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-11T21:00:00.000Z",
@@ -2655,15 +2792,15 @@
     }
    },
    "blocks": [
-    "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72",
-    "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716"
+    "6791c6b7484f7317a70566e59cfe056d65bca4764b183ab633d3ad6ab0c6df5c",
+    "9203368acdb17c2c89695e1a2deaa64962624b9e58ba9fc8a085467e5a9f3161"
    ],
    "roundtrip": true
   },
   {
    "name": "first land-based receiving: the dock fillets the catch",
    "signer": "harbourfish",
-   "before": 55,
+   "before": 58,
    "event": {
     "type": "TransformationEvent",
     "eventTime": "2026-10-12T06:00:00.000Z",
@@ -2694,15 +2831,15 @@
     ]
    },
    "blocks": [
-    "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802",
-    "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0"
+    "5d69b8aec0aa53e852e6342ef05c853c3bf27b74e4d2beb62c95b9339f26237f",
+    "3ced2f8f45e5aa58a5c7bb6c3088087daba37c1d66788d3ba81f645b1c499f9b"
    ],
    "roundtrip": true
   },
   {
    "name": "transaction: the fillets sold on invoice",
    "signer": "harbourfish",
-   "before": 57,
+   "before": 60,
    "event": {
     "type": "TransactionEvent",
     "eventTime": "2026-10-12T10:00:00.000Z",
@@ -2737,15 +2874,15 @@
     ]
    },
    "blocks": [
-    "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
-    "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+    "fa5727347e2aa38a4ad69dbaa8978b68d25c1bd33d7620ee9e049c9f8c40448a",
+    "05e2b7761c6a9db7a1ab25f976e6af5e9efd0eedf91ea02f80a3cb21b1522eb1"
    ],
    "roundtrip": true
   },
   {
    "name": "escape hatch: storing, which no row maps",
    "signer": "cornermarket",
-   "before": 59,
+   "before": 62,
    "event": {
     "type": "ObjectEvent",
     "eventTime": "2026-10-14T12:00:00.000Z",
@@ -2765,7 +2902,7 @@
     ]
    },
    "blocks": [
-    "8d9e353fdbe2dc25de2da5a6e838351f1a399aa72fb8ccbdbfcffc9496a81882"
+    "ccd036370438b266b6e2c395c2a6f12bab42ffd92ec509e39e841eb4302e57ad"
    ],
    "roundtrip": false,
    "note": "The raw document is kept by its hash; the way back needs the document."
@@ -2775,12 +2912,12 @@
   {
    "name": "Metro Fresh owns the Fieldhouse lot once it receives it",
    "op": "ownership",
-   "thing": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+   "thing": "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
    "held": "all",
    "expect": {
     "owner": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
     "transfers": [
-     "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21"
+     "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca"
     ],
     "conflict": null
    }
@@ -2788,12 +2925,12 @@
   {
    "name": "Corner Market owns the kits",
    "op": "ownership",
-   "thing": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "thing": "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802",
    "held": "all",
    "expect": {
     "owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
     "transfers": [
-     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6"
+     "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e"
     ],
     "conflict": null
    }
@@ -2801,12 +2938,12 @@
   {
    "name": "the fillets belong to Corner Market once the sale is accepted",
    "op": "ownership",
-   "thing": "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0",
+   "thing": "3ced2f8f45e5aa58a5c7bb6c3088087daba37c1d66788d3ba81f645b1c499f9b",
    "held": "all",
    "expect": {
     "owner": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
     "transfers": [
-     "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641"
+     "fa5727347e2aa38a4ad69dbaa8978b68d25c1bd33d7620ee9e049c9f8c40448a"
     ],
     "conflict": null
    }
@@ -2814,7 +2951,7 @@
   {
    "name": "the harvest stays with the farm that made it",
    "op": "ownership",
-   "thing": "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
+   "thing": "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c",
    "held": "all",
    "expect": {
     "owner": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
@@ -2825,44 +2962,44 @@
   {
    "name": "the Fieldhouse lot is at Metro Fresh after it arrives",
    "op": "where_now",
-   "thing": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+   "thing": "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
    "held": "all",
    "expect": [
-    "f0e05394f3c4b66ed6acdb8445326ca215b2240db5b5e3ec485db3c03552e2f8"
+    "b98976e73bcefa2d15ac3d92ba4f5c5272b1e4140d34d63da3b1b3782969bbb6"
    ]
   },
   {
    "name": "the kits, in the tote, are where the tote is",
    "op": "where_now",
-   "thing": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "thing": "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802",
    "held": "before the unload",
    "expect": [
-    "4fbae058350ff1a5e4cc293340d4c3e223a5e320e79463c0ce980369eac21fac"
+    "d9e2d290541bfd59f95928b7a5438de1eb69448ca42ffc0b084a8be2ab5bb198"
    ]
   },
   {
    "name": "the kits, taken out onto the sales floor, are on the sales floor",
    "op": "where_now",
-   "thing": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+   "thing": "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802",
    "held": "all",
    "expect": [
-    "317e206b9f526d9d7dc0b550505ea42853025a0f6cc101ed4ae0d68b48c5d23d"
+    "e6ae7de7d5561964f221f6ea6cd58ca679cc10590e32221f4b03ef89e4b47ed9"
    ]
   },
   {
    "name": "the tomatoes are where they were received",
    "op": "where_now",
-   "thing": "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1",
+   "thing": "bf0bd5da35c7bfc636f3cc4f1e3460af2cd3239b2179e16d00c4d77dabcc2af3",
    "held": "all",
    "expect": [
-    "03613b0abaa6c8bfe5100c76e7e07d4b18ae63a11fd31b17d0d8296458ea634d"
+    "a195945e82f34f7258e6be3c12bf5097413cf4b2d60cd8b7fd7010e5f6cc23dc"
    ]
   }
  ],
  "negatives": [
   {
    "name": "a shipping transfer that does not name the profile schema is refused",
-   "block": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+   "block": "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
    "without": "refs.schema",
    "codes": [
     "undeclared_field"
@@ -2876,27 +3013,27 @@
    "direction": "backward",
    "expect": {
     "lots": [
-     "4a30e2782c6bdcb327ddd20e21c0d8b4315882b7fe701866169387fd1e339549",
-     "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
-     "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
-     "b22329eb2dcd702eaa3169eee8308519da1179679e20b8801c4c100d9079ef0b",
-     "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+     "0869abb7ba6dff07119a4800397950c3514d5f8893b14da5e6636390e1f0106c",
+     "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
+     "622e420c2ab7f547b22eb1ca795197e827cabd387ef165421160344d1a7f9ddd",
+     "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3",
+     "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
     ],
     "blocks": [
-     "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822",
-     "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0",
-     "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5",
-     "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
-     "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
-     "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
-     "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
-     "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
-     "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
-     "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
-     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
-     "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
-     "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
-     "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+     "49bc87d1f2288519c362cd3f7cc41aa9d4fa275bd3f3d4af1db736fb8d69dcd6",
+     "c0ed058547c50a8e30ad863805f50f4afa7dffaca2872c00bc4891e132ff4af5",
+     "50b556642e6cb900636101e7db3aa7e47ffd0b1a80f6da890700590cc3a5b6c7",
+     "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2",
+     "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25",
+     "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b",
+     "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
+     "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
+     "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
+     "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63",
+     "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
+     "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
+     "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf",
+     "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856"
     ],
     "rows": [
      {
@@ -2913,7 +3050,7 @@
       },
       "location": "0614141000012",
       "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-      "block": "5e2778bc91bbeda3ee8f9cef8a458ab3fe456d65dd51694bea17321d9f294822"
+      "block": "49bc87d1f2288519c362cd3f7cc41aa9d4fa275bd3f3d4af1db736fb8d69dcd6"
      },
      {
       "cte": "harvest",
@@ -2929,7 +3066,7 @@
       },
       "location": "0614155000015",
       "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-      "block": "b64628a52324d66b4367b9f5f41f5e848beae28655700e4dd057249841d920e0"
+      "block": "c0ed058547c50a8e30ad863805f50f4afa7dffaca2872c00bc4891e132ff4af5"
      },
      {
       "cte": "cool",
@@ -2945,7 +3082,7 @@
       },
       "location": "0614141000029",
       "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-      "block": "4e4250a5102da2d4ee439b4ab2a280ac8c582cea277dbf39a014a9f59ba858a5"
+      "block": "50b556642e6cb900636101e7db3aa7e47ffd0b1a80f6da890700590cc3a5b6c7"
      },
      {
       "cte": "pack",
@@ -2962,7 +3099,7 @@
       "when": "2026-10-12T13:20:00.000Z",
       "location": "0614155000022",
       "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-      "block": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+      "block": "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2"
      },
      {
       "cte": "pack",
@@ -2979,7 +3116,7 @@
       "when": "2026-10-12T14:00:00.000Z",
       "location": "0614141000029",
       "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-      "block": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+      "block": "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25"
      },
      {
       "cte": "ship",
@@ -2999,7 +3136,7 @@
       },
       "location": "0614155000022",
       "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-      "block": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+      "block": "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b",
       "ship_to": "0614160000017",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-7710"
@@ -3023,7 +3160,7 @@
       },
       "location": "0614141000029",
       "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-      "block": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+      "block": "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
       "ship_to": "0614160000017",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-5521"
@@ -3047,7 +3184,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+      "block": "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-7710"
       ]
@@ -3070,7 +3207,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+      "block": "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-5521"
       ]
@@ -3095,7 +3232,7 @@
       "when": "2026-10-13T11:00:00.000Z",
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+      "block": "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63"
      },
      {
       "cte": "ship",
@@ -3115,7 +3252,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+      "block": "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
       "ship_to": "0614190000018",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-8802"
@@ -3139,7 +3276,7 @@
       },
       "location": "0614190000018",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+      "block": "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-8802"
       ]
@@ -3162,7 +3299,7 @@
       },
       "location": "0614190000025",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+      "block": "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf"
      },
      {
       "cte": "aggregate",
@@ -3182,7 +3319,7 @@
       },
       "location": "0614190000032",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+      "block": "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856",
       "ship_to": "0614190000032"
      }
     ]
@@ -3195,19 +3332,19 @@
    "direction": "forward",
    "expect": {
     "lots": [
-     "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
-     "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306",
-     "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343"
+     "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
+     "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d",
+     "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
     ],
     "blocks": [
-     "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be",
-     "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
-     "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
-     "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
-     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
-     "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
-     "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
-     "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+     "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25",
+     "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
+     "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
+     "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63",
+     "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
+     "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
+     "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf",
+     "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856"
     ],
     "rows": [
      {
@@ -3228,7 +3365,7 @@
       },
       "location": "0614141000029",
       "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-      "block": "96f75cf0cb43f465b608b8370c976c022464182c8c8ca6754d3de06d480125be"
+      "block": "cc7e2529207c6a8e65b23c17e241a1cb152935a44a522a003ed6d407d93eaa25"
      },
      {
       "cte": "ship",
@@ -3248,7 +3385,7 @@
       },
       "location": "0614141000029",
       "party": "401a35f54f3138d3eb1146e5246da84f1ed3b311dc165fb736504fb653a72620",
-      "block": "f9323ec9e0cd7c067a14d4b5a2b5fd47c3fc39c4b566683149c02281fc613c21",
+      "block": "acd613a1bdae21448963dd5409669c907d18fb21e7d196d70328f80e3518c6ca",
       "ship_to": "0614160000017",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-5521"
@@ -3272,7 +3409,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "8b3117e0a20c52a0153b977089d0b544e2a65117db67823f174bc9a46732d065",
+      "block": "7186d9c0b6010eb77ad4551f009f293c57d125e451afdf80f1616625d15e0086",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-5521"
       ]
@@ -3294,7 +3431,7 @@
       "when": "2026-10-13T11:00:00.000Z",
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+      "block": "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63"
      },
      {
       "cte": "ship",
@@ -3314,7 +3451,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+      "block": "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
       "ship_to": "0614190000018",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-8802"
@@ -3338,7 +3475,7 @@
       },
       "location": "0614190000018",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+      "block": "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-8802"
       ]
@@ -3357,7 +3494,7 @@
       "when": "2026-10-14T08:20:00.000Z",
       "location": "0614190000025",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+      "block": "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf"
      },
      {
       "cte": "aggregate",
@@ -3373,7 +3510,7 @@
       "when": "2026-10-14T16:00:00.000Z",
       "location": "0614190000032",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+      "block": "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856",
       "ship_to": "0614190000032"
      }
     ]
@@ -3386,19 +3523,19 @@
    "direction": "forward",
    "expect": {
     "lots": [
-     "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
-     "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
-     "9d8fa6f7caa4183c7189a21a3393e4be0ac05147aaa3b3a1c905b6a76f6af306"
+     "35e2bd8b203fc0d96d4c51801a0ee0838d24fd14415647669a5452289762e21d",
+     "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3",
+     "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802"
     ],
     "blocks": [
-     "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456",
-     "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
-     "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
-     "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44",
-     "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
-     "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
-     "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d",
-     "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309"
+     "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2",
+     "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b",
+     "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
+     "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63",
+     "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
+     "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
+     "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf",
+     "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856"
     ],
     "rows": [
      {
@@ -3419,7 +3556,7 @@
       },
       "location": "0614155000022",
       "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-      "block": "742b3aab107c0adaff3e36fc13aa43814b8d823fefcb7db3a446b06b8bc09456"
+      "block": "8bb7896da4acb64fa309fbe69dc2c62e6b8a36176b476871e831349936973af2"
      },
      {
       "cte": "ship",
@@ -3439,7 +3576,7 @@
       },
       "location": "0614155000022",
       "party": "903a226bd3d047a837a07b292d0c15d2f27e239da282379e2a08e9571c4b0d59",
-      "block": "98ece38be07fbb37f287f4916e1704ee22d7f5dc81a7aa8d102c8a0429998935",
+      "block": "39df3f85e6d193da2d0334716caa38935f5c576a9d647233fdce909be553013b",
       "ship_to": "0614160000017",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-7710"
@@ -3463,7 +3600,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "0435cbeaa6e37464004d1cfe87add4ad728702474f8194d9963fd1de6e3d0016",
+      "block": "8ec0cedd1a6c6a2c20ca08e5a8f2ee43f23b47ca8f7ef3d11e2cf95b3722d985",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-7710"
       ]
@@ -3485,7 +3622,7 @@
       "when": "2026-10-13T11:00:00.000Z",
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "9ac0d08e85e10908cda00eaba06ace65ce8d0c5859422097fb7a1b2854222c44"
+      "block": "cb0a2aa83df8bd83f36b2da9153c57e79f7c508fc52b0b865e62c9d1b7711c63"
      },
      {
       "cte": "ship",
@@ -3505,7 +3642,7 @@
       },
       "location": "0614160000017",
       "party": "e00f3b518d50f136e05c87e2d3f2c72355cf0d412910bfa52d498023d9129aca",
-      "block": "8a3fdf3ae4619428e285f5ac7eb0a17d1e76ca2af2d2702126992ad9788292e6",
+      "block": "231a3a491e1e879cc5f5453cae16c7ba588ed536a03d593a947e5c016f40348e",
       "ship_to": "0614190000018",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-8802"
@@ -3529,7 +3666,7 @@
       },
       "location": "0614190000018",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "384937e0ef2b4e85f8996d85bf039614eab22d5a5b50245564e322d6609fea1d",
+      "block": "7f01b09e5b0593f35efaecfc452f272e7b3f26beed76d64ab59a6249206a3195",
       "reference": [
        "urn:epc:id:gdti:0614141.00007.BOL-8802"
       ]
@@ -3548,7 +3685,7 @@
       "when": "2026-10-14T08:20:00.000Z",
       "location": "0614190000025",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "05462ac3adafbddadb7ceeb8e340ac0fd6de40f41d689ed561ba3e6ecf10f54d"
+      "block": "cc3e26ac3f8213b462100f660ebad0f8fb567b56d73f9c809980913e1886b4cf"
      },
      {
       "cte": "aggregate",
@@ -3564,7 +3701,7 @@
       "when": "2026-10-14T16:00:00.000Z",
       "location": "0614190000032",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "5b8a0f8bf98dd5bb81127a4a757d13a3e61c17639436928af4fbe0cb7ff04309",
+      "block": "d4e3374263224312bfe9c4f60010480ad91b0a24367a68dfb3a850160d4e7856",
       "ship_to": "0614190000032"
      }
     ]
@@ -3576,14 +3713,14 @@
    "direction": "backward",
    "expect": {
     "lots": [
-     "d1e2acb894f5d58ba3108aa3f65d17171ec4bc4bf63660af2e65d9fe2a6713b0",
-     "d58f32042f754d03601e296344a2d08b6bb278e9c3904598b3b3c008a248e716"
+     "3ced2f8f45e5aa58a5c7bb6c3088087daba37c1d66788d3ba81f645b1c499f9b",
+     "9203368acdb17c2c89695e1a2deaa64962624b9e58ba9fc8a085467e5a9f3161"
     ],
     "blocks": [
-     "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72",
-     "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802",
-     "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
-     "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+     "6791c6b7484f7317a70566e59cfe056d65bca4764b183ab633d3ad6ab0c6df5c",
+     "5d69b8aec0aa53e852e6342ef05c853c3bf27b74e4d2beb62c95b9339f26237f",
+     "fa5727347e2aa38a4ad69dbaa8978b68d25c1bd33d7620ee9e049c9f8c40448a",
+     "05e2b7761c6a9db7a1ab25f976e6af5e9efd0eedf91ea02f80a3cb21b1522eb1"
     ],
     "rows": [
      {
@@ -3600,7 +3737,7 @@
       },
       "location": "0614170000014",
       "party": "f320973bff0f353d46199b2dfdd843bbc2043caba7926d30b976845ca32fa293",
-      "block": "3b2de6e47f9f1b5000a968e0fffab77387cb204eb5441ba0e874936f31752b72"
+      "block": "6791c6b7484f7317a70566e59cfe056d65bca4764b183ab633d3ad6ab0c6df5c"
      },
      {
       "cte": "first_land_receive",
@@ -3617,7 +3754,7 @@
       "when": "2026-10-12T06:00:00.000Z",
       "location": "0614175000019",
       "party": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
-      "block": "56f12bf7e80ea3de3f3e9a9da3aebf0e77c00c04719c6b650bc1718af179b802"
+      "block": "5d69b8aec0aa53e852e6342ef05c853c3bf27b74e4d2beb62c95b9339f26237f"
      },
      {
       "cte": "transaction",
@@ -3636,7 +3773,7 @@
        "unit": "kg"
       },
       "party": "44bef58d9ef7bc9e1fe5a9fe3e41487d18ac937936e72c54dbf65005f3785f4c",
-      "block": "59718b8aeded2c683642b93f9330edd1b51a559eb4e9ff43c18b3ed3eaca5641",
+      "block": "fa5727347e2aa38a4ad69dbaa8978b68d25c1bd33d7620ee9e049c9f8c40448a",
       "reference": [
        "urn:epc:id:gdti:0614175.00003.INV-3317"
       ]
@@ -3658,7 +3795,7 @@
        "unit": "kg"
       },
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "3af0e5c7348af5e6ab3211cff3813496528568da6ce1cbafb1384859797f9682"
+      "block": "05e2b7761c6a9db7a1ab25f976e6af5e9efd0eedf91ea02f80a3cb21b1522eb1"
      }
     ]
    },
@@ -3670,14 +3807,14 @@
    "direction": "forward",
    "expect": {
     "lots": [
-     "36f9f9644e564981b2c3d039d76d48862efb3ad353f2b74c2203a80ca4d5c1d1"
+     "bf0bd5da35c7bfc636f3cc4f1e3460af2cd3239b2179e16d00c4d77dabcc2af3"
     ],
     "blocks": [
-     "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+     "e855afdbbab7a30a9b42cb7fa4078bde685a6d80fa5f5a1a35b81b17e1e1a107"
     ],
     "rows": [
      {
-      "cte": "receive",
+      "cte": "first_receive",
       "tlc": [
        "CM-RX-0001"
       ],
@@ -3694,7 +3831,7 @@
       },
       "location": "0614190000018",
       "party": "cf0e9c7478317e11846cffd0d4cc5b1e10ecea5848352d8fa44be8a192e45913",
-      "block": "98a94dbe8aa7ad5bb552065b12bf1201881b5d7bd52a36511b71377e3ed2e69c"
+      "block": "e855afdbbab7a30a9b42cb7fa4078bde685a6d80fa5f5a1a35b81b17e1e1a107"
      }
     ]
    },
@@ -3702,7 +3839,7 @@
   }
  ],
  "recall": {
-  "grant": "ad0e7e0e46cb2709ec5e28e643f6a5d17067341a39936f8d20a55a96c5c2886e",
+  "grant": "67482d8070ac767c29f98f18392abf2122ff2770978876d78355a71aa6e1d15e",
   "filter": {
    "marks": {
     "scheme": "tlc",
@@ -3712,17 +3849,17 @@
   "pulls": [
    {
     "name": "a pull by lot code selects the lot",
-    "block": "bf1826092f28511d8c8d80a6c29d09225ebc492543b2f7090d77fc2e38077343",
+    "block": "16fbfdf63def4cc245a1776214c00c1d1907aa4be6664c77f4c677f330756153",
     "expect": true
    },
    {
     "name": "and not another farm's lot",
-    "block": "6cff6f70d1ffb71b2a5c66e2071c3918c3c0a4292b462e74724510ac7d2dd333",
+    "block": "712b7eece94deb756f4c76ce67f5f410f8bf68e43c37a32af783dd529acb1ec3",
     "expect": false
    },
    {
     "name": "and not the kits made from it (they carry their own code)",
-    "block": "7339bc7ab62c2c0bc5ede25b79359f5d1e6ca3a4ad52127ab66eb10081ab5a89",
+    "block": "e8eba978bedd3a269275bfc9d03c187847457da693842c23db41c2354844f802",
     "expect": false
    }
   ],

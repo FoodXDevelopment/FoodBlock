@@ -16,7 +16,7 @@ NAME = {"darwin": "libfoodblock.dylib", "win32": "foodblock.dll"}.get(sys.platfo
 class BuildWithCore(build_py):
     def run(self):
         if os.path.isdir(CORE):
-            subprocess.check_call(["cargo", "rustc", "--release", "--features", "ffi", "--crate-type", "cdylib"], cwd=CORE)
+            subprocess.check_call(["cargo", "rustc", "--locked", "--release", "--features", "ffi", "--crate-type", "cdylib"], cwd=CORE)
             package = os.path.join(os.path.dirname(os.path.abspath(__file__)), "foodblock")
             shutil.copy(os.path.join(CORE, "target", "release", NAME), os.path.join(package, NAME))
         super().run()

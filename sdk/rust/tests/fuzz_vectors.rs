@@ -69,14 +69,14 @@ fn a_fold_over_many_blocks_is_not_quadratic_in_signature_checks() {
     // 300 transfers of one thing by its maker, none accepted: every candidate is looked at; each look used to re-find the forks of the whole
     // record (a signature check per block each time), which took seconds.
     let key = foodblock::keypair_from_seed(&"07".repeat(32)).unwrap();
-    let g = foodblock::identity::genesis(&key, &foodblock::identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), ..Default::default() }).unwrap();
+    let g = foodblock::identity::genesis(&key, &foodblock::identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), audience: Some(foodblock::Readers::Public), ..Default::default() }).unwrap();
     let id = g["hash"].as_str().unwrap().to_string();
     let mut blocks = vec![g];
     let mut prev = id.clone();
     let mut thing = String::new();
     for seq in 1..=300i64 {
         let (typ, state, mut refs) = if seq == 1 {
-            ("thing", json!({ "kind": "eggs", "name": "Eggs", "at": "2026-10-15T09:00:01.000Z", "audience": "public", "seq": 1 }), json!({}))
+            ("thing", json!({ "kind": "eggs", "name": "Eggs", "at": "2026-10-15T09:00:01.000Z", "audience": "public", "seq": 1 }), json!({ "of": "c".repeat(64) }))
         } else {
             ("transfer", json!({ "at": "2026-10-15T09:00:01.000Z", "audience": "public", "seq": seq }), json!({ "to_owner": "b".repeat(64), "what": thing }))
         };

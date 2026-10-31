@@ -10,8 +10,9 @@ const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 const { recoveryKeyHash, genesis, keyGrant } = fb.identity
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const { V, tags: INVARIANTS } = vectorsFile.load()
 const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex')
 const keys = {}
 const keyOf = (name, suite = 'std') => {
@@ -145,7 +146,7 @@ const sorted = (list) => [...list].sort()
 // ---- 4. The circle: heads, the cut, the removal that has not seen the answer ----
 {
   const s = story(), fay = s.person('fay'), mo = s.person('mo'), nell = s.person('nell'), ola = s.person('ola')
-  const circle = s.say(fay, 'actor', { kind: 'circle', name: 'Bakery', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }, { name: 'speak', powers: [] }] })
+  const circle = s.say(fay, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Bakery', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }, { name: 'speak', powers: [] }] })
   const invite = (who, roles) => s.say(fay, 'grant', { kind: 'member', roles }, { subject: circle.hash, as: circle.hash, to: who.id })
   const yes = (who, inv) => s.say(who, 'grant', { kind: 'member', status: 'accepted' }, { answers: inv.hash, subject: circle.hash, after: [inv.hash] })
   const note = (who, text, after = []) => s.say(who, 'observe', { kind: 'note', text }, { as: circle.hash, ...(after.length ? { after } : {}) })
@@ -179,7 +180,7 @@ const sorted = (list) => [...list].sort()
 {
   // a removal that has not seen the member's answer comes before it: the answer accepts nothing
   const s = story(), fay = s.person('fay2'), pat = s.person('pat2')
-  const circle = s.say(fay, 'actor', { kind: 'circle', name: 'Co-op', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }] })
+  const circle = s.say(fay, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Co-op', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }] })
   const inv = s.say(fay, 'grant', { kind: 'member', roles: ['orders'] }, { subject: circle.hash, as: circle.hash, to: pat.id })
   const stop = s.say(fay, 'grant', { kind: 'member', status: 'stopped', stop: 'onward' }, { updates: inv.hash, subject: circle.hash, as: circle.hash, after: [inv.hash] })
   const yes = s.say(pat, 'grant', { kind: 'member', status: 'accepted' }, { answers: inv.hash, subject: circle.hash, after: [inv.hash] })
@@ -195,7 +196,7 @@ const sorted = (list) => [...list].sort()
 {
   const s = story(), sal = s.person('sal'), pat = s.person('pat'), ag = s.person('cag', { kind: 'agent' }), other = s.person('cother', { kind: 'agent' })
   const grant = s.say(pat, 'grant', { kind: 'shop', scope: { acts: ['promise'], until: LATER } }, { to: ag.id })
-  const circle = s.say(pat, 'actor', { kind: 'circle', name: 'Pat\'s', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }] })
+  const circle = s.say(pat, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Pat\'s', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }] })
   const memberGrant = s.say(pat, 'grant', { kind: 'member', roles: ['admin'] }, { subject: circle.hash, as: circle.hash, to: other.id })
   const yes = s.say(sal, 'observe', { kind: 'consent', word: 'yes' }, { subject: pat.id })
   door('consent: a yes to the person is a yes to her agent acting under her live grant', 'consent', [sal.id, ag.id, s.held, grant.hash], { expect: { word: 'yes', block: yes.hash } })
@@ -326,10 +327,10 @@ const sorted = (list) => [...list].sort()
   made.add(NAME)
   const view = call('successor_view', JSON.parse(JSON.stringify(grant)), JSON.parse(JSON.stringify(s.held)), '2026-10-30T00:00:00.000Z', { [t1.hash]: '2026-10-01T00:00:00.000Z', [t2.hash]: '2026-10-02T00:00:00.000Z', [stranger.hash]: '2026-10-01T00:00:00.000Z' })
   assert.deepEqual(view.events, sorted([t1.hash, t2.hash]))
-  door('successor_view: only a witness\'s trigger counts: a note by a witness and a trigger by a stranger do not', 'successor_view', [grant, s.held, '2026-10-30T00:00:00.000Z', { [t1.hash]: '2026-10-01T00:00:00.000Z', [t2.hash]: '2026-10-02T00:00:00.000Z', [stranger.hash]: '2026-10-01T00:00:00.000Z', [notTrigger.hash]: '2026-10-01T00:00:00.000Z' }], { expect: { events: sorted([t1.hash, t2.hash]), fired: true } })
+  door('successor_view: only a witness\'s trigger counts: an observe by a witness and a trigger by a stranger do not', 'successor_view', [grant, s.held, '2026-10-30T00:00:00.000Z', { [t1.hash]: '2026-10-01T00:00:00.000Z', [t2.hash]: '2026-10-02T00:00:00.000Z', [stranger.hash]: '2026-10-01T00:00:00.000Z', [notTrigger.hash]: '2026-10-01T00:00:00.000Z' }], { expect: { events: sorted([t1.hash, t2.hash]), fired: true } })
 }
 
-// ---- 12. Lies travel with their proof (nodes.md, Pull) ----
+// ---- 12. Forks travel with their proof (nodes.md, Pull) ----
 {
   const s = story(), pf = s.person('cpf'), other = s.person('cpo')
   const first = s.say(pf, 'observe', { kind: 'note', text: 'one story' })
@@ -354,5 +355,5 @@ const sorted = (list) => [...list].sort()
 door('the protocol names how many missing seq numbers check_chain lists', 'spec', [], { expect: { protocol: { limits: { gaps_max: 10000 } } } })
 
 // ---- write ----
-fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
+vectorsFile.save(V, INVARIANTS)
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

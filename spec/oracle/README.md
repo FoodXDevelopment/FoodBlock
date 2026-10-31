@@ -1,6 +1,6 @@
 # The conformance oracle
 
-An independent implementation of FoodBlock 1.6, written only from the spec text (`core.md`, `canonical.md`,
+An independent implementation of FoodBlock 1.7, written only from the spec text (`core.md`, `canonical.md`,
 `protocol.md`, `transport.md`, `protocol.json`, `modules/*.md`, `profiles/*.md`, `legacy/converter.md`) and never from
 any SDK. It is plain Node with the built-in `crypto`: no dependency, no network, and no line shared with `sdk/`.
 
@@ -19,7 +19,7 @@ node spec/oracle/run.cjs        # exits 1 on any disagreement; -v lists every ca
 ```
 
 A door case with `oracle: false` is outside the spec text and is skipped (the run prints how many). A signature made by
-the oracle is checked by opening it, not by comparing bytes: the nonce of ECDSA and SM2 is the signer's choice.
+the oracle signs p256 and SM2 with RFC 6979 deterministic nonces, as core.md requires, so its signatures match the vectors byte for byte.
 
 Rules for editing the oracle: read only the spec. A guess that the text does not settle is marked `GUESS` in the code
 (and is a gap in the spec worth closing), never copied from an SDK. When the oracle and a vector disagree, the spec

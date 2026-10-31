@@ -6,7 +6,7 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:cr
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-export function durableState(file, { collections = ["clients", "access", "refresh", "sessions", "accounts", "identities"] } = {}) {
+export function durableState(file, { collections = ["clients", "access", "refresh", "sessions", "accounts", "identities", "operator"] } = {}) {
   const data = Object.fromEntries(collections.map((name) => [name, {}]));
   if (file && existsSync(file)) {
     const saved = JSON.parse(readFileSync(file, "utf8"));
@@ -86,5 +86,6 @@ export function durableSessions(file, seal) {
     touch: (id) => { const r = data[id]; if (r && Date.now() - r.seen > 600e3) { r.seen = Date.now(); save(); } },
     prune: (olderThanMs) => { let n = 0; for (const [id, r] of Object.entries(data)) if (Date.now() - r.seen > olderThanMs) { delete data[id]; n++; } if (n) save(); },
     size: () => Object.keys(data).length,
+    ids: () => Object.keys(data),
   };
 }

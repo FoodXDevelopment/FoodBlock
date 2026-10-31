@@ -1,4 +1,4 @@
-// The EPCIS 2.0 <-> FoodBlock 1.6 reference adapter (spec/profiles/foodblock-profile-epcis.md, section 4). Pure mapping:
+// The EPCIS 2.0 <-> FoodBlock reference adapter (spec/profiles/foodblock-profile-epcis.md, section 4). Pure mapping:
 // it reads and writes the JSON of an EPCIS event and the { type, state, refs } of a block. It signs nothing and hashes
 // nothing but the raw event (escape hatch). A party directory (`parties`: PGLN URN -> actor id) is the adapter's own
 // configuration; sites, lots, containers and product kinds are found in the blocks held, by their marks.
@@ -69,7 +69,7 @@ function cteOf(event) {
   if (t === 'ObjectEvent') return step === STEP.shipping ? 'ship' : step === STEP.receiving ? 'receive' : undefined
   return undefined
 }
-const ASSIGNS = new Set(['pack', 'first_land_receive', 'process', 'receive'])
+const ASSIGNS = new Set(['pack', 'first_land_receive', 'process', 'first_receive'])
 
 // A lot an event makes: the instance, with the marks the lot carries.
 function outputDraft(held, item, role, cteKind, event, place, ilmd) {
@@ -88,9 +88,11 @@ function fromEvent(event, ctx) {
   const place = siteOf(held, (event.readPoint || event.bizLocation || {}).id)
   const at = event.recordTime
   const base = (type, state, refs, extra = {}) => ({ role: 'event', type, state: { ...state, ...(at ? { at } : {}) }, refs, ...extra })
-  if (event.type === 'ObjectEvent' && (cte === 'harvest' || (cte === 'receive' && event.action === 'ADD'))) {
-    const out = list(event.quantityList).map((item, i) => outputDraft(held, item, `out${i}`, cte, event, place, event.ilmd))
-    return [base('transform', { kind: cte, ...common(event) }, { place }), ...out]
+  // harvest, and the receiving from an exempt source, are the events that say so themselves: `fb:cte` alone (profile 4.1, 4.3)
+  const own = event['fb:cte']
+  if (event.type === 'ObjectEvent' && (own === 'harvest' || own === 'first_receive')) {
+    const out = list(event.quantityList).map((item, i) => outputDraft(held, item, `out${i}`, own, event, place, event.ilmd))
+    return [base('transform', { kind: own, ...common(event) }, { place }), ...out]
   }
   if (event.type === 'ObjectEvent' && cte === 'cool') {
     return [base('transform', { kind: 'cool', ...common(event) }, { subject: lotItem(held, event.quantityList[0]).thing.hash, place })]
@@ -162,7 +164,7 @@ function toEvent(block, ctx) {
   const { held, parties } = ctx
   const s = block.state, r = block.refs
   const made = () => held.filter((b) => b.type === 'thing' && list(b.refs.derives_from).includes(block.hash))
-  if (block.type === 'transform' && (s.kind === 'harvest' || (s.kind === 'receive' && s.action === 'ADD'))) {
+  if (block.type === 'transform' && (s.kind === 'harvest' || s.kind === 'first_receive')) {
     const outs = made()
     const ilmd = ilmdOf(outs[0])
     return envelope(block, 'ObjectEvent', { 'fb:cte': s.kind, ...point(held, r.place), quantityList: outs.map((o) => quantityItem(o)).sort(byClass), ...(ilmd ? { ilmd } : {}) })

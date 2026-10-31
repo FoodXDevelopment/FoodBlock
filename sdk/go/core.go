@@ -3,6 +3,7 @@ package foodblock
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 )
 
 // The one door into the Rust core (sdk/rust, src/door.rs). The core is the same WebAssembly file every other SDK
@@ -82,10 +83,38 @@ func ask[T any](op string, args ...any) (T, error) {
 	return out, err
 }
 
-// must is for questions that cannot fail (a yes or no, a list): a failure reads as the zero answer.
+// must is for questions that cannot fail (a yes or no, a list). When the core fails anyway (a trap, an argument it
+// refuses, an answer that does not decode), must panics: a failed call is never read as an answer, because the zero
+// answer ("no refusals", "live", false) is often the permissive one (security J). Kotlin, Python and Swift throw.
 func must[T any](op string, args ...any) T {
-	out, _ := ask[T](op, args...)
+	out, err := ask[T](op, args...)
+	if err != nil {
+		panic(fmt.Errorf("foodblock: %s: %w", op, err))
+	}
 	return out
+}
+
+// sure is a (value, error) answer read as a value that cannot fail: it panics as must does.
+func sure[T any](v T, err error) T {
+	if err != nil {
+		panic(fmt.Errorf("foodblock: %w", err))
+	}
+	return v
+}
+
+// nilIfFalse is a bool option: true as given, false as missing.
+func nilIfFalse(b bool) any {
+	if !b {
+		return nil
+	}
+	return true
+}
+
+func nilIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 func details(found []Finding) []string {

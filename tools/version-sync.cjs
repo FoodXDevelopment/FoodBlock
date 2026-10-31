@@ -29,7 +29,7 @@ const NPM = { 'sdk/javascript': SDK, mcp: 'foodblock-mcp', cli: 'foodblock-cli',
 for (const [dir, name] of Object.entries(NPM)) {
   const f = dir + '/package.json', j = JSON.parse(read(f))
   if (j.name !== name) bad(`${f}: name ${j.name}, want ${name}`)
-  if (j.license !== 'MIT') bad(`${f}: license ${j.license}, want MIT`)
+  if (j.license !== 'CC0-1.0') bad(`${f}: license ${j.license}, want CC0-1.0`)
   if (j.private) bad(`${f}: private`)
   if (j.version !== VERSION) { if (WRITE) { j.version = VERSION; write(f, JSON.stringify(j, null, 2) + '\n') } else bad(`${f}: version ${j.version}, want ${VERSION}`) }
   if (dir !== 'sdk/javascript' && j.dependencies[SDK] !== 'file:../sdk/javascript') bad(`${f}: ${SDK} should be file:../sdk/javascript in the repo`)
@@ -50,6 +50,7 @@ function text(file, re, replace, what) {
 }
 text('sdk/python/pyproject.toml', /^version = "([^"]+)"/m, `version = "${VERSION}"`, 'version')
 text('sdk/rust/Cargo.toml', /^version = "([^"]+)"/m, `version = "${VERSION}"`, 'package version')
+text('CITATION.cff', /^version: (\S+)$/m, `version: ${VERSION}`, 'citation version')
 // Kotlin reads the protocol file itself; Go is versioned by git tag; Swift by git tag and the release URL in Package.swift.
 if (!/protocol\.json/.test(read('sdk/kotlin/build.gradle.kts'))) bad('sdk/kotlin/build.gradle.kts must read the version from spec/protocol.json')
 if (!/^module github\.com\/FoodXDevelopment\/foodblock\/sdk\/go$/m.test(read('sdk/go/go.mod'))) bad('sdk/go/go.mod: module path')
@@ -136,6 +137,18 @@ if (PACK) {
     } else console.log('kotlin jar/AAR skipped (no JDK 17 on this computer; CI builds them: .github/workflows/packages.yml)')
   } else console.log('kotlin skipped (needs Rust; the jar and AAR need a JDK 17)')
   fs.rmSync(scratch, { recursive: true, force: true })
+}
+// Text that names an older protocol as the current one ("FoodBlock" and an old number): say FoodBlock, or the version above.
+// The year-zero and converter texts name 1.6 on purpose and never put the number after the name.
+{
+  const stale = /FoodBlock\s+(\d+\.\d+)\b/g, here = VERSION.replace(/\.0$/, '')
+  const files = cp.spawnSync('git', ['ls-files', 'sdk', 'server', 'mcp', 'cli', 'sql', 'tools', 'spec/profiles', 'spec/schemas/schemas.json'], { cwd: ROOT, encoding: 'utf8' }).stdout.split('\n')
+    .filter((f) => f && /\.(md|js|cjs|mjs|rs|h|hpp|py|go|swift|kt|kts|json|toml|sql|yml|tla)$/.test(f) && !/(^|\/)(legacy|CHANGELOG|aliases-)/.test(f) && !f.endsWith('vectors.json'))
+  for (const f of files) {
+    let text
+    try { text = read(f) } catch { continue }
+    for (const m of text.matchAll(stale)) if (m[1] !== here) bad(`${f}: says "${m[0]}"; say FoodBlock, or ${here}`)
+  }
 }
 console.log(wrong ? `${wrong} problem(s). Version should be ${VERSION}.` : `ok: every package is ${VERSION}`)
 process.exit(wrong ? 1 : 0)

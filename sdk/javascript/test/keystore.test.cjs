@@ -12,3 +12,13 @@ test('a key locked with a recovery code opens only with that code, however it is
   assert.equal(unlock(locked, code.toLowerCase().replace(/-/g, ' ')), keys.private_key, 'their code gives their key back')
   assert.throws(() => unlock(locked, recoveryCode()), /does not open/)
 })
+
+test('release 19 and 47: a short code, a key that is not hex, an empty code and a short tag are refused', () => {
+  const keys = fb.generateKeypair(), code = recoveryCode()
+  assert.throws(() => lock(keys.private_key, ''), /at least 24/)
+  assert.throws(() => lock(keys.private_key, 'ABCD-EFGH'), /at least 24/)
+  assert.throws(() => lock('not hex', code), /hexadecimal/)
+  const locked = lock(keys.private_key, code)
+  assert.throws(() => unlock(locked, ''), /does not open/)
+  assert.throws(() => unlock({ ...locked, tag: locked.tag.slice(0, 8) }, code), /does not open/)
+})

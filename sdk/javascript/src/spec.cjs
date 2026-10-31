@@ -3,7 +3,7 @@
 // The package carries its own exact copy of protocol.json (sdk/javascript/spec, made by test/sync-spec.cjs).
 const PROTOCOL = require('../spec/protocol.json')
 
-const GRAMMAR = Object.fromEntries(Object.entries(PROTOCOL.grammar).filter(([name]) => !name.endsWith('_note')).map(([name, pattern]) => [name, new RegExp(pattern)]))
+const GRAMMAR = Object.fromEntries(Object.entries(PROTOCOL.grammar).filter(([name]) => !name.endsWith('_about')).map(([name, pattern]) => [name, new RegExp(pattern)]))
 const TYPES = Object.keys(PROTOCOL.types)
 const REF_KEYS = [...PROTOCOL.refs.who_and_where, ...PROTOCOL.refs.what_and_which, ...PROTOCOL.verbs, ...PROTOCOL.causal]
 
@@ -14,7 +14,6 @@ module.exports = {
   CLOSED_TYPES: PROTOCOL.closed_types,
   STATUSES: PROTOCOL.statuses,
   STOPS: Object.keys(PROTOCOL.stop),
-  GRANT_KINDS: PROTOCOL.grant_kinds,
   POWERS: PROTOCOL.powers,
   GENESIS: PROTOCOL.genesis,
   TERMS: PROTOCOL.terms,

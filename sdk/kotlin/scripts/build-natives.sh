@@ -14,7 +14,7 @@ PROFILE="${PROFILE:-node}"; WHAT="${1:-all}"; API=24
 built=(); skipped=()
 
 cargo_for() { # <rust target> -> builds the cdylib, prints its directory; env for the linker comes from the caller
-  (cd "$RUST" && cargo rustc --release --no-default-features --features "jni,$PROFILE" --crate-type cdylib --target "$1" 2>&1 | tail -1) >&2
+  (cd "$RUST" && cargo rustc --locked --release --no-default-features --features "jni,$PROFILE" --crate-type cdylib --target "$1" 2>&1 | tail -1) >&2
 }
 have_target() { rustup target list --installed 2>/dev/null | grep -qx "$1"; }
 jvm() { # <id> <rust target> <file> [linker-env-name linker]
@@ -35,7 +35,7 @@ android() {
     set -- $row; local abi="$1" target="$2" clang="$3"
     have_target "$target" || { skipped+=("android $abi: rustup target add $target"); continue; }
     if command -v cargo-ndk >/dev/null; then # cargo-ndk sets the NDK linker itself
-      (cd "$RUST" && cargo ndk -t "$abi" -p "$API" -o "$OUT/android" rustc --release --no-default-features --features "jni,$PROFILE" --crate-type cdylib 2>&1 | tail -1) >&2
+      (cd "$RUST" && cargo ndk -t "$abi" -p "$API" -o "$OUT/android" rustc --locked --release --no-default-features --features "jni,$PROFILE" --crate-type cdylib 2>&1 | tail -1) >&2
     else # the same thing by hand: the NDK's clang as linker and C compiler
       local up; up="$(echo "$target" | tr 'a-z-' 'A-Z_')"
       export "CARGO_TARGET_${up}_LINKER=$bin/${clang}${API}-clang" "CC_$(echo "$target" | tr - _)=$bin/${clang}${API}-clang" "AR_$(echo "$target" | tr - _)=$bin/llvm-ar"

@@ -25,9 +25,15 @@ pub fn salted_hash_in(suite: &str, salt: &str, value: &str) -> String {
     crate::block::hash_in(suite, &text)
 }
 
+/// Whether a salt and a value open a commitment: the salt is in its grammar (`grammar.salt`: `salt + value` is one text, so a longer salt
+/// could open one commitment to two values) and the salted hash is the commitment. The one opening every reader uses (release 39).
+pub fn opens(suite: &str, salt: &str, value: &str, commitment: &str) -> bool {
+    crate::spec().is("salt", salt) && salted_hash_in(suite, salt, value) == commitment
+}
+
 /// The `std` commitment to a value under a salt.
 pub fn salted_hash(salt: &str, value: &str) -> String {
-    salted_hash_in("std", salt, value)
+    salted_hash_in(crate::spec::default_suite(), salt, value)
 }
 
 /// An audience: the sorted commitments, and each recipient's salt (kept beside the block, never signed).
@@ -57,7 +63,7 @@ impl Audience {
 /// An audience for these recipients (people, circles, `circle#role`). Each gets a fresh salt unless one is given in
 /// `salts` (only to reproduce a vector, or on a build without randomness).
 pub fn commit(recipients: &[&str], salts: &Value) -> Result<Audience> {
-    commit_in("std", recipients, salts)
+    commit_in(crate::spec::default_suite(), recipients, salts)
 }
 
 /// `commit` in a suite's hash.
@@ -71,7 +77,9 @@ pub fn commit_in(suite: &str, recipients: &[&str], salts: &Value) -> Result<Audi
     let mut given = Vec::new();
     for one in &who {
         let salt = match salts.get(one.as_str()).and_then(Value::as_str) {
-            Some(s) if !s.is_empty() => s.to_string(),
+            // a salt is 32 lowercase hex characters (privacy.md, `grammar.salt`): any other opens no commitment, so none is written
+            Some(s) if crate::spec().is("salt", s) => s.to_string(),
+            Some(s) if !s.is_empty() => return Err(Error::new("audience: a salt is 32 lowercase hex characters (grammar.salt)")),
             _ => try_new_salt()?,
         };
         given.push((one.clone(), salt));
@@ -84,15 +92,22 @@ pub fn commit_in(suite: &str, recipients: &[&str], salts: &Value) -> Result<Audi
     })
 }
 
+// The suite a block's commitments are hashed in: its author's, which its own id names (core.md, section 2; privacy.md).
+fn commitment_suite(block: &Value) -> String {
+    match crate::js::hash_of(block) {
+        "" => crate::block::suite_from_block(block),
+        id => crate::block::suite_of_id(id),
+    }
+}
+
 /// Whether a recipient holding this salt finds itself in a block's audience.
 pub fn finds_self(block: &Value, recipient: &str, salt: &str) -> bool {
     let Some(Value::Array(audience)) = crate::js::st(block, "audience") else {
         return false;
     };
-    !salt.is_empty()
-        && audience
-            .iter()
-            .any(|c| c.as_str() == Some(&salted_hash_in(crate::block::suite_of(block), salt, recipient)))
+    // a salt outside the grammar opens no commitment (privacy.md)
+    let suite = commitment_suite(block);
+    audience.iter().any(|c| c.as_str().is_some_and(|c| opens(&suite, salt, recipient, c)))
 }
 
 /// The reveal a recipient's copy carries for its audience entry: `{ salt, value }` (its own id).

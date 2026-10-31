@@ -2,7 +2,7 @@
 const { fb, World } = require('./lib.cjs')
 const w = new World('case10 bare acceptance')
 const ann = w.person('ann'), mo = w.person('mo'), nan = w.person('nan')
-const co = w.w(ann, 'actor', { kind: 'circle', name: 'Co-op', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] }, {}, 'circle')
+const co = w.w(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Co-op', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] }, {}, 'circle')
 const invite = (p) => w.w(ann, 'grant', { kind: 'member', roles: ['baker'] }, { subject: co.hash, to: p.id, as: co.hash }, 'invite ' + p.label)
 const gMo = invite(mo), gNan = invite(nan)
 w.w(mo, 'grant', { status: 'accepted' }, { answers: gMo.hash }, 'mo accepts with status alone')

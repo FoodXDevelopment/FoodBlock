@@ -6,7 +6,7 @@ class World {
   constructor(name) { (global.__worlds = global.__worlds || []).push(this); this.name = name; this.blocks = []; this.log = []; this.people = {}; this.problems = []; this.byNote = new Map() }
   person(label, kind = 'person') {
     const keys = fb.generateKeypair()
-    const g = fb.identity.genesis(keys, { kind, at: T() })
+    const g = fb.identity.genesis(keys, { kind, at: T(), audience: 'public' })
     this.add(g, `genesis ${label}`)
     const p = { label, keys, id: g.hash, g }
     this.people[label] = p
@@ -31,7 +31,7 @@ class World {
   w(p, type, state, refs = {}, note = '', opts = {}) {
     let b
     try {
-      b = fb.write(type, { ...state }, { ...refs }, { author: p.id, key: p.keys, held: this.blocks, at: T(), ...(this.useSchemas ? { schemas: this.blocks.filter((x) => x.type === 'thing' && x.state.kind === 'schema') } : {}), ...opts })
+      b = fb.write(type, { ...state }, { ...refs }, { author: p.id, key: p.keys, held: this.blocks, at: T(), audience: 'public', ...(this.useSchemas ? { schemas: this.blocks.filter((x) => x.type === 'thing' && x.state.kind === 'schema') } : {}), ...opts })
     } catch (e) {
       this.log.push({ note, type, writeRefused: (e.wrong || [e.message]).join(' | '), refused: (e.refused || []).map(x => x.code).join(',') })
       return { refusedWrite: true, error: e }
@@ -54,4 +54,6 @@ class World {
     if (this.problems.length) console.log('PROBLEMS', this.problems)
   }
 }
-module.exports = { fb, oracle, World, T }
+// A thing is owned only once its own record shows it is an instance (things.md, Things): the audit's instances name their kind, a kind no world holds.
+const kindOf = (word) => require('crypto').createHash('sha256').update('kind: ' + word, 'utf8').digest('hex')
+module.exports = { fb, oracle, World, T, kindOf }

@@ -2,7 +2,7 @@ const { fb, oracle, World } = require('./lib.cjs')
 const w = new World('case1 coffee shop')
 const alice = w.person('alice'), bob = w.person('bob'), carol = w.person('carol'), pay = w.person('payprovider', 'agent')
 const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
-const cafe = w.w(alice, 'actor', { kind: 'circle', name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'manager', powers: ['sign'] }] }, {}, 'circle')
+const cafe = w.w(alice, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'manager', powers: ['sign'] }] }, {}, 'circle')
 // bob manager
 const mg = w.w(alice, 'grant', { kind: 'member', roles: ['manager'] }, { subject: cafe.hash, to: bob.id, as: cafe.hash }, 'member grant bob manager (alice as cafe)')
 const ma = w.w(bob, 'grant', { status: 'accepted', kind: 'member' }, { answers: mg.hash, subject: cafe.hash }, 'bob accepts')

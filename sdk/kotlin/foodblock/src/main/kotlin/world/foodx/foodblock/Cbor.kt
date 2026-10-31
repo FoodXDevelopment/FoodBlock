@@ -1,5 +1,6 @@
 package world.foodx.foodblock
 
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -17,18 +18,20 @@ object Cbor {
 
     /** A signed public block as the CBOR message [t, block, signature]. */
     fun encode(block: JsonObject, short: Boolean = false): ByteArray =
-        bytes(Native.invoke("cbor_encode", block, JsonPrimitive(short)).string())
+        bytes(Door.cborEncode(block, JsonPrimitive(short)).string())
 
-    /** The block a CBOR message carries, its hash taken from its canonical JSON. Throws on floats, tags, null, indefinite lengths and duplicate keys. */
-    fun decode(data: ByteArray): JsonObject = Native.invoke("cbor_decode", JsonPrimitive(hex(data))).obj()
+    /** The block a CBOR message carries, its hash taken from its canonical JSON. Throws on floats, tags, null, indefinite lengths and duplicate keys.
+     *  With `held` (the author's blocks) the id is taken in the suite of the key that signed it (core.md, section 2). */
+    fun decode(data: ByteArray, held: List<JsonObject>? = null): JsonObject =
+        (if (held == null) Door.cborDecode(JsonPrimitive(hex(data))) else Door.cborDecode(JsonPrimitive(hex(data)), JsonArray(held))).obj()
 
     fun encodePush(blocks: List<JsonObject>, short: Boolean = false): ByteArray =
-        bytes(Native.invoke("cbor_encode_push", blocks(blocks), JsonPrimitive(short)).string())
+        bytes(Door.cborEncodePush(blocks(blocks), JsonPrimitive(short)).string())
 
-    fun decodePush(data: ByteArray): List<JsonElement> = (Native.invoke("cbor_decode_push", JsonPrimitive(hex(data))) as kotlinx.serialization.json.JsonArray).toList()
+    fun decodePush(data: ByteArray): List<JsonElement> = (Door.cborDecodePush(JsonPrimitive(hex(data))) as kotlinx.serialization.json.JsonArray).toList()
 
     fun encodeHeader(header: JsonObject, short: Boolean = false): ByteArray =
-        bytes(Native.invoke("cbor_encode_header", header, JsonPrimitive(short)).string())
+        bytes(Door.cborEncodeHeader(header, JsonPrimitive(short)).string())
 
-    fun decodeHeader(data: ByteArray): JsonObject = Native.invoke("cbor_decode_header", JsonPrimitive(hex(data))).obj()
+    fun decodeHeader(data: ByteArray): JsonObject = Door.cborDecodeHeader(JsonPrimitive(hex(data))).obj()
 }

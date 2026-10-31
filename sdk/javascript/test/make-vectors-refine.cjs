@@ -10,8 +10,9 @@ const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 const { genesis } = fb.identity
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const { V, tags: INVARIANTS } = vectorsFile.load()
 const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex')
 const keys = {}
 const keyOf = (name) => {
@@ -74,7 +75,7 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
 // ---- 1. A block speaks for one party: a circle's side is signed by someone who may sign for it ----
 {
   const s = story(), ann = s.person('rann'), bea = s.person('rbea'), gus = s.person('rgus'), eve = s.person('reve'), rita = s.person('rrita'), sam = s.person('rsam')
-  const cafe = s.say(ann, 'actor', { kind: 'circle', name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'manager', powers: ['sign'] }, { name: 'guest', powers: [] }] })
+  const cafe = s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'manager', powers: ['sign'] }, { name: 'guest', powers: [] }] })
   const join = (p, roles) => { const g = s.say(ann, 'grant', { kind: 'member', roles }, { subject: cafe.hash, to: p.id, as: cafe.hash }); s.say(p, 'grant', { status: 'accepted', kind: 'member' }, { answers: g.hash, subject: cafe.hash }); return g }
   join(bea, ['manager']); join(gus, ['guest']); const ritaGrant = join(rita, ['manager'])
   const eggs = s.say(sam, 'thing', { kind: 'eggs' })
@@ -118,7 +119,7 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
 // ---- 2. The maker of a thing made `as` a circle is the circle ----
 {
   const s = story(), ann = s.person('oann'), bea = s.person('obea'), eve = s.person('oeve'), cal = s.person('ocal')
-  const cafe = s.say(ann, 'actor', { kind: 'circle', name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] })
+  const cafe = s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] })
   const g = s.say(ann, 'grant', { kind: 'member', roles: ['baker'] }, { subject: cafe.hash, to: bea.id, as: cafe.hash })
   s.say(bea, 'grant', { status: 'accepted', kind: 'member' }, { answers: g.hash, subject: cafe.hash })
   const kind = s.say(bea, 'thing', { kind: 'share', name: 'Cafe share' }, { as: cafe.hash })
@@ -153,30 +154,30 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
 {
   const s = story(), lena = s.person('blena'), bo = s.person('bbo'), cy = s.person('bcy'), eve = s.person('beve')
   const coffee = s.say(lena, 'thing', { kind: 'coffee' })
-  const voucher = s.say(lena, 'thing', { kind: 'voucher', name: 'one coffee' })
-  const promise = s.say(lena, 'promise', { terms: { quantity: fb.amount('1', '{cup}'), expires: LATER } }, { from: lena.id, to: voucher.hash, what: coffee.hash })
+  const note = s.say(lena, 'thing', { kind: 'note', name: 'one coffee' })
+  const promise = s.say(lena, 'promise', { terms: { quantity: fb.amount('1', '{cup}'), expires: LATER } }, { from: lena.id, to: note.hash, what: coffee.hash })
   const pass = (from, to, thing) => { const t = s.say(from, 'transfer', {}, { what: thing.hash, to_owner: to.id }); s.say(to, 'transfer', { status: 'accepted' }, { answers: t.hash }); return t }
   const answer = (who, state, extra) => s.say(who, 'promise', state, { answers: promise.hash, for: promise.hash, after: [promise.hash], ...extra })
-  pass(lena, bo, voucher)
-  stage('bearer: the holder of the voucher is the receiving side; until she answers, the promise is offered', promise, s.held, { stage: 'offered', sides: { to: voucher.hash } })
+  pass(lena, bo, note)
+  stage('bearer: the holder of the note is the receiving side; until she answers, the promise is offered', promise, s.held, { stage: 'offered', sides: { to: note.hash } })
   const outsider = answer(eve, { status: 'accepted' })
-  stage('bearer: an accept by someone who does not hold the voucher binds no one', promise, s.held, { stage: 'offered', accept: null })
+  stage('bearer: an accept by someone who does not hold the note binds no one', promise, s.held, { stage: 'offered', accept: null })
   const boAccept = answer(bo, { status: 'accepted' })
   stage('bearer: the holder\'s accept binds (a side, not not_a_side)', promise, s.held, { stage: 'accepted', accept: boAccept.hash })
-  pass(bo, cy, voucher)
-  stage('bearer: the voucher passed on carries the promise: the earlier holder\'s accept counts for nothing', promise, s.held, { stage: 'offered', accept: null })
+  pass(bo, cy, note)
+  stage('bearer: the note passed on carries the promise: the earlier holder\'s accept counts for nothing', promise, s.held, { stage: 'offered', accept: null })
   const cyAccept = answer(cy, { status: 'accepted' })
   stage('bearer: the new holder answers it again and it binds', promise, s.held, { stage: 'accepted', accept: cyAccept.hash })
   const cup = s.say(lena, 'thing', { kind: 'coffee', lot: 'C1', pack: fb.amount('1', '{cup}') }, { of: coffee.hash })
   const handed = s.say(lena, 'transfer', {}, { what: cup.hash, to_owner: cy.id, for: promise.hash })
   s.say(cy, 'transfer', { status: 'accepted' }, { answers: handed.hash, for: promise.hash })
   stage('bearer: what is owed goes to the holder, who accepts it: done', promise, s.held, { stage: 'done' })
-  // a voucher with no owner (given to an open receiver) has no one to answer
-  const loose = s.say(lena, 'thing', { kind: 'voucher', name: 'dropped' })
+  // a note with no owner (given to an open receiver) has no one to answer
+  const loose = s.say(lena, 'thing', { kind: 'note', name: 'dropped' })
   const open = s.say(lena, 'transfer', { count: 1 }, { what: loose.hash, to_place: lena.id })
   const bearer2 = s.say(lena, 'promise', { terms: { quantity: fb.amount('1', '{cup}'), expires: LATER } }, { from: lena.id, to: loose.hash, what: coffee.hash })
   s.say(eve, 'promise', { status: 'accepted' }, { answers: bearer2.hash, for: bearer2.hash, after: [bearer2.hash] })
-  stage('bearer: a voucher nobody owns yet has no side that can answer', bearer2, s.held, { stage: 'offered', accept: null })
+  stage('bearer: a note nobody owns yet has no side that can answer', bearer2, s.held, { stage: 'offered', accept: null })
 }
 
 // ---- 4. An allocation starts a deal of its own ----
@@ -190,11 +191,10 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   const r1 = request(t1, 60), r2 = request(t2, 30), r3 = request(t3, 30)
   stage('allocation: the open offer is offered until an allocation binds', O, s.held, { stage: 'offered', takers: [] })
   const a1 = allocate(r1, 60), a2 = allocate(r2, 30), a3 = allocate(r3, 30)
-  stage('allocation: the open offer binds, and its quantity and total are what its allocations bind together (the third is over what was offered)', O, s.held,
-    { stage: 'accepted', accept: a1.hash, quantity: { value: '90', unit: '{egg}' }, total: { minor: 27000, currency: 'GBP' }, takers: [{ who: t1.id, allocation: a1.hash }, { who: t2.id, allocation: a2.hash }] })
+  // retired by decision C2 (2026-10-29): every allocation the offerer signed binds her; make-vectors-1-7.cjs section 25 twins these two
   stage('allocation: the first allocation is a deal of its own, between the offerer and the taker', a1, s.held,
     { stage: 'accepted', accept: a1.hash, offer: O.hash, sides: { from: maya.id }, quantity: { value: '60', unit: '{egg}' }, total: { minor: 18000, currency: 'GBP' }, takers: [{ who: t1.id, allocation: a1.hash }] })
-  door('allocation: an allocation past what was offered has no deal', 'promise_stage', [a3, s.held, {}], { expect: null, exact: true })
+  void a3
   // t2 settles his own 30 eggs: goods and payment name his allocation
   const lot = s.say(maya, 'thing', { kind: 'eggs', lot: 'L2', pack: EGG(30) }, { of: eggs.hash })
   const handed = s.say(maya, 'transfer', {}, { what: lot.hash, to_owner: t2.id, for: a2.hash })
@@ -359,7 +359,7 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
 // ---- 9. Member acceptances and stops are derived from what they answer or update ----
 {
   const s = story(), ann = s.person('mann'), mo = s.person('mmo'), nan = s.person('mnan'), ola = s.person('mola')
-  const circle = (name) => s.say(ann, 'actor', { kind: 'circle', name, roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] })
+  const circle = (name) => s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name, roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'baker', powers: ['sign'] }] })
   const invite = (c, who) => s.say(ann, 'grant', { kind: 'member', roles: ['baker'] }, { subject: c.hash, to: who.id, as: c.hash })
   const members = (name, c, expect) => door(name, 'circle_state', [c.hash, s.held], { expect })
   const joined = circle('Joined')
@@ -406,7 +406,7 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
   s.say(cat, 'transfer', { status: 'accepted' }, { answers: resold.hash })
   door('ownership: the next counted transfer is the earliest the owner signed; a later one by a past owner counts for nothing', 'ownership', [bowl, s.held], { expect: { owner: cat.id, transfers: [sold.hash, resold.hash], conflict: null }, exact: true })
   // a confirmer named as circle#role is a holder of the role in the circle's fold of the confirm's own causal past
-  const pool = s.say(ann, 'actor', { kind: 'circle', name: 'Pool', roles: [{ name: 'steward', powers: ['sign', 'admit', 'remove'] }, { name: 'assessor', powers: [] }] })
+  const pool = s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Pool', roles: [{ name: 'steward', powers: ['sign', 'admit', 'remove'] }, { name: 'assessor', powers: [] }] })
   const grant = s.say(ann, 'grant', { kind: 'member', roles: ['assessor'] }, { subject: pool.hash, to: ned.id, as: pool.hash })
   const yes = s.say(ned, 'grant', { status: 'accepted' }, { answers: grant.hash })
   const schema = s.say(ann, 'thing', { kind: 'schema', target: 'promise', grounds: { event: 'the work was done', confirmers: [pool.hash + '#assessor'] } })
@@ -420,5 +420,5 @@ const stage = (name, first, held, expect) => door(name, 'promise_stage', [first,
 }
 
 // ---- write ----
-fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
+vectorsFile.save(V, INVARIANTS)
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

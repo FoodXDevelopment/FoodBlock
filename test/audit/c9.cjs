@@ -7,7 +7,7 @@ w.w(farmer, 'grant', { kind: 'operator' }, { to: agent.id }, 'operator grant')
 const UNTIL = '2099-01-01T00:00:00.000Z'
 const broad = w.w(farmer, 'grant', { kind: 'authority', scope: { acts: ['transfer', 'observe'], until: UNTIL } }, { to: agent.id }, 'broad grant (acts: transfer, observe)')
 const named = w.w(farmer, 'grant', { kind: 'authority', scope: { acts: ['transfer.spray'], until: UNTIL } }, { to: agent.id }, 'named grant, NO limit')
-const namedLim = w.w(farmer, 'grant', { kind: 'authority', scope: { acts: ['transfer.spray'], limit: { minor: 5000, currency: 'GBP' }, per: 'P1D', until: UNTIL } }, { to: agent.id }, 'named grant WITH limit')
+const namedLim = w.w(farmer, 'grant', { kind: 'authority', scope: { acts: ['transfer.spray'], limit: { minor: 5000, currency: 'GBP' }, every: 'P1D', until: UNTIL } }, { to: agent.id }, 'named grant WITH limit')
 const sprayS = w.w(farmer, 'thing', { kind: 'schema', target: 'transfer.spray', undo: 'never', fields: { field: 'text' } }, {}, 'schema spray undo:never (by farmer)')
 const valveS = w.w(farmer, 'thing', { kind: 'schema', target: 'transfer.open_valve', fields: { valve: 'text' } }, {}, 'schema open_valve (NO undo marking)')
 const act = (kind, under, extraRefs = {}, who = agent) => w.w(who, 'transfer', { kind }, { what: field.hash, to_place: field.hash, under: under.hash, ...extraRefs }, `${kind} under ${under.state.scope.acts.join('+')}${under === namedLim ? ' (limit)' : under === named ? ' (no limit)' : ''}${Object.keys(extraRefs).length ? ' +' + Object.keys(extraRefs) : ''}`)

@@ -183,7 +183,8 @@ pub struct Duration {
     pub ms: i64,
 }
 
-/// Read a duration that the grammar's `duration` rule accepts.
+/// Read a duration that the grammar's `duration` rule accepts. None when a number is too large to hold: a duration that cannot be
+/// read is never small (callers read None as wider, not due, or not holding).
 pub fn parse_duration(text: &str) -> Option<Duration> {
     if !crate::spec().is("duration", text) {
         return None;
@@ -198,19 +199,15 @@ pub fn parse_duration(text: &str) -> Option<Duration> {
     let mut in_time = false;
     for c in text.chars().skip(1) {
         match c {
-            '0'..='9' => {
-                number = number
-                    .saturating_mul(10)
-                    .saturating_add(c as i64 - '0' as i64)
-            }
+            '0'..='9' => number = number.checked_mul(10)?.checked_add(c as i64 - '0' as i64)?,
             'T' => in_time = true,
             'Y' => d.years = number,
             'M' if !in_time => d.months = number,
-            'W' => d.days += number * 7,
-            'D' => d.days += number,
-            'H' => d.ms += number * 3_600_000,
-            'M' => d.ms += number * 60_000,
-            'S' => d.ms += number * 1000,
+            'W' => d.days = d.days.checked_add(number.checked_mul(7)?)?,
+            'D' => d.days = d.days.checked_add(number)?,
+            'H' => d.ms = d.ms.checked_add(number.checked_mul(3_600_000)?)?,
+            'M' => d.ms = d.ms.checked_add(number.checked_mul(60_000)?)?,
+            'S' => d.ms = d.ms.checked_add(number.checked_mul(1000)?)?,
             _ => return None,
         }
         if !c.is_ascii_digit() {
@@ -220,20 +217,26 @@ pub fn parse_duration(text: &str) -> Option<Duration> {
     Some(d)
 }
 
-/// A time moved by a duration (`sign` -1 goes back), months and years by the UTC calendar, as JavaScript's
-/// `setUTCFullYear(y, m, d)` does: a day past the month's end rolls over.
+/// A time moved by a duration (`sign` -1 goes back), months and years by the UTC calendar: a day past the month's end is the
+/// month's last day (core.md, section 3: 31 January plus P1M is 28 February), then days and time. None when the result is not a
+/// time (a year from 0000 to 9999), or a number in the duration is too large to hold.
 pub fn add_duration(time: &str, duration: &str, sign: i64) -> Option<String> {
     let parts = parse_duration(duration)?;
     let t = parse(time)?;
     let days = t.div_euclid(DAY_MS);
     let in_day = t.rem_euclid(DAY_MS);
     let (y, m, d) = civil_from_days(days);
-    let month0 = (m - 1) + sign * parts.months;
-    let year = y + sign * parts.years + month0.div_euclid(12);
+    let month0 = (m - 1).checked_add(sign.checked_mul(parts.months)?)?;
+    let year = y.checked_add(sign.checked_mul(parts.years)?)?.checked_add(month0.div_euclid(12))?;
+    if !(0..=9999).contains(&year) {
+        return None;
+    }
     let month = month0.rem_euclid(12) + 1;
-    let day_number = days_from_civil(year, month, 1) + (d - 1) + sign * parts.days;
-    let moved = day_number * DAY_MS + in_day + sign * parts.ms;
-    if moved.abs() > 8_640_000_000_000_000 {
+    let day = d.min(days_in_month(year, month));
+    let day_number = days_from_civil(year, month, 1).checked_add(day - 1)?.checked_add(sign.checked_mul(parts.days)?)?;
+    let moved = day_number.checked_mul(DAY_MS)?.checked_add(in_day)?.checked_add(sign.checked_mul(parts.ms)?)?;
+    // 0000-01-01 to 9999-12-31, the times the grammar writes
+    if !(-62_167_219_200_000..=253_402_300_799_999).contains(&moved) {
         return None;
     }
     Some(iso(moved))
@@ -269,7 +272,7 @@ mod tests {
         assert_eq!(parse("2026-10-15T09:00:00.000Z"), Some(1_792_054_800_000));
         assert_eq!(
             add_duration("2026-01-31T00:00:00.000Z", "P1M", 1).as_deref(),
-            Some("2026-03-03T00:00:00.000Z")
+            Some("2026-02-28T00:00:00.000Z")
         );
         assert_eq!(
             add_duration("2026-10-02T00:00:00.000Z", "P7D", 1).as_deref(),
@@ -277,11 +280,16 @@ mod tests {
         );
         assert_eq!(
             add_duration("2026-03-31T00:00:00.000Z", "P1M", -1).as_deref(),
-            Some("2026-03-03T00:00:00.000Z")
+            Some("2026-02-28T00:00:00.000Z")
         );
         assert_eq!(
             compare_durations("P1M", "P30D", "2026-01-01T00:00:00.000Z"),
             Some(1)
         );
+        // A number too large to hold, or a result past the year 9999, is no time: never a small duration.
+        assert_eq!(add_duration("2026-10-27T12:00:00.000Z", "P99999999999999999999Y", 1), None);
+        assert_eq!(add_duration("2026-10-27T12:00:00.000Z", "PT99999999999999999999H", 1), None);
+        assert_eq!(add_duration("2026-10-27T12:00:00.000Z", "P8000Y", 1), None);
+        assert_eq!(compare_durations("P99999999999999999999D", "P30D", "2026-01-01T00:00:00.000Z"), None);
     }
 }

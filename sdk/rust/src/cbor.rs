@@ -12,7 +12,7 @@ use crate::prelude::*;
 use crate::spec::Spec;
 
 const MAX: i64 = 9_007_199_254_740_991;
-const DEPTH: usize = 64;
+
 
 /// A CBOR data item, the subset the compact form uses.
 #[derive(Debug, Clone, PartialEq)]
@@ -116,8 +116,17 @@ impl Reader<'_> {
             _ => return Err(fail("a reserved additional information value")),
         })
     }
+    /// A length or a count: never more than the bytes left (each item takes at least one), compared as the 64-bit number it
+    /// is written as, so a 32-bit reader (WebAssembly) and a 64-bit one read the same bytes the same way.
+    fn count(&mut self, ai: u8) -> Result<usize> {
+        let n = self.arg(ai)?;
+        usize::try_from(n)
+            .ok()
+            .filter(|n| *n <= self.b.len() - self.at)
+            .ok_or_else(|| fail("it ends too soon"))
+    }
     fn item(&mut self, depth: usize) -> Result<C> {
-        if depth > DEPTH {
+        if depth > crate::spec().depth_read {
             return Err(fail("nested too deep"));
         }
         let first = self.take(1)?[0];
@@ -138,7 +147,7 @@ impl Reader<'_> {
                 Ok(C::Int(-1 - n as i64))
             }
             2 | 3 => {
-                let n = self.arg(ai)? as usize;
+                let n = self.count(ai)?;
                 let bytes = self.take(n)?.to_vec();
                 if major == 2 {
                     Ok(C::Bytes(bytes))
@@ -149,10 +158,7 @@ impl Reader<'_> {
                 }
             }
             4 => {
-                let n = self.arg(ai)? as usize;
-                if n > self.b.len() - self.at {
-                    return Err(fail("it ends too soon"));
-                }
+                let n = self.count(ai)?;
                 let mut items = Vec::new();
                 for _ in 0..n {
                     items.push(self.item(depth + 1)?);
@@ -160,14 +166,15 @@ impl Reader<'_> {
                 Ok(C::Array(items))
             }
             5 => {
-                let n = self.arg(ai)? as usize;
-                if n > self.b.len() - self.at {
-                    return Err(fail("it ends too soon"));
-                }
+                let n = self.count(ai)?;
                 let mut pairs: Vec<(C, C)> = Vec::new();
+                // the keys seen, by their canonical bytes: a map of n keys costs n lookups, never n squared comparisons (release 12)
+                let mut seen: alloc::collections::BTreeSet<Vec<u8>> = Default::default();
                 for _ in 0..n {
                     let k = self.item(depth + 1)?;
-                    if pairs.iter().any(|(p, _)| *p == k) {
+                    let mut bytes = Vec::new();
+                    write(&mut bytes, &k)?;
+                    if !seen.insert(bytes) {
                         return Err(fail("a map has a duplicate key"));
                     }
                     let v = self.item(depth + 1)?;
@@ -472,10 +479,11 @@ impl<'a> Codec<'a> {
     fn name_of(&self, k: &C) -> Result<String> {
         match k {
             C::Text(t) => Ok(t.clone()),
-            C::Int(i) if *i >= 0 && (*i as usize) < self.keys.len() => {
-                Ok(self.keys[*i as usize].clone())
-            }
-            C::Int(i) => Err(fail(format!("key {i} is not in the key table"))),
+            C::Int(i) => usize::try_from(*i)
+                .ok()
+                .and_then(|n| self.keys.get(n))
+                .cloned()
+                .ok_or_else(|| fail(format!("key {i} is not in the key table"))),
             _ => Err(fail("a map key is text or a table position")),
         }
     }
@@ -483,9 +491,11 @@ impl<'a> Codec<'a> {
     fn type_from_c(&self, v: &C) -> Result<Value> {
         match v {
             C::Text(t) => Ok(Value::String(t.clone())),
-            C::Int(i) if *i >= 0 && (*i as usize) < self.types.len() => {
-                Ok(Value::String(self.types[*i as usize].clone()))
-            }
+            C::Int(i) => usize::try_from(*i)
+                .ok()
+                .and_then(|n| self.types.get(n))
+                .map(|t| Value::String(t.clone()))
+                .ok_or_else(|| fail("type is text, or its position in the types list")),
             _ => Err(fail("type is text, or its position in the types list")),
         }
     }
@@ -590,21 +600,16 @@ fn message_to_c(spec: &Spec, codec: &Codec, block: &Value) -> Result<C> {
         .get("signature")
         .and_then(Value::as_str)
         .ok_or_else(|| fail("a message carries the block's signature"))?;
-    // 64 bytes, or for a p256 key a passkey's longer form (modules/encoding.md, Passkeys): the suite's own check says which opens.
-    let wide = block.get("suite").and_then(Value::as_str) == Some("p256") && sig.len() > 128;
-    if !((sig.len() == 128 || wide) && sig.len() % 2 == 0 && unhex(sig).is_some()) {
+    // 64 bytes, or a passkey's longer form (modules/encoding.md, Passkeys): the key's own check says which opens.
+    if !(sig.len() >= 128 && sig.len() % 2 == 0 && unhex(sig).is_some()) {
         return Err(fail("the signature is 64 bytes, in hex (a passkey's, longer)"));
     }
-    let mut parts = vec![
+    let parts = vec![
         C::Int(table_of(spec, codec.short)),
         block_to_c(codec, block)?,
         C::Bytes(unhex(sig).unwrap_or_default()),
     ];
-    // A suite other than std is named by a text entry after the signature.
-    let suite = crate::block::suite_of(block);
-    if !suite.is_empty() && suite != "std" {
-        parts.push(C::Text(suite.to_string()));
-    }
+    // No suite follows: a block is hashed in the suite of the key that signed it (core.md, section 2).
     Ok(C::Array(parts))
 }
 
@@ -612,22 +617,19 @@ fn message_from_c(spec: &Spec, c: &C) -> Result<Value> {
     let C::Array(parts) = c else {
         return Err(fail("a message is [t, block, signature]"));
     };
-    let (t, body, sig, suite) = match parts.as_slice() {
-        [C::Int(t), body, C::Bytes(sig)] => (t, body, sig, "std".to_string()),
-        [C::Int(t), body, C::Bytes(sig), C::Text(suite)] => (t, body, sig, suite.clone()),
-        _ => return Err(fail("a message is [t, block, signature] and the suite's name when it is not std")),
+    // [t, block, signature] and nothing after: a suite named beside a block is refused, as in JSON (core.md, section 6).
+    let (t, body, sig) = match parts.as_slice() {
+        [C::Int(t), body, C::Bytes(sig)] => (t, body, sig),
+        _ => return Err(fail("a message is [t, block, signature]")),
     };
-    if spec.suite(&suite).is_none() {
-        return Err(Error::coded("unknown_suite", format!("cbor: the suite {suite} is not one this reader knows")));
-    }
     let table = table_of(spec, true);
     if *t != 0 && *t != table {
         return Err(fail(format!(
             "t {t} is neither 0 nor a key table this reader has ({table})"
         )));
     }
-    if sig.len() != 64 && !(suite == "p256" && sig.len() > 64) {
-        return Err(fail("the signature is 64 bytes (a p256 passkey's, longer)"));
+    if sig.len() < 64 {
+        return Err(fail("the signature is 64 bytes (a passkey's, longer)"));
     }
     let codec = Codec::new(spec, *t != 0);
     let body = codec.from_c(body, &mut Vec::new())?;
@@ -648,13 +650,11 @@ fn message_from_c(spec: &Spec, c: &C) -> Result<Value> {
     if !state.is_object() || !refs.is_object() || ty.is_empty() {
         return Err(fail("a block is { type, state, refs }"));
     }
-    // The id is the hash of the canonical JSON the block is rebuilt as: never of these bytes.
+    // The id is the hash of the canonical JSON the block is rebuilt as: never of these bytes, in the suite the block shows
+    // (a reader that holds the author's keys computes it in the signing key's: identity::id_in).
+    let suite = crate::block::suite_from_block(&json!({ "type": ty, "state": state, "refs": refs }));
     let hash = crate::hash_suite(&suite, ty, state, refs);
-    let mut out = json!({ "hash": hash, "type": ty, "state": state, "refs": refs, "signature": hex(sig) });
-    if suite != "std" {
-        out["suite"] = json!(suite);
-    }
-    Ok(out)
+    Ok(json!({ "hash": hash, "type": ty, "state": state, "refs": refs, "signature": hex(sig) }))
 }
 
 /// A signed public block as the CBOR message `[t, block, signature]` (hex-free bytes). `short` uses the key table.

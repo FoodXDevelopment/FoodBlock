@@ -1,6 +1,6 @@
 # foodblock (Kotlin, JVM and Android)
 
-FoodBlock 1.6 for Android phones, Android-based devices (tills, scales, kiosks, fridges with a screen) and any JVM.
+FoodBlock 1.7 for Android phones, Android-based devices (tills, scales, kiosks, fridges with a screen) and any JVM.
 
 A **block** is a small signed message: `{ type, state, refs }`, signed by its author's key. Its id is the SHA-256
 hash of its canonical form, so any two peers agree on it byte for byte.
@@ -9,7 +9,7 @@ This library is a thin Kotlin skin over the Rust core in `sdk/rust`. It does not
 every call goes through one native function into the same Rust code that robots, sensors and C++ programs use.
 So if the Rust core passes the vectors, this library passes them too, by construction.
 
-MIT licence. The version is the protocol's (`spec/protocol.json` `version`), here `1.6.0`.
+Public domain (CC0 1.0). The version is the protocol's (`spec/protocol.json` `version`), here `1.7`.
 
 ## How it is built
 
@@ -49,18 +49,20 @@ import world.foodx.foodblock.*
 import kotlinx.serialization.json.*
 
 val keys = FoodBlock.generateKeypair()                      // made once, kept on the device (Android Keystore-wrapped)
-val me = Identity.genesis(keys, kind = "person", recoveryKey = offlineRecovery.publicKeySign,
-                          encryptionKey = myX25519Public)
+val me = Identity.genesis(keys, kind = "person", at = now, audience = listOf(PUBLIC),
+                          recoveryKey = offlineRecovery.publicKeySign, encryptionKey = myX25519Public)
 val id = me["hash"]!!.jsonPrimitive.content
 
+// `now` is your own clock reading as an ISO time. `kind`, `at` and `audience` (PUBLIC, or recipients) are always yours
+// to state; nothing is filled in, and a block that leaves one out is refused.
 // The one way to write: compose, check, sign, chain. A number is a decimal string, never a float.
 val reading = FoodBlock.write(
     "observe",
     buildJsonObject { put("kind", "reading"); put("amount", FoodBlock.amount("3.9", "Cel")) },
     buildJsonObject { put("subject", id) },
-    WriteOptions(author = id, key = keys, held = listOf(me)),
+    WriteOptions(author = id, key = keys, held = listOf(me), at = now, audience = listOf(PUBLIC)),
 )
-val message = FoodBlock.wrap(reading)                       // { version, block, signature }: send this
+val message = FoodBlock.wrap(reading)                       // { block, signature }: send this
 ```
 
 `write` refuses a block that breaks a rule and throws `RefusedException` with every reason (`reasons`, and
@@ -70,10 +72,10 @@ so your chain stays one line.
 Names follow the JavaScript reference SDK: `canonical`, `hash`, `sign` (signs), `verify`, `check`, `refusals` (the check with its codes), `valid`, `strictText`, `receiptCode`, `suiteOfKey`, `commit`, `findsSelf`, `forkPairs`,
 `nextLink`, `checkChain`, `causalOrder`, `write`, `wrap`, `unwrap`, `header`, `seal` (encrypts), `open`, `sealCopy`,
 `openCopy`; `Identity.genesis / recoveryKeyHash / keysOf / keyTimeline / signedByAuthor / identityState / recoveryReach`; `Grant.operatorsOf / whyNotUnder /
-whyNotLive / whyNotLiveUndo / actName`; `Fold.promiseStage / promiseView / consent / liveGrant / withdrawalSeen / due / ordererOf / circleState / mayActAs / membersThen / whereNow / ownership / successorView /
-countedIn / circleKey`; `Sync.accept / signPull / signPush / newChallenge / pullRefusals / pushRefusals / pullErrors / pushErrors / admissionRefusals / residencyRefusals / pushAnswer / pushRequest / answerSignedBy / wellKnownErrors / announcement`; `Strangers.*` (the reading and deposit rules); `Legacy.convert / oldHash` (the one-time converter for pre-1.6 data, not part of the protocol); `FoodBlock.call(op, ...)` is the door itself.
+whyNotLive / whyNotLiveUndo / actName`; `Fold.promiseStage / promiseView / consent / liveGrant / withdrawalSeen / due / circleState / mayActAs / membersThen / whereNow / ownership / successorView /
+countedIn / circleKey`; `Sync.accept(incoming, held, takesPairs) / acceptSealed / answerPull(.., cap, servesPairs) / signPull / signPush / newChallenge / pullRefusals / pushRefusals / admissionRefusals / residencyRefusals / pushAnswer / pushRequest / answerSignedBy / wellKnownErrors / announcement`; `Strangers.*` (the reading and earnest rules); `Legacy.convert / oldHash` (the one-time converter for pre-1.6 data, not part of the protocol); `FoodBlock.call(op, ...)` is the door itself.
 
-There is no alias table and no reading of an older shape: year zero. A key names its `suite` (std, p256, sm): `Keypair.suite`, and `suite` arguments on `hash`, `create`, `sign`, `seal`, `WriteOptions` and the key grants. A signed pull or push carries exactly one of `counter` or `challenge` and no time; a node judges it with `Freshness(node, keys, highest, issued)`.
+A node states its own choices (`takesPairs`, `cap`, `servesPairs`, the admission rule and its count); the reading views take `unknownArrival` ("inside" or "outside") whenever `arrivals` is given. `Fold.consent` takes the sender's block as its fourth argument. There is no alias table and no reading of an older shape: year zero. A key names its `suite` (std, p256, sm): `Keypair.suite`, and `suite` arguments on `hash`, `create`, `sign`, `seal`, `WriteOptions` and the key grants. A signed pull or push carries exactly one of `counter` or `challenge` and no time; a node judges it with `Freshness(node, keys, highest, issued)`.
 
 Blocks are `kotlinx.serialization` `JsonObject`s, the same `{ hash, type, state, refs, signature }` as everywhere.
 Numbers keep their exact text across the boundary.
@@ -126,9 +128,6 @@ the core: `expect` is a subset match, `exact` deep equality, `codes` the refusal
 build's peer leaves out prints that it was left out. The Kotlin library reads the spec through the core (op `spec`); it
 keeps no copy of `protocol.json`. `ApiTest` writes a sensor's chain end to end, a refusal, a sealed value, and every suite.
 
-## The window (`:window`, `:window-android`)
+## The window
 
-The phone as a window onto its hosted node, with the person's passkey as their FoodBlock key. `:window` is the JVM library (`FoodBlockWindow`: register, sign in
-by passkey assertion, read, write, an offline SQLite queue and `sync()`; every protocol check is the bundled core's). `:window-android` adds
-`CredentialManagerPasskeys` (Credential Manager) and `AndroidWindowStore`; the app needs the host's `assetlinks.json` entry (`get_login_creds`). Tests (JDK 17):
-`./gradlew :window:test` (end to end against a local host from the Backend checkout, `FOODOS_BACKEND`; skipped without it).
+The phone as a window onto a hosted node is FoodX's product, not part of the protocol: it lives in FoodX (`foodx/native/window/kotlin`), which includes this build by path.

@@ -10,8 +10,9 @@ const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 const { genesis } = fb.identity
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const { V, tags: INVARIANTS } = vectorsFile.load()
 const made = new Set()
 const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex')
 const keys = {}
@@ -44,12 +45,12 @@ function door(name, op, args, { expect, exact } = {}) {
   V.door.push({ name, op, args, expect: expect !== undefined ? expect : got, ...(exact ? { exact: true } : {}) })
 }
 
-// ---- the commitment: SHA-256 of the salt's hex then the canonical JSON of { limit, per } ----
+// ---- the commitment: SHA-256 of the salt's hex then the canonical JSON of { limit, every } (decision H14: a grant's period is scope.every) ----
 const SALT = 'ab'.repeat(16), OTHER_SALT = 'cd'.repeat(16)
 const LIMIT = M(5000)
-const plain = (limit, per, salt) => sha(salt + JSON.stringify(per ? { limit: { currency: limit.currency, minor: limit.minor }, per } : { limit: { currency: limit.currency, minor: limit.minor } }))
-door('limit: the commitment is the salted hash of { limit, per } in canonical JSON', 'limit_commitment', [LIMIT, 'P1D', SALT], { expect: plain(LIMIT, 'P1D', SALT), exact: true })
-door('limit: with no period, per is left out of the committed value', 'limit_commitment', [LIMIT, null, SALT], { expect: plain(LIMIT, null, SALT), exact: true })
+const plain = (limit, every, salt) => sha(salt + JSON.stringify(every ? { every, limit: { currency: limit.currency, minor: limit.minor } } : { limit: { currency: limit.currency, minor: limit.minor } }))
+door('H14: limit: the commitment is the salted hash of { limit, every } in canonical JSON', 'limit_commitment', [LIMIT, 'P1D', SALT], { expect: plain(LIMIT, 'P1D', SALT), exact: true })
+door('H14: limit: with no period, every is left out of the committed value', 'limit_commitment', [LIMIT, null, SALT], { expect: plain(LIMIT, null, SALT), exact: true })
 door('limit: another salt, another commitment', 'limit_commitment', [LIMIT, 'P1D', OTHER_SALT], { expect: plain(LIMIT, 'P1D', OTHER_SALT), exact: true })
 assert.notEqual(plain(LIMIT, 'P1D', SALT), plain(LIMIT, 'P1D', OTHER_SALT))
 const C = plain(LIMIT, 'P1D', SALT)
@@ -63,7 +64,7 @@ const C = plain(LIMIT, 'P1D', SALT)
   const never = s.say(farmer, 'thing', { kind: 'schema', target: 'transfer.spray', fields: { field: 'text' }, undo: 'never' })
   const broad = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ACTS, until: LATER } }, { to: agent.id })
   const sealed = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ACTS, limit_commitment: C, until: LATER } }, { to: agent.id })
-  const visible = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ACTS, limit: LIMIT, per: 'P1D', until: LATER } }, { to: agent.id })
+  const visible = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ACTS, limit: LIMIT, every: 'P1D', until: LATER } }, { to: agent.id })
   const unnamed = s.say(farmer, 'grant', { kind: 'authority', scope: { acts: ['transfer.water'], limit_commitment: C, until: LATER } }, { to: agent.id })
   const act = (kind, under, extra = {}) => s.say(agent, 'transfer', { kind }, { what: field.hash, to_place: field.hash, under: under.hash, ...extra })
   const underOk = (name, block, expect) => door(name, 'under_ok', [block, s.held], { expect, exact: true })
@@ -73,16 +74,16 @@ const C = plain(LIMIT, 'P1D', SALT)
   underOk('sealed limit: a limit commitment on a grant that does not name the act is not enough', act('spray', unnamed, { schema: never.hash }), false)
   // the amount sits on the principal's node: an observe of kind limit, for the grant
   const fence = (state, refs) => s.say(farmer, 'observe', { kind: 'limit', ...state }, refs)
-  const right = fence({ limit: LIMIT, per: 'P1D', salt: SALT }, { for: sealed.hash })
+  const right = fence({ limit: LIMIT, every: 'P1D', salt: SALT }, { for: sealed.hash })
   const opens = (name, g, f, expect) => door(name, 'limit_opens', [g, f], { expect, exact: true })
   opens('sealed limit: the observe with the amount, period and salt opens the grant\'s commitment', sealed, right, true)
-  opens('sealed limit: a tampered amount does not open it', sealed, fence({ limit: M(9000), per: 'P1D', salt: SALT }, { for: sealed.hash }), false)
-  opens('sealed limit: a tampered period does not open it', sealed, fence({ limit: LIMIT, per: 'P7D', salt: SALT }, { for: sealed.hash }), false)
+  opens('sealed limit: a tampered amount does not open it', sealed, fence({ limit: M(9000), every: 'P1D', salt: SALT }, { for: sealed.hash }), false)
+  opens('sealed limit: a tampered period does not open it', sealed, fence({ limit: LIMIT, every: 'P7D', salt: SALT }, { for: sealed.hash }), false)
   opens('sealed limit: a left-out period does not open a commitment that holds one', sealed, fence({ limit: LIMIT, salt: SALT }, { for: sealed.hash }), false)
-  opens('sealed limit: another salt does not open it', sealed, fence({ limit: LIMIT, per: 'P1D', salt: OTHER_SALT }, { for: sealed.hash }), false)
-  opens('sealed limit: an observe with no salt does not open it', sealed, fence({ limit: LIMIT, per: 'P1D' }, { for: sealed.hash }), false)
-  opens('sealed limit: an observe for another grant does not open it', sealed, fence({ limit: LIMIT, per: 'P1D', salt: SALT }, { for: unnamed.hash }), false)
-  opens('sealed limit: an observe that is not of kind limit does not open it', sealed, s.say(farmer, 'observe', { kind: 'note', limit: LIMIT, per: 'P1D', salt: SALT }, { for: sealed.hash }), false)
+  opens('sealed limit: another salt does not open it', sealed, fence({ limit: LIMIT, every: 'P1D', salt: OTHER_SALT }, { for: sealed.hash }), false)
+  opens('sealed limit: an observe with no salt does not open it', sealed, fence({ limit: LIMIT, every: 'P1D' }, { for: sealed.hash }), false)
+  opens('sealed limit: an observe for another grant does not open it', sealed, fence({ limit: LIMIT, every: 'P1D', salt: SALT }, { for: unnamed.hash }), false)
+  opens('sealed limit: an observe that is not of kind limit does not open it', sealed, s.say(farmer, 'observe', { kind: 'note', limit: LIMIT, every: 'P1D', salt: SALT }, { for: sealed.hash }), false)
   opens('sealed limit: a grant with a visible limit has nothing to open', visible, right, false)
   // the same amount, signed in a grant that updates it, is a new commitment: the old one is not changed
   const raised = plain(M(9000), 'P1D', SALT)
@@ -124,5 +125,5 @@ const C = plain(LIMIT, 'P1D', SALT)
   c1('sealed limit: a child under a visible parent keeps a visible limit no larger', { limit: M(1000) }, parentVisible, [])
 }
 
-fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
+vectorsFile.save(V, INVARIANTS)
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)

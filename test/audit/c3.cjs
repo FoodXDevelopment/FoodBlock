@@ -1,13 +1,13 @@
-const { fb, oracle, World } = require('./lib.cjs')
+const { fb, oracle, World, kindOf } = require('./lib.cjs')
 const w = new World('case3 risk pool')
 const nia = w.person('nia'), mia = w.person('mia'), ned = w.person('ned'), dev = w.person('rainsensor-device', 'machine'), inst = w.person('installer')
 const show = (n, ...a) => console.log('>>', n, ...a.map(x => typeof x === 'string' ? x : JSON.stringify(x)))
 const GBP = (m) => ({ minor: m, currency: 'GBP' })
-const pool = w.w(nia, 'actor', { kind: 'circle', name: 'Hill Road pool', roles: [{ name: 'steward', powers: ['sign', 'admit', 'remove'] }, { name: 'member', powers: [] }, { name: 'assessor', powers: [] }] }, {}, 'pool circle')
+const pool = w.w(nia, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Hill Road pool', roles: [{ name: 'steward', powers: ['sign', 'admit', 'remove'] }, { name: 'member', powers: [] }, { name: 'assessor', powers: [] }] }, {}, 'pool circle')
 const join = (p, roles) => { const g = w.w(nia, 'grant', { kind: 'member', roles }, { subject: pool.hash, to: p.id, as: pool.hash }, 'member grant ' + p.label); w.w(p, 'grant', { status: 'accepted', kind: 'member' }, { answers: g.hash, subject: pool.hash }, p.label + ' accepts') }
 join(mia, ['member']); join(ned, ['member', 'assessor'])
 show('assessors via members_then', fb.membersThen(pool, pool.hash + '#assessor', w.blocks).map(x => x.slice(0, 6)), 'ned', ned.id.slice(0, 6))
-const roof = w.w(mia, 'thing', { kind: 'roof', name: "Mia's roof" }, {}, 'roof')
+const roof = w.w(mia, 'thing', { kind: 'roof', name: "Mia's roof" }, { of: kindOf('roof') }, 'roof')
 const schema = w.w(nia, 'thing', { kind: 'schema', target: 'promise', name: 'hail cover', fields: { peril: 'text' }, grounds: { event: 'hail damage occurred at the roof', confirms: ['observe'], defeats: ['observe'], confirmers: [pool.hash + '#assessor'] } }, { as: pool.hash }, 'cover schema (confirmer = pool#assessor)')
 const cover = w.w(nia, 'promise', { what: 'cover hail damage to roof up to 500', terms: { price: GBP(500), condition: { peril: 'hail', where: 'roof' }, expires: '2027-06-01T00:00:00.000Z' } }, { from: pool.hash, to: mia.id, as: pool.hash, schema: schema.hash }, 'conditional promise: pool covers Mia')
 w.w(mia, 'promise', { status: 'accepted' }, { answers: cover.hash, for: cover.hash }, 'mia accepts')
@@ -28,7 +28,7 @@ s = fb.promiseStage(cover, w.blocks); show('paid after non-confirmer confirms 2n
 // the condition: is "owed" visible in any fold?
 show('fold fields for conditional', Object.keys(s))
 // sensor path
-const sensor = w.w(inst, 'thing', { kind: 'sensor', name: 'rain gauge R1', marks: [{ scheme: 'serial', value: 'RG-1' }] }, {}, 'sensor thing (by installer)')
+const sensor = w.w(inst, 'thing', { kind: 'sensor', name: 'rain gauge R1', marks: [{ scheme: 'serial', value: 'RG-1' }] }, { of: kindOf('sensor') }, 'sensor thing (by installer)')
 const op = w.w(inst, 'grant', { kind: 'operator' }, { to: dev.id, subject: sensor.hash }, 'operator grant: installer answers for the device')
 show('operators of device', fb.identity.identityState(dev.id, w.blocks).operators.map(x => x.slice(0, 6)), 'installer', inst.id.slice(0, 6))
 const cond = w.w(nia, 'thing', { kind: 'schema', target: 'promise.sensor_cover', name: 'reading_condition', fields: { reading: 'hash' }, grounds: { event: 'rain over 50 mm in an hour at the gauge', confirmers: [dev.id] } }, { as: pool.hash }, 'sensor cover schema (confirmer=device)')

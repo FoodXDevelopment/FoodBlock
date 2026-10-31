@@ -1,23 +1,558 @@
 {
- "about": "The base schemas of FoodBlock 1.6: what the protocol reads of its own kinds, as data. Each entry is the state of a thing of kind schema (things.md, Schemas). make.cjs (sdk/javascript/test/make-schemas.cjs) signs them in this order with the publisher key and writes published.json, so each has a stable id. A schema's `fields` are names with a free hint of the value; nothing checks the hint. A new schema goes at the end of the list: the ids before it never change.",
- "publisher": { "seed_text": "foodblock 1.6 base schemas", "kind": "publisher", "at": "2026-10-19T00:00:00.000Z", "note": "The seed is public on purpose: anyone can rebuild every id. The publisher is a convention for finding these schemas, not an authority. A reader trusts a schema only by the rules of authority.md (the grantor's own, or one the grantor confirmed)." },
+ "about": "The base schemas of FoodBlock: what the protocol reads of its own kinds, as data. Each entry is the state of a thing of kind schema (things.md, Schemas). make.cjs (sdk/javascript/test/make-schemas.cjs) signs them in this order with the publisher key and writes published.json, so each has a stable id. A schema's `fields` are names with a free hint of the value; nothing checks the hint. A new schema goes at the end of the list, so the ids before it do not change; until the lock (core.md, section 11) one may still be taken out, and every id after it changes.",
+ "publisher": {
+  "seed_text": "foodblock 1.6 base schemas",
+  "kind": "publisher",
+  "at": "2026-10-19T00:00:00.000Z",
+  "note": "The seed is public on purpose: anyone can rebuild every id. The publisher is a convention for finding these schemas, not an authority. A reader trusts a schema only by the rules of authority.md (the grantor's own, or one the grantor confirmed)."
+ },
  "schemas": [
-  { "name": "thing", "target": "thing", "fields": { "name": "text", "marks": "exact marks, [{ scheme, value }]", "words": "the words printed on it, as first read", "lot": "the lot code", "use_by": "a date", "pack": "an amount: what one instance holds", "amount": "an amount" } },
-  { "name": "schema", "target": "thing.schema", "fields": { "target": "the type, or type.kind, it is for", "fields": "{ name: hint }", "roles": "the ref keys it declares beyond the shared ones", "grounds": "{ event, confirms, defeats, confirmers }", "undo": "never or ok", "labels": "{ lang: { name: label } }" } },
-  { "name": "make", "target": "transform.make", "fields": { "shares": "[{ from, share }]: how much of each input the output carries, a decimal string" } },
-  { "name": "observation", "target": "observe", "fields": { "text": "what is so, in words", "amount": "an amount" } },
-  { "name": "admission", "target": "observe.admission", "fields": { "parties": "ids always admitted (a list)", "per_stranger": "most blocks one day may bring from anyone else (an integer)", "order_channel": "the acts, as type.kind, an agent may send first (a list)" } },
-  { "name": "limit", "target": "observe.limit", "fields": { "limit": "money: the most the agent may spend", "per": "a duration: the period the limit covers" }, "grounds": { "event": "the principal set the fence on the grant named in refs.for" } },
-  { "name": "consent", "target": "observe.consent", "fields": { "word": "yes, stop, keep or move", "to": "for move: the custodian or node (an id)" }, "grounds": { "event": "the person said it, or a recorder heard it and kept the raw message in derives_from" } },
-  { "name": "reading", "target": "observe.reading", "fields": { "amount": "an amount: what was measured", "text": "what was read, in words", "accuracy": "an amount, in the unit of the reading", "coverage": "a decimal from 0 to 1: how much was seen", "method": "how: sensor, import, or a model's name" }, "grounds": { "event": "the sensor, or a reader of evidence, saw it; refs.from names the sensor" } },
-  { "name": "work", "target": "observe.work", "fields": { "text": "what was done, in words", "amount": "an amount: the hours or the quantity", "line": "the id of the promise line it is for" }, "grounds": { "event": "the worker did it", "confirms": ["observe"] } },
-  { "name": "attestation", "target": "observe.attestation", "fields": { "scheme": "the register: eudi, cnpj, rfc, abn, uscc, national_id, device", "value": "the number, or a commitment to it", "kind_of": "person, business or device" }, "grounds": { "event": "the issuer checked the register or the maker's record" } },
-  { "name": "share_vote", "target": "observe.vote", "fields": { "choice": "a commitment to the choice (privacy.md)" }, "grounds": { "event": "the voter owned the shares named in refs.of when the counter read the ownership fold; each owned instance is one vote" } },
-  { "name": "kept_promises", "target": "observe.kept", "fields": { "kept": "an integer: promises whose stage is done", "broken": "an integer: promises stopped, declined or expired after a binding accept, or reversed", "open": "an integer: the rest" }, "grounds": { "event": "the promise stages of refs.subject, read by the writer; a reader recomputes them from the promises named in derives_from (folds.md, Kept and broken)" } },
-  { "name": "person_confirmed", "target": "promise", "fields": {}, "grounds": { "event": "the receiver says it arrived: their accepted answer to the transfer, before the promise's terms.deliver_by", "confirms": ["transfer"] }, "undo": "ok" },
-  { "name": "sensor_confirmed", "target": "promise", "fields": {}, "grounds": { "event": "the sensor read past the line for the time terms.condition names (reading_condition, profiles/tasks.md); the schema's confirmers settle a dispute about the reading", "confirms": ["observe"] }, "undo": "ok" },
-  { "name": "teach", "target": "promise.teach", "fields": {}, "grounds": { "event": "the lesson was given: the learner's accepted answer to the teacher's work block; a learner's make names the teacher's recipe in derives_from, with the share in state.shares if one was agreed", "confirms": ["observe"] }, "undo": "ok" },
-  { "name": "loan", "target": "promise.loan", "fields": { "principal": "money: what is lent" }, "grounds": { "event": "the lender advanced the money (a payout record the borrower accepts) and it came back (the repayment, accepted by the lender)", "confirms": ["observe", "transfer"] }, "undo": "never" },
-  { "name": "payout", "target": "observe.work", "fields": { "amount": "money: what was paid out", "text": "what it was for, in words" }, "grounds": { "event": "the payer paid it: the transfer in derives_from; the receiver's accepted answer confirms. A loan's advance is a payout record too", "confirms": ["observe"] } }
+  {
+   "name": "thing",
+   "target": "thing",
+   "fields": {
+    "name": "text",
+    "marks": "exact marks, [{ scheme, value }]",
+    "words": "the words printed on it, as first read",
+    "lot": "the lot code",
+    "use_by": "a date",
+    "pack": "an amount: what one instance holds",
+    "amount": "an amount",
+    "walk": "a place's bound as a walk of named marks, in order: [{ kind, words, photo }] (a tree, a stream, a wall; photo a hash). Beside or instead of state.bound; most smallholders have no coordinates",
+    "count": "a whole number: how many a counted lot holds (a herd). A tally is an observe of kind tally with a count, countersigned by the other side"
+   }
+  },
+  {
+   "name": "schema",
+   "target": "thing.schema",
+   "fields": {
+    "target": "the type, or type.kind, it is for",
+    "fields": "{ name: hint }",
+    "terms": "{ name: hint }: the terms a promise naming it may carry beyond the protocol's own",
+    "roles": "the ref keys it declares beyond the shared ones",
+    "grounds": "{ event, confirms, defeats, confirmers, needed, wait }",
+    "undo": "never or ok",
+    "labels": "{ lang: { name: label } }"
+   }
+  },
+  {
+   "name": "make",
+   "target": "transform.make",
+   "fields": {
+    "shares": "[{ from, share }]: how much of each input the output carries, a decimal string"
+   }
+  },
+  {
+   "name": "observation",
+   "target": "observe",
+   "fields": {
+    "text": "what is so, in words",
+    "amount": "an amount"
+   }
+  },
+  {
+   "name": "admission",
+   "target": "observe.admission",
+   "fields": {
+    "parties": "ids always admitted (a list)",
+    "per_stranger": "most blocks one day may bring from anyone else (an integer)",
+    "order_channel": "the acts, as type.kind, an agent may send first (a list)"
+   }
+  },
+  {
+   "name": "limit",
+   "target": "observe.limit",
+   "fields": {
+    "limit": "money: the most the agent may spend",
+    "every": "a duration: the period the limit renews over (scope.every)"
+   },
+   "grounds": {
+    "event": "the principal set the fence on the grant named in refs.for"
+   }
+  },
+  {
+   "name": "consent",
+   "target": "observe.consent",
+   "fields": {
+    "word": "yes (it names whom it is about in refs.subject), stop, keep or move",
+    "to": "for move: the custodian or node (an id)"
+   },
+   "grounds": {
+    "event": "the person said it, or a recorder heard it and kept the raw message in derives_from"
+   }
+  },
+  {
+   "name": "reading",
+   "target": "observe.reading",
+   "fields": {
+    "amount": "an amount: what was measured",
+    "text": "what was read, in words",
+    "accuracy": "an amount, in the unit of the reading",
+    "coverage": "a decimal from 0 to 1: how much was seen",
+    "method": "how: sensor, import, or a model's name",
+    "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+    "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+    "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional"
+   },
+   "grounds": {
+    "event": "the sensor, or a reader of evidence, saw it; refs.from names the sensor"
+   }
+  },
+  {
+   "name": "work",
+   "target": "observe.work",
+   "fields": {
+    "text": "what was done, in words",
+    "amount": "an amount: the hours or the quantity",
+    "line": "the id of the promise line it is for"
+   },
+   "grounds": {
+    "event": "the worker did it",
+    "confirms": [
+     "observe"
+    ]
+   }
+  },
+  {
+   "name": "attestation",
+   "target": "observe.attestation",
+   "fields": {
+    "scheme": "the register the issuer checked, named by the issuer",
+    "value": "the number, or a commitment to it",
+    "kind_of": "person, business or device",
+    "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+    "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+    "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional"
+   },
+   "grounds": {
+    "event": "the issuer checked the register or the maker's record"
+   }
+  },
+  {
+   "name": "share_vote",
+   "target": "observe.vote",
+   "fields": {
+    "choice": "a commitment to the choice (privacy.md)"
+   },
+   "grounds": {
+    "event": "the voter owned the shares named in refs.of when the counter read the ownership fold; each owned instance is one vote"
+   }
+  },
+  {
+   "name": "person_confirmed",
+   "target": "promise",
+   "fields": {},
+   "grounds": {
+    "event": "the receiver says it arrived: their accepted answer to the transfer, before the promise's terms.deliver_by",
+    "confirms": [
+     "transfer"
+    ]
+   },
+   "undo": "ok"
+  },
+  {
+   "name": "sensor_confirmed",
+   "target": "promise",
+   "fields": {},
+   "grounds": {
+    "event": "the sensor read past the line for the time terms.condition names (reading_condition, profiles/tasks.md); the schema's confirmers settle a dispute about the reading",
+    "confirms": [
+     "observe"
+    ]
+   },
+   "undo": "ok"
+  },
+  {
+   "name": "teach",
+   "target": "promise.teach",
+   "fields": {},
+   "grounds": {
+    "event": "the lesson was given: the learner's accepted answer to the teacher's work block; a learner's make names the teacher's recipe in derives_from, with the share in state.shares if one was agreed",
+    "confirms": [
+     "observe"
+    ]
+   },
+   "undo": "ok"
+  },
+  {
+   "name": "loan",
+   "target": "promise.loan",
+   "fields": {
+    "principal": "money: what is lent"
+   },
+   "grounds": {
+    "event": "the lender advanced the money (a payout record the borrower accepts) and it came back (the repayment, accepted by the lender)",
+    "confirms": [
+     "observe",
+     "transfer"
+    ]
+   },
+   "undo": "never"
+  },
+  {
+   "name": "payout",
+   "target": "observe.work",
+   "fields": {
+    "amount": "money: what was paid out",
+    "text": "what it was for, in words"
+   },
+   "grounds": {
+    "event": "the payer paid it: the transfer in derives_from; the receiver's accepted answer confirms. A loan's advance is a payout record too",
+    "confirms": [
+     "observe"
+    ]
+   }
+  },
+  {
+   "name": "pledge",
+   "target": "promise",
+   "fields": {},
+   "grounds": {
+    "event": "the organiser named in refs.from signed a pledge_close that names this pledge in derives_from and is dated no later than terms.expires, and the pledges it binds that name this plan in refs.what total at least terms.condition.pledged, in its currency (profiles/pledges.md); then the pledger owes terms.price. The price may be an amount (a village's haul call, 200 kg by Friday), and the threshold then an amount of the same unit: only one unit adds. A held stake names its release, or the reader shows release not named. Each pledger counts for herself, never per group"
+   },
+   "undo": "ok"
+  },
+  {
+   "name": "pledge_close",
+   "target": "observe",
+   "fields": {},
+   "grounds": {
+    "event": "the organiser counted the pledges it names in derives_from; it binds those that are live, name her in refs.from and expire no earlier than its at, less any whose threshold the rest do not meet (profiles/pledges.md)"
+   },
+   "undo": "never"
+  },
+  {
+   "name": "not_free",
+   "target": "observe.not_free",
+   "fields": {
+    "reason": "compelled (signed under force: a physical attack or the threat of one, never a hard bargain, a refusal to deal or scarcity; a boss's order alone is no threat), not_me (my key was taken; I did not sign it) or could_not_understand (only a person who can reason consents)",
+    "threat": "for compelled: what the threat was, in words"
+   },
+   "grounds": {
+    "event": "the signer of the block named in refs.subject says it was not her free word; only her own block counts as hers, it may be sealed to any audience she picks, it has no time limit, and she cannot take it back. It is a claim, never a verdict: only the deal's referee rules, by a defeats of the block on that ground"
+   },
+   "undo": "never"
+  },
+  {
+   "name": "invasion",
+   "target": "observe.invasion",
+   "fields": {
+    "text": "what crossed into what, in words",
+    "asks": "stop, or pay N (money): what the claim asks. Data only; FoodBlock enforces neither"
+   },
+   "grounds": {
+    "event": "a physical crossing into a person, place or thing with no deal behind it: refs.to the accused (one or several), refs.subject what was crossed, derives_from the evidence. Lost sales, a lower price or a true review cross nothing"
+   }
+  },
+  {
+   "name": "ruling",
+   "target": "observe.ruling",
+   "fields": {
+    "text": "the referee's remark, in words: it binds nobody and moves nothing",
+    "up_to": "money or an amount: on a confirms of a claim of invasion, the harm the ruling finds. A fact; no fold moves anything because of it",
+    "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+    "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+    "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional",
+    "rule": "a hash: the text of the rule the ruling applied (a thing, also named in derives_from), so readers can see whether two judges who disagree used the same code"
+   },
+   "grounds": {
+    "event": "a referee wrote a remark beside her ruling (her confirms or defeats), or the harm she finds"
+   }
+  },
+  {
+   "name": "loyalty",
+   "target": "promise.loyalty",
+   "fields": {
+    "what": "what the one acting does for the one acted for, in words"
+   },
+   "grounds": {
+    "event": "the one acting (refs.from) takes nothing from anyone else about what he does for the one acted for (refs.to, a person or circle): a refrain with terms.until, an optional price (the one acted for pays it; it is owed back if the promise is broken) and a referee named in the deal's own schema or by a referee grant. The payer is never marked: only what the agent signed is read"
+   },
+   "terms": {
+    "stake": "{ times, of }: a stake as a multiple of a named value, read by a referee; no fold moves it"
+   }
+  },
+  {
+   "name": "vouch",
+   "target": "promise.vouch",
+   "fields": {
+    "what": "whom or what the voucher stands behind, in words"
+   },
+   "roles": [
+    "subject"
+   ],
+   "grounds": {
+    "event": "the voucher stands behind refs.subject (a person, or a thing such as a lot of goats) for up to terms.backing, to refs.to (a person, a circle, a thing whose owner is the receiver, or the worker for whom a backer stands behind the curtain; left out, any who deal with the subject). The cap is money or a count of one named kind (an amount: up to 2 heifers). The condition is a signal by the referee the voucher names: the subject failed a deal, the subject delivered (a letter of credit paid on a weigher's signal), or another owner has a better claim to the thing. A receiver may also be whoever owns a thing made from the lot, read along the makes. Each payment is the voucher's transfer for the vouch with the deal paid for in derives_from; the fold `pot` shows what is paid and what is left. Payments past the backing count for nothing against it. A held stake names its release, or the reader shows release not named"
+   },
+   "terms": {
+    "fraction": "a decimal from 0 to 1: the share of each loss the voucher bears, so the receiver keeps a reason to screen. With none, all of it up to the cap. Optional, never a default",
+    "until_reads": "occurrence or claims_made: what the vouch's `until` bounds. `occurrence`: deals made before D. `claims_made`: failures claimed before D. Required of a vouch that has an `until`; silence never widens it. A stranger is covered only if her deal names the vouch in its refs (her naming it is her accept of the open offer). A vouch may also name the rulebook of what it backs in refs.schema's deal terms, and write its cap out as `cap: all` (shown as \"no limit\")",
+    "cap": "`all`, written out and never a default: all the voucher owns on the day a claim is read, the referee fixing the sum. It reaches property only, never her body or labour. A vouch with it carries no `backing`, and the card prints \"no limit\"",
+    "demand": "`first` or `after_failure`: whether the receiver may claim on her own first demand (the condition is her signal) or only after the referee signs that the subject failed. Optional, never a default",
+    "liability": "`joint` or `several`: with co-vouchers, whether each answers for the whole claim or only for her share. Optional, never a default; a debt has one amount, and any payment lowers it for all (promises.md, Settling)",
+    "contribution": "none, or the hash of the `shareback` the co-vouchers signed to each other. With none, no co-voucher owes another anything"
+   }
+  },
+  {
+   "name": "payback",
+   "target": "promise.payback",
+   "fields": {
+    "what": "what is owed back, in words"
+   },
+   "grounds": {
+    "event": "the one vouched for (refs.from) promises the voucher (refs.to): if you pay for me under that vouch, that amount, plus an optional fee, of mine becomes yours. Its condition is a deed or settled of the voucher's payment"
+   }
+  },
+  {
+   "name": "refusal",
+   "target": "promise.refusal",
+   "fields": {
+    "what": "whom the signer will not deal with, in words"
+   },
+   "grounds": {
+    "event": "each signer (refs.from) promises the other signers, the circle (refs.to), not to deal with the one named in refs.subject until it ends: a refrain with terms.until, made to the circle and ruled on only by the referee the circle's grounds name, so a signer who deals with him has broken his own word to them, shown, and a non-signer who deals with him has broken nothing. It binds once enough signers have signed: a signal of that kind by holders of the named circle#role, counted by distinct signing keys, never by bare keys. When it names a person, derives_from holds the deal it falls under and the notice the creditor sent first, with a receipt that it reached him; without that receipt it counts for no signer. A signal about anything else counts for nothing. It names only the one who signed the deal (or the circle, if the circle did), never his fellow members or kin. It ends when the deal is settled, the creditor withdraws her signal, or the deal's referee defeats the signal. The circle's grounds may say that a member's open signal toward someone already refused does not count toward the refusal of that member; that never touches the refused one's own claim. A refrain that names no one needs no cause: refusing to sell is every owner's right"
+   },
+   "terms": {
+    "strikes": "a whole number: how many open signals, from distinct deals, make the refusal bind. The circle's choice; with none, nothing is filled in",
+    "window": "a duration: the period those signals must fall in",
+    "cure": "a duration: days a debtor has to settle before a signal counts (the rulebook term of the same name, profiles/rulebooks.md)",
+    "release": "who besides the debtor's payment may lift it: ids or circle#role. Each refuser lifts only her own refusal",
+    "stake": "{ times, of }: a stake as a multiple of a named value (an entry on the circle's table, by hash). Read by a referee; no fold moves it"
+   }
+  },
+  {
+   "name": "pool",
+   "target": "promise.pool",
+   "fields": {
+    "what": "what the members pool against, in words"
+   },
+   "terms": {
+    "ceiling": "money: the most the pot may hold",
+    "above": "what happens to pay-ins above the ceiling, in words (for example: back to payers in proportion to what each paid in)",
+    "if_short": "the order payouts are paid in if the pot runs short, in words; with none, a payout past the pot counts for nothing",
+    "rank": "a whole number: the place in the payout order a member's own signed promise names for herself, with its own premium. No default order exists",
+    "premium": "money: what that rank costs her",
+    "first_loss": "money or a fraction: a first part of any loss she bears herself",
+    "pay_in": "kept or held: whether each pay-in is a premium that is kept (leaving takes nothing back) or money held (it comes back in full and is never paid out while held). One unit of money cannot be both. With neither said, the card shows \"pay-in: not said\" and nothing is filled in",
+    "loads_dues": "`true` or `false`: whether a claim paid out raises the members' dues. Signed at founding, never a default; with neither said, the card shows \"dues: not said\""
+   },
+   "grounds": {
+    "event": "the holder (a circle or a named holder, the head's signer) holds the pot. Members pay in by transfers for the pool, each of their own choosing and never forced equal. A payout is the holder's transfer conditioned on a signal by the confirmers the schema names, naming the event. It never counts past what was paid in, less what was paid out (the fold `pot`). What voids a payout is the member's own conduct, each a refrain that member signed. A new ceiling is a new schema hash, which each payer signs for their own pay-ins. A member's own promise to the holder may carry rank, premium and first_loss; a share-out is paid per signer, never per circle (paying per group makes groups split to collect more)"
+   }
+  },
+  {
+   "name": "link",
+   "target": "observe.link",
+   "fields": {
+    "text": "what the two keys say, in words"
+   },
+   "grounds": {
+    "event": "the signer says refs.same_as is another key of hers. It weighs as one hand only when the other key has countersigned: an observe of kind link signed by that key, naming this block in confirms and the first key in same_as. One signature is only its author's word. It may be sealed to one reader (privacy.md, Audiences). A third party's same_as stays only its author's word"
+   },
+   "undo": "never"
+  },
+  {
+   "name": "rulebook",
+   "target": "thing.schema",
+   "fields": {
+    "glossary": "the id of the glossary its words are defined in",
+    "deadlines": "{ name: duration }: the dates a deal under it keeps",
+    "text": "the rules, in words"
+   },
+   "terms": {
+    "cover": "{ quotes, within, take }: take is lowest or highest. Each quote is an observe by its giver for the deal; the claim is the gap between the deal price and the chosen quote, and the referee checks the arithmetic",
+    "cure": "{ within }: after a lot is found short, the seller may replace it within this duration",
+    "allowance": "a fraction or an amount: what the grader may find the lot worth less, if both sides signed it",
+    "sample": "{ holder, deadline, fee }: a sealed sample the grade is read from. Who holds it, until when, and who pays the fee, each signed",
+    "appeal": "the id of the appeal grader both sides named in advance; her later reading on the same lot supersedes the first grader's",
+    "fallback": "{ source, date, chooser }: a cash price for a debt in goods, only if signed. `source` names the price reading, `date` the day it is read, `chooser` is payer, payee or neither. With none signed, the debt stays in goods and failing to deliver is a breach, never a quiet conversion at one side's price",
+    "claim_within": "a duration: a claim after this is not heard by this referee. Never \"extinguished\": the claimant may name another judge, and it never touches first use, which time does not lose",
+    "lot": "{ size, up_to }: a step in a price table. From `size` units up to `up_to` units, the line beside it carries that step's price (\"12 crates, 90; 13-24, 85 each\"). Read like any term",
+    "index": "{ goods, grade, weights, average }: what a price that follows an index is of. It names the goods, the grade, the weights and the kind of average, by hash. There is no default index and no default average"
+   },
+   "grounds": {
+    "event": "a circle publishes its terms, referee panel and deadlines as a schema; a deal names it by hash in refs.schema, so both sides sign it by naming it. A new version is a new hash and old deals stay under the old hash. Its grounds may carry reads (the block kinds the referee considers), due_in (the time she has), fee (and who gets it back) and blind (names hidden in the bundle). A rulebook or custom binds only its signers and never excuses an invasion of someone who never signed it. A price table in it binds only the deals that name it"
+   }
+  },
+  {
+   "name": "glossary",
+   "target": "thing.glossary",
+   "fields": {
+    "entries": "[{ word, meaning, check, unit, measure, tolerance }]: what each word means, how it is checked, the unit, its measure and its tolerance. The protocol keeps no list of units. A bare noun (\"a bag\") is not a unit: `measure` says whose scale or tin and where (\"50 kg on the warehouse weighbridge, ticket signed by both\"). `tolerance` is a signed number or \"none\"; silence there is where the fights are. `check` is a test the sides can run (a unit, a count, a reading) or \"a referee's judgment\", a term both signed knowing a judge will weigh it"
+   },
+   "grounds": {
+    "event": "a circle or a deal defines its words; a rulebook or deal names it by hash"
+   }
+  },
+  {
+   "name": "grader",
+   "target": "observe.grade",
+   "fields": {
+    "match": "yes or no: does the lot match the description?",
+    "allowance": "a fraction or an amount, only if the sides signed an allowance term; the cover reads it",
+    "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
+    "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
+    "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional",
+    "bond": "money: if a referee finds my rejection wrong, up to this much of mine becomes the seller's. Signed by the grader before inspecting; consent to be inspected is the owner's, so she may make it conditional"
+   },
+   "grounds": {
+    "event": "the confirmer the schema names inspected the lot named in refs.subject. She answers only whether it matches the description. With no allowance term signed, she says nothing of price. Her reading is a fact on the lot, fixed once from the sealed sample the deal names; a later reading by the appeal grader both sides named supersedes it",
+    "confirms": [
+     "observe"
+    ]
+   }
+  },
+  {
+   "name": "release",
+   "target": "observe.release",
+   "fields": {
+    "text": "what is let go, in words",
+    "except": "[hash]: the deals (first promises) that stay open though the rest is let go"
+   },
+   "grounds": {
+    "event": "the signer lets go of her own claims, and only hers (it binds only its signer). With refs.subject (a deal or a thing) she lets go of her claims on that; without it, of her claims on every deal with refs.to whose first promise this block has in its causal past, except the deals in state.except, which stay open. A mutual release is one from each side. The fold `release_shown` shows what was let go and what stayed open"
+   },
+   "undo": "never"
+  },
+  {
+   "name": "bid",
+   "target": "observe.bid",
+   "fields": {
+    "commitment": "a commitment (privacy.md) to the signer's number: whole minor units, as text",
+    "deadline": "a time: when both bids and both openings must have reached the named clock",
+    "keepers": "the named clock, { names, needed }",
+    "currency": "the currency the numbers are in"
+   },
+   "grounds": {
+    "event": "the signer, a side of the deal named in refs.subject, commits to the most she would pay (the paying side) or the least she would take (the paid side) for that quarrel. Each side signs one bid and states the same deadline, clock and currency. Both then open by a block carrying state.opening. The fold `bids_shown` shows only whether the numbers overlap, and then their middle"
+   },
+   "undo": "never"
+  },
+  {
+   "name": "reliance",
+   "target": "observe.relies",
+   "fields": {
+    "of": "the kind of thing the issuer is relied on for, in words",
+    "reliance": "relied on, or on conditions (then say the conditions in text)",
+    "text": "the conditions, in words"
+   },
+   "grounds": {
+    "event": "the signer relies on refs.subject (an issuer) for things of kind `of`. It is her own reading and binds only her; a follower adopts it by choice. There is no rejected status: not being on her list is silence, and silence is never a no. She withdraws it by a stop (an updates with status stopped)"
+   }
+  },
+  {
+   "name": "price_reading",
+   "target": "observe.price",
+   "fields": {
+    "good": "the kind of good, in words or a thing hash",
+    "grade": "its quality class, named in a glossary both read",
+    "place": "where: a thing or words",
+    "date": "the day the price was read",
+    "price": "money per unit: { money, per }, per an amount",
+    "paid_by": "optional, as every confirmer states it",
+    "funded_by": "optional",
+    "pay_depends_on_result": "optional"
+   },
+   "grounds": {
+    "event": "the signer (the assessor) says what a good of that grade fetched at that place on that date. It is a fact she signed, never a verdict on any deal and never a price anyone must pay; it moves nothing. A price fixed later (promises.md, Terms) may cite it in derives_from"
+   }
+  },
+  {
+   "name": "keeping",
+   "target": "promise.keeping",
+   "fields": {
+    "what": "what is kept, in words"
+   },
+   "terms": {
+    "loss_band": "a decimal from 0 to 1: the share of the lot whose loss is the owner's when the holder signs a `loss` in time. Beyond it, or with no `loss`, the holder restores its value",
+    "loss_within": "a duration on a named clock: how long after knowing of a loss the holder has to sign the `loss`"
+   },
+   "grounds": {
+    "event": "the holder of the goods (refs.from) promises the owner (refs.to): if a thing in my keeping is lost I sign a `loss`, with evidence, within loss_within of knowing; a loss up to loss_band of the lot is yours; beyond that, or with no `loss`, I restore its value. loss_band is this schema's own term, never a change to the catch-weight band"
+   }
+  },
+  {
+   "name": "loss",
+   "target": "observe.loss",
+   "fields": {
+    "text": "what was lost and how, in words",
+    "amount": "an amount: how much of the lot"
+   },
+   "grounds": {
+    "event": "the holder signs that a thing in his keeping (refs.subject) was lost, with the evidence in derives_from. It is his own word and binds his name to its truth; it moves nothing by itself"
+   }
+  },
+  {
+   "name": "place_use",
+   "target": "transform.use",
+   "fields": {
+    "use": "what was done, in words (cleared, planted, harvested, drew water, fenced, built, kept)",
+    "bound": "a polygon, GeoJSON-shaped: one closed ring of at least four [lon, lat] positions, each a decimal string (things.md, Uses of a place)",
+    "layer": "optional words: which layer of the place (the roof deck, above the ovens, summer cropping, winter grazing). Data; two uses over one bound that name different acts or layers are not rival claims",
+    "rate": "an amount per time (20 litres per second): a water draw is a rate, beside the optional bound. A part of a rate may be sold as a share",
+    "resting": "a time: the user's own word that the place rests until then; shown, never read as ending anything"
+   },
+   "grounds": {
+    "event": "the user did it on the place named in refs.subject, making nothing from anything (no derives_from). The dated record is evidence a referee reads, never title"
+   }
+  },
+  {
+   "name": "shareback",
+   "target": "promise.shareback",
+   "fields": {
+    "what": "which vouch it is under, in words"
+   },
+   "terms": {
+    "shares": "[{ who, share }]: the co-vouchers' own list, each share a decimal from 0 to 1, adding to 1. There is no default equal split"
+   },
+   "grounds": {
+    "event": "one co-voucher (refs.from) promises another (refs.to), under the vouch both signed: if you pay more than your share of a claim under our vouch, my share of the excess becomes yours. Its condition is a deed of the other's payment, and its price is her share of the excess. It binds only the one who signed it; a co-voucher who never signed one owes nobody anything. The claim itself is covered once, whoever pays it (promises.md, Settling)"
+   }
+  },
+  {
+   "name": "rebate",
+   "target": "promise.rebate",
+   "fields": {
+    "what": "what the rebate is paid on, in words"
+   },
+   "terms": {
+    "order": "words: the order the circle pays in (interest first, then the rebate), as the circle signed it. No default order"
+   },
+   "grounds": {
+    "event": "the circle (refs.from) promises each buyer (refs.to): your settled purchases, times a figure the named bookkeeper signs, become yours. The price is a figure fixed later (promises.md, Terms) signed by the bookkeeper, with the transfers counted in derives_from. With no figure the stage shows \"figure not signed\" and nothing is owed. It is a promise of its own, never a term of each sale"
+   }
+  },
+  {
+   "name": "draw",
+   "target": "promise.draw",
+   "fields": {
+    "what": "what is drawn for (the turns of a rotating pot), in words"
+   },
+   "terms": {
+    "commitment": "the member's commitment to her salt and her reveal (privacy.md, A commitment), written before the close. The reveal is a block with state.opening that opens it",
+    "recipe": "the hash of the ranking recipe: the order is the hash of all the reveals, ranked as the recipe says. Named by hash, so every member reads the same order",
+    "reveal_by": "a time: the deadline for a reveal, read on the named clock `keepers`",
+    "keepers": "a named clock (blocks.md, A named clock) that receives the reveals",
+    "if_withheld": "`last`: a member who has not revealed by the deadline takes the last turns, by her own signed term. Her silence moves no one else's place"
+   },
+   "grounds": {
+    "event": "each member (refs.from) promises the circle (refs.to): before the close I commit to a salt, and I reveal it by the deadline. A commitment is privacy.md's, and a reveal is a block with state.opening that opens it (promises.md, Conditions, `opened`). Turns belong only to member keys the circle admitted, never to bare keys, and one person with many keys is named in the threat model. It binds only the member who signed it"
+   }
+  },
+  {
+   "name": "bounded_change",
+   "target": "promise.bounded_change",
+   "fields": {
+    "what": "what may change (the dues, the payout), in words"
+   },
+   "terms": {
+    "change_needed": "a count of the members whose signatures change it: a whole number or { of_members: \"p/q\" }",
+    "change_up_to": "money or an amount: the most the figure may become. A change past it binds her to nothing",
+    "change_notice": "a duration: a change takes effect no sooner than this after it is signed, so she may leave with what is hers before it does"
+   },
+   "grounds": {
+    "event": "a member (refs.from) promises the circle (refs.to), when she joins: my dues may change by the count named, up to the figure named. It binds her only within the bound she signed, as a visible limit does (authority.md), and she may leave with what is hers before a change takes effect. A rule that says \"whatever the majority decides\" binds nothing past what it names. The circle's `needed` and its removal rule may carry such a bounded change"
+   }
+  }
  ]
 }

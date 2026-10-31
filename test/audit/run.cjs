@@ -3,14 +3,14 @@
 // The cases c1 to c9 are small worlds of signed blocks that a read-only audit of FoodBlock 1.6 (2026-10-19) built to find where the Rust
 // core (the one engine every SDK wraps) and the oracle (spec/oracle, written from the spec text alone) disagreed, or where the spec let a
 // stranger do something it should not. Each fixed rule stays fixed here:
-//   1. PARITY: every fold in protocol.json (`folds`) is computed by the core and by the oracle over every block of every world, and the
+//   1. PARITY: every fold in protocol.json (`folds`) is computed by the core and by the oracle over every subject of every world, and the
 //      answers must be identical. Zero differences, or this exits 1.
 //   2. RULES: what each of the nine revisions says, asserted on these worlds (CHANGELOG.md, "1.6 revisions after the audit").
 const assert = require('assert/strict')
-const { fb, oracle } = require('./lib.cjs')
+const { fb, oracle, World, T } = require('./lib.cjs')
 const { call } = require('../../sdk/javascript/src/core.cjs')
 
-const files = ['c1', 'c1b', 'c1d', 'c1e', 'c2', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c6', 'c7', 'c9', 'c10', 'c11', 'c12']
+const files = ['c1', 'c1b', 'c1d', 'c1e', 'c2', 'c3', 'c3b', 'c4', 'c4b', 'c5', 'c6', 'c7', 'c9', 'c10', 'c11', 'c12', 'c13', 'c14', 'c15']
 const realLog = console.log
 console.log = () => {}
 for (const f of files) require('./' + f + '.cjs')
@@ -23,64 +23,39 @@ const failures = []
 const check = (name, fn) => { try { fn(); pass++ } catch (e) { fail++; failures.push(`${name}: ${String(e.message).split('\n').slice(0, 6).join(' | ')}`) } }
 
 // ---------- 1. Parity ----------
+// Every fold of protocol.json (`folds`) is asked of every world through tools/fuzz/folds.cjs and compared with the one projection table
+// (tools/fuzz/diff.cjs OPS); a fold neither can ask fails the run.
+const { askAll } = require('../../tools/fuzz/folds.cjs')
+const { ownersHaveReasons } = require('../../tools/fuzz/owners.cjs')
+const reasonless = []
+const { compare: compareAnswers, unaskable } = require('../../tools/fuzz/diff.cjs')
 const J = (x) => JSON.stringify(x, (k, v) => (v && typeof v === 'object' && !Array.isArray(v) ? Object.fromEntries(Object.keys(v).sort().map((key) => [key, v[key]])) : v))
-const sameAnswer = (a, b) => J(a) === J(b)
 const diffs = []
-const compare = (fold, world, what, a, b) => { tally[fold] = tally[fold] || [0, 0]; tally[fold][0]++; if (!sameAnswer(a, b)) { tally[fold][1]++; diffs.push(`${fold} (${world}, ${what}): core ${J(a).slice(0, 300)} | oracle ${J(b).slice(0, 300)}`) } }
 const tally = {}
-const NOW = '2026-12-01T00:00:00.000Z'
 const sortedRoles = (c) => c && ({ founder: c.founder, removed: c.removed, members: Object.fromEntries(Object.entries(c.members).map(([k, v]) => [k, { roles: [...v.roles].sort(), grant: v.grant, counted_to: v.counted_to }])) })
+if (unaskable().length) { realLog('no OPS entry for the fold(s) ' + unaskable().join(', ')); process.exit(1) }
 // The vectors' own stories are worlds too: whatever they hold is compared the same way.
 const V = require('../../spec/vectors.json')
 const full = (b) => ({ hash: b.hash, ...b.block, ...(b.suite ? { suite: b.suite } : {}), signature: b.signature })
 const stories = [...V.deals, ...V.circles, ...V.identities, ...V.folds.promises, ...V.folds.circles, ...V.folds.things, ...V.refusals.cases.filter((c) => c.blocks)].map((v, i) => {
   const blocks = v.blocks.map(full)
-  const people = {}
-  for (const b of blocks) if (b.type === 'actor' && b.state.public_key_sign) people[b.hash] = { label: b.hash.slice(0, 6), id: b.hash }
-  return { name: 'vectors: ' + (v.name || i), blocks, log: v.blocks.map((b) => ({ hash: b.hash.slice(0, 8), note: b.name })), people }
+  return { name: 'vectors: ' + (v.name || i), blocks, log: v.blocks.map((b) => ({ hash: b.hash.slice(0, 8), note: b.name })) }
 })
 for (const w of [...worlds, ...stories]) {
-  const held = w.blocks
   const label = (b) => (w.log.find((l) => l.hash === b.hash.slice(0, 8)) || {}).note || b.hash.slice(0, 8)
-  const people = Object.values(w.people)
-  const circles = held.filter((b) => b.type === 'actor' && b.state.kind === 'circle')
-  for (const b of held) {
-    if (b.type === 'promise') {
-      compare('promise_stage', w.name, label(b), call('promise_stage', b, held, {}), oracle.door('promise_stage', b, held, {}))
-      if (b.refs.answers === undefined && b.refs.updates === undefined) compare('promise_view', w.name, label(b), call('promise_view', b, held, { now: NOW }), oracle.door('promise_view', b, held, { now: NOW }))
-    }
-    if (b.type === 'thing') {
-      compare('ownership', w.name, label(b), call('ownership', b, held), oracle.door('ownership', b, held))
-      compare('where_now', w.name, label(b), [...call('where_now', b, held)].sort(), [...oracle.door('where_now', b, held)].sort())
-    }
-    if (b.refs.as) {
-      const c = held.find((x) => x.hash === b.refs.as)
-      if (c) compare('may_act_as', w.name, label(b), call('may_act_as', b, c.hash, held, null), oracle.door('may_act_as', b, c.hash, held))
-    }
-    if (b.type === 'actor' && b.state.public_key_sign) {
-      const s = fb.identity.identityState(b.hash, held), o = oracle.identityFold(b.hash, held)
-      compare('identity', w.name, label(b), { keys: [...s.keys].sort(), frozen: [...s.frozen].sort(), operators: [...s.operators].sort() }, { keys: (o.keys instanceof Map ? [...o.keys.keys()] : o.keys.map((k) => k.key || k)).sort(), frozen: [...o.frozen].sort(), operators: [...oracle.operatorsOf(b.hash, held)].sort() })
-      const slim = (t) => t.map((k) => ({ key: k.key, frozen: k.frozen, suite: k.suite }))
-      compare('key_timeline', w.name, label(b), slim(call('key_timeline', b.hash, held, null)), slim(oracle.door('key_timeline', b.hash, held, null)))
-      const mine = held.filter((x) => x.refs.author === b.hash && x.state.seq !== undefined && !(x.type === 'grant' && x.state.kind === 'key'))
-      if (mine.length && mine.every((x) => x.refs.prev === b.hash || mine.some((y) => y.hash === x.refs.prev))) {
-        compare('chain', w.name, label(b), call('check_chain', mine, b.hash), oracle.door('check_chain', mine, b.hash))
-        const last = mine.reduce((a, x) => (!a || x.state.seq > a.state.seq ? x : a), null)
-        compare('next_link', w.name, label(b), call('next_link', last, b.hash), oracle.door('next_link', last, b.hash))
-      }
-    }
+  for (const q of askAll(w.blocks, label)) {
+    let ans
+    try { ans = { ok: call(q.op, ...JSON.parse(JSON.stringify(q.args))) } } catch (e) { ans = { error: 'throws', message: String(e.message) } }
+    if (q.op === 'ownership' && ans.ok) { const why = ownersHaveReasons(q.args[0], q.args[1], ans.ok); if (why) reasonless.push(`${w.name}, ${q.what}: ${why}`) }
+    const bad = compareAnswers(q, ans)
+    tally[q.fold] = tally[q.fold] || [0, 0]
+    tally[q.fold][0]++
+    if (bad) { tally[q.fold][1]++; diffs.push(`${q.fold} (${w.name}, ${q.what}): ${bad.kind} ${bad.detail.slice(0, 500)}`) }
   }
-  for (const c of circles) {
-    compare('circle_state', w.name, label(c), sortedRoles(call('circle_state', c.hash, held, null)), sortedRoles(oracle.door('circle_state', c.hash, held)))
-    const roles = (c.state.roles || []).map((r) => r.name)
-    for (const b of held.filter((x) => x.refs.as === c.hash)) {
-      for (const who of [c.hash, ...roles.map((r) => `${c.hash}#${r}`)]) compare('members_then', w.name, label(b) + ' ' + who.slice(0, 6), [...call('members_then', b, who, held)].sort(), [...oracle.membersThen(b, who, held)].sort())
-    }
-  }
-  for (const p of people) for (const q of [null, ...people]) compare('consent', w.name, `${p.label} <- ${q ? q.label : 'anyone'}`, call('consent', p.id, q && q.id, held, null), oracle.door('consent', p.id, q && q.id, held, null))
 }
 check('parity: every fold agrees between the Rust core and the oracle, over every block of every world', () => assert.deepEqual(diffs, []))
 const worldCount = worlds.length, blockCount = worlds.reduce((n, w) => n + w.blocks.length, 0)
+check('invariant 32: owners change only for one of three reasons: every owner the ownership fold names has its reason, over every block of every world', () => assert.deepEqual(reasonless, []))
 check('parity: the two engines judge every block of every world valid or not alike', () => assert.deepEqual(worlds.flatMap((w) => w.problems), []))
 
 // ---------- 2. The nine revisions ----------
@@ -116,7 +91,7 @@ check('rule 2: shares and stock a member made as the circle belong to the circle
   const share = (i) => c1.find('share ' + i)
   assert.equal(call('ownership', share(7), c1.blocks).owner, cafe.hash)
   assert.equal(call('ownership', share(0), c1.blocks).owner, c1.people.carol.id)
-  assert.equal(call('ownership', c1.find('share kind (bob as cafe)'), c1.blocks).owner, cafe.hash)
+  assert.equal(call('ownership', c1.find('share kind (bob as cafe)'), c1.blocks).owner, null) // a kind is a description and has no owner (things.md); its instances do
   assert.equal(call('ownership', share(10), c1.blocks).owner, c1.people.carol.id)
 })
 
@@ -142,9 +117,9 @@ check('rule 4: several takers have a deal each: one taker\'s goods and payment n
   assert.deepEqual(stageOf(O, w).quantity, { value: '3', unit: 'egg' })
   assert.equal(stageOf(O, w).total.minor, 900)
 })
-check('rule 4: an allocation past what the open offer holds has no deal', () => {
+check('rule 4 (decision C2): an allocation past what the open offer holds still binds its offerer: a deal of its own', () => {
   const w = world('case4 market maker')
-  assert.equal(stageOf(w.find('maya allocates t3 30 (would be 120 of 100)'), w), null)
+  assert.equal(stageOf(w.find('maya allocates t3 30 (would be 120 of 100)'), w).stage, 'accepted')
   assert.notEqual(stageOf(w.find('maya allocates t1 60'), w), null)
 })
 
@@ -153,33 +128,37 @@ check('rule 5: a price written as an updates of a promise is refused, and change
   const w = world('case4 market maker')
   const O = w.find('standing open offer 100 eggs @3.00/egg(minor)')
   assert.ok(w.log.some((l) => l.note.startsWith('maya updates price') && l.writeRefused && /required|updates/.test(l.writeRefused + l.refused)))
-  assert.equal(stageOf(O, w).total.minor, 27000)
+  // every allocation binds (decision C2): 120 eggs of the 100 offered, her broken promise, at the price as written
+  assert.equal(stageOf(O, w).total.minor, 36000)
 })
 
 // Rule 6: a defeated transfer or work block stops counting.
-check('rule 6: a delivery the receiver defeated no longer reads as done', () => {
+check('rule 6 (batch 2 P4): a delivery the receiver defeated still counts: her defeats is a dispute, shown, never a verdict', () => {
   const w = world('case2 lending')
   const kept = w.blocks.find((b) => b.type === 'promise' && b.refs.answers === undefined && (w.log.find((l) => l.hash === b.hash.slice(0, 8)) || {}).note === 'd1 kept offer')
   const defeated = w.blocks.find((b) => b.type === 'promise' && b.refs.answers === undefined && (w.log.find((l) => l.hash === b.hash.slice(0, 8)) || {}).note === 'd4 delivered then defeated offer')
   assert.equal(stageOf(kept, w).stage, 'done')
-  assert.notEqual(stageOf(defeated, w).stage, 'done')
-  assert.equal(stageOf(defeated, w).stage, 'accepted')
+  assert.equal(stageOf(defeated, w).stage, 'underway')
+  assert.equal(stageOf(defeated, w).disputed.length, 1)
 })
 
-// Rule 7: reversibility is closed by default.
-check('rule 7: an act is irreversible for an agent unless a trusted schema says ok; a stranger\'s schema cannot unblock; a limit that names the act opens it', () => {
+// Rule 7: an act is under a grant only where the grantor's own signed word names it (one predicate: `under_ok`). The three ways to sign
+// that word: a schema the grantor published with undo ok, a specific accepted ask (`for`), a named grant (a limit that names the act).
+// A stranger's schema signs nothing for the grantor, and neither does a broad grant that names no act.
+check('rule 7: an act is under a grant only if the grantor signed a word that names it; nobody else\'s word does', () => {
   const w = world('case9 reversibility')
-  const ok = (note) => call('under_ok', w.find(note), w.blocks) === true
-  const same = (note) => assert.equal(call('under_ok', w.find(note), w.blocks), oracle.door('under_ok', w.find(note), w.blocks), note)
-  for (const l of w.log) if (l.type === 'transfer' && l.sdk === 'valid') same(l.note)
-  assert.equal(ok('spray under transfer.spray (limit)'), true)
-  assert.equal(ok('spray under transfer+observe'), false)
-  assert.equal(ok('spray under transfer+observe +for'), true)
-  assert.equal(ok('spray under transfer.spray (no limit)'), false)
-  assert.equal(ok('open_valve under transfer+observe'), false)
-  assert.equal(ok('launch_robot under transfer+observe'), false)
-  assert.equal(ok('spray under transfer+observe +schema'), false)
-  assert.equal(ok('restock under transfer+observe'), false)
+  const named = {
+    'spray under transfer.spray (limit)': true, // a named grant with a limit
+    'spray under transfer+observe +for': true, // a specific accepted ask
+    'spray under transfer+observe': false,
+    'spray under transfer.spray (no limit)': false,
+    'open_valve under transfer+observe': false,
+    'launch_robot under transfer+observe': false,
+    'spray under transfer+observe +schema': false,
+    'restock under transfer+observe': false // a stranger's schema cannot unblock
+  }
+  for (const l of w.log) if (l.type === 'transfer' && l.sdk === 'valid') assert.equal(call('under_ok', w.find(l.note), w.blocks), oracle.door('under_ok', w.find(l.note), w.blocks), l.note)
+  for (const [note, expected] of Object.entries(named)) assert.equal(call('under_ok', w.find(note), w.blocks), expected, note)
 })
 
 // Rule 8: readings count only when the sensor or its operator signed them.
@@ -230,7 +209,8 @@ const c11 = world('case11 base schemas')
 check('base schemas: the publisher\'s chain is held and every use of a schema is valid in both engines', () => {
   assert.deepEqual(c11.problems, [])
   assert.equal(c11.log.filter((l) => l.writeRefused).length, 0)
-  assert.equal(Object.keys(c11.baseSchemas).length, 17)
+  assert.equal(Object.keys(c11.baseSchemas).length, 41) // shareback, rebate, draw and bounded_change (batch 10); place_use (batch 9); reliance, price_reading, keeping and loss (batch 8); pledge and pledge_close (decision H20); not_free, invasion and ruling (batch 4); loyalty, vouch, payback, refusal, pool, link, rulebook, glossary and grader (batch 5)
+  assert.ok(!('kept_promises' in c11.baseSchemas) && !('kept_and_broken' in c11.baseSchemas))
 })
 // share_vote: a vote under a ballots rule weighs as many votes as the shares of refs.of its author owns (the ownership fold).
 check('share_vote: holding shares of a kind gives that many votes; shares made as the circle belong to the circle and vote for no one', () => {
@@ -246,14 +226,50 @@ check('share_vote: holding shares of a kind gives that many votes; shares made a
   const votes = c11.blocks.filter((b) => b.type === 'observe' && b.state.kind === 'vote')
   assert.deepEqual(votes.map((v) => weight(v.refs.author)).sort(), [0, 1, 2])
 })
-// kept_promises: kept = the cook's promises that reached done; broken = stopped after a binding accept, or reversed; a decline binds nothing.
-check('kept_promises: kept and broken are read from the stage of each promise, alike in both engines', () => {
-  const stages = c11.keptRecord.map((h) => both('promise_stage', c11.blocks.find((b) => b.hash === h), c11.blocks, {}))
-  assert.deepEqual(stages.map((s) => s.stage), ['done', 'stopped', 'declined', 'accepted'])
-  const kept = stages.filter((s) => s.stage === 'done').length
-  const broken = stages.filter((s) => (s.stage === 'stopped' && s.accept) || s.stage === 'reversed').length
-  const open = stages.filter((s) => !['done', 'declined', 'reversed'].includes(s.stage) && !(s.stage === 'stopped' && s.accept)).length
-  assert.deepEqual([kept, broken, open], [1, 1, 1])
+// The facts of each promise (folds.md, Facts, never verdicts): its stage and who ended it, alike in both engines. No verdict is read: batch 2 P3
+// deleted the kept_and_broken schema; P4 makes the buyer's word on refrain 8 a dispute; P7 lets refrain 12 outlive its promiser's death.
+check('facts: each promise\'s stage and who ended it are read alike in both engines, with no verdict', () => {
+  const stages = c11.promises.map((h) => [c11.blocks.find((b) => b.hash === h), both('promise_stage', c11.blocks.find((b) => b.hash === h), c11.blocks, {})])
+  assert.deepEqual(stages.map(([, s]) => s.stage), ['done', 'stopped', 'declined', 'accepted', 'stopped', 'stopped', 'stopped', 'accepted', 'stopped', 'stopped', 'accepted', 'accepted'])
+  assert.deepEqual(stages.map(([, s]) => s.by), [null, 'from', null, null, 'to', 'both', 'from', null, 'from', 'to', null, null])
+  assert.deepEqual(stages.map(([, s]) => s.disputed.length), [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0])
+})
+// A refrain is done only in the view, after its until (folds.md, Views). Each refrain here is read at a clock before and after its until, in both
+// engines: left alone, stopped after until by either side, outliving its promiser, and stopped early by its promiser. A stop ends it whenever it came:
+// when, against until, is a fact for each reader (batch 2 P4 deleted the after-until rules), and a death ends no promise (P7).
+check('refrains through promise_view: elapsed after until when left alone, never done (decision H15); a stop, early or late, agreed or not, stays stopped; a death ends nothing', () => {
+  const w = new World('audit refrains in the view')
+  const A = w.person('A'), B = w.person('B'), W1 = w.person('W1'), S = w.person('S')
+  const thing = w.w(A, 'thing', { kind: 'x', name: 'x' }, {}, 't')
+  const sg = w.w(A, 'grant', { kind: 'successor', witnesses: [W1.id], needed: 1, wait: 'P7D' }, { to: S.id }, 'sg')
+  const until = new Date(Date.parse(T()) + 30 * 60000).toISOString()
+  const refrain = (note) => {
+    const p = w.w(A, 'promise', { what: 'no spray', terms: { refrain: true, until, expires: '2099-01-01T00:00:00.000Z' } }, { from: A.id, to: B.id, what: thing.hash }, note)
+    w.w(B, 'promise', { status: 'accepted' }, { answers: p.hash, for: p.hash }, note + ' accepted')
+    return p
+  }
+  const alone = refrain('alone'), early = refrain('early'), late = refrain('late'), agreed = refrain('agreed'), other = refrain('other'), closed = refrain('closed')
+  w.w(A, 'promise', { status: 'stopped', stop: 'onward' }, { updates: early.hash, for: early.hash }, 'early stop')
+  while (T() <= until) { /* the clock passes until */ }
+  w.w(A, 'promise', { status: 'stopped', stop: 'onward' }, { updates: late.hash, for: late.hash }, 'late stop')
+  const lateAgreed = w.w(A, 'promise', { status: 'stopped', stop: 'onward' }, { updates: agreed.hash, for: agreed.hash }, 'late stop, agreed')
+  w.w(B, 'observe', { kind: 'note', text: 'agreed' }, { confirms: lateAgreed.hash, for: agreed.hash }, 'B confirms the late stop')
+  w.w(B, 'promise', { status: 'stopped', stop: 'onward' }, { answers: other.hash, for: other.hash }, 'other stop')
+  assert.deepEqual(w.problems, [])
+  const before = new Date(Date.parse(until) - 60000).toISOString(), after = '2099-06-01T00:00:00.000Z'
+  const view = (p, now, blocks = w.blocks) => both('promise_view', p, blocks, { now }).stage
+  assert.equal(view(alone, before), 'accepted')
+  assert.equal(view(alone, after), 'elapsed')
+  // a stop is a stop, whenever it came and whoever agreed to it
+  assert.equal(view(late, after), 'stopped')
+  assert.equal(view(agreed, after), 'stopped')
+  assert.equal(view(early, after), 'stopped')
+  view(other, before); view(other, after)
+  // the death comes after until: it ends no refrain, so one left alone reads elapsed once until has passed
+  const trig = w.w(W1, 'observe', { kind: 'trigger' }, { under: sg.hash, subject: A.id }, 'trigger')
+  w.w(S, 'observe', { kind: 'close' }, { under: sg.hash, subject: A.id, after: [trig.hash] }, 'close')
+  assert.equal(view(closed, after), 'elapsed')
+  assert.equal(view(early, after), 'stopped')
 })
 check('person_confirmed: the receiver\'s accepted answer to the transfer is what makes the delivery count', () => {
   const stage = (h) => both('promise_stage', c11.blocks.find((b) => b.hash === h), c11.blocks, {})
@@ -290,14 +306,49 @@ check('device attestation: an operator grant that names a sensor makes its autho
 })
 check('device attestation: when the owner gives the sensor away, the old owner\'s grants stop counting and the new owner\'s start', () => {
   const sensor = c12.blocks.find((b) => b.type === 'thing' && b.state.name === 'frost probe')
-  const t = fb.write('transfer', {}, { what: sensor.hash, to_owner: c12.people.installer.id }, { author: c12.people.farmer.id, key: c12.people.farmer.keys, held: c12.blocks, at: '2026-11-03T05:00:00.000Z' })
-  const acc = fb.write('transfer', { status: 'accepted' }, { answers: t.hash }, { author: c12.people.installer.id, key: c12.people.installer.keys, held: [...c12.blocks, t], at: '2026-11-03T05:01:00.000Z' })
+  const t = fb.write('transfer', {}, { what: sensor.hash, to_owner: c12.people.installer.id }, { author: c12.people.farmer.id, key: c12.people.farmer.keys, held: c12.blocks, audience: 'public', at: '2026-11-03T05:00:00.000Z' })
+  const acc = fb.write('transfer', { status: 'accepted' }, { answers: t.hash }, { author: c12.people.installer.id, key: c12.people.installer.keys, held: [...c12.blocks, t], audience: 'public', at: '2026-11-03T05:01:00.000Z' })
   const held = [...c12.blocks, t, acc]
   assert.equal(both('ownership', sensor, held).owner, c12.people.installer.id)
   const at = '2026-11-03T04:30:00.000Z'
   const without = (who) => held.filter((b) => !(b.type === 'observe' && b.state.kind === 'temperature' && b.refs.author === c12.people[who].id))
   assert.equal(both('reading_condition_holds', c12.frost, without('rogue-device'), at), false, 'the device the farmer named no longer counts: the farmer no longer owns the probe')
   assert.equal(both('reading_condition_holds', c12.frost, held, at), true, 'the installer, now the owner, had named the rogue device: its readings count')
+})
+
+
+// ---------- 3. Congruence ----------
+// A rule asked of everyone but its author is a privilege. FoodX's own offers, grants, signals and rulings are folded exactly like anyone's.
+const c15 = require('./c15.cjs').worlds
+const answersOf = (k) => {
+  const { w, house, una, helper, offer, small, big, claim } = c15[k]
+  const label = new Map([[house.id, 'house'], [una.id, 'una'], [helper.id, 'helper'], [c15[k].judge.id, 'judge']])
+  const norm = (x) => JSON.parse(JSON.stringify(x, (key, v) => (typeof v === 'string' && label.has(v) ? label.get(v) : typeof v === 'string' && /^[0-9a-f]{64}$/.test(v) ? 'hash' : v)))
+  const stage = call('promise_stage', offer, w.blocks, {})
+  const out = { stage: stage.stage, disputed: stage.disputed.map((d) => d.by), paid: stage.paid }
+  out.small = call('under_ok', small, w.blocks)
+  out.big = call('under_ok', big, w.blocks)
+  const inv = call('invasion_shown', claim, w.blocks)
+  out.invasion = { standing: inv.standing, judges: inv.judges.map((j) => j.judge), rulings: inv.rulings.length, nothing: inv.nothing.map((n) => n.reason) }
+  out.signal = call('condition_holds', { signal: 'ready', by: [house.id], signers: 1, subject: una.id }, w.blocks, '2026-12-01T00:00:00.000Z')
+  out.twice = call('condition_holds', { signal: 'ready', by: [house.id], signers: 2, subject: una.id }, w.blocks, '2026-12-01T00:00:00.000Z')
+  return norm(out)
+}
+check('congruence: FoodX\'s own offer, grant, claim, signal and ruling are folded exactly like a stranger\'s: the same scene gives the same answers', () => {
+  assert.deepEqual(answersOf('FoodX'), answersOf('a stranger'))
+  assert.equal(answersOf('FoodX').big, false, 'a visible limit binds FoodX too')
+  assert.equal(answersOf('FoodX').twice, false, 'FoodX signing twice is one signer')
+  assert.deepEqual(answersOf('FoodX').disputed, ['from'], 'FoodX\'s defeats of a block of its own deal is a dispute, not a ruling')
+})
+check('congruence: no source of the core, the oracle or the SDK names FoodX: no key, name or id is exempt (the one hit is the Android package path)', () => {
+  const fs = require('fs'), path = require('path')
+  const root = path.join(__dirname, '../..')
+  const files = []
+  const walk = (d) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { if (e.name === 'target' || e.name === 'node_modules') continue; const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.(rs|cjs|json)$/.test(e.name)) files.push(p) } }
+  walk(path.join(root, 'sdk/rust/src')); walk(path.join(root, 'sdk/javascript/src')); files.push(path.join(root, 'spec/oracle/fb.cjs'), path.join(root, 'spec/protocol.json'))
+  const hits = []
+  for (const f of files) fs.readFileSync(f, 'utf8').split('\n').forEach((l, i) => { if (/foodx/i.test(l) && !/world[._]foodx/i.test(l)) hits.push(`${path.relative(root, f)}:${i + 1}`) })
+  assert.deepEqual(hits, [])
 })
 
 for (const f of failures) realLog('✗ ' + f)

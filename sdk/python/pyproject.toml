@@ -4,17 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "foodblock"
-version = "1.6.0"
-description = "FoodBlock 1.6 for Python: a thin layer over the one Rust core: canonical form, signatures, the write check, key chains, identities, envelopes, folds and the messages between nodes"
+version = "1.7.0"
+description = "FoodBlock for Python: a thin layer over the one Rust core: canonical form, signatures, the write check, key chains, identities, envelopes, folds and the messages between nodes"
 readme = "README.md"
-license = {text = "MIT"}
+license = {text = "CC0-1.0"}
 maintainers = [{name = "FoodX", email = "developers@foodx.com"}]
 requires-python = ">=3.10"
 authors = [{name = "FoodX", email = "developers@foodx.com"}]
 dependencies = []
 keywords = ["food", "foodblock", "protocol", "traceability", "provenance", "supply-chain"]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
+    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

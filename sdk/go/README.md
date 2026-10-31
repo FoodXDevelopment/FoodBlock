@@ -1,6 +1,6 @@
 # foodblock (Go)
 
-FoodBlock 1.6 for Go. The protocol is [`spec/protocol.md`](../../spec/protocol.md). This package is a thin layer
+FoodBlock 1.7 for Go. The protocol is [`spec/protocol.md`](../../spec/protocol.md). This package is a thin layer
 over the one Rust core ([`../rust`](../rust)): every rule (canonical form, hashing, Ed25519, the write check, chains,
 identities, envelopes, folds, messages between nodes, and protocol.json itself) lives there once. The core is compiled
 to WebAssembly (the very file the JavaScript SDK carries), embedded in the package with `go:embed` (`foodblock.wasm`)
@@ -48,13 +48,24 @@ A small device (a fridge sensor, a scale) can use only the micro part: `Write` (
 | The commitment | `NewSalt`, `SaltedHash`, `Commit`, `FindsSelf`, `RevealFor` |
 | Writing | `Compose`, `Write` (compose, check, sign, chain), `Check`, `Refusals`, `Valid`, `StrictText` (the checks), `Amount`, `Money`, `Confidence`, `Terms`, `Public` |
 | The wire | `Wrap`, `Unwrap`, `Header`, `SealCopy`, `OpenCopy`, `HeaderSignedBy` |
-| Strangers and small profiles | `ReceiptCode`, `ReadingIsPersonsClaim`, `ReadingConditionHolds`, `DepositShapeOk`, `DepositPaid` |
+| Strangers and small profiles | `ReceiptCode`, `ReadingIsPersonsClaim`, `ReadingConditionHolds`, `EarnestShapeOk`, `EarnestPaid` |
 | The one-time converter (not protocol) | `Convert`, `OldHash` |
 | Chains and causal order | `NextLink`, `CheckChain` (also `Skips`; equivocations are pairs), `CausesOf`, `PastOf`, `HeadsAmong`, `Sees`, `CausalOrder` |
 | Who someone is | `Genesis`, `IsGenesis`, `GenesisOpens`, `RecoveryKeyHash`, `KeyGrant`, `KeyTimeline`, `KeysOf`, `SignedByAuthor`, `IdentityStateOf`, `NextLinkFor`, `Forked`, `ForkPairs` |
 | Authority | `AddDuration`, `CompareDurations`, `ScopeWithin`, `ScopeRefusals`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `WhyNotLiveUndo`, `ActName`, `OperatorsOf`, `LimitFence`, `WithinLimit` |
-| Folds | `PromiseStage` (no clock), `PromiseView` (the reader's now), `CircleStateOf`, `HoldersOf`, `MayActAs`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `ReceiverOf`, `OrdererOf`, `WhereNow`, `Consent`, `LiveGrant`, `WithdrawalSeen`, `Due`, `RecoveryReach`, `SuccessorView`, `CircleKeyOf`, `CountedIn` |
-| Between nodes | `PullRequest`, `SignPull`, `SignPush` (a `counter` or a `challenge`, no time), `NewChallenge`, `PullErrors`, `PushErrors`, `PullRefusals`, `PushRefusals`, `AdmissionRefusals`, `ResidencyRefusals`, `Matches`, `HeadsOf`, `AnswerPull`, `AnswerSignedBy`, `PushRequest`, `Accept`, `WaitedTooLong`, `PushAnswer`, `WellKnown`, `Announcement`, `WellKnownErrors` |
+| Folds | `PromiseStage` (no clock), `PromiseView` (the reader's now), `CircleStateOf`, `HoldersOf`, `MayActAs`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `ReceiverOf`, `WhereNow`, `Consent`, `LiveGrant`, `WithdrawalSeen`, `Due`, `RecoveryReach`, `SuccessorView`, `CircleKeyOf`, `CountedIn` |
+| Between nodes | `PullRequest`, `SignPull`, `SignPush` (a `counter` or a `challenge`, no time), `NewChallenge`, `PullRefusals`, `PushRefusals`, `AdmissionRefusals`, `ResidencyRefusals`, `Matches`, `HeadsOf`, `AnswerPull`, `AnswerSignedBy`, `PushRequest`, `Accept`, `WaitedTooLong`, `PushAnswer`, `WellKnown`, `Announcement`, `WellKnownErrors` |
+
+Nothing a signer left out is filled in. `Compose`, `Write` and `Genesis` need an `Audience` (`[]string{foodblock.Public}`, or
+recipients) and an `At`; `Genesis` also a `Kind`; `KeyGrant` an `At`. A node states its choices: `AnswerPull` a `Cap` (1 or more; there
+is no default) and `ServesPairs`; `Accept` and `AcceptSealed` `TakesPairs`. A reader with an arrival log passes `Inside` or
+`Outside` for a block whose arrival it does not know (`KeysOf`, `KeyTimeline`, `SignedByAuthor`, `IdentityStateOf`,
+`RecoveryReach`). `Consent`'s fourth argument is the sender's block (or nil). `Convert` takes `CustodianFor`. A missing choice is
+refused by the core.
+
+A function that returns no error (a yes or no, a list such as `Valid`'s refusals) panics when the core fails, never returns the
+empty answer: an empty list means "no refusals", so a failed call read as empty would read as fine (security J). Functions that
+can fail in normal use return an `error`.
 
 The JavaScript SDK's `keystore` (a device key locked with a recovery code) is product custody, not protocol, so it
 is not here.
@@ -62,14 +73,15 @@ is not here.
 ## Example
 
 ```go
+now := "2026-10-15T09:00:00.000Z" // your own clock reading: nothing here fills `at`
 keys, _ := foodblock.GenerateKeypair()
 enc, _ := foodblock.GenerateEncryptionKeypair()
 recovery, _ := foodblock.GenerateKeypair()
-me, _ := foodblock.Genesis(keys, foodblock.GenesisOptions{EncryptionKey: enc.PublicKeyEncrypt, RecoveryKey: recovery.PublicKeySign, Reach: "P30D"})
+me, _ := foodblock.Genesis(keys, foodblock.GenesisOptions{Kind: "person", At: now, Audience: []string{foodblock.Public}, EncryptionKey: enc.PublicKeyEncrypt, RecoveryKey: recovery.PublicKeySign, Reach: "P30D"})
 
 eggs, err := foodblock.Write("thing", map[string]any{"kind": "eggs", "name": "Free-range eggs"}, nil,
-	foodblock.WriteOptions{ComposeOptions: foodblock.ComposeOptions{Author: me.Hash}, Key: keys, Held: []foodblock.Block{me}})
-message := foodblock.Wrap(eggs, "") // { version, block, signature }, as it travels
+	foodblock.WriteOptions{ComposeOptions: foodblock.ComposeOptions{Author: me.Hash, Audience: []string{foodblock.Public}, At: now}, Key: keys, Held: []foodblock.Block{me}})
+message := foodblock.Wrap(eggs) // { block, signature }, as it travels
 ```
 
 ## Test
@@ -89,4 +101,4 @@ X". This is exact for the grammar in `protocol.json`.
 
 ## Licence
 
-MIT
+Public domain (CC0 1.0).

@@ -33,7 +33,7 @@ pub fn causes_of(block: &Value) -> Vec<String> {
             }
         }
     }
-    // A rotation or removal sees the block it counts to (protocol.json `causal_state`): its causal past holds the chain it cuts.
+    // A block sees the block it counts to (protocol.json `causal_state`): a rotation's causal past holds the chain it cuts.
     for key in crate::spec().list("causal_state") {
         if let Some(h) = block.get("state").and_then(|s| s.get(&key)).and_then(Value::as_str) {
             if is_hash(h) && !out.iter().any(|o| o == h) {
@@ -44,30 +44,14 @@ pub fn causes_of(block: &Value) -> Vec<String> {
     out
 }
 
-/// Every held block in a block's causal past (the hashes; the block itself is not in it unless a cycle names it).
-pub fn past_in(block: &Value, index: &Index) -> BTreeSet<String> {
-    let mut past = BTreeSet::new();
-    let mut todo = causes_of(block);
-    while let Some(h) = todo.pop() {
-        if past.contains(&h) {
-            continue;
-        }
-        if let Some(b) = index.get(&h) {
-            todo.extend(causes_of(b));
-        }
-        past.insert(h);
-    }
-    past
-}
-
 /// Every block in a block's causal past, among these blocks.
 pub fn past_of(block: &Value, blocks: &[Value]) -> BTreeSet<String> {
-    past_in(block, &index_of(blocks))
+    index_of(blocks).past_of(block).hashes().into_iter().collect()
 }
 
 /// Whether `later` has `earlier` (a hash) in its causal past.
 pub fn sees_in(later: &Value, earlier: &str, index: &Index) -> bool {
-    !earlier.is_empty() && past_in(later, index).contains(earlier)
+    !earlier.is_empty() && index.past_of(later).contains(earlier)
 }
 
 /// Whether `later` has `earlier` in its causal past, among these blocks.
@@ -75,12 +59,26 @@ pub fn sees(later: &Value, earlier: &Value, blocks: &[Value]) -> bool {
     sees_in(later, crate::js::hash_of(earlier), &index_of(blocks))
 }
 
+/// earliest(set): the causal minima of a set of blocks, those whose causal past holds no other of them (an antichain). Where there are
+/// several, a rule reports them all (a fork, a conflict, a crossing) and, only to name one, takes `named`.
+pub fn earliest<'a>(set: &[&'a Value], index: &Index) -> Vec<&'a Value> {
+    set.iter()
+        .filter(|one| !set.iter().any(|other| !core::ptr::eq(*other, **one) && sees_in(one, crate::js::hash_of(other), index)))
+        .copied()
+        .collect()
+}
+
+/// The one of a set that names it: the lowest hash, with no authority.
+pub fn named<'a>(set: &[&'a Value]) -> Option<&'a Value> {
+    set.iter().copied().min_by(|a, b| cmp16(crate::js::hash_of(a), crate::js::hash_of(b)))
+}
+
 /// The blocks no other block among them has in its causal past.
 pub fn heads_among(blocks: &[Value]) -> Vec<Value> {
     let index = index_of(blocks);
     let mut named = BTreeSet::new();
     for b in blocks {
-        named.extend(past_in(b, &index));
+        named.extend(index.past_of(b).hashes());
     }
     blocks
         .iter()
@@ -151,7 +149,7 @@ pub fn causal_order_in(index: &Index) -> Vec<Value> {
 /// subset's own refs cannot order it: that left the order to hash ties and made later blocks look as if they did not see earlier
 /// ones (found by the simulator). A block that sees another has a strictly larger causal past, so past size orders them; ties by hash.
 pub fn causal_order_among(subset: &Index, full: &Index) -> Vec<Value> {
-    let mut v: Vec<(usize, &String, &Value)> = subset.iter().map(|(h, b)| (past_in(b, full).len(), h, b)).collect();
+    let mut v: Vec<(usize, &String, &Value)> = subset.iter().map(|(h, b)| (full.past_of(b).len(), h, b)).collect();
     v.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| cmp16(a.1, b.1)));
     v.into_iter().map(|(_, _, b)| b.clone()).collect()
 }

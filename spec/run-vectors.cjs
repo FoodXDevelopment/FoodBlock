@@ -77,7 +77,7 @@ for (const v of V.bad_signatures) report(!opens(v), `bad signature refused: ${v.
 // Envelopes, and sealed copies with their signed public header.
 for (const v of V.envelopes) attempt(`envelope: ${v.name}`, () => {
   const m = fb.unwrap(fb.open(v.envelope, V.keys[v.recipient].x25519_private))
-  return m.hash === v.opens_to.hash && m.signature === v.opens_to.signature && m.version === v.opens_to.version
+  return m.hash === v.opens_to.hash && m.signature === v.opens_to.signature
 })
 for (const v of V.sealed.cases) attempt(`sealed: ${v.name}`, () => {
   const m = fb.openCopy(v.message, V.keys[v.recipient].x25519_private)
@@ -87,7 +87,7 @@ for (const v of V.headers) report(same(fb.header({ hash: v.hash, ...byHash.get(v
 
 // Identities: which blocks are their author's, which keys speak, who operates an agent.
 for (const v of V.identities) {
-  const held = blocksOf(v.blocks), options = v.arrivals ? { arrivedAt: (hash) => v.arrivals[hash] } : {}
+  const held = blocksOf(v.blocks), options = v.arrivals ? { arrivedAt: (hash) => v.arrivals[hash], unknownArrival: v.unknown_arrival } : {}
   for (const b of held) if (b.hash in v.signed_by_author) report(fb.identity.signedByAuthor(b, held, options) === v.signed_by_author[b.hash], `identity: ${v.name}: ${v.blocks.find((x) => x.hash === b.hash).name} ${v.signed_by_author[b.hash] ? 'stands' : 'is void'}`)
   if (v.keys) report(same(fb.identity.keysOf(v.id, held, options).sort(), v.keys), `identity: ${v.name}: the keys that speak`)
   if (v.frozen) report(same(fb.identity.keyTimeline(v.id, held).filter((k) => k.frozen).map((k) => k.key).sort(), v.frozen), `identity: ${v.name}: the frozen keys`)
@@ -134,7 +134,7 @@ for (const c of V.refusals.cases) attempt(`refused (${c.by}): ${c.name}`, () => 
   if (c.by === 'valid') return same(codesOf(fb.valid(c.block, held)), c.codes)
   if (c.by === 'accept') {
     const incoming = c.inline || c.incoming.map((h) => refusalBlocks.get(h))
-    const got = fb.sync.accept(incoming, held)
+    const got = fb.sync.accept(incoming, held, { takesPairs: false })
     // The second of a pair is neither taken nor refused: it is listed in its pair.
     if (c.equivocations) return same(got.taken.map((b) => b.hash), c.taken) && !got.refused.length && same(got.equivocations, c.equivocations)
     if (c.waiting) return same(got.waiting.map((w) => w.hash), c.waiting) && !got.refused.length
@@ -167,7 +167,7 @@ report(fb.sync.answerSignedBy(MS.push_answer.message, nodeKey), 'message: a push
 {
   // Every key is always there; each refusal is { hash, code, detail } with a code from protocol.json; each pair sorted.
   const P = MS.push_answer.message, known = new Set(Object.values(fb.CODES).flatMap(Object.keys))
-  report(same(Object.keys(P), fb.PROTOCOL.messages.push_answer) && P.refused.every((r) => same(Object.keys(r), fb.PROTOCOL.messages.refusal) && known.has(r.code)) && P.equivocations.every((pair) => same(pair, [...pair].sort())), 'message: a push answer carries every key, refusals as { hash, code, detail }, equivocations as sorted pairs')
+  report(same(Object.keys(P), fb.PROTOCOL.messages.push_answer.filter((k) => k in P || !fb.PROTOCOL.messages.push_answer_optional.includes(k))) && P.refused.every((r) => same(Object.keys(r), fb.PROTOCOL.messages.refusal) && known.has(r.code)) && P.equivocations.every((pair) => same(pair, [...pair].sort())), 'message: a push answer carries every key, refusals as { hash, code, detail }, equivocations as sorted pairs')
   report(same(fb.sync.pushAnswer(P, { node: P.node, privateKey: V.keys[MS.node_signer].private_key }), P), 'message: the push answer rebuilds byte for byte')
   const Q = MS.push
   report(same(fb.sync.pushRequest(Q.request.messages, Q.request.for), Q.request) && same(Q.request.for[Q.hash], Q.recipients) && Q.recipients.length === 2, 'message: a push names the list of ids each sealed copy is for')

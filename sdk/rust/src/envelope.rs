@@ -38,8 +38,9 @@ fn fixed_or_random<const N: usize>(given: Option<&String>) -> Result<[u8; N]> {
     }
 }
 
+// Whether a suite name (the empty name being the default's) names the `std` suite.
 fn is_std(suite: &str) -> bool {
-    suite.is_empty() || suite == "std"
+    crate::spec::suite_or_default(suite) == "std"
 }
 
 /// The suite whose envelope name this is (`alg` of an envelope), if the protocol knows one.
@@ -79,7 +80,7 @@ pub fn encryption_key_in(suite: &str, private_hex: &str) -> Result<String> {
 
 /// The public encryption key (hex) of an X25519 private key (hex).
 pub fn encryption_key_of(private_hex: &str) -> Result<String> {
-    encryption_key_in("std", private_hex)
+    encryption_key_in(crate::spec::default_suite(), private_hex)
 }
 
 /// A new encryption key in a suite: `{ public_key_encrypt, x25519_private }` (the private key's field keeps its name
@@ -96,7 +97,7 @@ pub fn generate_encryption_keypair_in(suite: &str) -> Result<Value> {
 }
 #[cfg(feature = "std")]
 pub fn generate_encryption_keypair() -> Result<Value> {
-    generate_encryption_keypair_in("std")
+    generate_encryption_keypair_in(crate::spec::default_suite())
 }
 
 // The agreed secret (the shared x coordinate / X25519 output) of a private scalar and a peer's public key.
@@ -104,7 +105,13 @@ fn agree(suite: &str, private: &[u8; 32], peer: &[u8]) -> Result<Vec<u8>> {
     if is_std(suite) {
         let their = <[u8; 32]>::try_from(peer).map_err(|_| Error::new("envelope: an X25519 public key is 32 bytes"))?;
         let secret = StaticSecret::from(*private);
-        return Ok(secret.diffie_hellman(&PublicKey::from(their)).as_bytes().to_vec());
+        let shared = secret.diffie_hellman(&PublicKey::from(their));
+        // a key of small order (32 zero bytes is one) gives every sealer the same secret, so anyone could open what is sealed to it:
+        // no envelope is made with one (privacy.md; security20 privacy/r1)
+        if !shared.was_contributory() {
+            return Err(Error::new("envelope: that X25519 key is of small order: anything sealed to it could be opened by anyone"));
+        }
+        return Ok(shared.as_bytes().to_vec());
     }
     #[cfg(feature = "suites")]
     {
@@ -190,7 +197,7 @@ fn ungcm(suite: &str, key: &[u8; 32], nonce: &[u8], sealed: &[u8]) -> Option<Vec
 /// Encrypt a value (JSON) to recipients' encryption keys (hex): `{ alg, ephemeral_key, nonce, ciphertext,
 /// recipients: [{ encrypted_key }] }`.
 pub fn seal(value: &Value, recipient_keys: &[&str]) -> Result<Value> {
-    seal_with(value, recipient_keys, "std", None)
+    seal_with(value, recipient_keys, crate::spec::default_suite(), None)
 }
 
 /// `seal` in a suite and, to reproduce a vector, with fixed randomness.
@@ -213,6 +220,10 @@ pub fn seal_with(
     let mut recipients = Vec::new();
     for (i, key) in recipient_keys.iter().enumerate() {
         let their = unhex(key).ok_or_else(|| Error::new("envelope: a public key is hex"))?;
+        // a key is sealed to only as it is written canonically (lowercase hex): one spelling, one key (release 40)
+        if hex(&their) != *key {
+            return Err(Error::new("envelope: a public key is written as lowercase hex, and only so"));
+        }
         let key_nonce = fixed_or_random::<12>(fixed.key_nonces.get(i))?;
         let secret = agree(suite, &ephemeral_private, &their)?;
         let mut sealed = gcm(

@@ -15,19 +15,19 @@ const me = join(dir, 'me.json')
 test.after(() => rmSync(dir, { recursive: true, force: true }))
 
 test('init: a genesis that passes the write check; the recovery key kept apart', () => {
-  const genesis = ok('init', me)
+  const genesis = ok('init', me, '--kind', 'person', '--audience', 'public', '--reach', 'P30D')
   assert.deepEqual(fb.check(genesis.type, genesis.state, genesis.refs), [])
   assert.equal(fb.identity.signedByAuthor(genesis, [genesis]), true)
   const { recovery } = JSON.parse(readFileSync(`${me}.recovery.json`, 'utf8'))
   assert.equal(genesis.state.recovery_key_hash, fb.identity.recoveryKeyHash(recovery.public_key_sign))
   assert.equal(JSON.parse(readFileSync(me, 'utf8')).recovery, undefined, 'the identity file holds no recovery key')
-  assert.notEqual(run('init', me).status, 0, 'never overwrites an identity')
+  assert.notEqual(run('init', me, '--kind', 'person', '--audience', 'public', '--reach', 'P30D').status, 0, 'never overwrites an identity')
 })
 
 test('create: valid blocks, each the next in the key chain, signed by a key that speaks', () => {
-  const eggs = ok('create', 'thing', 'eggs', '--state', '{"name":"Eggs"}', '--identity', me)
+  const eggs = ok('create', 'thing', 'eggs', '--state', '{"name":"Eggs"}', '--audience', 'public', '--identity', me)
   const offer = ok('create', 'promise', '--state', JSON.stringify({ terms: { price: fb.money(450, 'GBP'), quantity: fb.amount('2', '{tray}'), expires: '2026-10-20T00:00:00.000Z' } }),
-    '--refs', JSON.stringify({ from: eggs.refs.author, what: eggs.hash }), '--identity', me)
+    '--refs', JSON.stringify({ from: eggs.refs.author, what: eggs.hash }), '--audience', 'public', '--identity', me)
   const { chain } = JSON.parse(readFileSync(me, 'utf8'))
   for (const block of [eggs, offer]) assert.deepEqual(fb.check(block.type, block.state, block.refs), [])
   assert.deepEqual([eggs.state.seq, offer.state.seq, offer.refs.prev], [1, 2, eggs.hash])
@@ -38,11 +38,29 @@ test('create: valid blocks, each the next in the key chain, signed by a key that
 test('create refuses what the write check refuses, and writes nothing', () => {
   const before = JSON.parse(readFileSync(me, 'utf8')).chain.length
   for (const args of [['thing', 'flour', '--state', '{"amount":{"value":1.5,"unit":"kg"}}'], ['place.venue', 'kitchen'], ['promise', '--refs', '{}']]) {
-    const result = run('create', ...args, '--identity', me)
+    const result = run('create', ...args, '--audience', 'public', '--identity', me)
     assert.notEqual(result.status, 0, args.join(' '))
     assert.match(result.stderr, /refused/)
   }
   assert.equal(JSON.parse(readFileSync(me, 'utf8')).chain.length, before)
+})
+
+test('a missing --kind or --audience is refused with the plain reason, and nothing is written', () => {
+  const other = join(dir, 'other.json')
+  for (const [args, reason] of [[['--audience', 'public', '--reach', 'P30D'], /--kind is required/], [['--kind', 'person', '--reach', 'P30D'], /--audience is required/], [['--kind', 'person', '--audience', 'public'], /--reach is required/], [[], /--kind is required/]]) {
+    const result = run('init', other, ...args)
+    assert.notEqual(result.status, 0); assert.match(result.stderr, reason)
+  }
+  assert.equal(run('init', other, '--kind', 'person', '--reach', 'P30D', '--audience').status === 0, false, 'a flag with no value is a missing one')
+  const before = JSON.parse(readFileSync(me, 'utf8')).chain.length
+  const result = run('create', 'observe', 'note', '--state', '{"text":"hi"}', '--identity', me)
+  assert.notEqual(result.status, 0); assert.match(result.stderr, /--audience is required/)
+  assert.equal(JSON.parse(readFileSync(me, 'utf8')).chain.length, before, 'nothing was signed')
+})
+
+test('a list audience: the block is for those ids alone', () => {
+  const secret = ok('create', 'observe', 'note', '--state', '{"text":"for Bo"}', '--audience', 'bo-id-not-real', '--identity', me)
+  assert.ok(Array.isArray(secret.state.audience) && secret.state.audience.length === 1)
 })
 
 test('key: a device key brought in by a key grant, ready to sign a node\'s answers', () => {
@@ -55,12 +73,12 @@ test('key: a device key brought in by a key grant, ready to sign a node\'s answe
 
 test('check and valid', () => {
   assert.ok(ok('check', 'thing', '--state', '{"kind":"eggs"}').errors.some((error) => /refs.author/.test(error)))
-  const note = ok('create', 'observe', 'note', '--state', '{"text":"hi"}', '--identity', me)
+  const note = ok('create', 'observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public', '--identity', me)
   assert.deepEqual(ok('valid', JSON.stringify(note), '--identity', me).refusals, [])
   assert.deepEqual(ok('valid', JSON.stringify({ ...note, signature: 'f'.repeat(128) }), '--identity', me).refusals.map((r) => r.code), ['bad_signature'])
 })
 
-test('convert: the one-time converter turns old blocks into fresh 1.6 blocks, and running again adds nothing', () => {
+test('convert: the one-time converter turns old blocks into fresh blocks, and running again adds nothing', () => {
   const owner = fb.generateKeypair()
   const genesis = { type: 'actor.foodie', state: { name: 'Ann', public_key_sign: owner.public_key_sign, at: '2024-01-01T00:00:00.000Z', audience: 'public' }, refs: {} }
   const id = fb.legacy.oldHash(genesis)
@@ -70,6 +88,7 @@ test('convert: the one-time converter turns old blocks into fresh 1.6 blocks, an
   const done = ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-15T12:00:00.000Z', '--map', files.map)
   assert.equal(done.blocks.length, 3)
   assert.deepEqual(done.blocks[1].refs.derives_from, [id])
+  assert.ok(Array.isArray(done.blocks[2].state.audience), 'a block that named no audience is its author\'s alone, not public')
   assert.deepEqual(fb.valid(done.blocks[2], [done.blocks[0], done.blocks[1]]), [])
   assert.deepEqual(done.blocks[2].refs.derives_from, [fb.legacy.oldHash(note)])
   assert.equal(ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-16T12:00:00.000Z', '--map', files.map).blocks.length, 0)

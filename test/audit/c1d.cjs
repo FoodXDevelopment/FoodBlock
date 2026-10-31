@@ -1,7 +1,7 @@
 const { fb, oracle, World } = require('./lib.cjs')
 const w = new World('repro: circle sign power in promise_stage')
 const alice = w.person('alice'), eve = w.person('eve'), bob = w.person('bob')
-const cafe = w.w(alice, 'actor', { kind: 'circle', name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'guest', powers: [] }] }, {}, 'circle')
+const cafe = w.w(alice, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'guest', powers: [] }] }, {}, 'circle')
 // bob joins as guest (no sign power), eve is not a member at all
 const mg = w.w(alice, 'grant', { kind: 'member', roles: ['guest'] }, { subject: cafe.hash, to: bob.id, as: cafe.hash }, 'bob guest grant')
 w.w(bob, 'grant', { status: 'accepted', kind: 'member' }, { answers: mg.hash, subject: cafe.hash }, 'bob accepts')

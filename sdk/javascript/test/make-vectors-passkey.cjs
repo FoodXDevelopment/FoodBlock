@@ -9,8 +9,9 @@ const assert = require('assert/strict')
 const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const { V, tags: INVARIANTS } = vectorsFile.load()
 const sha = (x) => crypto.createHash('sha256').update(x).digest()
 const seed = sha('foodblock 1.6 passkey vectors: the authenticator').toString('hex')
 const key = fb.keypairFromSeed(seed, 'p256')
@@ -179,5 +180,5 @@ for (const [what, auth] of [
 }
 
 // ---- write ----
-fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
+vectorsFile.save(V, INVARIANTS)
 console.log(`${made.size} passkey cases written to ${path.relative(process.cwd(), FILE)}`)

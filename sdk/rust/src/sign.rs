@@ -7,7 +7,7 @@ use crate::block::{hex, parts, unhex};
 use crate::canonical::{canonical, canonical_json};
 use crate::error::{Error, Result};
 use crate::prelude::*;
-use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
 /// SPKI DER prefix of an Ed25519 public key.
 pub const SPKI_ED25519: &str = "302a300506032b6570032100";
@@ -18,25 +18,33 @@ pub const PKCS8_ED25519: &str = "302e020100300506032b657004220420";
 const SM2_ID: &str = "1234567812345678";
 
 /// A signing key: `{ public_key_sign, private_key }`, both hex, and the suite it signs in (empty: `std`).
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
+#[derive(Clone, PartialEq, Eq, Default)]
 pub struct Keypair {
     pub suite: String,
     pub public_key_sign: String,
     pub private_key: String,
 }
 
+// A key is never printed, logged or put in a panic message by accident: Debug shows the public half and hides the private one (release 38).
+impl core::fmt::Debug for Keypair {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Keypair").field("suite", &self.suite).field("public_key_sign", &self.public_key_sign).field("private_key", &"<hidden>").finish()
+    }
+}
+
 impl Keypair {
     pub fn to_json(&self) -> Value {
         let mut out = json!({ "public_key_sign": self.public_key_sign, "private_key": self.private_key });
-        if !self.suite.is_empty() && self.suite != "std" {
+        if crate::spec::suite_or_default(&self.suite) != crate::spec::default_suite() {
             out["suite"] = json!(self.suite);
         }
         out
     }
 }
 
+// Whether a suite name (the empty name being the default's) names the `std` suite, Ed25519 and SHA-256.
 fn is_std(suite: &str) -> bool {
-    suite.is_empty() || suite == "std"
+    crate::spec::suite_or_default(suite) == "std"
 }
 
 fn seed_of(private_key: &str) -> Result<[u8; 32]> {
@@ -58,13 +66,40 @@ fn signing_key(private_key: &str) -> Result<SigningKey> {
     Ok(SigningKey::from_bytes(&seed_of(private_key)?))
 }
 
+// An Ed25519 key as the suite accepts it (core.md, Suites): SPKI hex in the suite's grammar (lowercase, exact length), whose point is
+// encoded canonically (it encodes back to the same 32 bytes) and is not of small order. A small-order key verifies a fixed signature
+// over every message: anyone could have signed for it.
 fn verifying_key(public_key: &str) -> Option<VerifyingKey> {
-    let text = public_key.to_ascii_lowercase();
-    if text.len() != 88 || !text.starts_with(SPKI_ED25519) {
+    if public_key.len() != 88 || !public_key.starts_with(SPKI_ED25519) {
         return None;
     }
-    let bytes: [u8; 32] = unhex(&text[24..])?.try_into().ok()?;
-    VerifyingKey::from_bytes(&bytes).ok()
+    let bytes: [u8; 32] = unhex_lower(&public_key[24..])?.try_into().ok()?;
+    let key = VerifyingKey::from_bytes(&bytes).ok()?;
+    (!key.is_weak() && key.to_edwards().compress().to_bytes() == bytes).then_some(key)
+}
+
+// Lowercase hex only (core.md section 3: hex is lowercase): one signature or key has one written form.
+fn unhex_lower(text: &str) -> Option<Vec<u8>> {
+    text.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f')).then(|| unhex(text)).flatten()
+}
+
+/// Whether a signing key (SPKI hex) is one its suite accepts beyond its grammar: an Ed25519 key canonically encoded and not of small
+/// order (core.md, Suites). A key of another suite is judged by its grammar alone here (its point is checked when it verifies).
+pub fn key_is_sound(public_key: &str) -> bool {
+    !public_key.starts_with(SPKI_ED25519) || verifying_key(public_key).is_some()
+}
+
+// A signature and a key in their suite's grammar (protocol.json `suites.*.signature.grammar`, `sign_key.grammar`; a p256 signature
+// may be a passkey's longer form): checked before anything is decoded or remembered.
+fn in_grammar(suite: &str, signature: &str, public_key: &str) -> bool {
+    let name = crate::spec::suite_or_default(suite);
+    let Some(info) = crate::spec().suite(name) else { return false };
+    let hex = |t: &str| t.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'));
+    // the grammars are a prefix and so many lowercase hex characters (protocol.json): read as such, cheaply, before anything is decoded
+    let key = public_key.strip_prefix(info.spki_prefix.as_str()).is_some_and(|rest| rest.len() == 2 * info.raw_key_bytes && hex(rest));
+    let plain = signature.len() == 2 * info.signature_bytes && hex(signature);
+    let passkey = info.passkey_re.is_some() && signature.len() > 2 * info.signature_bytes + 4 && signature.len() % 2 == 0 && hex(signature);
+    key && (plain || passkey)
 }
 
 fn unknown_suite(suite: &str) -> Error {
@@ -100,9 +135,9 @@ pub fn keypair_from_seed_in(suite: &str, seed_hex: &str) -> Result<Keypair> {
     })
 }
 
-/// The `std` signing key a 32-byte seed (hex) gives.
+/// The signing key a 32-byte seed (hex) gives, in the default suite.
 pub fn keypair_from_seed(seed_hex: &str) -> Result<Keypair> {
-    keypair_from_seed_in("std", seed_hex)
+    keypair_from_seed_in(crate::spec::default_suite(), seed_hex)
 }
 
 /// A new signing key from the operating system's randomness.
@@ -121,7 +156,7 @@ pub fn generate_keypair_in(suite: &str) -> Result<Keypair> {
 }
 #[cfg(feature = "std")]
 pub fn generate_keypair() -> Result<Keypair> {
-    generate_keypair_in("std")
+    generate_keypair_in(crate::spec::default_suite())
 }
 
 /// The public signing key (SPKI hex) of a private key, in a suite.
@@ -165,9 +200,9 @@ pub fn public_key_in(suite: &str, private_key: &str) -> Result<String> {
     }
 }
 
-/// The public signing key (SPKI hex) of a `std` private key.
+/// The public signing key (SPKI hex) of a private key in the default suite.
 pub fn public_key_of(private_key: &str) -> Result<String> {
-    public_key_in("std", private_key)
+    public_key_in(crate::spec::default_suite(), private_key)
 }
 
 /// Sign bytes in a suite: the 64-byte signature, hex.
@@ -189,7 +224,8 @@ pub fn sign_bytes_in(suite: &str, bytes: &[u8], private_key: &str) -> Result<Str
                 let key = p256::ecdsa::SigningKey::from_slice(&scalar)
                     .map_err(|_| Error::new("sign: not a P-256 scalar"))?;
                 let sig: p256::ecdsa::Signature = key.sign(bytes);
-                Ok(hex(&sig.to_bytes()))
+                // low s (core.md, Suites): the one form a reader accepts
+                Ok(hex(&sig.normalize_s().unwrap_or(sig).to_bytes()))
             }
             "sm" => {
                 use sm2::dsa::signature::Signer as _;
@@ -208,9 +244,9 @@ pub fn sign_bytes_in(suite: &str, bytes: &[u8], private_key: &str) -> Result<Str
     ))
 }
 
-/// Sign bytes with a `std` key.
+/// Sign bytes with a key of the default suite.
 pub fn sign_bytes(bytes: &[u8], private_key: &str) -> Result<String> {
-    sign_bytes_in("std", bytes, private_key)
+    sign_bytes_in(crate::spec::default_suite(), bytes, private_key)
 }
 
 /// Whether a signature (hex) is this key's over these bytes, in a suite. Never fails: anything malformed is false.
@@ -220,23 +256,34 @@ pub fn sign_bytes(bytes: &[u8], private_key: &str) -> Result<String> {
 /// (the answer is a pure function of the four arguments). Without it a fold over a few hundred blocks took seconds
 /// (found by the simulator, tools/sim). `no_std` builds do not remember and are as before.
 pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &str) -> bool {
+    // the grammar first: nothing outside it is decoded or remembered (a megabyte "signature" costs a scan, never memory)
+    if !in_grammar(suite, signature, public_key) {
+        return false;
+    }
     #[cfg(feature = "std")]
     {
         use sha2::Digest;
         use std::cell::RefCell;
         use std::collections::HashMap;
+        // a verdict is remembered by a digest of the four arguments (32 bytes, whatever their size), and the memory is bounded by bytes
+        const ENTRY_BYTES: usize = 96;
+        const MOST_BYTES: usize = 8 << 20;
         std::thread_local! {
-            static VERDICTS: RefCell<HashMap<(String, String, String, [u8; 32]), bool>> = RefCell::new(HashMap::new());
+            static VERDICTS: RefCell<HashMap<[u8; 32], bool>> = RefCell::new(HashMap::new());
         }
-        let digest: [u8; 32] = sha2::Sha256::digest(bytes).into();
-        let key = (suite.to_string(), public_key.to_string(), signature.to_string(), digest);
+        let mut h = sha2::Sha256::new();
+        for part in [suite.as_bytes(), public_key.as_bytes(), signature.as_bytes(), bytes] {
+            h.update((part.len() as u64).to_be_bytes());
+            h.update(part);
+        }
+        let key: [u8; 32] = h.finalize().into();
         if let Some(v) = VERDICTS.with(|m| m.borrow().get(&key).copied()) {
             return v;
         }
         let verdict = verify_bytes_uncached(suite, bytes, signature, public_key);
         VERDICTS.with(|m| {
             let mut m = m.borrow_mut();
-            if m.len() > 200_000 {
+            if (m.len() + 1) * ENTRY_BYTES > MOST_BYTES {
                 m.clear();
             }
             m.insert(key, verdict);
@@ -248,7 +295,7 @@ pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &
 }
 
 fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key: &str) -> bool {
-    let Some(sig_bytes) = unhex(signature) else {
+    let Some(sig_bytes) = unhex_lower(signature) else {
         return false;
     };
     if is_std(suite) {
@@ -258,17 +305,18 @@ fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key:
         let Ok(sig) = <[u8; 64]>::try_from(sig_bytes) else {
             return false;
         };
-        return key.verify(bytes, &Signature::from_bytes(&sig)).is_ok();
+        // RFC 8032 with the strict rules (core.md, Suites): S below the group order, R canonical and not of small order, and the
+        // cofactorless equation, [S]B = R + [k]A, checked on R's encoding
+        return key.verify_strict(bytes, &Signature::from_bytes(&sig)).is_ok();
     }
     #[cfg(feature = "suites")]
     {
         let Some(info) = crate::spec().suite(suite) else {
             return false;
         };
-        let public = public_key.to_ascii_lowercase();
-        let Some(point) = public
+        let Some(point) = public_key
             .strip_prefix(info.spki_prefix.as_str())
-            .and_then(unhex)
+            .and_then(unhex_lower)
         else {
             return false;
         };
@@ -290,6 +338,10 @@ fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key:
                 let Ok(sig) = p256::ecdsa::Signature::from_slice(rs) else {
                     return false;
                 };
+                // low s only (core.md, Suites): s and n - s both verify, and one signature has one written form
+                if sig.normalize_s().is_some() {
+                    return false;
+                }
                 key.verify(&message, &sig).is_ok()
             }
             "sm" => {
@@ -347,7 +399,8 @@ pub fn passkey_signature(authenticator_data: &str, client_data_json: &str, signa
     }
     .map_err(|_| Error::new("passkey: the signature is DER or r then s"))?;
     let len = u16::try_from(auth.len()).map_err(|_| Error::new("passkey: authenticator data is too long"))?;
-    let mut out = rs.to_bytes().to_vec();
+    // an authenticator may give a high s; s and n - s both verify, and the suite accepts the low one (core.md, Suites)
+    let mut out = rs.normalize_s().unwrap_or(rs).to_bytes().to_vec();
     out.extend_from_slice(&len.to_be_bytes());
     out.extend_from_slice(&auth);
     out.extend_from_slice(&cdj);
@@ -379,7 +432,7 @@ fn passkey_message<'a>(bytes: &[u8], sig: &'a [u8]) -> Option<(Vec<u8>, &'a [u8]
 
 /// Whether a `std` signature is this key's over these bytes.
 pub fn verify_bytes(bytes: &[u8], signature: &str, public_key: &str) -> bool {
-    verify_bytes_in("std", bytes, signature, public_key)
+    verify_bytes_in(crate::spec::default_suite(), bytes, signature, public_key)
 }
 
 /// The author's signature over a block's canonical form, hex, in the key's suite.
@@ -389,7 +442,7 @@ pub fn sign_in(suite: &str, block: &Value, private_key: &str) -> Result<String> 
 }
 /// The author's `std` signature over a block's canonical form, hex.
 pub fn sign(block: &Value, private_key: &str) -> Result<String> {
-    sign_in("std", block, private_key)
+    sign_in(crate::spec::default_suite(), block, private_key)
 }
 
 /// Whether a signature is this key's over exactly this block, in a suite. Never fails.
@@ -399,7 +452,7 @@ pub fn verify_in(suite: &str, block: &Value, signature: &str, public_key: &str) 
 }
 /// Whether a `std` signature is this key's over exactly this block.
 pub fn verify(block: &Value, signature: &str, public_key: &str) -> bool {
-    verify_in("std", block, signature, public_key)
+    verify_in(crate::spec::default_suite(), block, signature, public_key)
 }
 
 fn without_signature(part: &Value) -> Value {
@@ -423,12 +476,12 @@ pub fn sign_message_in(suite: &str, part: &Value, private_key: &str) -> Result<V
     Ok(rest)
 }
 pub fn sign_message(part: &Value, private_key: &str) -> Result<Value> {
-    sign_message_in("std", part, private_key)
+    sign_message_in(crate::spec::default_suite(), part, private_key)
 }
 
 /// Whether a signed message part's `signature` is this key's. Never fails.
 pub fn verify_message_in(suite: &str, part: &Value, public_key: &str) -> bool {
-    let signature = crate::js::text(part.get("signature"));
+    let signature = crate::js::str_of(part.get("signature"));
     verify_bytes_in(
         suite,
         canonical_json(&without_signature(part)).as_bytes(),
@@ -437,7 +490,7 @@ pub fn verify_message_in(suite: &str, part: &Value, public_key: &str) -> bool {
     )
 }
 pub fn verify_message(part: &Value, public_key: &str) -> bool {
-    verify_message_in("std", part, public_key)
+    verify_message_in(crate::spec::default_suite(), part, public_key)
 }
 
 /// The suite a signing key (SPKI hex) belongs to, found by its SPKI prefix; None when no suite this build knows has it.
@@ -448,6 +501,12 @@ pub fn suite_of_key(public_key: &str) -> Option<String> {
         .iter()
         .find(|s| !s.spki_prefix.is_empty() && lower.starts_with(&s.spki_prefix))
         .map(|s| s.name.clone())
+}
+
+/// The suite a signing key is read in: the one its own text shows (`suite_of_key`), else the default suite (an absent suite is
+/// the std spelling, core.md). The one place a key's suite is read when none is named.
+pub fn suite_named_by(public_key: &str) -> String {
+    suite_of_key(public_key).unwrap_or_else(|| crate::spec::default_suite().to_string())
 }
 
 /// Whether this build can sign and verify in a suite (declared and built in).

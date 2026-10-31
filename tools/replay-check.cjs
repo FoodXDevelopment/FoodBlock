@@ -6,7 +6,7 @@
 //
 // Input: a JSON-lines file (one block per line), a JSON file holding an array, or a directory of such files. A line is
 // any of the forms a node holds:
-//   a message        { "version": "1.6", "block": { type, state, refs }, "signature": "<hex>", "suite"?: "<name>" }
+//   a message        { "version": "1.7", "block": { type, state, refs }, "signature": "<hex>", "suite"?: "<name>" }
 //   a signed block   { type, state, refs, "signature": "<hex>", "hash"?: "<id>", "suite"?: "<name>" }
 //   a sealed header  { "version", "header", "header_signature" }   (counted, not judged: only its public header is stored)
 // Every block is judged by the core's `valid(block, held)`, with all the blocks read as the context `held`, the way a

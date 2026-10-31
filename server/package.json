@@ -1,7 +1,7 @@
 {
   "name": "foodblock-node",
-  "version": "1.6.0",
-  "description": "A FoodBlock 1.6 node: Postgres for the blocks, HTTP for signed pull, push and .well-known/foodblock",
+  "version": "1.7.0",
+  "description": "A FoodBlock node: Postgres for the blocks, HTTP for signed pull, push and .well-known/foodblock",
   "keywords": [
     "food",
     "foodblock",
@@ -34,6 +34,7 @@
   ],
   "scripts": {
     "start": "node index.js",
+    "prepublishOnly": "node -e \"const p=require('./package.json');const bad=Object.entries({...p.dependencies,...p.optionalDependencies}).filter(([,v])=>/^(file|link|git|https?):/.test(v));if(bad.length){console.error('refusing to publish with local dependencies: '+bad.map(([k,v])=>k+'@'+v).join(', '));process.exit(1)}\"",
     "test": "node --test test/node.test.js"
   },
   "dependencies": {
@@ -45,7 +46,7 @@
     "pg-mem": "^3.0.14",
     "supertest": "^7.3.1"
   },
-  "license": "MIT",
+  "license": "CC0-1.0",
   "engines": {
     "node": ">=18.0.0"
   },

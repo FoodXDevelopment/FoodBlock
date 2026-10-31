@@ -26,7 +26,7 @@ export function remoteNode({ base, token, fetch: request = globalThis.fetch } = 
     /** Take a signed block into the mirror if the SDK accepts it against what is held; it is sent on the next flush. */
     push(signed) {
       const { salts, ...block } = signed;
-      const result = fb.sync.accept([block], all());
+      const result = fb.sync.accept([block], all(), { takesPairs: false });
       result.taken.forEach((taken) => { mirror.set(taken.hash, taken); queue.push(taken); });
       return { taken: result.taken, refused: result.refused, waiting: result.waiting };
     },
@@ -106,7 +106,7 @@ export function remoteIndex({ base, key, fetch: request = globalThis.fetch } = {
       .filter((hit) => !wanted || hit.place === near || String(byHash.get(hit.place)?.state?.name || "").toLowerCase().includes(wanted))
       .map((hit) => {
         const offer = byHash.get(hit.offer), thing = byHash.get(offer.refs.what);
-        return { offer: hit.offer, from: { id: offer.refs.from, kind: byHash.get(offer.refs.from)?.state?.kind || null, no_contact: false }, distance_m: hit.distance_m ?? null, index: answer.index,
+        return { offer: hit.offer, from: { id: offer.refs.from, kind: byHash.get(offer.refs.from)?.state?.kind || null, no_contact: null }, distance_m: hit.distance_m ?? null, index: answer.index,
           what: thing ? { hash: thing.hash, kind: thing.state?.kind, name: thing.state?.name } : offer.state?.what || null,
           price: offer.state?.terms?.price || null, quantity: offer.state?.terms?.quantity || null, deliver_by: offer.state?.terms?.deliver_by || null, expires: offer.state?.terms?.expires || null };
       });

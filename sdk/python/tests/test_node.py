@@ -10,22 +10,30 @@ AT = "2026-10-15T09:00:00.000Z"
 def person():
     keys = fb.generate_keypair()
     encryption = fb.generate_encryption_keypair()
-    me = fb.identity.genesis(keys, encryption_key=encryption["public_key_encrypt"],
-                             recovery_key=fb.generate_keypair()["public_key_sign"], reach="P30D", at=AT)
+    me = fb.identity.genesis(keys, kind="person", at=AT, audience="public", encryption_key=encryption["public_key_encrypt"],
+                             recovery_key=fb.generate_keypair()["public_key_sign"], reach="P30D")
     return {"keys": keys, "encryption": encryption, "me": me, "id": me["hash"], "held": [me]}
 
 
-def say(who, type_, state, refs=None, **options):
-    block = fb.write(type_, state, refs or {}, author=who["id"], key=who["keys"], held=who["held"], at=AT, **options)
+def say(who, type_, state, refs=None, audience="public", **options):
+    block = fb.write(type_, state, refs or {}, author=who["id"], key=who["keys"], held=who["held"], at=AT, audience=audience, **options)
     who["held"].append(block)
     return block
 
 
 class Writing(unittest.TestCase):
     def test_genesis_names_its_keys(self):
-        self.assertEqual(fb.identity.genesis(fb.generate_keypair(), at=AT)["state"]["audience"], "public")  # kind, at, audience and the key are enough
+        keys = fb.generate_keypair()
+        self.assertEqual(fb.identity.genesis(keys, kind="person", at=AT, audience="public")["state"]["audience"], "public")  # kind, at, audience and the key are enough
+        listed = fb.identity.genesis(keys, kind="person", at=AT, audience=["a" * 64])  # a list audience carries its salts
+        self.assertIn("salts", listed)
         with self.assertRaises(ValueError):  # the recovery key and its reach come as a pair
-            fb.identity.genesis(fb.generate_keypair(), recovery_key=fb.generate_keypair()["public_key_sign"], at=AT)
+            fb.identity.genesis(keys, kind="person", at=AT, audience="public", recovery_key=fb.generate_keypair()["public_key_sign"])
+        for missing in ("kind", "at", "audience"):  # nothing is filled in
+            given = {"kind": "person", "at": AT, "audience": "public"}
+            del given[missing]
+            with self.assertRaises(fb.FoodBlockError, msg=missing):
+                fb.identity.genesis(keys, **given)
         ann = person()
         self.assertEqual(fb.check(ann["me"]["type"], ann["me"]["state"], ann["me"]["refs"]), [])
         self.assertTrue(fb.identity.signed_by_author(ann["me"], [ann["me"]]))
@@ -39,6 +47,29 @@ class Writing(unittest.TestCase):
         self.assertTrue(fb.identity.signed_by_author(offer, ann["held"]))
         self.assertEqual(fb.promise_stage(offer, ann["held"])["stage"], "offered")
         self.assertTrue(fb.check_chain(ann["held"][1:], ann["id"])["ok"])
+
+    def test_write_and_compose_fill_nothing(self):
+        ann = person()
+        for given in ({"at": AT}, {"audience": "public"}, {"audience": [], "at": AT}):  # no audience, no at, an empty audience
+            with self.assertRaises(fb.FoodBlockError, msg=str(given)):
+                fb.write("observe", {"kind": "note", "text": "x"}, {}, author=ann["id"], key=ann["keys"], held=ann["held"], **given)
+            with self.assertRaises(fb.FoodBlockError, msg=str(given)):
+                fb.compose("observe", {"kind": "note", "text": "x"}, {}, author=ann["id"], **given)
+        self.assertNotIn("version", fb.wrap(say(ann, "observe", {"kind": "note", "text": "y"})))
+
+    def test_key_grant_needs_its_time(self):
+        keys, new = fb.generate_keypair(), fb.generate_keypair()
+        g = fb.identity.genesis(keys, kind="person", at=AT, audience="public")
+        signer = {"private_key": keys["private_key"], "last": None, "brought_in": g["hash"]}
+        with self.assertRaises(fb.FoodBlockError):
+            fb.identity.key_grant(g["hash"], new["public_key_sign"], signer)
+
+    def test_arrivals_need_the_readers_choice(self):
+        ann = person()
+        arrivals = {ann["id"]: AT}
+        with self.assertRaises(fb.FoodBlockError):
+            fb.identity.keys_of(ann["id"], ann["held"], arrivals)
+        self.assertEqual(fb.identity.keys_of(ann["id"], ann["held"], arrivals, "inside"), [ann["keys"]["public_key_sign"]])
 
     def test_write_refuses_never_repairs(self):
         ann = person()
@@ -93,17 +124,40 @@ class BetweenNodes(unittest.TestCase):
         ann = person()
         one = say(ann, "observe", {"kind": "note", "text": "two trays"})
         two = say(ann, "observe", {"kind": "note", "text": "one tray left"})
-        early = fb.sync.accept([two], [ann["me"]])
+        early = fb.sync.accept([two], [ann["me"]], False)
         self.assertEqual(early["waiting"], [{"hash": two["hash"], "needs": [one["hash"]]}])
-        late = fb.sync.accept([one, two], [ann["me"]])
+        late = fb.sync.accept([one, two], [ann["me"]], False)
         self.assertEqual(sorted(b["hash"] for b in late["taken"]), sorted([one["hash"], two["hash"]]))
         other = fb.write("observe", {"kind": "note", "text": "five trays"}, {}, author=ann["id"], key=ann["keys"],
-                         link={"seq": 1, "prev": ann["id"]}, at=AT)
-        caught = fb.sync.accept([other], [ann["me"], one])
+                         link={"seq": 1, "prev": ann["id"]}, at=AT, audience="public")
+        caught = fb.sync.accept([other], [ann["me"], one], False)
         self.assertEqual(caught["equivocations"], [sorted([one["hash"], other["hash"]])])
         forged = fb.write("observe", {"kind": "note", "text": "gold"}, {}, author=ann["id"], key=fb.generate_keypair(),
-                          link={"seq": 3, "prev": two["hash"]}, at=AT)
-        self.assertEqual([r["hash"] for r in fb.sync.accept([forged], ann["held"])["refused"]], [forged["hash"]])
+                          link={"seq": 3, "prev": two["hash"]}, at=AT, audience="public")
+        self.assertEqual([r["hash"] for r in fb.sync.accept([forged], ann["held"], False)["refused"]], [forged["hash"]])
+
+    def test_a_node_states_its_choices(self):
+        ann, node = person(), person()
+        note = say(ann, "observe", {"kind": "note", "text": "hi"})
+        other = fb.write("observe", {"kind": "note", "text": "other"}, {}, author=ann["id"], key=ann["keys"],
+                         link={"seq": 1, "prev": ann["id"]}, at=AT, audience="public")
+        pair = [note, other]
+        self.assertEqual(fb.sync.accept(pair, [ann["me"]], False)["taken"], [])
+        self.assertEqual(len(fb.sync.accept(pair, [ann["me"]], True)["taken"]), 2)
+        with self.assertRaises(TypeError):  # takes_pairs is not filled in
+            fb.sync.accept(pair, [ann["me"]])
+        with self.assertRaises(fb.FoodBlockError):
+            fb.sync.accept(pair, [ann["me"]], None)
+        log = [{"n": 1, "block": note}]
+        for cap, pairs in ((None, True), (0, True), (500, None)):
+            with self.assertRaises(fb.FoodBlockError, msg=str((cap, pairs))):
+                fb.sync.answer_pull(log, {"since": 0}, node["id"], None, cap, pairs)
+        with self.assertRaises(fb.FoodBlockError):  # accept_sealed refuses a missing choice too
+            fb.sync.accept_sealed([], [], None)
+        with self.assertRaises(TypeError):
+            fb.sync.admission_refusals(note, ann["id"], [])
+        with self.assertRaises(fb.FoodBlockError):  # admission null is stated; strangers_today missing is not
+            fb.sync.admission_refusals(note, ann["id"], [], None, None)
 
     def test_signed_pull_and_signed_answers(self):
         ann, node = person(), person()
@@ -111,32 +165,32 @@ class BetweenNodes(unittest.TestCase):
         key = [ann["keys"]["public_key_sign"]]
         request = fb.sync.sign_pull({"since": 0}, signer=ann["id"], node=node["id"], private_key=ann["keys"]["private_key"], counter=5)
         self.assertNotIn("at", request)
-        self.assertEqual(fb.sync.pull_errors(request, node=node["id"], keys=key, highest=4), [])
-        self.assertTrue(fb.sync.pull_errors(request, node=node["id"], keys=key, highest=5))
+        self.assertEqual(fb.sync.pull_refusals(request, node=node["id"], keys=key, highest=4), [])
+        self.assertTrue(fb.sync.pull_refusals(request, node=node["id"], keys=key, highest=5))
         challenge = fb.sync.new_challenge()
         asked = fb.sync.sign_pull({"since": 0}, signer=ann["id"], node=node["id"], private_key=ann["keys"]["private_key"], challenge=challenge)
-        self.assertEqual(fb.sync.pull_errors(asked, node=node["id"], keys=key, issued=[challenge]), [])
-        self.assertTrue(fb.sync.pull_errors(asked, node=node["id"], keys=key, issued=[]))
+        self.assertEqual(fb.sync.pull_refusals(asked, node=node["id"], keys=key, issued=[challenge]), [])
+        self.assertTrue(fb.sync.pull_refusals(asked, node=node["id"], keys=key, issued=[]))
         log = [{"n": i + 1, "block": b} for i, b in enumerate(ann["held"])]
-        answer = fb.sync.answer_pull(log, request, node=node["id"], private_key=node["keys"]["private_key"])
+        answer = fb.sync.answer_pull(log, request, node=node["id"], private_key=node["keys"]["private_key"], cap=500, serves_pairs=True)
         self.assertEqual([entry["n"] for entry in answer["blocks"]], [1, 2])
         self.assertTrue(fb.sync.answer_signed_by(answer, node["keys"]["public_key_sign"]))
-        heads = fb.sync.answer_pull(log, {"heads": True}, node=node["id"])
+        heads = fb.sync.answer_pull(log, {"heads": True}, node["id"], None, 500, True)
         self.assertEqual([fb.unwrap(entry["message"])["hash"] for entry in heads["blocks"]], [note["hash"]])
-        pushed = fb.sync.push_answer(fb.sync.accept([note], [ann["me"]]), node=node["id"], private_key=node["keys"]["private_key"])
+        pushed = fb.sync.push_answer(fb.sync.accept([note], [ann["me"]], False), node=node["id"], private_key=node["keys"]["private_key"])
         self.assertEqual(pushed["taken"], [note["hash"]])
         self.assertTrue(fb.sync.answer_signed_by(pushed, node["keys"]["public_key_sign"]))
 
     def test_discovery(self):
         node = person()
-        doc = fb.sync.well_known(node=node["id"], holds=[node["id"]], speaks_for=[node["id"]],
+        doc = fb.sync.well_known(node=node["id"], holds=[node["id"]], speaks_for=[node["id"]], admission=None,
                                  endpoints={"pull": "https://n.example/pull", "push": "https://n.example/push"})
         self.assertEqual(fb.sync.well_known_errors(doc), [])
         self.assertEqual(sorted(fb.sync.announcement(doc)), ["endpoints", "node", "protocol", "version"])
 
     def test_custody_the_limit_and_push_for_a_list(self):
         keys, recovery, coop = fb.generate_keypair(), fb.generate_keypair(), "c" * 64
-        g = fb.identity.genesis(keys, recovery_key=recovery["public_key_sign"], reach="P30D", at=AT, custodian=coop)
+        g = fb.identity.genesis(keys, kind="person", at=AT, audience="public", recovery_key=recovery["public_key_sign"], reach="P30D", custodian=coop)
         self.assertEqual(g["state"]["custodian"], coop)
         self.assertEqual(fb.refusals("actor", g["state"], {}), [])
         fence = fb.grant.limit_fence("a" * 64, "b" * 64, fb.money(5000, "GBP"), "P7D")
@@ -146,7 +200,7 @@ class BetweenNodes(unittest.TestCase):
         # a sealed limit: the grant carries the commitment, the observe carries the salt that opens it
         salt = "ab" * 16
         commitment = fb.grant.limit_commitment(fb.money(5000, "GBP"), "P7D", salt)
-        grant = fb.write("grant", {"kind": "authority", "scope": {"acts": ["transfer"], "limit_commitment": commitment, "until": "2027-01-01T00:00:00.000Z"}}, {"to": "b" * 64}, author=g["hash"], key=keys, held=[g], at=AT)
+        grant = fb.write("grant", {"kind": "authority", "scope": {"acts": ["transfer"], "limit_commitment": commitment, "until": "2027-01-01T00:00:00.000Z"}}, {"to": "b" * 64}, author=g["hash"], key=keys, held=[g], at=AT, audience="public")
         sealed = fb.grant.limit_fence(grant["hash"], "b" * 64, fb.money(5000, "GBP"), "P7D", salt)
         observe = {"hash": "c" * 64, "type": "observe", "state": sealed["state"], "refs": sealed["refs"]}
         self.assertTrue(fb.grant.limit_opens(grant, observe))

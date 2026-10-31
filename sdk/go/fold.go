@@ -25,7 +25,7 @@ type LineState struct {
 	Moved  any `json:"moved"`
 }
 
-// Stage is where a promise stands: offered, asked, expired, declined, stopped, accepted, underway, done or reversed.
+// Stage is where a promise stands: offered, asked, expired, declined, stopped, accepted, underway, breached, done or reversed.
 // Every name the spec gives is always there (§11, What each fold returns): a field that does not apply is null, or an
 // empty list.
 type Stage struct {
@@ -44,27 +44,14 @@ type Stage struct {
 	Stopped  []string       `json:"stopped"`
 }
 
-// StageOptions: Confirmers (ids whose confirms count a transfer, beside the schema's grounds).
-type StageOptions struct {
-	Confirmers []string
-}
-
-// PromiseStage is a promise's stage, from its first promise and every block in its deal. No clock.
-func PromiseStage(firstBlock Block, blocks []Block, options ...StageOptions) Stage {
-	var o StageOptions
-	if len(options) > 0 {
-		o = options[0]
-	}
-	return must[Stage]("promise_stage", firstBlock, plural(blocks), map[string]any{"confirmers": plural(o.Confirmers)})
+// PromiseStage is a promise's stage, from its first promise and every block in its deal: a function of the blocks alone. No clock.
+func PromiseStage(firstBlock Block, blocks []Block) Stage {
+	return doorPromiseStage[Stage](firstBlock, blocks, map[string]any{})
 }
 
 // PromiseView is the same answer with stage `expired` once the reader's now passes `expires` and nothing binds.
-func PromiseView(firstBlock Block, blocks []Block, now string, options ...StageOptions) Stage {
-	var o StageOptions
-	if len(options) > 0 {
-		o = options[0]
-	}
-	return must[Stage]("promise_view", firstBlock, plural(blocks), map[string]any{"now": nilIfEmpty(now), "confirmers": plural(o.Confirmers)})
+func PromiseView(firstBlock Block, blocks []Block, now string) Stage {
+	return doorPromiseView[Stage](firstBlock, blocks, map[string]any{"now": nilIfEmpty(now)})
 }
 
 // Member is one member of a circle: the roles they hold, the grant that made them a member, and counted_to (null
@@ -99,15 +86,7 @@ func (s *CircleState) MemberIDs() []string {
 // CircleStateOf is a circle's members and roles from its member grants, in causal order; nil when the circle is not
 // held. within: fold only that block's causal past.
 func CircleStateOf(circle string, blocks []Block, within *Block) *CircleState {
-	var w any
-	if within != nil {
-		w = *within
-	}
-	state, err := ask[*CircleState]("circle_state", circle, plural(blocks), w)
-	if err != nil {
-		return nil
-	}
-	return state
+	return doorCircleState[*CircleState](circle, blocks, within)
 }
 
 // HoldersOf are the members who hold a role, sorted.
@@ -130,16 +109,12 @@ func HoldersOf(state *CircleState, role string) []string {
 
 // MayActAs is whether a block may be signed as a circle.
 func MayActAs(b Block, circle string, blocks []Block, role string) bool {
-	var r any
-	if role != "" {
-		r = role
-	}
-	return must[bool]("may_act_as", b, circle, plural(blocks), r)
+	return doorMayActAs(b, circle, blocks, role)
 }
 
 // MembersThen is who a circle (or `circle#role`) in a block's audience means.
 func MembersThen(b Block, recipient string, blocks []Block) []string {
-	return plural(must[[]string]("members_then", b, recipient, plural(blocks)))
+	return plural(doorMembersThen[[]string](b, recipient, blocks))
 }
 
 // Ownership is who owns an instance ("" when it went to an open receiver), the counted transfers, and a conflict
@@ -152,11 +127,11 @@ type Ownership struct {
 
 // OwnershipOf is who owns an instance.
 func OwnershipOf(instance Block, blocks []Block) Ownership {
-	o := must[struct {
+	o := doorOwnership[struct {
 		Owner     *string  `json:"owner"`
 		Transfers []string `json:"transfers"`
 		Conflict  []string `json:"conflict"`
-	}]("ownership", instance, plural(blocks))
+	}](instance, blocks, "")
 	out := Ownership{Transfers: plural(o.Transfers), Conflict: o.Conflict}
 	if o.Owner != nil {
 		out.Owner = *o.Owner
@@ -169,45 +144,42 @@ func OwnerOf(instance Block, blocks []Block) string { return OwnershipOf(instanc
 
 // WhereNow is where a thing is now.
 func WhereNow(thing Block, blocks []Block) []string {
-	return plural(must[[]string]("where_now", thing, plural(blocks)))
+	return plural(doorWhereNow[[]string](thing, blocks))
 }
 
 // ReceiverOf is who receives a promise ("" when none).
 func ReceiverOf(promise Block, blocks []Block) string {
-	return must[string]("receiver_of", promise, plural(blocks))
+	return doorReceiverOf[string](promise, blocks)
 }
 
-// OrdererOf is the orderer a record names (state.orderer), or nil.
-func OrdererOf(record Block) any { return must[any]("orderer_of", record) }
-
-// Consent is a person's live word about a sender (or none): { word, block }. The optional under is the grant the sender's
-// block acts under: a word about its grantor is a word about the sender (consent follows the principal).
-func Consent(person, sender string, blocks []Block, under ...string) map[string]any {
-	grant := ""
-	if len(under) > 0 {
-		grant = under[0]
+// Consent is a person's live word about a sender (or none): { word, block }. The fourth is the sender's block, or nil:
+// when it acts under a grant, a word about the grantor is a word about the sender (consent follows the principal).
+func Consent(person, sender string, blocks []Block, block *Block) map[string]any {
+	var b any
+	if block != nil {
+		b = *block
 	}
-	return must[map[string]any]("consent", person, nilIfEmpty(sender), plural(blocks), nilIfEmpty(grant))
+	return doorConsent[map[string]any](person, sender, blocks, b)
 }
 
 // LiveGrant is the grant, among grants, that makes an act live at the reader's now (nil when none).
 func LiveGrant(act Block, grants []Block, now string) any {
-	return must[any]("live_grant", act, plural(grants), now)
+	return doorLiveGrant(act, grants, now)
 }
 
 // WithdrawalSeen is whether a withdrawal was seen before a block, on the reader's arrival log.
 func WithdrawalSeen(withdrawal, b Block, blocks []Block, arrivedAt ArrivedAt) any {
-	return must[any]("withdrawal_seen", withdrawal, b, plural(blocks), arrivals(arrivedAt, append(append([]Block{}, blocks...), withdrawal, b)))
+	return doorWithdrawalSeen(withdrawal, b, blocks, arrivals(arrivedAt, append(append([]Block{}, blocks...), withdrawal, b)))
 }
 
 // Due is when a promise falls due, on the reader's arrival log (of the blocks it names).
 func Due(promise Block, arrivedAt ArrivedAt, named []Block) any {
-	return must[any]("due", promise, arrivals(arrivedAt, append([]Block{promise}, named...)))
+	return doorDue[any](promise, arrivals(arrivedAt, append([]Block{promise}, named...)))
 }
 
 // RecoveryReach lists the voided blocks a recovery rotation's reach protects.
-func RecoveryReach(rotation Block, blocks []Block, arrivedAt ArrivedAt) any {
-	return must[any]("recovery_reach", rotation, plural(blocks), arrivals(arrivedAt, append(append([]Block{}, blocks...), rotation)))
+func RecoveryReach(rotation Block, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) any {
+	return doorRecoveryReach[any](rotation, blocks, arrivals(arrivedAt, append(append([]Block{}, blocks...), rotation)), unknownFor(arrivedAt, unknown))
 }
 
 // Successor is where a successor grant's trigger stands.
@@ -221,11 +193,7 @@ type Successor struct {
 
 // SuccessorView is where a successor grant's trigger stands on the reader's own clock (now) and arrival log.
 func SuccessorView(grant Block, blocks []Block, now string, arrivedAt ArrivedAt) Successor {
-	var n any
-	if now != "" {
-		n = now
-	}
-	return must[Successor]("successor_view", grant, plural(blocks), n, arrivals(arrivedAt, blocks))
+	return doorSuccessorView[Successor](grant, blocks, now, arrivals(arrivedAt, blocks))
 }
 
 // CircleKey is a circle's encryption key now: its epoch (0 is the key in the circle's actor), the open keys and the
@@ -238,10 +206,10 @@ type CircleKey struct {
 
 // CircleKeyOf reads the rekeys of a circle.
 func CircleKeyOf(circle string, blocks []Block) CircleKey {
-	return must[CircleKey]("circle_key", circle, plural(blocks))
+	return doorCircleKey[CircleKey](circle, blocks)
 }
 
 // CountedIn is whether a counter's count is in a result for a commitment.
 func CountedIn(result Block, commitment, counter string) bool {
-	return must[bool]("counted_in", result, commitment, counter)
+	return doorCountedIn(result, commitment, counter)
 }

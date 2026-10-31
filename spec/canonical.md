@@ -1,6 +1,6 @@
 # FoodBlock canonical form
 
-**Version:** FoodBlock 1.6
+**Version:** FoodBlock 1.7
 **Status:** Normative
 **Purpose:** The one exact byte form of a block, so every implementation in any language gets the same id.
 

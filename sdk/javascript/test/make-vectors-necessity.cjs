@@ -9,8 +9,9 @@ const assert = require('assert/strict')
 const fb = require('../src/index.cjs')
 const { call } = require('../src/core.cjs')
 
-const FILE = path.join(__dirname, '../../../spec/vectors.json')
-const V = JSON.parse(fs.readFileSync(FILE, 'utf8'))
+const vectorsFile = require('./vectors-file.cjs')
+const FILE = vectorsFile.FILE
+const { V, tags: INVARIANTS } = vectorsFile.load()
 const key = fb.keypairFromSeed('c3'.repeat(32), 'std')
 const g = fb.identity.genesis(key, { kind: 'person', at: '2026-10-19T12:00:00.000Z' })
 const other = 'cd'.repeat(32), third = 'ef'.repeat(32)
@@ -32,8 +33,9 @@ const carries = (thing, block) => check(`necessity: a closed block may carry ${t
 
 carries('state.where', promise({ where: { lat: '51.5', lon: '-0.12' } }))
 carries('state.nonce', promise({ nonce: 'ab'.repeat(16) }))
-carries('state.confidence', promise({ confidence: '0.8' }))
-carries('state.orderer', promise({ orderer: key.public_key_sign }))
+// batch 2 (2026-10-28): confidence (P6) and orderer (a technical call) are no fields of a closed block any more
+check('necessity: a closed block carries no state.confidence (batch 2 P6)', promise({ confidence: '0.8' }), ['undeclared_field'])
+check('necessity: a closed block carries no state.orderer: handing over who allocates is a grant (batch 2)', promise({ orderer: key.public_key_sign }), ['undeclared_field'])
 carries('state.skip', { type: 'promise', state: { ...common(9), what: 'bread', terms: { expires: LATER }, skip: true }, refs: { ...mine, from: g.hash } })
 carries('state.withheld', promise({ withheld: true }))
 carries('state.channel', promise({ channel: 'sms' }))
@@ -53,5 +55,5 @@ for (const k of ['author', 'prev']) {
   check(`necessity: refs.${k} holds exactly one id, a set is refused`, { type: 'observe', state: { ...common(), kind: 'note' }, refs: { ...mine, [k]: [other, third] } }, ['grammar'])
 }
 
-fs.writeFileSync(FILE, JSON.stringify(V, null, 1) + '\n')
+vectorsFile.save(V, INVARIANTS)
 console.log(`${made.size} cases written to ${path.relative(process.cwd(), FILE)}`)
