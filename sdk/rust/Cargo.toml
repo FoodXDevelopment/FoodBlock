@@ -49,24 +49,24 @@ jni = ["door", "std", "dep:jni", "suites", "successor", "ballots", "rekeys", "ea
 serde = { version = "1", default-features = false, features = ["alloc"] }
 serde_json = { version = "1.0.120", default-features = false, features = ["alloc", "preserve_order", "float_roundtrip", "unbounded_depth"] }
 indexmap = { version = "2", default-features = false }
-sha2 = { version = "0.10", default-features = false }
-ed25519-dalek = { version = "2.1", default-features = false, features = ["zeroize"] }
+sha2 = { version = "0.11", default-features = false }
+ed25519-dalek = { version = "3.0", default-features = false, features = ["zeroize"] }
 unicode-normalization = { version = "0.1.23", default-features = false }
 once_cell = { version = "1.19", default-features = false, features = ["race", "alloc"] }
-getrandom = { version = "0.2", optional = true }
+getrandom = { version = "0.4", optional = true }
 # buffers that held a key or a plaintext are overwritten before they are freed (release 46)
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
-x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "zeroize"], optional = true }
-aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"], optional = true }
-hkdf = { version = "0.12", default-features = false, optional = true }
-jni = { version = "0.21", optional = true }
-p256 = { version = "0.13", default-features = false, features = ["ecdsa", "ecdh", "arithmetic", "pkcs8"], optional = true }
-sm2 = { version = "0.13", default-features = false, features = ["dsa", "arithmetic"], optional = true }
-sm3 = { version = "0.4", default-features = false, optional = true }
-sm4 = { version = "0.5", default-features = false, optional = true }
-elliptic-curve = { version = "0.13", default-features = false, features = ["ecdh", "sec1", "arithmetic"], optional = true }
+x25519-dalek = { version = "3", default-features = false, features = ["static_secrets", "zeroize"], optional = true }
+aes-gcm = { version = "0.11", default-features = false, features = ["aes", "alloc"], optional = true }
+hkdf = { version = "0.13", default-features = false, optional = true }
+jni = { version = "0.22", optional = true }
+p256 = { version = "0.14", default-features = false, features = ["ecdsa", "ecdh", "arithmetic", "pkcs8"], optional = true }
+sm2 = { version = "0.14", default-features = false, features = ["dsa", "arithmetic"], optional = true }
+sm3 = { version = "0.5", default-features = false, optional = true }
+sm4 = { version = "0.6", default-features = false, optional = true }
+elliptic-curve = { version = "0.14", default-features = false, features = ["ecdh", "sec1", "arithmetic"], optional = true }
 ecdsa = { version = "0.16", default-features = false, features = ["signing", "verifying", "arithmetic"], optional = true }
-hmac = { version = "0.12", default-features = false, optional = true }
+hmac = { version = "0.13", default-features = false, optional = true }
 
 [profile.dev.package."*"]
 # Signature checks run thousands of times in the conformance tests; keep the crypto fast in debug builds.
