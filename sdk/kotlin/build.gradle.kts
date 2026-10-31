@@ -1,7 +1,7 @@
 plugins {
-    kotlin("jvm") version "2.1.21" apply false
-    kotlin("android") version "2.1.21" apply false
-    id("com.android.library") version "8.10.1" apply false
+    kotlin("jvm") version "2.4.21" apply false
+    kotlin("android") version "2.4.21" apply false
+    id("com.android.library") version "9.5.0" apply false
 }
 
 // The library's version is the protocol's (spec/protocol.json `version`), as for every FoodBlock SDK.
