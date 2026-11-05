@@ -665,6 +665,16 @@ func doorBacked[T any](block any, person string, blocks []Block) T {
 	return must[T]("backed", block, person, plural(blocks))
 }
 
+// doorGives is the door's gives(block, person, blocks) -> object.
+func doorGives[T any](block any, person string, blocks []Block) T {
+	return must[T]("gives", block, person, plural(blocks))
+}
+
+// doorActCheck is the door's act_check(deal, template) -> object.
+func doorActCheck[T any](deal any, template any) T {
+	return must[T]("act_check", deal, template)
+}
+
 // doorMembersThen is the door's members_then(block, recipient, blocks) -> json.
 func doorMembersThen[T any](block any, recipient string, blocks []Block) T {
 	return must[T]("members_then", block, recipient, plural(blocks))

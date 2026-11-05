@@ -2,7 +2,7 @@
 
 Version 1.7, 2026-10-27. Year zero is 1.6; 1.7 adds to it, except the deletions CHANGELOG.md lists.
 
-This is the index: one core, eleven modules, optional profiles and a few data files. Where another document disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
+This is the index: one core, which opens with the one shape, a promise (*if this happens, this of mine becomes yours, and this person settles it*); eleven modules, optional profiles and a few data files. Where another document disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
 
 ## Files
 
@@ -88,7 +88,7 @@ Each invariant is stated in its module, under its number. Numbers 16 and 21 are 
 | 27 | circles.md |
 | 8, 19 | identity.md |
 | 28 | encoding.md |
-| 11, 12, 13, 14, 15, 22 | promises.md |
+| 11, 12, 13, 14, 15, 22, 32 | promises.md |
 | 20, 29, 30 | consent.md |
 | 24 | things.md |
 | 17 | privacy.md |
@@ -97,7 +97,7 @@ Each invariant is stated in its module, under its number. Numbers 16 and 21 are 
 ## Glossary
 
 Each other word is defined where its rule lives: allocation, bearer, side, deal and stage in promises.md; frozen, custodian, recovery key and operator in identity.md; stranger in consent.md; grounds and schema in things.md; commitment and reveals in privacy.md; orderer, fold and view in folds.md; circle in circles.md.
-- **Act:** a kind of block a grant covers, named `type.kind` (authority.md).
+- **Act:** a kind of block a grant covers, named `type.kind` (authority.md). An **act template** is a published thing of kind `act`: a template of the one shape, which a deal names in `refs.act` (promises.md).
 - **Genesis:** the first block of an identity: an actor with no author, signed by its own key.
 - **Speaks for:** the one party a fold counts a block for (authority.md, Who a block speaks for).
 - **`for`, `for_whom`:** `for` names the deal or task a block serves; `for_whom` is the hidden person it is for.

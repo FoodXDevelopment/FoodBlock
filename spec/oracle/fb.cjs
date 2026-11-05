@@ -4204,6 +4204,118 @@ function backed(block, person, blocks) {
   }
   return no('its chain roots in someone else', chain);
 }
+// actCheck(deal, template): a deal against the act template it names (promises.md, An act is a template of the one shape). { ok, why }.
+// A template is whole when it is a thing of kind `act` that carries only the fields of protocol.json `act.fields` (and the common ones), each of its shape.
+function actWhole(t) {
+  const A = P.act, no = why => 'the template is not whole: ' + why;
+  if (t.type !== 'thing' || !isObj(t.state) || t.state.kind !== 'act') return no('an act template is a thing of kind `act`');
+  const extra = Object.keys(t.state).find(k => k !== 'kind' && !A.fields.includes(k) && !P.fields.every.includes(k));
+  if (extra !== undefined) return no('`' + extra + '` is no field of an act');
+  const named = v => isStr(v) && v.length > 0;
+  if (!named(t.state.name)) return no('`name` is a non-empty text');
+  if (t.state.words !== undefined && !isStr(t.state.words)) return no('`words` is text');
+  if (t.state.labels !== undefined && !isObj(t.state.labels)) return no('`labels`');
+  const sides = t.state.sides;
+  if (!isObj(sides) || Object.keys(sides).some(k => !A.sides.includes(k)) || Object.values(sides).some(v => !named(v))) return no('`sides`');
+  const terms = t.state.takes;
+  if (!isObj(terms) || Object.entries(terms).some(([k, v]) => !RX.type_name.test(k) || !A.types.includes(v))) return no('`takes`');
+  if (t.state.needs !== undefined && !(Array.isArray(t.state.needs) && t.state.needs.every(n => isStr(n) && n in terms))) return no('`needs`');
+  const rec = t.state.record;
+  if (!isObj(rec) || !Object.keys(rec).length || Object.keys(rec).some(k => !(k in A.moves))) return no('`record`');
+  for (const [mv, f] of Object.entries(rec)) {
+    const ok = isObj(f) && Object.keys(f).every(k => A.record.keys.includes(k)) && ['type', 'tie', 'sides'].every(k => isStr(f[k]) && A.record[k].includes(f[k])) &&
+      ['needs', 'words'].every(k => f[k] === undefined || (Array.isArray(f[k]) && f[k].every(named)));
+    if (!ok) return no('the record for `' + mv + '`');
+  }
+  return null;
+}
+// whether a value is of a term type: a scalar the grammar names, or exactly one keyed shape
+function termFits(ty, v) {
+  switch (ty) {
+    case 'text': return isStr(v) && v.length > 0;
+    case 'integer': return Number.isInteger(v);
+    case 'bool': return typeof v === 'boolean';
+    case 'time': return isStr(v) && RX.time.test(v) && timeMs(v) !== null;
+    case 'date': return isStr(v) && RX.date.test(v) && timeMs(v) !== null;
+    case 'duration': return isStr(v) && RX.duration.test(v);
+    case 'id': return isStr(v) && RX.id.test(v);
+    default: { const want = P.shapes[ty]; return isObj(v) && Array.isArray(want) && Object.keys(v).length === want.length && want.every(k => k in v); }
+  }
+}
+function actCheck(deal, template) {
+  if (!isObj(deal) || !isObj(template)) throw argError('arguments 0 and 1 are blocks');
+  const not = why => ({ ok: false, why });
+  const bad = actWhole(template);
+  if (bad !== null) return not(bad);
+  const named = deal.refs && deal.refs.act;
+  if (named === undefined) return not('the deal names no act (`refs.act`)');
+  if (named !== template.hash) return not('the deal names the act ' + named + ', not this template');
+  const written = Object.values(template.state.record).map(f => f.type);
+  if (!written.some(t => t === deal.type || t === 'as the anchor')) return not('no move of the template is written as a `' + deal.type + '`');
+  if (deal.type !== 'promise' || (deal.state && deal.state.status !== undefined)) return { ok: true, why: null };
+  const declared = Object.keys(template.state.sides), has = P.act.sides.filter(k => deal.refs[k] !== undefined);
+  if (declared.some(k => !has.includes(k)) || has.some(k => !declared.includes(k))) return not('the template has the sides ' + declared.sort().join(', ') + '; the deal names ' + has.join(', '));
+  const had = isObj(deal.state.terms) ? deal.state.terms : {};
+  for (const [k, v] of Object.entries(had)) {
+    const ty = template.state.takes[k];
+    if (ty === undefined) return not('the deal has the term `' + k + '`, which the template does not take');
+    if (!termFits(ty, v)) return not('the term `' + k + '` is not a ' + ty + ', as the template says');
+  }
+  for (const need of asList(template.state.needs)) if (!(need in had)) return not('the template needs the term `' + need + '`; the deal has none');
+  return { ok: true, why: null };
+}
+// gives(block, person, blocks): what of the person's would become whose if the block stands (promises.md, What becomes whose). { gives: [line] }.
+function gives(block, person, blocks) {
+  if (!isObj(block)) throw argError('argument 0 is a block');
+  if (!isStr(person)) throw argError('person is an id (text)');
+  const pool = readWith(blocks, block);
+  const line = (of, to, back, parts) => ({ of, ...parts, to: to === undefined ? null : to, back: back === undefined ? null : back });
+  // a thing its held record shows another owns is not hers to give; a kind, or a thing not held, is read as hers
+  const hers = w => { const t = pool.get(w); if (!t || !t.refs || t.refs.of === undefined) return true; const o = ownershipFold(t, blocks).owner; return o === null || o === person; };
+  // whose word a block is: the circle it is signed `as`, else, for a block under a grant, the one at the top of the grant's chain, else its author
+  const principal = b => {
+    if (b.refs.as !== undefined || b.refs.under === undefined) return principalOf(b, pool);
+    let g = pool.get(b.refs.under);
+    while (g && g.refs.parent !== undefined && pool.get(g.refs.parent)) g = pool.get(g.refs.parent);
+    return g ? principalOf(g, pool) : null;
+  };
+  const out = [];
+  if (block.type === 'promise') {
+    let deal = block, chosen;
+    const st = block.state && block.state.status;
+    if (st !== undefined) {
+      const d = st === 'accepted' && block.refs && block.refs.answers ? pool.get(block.refs.answers) : undefined;
+      if (!d || d.type !== 'promise') return { gives: [] };
+      deal = d; chosen = block.state.terms && block.state.terms.quantity;
+    }
+    const terms = isObj(deal.state.terms) ? deal.state.terms : {}, from = deal.refs.from, to = deal.refs.to, until = isStr(terms.until) ? terms.until : undefined;
+    if (from === person) {
+      const things = Array.isArray(terms.lines) && terms.lines.length ? terms.lines.map(l => [isObj(l) ? l.what : undefined, isObj(l) ? l.quantity : undefined]) : asList(deal.refs.what).map(w => [w, chosen !== undefined ? chosen : terms.quantity]);
+      for (const [w, q] of things) {
+        if (!isStr(w) || !hers(w)) continue;
+        const amount = isObj(q) && q.unit !== undefined && q.value !== undefined ? { amount: q } : {};
+        out.push(line(until !== undefined ? 'use' : 'goods', to, until, { what: w, ...amount }));
+      }
+    }
+    if (to === person) {
+      const total = termsTotal(terms, chosen);
+      if (total && total.minor !== undefined) out.push(line('money', from, null, { minor: total.minor, currency: total.currency }));
+      else if (total && total.unit !== undefined) out.push(line('goods', from, null, { amount: total }));
+    }
+  } else if (block.type === 'transfer') {
+    if (principal(block) !== person || (block.state && block.state.status !== undefined)) return { gives: [] };
+    const owner = block.refs.to_owner, holder = block.refs.to_holder;
+    let until;
+    for (const d of asList(block.refs.for)) { const x = pool.get(d); if (x && x.state && isObj(x.state.terms) && isStr(x.state.terms.until)) { until = x.state.terms.until; break; } }
+    const money = block.state.money;
+    if (isObj(money) && money.minor !== undefined) out.push(line('money', owner, null, { minor: money.minor, currency: money.currency }));
+    for (const w of asList(block.refs.what)) {
+      if (owner !== undefined && hers(w)) out.push(line('goods', owner, null, { what: w }));
+      else if (owner === undefined && holder !== undefined) out.push(line('use', holder, until, { what: w }));
+    }
+  }
+  return { gives: out.filter(l => l.to !== person) };
+}
 // accountOf(who, blocks): where a person says money to them goes (promises.md, Where to pay me). The words counted are the `observe` blocks of kind `account` that `who`
 // signed, that speak for no one else and that a node would take; the head is the one no other of those has in its causal past. null for none, for two heads that
 // do not see each other, and for a head with no destination (it ends the account).
@@ -4868,6 +4980,8 @@ function door(op, ...a) {
     case 'speaks_for': return speaksFor(a[0], a[1]);
     case 'account_of': return accountOf(a[0], a[1]);
     case 'backed': return backed(a[0], a[1], a[2]);
+    case 'gives': return gives(a[0], a[1], a[2]);
+    case 'act_check': return actCheck(a[0], a[1]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
     case 'circle_key': return circleKey(a[0], a[1]); // profiles/rekeys.md
     case 'members_then': return membersThen(a[0], a[1], a[2]);
@@ -4977,6 +5091,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, isStranger, speaksFor, backed, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, backed, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

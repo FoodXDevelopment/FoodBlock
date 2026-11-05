@@ -1,6 +1,6 @@
 {
-  "source": "e6eabe25c9f712a64ed39d65c47443dfe4e0c779759abdd6d52aed24cc600476",
+  "source": "0ae2ddf086fec22b3d20dd44b123f455f54c9b7fd2b418bf5b653ccaeae0063b",
   "rustc": "1.94.1 e408947bfd200af42db322daf0fadfe7e26d3bd1",
-  "wasm": "4aa7a89663c9eb82860fd6a14c38efe5f0ec3f33cf24e5f06acb6b60bd7126fd",
-  "bytes": 2849964
+  "wasm": "64a1ec7720fee331f129e95070270fbb0d6d36c28ef9968452194b0479b0a49c",
+  "bytes": 2874165
 }

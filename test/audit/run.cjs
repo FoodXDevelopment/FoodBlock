@@ -209,7 +209,7 @@ const c11 = world('case11 base schemas')
 check('base schemas: the publisher\'s chain is held and every use of a schema is valid in both engines', () => {
   assert.deepEqual(c11.problems, [])
   assert.equal(c11.log.filter((l) => l.writeRefused).length, 0)
-  assert.equal(Object.keys(c11.baseSchemas).length, 46) // witness; account and answer; done and pass (R9); shareback, rebate, draw and bounded_change (batch 10); place_use (batch 9); reliance, price_reading, keeping and loss (batch 8); pledge and pledge_close (decision H20); not_free, invasion and ruling (batch 4); loyalty, vouch, payback, refusal, pool, link, rulebook, glossary and grader (batch 5)
+  assert.equal(Object.keys(c11.baseSchemas).length, 47) // act; witness; account and answer; done and pass (R9); shareback, rebate, draw and bounded_change (batch 10); place_use (batch 9); reliance, price_reading, keeping and loss (batch 8); pledge and pledge_close (decision H20); not_free, invasion and ruling (batch 4); loyalty, vouch, payback, refusal, pool, link, rulebook, glossary and grader (batch 5)
   assert.ok(!('kept_promises' in c11.baseSchemas) && !('kept_and_broken' in c11.baseSchemas))
 })
 // share_vote: a vote under a ballots rule weighs as many votes as the shares of refs.of its author owns (the ownership fold).

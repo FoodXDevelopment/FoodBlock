@@ -161,6 +161,8 @@ circle_state(circle:text, blocks:blocks, within:block?) -> object?
 may_act_as(block:block, circle:text, blocks:blocks, role:text?) -> bool
 speaks_for(block:block, blocks:blocks) -> text?
 backed(block:block, person:text, blocks:blocks) -> object
+gives(block:block, person:text, blocks:blocks) -> object
+act_check(deal:block, template:block) -> object
 members_then(block:block, recipient:text, blocks:blocks) -> json
 where_now(thing:block, blocks:blocks) -> json
 ownership(instance:block, blocks:blocks, now:time?) -> object

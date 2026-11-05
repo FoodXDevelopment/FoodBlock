@@ -702,6 +702,20 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             fold::backed(a.v(0), a.s(1)?, &a.list(2))
         }
+        // a deal against the act template it names (promises.md, An act is a template of the one shape): { ok, why }
+        "act_check" => {
+            if !a.v(0).is_object() || !a.v(1).is_object() {
+                return Err(Fail::Argument("arguments 0 and 1 are blocks".into()));
+            }
+            fold::act_check(a.v(0), a.v(1))
+        }
+        // what of this person's becomes whose if this block stands, and whether it can come back (promises.md, What becomes whose)
+        "gives" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            fold::gives(a.v(0), a.s(1)?, &a.list(2))
+        }
         "members_then" => json!(fold::members_then(a.v(0), a.s(1)?, &a.list(2))),
         "where_now" => json!(fold::where_now(a.v(0), &a.list(1))),
         "ownership" => {

@@ -608,6 +608,22 @@
    "grounds": {
     "event": "the signer answers the block in refs.answers with a typed field and value, so a reader checks it without reading words, and a grant's scope may allow the act (promises.md, An answer to a question)"
    }
+  },
+  {
+   "name": "act",
+   "target": "thing.act",
+   "fields": {
+    "name": "the act's name, in words: pencil, read by no fold",
+    "words": "what the act is, in words: pencil, read by no fold, and never a claim of money, effect or authority",
+    "labels": "names and words per language, `{ lang: { name, words } }`: pencil",
+    "sides": "the sides a deal of this act has, `{ from: words, to: words }`: exactly these are named in the deal's refs",
+    "takes": "the terms a deal of this act may carry, `{ term: type }`; a type is `text`, `integer`, `bool`, `time`, `date`, `duration`, `id`, `amount`, `money`, `price_per` or `range`",
+    "needs": "the terms a deal of this act must carry (a list of names from `takes`)",
+    "record": "how each move the act takes is written down, `{ move: { type, tie, sides, needs, words } }` (protocol.json `act`)"
+   },
+   "grounds": {
+    "event": "the signer publishes a template of the one shape (promises.md, An act is a template of the one shape). It is a word about nothing yet: a deal that names it in `refs.act` is read against it by the door's `act_check`, and what the deal gives is read from the deal's own terms (`gives`), never from this block's words"
+   }
   }
  ]
 }

@@ -77,13 +77,14 @@
    "schema",
    "what",
    "under",
-   "parent"
+   "parent",
+   "act"
   ],
   "also": [
    "verbs",
    "causal"
   ],
-  "about": "Shared ref keys are these lists plus the verbs and the causal keys. refs.of names the kind an instance belongs to; state.kind is a label."
+  "about": "Shared ref keys are these lists plus the verbs and the causal keys. refs.of names the kind an instance belongs to; state.kind is a label. refs.act names the act template a deal follows, by hash (promises.md, An act is a template of the one shape)."
  },
  "refs_single": [
   "author",
@@ -92,7 +93,8 @@
   "updates",
   "as",
   "under",
-  "parent"
+  "parent",
+  "act"
  ],
  "refs_single_about": "These links hold exactly one id; an array there is `grammar` (core.md, section 1): an answer answers one block, a stop or a new version updates one, a block speaks as one circle, acts under one grant, and a grant passes on one parent. A promise's sides (from, to) are one id each too (promises.md, Sides: `shape`).",
  "statuses": [
@@ -1823,6 +1825,21 @@
     ],
     "result": "authority.md, Backed by a person: { backed: true or false, why: one plain sentence when not backed, else null, chain: the hashes from the block to the block the person signed }. Backed when the person signed it, or signed it as a circle in which they hold `sign`, or a grantee signed it under a grant that passes why_not_under and whose chain (refs.parent) roots in the person's signature or in a circle they hold `sign` in; every link live and no wider than the one above, judged at the block's own place in time (its causal past). The block is read with held as if it were held; no clock, no arrival"
    },
+   "gives": {
+    "args": [
+     "full_block",
+     "person: a person's or circle's id",
+     "held"
+    ],
+    "result": "promises.md, What becomes whose: { gives: [line] }, what of the person's would become whose if the block stands, read only from its typed terms and refs. A line is { of, to, back }: `of` is `money` (with `minor`, `currency`), `goods` (with `what`, a thing, and `amount` when the terms say how much; or `amount` alone, a price paid in a kind of goods) or `use` (goods that come back; `what`, `amount`); `to` the id it becomes the property or use of (null: open); `back` the deal's `terms.until` or null. A promise gives, for its `from` side, each thing it names (its quantity from `terms.lines` or `terms.quantity`; a thing its held record shows another owns is left out) and, for its `to` side, the price (`terms_total`, in any kind); an answer `accepted` reads the promise it answers at the quantity it chooses, any other status gives nothing; a transfer, for the one whose word it is (the circle it is signed `as`, else the principal at the top of its grant's chain, else its author), gives its `state.money`, and each `refs.what` to `to_owner` as goods, or to `to_holder` as a use that comes back at the `until` of the deal it is `for`. A line to the person herself is left out. No word of a template, schema or text is read"
+   },
+   "act_check": {
+    "args": [
+     "full_block: the deal",
+     "full_block: the template"
+    ],
+    "result": "promises.md, An act is a template of the one shape: { ok, why }, `why` one plain sentence when not ok, else null. Not ok when the template is not whole (a thing of kind `act` with only the fields of `act.fields`, each of its shape), when the deal's `refs.act` is not the template's hash, when no move of the template writes the deal's type, or, for a promise that is not a bare answer, when its sides (`from`, `to`) are not exactly the template's, a term is one the template does not take or is not of the type it names, or a term the template needs is missing"
+   },
    "account_of": {
     "args": [
      "who: a person's id",
@@ -2240,6 +2257,131 @@
   "keys_about": "the keys of an event repeat { after, by, wait }: an occurrence each time an observe of kind `after` is written for this promise, by a signer `by` names (ids, or circle#role; with no `by` nothing starts one), due `wait` after the named clock's receipt of it, never after its own `at` (blocks.md, A named clock; a moon sighted, each batch); the occurrence is named by that observe's hash. The protocol checks the shape of a repeat; a reader works out its occurrences"
  },
  "terms_about": "refrain: true makes a promise not to do something (no pesticide, sell only to me, never meat): it carries terms.until, moves nothing, and is breached only by a counted defeats of it by the deal's referee, or by its own signal condition holding at its until (folds.md); the side it was made to only disputes. Never done: once the reader's clock passes its until unbreached, the view says elapsed (decision H15). expires: ends an unanswered offer or ask; an ask may carry it or not (decision H11). condition: data under a schema; the protocol reads the condition_shapes, and a promise whose condition is { accepted: <first promise> } binds only once that deal binds (decision H17). zone: shaped like an IANA time zone name (Europe/London) that a repeat's dates are read in; read only beside a calendar repeat. pay_by: a time, when the price falls due; the fold reports it as due, beside paid_at, and judges no lateness. keepers: a named clock (blocks.md, A named clock) for the offer: an accept `needed` keepers received by `expires` is timely, and an event `when` or event repeat runs its wait from their receipt of the event; with none named there is no clock (no receipt dates anything). A schema the promise names may declare more terms (its state.terms): no fold reads them, so they bind no one.",
+ "act": {
+  "about": "An act is a template of the one shape (promises.md, An act is a template of the one shape): a thing of kind `act`, signed by anyone. `fields` are all it may carry beyond the common fields: `name`, `words` and `labels` are pencil that no fold reads; `sides` names each side the deal has (`from`, `to`) with its words; `takes` names each term the deal may carry with its type (not `terms`: that name is where the protocol reads a deal's own terms); `needs` lists the terms it must carry; `record` says, for each move the act takes, how the move is written down. A field outside this list makes the template not whole, so a template's words can claim no money, effect or authority.",
+  "kind": "act",
+  "fields": [
+   "name",
+   "words",
+   "labels",
+   "sides",
+   "takes",
+   "needs",
+   "record"
+  ],
+  "sides": [
+   "from",
+   "to"
+  ],
+  "types": [
+   "text",
+   "integer",
+   "bool",
+   "time",
+   "date",
+   "duration",
+   "id",
+   "amount",
+   "money",
+   "price_per",
+   "range"
+  ],
+  "types_about": "A term's type is a scalar the grammar names (text, integer, bool, time, date, duration, id) or exactly one keyed shape (`shapes`: amount, money, price_per, range). Every type is something the protocol already reads.",
+  "moves": {
+   "Promise": {},
+   "Start": {
+    "kind": "start"
+   },
+   "Accept": {
+    "status": "accepted"
+   },
+   "Decline": {
+    "status": "declined"
+   },
+   "Change": {},
+   "Question": {
+    "kind": "question"
+   },
+   "Answer": {
+    "kind": "answer"
+   },
+   "Note": {
+    "kind": "note"
+   },
+   "Invite": {
+    "grant": "member"
+   },
+   "Pass": {
+    "kind": "pass"
+   },
+   "Leave": {
+    "stop": "onward"
+   },
+   "Remove": {
+    "stop": "onward",
+    "grant": "member"
+   },
+   "Hand over": {
+    "kind": "delivery"
+   },
+   "Pay": {
+    "kind": "payment"
+   },
+   "Receive": {
+    "status": "accepted"
+   },
+   "Done": {
+    "kind": "done"
+   },
+   "Withdraw": {
+    "stop": "before"
+   },
+   "End": {
+    "stop": "onward"
+   },
+   "Pause": {
+    "stop": "occurrences"
+   },
+   "Resume": {
+    "status": "resumed"
+   }
+  },
+  "moves_about": "The twenty moves an act may take, each with what it adds to the block it writes: a `kind`, a `status`, a `stop` or a `grant`. One choice by one person, signed, never edited.",
+  "record": {
+   "keys": [
+    "type",
+    "tie",
+    "sides",
+    "needs",
+    "words"
+   ],
+   "type": [
+    "actor",
+    "thing",
+    "observe",
+    "transform",
+    "transfer",
+    "promise",
+    "grant",
+    "as the anchor"
+   ],
+   "tie": [
+    "none",
+    "answers",
+    "updates",
+    "updates or answers",
+    "for",
+    "by the move"
+   ],
+   "sides": [
+    "mine to theirs",
+    "mine to mine",
+    "kept",
+    "none"
+   ],
+   "about": "How a move is written as a block: its `type` (`as the anchor`: the type of the block it answers or updates), `tie` (how it points at the block it is about), `sides` (which sides it names), `needs` (terms or words it must carry) and `words` (the fields it carries)."
+  }
+ },
  "narrower_than": {
   "acts": "subset-or-none",
   "parties": "subset-or-none",

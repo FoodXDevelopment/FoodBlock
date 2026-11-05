@@ -23,6 +23,10 @@ const mayActAs = (block, circle, blocks, role) => door.mayActAs(block, idOf(circ
 const speaksFor = (block, blocks) => door.speaksFor(block, blocks)
 /** Is `block` backed by `person` (authority.md, Backed by a person)? `{ backed, why, chain }`: `why` is a plain sentence when not (null when backed), `chain` the hashes from the block down to the block the person signed. `person` is an id or a block; no clock, no arrival. */
 const backed = (block, person, blocks) => door.backed(block, idOf(person), blocks)
+/** What of `person`'s would become whose if `block` stands (promises.md, What becomes whose): `{ gives: [{ of: 'money' | 'goods' | 'use', to, back, ... }] }`, read only from the block's typed terms and refs, never from any template's words. `back` is the time it comes back, or null (it cannot be counted on to). `person` is an id or a block. */
+const gives = (block, person, blocks) => door.gives(block, idOf(person), blocks)
+/** A deal against the act template it names (promises.md, An act is a template of the one shape): `{ ok, why }`, `why` one plain sentence when not ok (null when it is). */
+const actCheck = (deal, template) => door.actCheck(deal, template)
 const membersThen = door.membersThen
 const ownership = (instance, blocks, now) => door.ownership(blockOf(instance), blocks, now)
 const ownerOf = (instance, blocks) => door.ownerOf(blockOf(instance), blocks)
@@ -49,4 +53,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

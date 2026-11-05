@@ -535,6 +535,14 @@ def backed(block, person, blocks):
     return call("backed", block, person, _blocks(blocks))
 
 
+def gives(block, person, blocks):
+    return call("gives", block, person, _blocks(blocks))
+
+
+def act_check(deal, template):
+    return call("act_check", deal, template)
+
+
 def members_then(block, recipient, blocks):
     return call("members_then", block, recipient, _blocks(blocks))
 

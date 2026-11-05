@@ -4,6 +4,10 @@ Version 1.7, 2026-10-27. This page and canonical.md are enough to build a micro:
 
 There is no earlier version in the protocol: 1.6 is year zero and 1.7 adds to it, except the deletions CHANGELOG.md lists. Old data enters once, through a converter outside the protocol (legacy/converter.md).
 
+## The one shape
+
+The protocol has one shape, and it is a promise: *if this happens, this of mine becomes yours, and this person settles it.* A sale, a loan, a wage, a deposit, a warranty, a stake and a guarantee are all it (promises.md, What a promise binds), and so is a rule a person signs in advance for what her autonomous system may do. A transfer is the shape with its condition already met; a ruling is the settling the shape names, a signed fact by the one named. Two signed things are not a promise and bind no one: a grant lets another act for me, and a circle is people who hold such grants and things together. An act (a way people deal) is not a second thing: it is a published template of the sentence (promises.md, An act is a template of the one shape). Everything below is how strangers' computers read this sentence alike.
+
 ## 1. A block
 
 A block is three fields and nothing else:

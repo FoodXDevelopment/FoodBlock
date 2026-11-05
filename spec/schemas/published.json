@@ -63,7 +63,8 @@
   "pass",
   "account",
   "witness",
-  "answer"
+  "answer",
+  "act"
  ],
  "schemas": {
   "thing": {
@@ -1265,6 +1266,35 @@
     "prev": "bf481bd6c01d61b7a1a167a278e16f7bb901d0ca62b234f60ba0fb699946183b"
    },
    "signature": "b027280dded81b712e34e254cc9eceb5fbf8928fae44befc9f5b8a111f23348e43e67db60d8e2cdb46e51ff5459363608f77f8cb1094617ff7e30c75677d4503"
+  },
+  "act": {
+   "hash": "add05cfff89b058b3403663dc74583d60ee22fe77114fc9c655056571a04b94e",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "act",
+    "target": "thing.act",
+    "fields": {
+     "name": "the act's name, in words: pencil, read by no fold",
+     "words": "what the act is, in words: pencil, read by no fold, and never a claim of money, effect or authority",
+     "labels": "names and words per language, `{ lang: { name, words } }`: pencil",
+     "sides": "the sides a deal of this act has, `{ from: words, to: words }`: exactly these are named in the deal's refs",
+     "takes": "the terms a deal of this act may carry, `{ term: type }`; a type is `text`, `integer`, `bool`, `time`, `date`, `duration`, `id`, `amount`, `money`, `price_per` or `range`",
+     "needs": "the terms a deal of this act must carry (a list of names from `takes`)",
+     "record": "how each move the act takes is written down, `{ move: { type, tie, sides, needs, words } }` (protocol.json `act`)"
+    },
+    "grounds": {
+     "event": "the signer publishes a template of the one shape (promises.md, An act is a template of the one shape). It is a word about nothing yet: a deal that names it in `refs.act` is read against it by the door's `act_check`, and what the deal gives is read from the deal's own terms (`gives`), never from this block's words"
+    },
+    "at": "2026-10-19T00:00:47.000Z",
+    "audience": "public",
+    "seq": 47
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "2a8e41f2718028beeea53caa965beb2b78761532b8a0fb38f545cdd777ee82dd"
+   },
+   "signature": "f4d86291d004fde8b7ec36d5fe2516eeadc90205f9f75867357d284a295a636d1a05c7fee9c39094ffa1245c52309171d47fe721751596a82272d8ad1becbb0f"
   }
  }
 }
