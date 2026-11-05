@@ -47,6 +47,32 @@ func (p *person) say(t *testing.T, typ string, state, refs map[string]any, audie
 	return b
 }
 
+func TestTheReadsOfThisWeekHaveFriendlyNames(t *testing.T) {
+	ann := newPerson(t)
+	eggs := ann.say(t, "thing", map[string]any{"kind": "eggs", "name": "Free-range eggs"}, nil)
+	offer := ann.say(t, "promise", map[string]any{"when": "2026-11-03T09:00:00.000Z", "terms": map[string]any{"price": Money(450, "GBP"), "repeat": "FREQ=WEEKLY;BYDAY=TU",
+		"zone": "Europe/London", "expires": "2026-12-20T00:00:00.000Z"}}, map[string]any{"from": ann.genesis.Hash, "what": eggs.Hash})
+	if r := Backed(offer, ann.genesis.Hash, ann.held); r["backed"] != true {
+		t.Fatal("her own block is backed by her", r)
+	}
+	if r := BackedAll(ann.genesis.Hash, ann.held); r[offer.Hash].(map[string]any)["backed"] != true {
+		t.Fatal(r)
+	}
+	if r := OwedBack(ann.genesis.Hash, ann.held); len(r["owed"].([]any)) != 0 {
+		t.Fatal(r)
+	}
+	if r := AccountOf(ann.genesis.Hash, ann.held); r != nil {
+		t.Fatal("she has said nowhere to pay her", r)
+	}
+	if r := Gives(offer, ann.genesis.Hash, ann.held); r["gives"].([]any)[0].(map[string]any)["of"] != "goods" {
+		t.Fatal(r)
+	}
+	got := RepeatOccurrences(offer, "2026-11-01T00:00:00.000Z", "2026-11-20T00:00:00.000Z")
+	if strings.Join(got, ",") != "2026-11-03T09:00:00.000Z,2026-11-10T09:00:00.000Z,2026-11-17T09:00:00.000Z" {
+		t.Fatal(got)
+	}
+}
+
 func TestWriteChainsChecksAndSigns(t *testing.T) {
 	ann := newPerson(t)
 	eggs := ann.say(t, "thing", map[string]any{"kind": "eggs", "name": "Free-range eggs"}, nil)

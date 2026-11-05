@@ -14,6 +14,8 @@ clearing_applied = door.clearing_applied  # a circle of IOUs cancelled, each pro
 ruling_releases = door.ruling_releases  # whether a judge's ruling releases a stake that names it: {releases, to, money, ruling, why}
 gives = door.gives  # what of this person's would become whose if the block stands (promises.md): {gives: [{of: money|goods|use, to, back, ...}]}; read only from typed terms and refs, never from a template's words
 act_check = door.act_check  # a deal against the act template it names (promises.md): {ok, why}; why is a plain sentence when not ok (None when ok)
+account_of = door.account_of  # where a person says money to them goes (promises.md, Where to pay me): { who, destination, hash, at } from their own newest account word, or None
+repeat_occurrences = door.repeat_occurrences  # the UTC start times of a promise's calendar repeat from `from_` to `to`, read in its zone by the pinned IANA database
 speaks_for = door.speaks_for  # the one party a fold counts a block for (authority.md): an id, or None when it speaks for no one; the block need not be among the blocks yet; no clock
 members_then = door.members_then
 where_now = door.where_now
@@ -21,7 +23,6 @@ ownership = door.ownership
 owner_of = door.owner_of
 receiver_of = door.receiver_of
 consent = door.consent  # a person's live word about a sender (or none): { word, block }; the 4th argument is the sender's block (or None)
-live_grant = door.live_grant
 circle_key = door.circle_key
 
 
@@ -35,10 +36,6 @@ def promise_view(first_block, blocks, now=None, arrivals=None, unknown_arrival=N
     ("inside" or "outside") is required whenever `arrivals` ({ hash: time }) is given."""
     options = {"now": now, "arrivals": arrivals, "unknown_arrival": unknown_arrival}
     return door.promise_view(first_block, blocks, {k: v for k, v in options.items() if v is not None})
-
-
-def withdrawal_seen(withdrawal, block, blocks, arrived_at=None):
-    return door.withdrawal_seen(withdrawal, block, blocks, _arrived(arrived_at, list(blocks) + [withdrawal, block]))
 
 
 def due(promise, arrived_at=None):

@@ -21,6 +21,23 @@ def say(who, type_, state, refs=None, audience="public", **options):
     return block
 
 
+class Reading(unittest.TestCase):
+    def test_the_door_reads_of_this_week_have_friendly_names(self):
+        ann = person()
+        eggs = say(ann, "thing", {"kind": "eggs", "name": "Free-range eggs"})
+        offer = say(ann, "promise", {"when": "2026-11-03T09:00:00.000Z", "terms": {"price": fb.money(450, "GBP"), "repeat": "FREQ=WEEKLY;BYDAY=TU",
+                                                                              "zone": "Europe/London", "expires": "2026-12-20T00:00:00.000Z"}},
+                    {"from": ann["id"], "what": eggs["hash"]})
+        self.assertTrue(fb.backed(offer, ann["id"], ann["held"])["backed"])  # her own block is backed by her
+        self.assertTrue(fb.backed_all(ann["id"], ann["held"])[offer["hash"]]["backed"])
+        self.assertEqual(fb.owed_back(ann["id"], ann["held"]), {"owed": []})
+        self.assertIsNone(fb.account_of(ann["id"], ann["held"]))  # she has said nowhere to pay her
+        self.assertEqual(fb.gives(offer, ann["id"], ann["held"])["gives"][0]["of"], "goods")
+        self.assertEqual(fb.repeat_occurrences(offer, "2026-11-01T00:00:00.000Z", "2026-11-20T00:00:00.000Z"),
+                         ["2026-11-03T09:00:00.000Z", "2026-11-10T09:00:00.000Z", "2026-11-17T09:00:00.000Z"])
+        self.assertEqual(fb.fold.account_of, fb.account_of)
+
+
 class Writing(unittest.TestCase):
     def test_genesis_names_its_keys(self):
         keys = fb.generate_keypair()

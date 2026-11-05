@@ -121,6 +121,71 @@ func SpeaksFor(b Block, blocks []Block) string {
 	return ""
 }
 
+// Backed is whether a block is backed by a person (authority.md, Backed by a person): { backed, why, chain }. why is one
+// plain sentence when it is not (nil when it is); chain is the hashes from the block down to the block the person
+// signed. No clock and no arrival is read.
+func Backed(b Block, person string, blocks []Block) map[string]any {
+	return doorBacked[map[string]any](b, person, blocks)
+}
+
+// BackedAll is Backed for a whole set at once: { hash: { backed, why } }, each the verdict Backed gives that block among
+// the same blocks, read together.
+func BackedAll(person string, blocks []Block) map[string]any {
+	return doorBackedAll[map[string]any](person, blocks)
+}
+
+// OwedBack is money moved in a person's name that they do not back (promises.md, What is owed back):
+// { owed: [{ block, minor, currency, to, why }] }.
+func OwedBack(person string, blocks []Block) map[string]any {
+	return doorOwedBack[map[string]any](person, blocks)
+}
+
+// Gives is what of a person's would become whose if a block stands (promises.md, What becomes whose):
+// { gives: [{ of: money | goods | use, to, back, ... }] }, read only from typed terms and refs, never a template's words.
+func Gives(b Block, person string, blocks []Block) map[string]any {
+	return doorGives[map[string]any](b, person, blocks)
+}
+
+// AccountOf is where a person says money to them goes (promises.md, Where to pay me): { who, destination, hash, at }
+// from their own newest account word, or nil.
+func AccountOf(who string, blocks []Block) map[string]any {
+	return doorAccountOf[map[string]any](who, blocks)
+}
+
+// ActCheck is a deal against the act template it names (promises.md, An act is a template): { ok, why }; why is one
+// plain sentence when not ok (nil when it is).
+func ActCheck(deal, template Block) map[string]any {
+	return doorActCheck[map[string]any](deal, template)
+}
+
+// ListingCheck is a list-keeper's answer against the lookup it answers (promises.md, Finding): { ok, why, bad, left_out }.
+func ListingCheck(lookup, listing Block, blocks []Block) map[string]any {
+	return doorListingCheck[map[string]any](lookup, listing, blocks)
+}
+
+// CheckReads is a signed check of someone's record against the blocks it names (promises.md, A signed check):
+// { ok, why, read: [{ hash, held, concerns, stage }] }.
+func CheckReads(check Block, blocks []Block) map[string]any {
+	return doorCheckReads[map[string]any](check, blocks)
+}
+
+// ClearingApplied is a circle of IOUs cancelled (promises.md, Clearing): { binds, why, who, missing, lines }.
+func ClearingApplied(clearing Block, blocks []Block) map[string]any {
+	return doorClearingApplied[map[string]any](clearing, blocks)
+}
+
+// RulingReleases is whether a judge's ruling releases a stake that names it (promises.md, Rulings):
+// { releases, to, money, ruling, why }. now is the reader's clock, or "" for none.
+func RulingReleases(stake Block, blocks []Block, now string) map[string]any {
+	return doorRulingReleases[map[string]any](stake, blocks, now)
+}
+
+// RepeatOccurrences is the UTC start times of a promise's calendar repeat from from to to, read in its zone by the
+// pinned IANA database (promises.md, Terms, repeat).
+func RepeatOccurrences(promise Block, from, to string) []string {
+	return doorRepeatOccurrences(promise, from, to)
+}
+
 // MembersThen is who a circle (or `circle#role`) in a block's audience means.
 func MembersThen(b Block, recipient string, blocks []Block) []string {
 	return plural(doorMembersThen[[]string](b, recipient, blocks))
@@ -169,16 +234,6 @@ func Consent(person, sender string, blocks []Block, block *Block) map[string]any
 		b = *block
 	}
 	return doorConsent[map[string]any](person, sender, blocks, b)
-}
-
-// LiveGrant is the grant, among grants, that makes an act live at the reader's now (nil when none).
-func LiveGrant(act Block, grants []Block, now string) any {
-	return doorLiveGrant(act, grants, now)
-}
-
-// WithdrawalSeen is whether a withdrawal was seen before a block, on the reader's arrival log.
-func WithdrawalSeen(withdrawal, b Block, blocks []Block, arrivedAt ArrivedAt) any {
-	return doorWithdrawalSeen(withdrawal, b, blocks, arrivals(arrivedAt, append(append([]Block{}, blocks...), withdrawal, b)))
 }
 
 // Due is when a promise falls due, on the reader's arrival log (of the blocks it names).
