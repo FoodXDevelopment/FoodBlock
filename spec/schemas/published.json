@@ -58,7 +58,9 @@
   "shareback",
   "rebate",
   "draw",
-  "bounded_change"
+  "bounded_change",
+  "done",
+  "pass"
  ],
  "schemas": {
   "thing": {
@@ -1140,6 +1142,53 @@
     "prev": "65d891743483dd53cfddb191019a964a7f4d3fe10a19087ec05d3aa18f6bd441"
    },
    "signature": "d0785787c0f442bf390a954d3506ead0565549a551ef88836f5968e02b44761f10935eceed1a528bfb222ed4aecff453685a90d843bdb89f19245fd946723e02"
+  },
+  "done": {
+   "hash": "156845f4bf831f8893d9d30b0596a3326e9ed0ac2ce0c056bbd5a07365f0cb59",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "done",
+    "target": "observe.done",
+    "fields": {
+     "occurrence": "the start time (or the hash of the block that started it) of the occurrence of a standing promise it keeps",
+     "text": "what was done, in words"
+    },
+    "grounds": {
+     "event": "the doer says one occurrence of an unpriced standing promise (walk the dog every day) is kept; it counts for the promise's `from` side alone, and the other side's defeats of it is a dispute (promises.md, Settling)"
+    },
+    "at": "2026-10-19T00:00:42.000Z",
+    "audience": "public",
+    "seq": 42
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "b99b56c70e184e7503c7116a667c8a8c3205e54d96d37230950e1ba9a2030fb9"
+   },
+   "signature": "9cc0f49892636a4419a89286c25bce74c9a325e5d27884fcf3d57b6f164c189eb04efd594ab81d5e18863fa2a3268da2e23fc90daba5e2b424c1ac38868a940c"
+  },
+  "pass": {
+   "hash": "0f4a96a23b3b79764e754b0f09fdae7f2dea3a23686f034b8e534513c15a785e",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "pass",
+    "target": "observe.pass",
+    "fields": {
+     "text": "what is passed on, in words"
+    },
+    "grounds": {
+     "event": "the one who answers for a side's part of a deal (refs.for) passes it to refs.to, one id; it counts once that receiver's own observe answers it accepted (promises.md, Passing a part). Until then the passer still owes it"
+    },
+    "at": "2026-10-19T00:00:43.000Z",
+    "audience": "public",
+    "seq": 43
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "156845f4bf831f8893d9d30b0596a3326e9ed0ac2ce0c056bbd5a07365f0cb59"
+   },
+   "signature": "cf48937400dfba1285153d03c853c2f075cc2fd5616364c06c5593200621b53faed56ae31cda2106998f553fd2b798b182704e140a996a6e5a7940a8e7406103"
   }
  }
 }

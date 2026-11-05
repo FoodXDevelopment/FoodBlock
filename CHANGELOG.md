@@ -2,6 +2,13 @@
 
 What changed in each version. The spec says what each version means; this page says what moved.
 
+## A part passed on, a pause resumed, an unpriced occurrence done, 2026-11-05 (adds to 1.7)
+
+- **Passing a part** (promises.md, Owed's neighbour: Passing a part): two signed words. The one who answers for a side's part signs an `observe` of kind `pass`, `for` the deal, `refs.to` the receiver; the receiver's own `observe` answers it `accepted`. Until then the passer still owes it. After, the receiver answers for it (their `done`, `work`, `transform` count as the side's) and may pass it on; `terms.personal` forbids it. The view gains `passed` and `answerable`. Schema `pass`.
+- **Resume**: status `resumed`, the author's own `updates` of their pause (a stop naming occurrences). Only the pause's own signer ends it; the other side asks and her resume is her yes. The named times at or after the resume's `at` stand again. The view's `stopped` is read with it.
+- **An occurrence of an unpriced standing promise** is kept by the doer's own `observe` of kind `done`, `for` the promise, with `state.occurrence`. The view's `occurrences` entries gain `done_at`, and list an occurrence a done names. Schema `done`.
+- 24 vectors (make-vectors-pass.cjs); the full-view vectors that listed every key gain `passed`, `answerable`, `done_at`.
+
 ## Calendar repeats are read by a pinned time zone database, 2026-11-05 (adds to 1.7, no signed shape changed)
 
 - **The reader of a calendar repeat** (promises.md, Terms: `zone`): the IANA time zone database, release 2026e, is the one every core reads `terms.zone` by, so strangers' computers count the same occurrences. The Rust core bundles it (the `recur` feature, in the door builds).

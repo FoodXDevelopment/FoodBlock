@@ -688,7 +688,7 @@ function closedFindings(b, ctx, add) {
   const req = (cond, what) => { if (!cond) add(A, 'required', what); };
   if (asAnswer) req(state.status !== undefined, 'an answer carries state.status');
   // a promise's terms are fixed once it is written (promises.md): an updates of a promise is its author's stop
-  if (type === 'promise') req(refs.updates === undefined || refs.answers !== undefined || state.status === 'stopped', 'an updates of a promise is its author\'s stop (state.status stopped)');
+  if (type === 'promise') req(refs.updates === undefined || refs.answers !== undefined || state.status === 'stopped' || state.status === 'resumed', 'an updates of a promise is its author\'s stop (state.status stopped), or the end of a pause of their own (resumed)');
   if (type === 'actor') { if (!asAnswer) req(isStr(state.kind) && state.kind !== '', 'actor kind'); }
   if (type === 'grant') {
     if (!asAnswer) {
@@ -757,6 +757,8 @@ function closedFindings(b, ctx, add) {
     else {
       if (!answer && refs.updates === undefined) add(A, 'status_not_answer', 'status on a block that neither answers nor updates');
       if (!STATUSES.has(state.status)) add(A, 'bad_status', String(state.status));
+      // a pause ends by its own signer's updates of it, never by an answer (promises.md, Answers)
+      if (state.status === 'resumed' && (refs.updates === undefined || refs.answers !== undefined)) add(A, 'bad_status', 'resumed is the author\'s own updates of their pause');
       if (state.status === 'stopped') {
         if (!stopOk(state.stop)) add(A, 'bad_status', 'state.stop');
       } else if ('stop' in state) add(A, 'bad_status', 'state.stop goes with status stopped');
@@ -2651,7 +2653,7 @@ function promiseStage(firstIn, poolIn, opts) {
     return t ? { O, R, t } : null;
   })();
   const Q = alloc ? alloc.O : P; // the root: sides, terms, what
-  const out = { stage: null, stop: null, from: null, by: null, offer: Q.hash, accept: null, sides: { from: Q.refs.from === undefined ? null : Q.refs.from, to: Q.refs.to === undefined ? null : Q.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [], disputed: [], due: null, paid_at: null, occurrences: [], referee_ties: [], uncovered: null, over_allocated: false, owed: null, owed_on: [], received_at: [], moved: [], price_fixed: null };
+  const out = { stage: null, stop: null, from: null, by: null, offer: Q.hash, accept: null, sides: { from: Q.refs.from === undefined ? null : Q.refs.from, to: Q.refs.to === undefined ? null : Q.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [], passed: [], answerable: { from: null, to: null }, disputed: [], due: null, paid_at: null, occurrences: [], referee_ties: [], uncovered: null, over_allocated: false, owed: null, owed_on: [], received_at: [], moved: [], price_fixed: null };
   // a side that names a thing is its owner where each block stands: the ownership fold of that block's causal past (promises.md, Bearer), so an
   // accept binds the holder that signed it, and a note passed on after it was redeemed binds no one again. An allocation's open side is its taker.
   const isThing = r => { const t = r !== undefined && pool.get(r); return !!t && t.type === 'thing'; };
@@ -2688,6 +2690,21 @@ function promiseStage(firstIn, poolIn, opts) {
   const D = [...deal.values()].filter(b => !(b.type === 'promise' && b.refs.updates !== undefined && b.refs.answers === undefined &&
     (!pool.get(b.refs.updates) || who(b) === null || who(b) !== who(pool.get(b.refs.updates)))));
   if (!sideOfB(Q)) return null; // a first promise that speaks for neither side is nobody's promise: no stage
+  // parts passed on (promises.md, Passing a part): a pass is an observe of kind pass, for the deal, to one receiver, signed by whoever answers for the
+  // side's part (the side itself, or the receiver of an earlier accepted pass); it counts once the receiver's own observe answers it accepted
+  const passList = [];
+  {
+    const holder = {};
+    const seenD = D.slice().sort((a, b) => (pool.past(a.hash).size - pool.past(b.hash).size) || (a.hash < b.hash ? -1 : 1));
+    for (const p of seenD) {
+      if (p.type !== 'observe' || p.state.kind !== 'pass' || !asList(p.refs.for).includes(P.hash)) continue;
+      const by = who(p), to = p.refs.to;
+      if (!isStr(by) || !isStr(to) || to === by) continue;
+      const side = ['from', 'to'].find(k => (holder[k] !== undefined ? holder[k] === by : sideOfB(p) === k));
+      if (!side) continue;
+      if (seenD.some(a => a.type === 'observe' && a.state.status === 'accepted' && a.refs.answers === p.hash && who(a) === to)) { holder[side] = to; passList.push({ pass: p.hash, side, by, to }); }
+    }
+  }
   const open = !alloc && (Q.refs.from === undefined || Q.refs.to === undefined);
   // to yourself: both refs name its author (a note its issuer still holds is a promise to its holder, not to yourself)
   const self = !alloc && isStr(Q.refs.from) && !isThing(Q.refs.from) && Q.refs.from === Q.refs.to && Q.refs.from === who(Q);
@@ -3120,7 +3137,10 @@ function promiseStage(firstIn, poolIn, opts) {
   const accepted = (b, receiver) => standingAnswer(b, a => receiver === undefined || who(a) === receiver).length > 0;
   // only the deal's referee changes what counts (folds.md, Defeated blocks): a side's defeats erases nothing; the stage shows it as disputed
   const defeated = h => ruling(h) === false;
-  const settling = D.filter(b => !defeated(b.hash) && b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && sideOfB(b));
+  // the parts passed on, none when the terms say personal; a receiver's word counts as the side's whose part it answers for
+  const passes = terms.personal === true ? [] : passList;
+  const partSide = b => sideOfB(b) || ((p => (p ? p.side : null))(passes.find(x => x.to === who(b))));
+  const settling = D.filter(b => !defeated(b.hash) && b.refs.answers === undefined && b.hash !== P.hash && b.type !== 'promise' && asList(b.refs.for).includes(P.hash) && partSide(b));
   // who a side is where a block stands; an open side is the taker, or the accepter
   const otherName = sideOfB(Q) === 'from' ? 'to' : 'from';
   const receiverAt = (side, b) => { const r = sideAt(side, b); if (isStr(r)) return r; return side === otherName ? ((takers[0] && isStr(takers[0].who) && takers[0].who) || accept.refs.author) : undefined; };
@@ -3170,7 +3190,7 @@ function promiseStage(firstIn, poolIn, opts) {
       if (sideOfB(b) === 'to' && countedTo(b, 'from', true)) pays.push(b);
       else if (sideOfB(b) === 'from' && countedTo(b, 'to', false)) refunds.push(b);
     } else if (b.type === 'observe' && b.state.kind === 'work') {
-      const receiver = sideAt(sideOfB(b) === 'from' ? 'to' : 'from', b);
+      const receiver = sideAt(partSide(b) === 'from' ? 'to' : 'from', b);
       if (owedActive ? standingAnswer(b, a => rcvs('to', b, a, true).includes(who(a))).length > 0 : accepted(b, receiver)) works.push(b);
       else if (confirmed(b.hash)) works.push(b);
     } else if (b.type === 'transform') {
@@ -3388,7 +3408,9 @@ function promiseStage(firstIn, poolIn, opts) {
     // the occurrences a payment names: a lone state.occurrence, or in a split the occurrence of each part for this deal (a part with none reads the payment's own)
     const occOf = b => (Array.isArray(b.state.split) ? b.state.split.filter(x => isObj(x) && x.for === P.hash).map(x => (isStr(x.occurrence) ? x.occurrence : b.state.occurrence)).filter(isStr) : isStr(b.state.occurrence) ? [b.state.occurrence] : []);
     const sumFor = (b, name) => (Array.isArray(b.state.split) ? b.state.split.filter(x => isObj(x) && x.for === P.hash && (isStr(x.occurrence) ? x.occurrence : b.state.occurrence) === name).map(x => x.money).filter(sameCur).reduce((s, m) => s + BigInt(m.minor), 0n) : putToward(b, 'from'));
-    const names = [...new Set([...pays.flatMap(occOf), ...events.map(o => o.hash)])].sort();
+    // an occurrence kept with no price: the doer's own done made for the deal, naming it; the doer is the from side, or whoever it passed the part to
+    const dones = pool.all().filter(o => o.type === 'observe' && o.state.kind === 'done' && isStr(o.state.occurrence) && asList(o.refs.for).includes(P.hash) && partSide(o) === 'from' && counts(o, pool) && !defeated(o.hash));
+    const names = [...new Set([...pays.flatMap(occOf), ...events.map(o => o.hash), ...dones.map(o => o.state.occurrence)])].sort();
     for (const name of names) {
       const ev = events.find(o => o.hash === name);
       const rcv = ev && kclock ? receivedAt(ev.hash, kclock, pool) : null;
@@ -3398,7 +3420,8 @@ function promiseStage(firstIn, poolIn, opts) {
       const paid = !mine.length || (total === null && (ownCur === undefined || ownCur === null)) ? null : kindOut(sum, ownCur);
       const covered = totalBig !== null && sum >= totalBig && sum > 0n;
       const dates = covered ? mine.map(countedAt).filter(isStr).sort() : [];
-      out.occurrences.push({ occurrence: name, due: due === undefined ? null : due, paid, paid_at: dates.length ? dates[dates.length - 1] : null });
+      const doneDates = dones.filter(o => o.state.occurrence === name).map(o => o.state.at).filter(isStr).sort();
+      out.occurrences.push({ occurrence: name, due: due === undefined ? null : due, paid, paid_at: dates.length ? dates[dates.length - 1] : null, done_at: doneDates.length ? doneDates[0] : null });
     }
   }
   // a side's defeats of the deal's head (its first promise, its root, or the offer the binding accept answers), or of a block in the deal that speaks
@@ -3447,8 +3470,15 @@ function promiseStage(firstIn, poolIn, opts) {
   const anySettling = goods.length + pays.length + works.length > 0;
   // ---- onward stop and occurrences
   const occ = new Set();
-  for (const b of D) if (b.type === 'promise' && b.state.status === 'stopped' && isObj(b.state.stop) && Array.isArray(b.state.stop.occurrences) && sideOfB(b)) b.state.stop.occurrences.forEach(o => occ.add(o));
+  for (const b of D) {
+    if (!(b.type === 'promise' && b.state.status === 'stopped' && isObj(b.state.stop) && Array.isArray(b.state.stop.occurrences) && sideOfB(b))) continue;
+    // a pause ends early by its own signer's updates of it, status resumed (promises.md, Answers): the times named at or after its at stand again
+    const back = D.filter(r => r.type === 'promise' && r.state.status === 'resumed' && r.refs.updates === b.hash && r.refs.answers === undefined).map(r => Date.parse(r.state.at)).filter(t => !Number.isNaN(t));
+    b.state.stop.occurrences.forEach(o => { const t = timeProblem(o) === null ? Date.parse(o) : NaN; if (!(back.some(r => r <= t))) occ.add(o); });
+  }
   out.stopped = [...occ].sort();
+  out.passed = passes.map(x => ({ ...x }));
+  out.answerable = { from: ((l) => (l ? l.to : (receiverAt('from', accept) ?? null)))(passes.filter(x => x.side === 'from').pop()), to: ((l) => (l ? l.to : (receiverAt('to', accept) ?? null)))(passes.filter(x => x.side === 'to').pop()) };
   // ---- the stage: the first of these that holds, from the furthest along back to the start (with no binding accept, above)
   if (covered && paidAll && paidBig > 0n && refundedBig >= paidBig) out.stage = 'reversed';
   else if (covered && paidAll) out.stage = 'done';

@@ -2,7 +2,7 @@
 //! whether that is done, and the breach or stop that may end it. Reading which accept binds is deal.rs.
 use super::bench::{bench, Bench};
 use super::owed::Owed;
-use super::deal::{Binding, Deal};
+use super::deal::{Binding, Deal, Pass};
 use super::promise::{amount_dec, disputes_shown, kind_json, measure, total_of};
 use super::{holds_then, speaker_of};
 use crate::decimal::Dec;
@@ -84,6 +84,16 @@ impl<'s> Settling<'s> {
         let sides: Vec<String> = [s.receiver("from", accept_block), s.receiver("to", accept_block)].into_iter().flatten().collect();
         s.bench = bench(schema, sides.clone(), d.judges_for(&sides, &d.first_hash), Some(accept_block));
         s
+    }
+
+    /// The parts passed on and accepted (promises.md, Passing a part); none when the terms say `personal`.
+    fn passes(&self) -> &[Pass] {
+        if self.terms.get("personal") == Some(&Value::Bool(true)) { &[] } else { &self.d.passes }
+    }
+    /// Whether `x` is the word of the side whose part it is: the side itself, or whoever the side's part was passed to.
+    fn speaks_for_part(&self, x: &Value, side: Option<&str>) -> bool {
+        let by = speaker_of(x, self.d.index, None);
+        self.d.side_of(x).is_some_and(|s| side.is_none_or(|w| w == s)) || self.passes().iter().any(|p| side.is_none_or(|w| w == p.side) && by.as_deref() == Some(p.to.as_str()))
     }
 
     fn result(&self, stage: &str, more: Value) -> Value {
@@ -292,7 +302,7 @@ impl<'s> Settling<'s> {
             .iter()
             .filter(|x| {
                 (type_of(x) == "transform" || (type_of(x) == "observe" && ss(x, "kind") == Some("work")))
-                    && d.side_of(x).is_some()
+                    && self.speaks_for_part(x, None)
                     && st(x, "status").is_none()
                     && self.made_for(x)
                     && !self.defeated(x)
@@ -514,7 +524,13 @@ impl<'s> Settling<'s> {
         // `keepers`, and no one else: with none named there is no clock (nothing fills the sides' silence). With no receipt the wait has not begun:
         // the occurrence is named, due null.
         let keepers = self.terms.get("keepers").and_then(crate::tasks::keepers_of);
-        let names = sorted_set(deeds.pays.iter().flat_map(|x| self.occurrences_of(x)).chain(events.iter().map(|o| hash_of(o).to_string())));
+        // An occurrence kept with no price: the doer's own `done` made for the deal, naming it (promises.md, Settling). The doer is the `from`
+        // side (or whoever it passed the part to); the other side's defeats of it is a dispute, and only the referee changes what counts.
+        let dones: Vec<&Value> = index
+            .values()
+            .filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("done") && ss(o, "occurrence").is_some() && self.made_for(o) && self.speaks_for_part(o, Some("from")) && crate::identity::counts_in(o, index) && !self.defeated(o))
+            .collect();
+        let names = sorted_set(deeds.pays.iter().flat_map(|x| self.occurrences_of(x)).chain(events.iter().map(|o| hash_of(o).to_string())).chain(dones.iter().filter_map(|o| ss(o, "occurrence").map(String::from))));
         names
             .iter()
             .map(|name| {
@@ -531,9 +547,42 @@ impl<'s> Settling<'s> {
                 let sum = mine.iter().fold(Dec::zero(), |t, x| t.add(&self.money_for_occurrence(x, name, &money.currency)));
                 let paid = if mine.is_empty() || (deeds.total.is_none() && money.currency.is_null()) { Value::Null } else { kind_json(&sum, &money.currency) };
                 let covered = deeds.total.as_ref().is_some_and(|t| sum.cmp(&t.0) != Ordering::Less) && sum.cmp(&Dec::zero()) == Ordering::Greater;
-                json!({ "occurrence": name, "due": due, "paid": paid, "paid_at": if covered { self.latest_counted(&mine) } else { Value::Null } })
+                let done_at = dones.iter().filter(|o| ss(o, "occurrence") == Some(name.as_str())).filter_map(|o| ss(o, "at").map(String::from)).min();
+                json!({ "occurrence": name, "due": due, "paid": paid, "paid_at": if covered { self.latest_counted(&mine) } else { Value::Null }, "done_at": done_at })
             })
             .collect()
+    }
+
+    /// The occurrences the deal's pauses leave stopped: each time an occurrence a pause names, less the ones its own signer resumed
+    /// (promises.md, Answers, `resumed`): an `updates` of the pause with `status: resumed`, counted only for the pause's signer (the deal
+    /// reads no other), ends it from its own `at`: the named times at or after that are no longer stopped.
+    fn paused(&self, stops: &[&Value]) -> Vec<String> {
+        let mut out: Vec<String> = Vec::new();
+        for s in stops {
+            let Some(named) = get(s, "state.stop.occurrences").and_then(Value::as_array) else { continue };
+            let resumed_at: Vec<i64> = self
+                .d
+                .in_deal
+                .iter()
+                .filter(|r| type_of(r) == "promise" && ss(r, "status") == Some("resumed") && rs(r, "updates") == Some(hash_of(s)) && rf(r, "answers").is_none())
+                .filter_map(|r| ss(r, "at").and_then(crate::time::parse))
+                .collect();
+            for name in named.iter().filter_map(Value::as_str) {
+                let at = crate::time::parse(name);
+                let back = at.is_some_and(|t| resumed_at.iter().any(|r| *r <= t));
+                if !back {
+                    out.push(name.to_string());
+                }
+            }
+        }
+        sorted_set(out.into_iter())
+    }
+    /// Who answers for a side's part now: the side itself, or whoever its part was last passed to (null for an open side).
+    fn answerable(&self, side: &str) -> Value {
+        match self.passes().iter().rfind(|p| p.side == side) {
+            Some(p) => json!(p.to),
+            None => self.receiver(side, self.accept_block).map_or(Value::Null, |w| json!(w)),
+        }
     }
 
     /// The settled deal's stage: reversed, done, breached, stopped onward, underway or accepted.
@@ -569,7 +618,7 @@ impl<'s> Settling<'s> {
         let repeat = terms.get("repeat");
         let event_when = get(offer, "state.when").filter(|w| w.get("after").and_then(Value::as_str).is_some_and(|a| !crate::spec().is("id", a)) && w.get("wait").is_some());
         let done = !refrain && repeat.is_none() && goods_done && money.paid_up && (offer_what || terms.get("lines").is_some() || work_done);
-        let stopped_occurrences = sorted_set(stops.iter().filter_map(|s| get(s, "state.stop.occurrences")).filter_map(Value::as_array).flatten().filter_map(Value::as_str).map(String::from));
+        let stopped_occurrences = self.paused(stops);
         // `paid` is null until a payment is counted, and when, with no price, the payments cover more than one currency; it carries the
         // price's currency, else the one the payments cover.
         let set_off = money.setoff.cmp(&zero) == Ordering::Greater;
@@ -594,6 +643,8 @@ impl<'s> Settling<'s> {
                 },
             })).collect::<Vec<_>>() } else { Vec::new() },
             "stopped": stopped_occurrences,
+            "passed": self.passes().iter().map(|p| json!({ "pass": p.hash, "side": p.side, "by": p.by, "to": p.to })).collect::<Vec<_>>(),
+            "answerable": json!({ "from": self.answerable("from"), "to": self.answerable("to") }),
             "disputed": disputed,
             "due": if repeat.is_some() { Value::Null } else { terms.get("pay_by").cloned().unwrap_or(Value::Null) },
             "paid_at": paid_at,

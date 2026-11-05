@@ -19,8 +19,8 @@ impl Checker<'_> {
             }
         }
         // A promise's terms are fixed once it is written (promises.md, Terms are fixed): an `updates` of a promise is its author's stop.
-        if r("updates").is_some() && r("answers").is_none() && g("status") != Some(&Value::String("stopped".into())) {
-            w.push(f("required", "an updates of a promise is its author's stop (state.status stopped): terms are fixed once written; change them with a counter-offer or a new offer"));
+        if r("updates").is_some() && r("answers").is_none() && !matches!(g("status").and_then(Value::as_str), Some("stopped" | "resumed")) {
+            w.push(f("required", "an updates of a promise is its author's stop (state.status stopped), or the end of a pause of their own (resumed): terms are fixed once written; change them with a counter-offer or a new offer"));
         }
         if !answering && r("what").is_none() && g("what").is_none() {
             w.push(f("required", "a promise names what moves: refs.what, or state.what for time or a job"));

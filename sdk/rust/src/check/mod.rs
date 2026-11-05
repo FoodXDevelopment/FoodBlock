@@ -142,6 +142,10 @@ impl<'a> Checker<'a> {
                 format!("state.status is one of {}", self.spec.statuses.join(", ")),
             ));
         }
+        // A pause ends by its own signer's `updates` of it, never by an answer (promises.md, Answers).
+        if status.as_str() == Some("resumed") && (refs.get("updates").is_none() || refs.get("answers").is_some()) {
+            w.push(f("bad_status", "resumed is the author's own updates of their pause (refs.updates), never an answer"));
+        }
         if status.as_str() == Some("stopped") {
             w.extend(self.stop_shape(state.get("stop")));
         } else if state.get("stop").is_some() {

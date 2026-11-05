@@ -553,6 +553,27 @@
    "grounds": {
     "event": "a member (refs.from) promises the circle (refs.to), when she joins: my dues may change by the count named, up to the figure named. It binds her only within the bound she signed, as a visible limit does (authority.md), and she may leave with what is hers before a change takes effect. A rule that says \"whatever the majority decides\" binds nothing past what it names. The circle's `needed` and its removal rule may carry such a bounded change"
    }
+  },
+  {
+   "name": "done",
+   "target": "observe.done",
+   "fields": {
+    "occurrence": "the start time (or the hash of the block that started it) of the occurrence of a standing promise it keeps",
+    "text": "what was done, in words"
+   },
+   "grounds": {
+    "event": "the doer says one occurrence of an unpriced standing promise (walk the dog every day) is kept; it counts for the promise's `from` side alone, and the other side's defeats of it is a dispute (promises.md, Settling)"
+   }
+  },
+  {
+   "name": "pass",
+   "target": "observe.pass",
+   "fields": {
+    "text": "what is passed on, in words"
+   },
+   "grounds": {
+    "event": "the one who answers for a side's part of a deal (refs.for) passes it to refs.to, one id; it counts once that receiver's own observe answers it accepted (promises.md, Passing a part). Until then the passer still owes it"
+   }
   }
  ]
 }

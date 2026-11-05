@@ -98,9 +98,10 @@
  "statuses": [
   "accepted",
   "declined",
-  "stopped"
+  "stopped",
+  "resumed"
  ],
- "statuses_about": "A counter-offer is an answer (a promise with refs.answers) whose state carries new terms and no status; it is the one answer without a status.",
+ "statuses_about": "`resumed` is the author's own `updates` of their pause (a stop naming occurrences), never an answer. A counter-offer is an answer (a promise with refs.answers) whose state carries new terms and no status; it is the one answer without a status.",
  "stop": {
   "before": "before acceptance: a withdrawal",
   "onward": "from this block on",
@@ -1119,7 +1120,9 @@
     "lines": "[{ id, needed, moved }], id null without lines",
     "total": "money the price comes to, or null (minor past 2^53 - 1 is exact decimal text)",
     "paid": "money counted to the from side, by what the from side's own accepted answers say each payment covers (state.covers), else its own money; in the price's currency, else the one currency the payments cover; or null (minor past 2^53 - 1 is exact decimal text)",
-    "stopped": "occurrence start times or hashes stopped, sorted",
+    "stopped": "occurrence start times or hashes stopped, sorted: each a pause names, less the times its own signer resumed (an updates of it with status resumed, from its at)",
+    "passed": "[{ pass, side, by, to }]: each part a side's answerer passed on that its receiver answered accepted (promises.md, Passing a part), in causal order; empty when the terms say personal",
+    "answerable": "{ from, to }: who answers for each side's part now, the side itself or whoever its part was last passed to; null for an open side, and both null before the deal binds",
     "disputed": "[{ hash, of, by, at }]: each counted defeats by a side of a block in the deal that is not its own (by: from or to; at: the date it gives, or null), sorted by hash then of. It changes nothing: only the deal's referee changes the stage",
     "due": "the deal's terms.pay_by, or null (always null on a standing promise: it is due occurrence by occurrence, in occurrences)",
     "paid_at": "once the price is paid in full, the latest date among the payments, each dated by the first counting answer of the side it is paid to (or a named confirmer's confirms); else null (always null on a standing promise)",
@@ -1130,7 +1133,7 @@
     "moved": "[{ pay_by, proposal, answer }]: each new date both sides signed (a side's observe of kind message for the deal with a pay_by, answered accepted by an observe of the other side), in the order the answers stand in causal order. The first promise's own pay_by stays in due; a date only one side signed is not listed",
     "owed_on": "[{ from, to, money, payment }]: a counted payment made, unseen by its payer, to an owner who had handed that part on: the old owner holds that amount for the new one; sorted by payment, then to",
     "referee_ties": "[{ referee, side, how }]: each name on the deal's bench tied to a side (decision H9), read from the blocks held: side from or to; how role (a role inside the side's circle), member (a member of the side's circle) or operator (an autonomous system the side runs); sorted by referee, side, how; empty until a binding accept exists. A fact: it changes no stage",
-    "occurrences": "on a standing promise, [{ occurrence, due, paid, paid_at }] for each occurrence a counted payment names (state.occurrence) or an event started, sorted: due is its start time, or an event's at plus the repeat's wait; paid what its payments put toward the price; paid_at, once that covers one occurrence's price, the latest date among them. Empty on any other promise",
+    "occurrences": "on a standing promise, [{ occurrence, due, paid, paid_at, done_at }] for each occurrence a counted payment names (state.occurrence), a done names, or an event started, sorted: done_at is the earliest `at` of the doer's own counted done of it (observe kind done, state.occurrence), else null; due is its start time, or an event's at plus the repeat's wait; paid what its payments put toward the price; paid_at, once that covers one occurrence's price, the latest date among them. Empty on any other promise",
     "price_fixed": "null when the price is a plain number; for a price fixed later (promises.md, Terms), false until it is fixed (total is then null and the price is never paid), true once `signers` readers have each signed the same figure in time. A fact: it changes no stage"
    }
   },

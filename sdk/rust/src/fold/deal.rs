@@ -29,10 +29,21 @@ pub(super) struct Deal<'a> {
     pub open: bool,
     /// The blocks a side signed (an open side is anyone, until an accept binds), in causal order.
     pub in_deal: Vec<Value>,
+    /// The parts passed on and accepted (promises.md, Passing a part), in causal order.
+    pub passes: Vec<Pass>,
     taker_id: Option<String>,
     /// Who signed, or was named owner by, a transfer that names the deal in `what`: the owners of what is owed answer deliveries and payments in it.
     owed_owners: BTreeSet<String>,
     owners: RefCell<BTreeMap<(String, String), Option<String>>>,
+}
+
+/// A part of a side passed on: the `pass` its holder signed and the receiver's accept of it stand.
+#[derive(Clone)]
+pub(super) struct Pass {
+    pub hash: String,
+    pub side: &'static str,
+    pub by: String,
+    pub to: String,
 }
 
 /// What binds in a deal (stage 2): the accept (or, on an open offer, the first allocation), the takers of an open offer and which
@@ -45,6 +56,16 @@ pub(super) struct Binding<'d> {
     pub live: Vec<&'d Value>,
     /// To yourself: a promise whose `from` and `to` both name its author, accepted when made.
     pub to_self: bool,
+}
+
+/// An `observe` of kind `pass` (promises.md, Passing a part).
+fn is_pass(b: &Value) -> bool {
+    type_of(b) == "observe" && ss(b, "kind") == Some("pass")
+}
+
+/// A pass, or an observe that answers one `accepted`.
+fn is_pass_word(b: &Value, index: &Index) -> bool {
+    is_pass(b) || (type_of(b) == "observe" && rs(b, "answers").and_then(|h| index.get(h)).is_some_and(is_pass))
 }
 
 pub(super) fn status(b: &Value, word: &str) -> bool {
@@ -92,6 +113,7 @@ impl<'a> Deal<'a> {
             first,
             from_ref: rs(&root, "from").map(String::from),
             to_ref: rs(&root, "to").map(String::from),
+            passes: Vec::new(),
             taker_id: alloc.as_ref().and_then(|(_, _, taker)| taker.get("who").and_then(Value::as_str).map(String::from)),
             root,
             alloc,
@@ -118,22 +140,57 @@ impl<'a> Deal<'a> {
         // Who counts: only blocks a side signed. An `updates` of a promise is its author's stop (any other is refused: terms are fixed
         // once written): it counts only when it speaks for the one the block it updates speaks for (the other side stops by `answers`).
         let blocks: Vec<&Value> = members.iter().map(|h| &index[h.as_str()]).collect();
-        let in_deal: Vec<Value> = causal_order_among(&sub_index(&blocks), index)
+        let ordered: Vec<Value> = causal_order_among(&sub_index(&blocks), index)
             .into_iter()
             .filter(|b| {
                 let updates = type_of(b) == "promise" && rf(b, "updates").is_some() && rf(b, "answers").is_none();
                 !updates
                     || rs(b, "updates").and_then(|h| index.get(h)).is_some_and(|u| speaker_of(b, index, None).is_some_and(|w| speaker_of(u, index, None).as_deref() == Some(w.as_str())))
             })
-            .filter(|b| {
-                hash_of(b) != first_hash
-                    && (deal.side_of(b).is_some()
-                        || (deal.open && !deal.by_offerer(b))
-                        || (type_of(b) == "transfer" && status(b, "accepted") && speaker_of(b, index, None).is_some_and(|w| deal.owed_owners.contains(&w))))
-            })
             .collect();
+        // A pass, and the receiver's accept of it, are words of no side: they are read here (promises.md, Passing a part). What a receiver
+        // then does for the part is in the deal too.
+        let admit = |deal: &Deal, b: &Value, receivers: &BTreeSet<String>| {
+            hash_of(b) != first_hash
+                && (deal.side_of(b).is_some()
+                    || (deal.open && !deal.by_offerer(b))
+                    || (type_of(b) == "transfer" && status(b, "accepted") && speaker_of(b, index, None).is_some_and(|w| deal.owed_owners.contains(&w)))
+                    || is_pass_word(b, index)
+                    || speaker_of(b, index, None).is_some_and(|w| receivers.contains(&w)))
+        };
+        let seen: Vec<Value> = ordered.iter().filter(|b| admit(&deal, b, &BTreeSet::new())).cloned().collect();
+        deal.passes = deal.passes_in(&seen);
+        let receivers: BTreeSet<String> = deal.passes.iter().map(|p| p.to.clone()).collect();
+        let in_deal: Vec<Value> = ordered.iter().filter(|b| admit(&deal, b, &receivers)).cloned().collect();
         deal.in_deal = in_deal;
         Some(deal)
+    }
+
+    /// The parts passed on: each `pass` a side's current answerer signed, in causal order, whose named receiver answered it `accepted`.
+    /// The receiver then answers for the part, and may pass it on in turn; a pass by anyone else counts for nothing.
+    fn passes_in(&self, seen: &[Value]) -> Vec<Pass> {
+        let index = self.index;
+        let mut holder: BTreeMap<&'static str, String> = BTreeMap::new();
+        let mut out: Vec<Pass> = Vec::new();
+        for p in seen.iter().filter(|b| is_pass(b)) {
+            let (Some(by), Some(to)) = (speaker_of(p, index, None), rs(p, "to").map(String::from)) else { continue };
+            if !list(rf(p, "for")).contains(&self.first_hash.as_str()) || to == by {
+                continue;
+            }
+            let side = ["from", "to"].into_iter().find(|key| match holder.get(key) {
+                Some(h) => *h == by,
+                None => self.side_of(p) == Some(key),
+            });
+            let Some(side) = side else { continue };
+            let accepted = seen.iter().any(|a| {
+                type_of(a) == "observe" && status(a, "accepted") && rs(a, "answers") == Some(hash_of(p)) && speaker_of(a, index, None).as_deref() == Some(to.as_str())
+            });
+            if accepted {
+                holder.insert(side, to.clone());
+                out.push(Pass { hash: hash_of(p).to_string(), side, by, to });
+            }
+        }
+        out
     }
 
     pub(super) fn speaks(&self, b: &Value, side: Option<&str>) -> bool {
