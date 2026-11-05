@@ -60,6 +60,7 @@ internal object Door {
     fun admissionRefusals(block: JsonElement, receiver: JsonElement, blocks: JsonElement, admission: JsonElement, strangersToday: JsonElement): JsonElement = go("admission_refusals", 5, block, receiver, blocks, admission, strangersToday)
     fun liveGrant(act: JsonElement, grants: JsonElement, now: JsonElement): JsonElement = go("live_grant", 3, act, grants, now)
     fun due(promise: JsonElement, arrivals: JsonElement = JsonNull): JsonElement = go("due", 1, promise, arrivals)
+    fun repeatOccurrences(promise: JsonElement, from: JsonElement, to: JsonElement): JsonElement = go("repeat_occurrences", 3, promise, from, to)
     fun recoveryReach(rotation: JsonElement, blocks: JsonElement, arrivals: JsonElement = JsonNull, unknownArrival: JsonElement = JsonNull): JsonElement = go("recovery_reach", 2, rotation, blocks, arrivals, unknownArrival)
     fun nextLink(last: JsonElement = JsonNull, broughtIn: JsonElement = JsonNull): JsonElement = go("next_link", 0, last, broughtIn)
     fun checkChain(blocks: JsonElement, id: JsonElement): JsonElement = go("check_chain", 2, blocks, id)

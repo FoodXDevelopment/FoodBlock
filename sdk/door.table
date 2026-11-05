@@ -72,6 +72,7 @@ is_stranger(receiver:text, sender:text, blocks:blocks, block:block?) -> bool
 admission_refusals(block:block, receiver:text, blocks:blocks, admission:json, strangers_today:int) -> refusals
 live_grant(act:block, grants:blocks, now:time) -> bool
 due(promise:block, arrivals:arrivals?) -> json
+repeat_occurrences(promise:block, from:time, to:time) -> strings
 recovery_reach(rotation:block, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> json
 next_link(last:block?, brought_in:text?) -> object !
 check_chain(blocks:blocks, id:text) -> object

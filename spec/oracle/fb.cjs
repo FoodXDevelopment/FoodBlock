@@ -4629,6 +4629,131 @@ const pureJunk = (() => {
 })();
 // the blocks held with `b` read among them, in place of any other of its hash: a block no node would take is no word
 const readWith = (blocks, b) => new Pool([...poolOf(blocks).all().filter(x => x.hash !== b.hash), b]);
+// ---- calendar repeats (promises.md, Terms: repeat, zone): written from the RFC 5545 text, a day at a time: each local date is asked "does the rule
+// name you?", never stepped by period arithmetic. The zone is read through the host's IANA database (Intl).
+const RR_DAY = 86400000;
+const RR_WD = { MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6, SU: 0 };
+// the zone's offset from UTC at an instant, in ms: the wall clock read as if it were UTC, less the instant
+const rrOffset = (zone, ms) => {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: zone, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+  return Date.UTC(Number(p.year), Number(p.month) - 1, Number(p.day), Number(p.hour), Number(p.minute), Number(p.second)) - Math.floor(ms / 1000) * 1000;
+};
+// the instant of a wall time: in a jump it is that wall time by the offset before the jump; when repeated, its first
+const rrInstant = (zone, wall) => {
+  const before = rrOffset(zone, wall - RR_DAY), after = rrOffset(zone, wall + RR_DAY);
+  const ok = [before, after].filter((o, i, all) => all.indexOf(o) === i).map(o => wall - o).filter(t => rrOffset(zone, t) === wall - t);
+  return ok.length ? Math.min(...ok) : wall - before;
+};
+function repeatOccurrences(promise, from, to) {
+  const st = promise && promise.state, terms = st && st.terms;
+  if (!isStr(st && st.when) || timeMs(st.when) === null) throw argError('the promise\'s state.when is a time');
+  if (!terms || !isStr(terms.repeat)) throw argError('the promise\'s terms.repeat is an RRULE text');
+  if (!isStr(terms.zone)) throw argError('a calendar repeat is read in terms.zone');
+  const zone = terms.zone;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: zone }); } catch { throw argError('a time zone not in the database'); }
+  const parts = terms.repeat.split(';').map(x => x.split('='));
+  if (parts.some(x => x.length !== 2)) throw argError('parts are KEY=VALUE');
+  const R = {};
+  parts.forEach(([k, v], i) => {
+    if (k in R) throw argError('a part twice');
+    if (k === 'RSCALE') { if (i !== 0 || v !== 'GREGORIAN') throw argError('Gregorian only'); return; }
+    if (k === 'SKIP') { if (v !== 'OMIT') throw argError('SKIP'); return; }
+    if (!['FREQ', 'INTERVAL', 'COUNT', 'UNTIL', 'BYMONTH', 'BYMONTHDAY', 'BYYEARDAY', 'BYDAY', 'BYHOUR', 'BYMINUTE', 'BYSECOND', 'BYSETPOS', 'WKST'].includes(k)) throw argError('a part not read');
+    R[k] = v;
+  });
+  const freqs = ['SECONDLY', 'MINUTELY', 'HOURLY', 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'];
+  if (!freqs.includes(R.FREQ)) throw argError('FREQ');
+  if (R.COUNT !== undefined && R.UNTIL !== undefined) throw argError('COUNT and UNTIL');
+  const num = (k, lo, hi) => (R[k] === undefined ? [] : R[k].split(',').map(x => { const n = Number(x); if (!/^-?\d+$/.test(x) || n < lo || n > hi || (n === 0 && lo < 0)) throw argError(k); return n; }));
+  const interval = R.INTERVAL === undefined ? 1 : Number(R.INTERVAL);
+  if (!Number.isInteger(interval) || interval < 1) throw argError('INTERVAL');
+  const count = R.COUNT === undefined ? Infinity : Number(R.COUNT);
+  if (!(count >= 1)) throw argError('COUNT');
+  const byMonth = num('BYMONTH', 1, 12), byMD = num('BYMONTHDAY', -31, 31), byYD = num('BYYEARDAY', -366, 366), byHour = num('BYHOUR', 0, 23), byMin = num('BYMINUTE', 0, 59), bySec = num('BYSECOND', 0, 59), bySet = num('BYSETPOS', -366, 366);
+  const wkst = R.WKST === undefined ? 1 : RR_WD[R.WKST];
+  if (wkst === undefined) throw argError('WKST');
+  const byDay = R.BYDAY === undefined ? [] : R.BYDAY.split(',').map(x => { const m = /^(-?\d{1,2})?(MO|TU|WE|TH|FR|SA|SU)$/.exec(x); if (!m || m[1] === '0') throw argError('BYDAY'); return { n: m[1] === undefined ? null : Number(m[1]), wd: RR_WD[m[2]] }; });
+  const freq = freqs.indexOf(R.FREQ);
+  if (byDay.some(d => d.n !== null) && freq < 5) throw argError('BYDAY number');
+  if (freq < 3 && bySet.length) throw argError('BYSETPOS');
+  let untilWall = null, untilInstant = null;
+  if (R.UNTIL !== undefined) {
+    const m = /^(\d{4})(\d\d)(\d\d)(?:T(\d\d)(\d\d)(\d\d)(Z)?)?$/.exec(R.UNTIL);
+    if (!m) throw argError('UNTIL');
+    const w = Date.UTC(+m[1], +m[2] - 1, +m[3], m[4] ? +m[4] : 23, m[5] ? +m[5] : 59, m[6] ? +m[6] : 59, m[4] ? 0 : 999);
+    if (m[7]) untilInstant = w; else untilWall = w;
+  }
+  const f = timeMs(from), t = timeMs(to);
+  if (f === null || t === null) throw argError('from and to are times');
+  const start = timeMs(st.when), startWall = start + rrOffset(zone, start);
+  const sd = new Date(startWall), sDay = Math.floor(startWall / RR_DAY), sTime = startWall - sDay * RR_DAY;
+  const out = [];
+  let counted = 0;
+  const wdOf = day => new Date(day * RR_DAY).getUTCDay();
+  const ymd = day => { const d = new Date(day * RR_DAY); return { y: d.getUTCFullYear(), m: d.getUTCMonth() + 1, d: d.getUTCDate() }; };
+  const dim = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const diy = y => ((y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365);
+  const doy = day => day - Math.floor(Date.UTC(ymd(day).y, 0, 1) / RR_DAY) + 1;
+  const accept = (wall, instant) => {
+    if (untilInstant !== null && instant > untilInstant) return 'end';
+    if (untilWall !== null && wall > untilWall) return 'end';
+    if (instant >= t) return 'end';
+    counted++;
+    if (instant >= f) out.push(new Date(instant).toISOString());
+    return counted >= count ? 'end' : 'go';
+  };
+  const dayLimits = day => {
+    const { y, m, d } = ymd(day), ds = dim(y, m), ys = diy(y);
+    return (!byMonth.length || byMonth.includes(m)) && (!byYD.length || byYD.some(n => (n > 0 ? n === doy(day) : ys + 1 + n === doy(day)))) && (!byMD.length || byMD.some(n => (n > 0 ? n === d : ds + 1 + n === d)));
+  };
+  const dayOk = day => {
+    if (!dayLimits(day)) return false;
+    const { y, m, d } = ymd(day), wd = wdOf(day), ds = dim(y, m), ys = diy(y);
+    if (byDay.length) {
+      const inMonth = freq === 5 || byMonth.length > 0, pos = inMonth ? d : doy(day), size = inMonth ? ds : ys;
+      if (!byDay.some(x => x.wd === wd && (x.n === null || (x.n > 0 ? Math.floor((pos - 1) / 7) + 1 === x.n : -(Math.floor((size - pos) / 7) + 1) === x.n)))) return false;
+    }
+    const anyDay = byMD.length || byDay.length || byYD.length;
+    if (freq === 4 && !byDay.length) return wd === sd.getUTCDay();
+    if (freq === 5 && !anyDay) return d === sd.getUTCDate();
+    if (freq === 6 && !anyDay) return d === sd.getUTCDate() && (byMonth.length > 0 || m === sd.getUTCMonth() + 1);
+    return true;
+  };
+  if (freq < 3) {
+    const unit = [1000, 60000, 3600000][freq] * interval;
+    for (let n = 0; ; n++) {
+      const instant = start + n * unit;
+      if (instant >= t) break;
+      const wall = instant + rrOffset(zone, instant), day = Math.floor(wall / RR_DAY), tod = wall - day * RR_DAY;
+      const ok = dayLimits(day) && (!byDay.length || byDay.some(x => x.wd === wdOf(day))) && (!byHour.length || byHour.includes(Math.floor(tod / 3600000))) && (!byMin.length || byMin.includes(Math.floor(tod / 60000) % 60)) && (!bySec.length || bySec.includes(Math.floor(tod / 1000) % 60));
+      if (ok && accept(wall, instant) === 'end') break;
+      if (n > 5000000) throw argError('too many steps');
+    }
+    return out;
+  }
+  // a period's number: the day, the week (from WKST), the month or the year, counted from the start's
+  const week0 = sDay - ((sd.getUTCDay() - wkst + 7) % 7);
+  const periodOf = day => (freq === 3 ? day - sDay : freq === 4 ? Math.floor((day - week0) / 7) : freq === 5 ? (ymd(day).y - sd.getUTCFullYear()) * 12 + ymd(day).m - sd.getUTCMonth() - 1 : ymd(day).y - sd.getUTCFullYear());
+  const hours = byHour.length ? byHour : [Math.floor(sTime / 3600000)], mins = byMin.length ? byMin : [Math.floor(sTime / 60000) % 60], secs = bySec.length ? bySec : [Math.floor(sTime / 1000) % 60], sub = sTime % 1000;
+  let group = [], groupKey = null;
+  const flush = () => {
+    let set = [...new Set(group)].sort((a, b) => a - b);
+    if (bySet.length) set = [...new Set(bySet.map(p => set[p > 0 ? p - 1 : set.length + p]).filter(x => x !== undefined))].sort((a, b) => a - b);
+    group = [];
+    for (const wall of set) { if (wall < startWall) continue; if (accept(wall, rrInstant(zone, wall)) === 'end') return true; }
+    return false;
+  };
+  const last = Math.floor(t / RR_DAY) + 2;
+  for (let day = sDay - 400; day <= last; day++) {
+    const p = periodOf(day);
+    if (groupKey !== null && p !== groupKey && flush()) return out;
+    groupKey = p;
+    if (p < 0 || p % interval !== 0 || !dayOk(day)) continue;
+    for (const h of hours) for (const mi of mins) for (const se of secs) group.push(day * RR_DAY + h * 3600000 + mi * 60000 + se * 1000 + sub);
+  }
+  flush();
+  return out;
+}
 // ================================================================ the door: one case per rule
 function door(op, ...a) {
   // a list argument (written [...] in the op's args in protocol.json) given as anything but a list, or null, is an argument error: never read as the empty list
@@ -4744,6 +4869,7 @@ function door(op, ...a) {
     case 'is_stranger':
       if (!isStr(a[0]) || !isStr(a[1])) throw argError('receiver and sender are ids (text)');
       return isStranger(a[0], a[1], a[2], isObj(a[3]) ? a[3] : null);
+    case 'repeat_occurrences': return repeatOccurrences(a[0], a[1], a[2]);
     case 'scope_reading': return scopeReading(a[0]);
     case 'receipt_code': return receiptCode(a[0], a[1]);
     case 'code_matches': return codeMatches(a[0], a[1]);

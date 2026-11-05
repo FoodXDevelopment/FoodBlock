@@ -50,6 +50,7 @@ enum Door {
     static func admissionRefusals(_ block: JSON, _ receiver: String, _ blocks: [JSON], _ admission: Any?, _ strangersToday: Int) throws -> [JSON] { try Core.list("admission_refusals", block, receiver, blocks, admission, strangersToday) }
     static func liveGrant(_ act: JSON, _ grants: [JSON], _ now: String) throws -> Bool { try Core.bool("live_grant", act, grants, now) }
     static func due(_ promise: JSON, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("due", promise, arrivals) }
+    static func repeatOccurrences(_ promise: JSON, _ from: String, _ to: String) throws -> [String] { try Core.strings("repeat_occurrences", promise, from, to) }
     static func recoveryReach(_ rotation: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> Any? { try Core.maybe("recovery_reach", rotation, blocks, arrivals, unknownArrival) }
     static func nextLink(_ last: JSON? = nil, _ broughtIn: String? = nil) throws -> JSON { try Core.json("next_link", last, broughtIn) }
     static func checkChain(_ blocks: [JSON], _ id: String) throws -> JSON { try Core.json("check_chain", blocks, id) }

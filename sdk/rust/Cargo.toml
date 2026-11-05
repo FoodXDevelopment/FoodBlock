@@ -35,8 +35,10 @@ rekeys = ["folds"]
 earnest = []
 # The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol.
 legacy = ["envelope"]
+# Calendar repeats (promises.md, Terms: repeat): RRULE occurrences read in a time zone, with the IANA database bundled and pinned by Cargo.lock.
+recur = ["dep:jiff", "dep:jiff-tzdb"]
 # The JSON door (src/door.rs): one call, one data shape, shared by every language binding.
-door = ["std", "node"]
+door = ["std", "node", "recur"]
 # The C ABI (include/foodblock.h), JSON in and JSON out.
 ffi = ["door", "std", "node", "suites", "successor", "ballots", "rekeys", "earnest", "legacy"]
 # The WebAssembly door for the JavaScript SDK (sdk/javascript/core): the JSON door as plain exports; the host gives
@@ -67,6 +69,9 @@ sm4 = { version = "0.5", default-features = false, optional = true }
 elliptic-curve = { version = "0.13", default-features = false, features = ["ecdh", "sec1", "arithmetic"], optional = true }
 ecdsa = { version = "0.16", default-features = false, features = ["signing", "verifying", "arithmetic"], optional = true }
 hmac = { version = "0.12", default-features = false, optional = true }
+# The time zone database, bundled (no system files): the one release every core reads a repeat by (promises.md, Terms: zone).
+jiff-tzdb = { version = "=0.1.9", optional = true }
+jiff = { version = "=0.2.39", default-features = false, features = ["alloc", "tzdb-bundle-always"], optional = true }
 
 [profile.dev.package."*"]
 # Signature checks run thousands of times in the conformance tests; keep the crypto fast in debug builds.

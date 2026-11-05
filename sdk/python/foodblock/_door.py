@@ -195,6 +195,10 @@ def due(promise, arrivals=None):
     return call("due", promise, arrivals)
 
 
+def repeat_occurrences(promise, from_, to):
+    return call("repeat_occurrences", promise, from_, to)
+
+
 def recovery_reach(rotation, blocks, arrivals=None, unknown_arrival=None):
     return call("recovery_reach", rotation, _blocks(blocks), arrivals, unknown_arrival)
 

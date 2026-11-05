@@ -64,6 +64,8 @@ pub mod legacy;
 
 #[cfg(feature = "envelope")]
 pub mod envelope;
+#[cfg(feature = "recur")]
+pub mod recur;
 #[cfg(feature = "door")]
 pub mod door;
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]

@@ -1803,6 +1803,14 @@
     ],
     "result": "refusals with the codes `not_admitted` and `not_human`"
    },
+   "repeat_occurrences": {
+    "args": [
+     "full_block: a promise with a calendar repeat (state.when a time, state.terms.repeat an RRULE, state.terms.zone)",
+     "from: time, inclusive",
+     "to: time, exclusive"
+    ],
+    "result": "the start times, in UTC and in order, of the occurrences of the promise's calendar repeat from `from` up to but not including `to` (promises.md, Terms: repeat, zone): counted from state.when, read in terms.zone by the IANA time zone database release 2026e. An error (argument) for a repeat that follows an event, an RSCALE other than GREGORIAN, a part the reader does not read, or a zone not in the release"
+   },
    "is_stranger": {
     "args": [
      "receiver id",

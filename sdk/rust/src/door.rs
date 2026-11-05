@@ -365,6 +365,16 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "receipt_code" => json!(if flag_arg(a.v(1)) { crate::strangers::receipt_code_long(a.s(0)?) } else { crate::strangers::receipt_code(a.s(0)?) }),
         "code_matches" => json!(crate::strangers::code_matches(a.s(0)?, a.s(1)?)),
         "consent" => crate::strangers::consent(a.s(0)?, a.opt(1), &a.list(2), Some(a.v(3)).filter(|b| b.is_object())),
+        // the occurrences of a standing promise's calendar repeat from `from` up to (not including) `to`, in UTC (promises.md, Terms: repeat, zone)
+        "repeat_occurrences" => {
+            let p = a.v(0);
+            let when = p.pointer("/state/when").and_then(Value::as_str).ok_or_else(|| Fail::Argument("the promise's state.when is a time: a repeat that follows an event has no calendar".into()))?;
+            let repeat = p.pointer("/state/terms/repeat").and_then(Value::as_str).ok_or_else(|| Fail::Argument("the promise's terms.repeat is an RRULE text: an event repeat has no calendar".into()))?;
+            let zone = p.pointer("/state/terms/zone").and_then(Value::as_str).ok_or_else(|| Fail::Argument("a calendar repeat is read in terms.zone".into()))?;
+            let ms = |t: &str| crate::time::parse(t).ok_or_else(|| Fail::Argument("a time".into()));
+            let (from, to) = (ms(a.time(1)?)?, ms(a.time(2)?)?);
+            json!(crate::recur::occurrences(when, repeat, zone, from, to).map_err(Fail::Argument)?)
+        }
         // a stranger to a sender (consent.md); the sender's block, when given, names the principal it speaks for
         "is_stranger" => json!(crate::strangers::is_stranger(a.s(0)?, a.s(1)?, &a.list(2), Some(a.v(3)).filter(|b| b.is_object()))),
         // the node's own stated choices: its rule's state (an object) or an explicit null (no rule), and today's count (an integer)

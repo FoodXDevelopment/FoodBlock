@@ -673545,6 +673545,805 @@
     ]
    },
    "exact": true
+  },
+  {
+   "name": "recur: a weekly London repeat keeps 09:00 on the wall through the clocks going forward",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-17T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=TU",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-03-17T00:00:00.000Z",
+    "2026-04-08T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-03-17T09:00:00.000Z",
+    "2026-03-24T09:00:00.000Z",
+    "2026-03-31T08:00:00.000Z",
+    "2026-04-07T08:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: and through the clocks going back",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-10-20T08:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=TU",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-10-20T00:00:00.000Z",
+    "2026-11-10T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-10-20T08:00:00.000Z",
+    "2026-10-27T09:00:00.000Z",
+    "2026-11-03T09:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a wall time the clocks skip falls by the offset before the skip",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-27T01:30:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-03-27T00:00:00.000Z",
+    "2026-03-31T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-03-27T01:30:00.000Z",
+    "2026-03-28T01:30:00.000Z",
+    "2026-03-29T01:30:00.000Z",
+    "2026-03-30T00:30:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a wall time the clocks repeat is its first",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-10-24T00:30:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-10-24T00:00:00.000Z",
+    "2026-10-28T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-10-24T00:30:00.000Z",
+    "2026-10-25T00:30:00.000Z",
+    "2026-10-26T01:30:00.000Z",
+    "2026-10-27T01:30:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: Nairobi keeps +03:00 all year: Monday and Friday 23:30 there",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-06-01T20:30:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=MO,FR",
+       "zone": "Africa/Nairobi"
+      }
+     },
+     "refs": {}
+    },
+    "2026-03-01T00:00:00.000Z",
+    "2026-06-16T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-06-01T20:30:00.000Z",
+    "2026-06-05T20:30:00.000Z",
+    "2026-06-08T20:30:00.000Z",
+    "2026-06-12T20:30:00.000Z",
+    "2026-06-15T20:30:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: the day is the zone's, not UTC's: Tuesday 01:00 in Nairobi is Monday 22:00Z",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-06-01T22:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=TU",
+       "zone": "Africa/Nairobi"
+      }
+     },
+     "refs": {}
+    },
+    "2026-06-01T00:00:00.000Z",
+    "2026-06-23T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-06-01T22:00:00.000Z",
+    "2026-06-08T22:00:00.000Z",
+    "2026-06-15T22:00:00.000Z",
+    "2026-06-22T22:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: from is inside the window and to is outside it",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-17T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=TU",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-03-24T09:00:00.000Z",
+    "2026-03-31T08:00:00.000Z"
+   ],
+   "expect": [
+    "2026-03-24T09:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a window long after the start",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-17T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=TU",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2031-01-01T00:00:00.000Z",
+    "2031-01-15T00:00:00.000Z"
+   ],
+   "expect": [
+    "2031-01-07T09:00:00.000Z",
+    "2031-01-14T09:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a window before the start has none",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-17T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;BYDAY=TU",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-03-17T09:00:00.000Z"
+   ],
+   "expect": [],
+   "exact": true
+  },
+  {
+   "name": "recur: a window of nothing has none",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-17T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-04-01T00:00:00.000Z",
+    "2026-04-01T00:00:00.000Z"
+   ],
+   "expect": [],
+   "exact": true
+  },
+  {
+   "name": "recur: a market on a 4-day week: every fourth day",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-11-01T06:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY;INTERVAL=4",
+       "zone": "Africa/Nairobi"
+      }
+     },
+     "refs": {}
+    },
+    "2026-11-01T00:00:00.000Z",
+    "2026-11-20T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-11-01T06:00:00.000Z",
+    "2026-11-05T06:00:00.000Z",
+    "2026-11-09T06:00:00.000Z",
+    "2026-11-13T06:00:00.000Z",
+    "2026-11-17T06:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a sensor's heartbeat every five minutes",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-11-05T00:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=MINUTELY;INTERVAL=5",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-11-05T01:00:00.000Z",
+    "2026-11-05T01:20:00.000Z"
+   ],
+   "expect": [
+    "2026-11-05T01:00:00.000Z",
+    "2026-11-05T01:05:00.000Z",
+    "2026-11-05T01:10:00.000Z",
+    "2026-11-05T01:15:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a window far from a minutely start skips to it",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-11-05T00:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=MINUTELY;INTERVAL=5",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2027-11-05T01:00:00.000Z",
+    "2027-11-05T01:11:00.000Z"
+   ],
+   "expect": [
+    "2027-11-05T01:00:00.000Z",
+    "2027-11-05T01:05:00.000Z",
+    "2027-11-05T01:10:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: hourly, only on Monday and Thursday",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-11-05T00:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=HOURLY;INTERVAL=7;BYDAY=MO,TH",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-11-05T01:00:00.000Z",
+    "2026-11-12T02:00:00.000Z"
+   ],
+   "expect": [
+    "2026-11-05T07:00:00.000Z",
+    "2026-11-05T14:00:00.000Z",
+    "2026-11-05T21:00:00.000Z",
+    "2026-11-09T02:00:00.000Z",
+    "2026-11-09T09:00:00.000Z",
+    "2026-11-09T16:00:00.000Z",
+    "2026-11-09T23:00:00.000Z",
+    "2026-11-12T00:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: the last Friday of every second month",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-30T10:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=MONTHLY;BYDAY=-1FR;INTERVAL=2",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2027-01-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-01-30T10:00:00.000Z",
+    "2026-03-27T10:00:00.000Z",
+    "2026-05-29T10:00:00.000Z",
+    "2026-07-31T10:00:00.000Z",
+    "2026-09-25T10:00:00.000Z",
+    "2026-11-27T10:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a monthly repeat from the 31st skips the months with no 31st",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-31T10:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=MONTHLY",
+       "zone": "America/New_York"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2027-01-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-01-31T10:00:00.000Z",
+    "2026-03-31T09:00:00.000Z",
+    "2026-05-31T09:00:00.000Z",
+    "2026-07-31T09:00:00.000Z",
+    "2026-08-31T09:00:00.000Z",
+    "2026-10-31T09:00:00.000Z",
+    "2026-12-31T10:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: the last weekday of the month (BYSETPOS)",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-05T08:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-06-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-01-30T08:00:00.000Z",
+    "2026-02-27T08:00:00.000Z",
+    "2026-03-31T07:00:00.000Z",
+    "2026-04-30T07:00:00.000Z",
+    "2026-05-29T07:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: 29 February comes only in leap years",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2024-02-29T10:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=YEARLY",
+       "zone": "Europe/Paris"
+      }
+     },
+     "refs": {}
+    },
+    "2024-01-01T00:00:00.000Z",
+    "2037-01-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2024-02-29T10:00:00.000Z",
+    "2028-02-29T10:00:00.000Z",
+    "2032-02-29T10:00:00.000Z",
+    "2036-02-29T10:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: the 20th Monday of the year",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=YEARLY;BYDAY=20MO",
+       "zone": "America/Los_Angeles"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2028-01-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-05-18T08:00:00.000Z",
+    "2027-05-17T08:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: the days of the year counted from either end",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=YEARLY;BYYEARDAY=1,100,-1",
+       "zone": "Pacific/Auckland"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2027-06-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-01-01T09:00:00.000Z",
+    "2026-04-10T10:00:00.000Z",
+    "2026-12-31T09:00:00.000Z",
+    "2027-01-01T09:00:00.000Z",
+    "2027-04-10T10:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: COUNT counts from the start of the promise, not of the window",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=WEEKLY;INTERVAL=2;BYDAY=SU,TU;WKST=SU;COUNT=9",
+       "zone": "Asia/Kolkata"
+      }
+     },
+     "refs": {}
+    },
+    "2026-02-01T00:00:00.000Z",
+    "2026-12-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-02-08T09:00:00.000Z",
+    "2026-02-10T09:00:00.000Z",
+    "2026-02-22T09:00:00.000Z",
+    "2026-02-24T09:00:00.000Z",
+    "2026-03-08T09:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: UNTIL in UTC ends it, itself included",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY;UNTIL=20260103T090000Z",
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-01-01T09:00:00.000Z",
+    "2026-01-02T09:00:00.000Z",
+    "2026-01-03T09:00:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: UNTIL as a date ends it at the end of that day in the zone",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-06-01T20:30:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY;UNTIL=20260603",
+       "zone": "Africa/Nairobi"
+      }
+     },
+     "refs": {}
+    },
+    "2026-06-01T00:00:00.000Z",
+    "2026-07-01T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-06-01T20:30:00.000Z",
+    "2026-06-02T20:30:00.000Z",
+    "2026-06-03T20:30:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: RSCALE=GREGORIAN is the Gregorian calendar",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-03-01T02:30:00.000Z",
+      "terms": {
+       "repeat": "RSCALE=GREGORIAN;FREQ=DAILY",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-03-05T00:00:00.000Z",
+    "2026-03-07T00:00:00.000Z"
+   ],
+   "expect": [
+    "2026-03-05T02:30:00.000Z",
+    "2026-03-06T02:30:00.000Z"
+   ],
+   "exact": true
+  },
+  {
+   "name": "recur: a repeat that follows an event has no calendar",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": {
+        "after": "delivered",
+        "by": [
+         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        ],
+        "wait": "P1D"
+       },
+       "zone": "Europe/London"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: a calendar repeat with no zone is not read",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: a zone that is not in the database is not read",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY",
+       "zone": "Mars/Olympus_Mons"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: another calendar (RSCALE=HEBREW) is not read",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "RSCALE=HEBREW;FREQ=YEARLY",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: a part the reader does not know (BYWEEKNO) is not read",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=YEARLY;BYWEEKNO=20",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: a repeat with no FREQ is not read",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "INTERVAL=2",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: COUNT and UNTIL together are not read",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": "2026-01-01T09:00:00.000Z",
+      "terms": {
+       "repeat": "FREQ=DAILY;COUNT=3;UNTIL=20260201",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
+  },
+  {
+   "name": "recur: a promise that starts after an event has no start to count from",
+   "op": "repeat_occurrences",
+   "args": [
+    {
+     "type": "promise",
+     "state": {
+      "when": {
+       "after": "delivered",
+       "wait": "P1D"
+      },
+      "terms": {
+       "repeat": "FREQ=DAILY",
+       "zone": "UTC"
+      }
+     },
+     "refs": {}
+    },
+    "2026-01-01T00:00:00.000Z",
+    "2026-02-01T00:00:00.000Z"
+   ],
+   "error": {
+    "kind": "argument"
+   }
   }
  ]
 }

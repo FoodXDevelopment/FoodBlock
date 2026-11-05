@@ -2,6 +2,11 @@
 
 What changed in each version. The spec says what each version means; this page says what moved.
 
+## Calendar repeats are read by a pinned time zone database, 2026-11-05 (adds to 1.7, no signed shape changed)
+
+- **The reader of a calendar repeat** (promises.md, Terms: `zone`): the IANA time zone database, release 2026e, is the one every core reads `terms.zone` by, so strangers' computers count the same occurrences. The Rust core bundles it (the `recur` feature, in the door builds).
+- New door op: `repeat_occurrences(promise, from, to)`: the UTC start times of the promise's `repeat`, counted from `state.when`, `from` up to (not including) `to`. JavaScript: `repeatOccurrences`. A repeat that follows an event, another calendar (`RSCALE` other than `GREGORIAN`), or a part the core does not read (`BYWEEKNO`) is refused, never guessed.
+
 ## New door ops: is_stranger, speaks_for, scope_reading, 2026-11-03 (adds to 1.7, no rule changed)
 
 - **Three rules the Rust core already held are now asked through the door**, so a product reads them from the SDK and keeps no copy that can drift. `is_stranger(receiver, sender, blocks, block?)` (consent.md): true unless her accept, her counter-offer, a deal she opened naming him or her own live `yes` makes him no stranger; the sender's block, when given, names whom it speaks for too. `speaks_for(block, blocks)` (authority.md, Who a block speaks for): the id of the one party a fold counts the block for, or null when it speaks for no one; a block no node would take is no word; no clock is read. `scope_reading(scope)` (authority.md): a grant's `state.scope` with every default the spec states and nothing else filled in; `junk` lists the fields that are there but cannot be read (what the write check refuses in a scope, a name that is no scope field), and a caller holds a grant with a non-empty `junk` to no word.

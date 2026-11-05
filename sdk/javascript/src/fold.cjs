@@ -13,6 +13,9 @@ const promiseStage = (firstBlock, blocks) => door.promiseStage(firstBlock, block
 const promiseView = (firstBlock, blocks, { now } = {}) => door.promiseView(firstBlock, blocks, { now })
 /** The views of many deals of one store at once, read against one reading of it: { hash: view }. Each first promise is among `blocks`. */
 const promiseViews = (firsts, blocks, { now } = {}) => door.promiseViews(list(firsts).map((f) => (typeof f === 'string' ? f : f.hash)), blocks, { now })
+/** The occurrences of a standing promise's calendar repeat (promises.md, Terms: repeat) from `from` up to, not including, `to`: UTC start times, each the name of an occurrence.
+ * Counted from `state.when`, read in `terms.zone` by the IANA database the core bundles. Throws for a repeat that follows an event, another calendar, or a part it does not read. */
+const repeatOccurrences = (promise, from, to) => door.repeatOccurrences(promise, from, to)
 /** A circle's members and roles. Options: `within` (a block: fold only its causal past). */
 const circleState = (circle, blocks, { within } = {}) => door.circleState(idOf(circle), blocks, within || null)
 const mayActAs = (block, circle, blocks, role) => door.mayActAs(block, idOf(circle), blocks, role || null)
@@ -42,4 +45,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

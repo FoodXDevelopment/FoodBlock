@@ -50,6 +50,7 @@ module.exports = {
   admissionRefusals: (block, receiver, blocks, admission, strangers_today) => call('admission_refusals', block, receiver, list(blocks), admission, strangers_today),
   liveGrant: (act, grants, now) => call('live_grant', act, list(grants), now),
   due: (promise, arrivals) => call('due', promise, arrivals ?? null),
+  repeatOccurrences: (promise, from, to) => call('repeat_occurrences', promise, from, to),
   recoveryReach: (rotation, blocks, arrivals, unknown_arrival) => call('recovery_reach', rotation, list(blocks), arrivals ?? null, unknown_arrival ?? null),
   nextLink: (last, brought_in) => call('next_link', last ?? null, brought_in ?? null),
   checkChain: (blocks, id) => call('check_chain', list(blocks), id),

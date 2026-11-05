@@ -240,6 +240,11 @@ func doorDue[T any](promise any, arrivals map[string]string) T {
 	return must[T]("due", promise, arrivals)
 }
 
+// doorRepeatOccurrences is the door's repeat_occurrences(promise, from, to) -> strings.
+func doorRepeatOccurrences(promise any, from string, to string) []string {
+	return plural(must[[]string]("repeat_occurrences", promise, from, to))
+}
+
 // doorRecoveryReach is the door's recovery_reach(rotation, blocks, arrivals?, unknown_arrival?) -> json.
 func doorRecoveryReach[T any](rotation any, blocks []Block, arrivals map[string]string, unknownArrival string) T {
 	return must[T]("recovery_reach", rotation, plural(blocks), arrivals, nilIfEmpty(unknownArrival))
