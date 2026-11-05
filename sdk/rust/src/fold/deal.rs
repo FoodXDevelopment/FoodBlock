@@ -44,6 +44,8 @@ pub(super) struct Pass {
     pub side: &'static str,
     pub by: String,
     pub to: String,
+    /// The one the part is owed to, who freed the passer by their own accept of the pass (a third signature); none while she still answers.
+    pub freed_by: Option<String>,
 }
 
 /// What binds in a deal (stage 2): the accept (or, on an open offer, the first allocation), the takers of an open offer and which
@@ -186,8 +188,16 @@ impl<'a> Deal<'a> {
                 type_of(a) == "observe" && status(a, "accepted") && rs(a, "answers") == Some(hash_of(p)) && speaker_of(a, index, None).as_deref() == Some(to.as_str())
             });
             if accepted {
+                let other = if side == "from" { "to" } else { "from" };
+                let freed_by = seen.iter().find(|a| {
+                    type_of(a) == "observe" && status(a, "accepted") && rs(a, "answers") == Some(hash_of(p)) && match (holder.get(other), speaker_of(a, index, None)) {
+                        (Some(h), Some(w)) => *h == w,
+                        (None, _) => self.side_of(a) == Some(other),
+                        _ => false,
+                    }
+                }).and_then(|a| speaker_of(a, index, None));
                 holder.insert(side, to.clone());
-                out.push(Pass { hash: hash_of(p).to_string(), side, by, to });
+                out.push(Pass { hash: hash_of(p).to_string(), side, by, to, freed_by });
             }
         }
         out

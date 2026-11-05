@@ -257,7 +257,7 @@ impl Deal<'_> {
         let mut out = json!({
             "stage": stage, "stop": null, "from": null, "by": null, "offer": reported, "live": live_hashes, "accept": b.accept.map(hash_of),
             "sides": { "from": self.from_ref, "to": self.to_ref }, "quantity": null, "takers": b.takers, "forks": b.forks, "lines": [], "total": null,
-            "paid": null, "stopped": [], "passed": [], "answerable": { "from": null, "to": null }, "disputed": [], "due": null, "paid_at": null, "occurrences": [], "referee_ties": [],
+            "paid": null, "stopped": [], "passed": [], "answerable": { "from": null, "to": null }, "owing": { "from": [], "to": [] }, "disputed": [], "due": null, "paid_at": null, "occurrences": [], "referee_ties": [],
             "uncovered": null, "over_allocated": false, "owed": null, "owed_on": [], "received_at": [], "moved": [], "price_fixed": null,
         });
         if let Value::Object(m) = more {

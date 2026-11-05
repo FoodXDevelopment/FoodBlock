@@ -585,6 +585,18 @@ impl<'s> Settling<'s> {
         }
     }
 
+    /// Everyone who answers to the other side for a side's part: whoever answers for it now, and each who passed it on and was not freed by the
+    /// other side's own accept of the pass (promises.md, Passing a part). Sorted as text.
+    fn owing(&self, side: &str) -> Value {
+        let mut ids: Vec<String> = self.passes().iter().filter(|p| p.side == side && p.freed_by.is_none()).map(|p| p.by.clone()).collect();
+        if let Some(w) = self.answerable(side).as_str() {
+            ids.push(w.to_string());
+        }
+        ids.sort();
+        ids.dedup();
+        json!(ids)
+    }
+
     /// The settled deal's stage: reversed, done, breached, stopped onward, underway or accepted.
     pub(super) fn settle(&self, stops: &[&Value]) -> Value {
         let (d, terms, offer) = (self.d, self.terms, self.offer);
@@ -643,8 +655,9 @@ impl<'s> Settling<'s> {
                 },
             })).collect::<Vec<_>>() } else { Vec::new() },
             "stopped": stopped_occurrences,
-            "passed": self.passes().iter().map(|p| json!({ "pass": p.hash, "side": p.side, "by": p.by, "to": p.to })).collect::<Vec<_>>(),
+            "passed": self.passes().iter().map(|p| json!({ "pass": p.hash, "side": p.side, "by": p.by, "to": p.to, "freed_by": p.freed_by })).collect::<Vec<_>>(),
             "answerable": json!({ "from": self.answerable("from"), "to": self.answerable("to") }),
+            "owing": json!({ "from": self.owing("from"), "to": self.owing("to") }),
             "disputed": disputed,
             "due": if repeat.is_some() { Value::Null } else { terms.get("pay_by").cloned().unwrap_or(Value::Null) },
             "paid_at": paid_at,

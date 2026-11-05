@@ -2,6 +2,10 @@
 
 What changed in each version. The spec says what each version means; this page says what moved.
 
+## A passer stays answerable until the other side frees her, 2026-11-05 (corrects the entry below; adds to 1.7)
+
+- Passing a part moves the work with two signatures and binds no one else. The passer still answers to the one she promised until that person's own `observe` that `answers` the pass `accepted` (an optional third signature) frees her. The view's `passed` entries gain `freed_by`; the view gains `owing` (`{ from, to }`, the sorted ids that answer to the other side for each side's part: the receiver and each passer not yet freed). `answerable` is unchanged (who does it now).
+
 ## A part passed on, a pause resumed, an unpriced occurrence done, 2026-11-05 (adds to 1.7)
 
 - **Passing a part** (promises.md, Owed's neighbour: Passing a part): two signed words. The one who answers for a side's part signs an `observe` of kind `pass`, `for` the deal, `refs.to` the receiver; the receiver's own `observe` answers it `accepted`. Until then the passer still owes it. After, the receiver answers for it (their `done`, `work`, `transform` count as the side's) and may pass it on; `terms.personal` forbids it. The view gains `passed` and `answerable`. Schema `pass`.

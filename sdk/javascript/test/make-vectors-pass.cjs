@@ -74,11 +74,15 @@ check('resume: an updates of a promise that says resumed is allowed (the pause i
 // ---- a part passed on by two signatures
 {
   const s = story(), ann = s.person('pe-ann'), bob = s.person('pe-bob'), carl = s.person('pe-carl'), dee = s.person('pe-dee'), p = dog(s, ann, bob)
-  stage('pass: before any pass, the side itself answers for its part', p, s.held, { stage: 'accepted', passed: [], answerable: { from: ann.id, to: bob.id } })
+  stage('pass: before any pass, the side itself answers for its part', p, s.held, { stage: 'accepted', passed: [], answerable: { from: ann.id, to: bob.id }, owing: { from: [ann.id], to: [bob.id] } })
   const pass = s.say(ann, 'observe', { kind: 'pass' }, { for: p.hash, to: carl.id })
-  stage('pass: until the receiver signs, she still owes it', p, s.held, { passed: [], answerable: { from: ann.id } })
+  stage('pass: until the receiver signs, she still owes it', p, s.held, { passed: [], answerable: { from: ann.id }, owing: { from: [ann.id] } })
   s.say(carl, 'observe', { status: 'accepted' }, { answers: pass.hash, for: p.hash })
-  stage('pass: once the receiver signs, he answers for it', p, s.held, { passed: [{ pass: pass.hash, side: 'from', by: ann.id, to: carl.id }], answerable: { from: carl.id, to: bob.id } })
+  stage('pass: once the receiver signs, he does it, and she still answers to Bob: nothing the two signed binds Bob', p, s.held, { passed: [{ pass: pass.hash, side: 'from', by: ann.id, to: carl.id, freed_by: null }], answerable: { from: carl.id, to: bob.id }, owing: { from: [ann.id, carl.id].sort(), to: [bob.id] } })
+  s.say(carl, 'observe', { status: 'accepted' }, { answers: pass.hash, for: p.hash })
+  stage('pass: Carl saying yes again frees no one: only the one she promised can', p, s.held, { passed: [{ freed_by: null }], owing: { from: [ann.id, carl.id].sort() } })
+  s.say(bob, 'observe', { status: 'accepted' }, { answers: pass.hash, for: p.hash }, { time: '2026-11-06T09:30:00.000Z' })
+  stage('pass: Bob\'s own accept of the pass frees her (a third signature); the receiver alone answers', p, s.held, { passed: [{ pass: pass.hash, freed_by: bob.id }], answerable: { from: carl.id, to: bob.id }, owing: { from: [carl.id], to: [bob.id] } })
   // his done is the side's word; hers no longer is
   s.say(carl, 'observe', { kind: 'done', occurrence: D1 }, { for: p.hash }, { time: '2026-11-06T10:00:00.000Z' })
   stage('pass: the receiver\'s done keeps the occurrence', p, s.held, { occurrences: [{ occurrence: D1, done_at: '2026-11-06T10:00:00.000Z' }] })
@@ -115,5 +119,6 @@ check('resume: an updates of a promise that says resumed is allowed (the pause i
   stage('pass: the other side passes its own part the same way', p, s.held, { passed: [{ side: 'to', by: bob.id, to: dee.id }], answerable: { from: ann.id, to: dee.id } })
 }
 
+kit.retire(['pass: once the receiver signs, he answers for it'])
 vectorsFile.save(V, tags)
 console.log(`${kit.made.size} cases written to ${require('path').relative(process.cwd(), vectorsFile.FILE)}`)

@@ -2653,7 +2653,7 @@ function promiseStage(firstIn, poolIn, opts) {
     return t ? { O, R, t } : null;
   })();
   const Q = alloc ? alloc.O : P; // the root: sides, terms, what
-  const out = { stage: null, stop: null, from: null, by: null, offer: Q.hash, accept: null, sides: { from: Q.refs.from === undefined ? null : Q.refs.from, to: Q.refs.to === undefined ? null : Q.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [], passed: [], answerable: { from: null, to: null }, disputed: [], due: null, paid_at: null, occurrences: [], referee_ties: [], uncovered: null, over_allocated: false, owed: null, owed_on: [], received_at: [], moved: [], price_fixed: null };
+  const out = { stage: null, stop: null, from: null, by: null, offer: Q.hash, accept: null, sides: { from: Q.refs.from === undefined ? null : Q.refs.from, to: Q.refs.to === undefined ? null : Q.refs.to }, quantity: null, takers: [], forks: [], lines: [], total: null, paid: null, stopped: [], passed: [], answerable: { from: null, to: null }, owing: { from: [], to: [] }, disputed: [], due: null, paid_at: null, occurrences: [], referee_ties: [], uncovered: null, over_allocated: false, owed: null, owed_on: [], received_at: [], moved: [], price_fixed: null };
   // a side that names a thing is its owner where each block stands: the ownership fold of that block's causal past (promises.md, Bearer), so an
   // accept binds the holder that signed it, and a note passed on after it was redeemed binds no one again. An allocation's open side is its taker.
   const isThing = r => { const t = r !== undefined && pool.get(r); return !!t && t.type === 'thing'; };
@@ -2702,7 +2702,12 @@ function promiseStage(firstIn, poolIn, opts) {
       if (!isStr(by) || !isStr(to) || to === by) continue;
       const side = ['from', 'to'].find(k => (holder[k] !== undefined ? holder[k] === by : sideOfB(p) === k));
       if (!side) continue;
-      if (seenD.some(a => a.type === 'observe' && a.state.status === 'accepted' && a.refs.answers === p.hash && who(a) === to)) { holder[side] = to; passList.push({ pass: p.hash, side, by, to }); }
+      if (seenD.some(a => a.type === 'observe' && a.state.status === 'accepted' && a.refs.answers === p.hash && who(a) === to)) {
+        const other = side === 'from' ? 'to' : 'from'
+        // the other side's own accept of the pass frees the passer (a third signature)
+        const f = seenD.find(a => a.type === 'observe' && a.state.status === 'accepted' && a.refs.answers === p.hash && (holder[other] !== undefined ? who(a) === holder[other] : sideOfB(a) === other))
+        holder[side] = to; passList.push({ pass: p.hash, side, by, to, freed_by: f ? who(f) : null })
+      }
     }
   }
   const open = !alloc && (Q.refs.from === undefined || Q.refs.to === undefined);
@@ -3479,6 +3484,8 @@ function promiseStage(firstIn, poolIn, opts) {
   out.stopped = [...occ].sort();
   out.passed = passes.map(x => ({ ...x }));
   out.answerable = { from: ((l) => (l ? l.to : (receiverAt('from', accept) ?? null)))(passes.filter(x => x.side === 'from').pop()), to: ((l) => (l ? l.to : (receiverAt('to', accept) ?? null)))(passes.filter(x => x.side === 'to').pop()) };
+  const owingOf = side => [...new Set([...passes.filter(x => x.side === side && x.freed_by === null).map(x => x.by), out.answerable[side]].filter(x => isStr(x)))].sort()
+  out.owing = { from: owingOf('from'), to: owingOf('to') }
   // ---- the stage: the first of these that holds, from the furthest along back to the start (with no binding accept, above)
   if (covered && paidAll && paidBig > 0n && refundedBig >= paidBig) out.stage = 'reversed';
   else if (covered && paidAll) out.stage = 'done';
