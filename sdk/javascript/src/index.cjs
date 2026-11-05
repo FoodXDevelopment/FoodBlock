@@ -57,7 +57,7 @@ module.exports = {
 
   // Who someone is; authority; the folds; between nodes
   identity, grant, fold, sync, merkle,
-  promiseStage: fold.promiseStage, repeatOccurrences: fold.repeatOccurrences, promiseView: fold.promiseView, consent: fold.consent, speaksFor: fold.speaksFor, circleState: fold.circleState, identityState: identity.identityState, membersThen: fold.membersThen, whereNow: fold.whereNow, ownerOf: fold.ownerOf,
+  promiseStage: fold.promiseStage, repeatOccurrences: fold.repeatOccurrences, promiseView: fold.promiseView, consent: fold.consent, speaksFor: fold.speaksFor, backed: fold.backed, circleState: fold.circleState, identityState: identity.identityState, membersThen: fold.membersThen, whereNow: fold.whereNow, ownerOf: fold.ownerOf,
 
   // Keys kept on a person's device, locked with a recovery code (product custody, not protocol)
   keystore

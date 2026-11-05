@@ -660,6 +660,11 @@ func doorSpeaksFor(block any, blocks []Block) *string {
 	return must[*string]("speaks_for", block, plural(blocks))
 }
 
+// doorBacked is the door's backed(block, person, blocks) -> object.
+func doorBacked[T any](block any, person string, blocks []Block) T {
+	return must[T]("backed", block, person, plural(blocks))
+}
+
 // doorMembersThen is the door's members_then(block, recipient, blocks) -> json.
 func doorMembersThen[T any](block any, recipient string, blocks []Block) T {
 	return must[T]("members_then", block, recipient, plural(blocks))

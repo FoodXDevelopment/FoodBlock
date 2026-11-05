@@ -144,6 +144,7 @@ internal object Door {
     fun circleState(circle: JsonElement, blocks: JsonElement, within: JsonElement = JsonNull): JsonElement = go("circle_state", 2, circle, blocks, within)
     fun mayActAs(block: JsonElement, circle: JsonElement, blocks: JsonElement, role: JsonElement = JsonNull): JsonElement = go("may_act_as", 3, block, circle, blocks, role)
     fun speaksFor(block: JsonElement, blocks: JsonElement): JsonElement = go("speaks_for", 2, block, blocks)
+    fun backed(block: JsonElement, person: JsonElement, blocks: JsonElement): JsonElement = go("backed", 3, block, person, blocks)
     fun membersThen(block: JsonElement, recipient: JsonElement, blocks: JsonElement): JsonElement = go("members_then", 3, block, recipient, blocks)
     fun whereNow(thing: JsonElement, blocks: JsonElement): JsonElement = go("where_now", 2, thing, blocks)
     fun ownership(instance: JsonElement, blocks: JsonElement, now: JsonElement = JsonNull): JsonElement = go("ownership", 2, instance, blocks, now)

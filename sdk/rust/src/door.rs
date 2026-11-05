@@ -695,6 +695,13 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             json!(fold::who_speaks(a.v(0), &a.list(1)))
         }
+        // is this block backed by this person (authority.md, Backed by a person): { backed, why, chain }; no clock, no arrival
+        "backed" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            fold::backed(a.v(0), a.s(1)?, &a.list(2))
+        }
         "members_then" => json!(fold::members_then(a.v(0), a.s(1)?, &a.list(2))),
         "where_now" => json!(fold::where_now(a.v(0), &a.list(1))),
         "ownership" => {

@@ -5,6 +5,7 @@ from .identity import _arrived
 
 circle_state = door.circle_state
 may_act_as = door.may_act_as
+backed = door.backed  # is this block backed by this person (authority.md): {backed, why, chain}; why is a plain sentence when not (None when backed), chain the hashes down to the block the person signed; no clock, no arrival
 speaks_for = door.speaks_for  # the one party a fold counts a block for (authority.md): an id, or None when it speaks for no one; the block need not be among the blocks yet; no clock
 members_then = door.members_then
 where_now = door.where_now

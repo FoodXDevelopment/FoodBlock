@@ -21,6 +21,8 @@ const circleState = (circle, blocks, { within } = {}) => door.circleState(idOf(c
 const mayActAs = (block, circle, blocks, role) => door.mayActAs(block, idOf(circle), blocks, role || null)
 /** The one party a fold counts `block` for (authority.md, Who a block speaks for): an id, or null when it speaks for no one. `block` need not be among `blocks` yet; no clock is read. */
 const speaksFor = (block, blocks) => door.speaksFor(block, blocks)
+/** Is `block` backed by `person` (authority.md, Backed by a person)? `{ backed, why, chain }`: `why` is a plain sentence when not (null when backed), `chain` the hashes from the block down to the block the person signed. `person` is an id or a block; no clock, no arrival. */
+const backed = (block, person, blocks) => door.backed(block, idOf(person), blocks)
 const membersThen = door.membersThen
 const ownership = (instance, blocks, now) => door.ownership(blockOf(instance), blocks, now)
 const ownerOf = (instance, blocks) => door.ownerOf(blockOf(instance), blocks)
@@ -47,4 +49,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

@@ -62,6 +62,7 @@
   "done",
   "pass",
   "account",
+  "witness",
   "answer"
  ],
  "schemas": {
@@ -1215,8 +1216,33 @@
    },
    "signature": "168e634d39eea87dee61b52142c9d0a54d5a4209ff252717ac6a9a2bc15970b2f02dc40e73992ec33a6ef94c83194205775778d1940f38f074777a7579d71a02"
   },
+  "witness": {
+   "hash": "bf481bd6c01d61b7a1a167a278e16f7bb901d0ca62b234f60ba0fb699946183b",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "witness",
+    "target": "observe.witness",
+    "fields": {
+     "channel": "the channel that spoke, in the witness's words: `sms:+447700900123`, `voice:+447700900123`. A grant that backs this block names the same one",
+     "said": "what the channel said: `yes`, `stop`, or the words themselves",
+     "readback": "the SHA-256 digest (hex) of the read-back text she was shown and the channel answered"
+    },
+    "grounds": {
+     "event": "the signer says a channel said something to a read-back (refs.for names the deal or move it was about); the block is the signer's own word and is backed by the person whose channel it is only under a live grant of theirs that names this signer and this channel (authority.md, A witness)"
+    },
+    "at": "2026-10-19T00:00:45.000Z",
+    "audience": "public",
+    "seq": 45
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c"
+   },
+   "signature": "fe497144b23f255ee5f2d845a40200ceba5ae933cc592e770a7166c30cfb3e07d106403055d275aa0a929621195f0d05ab04bf714559ac5463544f684f5e2d0e"
+  },
   "answer": {
-   "hash": "dce7371c8dce362f859fd058c23302c16e542608a30414aba3a3334477d64747",
+   "hash": "2a8e41f2718028beeea53caa965beb2b78761532b8a0fb38f545cdd777ee82dd",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1230,15 +1256,15 @@
     "grounds": {
      "event": "the signer answers the block in refs.answers with a typed field and value, so a reader checks it without reading words, and a grant's scope may allow the act (promises.md, An answer to a question)"
     },
-    "at": "2026-10-19T00:00:45.000Z",
+    "at": "2026-10-19T00:00:46.000Z",
     "audience": "public",
-    "seq": 45
+    "seq": 46
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c"
+    "prev": "bf481bd6c01d61b7a1a167a278e16f7bb901d0ca62b234f60ba0fb699946183b"
    },
-   "signature": "67d6b2676c33e06618cceac5453173bbeb814ab0107a7865b0f514069f8d707f913b9914f8544ca621c9cb644c52ecc32370a3ec2641e6e0034ecc7855191409"
+   "signature": "b027280dded81b712e34e254cc9eceb5fbf8928fae44befc9f5b8a111f23348e43e67db60d8e2cdb46e51ff5459363608f77f8cb1094617ff7e30c75677d4503"
   }
  }
 }

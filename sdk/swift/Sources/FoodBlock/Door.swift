@@ -134,6 +134,7 @@ enum Door {
     static func circleState(_ circle: String, _ blocks: [JSON], _ within: JSON? = nil) throws -> JSON? { try Core.maybe("circle_state", circle, blocks, within) as? JSON }
     static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], _ role: String? = nil) throws -> Bool { try Core.bool("may_act_as", block, circle, blocks, role) }
     static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Core.maybe("speaks_for", block, blocks) as? String }
+    static func backed(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("backed", block, person, blocks) }
     static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("members_then", block, recipient, blocks) }
     static func whereNow(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("where_now", thing, blocks) }
     static func ownership(_ instance: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ownership", instance, blocks, now) }

@@ -134,6 +134,7 @@ module.exports = {
   circleState: (circle, blocks, within) => call('circle_state', circle, list(blocks), within ?? null),
   mayActAs: (block, circle, blocks, role) => call('may_act_as', block, circle, list(blocks), role ?? null),
   speaksFor: (block, blocks) => call('speaks_for', block, list(blocks)),
+  backed: (block, person, blocks) => call('backed', block, person, list(blocks)),
   membersThen: (block, recipient, blocks) => call('members_then', block, recipient, list(blocks)),
   whereNow: (thing, blocks) => call('where_now', thing, list(blocks)),
   ownership: (instance, blocks, now) => call('ownership', instance, list(blocks), now ?? null),

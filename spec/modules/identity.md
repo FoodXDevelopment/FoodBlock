@@ -44,7 +44,7 @@ An **identity** is an `actor`; its id is its genesis hash. Its **keys** are publ
 - A held key is not lesser; a reader weighs the custodian and what it publishes about how it signs (profiles/custody.md). No fold ranks custodians.
 - A custodian that promised so signs only on the person's own word (core.md, section 10). Its grounds say how it came: `state.channel` (an open label: `sms`, `ussd`, `voice`, `letter`, `meeting`) and `derives_from` the hash of the raw message. Words read by a model are a reading; the person's yes to the exact terms is what it signs on (things.md, Truth).
 - The person may take their keys back any time: a key grant to a key on their own device rotates the custodian's out.
-- A custodian block acting on its own judgement speaks for the custodian alone, unless a grant names it.
+- A custodian block acting on its own judgement speaks for the custodian alone, unless a grant names it. A host that holds no key of hers and says what her channel said signs a witness in its own name under her grant (authority.md, A witness), never as her.
 
 **Profile facts** (a name, a timezone) are the person's own `observe` of kind `profile`, not identity.
 

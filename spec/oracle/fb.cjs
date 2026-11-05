@@ -976,6 +976,8 @@ function scopeWithin(child, parent) {
   if (p.limit_commitment !== undefined && c.limit_commitment === undefined && c.limit === undefined) return false;
   // a limit with no period covers all time: a child with a period under it could spend it again every period
   if (p.limit !== undefined && p.every === undefined && c.every !== undefined) return false;
+  // a grant that names a channel is passed on only to that channel
+  if (parent.channel !== undefined && child.channel !== parent.channel) return false;
   const pd = parent.depth === undefined ? 0 : parent.depth, cd = child.depth === undefined ? 0 : child.depth;
   return pd >= 1 && cd <= pd - 1;
 }
@@ -2116,6 +2118,8 @@ function whyNotUnder(b, poolIn) {
   if (!trigger && !receives(g, b, pool)) return fail('the signer is not the receiver of the grant');
   if (!grantLive(g, pool, new Set(), b)) return fail('the grant is not live');
   const sc = !trigger && isObj(g.state.scope) ? g.state.scope : {};
+  // a block that names a channel (a witness: this channel said yes) is covered only by a grant that names the same one (authority.md, A witness)
+  if (!trigger && b.state.channel !== undefined && g.state.channel !== b.state.channel) return fail('the grant does not name the channel');
   const names = actNames(b);
   if (!trigger && (sc.acts === undefined || !names.some(n => asList(sc.acts).includes(n)))) return fail('the act is outside the grant\'s scope');
   // scope.parties: every side the block deals with (its from, to, to_owner and to_holder, and for an answer the sides of the block it answers, or
@@ -4166,6 +4170,40 @@ function speaksFor(block, blocks) {
   const who = speakerOf(held, pool);
   return who === undefined ? null : who;
 }
+// backed(block, person, blocks): is this block backed by the person (authority.md, Backed by a person)? { backed, why, chain }. Backed when the person signed it
+// (their key speaks for them), or it is signed as a circle by one who may sign for it and the person holds `sign` in the circle's fold of the block's causal past,
+// or a grantee signed it under a grant that passes the door's test (whyNotUnder: made for its signer, live at the block's own place, covering it) and whose
+// chain (refs.parent, to the first grant not passed on) roots in the person's signature, or in a circle the person holds `sign` in. No clock, no arrival.
+function backed(block, person, blocks) {
+  if (!isObj(block)) throw argError('argument 0 is a block');
+  if (!isStr(person)) throw argError('person is an id (text)');
+  const pool = readWith(blocks, block);
+  const b = pool.get(block.hash);
+  const no = (why, chain) => ({ backed: false, why, chain });
+  if (!b) return no('the block is no word: it is not valid on what it rests on, or rests on a block not held', []);
+  const chain = [b.hash];
+  if (!counts(b, pool)) return no('its signer\'s key does not speak for its author here', chain);
+  let root;
+  if (b.refs.as !== undefined) {
+    if (!mayActAsIn(b, b.refs.as, pool)) return no('it is signed as a circle by one who holds no sign there', chain);
+    root = b.refs.as;
+  } else if (b.refs.author === person) return { backed: true, why: null, chain };
+  else if (b.refs.under !== undefined) {
+    const wrong = whyNotUnder(b, pool);
+    if (wrong.length) return no('a grant does not back it: ' + wrong.map(w => w.detail).join('; '), chain);
+    let g = pool.get(b.refs.under);
+    for (;;) { chain.push(g.hash); const up = g.refs.parent === undefined ? null : pool.get(g.refs.parent); if (!up) break; g = up; }
+    root = principalOf(g, pool);
+    if (root === null) return no('the grant at the top of its chain is signed as a circle by one who may not sign for it', chain);
+  } else return no('it is signed by someone else and names no grant', chain);
+  if (root === person) return { backed: true, why: null, chain };
+  const C = pool.get(root);
+  if (C && C.type === 'actor' && C.state.kind === 'circle' && pool.before(b.hash).has(root)) {
+    const m = circleWhole(root, pool, pool.before(b.hash)).members[person];
+    if (m && powersOf(C, rolesAt(m, b, pool)).has('sign')) return { backed: true, why: null, chain };
+  }
+  return no('its chain roots in someone else', chain);
+}
 // accountOf(who, blocks): where a person says money to them goes (promises.md, Where to pay me). The words counted are the `observe` blocks of kind `account` that `who`
 // signed, that speak for no one else and that a node would take; the head is the one no other of those has in its causal past. null for none, for two heads that
 // do not see each other, and for a head with no destination (it ends the account).
@@ -4829,6 +4867,7 @@ function door(op, ...a) {
     case 'may_act_as': return mayActAs(a[0], a[1], a[2], a[3]);
     case 'speaks_for': return speaksFor(a[0], a[1]);
     case 'account_of': return accountOf(a[0], a[1]);
+    case 'backed': return backed(a[0], a[1], a[2]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
     case 'circle_key': return circleKey(a[0], a[1]); // profiles/rekeys.md
     case 'members_then': return membersThen(a[0], a[1], a[2]);
@@ -4938,6 +4977,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, isStranger, speaksFor, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, backed, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

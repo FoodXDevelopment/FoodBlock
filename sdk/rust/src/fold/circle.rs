@@ -743,6 +743,12 @@ pub fn holders_of(state: Option<&CircleState>, role: &str) -> Vec<String> {
     sorted_set(state.members.iter().filter(|(_, m)| m.roles.iter().any(|r| r == role)).map(|(k, _)| k))
 }
 
+/// Whether `person` holds `sign` in the circle's fold of the block's causal past: one of the circle's hands (authority.md, Backed by a person).
+pub(crate) fn is_hand_at(person: &str, circle: &str, block: &Value, read: &Index) -> bool {
+    let (Some(root), Some(state)) = (read.get(circle), circle_state_in(circle, read, Some(block))) else { return false };
+    state.members.get(person).and_then(|m| roles_at(m, block, read)).is_some_and(|roles| holds_power(&roles_table(root), &roles, "sign"))
+}
+
 pub(crate) fn may_act_as_in(block: &Value, circle: &str, read: &Index, role: Option<&str>) -> bool {
     may_with_in(block, circle, read, role, "sign")
 }

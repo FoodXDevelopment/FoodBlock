@@ -531,6 +531,10 @@ def speaks_for(block, blocks):
     return call("speaks_for", block, _blocks(blocks))
 
 
+def backed(block, person, blocks):
+    return call("backed", block, person, _blocks(blocks))
+
+
 def members_then(block, recipient, blocks):
     return call("members_then", block, recipient, _blocks(blocks))
 

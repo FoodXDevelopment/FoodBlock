@@ -62,6 +62,10 @@ const READS = {
     const acting = held.filter((b) => b.refs && (b.refs.as || b.refs.under)), plain = held.filter((b) => b.refs && !b.refs.as && !b.refs.under).slice(0, 3)
     return [...acting, ...plain].map((b) => ({ block: b, args: [b, held] }))
   },
+  backed: (held) => {
+    const people = keyed(held)
+    return held.filter((b) => b.refs && (b.refs.as || b.refs.under)).flatMap((b) => people.map((p) => ({ note: ` by ${p.hash.slice(0, 6)}`, block: b, args: [b, p.hash, held] })))
+  },
   is_stranger: (held) => {
     const people = keyed(held)
     return people.flatMap((r) => people.filter((q) => q !== r).flatMap((q) => [

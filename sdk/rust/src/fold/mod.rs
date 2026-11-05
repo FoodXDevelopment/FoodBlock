@@ -5,6 +5,7 @@ use crate::js::{hash_of, index_of, rs, type_of, Index};
 use crate::prelude::*;
 
 mod account;
+mod backed;
 mod bench;
 mod owed;
 mod circle;
@@ -24,7 +25,7 @@ mod uses;
 
 #[cfg(feature = "rekeys")]
 pub use rekeys::circle_key;
-pub(crate) use circle::{holds_then, may_act_as_in};
+pub(crate) use circle::{holds_then, is_hand_at, may_act_as_in};
 pub use circle::{circle_state, circle_state_in, holders_of, may_act_as, members_then, CircleState, Member};
 pub(crate) use promise::promise_stage_in;
 pub use promise::{promise_stage, terms_total, StageOptions};
@@ -33,6 +34,7 @@ pub(crate) use promise::binds;
 pub use successor::successor_state;
 pub use invasion::{invasion_shown, not_free_shown};
 pub use account::account_of;
+pub use backed::backed;
 pub use pot::pot;
 pub use release::{bids_shown, release_shown};
 pub use uses::{shares_on, use_shown};

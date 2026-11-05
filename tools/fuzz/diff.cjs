@@ -42,6 +42,7 @@ const OPS = {
   consent: { oracle: (p, s, held, block) => fb.consentFold(p, s, held, block), proj: c => pick(c, ['word', 'block']) },
   is_stranger: { oracle: (r, s, held, block) => fb.door('is_stranger', r, s, held, block), proj: x => x },
   speaks_for: { oracle: (b, held) => fb.door('speaks_for', b, held), proj: x => x },
+  backed: { oracle: (b, who, held) => fb.door('backed', b, who, held), proj: x => ({ backed: x.backed, chain: x.chain }) }, // `why` is a sentence, never compared
   scope_reading: { oracle: scope => fb.door('scope_reading', scope), proj: x => x },
   circle_state: { oracle: (id, held) => fb.circleState(id, held), proj: s => s && s.founder && { founder: s.founder, members: members(s), removed: Object.fromEntries(Object.entries(s.removed || {}).sort()) } },
   members_then: { oracle: (b, who, held) => fb.membersThen(b, who, held), proj: sorted },
@@ -151,6 +152,9 @@ function casesOf(seed, size) {
   for (const b of r.shuffle(all.filter(x => x.refs && (x.refs.as || x.refs.under))).slice(0, 10)) {
     cases.push({ op: 'speaks_for', args: [b, heldFor(b)], world: seed });
     cases.push({ op: 'speaks_for', args: [b, [b, ...heldFor(b)]], world: seed });
+    // and whether it is backed, by each kind of person the world has: over holdings that miss some blocks, a chain with a link gone is not backed
+    cases.push({ op: 'backed', args: [b, r.pick(w.actors).id, heldFor(b)], world: seed });
+    cases.push({ op: 'backed', args: [b, r.pick(w.actors).id, [b, ...heldFor(b)]], world: seed });
   }
   for (const b of r.shuffle(all).slice(0, 4)) { const blk = { ...b, refs: { ...b.refs, as: g.circle.hash } }; cases.push({ op: 'speaks_for', args: [blk, [blk, ...heldFor(b)]], world: seed }); }
   // a grant's scope: the world's own, and scopes built from good and bad parts of every field (what cannot be read is junk, in the core and the oracle alike)

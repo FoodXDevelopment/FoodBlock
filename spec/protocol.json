@@ -1815,6 +1815,14 @@
     ],
     "result": "the start times, in UTC and in order, of the occurrences of the promise's calendar repeat from `from` up to but not including `to` (promises.md, Terms: repeat, zone): counted from state.when, read in terms.zone by the IANA time zone database release 2026e. An error (argument) for a repeat that follows an event, an RSCALE other than GREGORIAN, a part the reader does not read, or a zone not in the release"
    },
+   "backed": {
+    "args": [
+     "full_block",
+     "person: a person's or circle's id",
+     "held"
+    ],
+    "result": "authority.md, Backed by a person: { backed: true or false, why: one plain sentence when not backed, else null, chain: the hashes from the block to the block the person signed }. Backed when the person signed it, or signed it as a circle in which they hold `sign`, or a grantee signed it under a grant that passes why_not_under and whose chain (refs.parent) roots in the person's signature or in a circle they hold `sign` in; every link live and no wider than the one above, judged at the block's own place in time (its causal past). The block is read with held as if it were held; no clock, no arrival"
+   },
    "account_of": {
     "args": [
      "who: a person's id",
