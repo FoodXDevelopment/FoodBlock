@@ -384,7 +384,6 @@ fn dispatch(op: &str, a: &Args) -> Out {
                 .map(|r| r.to_json())
                 .collect(),
         ),
-        "live_grant" => json!(crate::views::live_grant(&a.list(1), a.time(2)?)),
         "due" => {
             arrived!(a.v(1), lookup, at);
             json!(crate::views::due(a.v(0), at))
@@ -676,10 +675,6 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             let o = a.v(2);
             arrived_reach!(o.get("arrivals").unwrap_or(&Value::Null), o.get("unknown_arrival").unwrap_or(&Value::Null), lookup, at);
             crate::views::promise_view_at(a.v(0), &a.list(1), clock(o.get("now").unwrap_or(&Value::Null))?, at)
-        }
-        "withdrawal_seen" => {
-            arrived!(a.v(3), lookup, at);
-            json!(crate::views::withdrawal_seen(a.v(0), a.v(1), &a.list(2), at))
         }
         "circle_state" => {
             let within = a.v(2);

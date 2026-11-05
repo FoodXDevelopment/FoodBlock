@@ -10,7 +10,7 @@ A `grant` gives authority. Every reader can check it.
 - **`scope.until` is optional on every kind.** With one the grant ends then; with none, when its author stops it. For a member, key or operator grant it is read like a cut at that time: a block dated at or after it holds no role by that membership (circles.md), is spoken for by no key that grant brought in, and has no operator by it (identity.md).
 - A grant takes effect when signed, except a member grant and an operator grant, which count once the receiver's own `answers` accepts (circles.md; identity.md). A grant has no status of its own: a block with `state.status` is a stop or an answer, never a grant, whatever else it restates. For a block relying on a grant, only the `confirms` in its causal past count.
 - **One agent, many principals.** A grant names a task, never an exclusive role, unless it says so. One person may hold grants from several principals for the same task, each act under one grant speaks for that grant's principal alone, and an employee may compete with his own principal's contractors, who hold grants of their own for the same task.
-- **Silence grants nothing.** A grant that lets an autonomous system spend or bind exists only after the person's own words, echoed back once (identity.md, Held keys). Until then it may ask and gather quotes.
+- **Silence grants nothing.** A grant that lets an autonomous system spend or bind exists only after the person's own words, echoed back once (identity.md, Held keys); a key-less person's yes reaches it only as a witness (A witness). Until then it may ask and gather quotes.
 
 ## Who a block speaks for
 
@@ -44,7 +44,7 @@ One rule ends anything a block gave: a grant, a promise, a member or operator gr
 - Only a **counted** stop ends: a stop of a forked key frees no one (folds.md, A fork is a burden). A key grant is ended only by rotation (identity.md); a stop of it ends nothing.
 - It ends the thing for every block with the stop in its causal past, and no other; what was done before stands. A stop cuts where signed (The cut), except that it also cuts every key grant an operator signs under the grant that it does not see (identity.md, Autonomous systems and machines).
 - **Death** ends a grant a person gave in their own name (not `as` a circle, not their successor grant) at a counted `close` of them (profiles/successor.md) that does not name it in `state.continues`, for every block with the close in its causal past.
-- **A stop is how an offline peer learns of an end;** `until` bounds it. What its signer signed before seeing the stop stands, however late it reaches the grantor, and Backed by a person (above) reads exactly that. The view `withdrawal_seen` adds whether a withdrawal has arrived on a node, which is that node's own caution and part of no one's backing. A counterparty who asks for the grantor's heads in `after` before binding a large amount does so for its own sake, never by a duty of the spec.
+- **A stop is how an offline peer learns of an end;** `until` bounds it. What its signer signed before seeing the stop stands, however late it reaches the grantor, and Backed by a person (above) reads exactly that. Arrival on a node counts for nothing: no door op reads it. A counterparty who asks for the grantor's heads in `after` before binding a large amount does so for its own sake, never by a duty of the spec.
 - **A decline reaches back only as far as its signer's stated window.** A receiver's `declined` voids a late accept only when the offer or transfer carried `expires`; with none it is firm. It voids nothing when a signed receipt shows the accept reached the node in time, or a counted block of the offerer's side has acted on the accept (promises.md, Answers; things.md, Transfers).
 - **A delayed power.** Named signers give a power after a wait: `needed` of them said it (folds.md, Counts) and `wait` has passed with no `defeats` from the holder's own key. Successor, custody step-up and rekeys read this.
 
@@ -69,9 +69,9 @@ A child's scope is a subset of its parent's on every field. A missing `acts` or 
 
 A limit is money or an amount (`{ value, unit }`). `every` and `notice` are durations, compared by adding both to the parent grant's `at`: arithmetic, never authority by clock. A grant with `every` or `notice` carries `state.at` (`required` otherwise).
 
-## Whose clock tests `until`
+## Whose date tests `until`
 
-**The act's own date:** an act whose `at` is at or after the `until` of its grant, or any above it, acts under none, on every node: its signer's own date says the grant had run out. An act with no `at` is cut too: silence only narrows. **The relying node's clock:** that node also tests `until` on its own clock when it takes the block in. This is a view (folds.md, Views), not a fold, and only it can refuse an act dated early but sent late; it is that node's own caution and part of no one's backing (Backed by a person). A micro with no clock leaves the test to its edge, which refuses to pass on an act outside `until`.
+**The act's own date:** an act whose `at` is at or after the `until` of its grant, or any above it, acts under none, on every node: its signer's own date says the grant had run out. An act with no `at` is cut too: silence only narrows. There is no other clock: whether a grant is live for a block is read at that block, in its causal past (Backed by a person), on every node. A micro with no clock leaves the test to its edge, which refuses to pass on an act outside `until`.
 
 ## The limit is the principal's fence, and it is sealed
 

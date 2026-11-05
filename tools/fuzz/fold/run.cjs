@@ -48,7 +48,6 @@ function exec(q, w) {
     case 'key_timeline': return [callCore('key_timeline', H(q.block), held, null), callOracle('key_timeline', H(q.block), held, null)]
     case 'fork_pairs': return [callCore('fork_pairs', held), callOracle('fork_pairs', held)]
     case 'may_act_as_role': return [callCore('may_act_as', B(q.block), H(q.circle), held, q.role), callOracle('may_act_as', B(q.block), H(q.circle), held, q.role)]
-    case 'is_live': return [callCore('live_grant', B(q.block), held, H(q.grant)), callOracle('live_grant', B(q.block), held, H(q.grant))]
   }
   throw new Error('no op ' + q.op)
 }

@@ -550,7 +550,6 @@ function finding(file, i, name, pick = (x) => x) {
   holds('conditions: a reading condition over a span that is not a duration does not hold', { reading: flour.hash, kind: 'temp', op: 'lt', value: fb.amount('5', 'C'), over: 'a while' }, s.held, T, false)
   refusedArg('clock: condition_holds refuses a clock that is not a time', 'condition_holds', [price, s.held, 'tomorrow'])
   refusedArg('clock: promise_view refuses a now that is not a time', 'promise_view', [flour, s.held, { now: '2027-04-02' }])
-  refusedArg('clock: live_grant refuses a clock that is not a time', 'live_grant', [null, [], 'x'])
   refusedArg('clock: reading_condition_holds refuses a now that is not a time', 'reading_condition_holds', [{ reading: flour.hash, kind: 'temp', op: 'lt', value: fb.amount('5', 'C'), over: 'PT1H' }, s.held, 5])
   // limits, exactly
   door('limits: within_limit adds what was spent exactly, past 18 decimals', 'within_limit', [{ limit: fb.amount('1.00000000000000000005', 'kg') }, fb.amount('0.00000000000000000002', 'kg'), '1.00000000000000000003'], { expect: true, exact: true })
@@ -3839,12 +3838,6 @@ function finding(file, i, name, pick = (x) => x) {
     const n = s.say(bot, 'observe', { kind: 'note', text: 'for her' }, { under: g.hash })
     door('under_ok: with every block it rests on, a note under a live grant is under it (n6, the control)', 'under_ok', [n, s.held], { expect: true, exact: true })
     door('under_ok: without its author\'s genesis it is no word, under no grant (n6)', 'under_ok', [n, s.held.filter((b) => b.hash !== bot.id)], { expect: false, exact: true })
-    const se = s.person('d6seller'), bu = s.person('d6buyer'), egg = s.say(se, 'thing', { kind: 'eggs' })
-    const o = s.say(se, 'promise', { terms: { price: M(300), expires: DAY } }, { from: se.id, to: bu.id, what: egg.hash })
-    const w = s.say(se, 'promise', { status: 'stopped', stop: 'before' }, { updates: o.hash, for: o.hash })
-    const seen = s.say(bu, 'observe', { kind: 'note', text: 'saw it' }, { after: [w.hash] })
-    door('withdrawal_seen: in the block\'s causal past (n6, the control)', 'withdrawal_seen', [w, seen, s.held, null], { expect: true, exact: true })
-    door('withdrawal_seen: without the counterparty\'s genesis its block is no word, and has seen nothing (n6)', 'withdrawal_seen', [w, seen, s.held.filter((b) => b.hash !== bu.id), null], { expect: false, exact: true })
   }
   {
     // m3: a stopped allocation frees its quantity: the open offer binds only what its allocations still bind together
@@ -4833,7 +4826,7 @@ function finding(file, i, name, pick = (x) => x) {
     const in2 = s.say(tess, 'observe', { kind: 'note', text: 'till open again' }, { as: C.hash }, { time: '2026-11-20T00:00:00.000Z' })
     door('H11: a member grant with scope.until: a block the member signs as the circle dated before it speaks for the circle', 'may_act_as', [in1, C.hash, s.held], { expect: true, exact: true })
     door('H11: and one dated at or after it holds no role: the membership ended then, like a cut at that time', 'may_act_as', [in2, C.hash, s.held], { expect: false, exact: true })
-    door('H11: the circle\'s state, a fold of the set, still lists her: whether her grant has ended now is the reader\'s clock (live_grant)', 'circle_state', [C.hash, s.held], { expect: { members: { [boss.id]: { roles: ['boss'] }, [tess.id]: { roles: ['till'] } } } })
+    door('H11: the circle\'s state, a fold of the set, still lists her: whether her grant is live for a block is read at that block, not here', 'circle_state', [C.hash, s.held], { expect: { members: { [boss.id]: { roles: ['boss'] }, [tess.id]: { roles: ['till'] } } } })
     // cute: dateless cut (silence may only narrow, never widen): a block with no date is cut by a grant that has an until, like one dated after it
     const undated = s.keep(fb.write('observe', { kind: 'note', text: 'no date' }, {}, { author: ann.id, key: phone, held: s.held, clockless: true, audience: 'public', link: { seq: 3, prev: after.hash } }))
     door('cute: a key brought in by a key grant with scope.until speaks for no block that has no date: it is cut like one dated after the until', 'signed_by_author', [undated, s.held, null], { expect: false, exact: true })

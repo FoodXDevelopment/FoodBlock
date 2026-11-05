@@ -150,14 +150,6 @@ object Fold {
     fun consent(person: String, sender: String?, blocks: List<JsonObject>, block: JsonObject? = null): JsonObject =
         Door.consent(JsonPrimitive(person), text(sender), JsonArray(blocks), block ?: JsonNull).obj()
 
-    /** Whether an act stands under a live grant at the reader's `now`. */
-    fun liveGrant(act: JsonObject, grants: List<JsonObject>, now: String): Boolean =
-        Door.liveGrant(act, JsonArray(grants), JsonPrimitive(now)).bool()
-
-    fun withdrawalSeen(
-        withdrawal: JsonObject, block: JsonObject, blocks: List<JsonObject>, arrivals: Map<String, String>? = null,
-    ): Boolean = Door.withdrawalSeen(withdrawal, block, JsonArray(blocks), arrivals(arrivals)).bool()
-
     fun due(promise: JsonObject, arrivals: Map<String, String>? = null): JsonElement = Door.due(promise, arrivals(arrivals))
 
 

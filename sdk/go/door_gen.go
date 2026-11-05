@@ -230,11 +230,6 @@ func doorAdmissionRefusals(block any, receiver string, blocks []Block, admission
 	return plural(must[[]Finding]("admission_refusals", block, receiver, plural(blocks), admission, strangersToday))
 }
 
-// doorLiveGrant is the door's live_grant(act, grants, now) -> bool.
-func doorLiveGrant(act any, grants []Block, now string) bool {
-	return must[bool]("live_grant", act, plural(grants), now)
-}
-
 // doorDue is the door's due(promise, arrivals?) -> json.
 func doorDue[T any](promise any, arrivals map[string]string) T {
 	return must[T]("due", promise, arrivals)
@@ -638,11 +633,6 @@ func doorPromiseViews[T any](firsts []string, blocks []Block, options any) T {
 // doorPromiseView is the door's promise_view(first, blocks, options) -> object.
 func doorPromiseView[T any](first any, blocks []Block, options any) T {
 	return must[T]("promise_view", first, plural(blocks), options)
-}
-
-// doorWithdrawalSeen is the door's withdrawal_seen(withdrawal, block, blocks, arrivals?) -> bool.
-func doorWithdrawalSeen(withdrawal any, block any, blocks []Block, arrivals map[string]string) bool {
-	return must[bool]("withdrawal_seen", withdrawal, block, plural(blocks), arrivals)
 }
 
 // doorCircleState is the door's circle_state(circle, blocks, within?) -> object?.

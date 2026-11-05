@@ -2186,16 +2186,6 @@ function whyNotUnder(b, poolIn) {
   }
   return [];
 }
-// live_grant (view): every grant's scope.until is later than the clock of the node that relies on the act
-const liveGrant = (block, grants, clock) => grants.every(g => { const u = g.state && g.state.scope && g.state.scope.until; return u === undefined || u > clock; });
-// withdrawal_seen (view): in the causal past of the counterparty's block, or arrived on its node
-function withdrawalSeen(w, block, blocks, arrivals) {
-  // the two blocks are read with the input: one no node would take is no word, seen by no one (folds.md)
-  const pool = new Pool([...poolOf(blocks).all().filter(x => x.hash !== w.hash && x.hash !== block.hash), w, block]);
-  if (!pool.get(w.hash) || !pool.get(block.hash)) return false;
-  return pool.sees(block.hash, w.hash) || !!(arrivals && arrivals[w.hash] !== undefined);
-}
-
 // ================================================================ circles (circles.md, folds.md)
 // The fold reads the circle and every member grant naming it, in causal order. limit = a set of hashes (the causal past of a block).
 // The roles a member holds for a block, by the block's own date (decision H11): a member grant with scope.until gives its roles to blocks dated before
@@ -5263,8 +5253,6 @@ function door(op, ...a) {
     // the keys that may sign a request (nodes.md, Messages): not void, not frozen, not rotated out
     case 'live_keys': { const f = identityFold(a[0], a[1]); const rotated = new Set(f.rotations.map(r => r.R)); return f.keys.filter(k => !f.frozen.includes(k) && !rotated.has(k)).sort(); }
     case 'promise_stage': return promiseStage(a[0], a[1], a[2]);
-    case 'live_grant': return liveGrant(a[0], a[1], clock(a[2], true));
-    case 'withdrawal_seen': return withdrawalSeen(a[0], a[1], a[2], arrivalsArg(a[3]));
     case 'consent': return consentFold(a[0], a[1], a[2], isObj(a[3]) ? a[3] : null);
     case 'admission_refusals':
       if (a.length < 4 || !(a[3] === null || isObj(a[3]))) throw argError('admission is the rule\'s state object or an explicit null (no rule): the node states it');
@@ -5291,7 +5279,7 @@ module.exports = {
   P, door, jcs, canonical, canonOf, hashBytes, hashStr, hashOfBlock, saltedHash, recoveryKeyHash, receiptCode, keypair, signBlock, verifyBlock, verifyBytes, signBytes,
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
-  whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
+  whyNotUnder, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
   successorView, consentFold, isStranger, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

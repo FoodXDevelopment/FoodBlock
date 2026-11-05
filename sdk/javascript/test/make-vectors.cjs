@@ -1264,15 +1264,6 @@ function doorVectors() {
     door('promise_stage: the fold itself reads no clock', 'promise_stage', [offer, s.held, {}], { expect: { stage: 'offered' } })
     s.say(bob, 'accepted', 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash })
     door('promise_view: an accepted promise is never expired', 'promise_view', [offer, s.held, { now: '2026-10-21T00:00:00.000Z' }], { expect: { stage: 'accepted' } })
-    const grant1 = { state: { scope: { until: '2026-12-31T00:00:00.000Z' } } }, grant2 = { state: { scope: { until: '2026-11-01T00:00:00.000Z' } } }
-    door('live_grant: every grant\'s scope.until is later than the relying node\'s clock', 'live_grant', [{}, [grant1, grant2], '2026-10-31T00:00:00.000Z'], { expect: true })
-    door('live_grant: one grant that has ended', 'live_grant', [{}, [grant1, grant2], '2026-11-02T00:00:00.000Z'], { expect: false })
-    const wd = s.say(ann, 'a withdrawal', 'promise', { status: 'stopped', stop: 'before' }, { updates: offer.hash, for: offer.hash })
-    const act = s.say(bob, 'a counterparty block', 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash })
-    door('withdrawal_seen: neither in the causal past nor arrived on its node', 'withdrawal_seen', [wd, act, s.held, {}], { expect: false })
-    door('withdrawal_seen: arrived on the counterparty\'s node', 'withdrawal_seen', [wd, act, s.held, { [wd.hash]: '2026-10-16T00:00:00.000Z' }], { expect: true })
-    const after = s.say(bob, 'a block that names the withdrawal in after', 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash }, { after: [wd.hash] })
-    door('withdrawal_seen: in the block\'s causal past', 'withdrawal_seen', [wd, after, s.held, {}], { expect: true })
   }
 
   // ---- Strangers: consent as a block, a live STOP, a human author, the receipt code ----

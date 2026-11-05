@@ -66,10 +66,6 @@ public enum Fold {
     /// The consent fold: a person's live word about a sender (or none): { word, block }. `block` is the sender's block (or nil).
     public static func consent(_ person: String, _ sender: String?, _ blocks: [JSON], block: JSON?) throws -> JSON { try Door.consent(person, sender, blocks, block) }
     /// Views, each saying whose clock or arrivals it reads.
-    public static func liveGrant(_ act: JSON, _ grants: [JSON], now: String) throws -> Bool { try Door.liveGrant(act, grants, now) }
-    public static func withdrawalSeen(_ withdrawal: JSON, _ block: JSON, _ blocks: [JSON], arrivedAt: Identity.Arrival? = nil) throws -> Bool {
-        try Door.withdrawalSeen(withdrawal, block, blocks, Identity.log(arrivedAt, blocks + [withdrawal, block]))
-    }
     public static func due(_ promise: JSON, arrivedAt: Identity.Arrival? = nil, held: [JSON] = []) throws -> Any? { try Door.due(promise, Identity.log(arrivedAt, held + [promise])) }
     public static func circleKey(_ circle: String, _ blocks: [JSON]) throws -> JSON { (try Door.circleKey(circle, blocks) as? JSON) ?? [:] }
     public static func countedIn(_ result: JSON?, _ commitment: String, _ counter: String) throws -> Bool { try Door.countedIn(result ?? [:], commitment, counter) }

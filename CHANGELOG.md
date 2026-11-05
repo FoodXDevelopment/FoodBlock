@@ -2,6 +2,12 @@
 
 What changed in each version. The spec says what each version means; this page says what moved.
 
+## Nobody signs as someone else: the last clock readings deleted, custody rewritten, 2026-11-05 (deletes from 1.7)
+
+- **`live_grant` and `withdrawal_seen` are deleted** (spec, Rust core, oracle, vectors, every SDK, the JS door). They were the last readings of "live" by a relying node's clock or by arrival. A grant is live as `backed` reads it: at the block's own place, in its causal past. Arrival on a node counts for nothing; no door op reads it. FoodOS called neither (its own SQL `liveGrant` filter is a different thing). Eight vectors removed.
+- **Custody text** (identity.md, Held keys; transport.md, consent.md, adapters.md, profiles/custody.md, short-form.md). No custodian signs as her. Her key signs only her own yes, on her own device. A key-less person's yes is a witness signed by the host in its own name, backed by her only under a live grant of hers naming that host and that handle. `state.custodian` stays only as a label for where a key is stored; no rule reads it.
+- **Friendly wrappers.** Python: `account_of`, `repeat_occurrences`. Go: `Backed`, `BackedAll`, `OwedBack`, `Gives`, `AccountOf`, `ActCheck`, `ListingCheck`, `CheckReads`, `ClearingApplied`, `RulingReleases`, `RepeatOccurrences`.
+
 ## Finding, checking, clearing and judges: four readings and six base schemas, 2026-11-05 (adds to 1.7)
 
 - **A list-keeper's ask and answer** (promises.md, Finding). A `lookup` (an `observe` of kind `lookup`: `side` offer or want, `refs.what`, `terms`) and a `listing` that answers it and names the blocks it found in `refs.derives_from`. The door op `listing_check(lookup, listing, blocks)` returns `{ ok, why, bad, left_out }`: every item must be a real signed offer or want (a first promise backed by its signing side, the other side open, still offered or asked) that fits the lookup. A keeper can leave one out, never make one up; `left_out` shows what a reader holds that the listing did not name.

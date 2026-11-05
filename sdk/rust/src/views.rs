@@ -8,28 +8,6 @@ use crate::js::{get, hash_of, index_of, rs, ss, st, type_of, Index};
 use crate::order::sees_in;
 use crate::prelude::*;
 
-/// `live_grant`: the clock is that of the node that relies on the act, read when it takes the block in. True when every
-/// grant's `scope.until` is later than the clock (a grant with no `until`, like a key grant, has no end of its own).
-pub fn live_grant(grants: &[Value], now: &str) -> bool {
-    // an until is a time (text): one that is not names no end the clock could be before
-    grants.iter().all(|g| match get(g, "state.scope.until") {
-        Some(until) => until.as_str().is_some_and(|u| u > now),
-        None => true,
-    })
-}
-
-/// `withdrawal_seen`: true when the withdrawal is in the causal past of the counterparty's block, or has arrived on the
-/// counterparty's node (`arrived`: a lookup of arrivals there).
-#[cfg(feature = "folds")]
-pub fn withdrawal_seen(withdrawal: &Value, block: &Value, blocks: &[Value], arrived: ArrivedAt) -> bool {
-    // the two blocks are read with the input: one no node would take is no word, seen by no one (folds.md)
-    let index = crate::js::held_index(blocks.iter().filter(|b| hash_of(b) != hash_of(withdrawal) && hash_of(b) != hash_of(block)).chain([withdrawal, block]));
-    if !index.contains_key(hash_of(withdrawal)) || !index.contains_key(hash_of(block)) {
-        return false;
-    }
-    sees_in(block, hash_of(withdrawal), &index) || arrived.is_some_and(|f| f.at(hash_of(withdrawal)).is_some())
-}
-
 /// `due`: a promise with a relative `when` `{ after, wait }` falls due `wait` after the `after` block arrived on the
 /// performer's node, counted on the performer's clock. The instant, or None while the anchor has not arrived.
 pub fn due(promise: &Value, arrived: ArrivedAt) -> Option<String> {

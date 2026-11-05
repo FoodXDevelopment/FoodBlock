@@ -56,8 +56,6 @@ const useShown = (place, blocks, keepers) => door.useShown(blockOf(place), block
 /** The consent fold: a person's live word about a sender (or none): { word, block }. `under`: the grant the sender's block acts under; a word about its grantor is a word about the sender (consent follows the principal). */
 const consent = (person, sender, blocks, under) => door.consent(person, sender || null, blocks, under || null)
 // Views, each saying whose clock or arrivals it reads.
-const liveGrant = door.liveGrant
-const withdrawalSeen = (withdrawal, block, blocks, { arrivedAt } = {}) => door.withdrawalSeen(withdrawal, block, blocks, arrivals(arrivedAt, blocks, [withdrawal, block]))
 const due = (promise, { arrivedAt } = {}) => door.due(promise, arrivals(arrivedAt, [promise], list(promise && promise.state && promise.state.when && promise.state.when.after ? [{ hash: promise.state.when.after }] : [])))
 const recoveryReach = (rotation, blocks, { arrivedAt, unknownArrival } = {}) => door.recoveryReach(rotation, blocks, arrivals(arrivedAt, blocks, [rotation]), unknownArrival)
 // The optional profiles (spec/profiles).
@@ -65,4 +63,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, due, recoveryReach, successorView, circleKey, countedIn }

@@ -48,7 +48,6 @@ enum Door {
     static func consent(_ person: String, _ sender: String? = nil, _ blocks: [JSON], _ block: Any? = nil) throws -> JSON { try Core.json("consent", person, sender, blocks, block) }
     static func isStranger(_ receiver: String, _ sender: String, _ blocks: [JSON], _ block: JSON? = nil) throws -> Bool { try Core.bool("is_stranger", receiver, sender, blocks, block) }
     static func admissionRefusals(_ block: JSON, _ receiver: String, _ blocks: [JSON], _ admission: Any?, _ strangersToday: Int) throws -> [JSON] { try Core.list("admission_refusals", block, receiver, blocks, admission, strangersToday) }
-    static func liveGrant(_ act: JSON, _ grants: [JSON], _ now: String) throws -> Bool { try Core.bool("live_grant", act, grants, now) }
     static func due(_ promise: JSON, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("due", promise, arrivals) }
     static func repeatOccurrences(_ promise: JSON, _ from: String, _ to: String) throws -> [String] { try Core.strings("repeat_occurrences", promise, from, to) }
     static func recoveryReach(_ rotation: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> Any? { try Core.maybe("recovery_reach", rotation, blocks, arrivals, unknownArrival) }
@@ -130,7 +129,6 @@ enum Door {
     static func promiseStage(_ first: JSON, _ blocks: [JSON], _ options: JSON) throws -> JSON { try Core.json("promise_stage", first, blocks, options) }
     static func promiseViews(_ firsts: [String], _ blocks: [JSON], _ options: JSON) throws -> JSON { try Core.json("promise_views", firsts, blocks, options) }
     static func promiseView(_ first: JSON, _ blocks: [JSON], _ options: JSON) throws -> JSON { try Core.json("promise_view", first, blocks, options) }
-    static func withdrawalSeen(_ withdrawal: JSON, _ block: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil) throws -> Bool { try Core.bool("withdrawal_seen", withdrawal, block, blocks, arrivals) }
     static func circleState(_ circle: String, _ blocks: [JSON], _ within: JSON? = nil) throws -> JSON? { try Core.maybe("circle_state", circle, blocks, within) as? JSON }
     static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], _ role: String? = nil) throws -> Bool { try Core.bool("may_act_as", block, circle, blocks, role) }
     static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Core.maybe("speaks_for", block, blocks) as? String }

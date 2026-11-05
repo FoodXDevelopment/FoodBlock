@@ -20,9 +20,7 @@ Each fold and view is named in `protocol.json` (`folds`, `views`), with input an
 | `promise_view` (adds `expired`, a refrain's `elapsed`, and `condition`) | view | the reader's clock | here |
 | `ownership` read at a clock, when a transfer carries a condition | view | the reader's clock | things.md, Transfers |
 | `pot` | view | the reader's clock, when a payout's condition reads it | here, A pot |
-| `live_grant` (`scope.until`) | view | the relying node's clock, when it takes the block in | authority.md |
 | `recovery_reach`; `ownership_view` and `promise_view` given arrivals | view | the reader's arrivals | identity.md, Recovery reach |
-| `withdrawal_seen` | view | arrival of the withdrawal on the counterparty's node | authority.md |
 | `due` (relative `when`) | view | the performer's clock, from the anchor's arrival | promises.md |
 | `condition_holds`, `reading_condition_holds` | view | the reader's clock and blocks | promises.md, Conditions; profiles/tasks.md |
 

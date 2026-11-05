@@ -187,10 +187,6 @@ def admission_refusals(block, receiver, blocks, admission, strangers_today):
     return call("admission_refusals", block, receiver, _blocks(blocks), admission, strangers_today)
 
 
-def live_grant(act, grants, now):
-    return call("live_grant", act, _blocks(grants), now)
-
-
 def due(promise, arrivals=None):
     return call("due", promise, arrivals)
 
@@ -513,10 +509,6 @@ def promise_views(firsts, blocks, options):
 
 def promise_view(first, blocks, options):
     return call("promise_view", first, _blocks(blocks), options)
-
-
-def withdrawal_seen(withdrawal, block, blocks, arrivals=None):
-    return call("withdrawal_seen", withdrawal, block, _blocks(blocks), arrivals)
 
 
 def circle_state(circle, blocks, within=None):

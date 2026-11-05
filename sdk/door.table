@@ -70,7 +70,6 @@ code_matches(code:text, typed:text) -> bool
 consent(person:text, sender:text?, blocks:blocks, block:json?) -> object
 is_stranger(receiver:text, sender:text, blocks:blocks, block:block?) -> bool
 admission_refusals(block:block, receiver:text, blocks:blocks, admission:json, strangers_today:int) -> refusals
-live_grant(act:block, grants:blocks, now:time) -> bool
 due(promise:block, arrivals:arrivals?) -> json
 repeat_occurrences(promise:block, from:time, to:time) -> strings
 recovery_reach(rotation:block, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> json
@@ -156,7 +155,6 @@ condition_holds(block:block, blocks:blocks, now:time) -> bool?
 promise_stage(first:block, blocks:blocks, options:object) -> object
 promise_views(firsts:strings, blocks:blocks, options:object) -> object
 promise_view(first:block, blocks:blocks, options:object) -> object
-withdrawal_seen(withdrawal:block, block:block, blocks:blocks, arrivals:arrivals?) -> bool
 circle_state(circle:text, blocks:blocks, within:block?) -> object?
 may_act_as(block:block, circle:text, blocks:blocks, role:text?) -> bool
 speaks_for(block:block, blocks:blocks) -> text?

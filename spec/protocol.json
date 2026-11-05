@@ -1352,20 +1352,10 @@
    "input": "an instance, the blocks held, the reader's arrivals and unknown_arrival, and the reader's clock",
    "output": "the ownership fold's answer, read with signed_by_author as the recovery_reach view reads it: a sale the reach protects stands for this reader (the fold stays the word); a transfer that carries a condition (state.condition) counts once the condition holds at the clock given (none given: only a condition that needs no clock)"
   },
-  "live_grant": {
-   "clock": "the node that relies on the act, when it takes the block in",
-   "input": "an act block, its grants, that clock",
-   "output": "true when every grant's scope.until is later than the clock"
-  },
   "recovery_reach": {
    "clock": "the reader's record of arrivals",
    "input": "a recovery rotation, the identity fold, the reader's arrivals and unknown_arrival",
    "output": "the blocks of a recovery rotation's identity that the fold voids and the reader's arrivals restore (a block the reach protects, and what a protected key grant brought in), sorted; asked about any other block, none"
-  },
-  "withdrawal_seen": {
-   "clock": "arrival on the counterparty's node",
-   "input": "a withdrawal, a counterparty block, its node's arrivals",
-   "output": "true when the withdrawal is in the block's causal past, or the node records any arrival of it (no times are compared)"
   },
   "due": {
    "clock": "the performer's own, from the anchor's arrival on its node",
@@ -1690,23 +1680,6 @@
      "now?: the reader's clock"
     ],
     "result": "{ owner, transfers, conflict } as the view `ownership_view` (folds.md, Views)"
-   },
-   "live_grant": {
-    "args": [
-     "act block (unused)",
-     "grants: [{ state: { scope: { until } } }]",
-     "clock"
-    ],
-    "result": "true when every grant's scope.until is later than the clock"
-   },
-   "withdrawal_seen": {
-    "args": [
-     "withdrawal",
-     "counterparty block",
-     "held",
-     "arrivals"
-    ],
-    "result": "authority.md, Withdrawal"
    },
    "may_act_as": {
     "args": [

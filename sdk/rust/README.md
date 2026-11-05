@@ -62,7 +62,7 @@ protocol.json `refusals.codes`; `err.reasons` the details alone); it never repai
 follow the JavaScript reference SDK: `canonical`, `hash`, `sign`, `verify`, `refusals`, `check`, `valid::valid`,
 `next_link`, `check_chain`, `seal`, `open`, `seal_copy`, `open_copy`, `identity::*`, `grant::*` (`scope_reading`), `fold::*`
 (`promise_stage`, `circle_state`, `members_then`, `who_speaks`, `where_now`, `ownership`, `successor_state`, `circle_key`), `views::*`
-(`promise_view`, `live_grant`, `due`, `recovery_reach`, `withdrawal_seen`), `strangers::*` (`consent`, `is_stranger`, `receipt_code`,
+(`promise_view`, `due`, `recovery_reach`), `strangers::*` (`consent`, `is_stranger`, `receipt_code`,
 `admission_refusals`), and
 `sync::*` (signed pull and push, `accept`, signed answers, `.well-known` discovery, the local announcement and the
 mDNS service `_foodblock._tcp`). A node's own choices are stated, never filled in: `answer_pull` takes `{ cap, serves_pairs }`, `accept` and `accept_sealed` take `{ takes_pairs }`, and `admission_refusals` takes the rule's state or an explicit null, with today's count.
