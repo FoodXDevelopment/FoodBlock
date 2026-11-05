@@ -82,7 +82,7 @@ refs:  { }
 
 **Recognising a genesis.** An `actor` is judged as a genesis when it has `state.public_key_sign` or no `refs.author`, and is then held to this section only: a key with an `author`, or neither, is `bad_genesis`. Every other actor (a contact, a circle) has an `author` and no signing key.
 
-That is the whole ceremony: one key. An encryption key, more devices or a custodian come later, each by a key grant (identity.md). A recovery key is named in the genesis or never (identity.md, The recovery key). **A genesis may carry any audience:** public, or a sorted list of commitments with its `nonce` (`protocol.json`, `genesis.private`). A node that lacks her genesis waits on her blocks (check 5). A genesis has no public header: a reader outside its audience is sent nothing of it.
+That is the whole ceremony: one key. An encryption key or more devices come later, each by a key grant (identity.md). A recovery key is named in the genesis or never (identity.md, The recovery key). **A genesis may carry any audience:** public, or a sorted list of commitments with its `nonce` (`protocol.json`, `genesis.private`). A node that lacks her genesis waits on her blocks (check 5). A genesis has no public header: a reader outside its audience is sent nothing of it.
 
 ## 5. The chain
 

@@ -22,7 +22,7 @@ A convention beside the protocol. The protocol reads only the blocks that arrive
 Email authentication (DKIM and the like) shows which domain sent a message, not who said it. A node may keep the result in its own log; it never becomes a field of a block. The block's signature proves the author.
 
 ## Every other envelope
-WhatsApp, SMS, USSD, voice, a letter, a QR code, a link: the body for humans, the block for machines. A person with held keys (identity.md, Held keys) acts by any of them: their custodian signs on their word, naming the channel as an open label and the raw message's hash. Words from anyone else are read as in Receiving. Where the link is too small for a block, the short form applies (profiles/short-form.md).
+WhatsApp, SMS, USSD, voice, a letter, a QR code, a link: the body for humans, the block for machines. A person with no key of her own (identity.md, Held keys) acts by any of them: the host that received her words signs a witness of them in its own name, under her grant naming that handle, with the channel as an open label and the raw message's hash; nobody signs as her. Words from anyone else are read as in Receiving. Where the link is too small for a block, the short form applies (profiles/short-form.md).
 
 ## Constrained links (CBOR)
 Over a link too small for JSON, a public block travels in the compact CBOR form, `application/foodblock+cbor` (modules/encoding.md). The receiver rebuilds the canonical JSON; the id is the same. A clockless micro's blocks are timed by the edge's `receipt` (blocks.md, No clock).
