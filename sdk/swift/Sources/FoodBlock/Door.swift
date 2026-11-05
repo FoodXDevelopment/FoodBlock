@@ -145,6 +145,7 @@ enum Door {
     static func notFreeShown(_ block: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("not_free_shown", block, blocks) }
     static func invasionShown(_ claim: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("invasion_shown", claim, blocks) }
     static func pot(_ head: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> Any? { try Core.maybe("pot", head, blocks, now) }
+    static func accountOf(_ who: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("account_of", who, blocks) }
     static func releaseShown(_ subject: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("release_shown", subject, blocks) }
     static func bidsShown(_ quarrel: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("bids_shown", quarrel, blocks) }
     static func successorState(_ grant: JSON, _ blocks: [JSON], _ now: String? = nil, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("successor_state", grant, blocks, now, arrivals) }

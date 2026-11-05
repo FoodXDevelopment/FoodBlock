@@ -1815,6 +1815,13 @@
     ],
     "result": "the start times, in UTC and in order, of the occurrences of the promise's calendar repeat from `from` up to but not including `to` (promises.md, Terms: repeat, zone): counted from state.when, read in terms.zone by the IANA time zone database release 2026e. An error (argument) for a repeat that follows an event, an RSCALE other than GREGORIAN, a part the reader does not read, or a zone not in the release"
    },
+   "account_of": {
+    "args": [
+     "who: a person's id",
+     "held"
+    ],
+    "result": "promises.md, Where to pay me: { who, destination, hash, at } from the head of the account words (observe, kind account) that who signed and that speak for no one else: the one no other of theirs has in its causal past; null when there is none, when two heads do not see each other (nothing fills the choice in), or when the head carries no destination (it ends the account). No clock is read"
+   },
    "is_stranger": {
     "args": [
      "receiver id",

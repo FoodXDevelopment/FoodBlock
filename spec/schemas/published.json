@@ -60,7 +60,9 @@
   "draw",
   "bounded_change",
   "done",
-  "pass"
+  "pass",
+  "account",
+  "answer"
  ],
  "schemas": {
   "thing": {
@@ -1189,6 +1191,54 @@
     "prev": "156845f4bf831f8893d9d30b0596a3326e9ed0ac2ce0c056bbd5a07365f0cb59"
    },
    "signature": "cf48937400dfba1285153d03c853c2f075cc2fd5616364c06c5593200621b53faed56ae31cda2106998f553fd2b798b182704e140a996a6e5a7940a8e7406103"
+  },
+  "account": {
+   "hash": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "account",
+    "target": "observe.account",
+    "fields": {
+     "destination": "where money to the signer goes, in the signer's words: an account number, a wallet, an address. Left out, it ends the account"
+    },
+    "grounds": {
+     "event": "the signer says where money to them goes; it names a destination for the signer alone, and a newer word of theirs (the head of their account words) replaces it (promises.md, Where to pay me)"
+    },
+    "at": "2026-10-19T00:00:44.000Z",
+    "audience": "public",
+    "seq": 44
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "0f4a96a23b3b79764e754b0f09fdae7f2dea3a23686f034b8e534513c15a785e"
+   },
+   "signature": "168e634d39eea87dee61b52142c9d0a54d5a4209ff252717ac6a9a2bc15970b2f02dc40e73992ec33a6ef94c83194205775778d1940f38f074777a7579d71a02"
+  },
+  "answer": {
+   "hash": "dce7371c8dce362f859fd058c23302c16e542608a30414aba3a3334477d64747",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "answer",
+    "target": "observe.answer",
+    "fields": {
+     "field": "the name of what is answered, in the asker's words",
+     "value": "the answer: text, a number, or true or false",
+     "text": "words that may go beside it"
+    },
+    "grounds": {
+     "event": "the signer answers the block in refs.answers with a typed field and value, so a reader checks it without reading words, and a grant's scope may allow the act (promises.md, An answer to a question)"
+    },
+    "at": "2026-10-19T00:00:45.000Z",
+    "audience": "public",
+    "seq": 45
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c"
+   },
+   "signature": "67d6b2676c33e06618cceac5453173bbeb814ab0107a7865b0f514069f8d707f913b9914f8544ca621c9cb644c52ecc32370a3ec2641e6e0034ecc7855191409"
   }
  }
 }

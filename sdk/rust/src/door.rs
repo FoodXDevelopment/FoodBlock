@@ -709,6 +709,7 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
         "shares_on" => fold::shares_on(a.v(0), &a.list(1)),
         "not_free_shown" => fold::not_free_shown(a.v(0), &a.list(1)),
         "invasion_shown" => fold::invasion_shown(a.v(0), &a.list(1)),
+        "account_of" => fold::account_of(a.s(0)?, &a.list(1)),
         "release_shown" => fold::release_shown(a.v(0), &a.list(1)),
         "bids_shown" => fold::bids_shown(a.v(0), &a.list(1)),
         "pot" => fold::pot(a.v(0), &a.list(1), a.time_opt(2)?.unwrap_or("")),

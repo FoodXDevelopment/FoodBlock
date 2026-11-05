@@ -4,6 +4,7 @@
 use crate::js::{hash_of, index_of, rs, type_of, Index};
 use crate::prelude::*;
 
+mod account;
 mod bench;
 mod owed;
 mod circle;
@@ -31,6 +32,7 @@ pub(crate) use promise::binds;
 #[cfg(feature = "successor")]
 pub use successor::successor_state;
 pub use invasion::{invasion_shown, not_free_shown};
+pub use account::account_of;
 pub use pot::pot;
 pub use release::{bids_shown, release_shown};
 pub use uses::{shares_on, use_shown};

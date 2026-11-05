@@ -155,6 +155,7 @@ internal object Door {
     fun notFreeShown(block: JsonElement, blocks: JsonElement): JsonElement = go("not_free_shown", 2, block, blocks)
     fun invasionShown(claim: JsonElement, blocks: JsonElement): JsonElement = go("invasion_shown", 2, claim, blocks)
     fun pot(head: JsonElement, blocks: JsonElement, now: JsonElement = JsonNull): JsonElement = go("pot", 2, head, blocks, now)
+    fun accountOf(who: JsonElement, blocks: JsonElement): JsonElement = go("account_of", 2, who, blocks)
     fun releaseShown(subject: JsonElement, blocks: JsonElement): JsonElement = go("release_shown", 2, subject, blocks)
     fun bidsShown(quarrel: JsonElement, blocks: JsonElement): JsonElement = go("bids_shown", 2, quarrel, blocks)
     fun successorState(grant: JsonElement, blocks: JsonElement, now: JsonElement = JsonNull, arrivals: JsonElement = JsonNull): JsonElement = go("successor_state", 2, grant, blocks, now, arrivals)

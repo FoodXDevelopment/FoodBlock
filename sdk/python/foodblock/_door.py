@@ -575,6 +575,10 @@ def pot(head, blocks, now=None):
     return call("pot", head, _blocks(blocks), now)
 
 
+def account_of(who, blocks):
+    return call("account_of", who, _blocks(blocks))
+
+
 def release_shown(subject, blocks):
     return call("release_shown", subject, _blocks(blocks))
 

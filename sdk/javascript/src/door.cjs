@@ -145,6 +145,7 @@ module.exports = {
   notFreeShown: (block, blocks) => call('not_free_shown', block, list(blocks)),
   invasionShown: (claim, blocks) => call('invasion_shown', claim, list(blocks)),
   pot: (head, blocks, now) => call('pot', head, list(blocks), now ?? null),
+  accountOf: (who, blocks) => call('account_of', who, list(blocks)),
   releaseShown: (subject, blocks) => call('release_shown', subject, list(blocks)),
   bidsShown: (quarrel, blocks) => call('bids_shown', quarrel, list(blocks)),
   successorState: (grant, blocks, now, arrivals) => call('successor_state', grant, list(blocks), now ?? null, arrivals ?? null),

@@ -30,6 +30,8 @@ const sharesOn = (thing, blocks) => door.sharesOn(blockOf(thing), blocks)
 const notFreeShown = (block, blocks) => door.notFreeShown(blockOf(block), blocks)
 const invasionShown = (claim, blocks) => door.invasionShown(blockOf(claim), blocks)
 const pot = (head, blocks, now) => door.pot(blockOf(head), blocks, now)
+/** Where `who` says money to them goes (promises.md, Where to pay me): `{ who, destination, hash, at }` from their own newest account word, or null. */
+const accountOf = (who, blocks) => door.accountOf(idOf(who), blocks)
 const releaseShown = (subject, blocks) => door.releaseShown(blockOf(subject), blocks)
 const bidsShown = (quarrel, blocks) => door.bidsShown(blockOf(quarrel), blocks)
 const useShown = (place, blocks, keepers) => door.useShown(blockOf(place), blocks, keepers)
@@ -45,4 +47,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

@@ -2,6 +2,11 @@
 
 What changed in each version. The spec says what each version means; this page says what moved.
 
+## Where to pay me and a typed answer, 2026-11-05 (adds to 1.7)
+
+- **Where to pay me** (promises.md): a person's own `observe` of kind `account` (base schema `account`), `state.destination`. The pair is who signed it and where; it names a destination for its signer alone (not a message, a deal, an invoice, a block signed `as` a circle or `under` a grant, or anyone else's word). New details are a new word; the head is the one no other of theirs has in its causal past; a head with no destination ends it, and two heads that do not see each other name none. New door op `account_of(who, blocks)`: `{ who, destination, hash, at }` or null (JavaScript `fold.accountOf`). 10 vectors (make-vectors-account.cjs), the oracle agrees.
+- **An answer to a question** (promises.md): an `observe` of kind `answer` (base schema `answer`) that `answers` the block it replies to and carries `state.field` and `state.value` (text, a number, true or false) beside optional words, so a reader checks it by its typed fields and a grant's `scope.acts` can name `observe.answer`. No new rule: a declared shape for what was an open kind.
+
 ## A passer stays answerable until the other side frees her, 2026-11-05 (corrects the entry below; adds to 1.7)
 
 - Passing a part moves the work with two signatures and binds no one else. The passer still answers to the one she promised until that person's own `observe` that `answers` the pass `accepted` (an optional third signature) frees her. The view's `passed` entries gain `freed_by`; the view gains `owing` (`{ from, to }`, the sorted ids that answer to the other side for each side's part: the receiver and each passer not yet freed). `answerable` is unchanged (who does it now).

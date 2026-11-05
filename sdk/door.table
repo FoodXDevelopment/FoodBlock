@@ -171,6 +171,7 @@ use_shown(place:block, blocks:blocks, keepers:json?) -> json
 not_free_shown(block:block, blocks:blocks) -> json
 invasion_shown(claim:block, blocks:blocks) -> json
 pot(head:block, blocks:blocks, now:time?) -> json
+account_of(who:text, blocks:blocks) -> json
 release_shown(subject:block, blocks:blocks) -> json
 bids_shown(quarrel:block, blocks:blocks) -> json
 # Feature successor

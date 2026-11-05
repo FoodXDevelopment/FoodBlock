@@ -4166,6 +4166,18 @@ function speaksFor(block, blocks) {
   const who = speakerOf(held, pool);
   return who === undefined ? null : who;
 }
+// accountOf(who, blocks): where a person says money to them goes (promises.md, Where to pay me). The words counted are the `observe` blocks of kind `account` that `who`
+// signed, that speak for no one else and that a node would take; the head is the one no other of those has in its causal past. null for none, for two heads that
+// do not see each other, and for a head with no destination (it ends the account).
+function accountOf(who, blocks) {
+  if (!isStr(who)) throw argError('who is an id (text)');
+  const pool = poolOf(blocks);
+  const words = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'account' && b.state.status === undefined && b.refs.author === who && counts(b, pool) && speakerOf(b, pool) === who);
+  const heads = words.filter(w => !words.some(o => o !== w && pool.sees(o.hash, w.hash)));
+  if (heads.length !== 1) return null;
+  const d = heads[0].state.destination;
+  return isStr(d) && d.trim() !== '' ? { who, destination: d, hash: heads[0].hash, at: isStr(heads[0].state.at) ? heads[0].state.at : null } : null;
+}
 // scopeReading(scope): the one reading of a grant's state.scope (authority.md), every default the spec states and nothing else filled in. A missing scope is
 // empty. A field that is there and cannot be read (what the write check refuses in a scope, or a name that is no scope field) is junk and reads as null or
 // [] beside it, so a caller finds that the grant is to be held to no word. junk is sorted as canonical JSON sorts keys.
@@ -4816,6 +4828,7 @@ function door(op, ...a) {
     case 'sees': return pastOfBlock(a[0], a[2]).includes(a[1].hash);
     case 'may_act_as': return mayActAs(a[0], a[1], a[2], a[3]);
     case 'speaks_for': return speaksFor(a[0], a[1]);
+    case 'account_of': return accountOf(a[0], a[1]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
     case 'circle_key': return circleKey(a[0], a[1]); // profiles/rekeys.md
     case 'members_then': return membersThen(a[0], a[1], a[2]);
@@ -4925,6 +4938,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, isStranger, speaksFor, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

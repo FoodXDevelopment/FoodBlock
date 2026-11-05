@@ -715,6 +715,11 @@ func doorPot[T any](head any, blocks []Block, now string) T {
 	return must[T]("pot", head, plural(blocks), nilIfEmpty(now))
 }
 
+// doorAccountOf is the door's account_of(who, blocks) -> json.
+func doorAccountOf[T any](who string, blocks []Block) T {
+	return must[T]("account_of", who, plural(blocks))
+}
+
 // doorReleaseShown is the door's release_shown(subject, blocks) -> json.
 func doorReleaseShown[T any](subject any, blocks []Block) T {
 	return must[T]("release_shown", subject, plural(blocks))

@@ -69,7 +69,7 @@ with no authority. A schema is a `thing` of kind schema. The verbs: `updates`, `
 - Identity: `identity.genesis`, `keyGrant`, `identityOf`, `keyTimeline`, `keysOf`, `signedByAuthor`, `chainsOf`,
   `nextLinkFor`, `recoveryKeyHash`, `forkPairs`. A rotation names `countedTo`.
 - Authority: `grant.scopeWithin`, `scopeReading(scope)` (the one reading of a scope: every default of authority.md, and `junk` for what cannot be read), `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration`.
-- Folds: `fold.promiseStage`, `circleState`, `mayActAs`, `speaksFor(block, blocks)` (also `fb.speaksFor`: the one party a fold counts a block for, or null), `membersThen`, `ownership`, `ownerOf`, `receiverOf`, `whereNow`,
+- Folds: `fold.promiseStage`, `circleState`, `mayActAs`, `speaksFor(block, blocks)` (also `fb.speaksFor`: the one party a fold counts a block for, or null), `accountOf(who, blocks)` (where a person's own newest account word says money to them goes, or null), `membersThen`, `ownership`, `ownerOf`, `receiverOf`, `whereNow`,
   `consent`; views: `promiseView`, `repeatOccurrences(promise, from, to)` (the UTC start times of a calendar repeat, read in its zone by the bundled IANA database), `liveGrant`, `withdrawalSeen`, `due`, `recoveryReach`; profiles: `successorView`,
   `circleKey`, `countedIn`.
 - Between nodes: `sync.pullRequest`, `signPull`/`signPush` (a `counter` or a `challenge`; no time), `newChallenge`, `pullRefusals`,
