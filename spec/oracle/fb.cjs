@@ -4252,6 +4252,9 @@ function termFits(ty, v) {
     case 'date': return isStr(v) && RX.date.test(v) && timeMs(v) !== null;
     case 'duration': return isStr(v) && RX.duration.test(v);
     case 'id': return isStr(v) && RX.id.test(v);
+    case 'lines': return Array.isArray(v) && v.length > 0 && v.every(l => isObj(l) && isStr(l.id) && l.id.length > 0 && Object.keys(l).every(k => P.line.includes(k)));
+    case 'condition': return isObj(v) && P.condition_shapes.some(k => k in v);
+    case 'keepers': return isObj(v) && Object.keys(v).every(k => P.shapes.keepers.includes(k)) && Array.isArray(v.names) && v.names.length > 0 && v.names.every(n => isStr(n) && n.length > 0);
     default: { const want = P.shapes[ty]; return isObj(v) && Array.isArray(want) && Object.keys(v).length === want.length && want.every(k => k in v); }
   }
 }
@@ -4345,6 +4348,165 @@ function owedBack(person, blocks) {
     for (const l of givesIn(b, person, read, blocks).gives) if (l.of === 'money') owed.push({ block: b.hash, minor: l.minor, currency: l.currency, to: l.to, why: verdict.why });
   }
   return { owed };
+}
+
+// ---- the market's shapes (promises.md: Finding, A signed check, Clearing, Rulings) ----
+// a measure of money or goods as an exact fraction in its kind; null for anything else
+const measureOf = m => {
+  if (!isObj(m)) return null;
+  if (Number.isInteger(m.minor) && isStr(m.currency)) return { kind: 'c:' + m.currency, v: { n: BigInt(m.minor), d: 1n } };
+  if (isStr(m.value) && isStr(m.unit) && dec(m.value)) return { kind: 'g:' + m.unit, v: dec(m.value) };
+  return null;
+};
+const fracText = f => { let n = f.n, d = f.d, k = 0; while (d > 1n) { d /= 10n; k++; } const neg = n < 0n; if (neg) n = -n; let t = n.toString().padStart(k + 1, '0'); let w = t.slice(0, t.length - k), fr = t.slice(t.length - k).replace(/0+$/, ''); return (neg ? '-' : '') + w + (fr ? '.' + fr : ''); };
+const measureOut = (kind, v) => kind.startsWith('c:') ? { minor: Number(v.n / v.d), currency: kind.slice(2) } : { value: fracText(v), unit: kind.slice(2) };
+const firstPromise = b => b.type === 'promise' && b.refs.answers === undefined && b.refs.updates === undefined;
+const sortedIds = l => [...new Set(l)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+// does this person's word stand behind the block, or a block that confirms it
+const signedBy = (b, p, pool) => backedIn(b, p, pool).backed || pool.all().some(c => asList(c.refs.confirms).includes(b.hash) && backedIn(c, p, pool).backed);
+function lookupWrong(lk) {
+  if (!isObj(lk) || lk.type !== 'observe' || lk.state.kind !== 'lookup') return 'the first block is no lookup (an observe of kind lookup)';
+  if (lk.state.side !== 'offer' && lk.state.side !== 'want') return 'a lookup says which side it looks for: `side` is offer or want';
+  if (lk.state.terms !== undefined && !isObj(lk.state.terms)) return 'a lookup\'s `terms` is an object of the terms an item must carry';
+  return null;
+}
+function itemWrong(lk, h, pool) {
+  const b = pool.get(h);
+  if (!b) return 'it is not a block the reader holds';
+  if (!firstPromise(b)) return 'it is not a first promise';
+  if (!counts(b, pool)) return 'its signer\'s key does not speak for its author here';
+  const offer = lk.state.side === 'offer', signs = offer ? b.refs.from : b.refs.to, other = offer ? b.refs.to : b.refs.from;
+  if (signs === undefined || other !== undefined || !backedIn(b, signs, pool).backed) return 'it is not the signed ' + lk.state.side + ' of one side with the other open';
+  const st = promiseStage(b, pool);
+  if (!st || (st.stage !== 'offered' && st.stage !== 'asked')) return 'it is no longer open';
+  const wanted = asList(lk.refs.what);
+  if (wanted.length && !asList(b.refs.what).some(w => wanted.includes(w))) return 'it names none of the things the lookup asks for';
+  const tm = isObj(b.state.terms) ? b.state.terms : {};
+  for (const [k, v] of Object.entries(lk.state.terms || {})) if (JSON.stringify(canonicalSort(tm[k])) !== JSON.stringify(canonicalSort(v))) return 'its term `' + k + '` is not the one the lookup asks for';
+  return null;
+}
+const canonicalSort = v => Array.isArray(v) ? v.map(canonicalSort) : isObj(v) ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canonicalSort(v[k])])) : v;
+function listingCheck(lookup, listing, blocks) {
+  if (!isObj(lookup) || !isObj(listing)) throw argError('arguments 0 and 1 are blocks');
+  const pool = poolOf(blocks), none = why => ({ ok: false, why, bad: [], left_out: [] });
+  const w = lookupWrong(lookup);
+  if (w) return none(w);
+  if (listing.type !== 'observe' || listing.state.kind !== 'listing') return none('the second block is no listing (an observe of kind listing)');
+  if (listing.refs.answers !== lookup.hash) return none('the listing does not answer this lookup');
+  const named = sortedIds(asList(listing.refs.derives_from));
+  const bad = [];
+  for (const h of named) { const why = itemWrong(lookup, h, pool); if (why) bad.push({ hash: h, why }); }
+  const left = sortedIds(pool.all().map(b => b.hash).filter(h => !named.includes(h) && itemWrong(lookup, h, pool) === null));
+  return { ok: bad.length === 0, why: bad.length ? bad[0].hash + ': ' + bad[0].why : null, bad, left_out: left };
+}
+function checkReads(check, blocks) {
+  if (!isObj(check)) throw argError('argument 0 is a block');
+  const pool = poolOf(blocks), no = (why, read) => ({ ok: false, why, read: read || [] });
+  if (check.type !== 'observe' || check.state.kind !== 'check') return no('the block is no check');
+  const subject = check.refs.subject;
+  if (!isStr(subject)) return no('a check names the one whose record it read');
+  const named = sortedIds(asList(check.refs.derives_from));
+  if (!named.length) return no('a check names what it read');
+  let wrong = null;
+  const read = named.map(h => {
+    const b = pool.get(h), held = !!b;
+    const concerns = held && [b.refs.author, b.refs.from, b.refs.to, b.refs.as].includes(subject);
+    const st = held && firstPromise(b) ? promiseStage(b, pool) : null;
+    const stage = st ? st.stage : null;
+    if (wrong === null) {
+      if (!held) wrong = h + ' is not held';
+      else if (!concerns) wrong = h + ' is not the subject\'s';
+      else if (check.state.of !== undefined && b.type !== check.state.of) wrong = h + ' is not of the type the check says';
+      else if (check.state.stage !== undefined && stage !== check.state.stage) wrong = h + ' is not at the stage the check says';
+    }
+    return { hash: h, held, concerns, stage };
+  });
+  if (wrong === null && check.state.count !== undefined && check.state.count !== named.length) wrong = 'the check says it read ' + check.state.count + ', and names ' + named.length;
+  return { ok: wrong === null, why: wrong, read };
+}
+// who owes the price of a deal and who is owed it
+function dealSides(st) {
+  const debtor = st.answerable && isStr(st.answerable.to) ? st.answerable.to : (st.sides && isStr(st.sides.to) ? st.sides.to : null);
+  const owners = st.owed && Array.isArray(st.owed.from) ? st.owed.from.map(l => l.owner).filter(isStr) : [];
+  const creditors = owners.length ? sortedIds(owners) : (st.sides && isStr(st.sides.from) ? [st.sides.from] : []);
+  return { debtor, creditors };
+}
+function clearingApplied(clearing, blocks) {
+  if (!isObj(clearing)) throw argError('argument 0 is a block');
+  const pool = readWith(blocks, clearing), stop = why => ({ binds: false, why, who: [], missing: [], lines: [] });
+  if (clearing.type !== 'observe' || clearing.state.kind !== 'clearing') return stop('the block is no clearing');
+  const lines = clearing.state.lines;
+  if (!Array.isArray(lines) || !lines.length) return stop('a clearing lists the promises it reduces');
+  const who = [], out = [];
+  for (const line of lines) {
+    const deal = isObj(line) && isStr(line.deal) ? line.deal : '';
+    const shown = { deal, ok: false, why: null, owed: null, reduce: null, left: null };
+    const no = why => { shown.why = why; out.push(shown); };
+    const first = pool.get(deal);
+    if (!first || !firstPromise(first)) { no('the deal is not a first promise the reader holds'); continue; }
+    const st = promiseStage(first, pool);
+    if (!st) { no('the deal rests on blocks the reader does not hold'); continue; }
+    const sides = dealSides(st);
+    for (const p of [sides.debtor, ...sides.creditors]) if (p !== null && !who.includes(p)) who.push(p);
+    if (!stageBinds(st)) { no('the deal does not bind'); continue; }
+    const total = st.total ? measureOf(st.total) : null;
+    if (!total) { no('the deal states no price'); continue; }
+    const paidM = st.paid ? measureOf(st.paid) : null;
+    const paid = paidM && paidM.kind === total.kind ? paidM.v : { n: 0n, d: 1n };
+    const owed = { n: total.v.n * paid.d - paid.n * total.v.d, d: total.v.d * paid.d };
+    shown.owed = measureOut(total.kind, owed);
+    const red = measureOf(line.reduce);
+    if (!red || fcmp(red.v, { n: 0n, d: 1n }) <= 0) { no('`reduce` is an amount of money or goods above nothing'); continue; }
+    shown.reduce = measureOut(red.kind, red.v);
+    let applied = red.v;
+    if (red.kind !== total.kind) {
+      const rate = isStr(line.rate) ? pool.get(line.rate) : undefined;
+      if (!rate || rate.type !== 'observe' || rate.state.kind !== 'rate') { no('it clears one kind against another and names no rate both sides signed'); continue; }
+      const parties = [sides.debtor, ...sides.creditors].filter(p => p !== null);
+      if (!parties.every(p => signedBy(rate, p, pool))) { no('the rate is not signed by both sides'); continue; }
+      const give = measureOf(rate.state.give), get = measureOf(rate.state.get), app = measureOf(line.applies);
+      if (!give || !get || !app) { no('a rate says what is given for what is got, and the line says what it applies'); continue; }
+      const prod = (a, b) => ({ n: a.n * b.n, d: a.d * b.d });
+      if (give.kind !== red.kind || get.kind !== total.kind || app.kind !== total.kind || fcmp(prod(red.v, get.v), prod(app.v, give.v)) !== 0) { no('the amount applied is not the rate\'s worth of the amount reduced'); continue; }
+      applied = app.v;
+    }
+    if (fcmp(applied, owed) > 0) { no('it reduces the deal by more than is still owed'); continue; }
+    shown.left = measureOut(total.kind, { n: owed.n * applied.d - applied.n * owed.d, d: owed.d * applied.d });
+    shown.ok = true;
+    out.push(shown);
+  }
+  const people = sortedIds(who), signed = people.filter(p => signedBy(clearing, p, pool)), missing = people.filter(p => !signed.includes(p));
+  const first = out.find(l => !l.ok);
+  const why = first ? first.deal + ': ' + first.why : missing.length ? missing.length + ' of those in it have not signed' : null;
+  return { binds: why === null, why, who: people, missing, lines: out };
+}
+// ruledFor(c, pool, now): the judge's head ruling on the deal, and its award line to the person (promises.md, Rulings); { ruling, award } or { why }; null for another shape
+function ruledFor(c, pool, now) {
+  if (!isObj(c) || !('ruled' in c)) return null;
+  if (![c.ruled, c.by, c.awards].every(x => isStr(x) && RX.id.test(x))) return { why: 'a condition `ruled` names the deal, the judge and the person it awards to' };
+  const mine = pool.all().filter(o => o.type === 'observe' && o.state.kind === 'ruling' && o.refs.subject === c.ruled && (!isStr(now) || (isStr(o.state.at) && o.state.at <= now)) && counts(o, pool) && backedIn(o, c.by, pool).backed);
+  if (!mine.length) return { why: 'the judge has made no ruling on the deal' };
+  const heads = mine.filter(w => !mine.some(o => o !== w && pool.sees(o.hash, w.hash)));
+  if (heads.length !== 1) return { why: 'two rulings that do not see each other' };
+  const award = asList(heads[0].state.awards).find(l => isObj(l) && l.to === c.awards);
+  return award ? { ruling: heads[0].hash, award } : { why: 'the ruling awards nothing to that person' };
+}
+function rulingReleases(stake, blocks, now) {
+  if (!isObj(stake)) throw argError('argument 0 is a block');
+  const pool = poolOf(blocks), no = why => ({ releases: false, to: null, money: null, ruling: null, why });
+  const cond = stake.type === 'promise' ? (isObj(stake.state.terms) ? stake.state.terms.condition : undefined) : stake.type === 'transfer' ? stake.state.condition : undefined;
+  const r = ruledFor(cond, pool, now);
+  if (r === null) return no('the stake\'s condition names no ruling');
+  if (r.why) return no(r.why);
+  let staked = null;
+  if (stake.type === 'promise') { const t = isObj(stake.state.terms) ? termsTotal(stake.state.terms) : null; staked = t ? measureOf(t) : null; } else staked = measureOf(stake.state.money);
+  const awarded = measureOf(r.award.money !== undefined ? r.award.money : r.award.amount);
+  let money = null;
+  if (staked) {
+    if (awarded && awarded.kind !== staked.kind) return no('the award is in another kind than the stake');
+    money = measureOut(staked.kind, awarded && fcmp(awarded.v, staked.v) < 0 ? awarded.v : staked.v);
+  }
+  return { releases: true, to: r.award.to, money, ruling: r.ruling, why: null };
 }
 // accountOf(who, blocks): where a person says money to them goes (promises.md, Where to pay me). The words counted are the `observe` blocks of kind `account` that `who`
 // signed, that speak for no one else and that a node would take; the head is the one no other of those has in its causal past. null for none, for two heads that
@@ -4698,6 +4860,8 @@ function conditionHolds(c, blocks, now) {
   // accepted: that deal binds, read from its promise fold, no clock (decision H17): accepted or further along, or stopped onward (it bound)
   if ('accepted' in c) { const p = isStr(c.accepted) && pool.get(c.accepted); return !!p && stageBinds(promiseStage(p, pool)); }
   if (isStr(c.deed)) { const b = pool.get(c.deed); return !!b && counts(b, pool); }
+  // ruled: the judge's head ruling on the deal awards something to the person (promises.md, Rulings)
+  if ('ruled' in c) { const r = ruledFor(c, pool, now); return !!r && r.ruling !== undefined; }
   // paid: that deal binds and its price is paid in full (the price side of the deal)
   if ('paid' in c) { const p = isStr(c.paid) && pool.get(c.paid); const v = p && promiseViewBase(p, pool, { now }); return !!v && v.paidUp === true && v.total !== null && v.total !== undefined; }
   // opened: a counted block carries the opening of the commitment (privacy.md): one hash comparison, in the suite the commitment names
@@ -4821,6 +4985,7 @@ function deciders(c, pool) {
   const kind = isStr(c.signal) ? c.signal : c.reading !== undefined && isStr(c.kind) ? c.kind : null;
   if (kind !== null) return pool.all().filter(b => b.type === 'observe' && b.state.kind === kind).map(b => b.hash);
   if ('opened' in c) return pool.all().filter(b => b.state.opening !== undefined).map(b => b.hash);
+  if ('ruled' in c) return pool.all().filter(b => b.type === 'observe' && b.state.kind === 'ruling').map(b => b.hash);
   return [];
 }
 function byDeadline(c, blocks, pool, now) {
@@ -5014,6 +5179,10 @@ function door(op, ...a) {
     case 'owed_back': return owedBack(a[0], a[1]);
     case 'gives': return gives(a[0], a[1], a[2]);
     case 'act_check': return actCheck(a[0], a[1]);
+    case 'listing_check': return listingCheck(a[0], a[1], a[2]);
+    case 'check_reads': return checkReads(a[0], a[1]);
+    case 'clearing_applied': return clearingApplied(a[0], a[1]);
+    case 'ruling_releases': return rulingReleases(a[0], a[1], a[2] === undefined || a[2] === null ? null : a[2]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
     case 'circle_key': return circleKey(a[0], a[1]); // profiles/rekeys.md
     case 'members_then': return membersThen(a[0], a[1], a[2]);
@@ -5123,6 +5292,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, isStranger, speaksFor, backed, backedAll, owedBack, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

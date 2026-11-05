@@ -713,6 +713,34 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             fold::act_check(a.v(0), a.v(1))
         }
+        // a list-keeper's answer against the lookup it answers (promises.md, Finding): { ok, why, bad, left_out }
+        "listing_check" => {
+            if !a.v(0).is_object() || !a.v(1).is_object() {
+                return Err(Fail::Argument("arguments 0 and 1 are blocks".into()));
+            }
+            fold::listing_check(a.v(0), a.v(1), &a.list(2))
+        }
+        // a signed check of someone's record against the blocks it names (promises.md, A signed check): { ok, why, read }
+        "check_reads" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            fold::check_reads(a.v(0), &a.list(1))
+        }
+        // a circle of IOUs cancelled, each promise reduced (promises.md, Clearing): { binds, why, who, missing, lines }
+        "clearing_applied" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            fold::clearing_applied(a.v(0), &a.list(1))
+        }
+        // whether a judge's ruling releases a stake that names it (promises.md, Rulings): { releases, to, money, ruling, why }
+        "ruling_releases" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            fold::ruling_releases(a.v(0), &a.list(1), a.time_opt(2)?)
+        }
         // what of this person's becomes whose if this block stands, and whether it can come back (promises.md, What becomes whose)
         "gives" => {
             if !a.v(0).is_object() {

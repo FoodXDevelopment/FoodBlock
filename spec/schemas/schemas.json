@@ -248,15 +248,16 @@
    "name": "ruling",
    "target": "observe.ruling",
    "fields": {
-    "text": "the referee's remark, in words: it binds nobody and moves nothing",
+    "text": "the referee's remark, or what the judge found happened, in words: it binds nobody and moves nothing",
     "up_to": "money or an amount: on a confirms of a claim of invasion, the harm the ruling finds. A fact; no fold moves anything because of it",
     "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
     "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
     "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional",
-    "rule": "a hash: the text of the rule the ruling applied (a thing, also named in derives_from), so readers can see whether two judges who disagree used the same code"
+    "rule": "a hash: the text of the rule the ruling applied (a thing, also named in derives_from), so readers can see whether two judges who disagree used the same code",
+    "awards": "[{ to, money | amount | what }]: what of whose becomes whose under the deal the ruling is about (refs.subject): each line names who it goes to (`to`) and what, money or an amount of one kind, or a thing. A fact about what the judge found, never a transfer: a stake that names this judge's ruling (a condition `ruled`) is released by it (promises.md, Rulings)"
    },
    "grounds": {
-    "event": "a referee wrote a remark beside her ruling (her confirms or defeats), or the harm she finds"
+    "event": "a referee wrote a remark beside her ruling (her confirms or defeats), or the harm she finds, or, with refs.subject a deal, what she found and what of whose becomes whose under it (`awards`)"
    }
   },
   {
@@ -624,6 +625,77 @@
    "grounds": {
     "event": "the signer publishes a template of the one shape (promises.md, An act is a template of the one shape). It is a word about nothing yet: a deal that names it in `refs.act` is read against it by the door's `act_check`, and what the deal gives is read from the deal's own terms (`gives`), never from this block's words"
    }
+  },
+  {
+   "name": "lookup",
+   "target": "observe.lookup",
+   "fields": {
+    "side": "`offer` or `want`: which side of a deal the asker looks for",
+    "terms": "{ term: value }: each term an item must carry, equal to the value",
+    "text": "words that may go beside it"
+   },
+   "grounds": {
+    "event": "the signer asks any node that keeps a list for the offers (or wants) that fit: refs.what the things or kinds it looks for, state.terms the terms it needs, refs.to optionally the list-keeper it asks (promises.md, Finding). It binds no one"
+   }
+  },
+  {
+   "name": "listing",
+   "target": "observe.listing",
+   "fields": {
+    "text": "words that may go beside it"
+   },
+   "grounds": {
+    "event": "a list-keeper answers the lookup in refs.answers with the blocks it found, named in refs.derives_from (none named: it found none). Every item must be a real signed offer or want that fits the lookup, which the door's `listing_check` proves from the blocks themselves: a keeper can leave one out but never make one up. Signing it binds the keeper's name to the list being what it found"
+   }
+  },
+  {
+   "name": "check",
+   "target": "observe.check",
+   "fields": {
+    "of": "the type of block each one it read is (promise, transfer ...), optional",
+    "count": "a whole number: how many it read, optional",
+    "stage": "the stage each promise it read is at (done ...), optional",
+    "text": "what it found, in words: pencil"
+   },
+   "grounds": {
+    "event": "the signer read the record of refs.subject, the blocks named in refs.derives_from, and says what it found (promises.md, A signed check). The door's `check_reads` proves the blocks are held, concern the subject and are as the typed fields say; whether the signer read well is the signer's own word, and the signer answers for it"
+   }
+  },
+  {
+   "name": "clearing",
+   "target": "observe.clearing",
+   "fields": {
+    "lines": "[{ deal, reduce, applies?, rate? }]: the first promises it reduces and the amount each is reduced by. `reduce` is money or an amount; `applies`, when `reduce` is in another kind than the deal's price, is the amount in the deal's kind and `rate` the observe of kind rate both sides of that deal signed",
+    "text": "words that may go beside it"
+   },
+   "grounds": {
+    "event": "anyone proposes a circle of IOUs cancelled against each other (promises.md, Clearing). It binds only when every person in it has signed it or a block that confirms it; the door's `clearing_applied` reads each promise reduced. It binds only its signers and moves no title"
+   }
+  },
+  {
+   "name": "rate",
+   "target": "observe.rate",
+   "fields": {
+    "give": "money or an amount: this much of one kind ...",
+    "get": "money or an amount: ... is worth this much of another, between the two who signed it"
+   },
+   "grounds": {
+    "event": "two sides say what one kind is worth in another for their own deals, each signing it or a block that confirms it. It is a word between them and binds no one else; a clearing across kinds names it (promises.md, Clearing)"
+   }
+  },
+  {
+   "name": "judging",
+   "target": "promise.judging",
+   "fields": {
+    "what": "what the judge will rule on, in words"
+   },
+   "terms": {
+    "rules_within": "a duration: how fast she rules once named"
+   },
+   "grounds": {
+    "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
+   },
+   "undo": "ok"
   }
  ]
 }

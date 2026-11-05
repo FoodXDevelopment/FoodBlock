@@ -45,6 +45,18 @@ fn fits(ty: &str, v: &Value) -> bool {
             .as_str()
             .is_some_and(|s| crate::time::parse_duration(s).is_some()),
         "id" => v.as_str().is_some_and(|s| spec.is("id", s)),
+        // a priced list: `[{ id, what, quantity, price }]`, each item with only the keys of protocol.json `line`, `id` named
+        "lines" => v.as_array().is_some_and(|a| {
+            let line = spec.list("line");
+            !a.is_empty() && a.iter().all(|l| l.as_object().is_some_and(|m| text(m.get("id")) && m.keys().all(|k| line.contains(k))))
+        }),
+        // a condition the protocol reads: an object with a key of `condition_shapes`
+        "condition" => v.as_object().is_some_and(|m| spec.list("condition_shapes").iter().any(|k| m.contains_key(k))),
+        // a named clock: `{ names, needed? }`, names a non-empty list of text
+        "keepers" => v.as_object().is_some_and(|m| {
+            let keys = spec.list("shapes.keepers");
+            m.keys().all(|k| keys.contains(k)) && m.get("names").and_then(Value::as_array).is_some_and(|n| !n.is_empty() && n.iter().all(|x| text(Some(x))))
+        }),
         shape => {
             let want = spec.list(&format!("shapes.{shape}"));
             v.as_object()

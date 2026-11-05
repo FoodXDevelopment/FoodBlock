@@ -138,6 +138,10 @@ enum Door {
     static func backedAll(_ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("backed_all", person, blocks) }
     static func gives(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("gives", block, person, blocks) }
     static func actCheck(_ deal: JSON, _ template: JSON) throws -> JSON { try Core.json("act_check", deal, template) }
+    static func listingCheck(_ lookup: JSON, _ listing: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("listing_check", lookup, listing, blocks) }
+    static func checkReads(_ check: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("check_reads", check, blocks) }
+    static func clearingApplied(_ clearing: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("clearing_applied", clearing, blocks) }
+    static func rulingReleases(_ stake: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ruling_releases", stake, blocks, now) }
     static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("members_then", block, recipient, blocks) }
     static func whereNow(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("where_now", thing, blocks) }
     static func ownership(_ instance: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ownership", instance, blocks, now) }

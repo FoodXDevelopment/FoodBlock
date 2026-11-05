@@ -64,7 +64,13 @@
   "account",
   "witness",
   "answer",
-  "act"
+  "act",
+  "lookup",
+  "listing",
+  "check",
+  "clearing",
+  "rate",
+  "judging"
  ],
  "schemas": {
   "thing": {
@@ -565,22 +571,23 @@
    "signature": "08f944235954c475278c9430195135be6133473cfb1087f2bf708c6646fca24504976ae3f5c82e767c8ed52c7a3916b89e12480edc9554260bf70f60826b5f00"
   },
   "ruling": {
-   "hash": "fcad166a8b602951f502e422e3d3a58f98c3632a34fd43ac4fb92f7578f7b5dd",
+   "hash": "a992e6e539bb99a8e2e556f48546535661ccede226f9de3ff249d350103e7603",
    "type": "thing",
    "state": {
     "kind": "schema",
     "name": "ruling",
     "target": "observe.ruling",
     "fields": {
-     "text": "the referee's remark, in words: it binds nobody and moves nothing",
+     "text": "the referee's remark, or what the judge found happened, in words: it binds nobody and moves nothing",
      "up_to": "money or an amount: on a confirms of a claim of invasion, the harm the ruling finds. A fact; no fold moves anything because of it",
      "paid_by": "an id: who paid her. Her own statement of it, optional: a false one is a broken word (profiles/attestations.md, Who pays a confirmer)",
      "funded_by": "an id: a patron or circle whose pledge covers her fee, optional",
      "pay_depends_on_result": "true or false: whether her fee depends on what she finds, optional",
-     "rule": "a hash: the text of the rule the ruling applied (a thing, also named in derives_from), so readers can see whether two judges who disagree used the same code"
+     "rule": "a hash: the text of the rule the ruling applied (a thing, also named in derives_from), so readers can see whether two judges who disagree used the same code",
+     "awards": "[{ to, money | amount | what }]: what of whose becomes whose under the deal the ruling is about (refs.subject): each line names who it goes to (`to`) and what, money or an amount of one kind, or a thing. A fact about what the judge found, never a transfer: a stake that names this judge's ruling (a condition `ruled`) is released by it (promises.md, Rulings)"
     },
     "grounds": {
-     "event": "a referee wrote a remark beside her ruling (her confirms or defeats), or the harm she finds"
+     "event": "a referee wrote a remark beside her ruling (her confirms or defeats), or the harm she finds, or, with refs.subject a deal, what she found and what of whose becomes whose under it (`awards`)"
     },
     "at": "2026-10-19T00:00:21.000Z",
     "audience": "public",
@@ -590,10 +597,10 @@
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
     "prev": "e2ed8c01bd86a655ee496261170767a58c385cb48a5c2de34fb0e5b0a33bfb66"
    },
-   "signature": "fbcefe4774cf8d182db1ea89b8eafd2e8e7834d4f0b30fb3ef40e9f953e4457c70fbbc1292e5cc24782bc702bb503e3c81176abd26b20105f86b54e77b11d107"
+   "signature": "24becd4e4139edbcb893873ff202350a6e50eef4e03125e8b4e8d5943698ef71a766e30b359a569052d9b6dabdb20d31a19b84cedbf86da9216f5c82b0594507"
   },
   "loyalty": {
-   "hash": "24b6117bcd40a7af5ace3664c364a49ce67e5027ea7a9501df56bf7374231950",
+   "hash": "f33aa2a71544cf26ad5445e9ea49e79d5905f8f3277bec2074335809fb85a9dc",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -614,12 +621,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "fcad166a8b602951f502e422e3d3a58f98c3632a34fd43ac4fb92f7578f7b5dd"
+    "prev": "a992e6e539bb99a8e2e556f48546535661ccede226f9de3ff249d350103e7603"
    },
-   "signature": "ef48b1b9b23e49a8ef88b39bfecd370bca40668e899dbc9326edb496751a583ecffb7af69ae151c21f2a4210a7b3fe1aae0685d3bcf6c342ea11c6b50ecbf30c"
+   "signature": "80dc07f10f22012ffebc1f64f5ebc56e65ed2ef4a25a314ec0b56b6ff71709f79ff0dabc044876547d7929e41b481d29cf5533498c762a928887842aa01e3700"
   },
   "vouch": {
-   "hash": "51ee9b96c1830fa23002beb138d61a1a0252d9412adaf088370e3b1436003d3a",
+   "hash": "5b25c3b0528e8ac0d8a27d2467e0d0d0eaee7aae6603fcfaf5fcd80038cbcee6",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -648,12 +655,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "24b6117bcd40a7af5ace3664c364a49ce67e5027ea7a9501df56bf7374231950"
+    "prev": "f33aa2a71544cf26ad5445e9ea49e79d5905f8f3277bec2074335809fb85a9dc"
    },
-   "signature": "b4b49e5ca6036df23c10324d639781afdd9f0d0f5dd6c316ed286a681a2f822eea465373b678d88e012bdc4747ca96c0da7ea3be1df393b6e81a9f1e16df2707"
+   "signature": "96830557c1c2264551411d49b08396a0c38e31e75a0f371cfa4ac761e816bd8d5623045352b95173b73708b533ba786a4c9b15d70193f4ab87f76e8b69d2a705"
   },
   "payback": {
-   "hash": "d3bb6e152cb2dcb34b90088e64fe5537299b541cf33e94ad17c409b3c0b42c10",
+   "hash": "b9759ed39745c81421b1ee054bfca24d57610ec3bd3187932989a7af09f9d869",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -671,12 +678,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "51ee9b96c1830fa23002beb138d61a1a0252d9412adaf088370e3b1436003d3a"
+    "prev": "5b25c3b0528e8ac0d8a27d2467e0d0d0eaee7aae6603fcfaf5fcd80038cbcee6"
    },
-   "signature": "0e91ee38139c18f240e2ee24190346e87b00db7c72a669bcce16bab0f90410032b481ed4bf395f2a7d9560f4268d379f984994dab3a5cd3661fd708da3c92108"
+   "signature": "3c4b5988a621d301635ad62bd07ae1cb8ff86e905217617911f2717d27081f16812817f2d02bee5c7781ab1e05327287cd8a18f296b60f5de46c7fd59e507b05"
   },
   "refusal": {
-   "hash": "92a62c438bc042878136cdf1cac977fe3f8d4026aeb142d88d9c70fe45779432",
+   "hash": "b2235e7a130c106b46a38d3730abe028e18860af325899fa67a7daa17b40f73f",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -701,12 +708,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "d3bb6e152cb2dcb34b90088e64fe5537299b541cf33e94ad17c409b3c0b42c10"
+    "prev": "b9759ed39745c81421b1ee054bfca24d57610ec3bd3187932989a7af09f9d869"
    },
-   "signature": "18bfd5c81b27715b1fc02dd439898ffc70c08cc066c7a448b517a3484ef58d5ea6ccc79f31b92efb19f5a2671447c02ffdbcac7d823c8be52d51492bb84d940b"
+   "signature": "5b529c7d919905169f19745bf3a9b59658afd385c1ae31d7d36e16315d5eb39c96e17ae7127f1c74fae09a988d91ffc5cd4bc264fdf2393eec12a15d9fee580f"
   },
   "pool": {
-   "hash": "bf46365b28ee780d06131999e47b001000a7198c8370e3c3fb1598a3d18c03db",
+   "hash": "022a647a98d481461de916fd80313f4849309d2b7886190d728cc0c3160a3249",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -734,12 +741,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "92a62c438bc042878136cdf1cac977fe3f8d4026aeb142d88d9c70fe45779432"
+    "prev": "b2235e7a130c106b46a38d3730abe028e18860af325899fa67a7daa17b40f73f"
    },
-   "signature": "31453650af10f7f2655942c1dedca1d3f8ca9564e76f8657552acaa71411cbead6f2bfb8d3b79ef72953f3817ee105d89060342217202b094f14a850c5f83e03"
+   "signature": "059a1bcae56d0cc6fbc5eb34f77c02bd0b16c82a35927bf7d55ae97eafb565f760e2d0b42c4f885f60eff90ea36cb462300e5752c94473472cd2f88d5c1c3c0c"
   },
   "link": {
-   "hash": "87f0a6b94b0d5f6d90ff923d0a098e13951d18219499df6f8f03d631ea7ad8b8",
+   "hash": "740c709243eb10df325cf2bd35ae77b2e4a11a43554818e0d0066258fd9536ab",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -758,12 +765,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "bf46365b28ee780d06131999e47b001000a7198c8370e3c3fb1598a3d18c03db"
+    "prev": "022a647a98d481461de916fd80313f4849309d2b7886190d728cc0c3160a3249"
    },
-   "signature": "f9e636bcbdbbdf593a45a752938ad30d88cbe8e1292a4bfa926816a712cb218911bdbd6fc6fc03066597ff5f43fb6c986c7d80711a0df683ad47569d83ab0e06"
+   "signature": "12d38ad99293e1f26d7103001d8a30b564be97dd49539759cfdcd3af736ddc0587078d233feb82f7082a40daedc6a678a801f30672a079a8aee36611eb4e2707"
   },
   "rulebook": {
-   "hash": "06ed9ccda4517349d565f2ab6b4d2767ef758b928c92dcf2713e9ac0c0e49f57",
+   "hash": "7b55d1fb705c2a35231aa4d049ec0a93b4ce4ba62971afd49c053fb6647d98a2",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -794,12 +801,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "87f0a6b94b0d5f6d90ff923d0a098e13951d18219499df6f8f03d631ea7ad8b8"
+    "prev": "740c709243eb10df325cf2bd35ae77b2e4a11a43554818e0d0066258fd9536ab"
    },
-   "signature": "c27df06446374a677d9711300a4212c388b17819520823ff60d75460ea9592781cae7ab64c8f8e97d2462725be7f1644301e35cc154d1ad32deab9b5c8ea4509"
+   "signature": "8391f72eccd2ec92e5d2618912962f8f109b07de1a35acaf1030fca8db63107ad3e86726819ed2530f3b26cce8aaae0abf37bfdfd504b86f11890562dbecea0c"
   },
   "glossary": {
-   "hash": "7137179a99d62fa7a8e5409f0374265991a70be185bf994ab68b775b475eadfc",
+   "hash": "3eb61b149e45c2760406cafdb192e799345925029fe2aef93a1094235283cbdb",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -817,12 +824,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "06ed9ccda4517349d565f2ab6b4d2767ef758b928c92dcf2713e9ac0c0e49f57"
+    "prev": "7b55d1fb705c2a35231aa4d049ec0a93b4ce4ba62971afd49c053fb6647d98a2"
    },
-   "signature": "72811d5a0cf5fb74a91d483c6958f15ea7be5f0fdaa6fcbc82058a79f145d47a6626608dccb180e95cd19262e01de93f1f43615b4517251be1fcc0e60c3dbb0f"
+   "signature": "ce96deaf579a9bfc47929d333b2444be2a535f49696fbb50e3ede8e301dbcf10940d9253ae7c9ccc8d9e54fa03761ef0d553bf06fb36d8036b6cd73e99d48e03"
   },
   "grader": {
-   "hash": "74cb2f579e292421df5c4c0456a2fd4477eb03d56fbdf8d877812e59c057a4a8",
+   "hash": "98abeccf47d6242a85238a0f29d3ea18d18edcc107e668ec97022c297ae09e67",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -848,12 +855,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "7137179a99d62fa7a8e5409f0374265991a70be185bf994ab68b775b475eadfc"
+    "prev": "3eb61b149e45c2760406cafdb192e799345925029fe2aef93a1094235283cbdb"
    },
-   "signature": "474e0b4b520115a0bda7a0bff2bdee15a50c1e627a596657784ff2b2faba8a9f695088d3de738cc11b2fdee3078e2cfeefdb6ce3100d09d390b9e32bd3bbfa09"
+   "signature": "760d06a108698cfca8986c47a8f545994c1e46140b84b30fb1534c7d22f93150f43f5e4c9946afecfc85ced9c29549116a36d1da2640bb8434230ce27c8d7d02"
   },
   "release": {
-   "hash": "f3b0399ce30006d02218745142c1b36a14cd5cc8314b8b7a51fa54f8159bf4e3",
+   "hash": "d0377646b1b027599b08d6e80e0217714e9f825e19c8ddf81445696e966e16a6",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -873,12 +880,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "74cb2f579e292421df5c4c0456a2fd4477eb03d56fbdf8d877812e59c057a4a8"
+    "prev": "98abeccf47d6242a85238a0f29d3ea18d18edcc107e668ec97022c297ae09e67"
    },
-   "signature": "f88b9e7f48b5acbdb3dd111cb645df3579acdd64bfc2f6d752ce3e392f48e98c01693d6dcd6d29c40fb2e74eb016606ac8b16ba76e7d7da30fbaa03ad3d4f50a"
+   "signature": "71abcc7eda4b78613e69c0179f19dcf6cf6108ef44e5f01ea15c3c1ad2c19075048bc2576f2e1c62ea79facab1a03c32f5cfd7785068948f2acfdabbd3296b01"
   },
   "bid": {
-   "hash": "972fe12297429ae7f91448778cb08397206661357cb4746fc294e48b3f3b4973",
+   "hash": "06798401eae960da43ee784998ac688fb4655eb147ca04783a92670fdd099173",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -900,12 +907,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "f3b0399ce30006d02218745142c1b36a14cd5cc8314b8b7a51fa54f8159bf4e3"
+    "prev": "d0377646b1b027599b08d6e80e0217714e9f825e19c8ddf81445696e966e16a6"
    },
-   "signature": "3d97e2fc2bca4827a66b63c55bcd707b703b7ea2a2bfa0dae598c74673b19c0495cee10314a4aff52fa8ecf01177f88f28d2700656bdf16f8a597cbf81bb380f"
+   "signature": "04f5af7dbb34e43a3b42f260e184728d5233c38bbc54736e220d4f6d3f00d44d68b5a88603295aa1e8bc44d18d29b86bc4b9bce5c68162d580dd83893797fc0d"
   },
   "reliance": {
-   "hash": "bca936b1f30cbda05e4c1c4d9240708e61c84aeb3815a6c076d474d52e16fac7",
+   "hash": "c06022f1bb97665f540ae11cfd6a23d2b61fd798c60681a87306f1a3bc435ea6",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -925,12 +932,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "972fe12297429ae7f91448778cb08397206661357cb4746fc294e48b3f3b4973"
+    "prev": "06798401eae960da43ee784998ac688fb4655eb147ca04783a92670fdd099173"
    },
-   "signature": "cd95a13de0485097af6a5d9697be2a8f8ebf02e1dbf1fab91d8b6164f28b045d7f45f692e9177d9e680e8015c8f00ce5fcd0861f477f16583619681ee734ca01"
+   "signature": "36b573486829d8bbb44ecb46dac81cb06826788984ace7570940ab794b87d821dcf6e0c0d02c3cfb549bfedcd48779eaf799d607584af806bc7dcd80a0d5340f"
   },
   "price_reading": {
-   "hash": "8feb452848390d13abca186d86038f98d42f695aefcc0dbed3bfc8b139c52ef0",
+   "hash": "782e47efe606329d62b8ac11af4b3aa72ee7f06953078ae27cd6aa3b0aeb16e4",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -955,12 +962,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "bca936b1f30cbda05e4c1c4d9240708e61c84aeb3815a6c076d474d52e16fac7"
+    "prev": "c06022f1bb97665f540ae11cfd6a23d2b61fd798c60681a87306f1a3bc435ea6"
    },
-   "signature": "bc08fe451a2b343f19ffc8632dbb90e8718c8bb9630e1cf35638c86f54073861b86b5df95a3267e20953c499a2a2255d26564ae254152de201c65c347393c201"
+   "signature": "db22c35434b635dc25ddedf6898d4291eba30200bad74272133982e6cec6a222cc59853320c18258be75110c6e8507cb265ce8165d243de9e0484f19db4d2a02"
   },
   "keeping": {
-   "hash": "f013dea2907ade8ba019ef863faa2a755ac063fe54e4c6899f9368046194990d",
+   "hash": "4a5cd4bf323e3a92935136f6b00724b10eecf3d350ec8e358b7ea3d5e919ee27",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -982,12 +989,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "8feb452848390d13abca186d86038f98d42f695aefcc0dbed3bfc8b139c52ef0"
+    "prev": "782e47efe606329d62b8ac11af4b3aa72ee7f06953078ae27cd6aa3b0aeb16e4"
    },
-   "signature": "59ff817bf744920c478454d7fa14e33a068f73fed56208205993ef603cad4ddba164a4e43334b801e26043c3bfc7f1f2e0c406fce1efc1c25dd624ba655e6102"
+   "signature": "e5d7ff4f600f6e1cf4df4ba0bb3e0c038891e8d27b74de580b39bbede1791e00d97853720ede2e51b44e708118212c1c3da296bedcf6dee0fbc54cdf0f34d30b"
   },
   "loss": {
-   "hash": "800cc74f13b5f7cd5c62f99eaedda9f844ee822264685049d0e276c470074b96",
+   "hash": "94f76390d16a14447707c38707fe7dfaacd9f20aac14972fb59995caf0b1b058",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1006,12 +1013,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "f013dea2907ade8ba019ef863faa2a755ac063fe54e4c6899f9368046194990d"
+    "prev": "4a5cd4bf323e3a92935136f6b00724b10eecf3d350ec8e358b7ea3d5e919ee27"
    },
-   "signature": "a5d61a0a6a633a32ebce8411aa65d868e779f4ed552ff4e4724d3ec7f13609872165336e3e511dc4e4a3462f299eb9f95f43a19769a41a03e2459a9e7416f803"
+   "signature": "77b481efd0c12106849e4a4f5e51cc096b1d13c5567da181a4b9c444cb76f12e333dbba6fb5d47cc9873992c85915763d7715f14b5c317982918bdf1a6667208"
   },
   "place_use": {
-   "hash": "2211fc8b0c7c571b680f8ffeccafe8732035198d94d3e1e839cb6c0c4e571f4b",
+   "hash": "02edbbcc3eabba94808a836b35b166de3c3546819e3e148652c8df5eb265af71",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1033,12 +1040,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "800cc74f13b5f7cd5c62f99eaedda9f844ee822264685049d0e276c470074b96"
+    "prev": "94f76390d16a14447707c38707fe7dfaacd9f20aac14972fb59995caf0b1b058"
    },
-   "signature": "c517ebb2482dab2778e38f4b6d19f117c507e49a25e9282eedd38662c42bb4fdf06d8fe9f4ee87732679c72e128936214ce7e1cff7aa21e9fd4f9222a6f2a10c"
+   "signature": "dbce5d8452693768eae16e017363bd7b5d2706fb96d0dda7b62b3ccda00c05030fe4888c6b3b3200f92e3025709e6abfacb265fb6ce30bd15b7a62ac1e59450e"
   },
   "shareback": {
-   "hash": "2aafbcb3ca72e921e635eb4b76cd4b52ff45502357d3a6dfd6a8e6ebeab37a64",
+   "hash": "5a95e7a330eefcb8a27eec0cbe93203202f04fa0fb32ee581ecfc697564f4742",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1059,12 +1066,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "2211fc8b0c7c571b680f8ffeccafe8732035198d94d3e1e839cb6c0c4e571f4b"
+    "prev": "02edbbcc3eabba94808a836b35b166de3c3546819e3e148652c8df5eb265af71"
    },
-   "signature": "da60be49f12fffa4c03fdcc8a35453bf29b78eb470b48c6ec6cc173678ed2392aa82c02ed94f83a5006457ee27bdc5cd2d356307ce739f47ee3c35f037891e0d"
+   "signature": "c99eeccb98c2755a007109d719fb6fcc53354b635c6dd077f8fc19bc7aa97a66919340011aa16ee4f2b945e2c48e1604a0c6b4b394e4e34ee29f5875957aa305"
   },
   "rebate": {
-   "hash": "dd73c62901d5680e0c03ef1759193a3a04774af09fd8c3d80b10c7594f555b4d",
+   "hash": "7f2a321132e7403cb218b708103dbd97b47e50bdddf112721c7f149e14fba62c",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1085,12 +1092,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "2aafbcb3ca72e921e635eb4b76cd4b52ff45502357d3a6dfd6a8e6ebeab37a64"
+    "prev": "5a95e7a330eefcb8a27eec0cbe93203202f04fa0fb32ee581ecfc697564f4742"
    },
-   "signature": "a8a68380a9fd9ae7d207991c042b496fc14ce4139743a3928f01ae97a09cdaf78cf57ff7e89ae43ec31acac4a3b128c0c7207830b7dcce21e93ed082be553b09"
+   "signature": "5b6565cf4d24c6fe8c3580c402abf0d7a32762a38152928c23bc79366c0b04b4e7c1f492d4040f5d82ee704f9ae71a9eb52a0e326f766f58dc6378d31dd35302"
   },
   "draw": {
-   "hash": "65d891743483dd53cfddb191019a964a7f4d3fe10a19087ec05d3aa18f6bd441",
+   "hash": "35f669238f217a1a19e4bddb0becffca6e47877a1a0b136052b06e185d54208d",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1115,12 +1122,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "dd73c62901d5680e0c03ef1759193a3a04774af09fd8c3d80b10c7594f555b4d"
+    "prev": "7f2a321132e7403cb218b708103dbd97b47e50bdddf112721c7f149e14fba62c"
    },
-   "signature": "2f35bb9c7a2944ff7836fab7971cf28c6030aa970a2f5b37d7f297ec30654a765af42346b2c748f6a4675e5fb382bc5d80b8675ec0f1e60aa7e1233f2c15df05"
+   "signature": "98c3aeb8b1c359a76c5e9262a384663843fcf82f95b6cfb76c47e6839dc9c2a93d4528ef46c62e8daffc3fdee516665bf824503cdbb0375e9b2b850a0d5a9408"
   },
   "bounded_change": {
-   "hash": "b99b56c70e184e7503c7116a667c8a8c3205e54d96d37230950e1ba9a2030fb9",
+   "hash": "dcc50ec2de652c07ce3eca04aed4c26a53de7ad3575b98cb3d9caf48d9eb6e6a",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1143,12 +1150,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "65d891743483dd53cfddb191019a964a7f4d3fe10a19087ec05d3aa18f6bd441"
+    "prev": "35f669238f217a1a19e4bddb0becffca6e47877a1a0b136052b06e185d54208d"
    },
-   "signature": "d0785787c0f442bf390a954d3506ead0565549a551ef88836f5968e02b44761f10935eceed1a528bfb222ed4aecff453685a90d843bdb89f19245fd946723e02"
+   "signature": "8569bd1181a99d3736e8b59a576ee4d3fb9bf2b930f1b6ca6011203e48ba95392d062b6fce8150fe135cdf04353d1b7f130fd92d7295d298e37effc6c0c14f03"
   },
   "done": {
-   "hash": "156845f4bf831f8893d9d30b0596a3326e9ed0ac2ce0c056bbd5a07365f0cb59",
+   "hash": "b9e54813c66b4de17c9124b5f6cb27f2487e5dc190d86f07d073361096ad162e",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1167,12 +1174,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "b99b56c70e184e7503c7116a667c8a8c3205e54d96d37230950e1ba9a2030fb9"
+    "prev": "dcc50ec2de652c07ce3eca04aed4c26a53de7ad3575b98cb3d9caf48d9eb6e6a"
    },
-   "signature": "9cc0f49892636a4419a89286c25bce74c9a325e5d27884fcf3d57b6f164c189eb04efd594ab81d5e18863fa2a3268da2e23fc90daba5e2b424c1ac38868a940c"
+   "signature": "eb0576f5d09d7b49fc93a5451b7a898c73b0c3ac89ae8e6be47419e8d3ae3b93566b536700040dfc98926ab0212e0b23eae17ef44bb5b91970c557bf24940e05"
   },
   "pass": {
-   "hash": "0f4a96a23b3b79764e754b0f09fdae7f2dea3a23686f034b8e534513c15a785e",
+   "hash": "805e34765e03693bb14511ec0d88e416907cf3d6246f4a208ada69ea80777042",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1190,12 +1197,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "156845f4bf831f8893d9d30b0596a3326e9ed0ac2ce0c056bbd5a07365f0cb59"
+    "prev": "b9e54813c66b4de17c9124b5f6cb27f2487e5dc190d86f07d073361096ad162e"
    },
-   "signature": "cf48937400dfba1285153d03c853c2f075cc2fd5616364c06c5593200621b53faed56ae31cda2106998f553fd2b798b182704e140a996a6e5a7940a8e7406103"
+   "signature": "5422a0513a6afe40fdc28d990eb67df8bdceab02b468adae8582648b8926f45b730d320631997ec8b16c896bd1c88a5ed209f75e1e26c100b07b6e22b7bfdf07"
   },
   "account": {
-   "hash": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c",
+   "hash": "575ea190805745c6e2fef845bb925b6e3d8e50db98e52b5ee90070803c43230e",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1213,12 +1220,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "0f4a96a23b3b79764e754b0f09fdae7f2dea3a23686f034b8e534513c15a785e"
+    "prev": "805e34765e03693bb14511ec0d88e416907cf3d6246f4a208ada69ea80777042"
    },
-   "signature": "168e634d39eea87dee61b52142c9d0a54d5a4209ff252717ac6a9a2bc15970b2f02dc40e73992ec33a6ef94c83194205775778d1940f38f074777a7579d71a02"
+   "signature": "da38a7ef4dce14df50c3c9c6f035dc83d3117423aefee91c5ca669a242a1b59007c359b3daba5be8bda973a081ae83d0754c43f2b49d42d1e8d8449b4e5ce201"
   },
   "witness": {
-   "hash": "7dfbe1f6c3efb835859f6b2da581ea441650c4ded444ec5575099eb8cb874880",
+   "hash": "77a776836799b891913f1cbbf811c5015a518d82430c99faf84ed1db70614e28",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1238,12 +1245,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c"
+    "prev": "575ea190805745c6e2fef845bb925b6e3d8e50db98e52b5ee90070803c43230e"
    },
-   "signature": "73a8f567a125654ea713109395fdf82a43ee371c20c4f2f9783496bdfd1ba5a3689ea2d17cfa593e5b0c8cc34e369064997f7857946d5d1c6f71ae7a8ac0b30c"
+   "signature": "291194b661aee7ff315f5b9d6584dc7520c9dbf2ac30cb303784280be2fc98adf45add3f2c99c45dd856210734831493fda14e217130c9958b9e89e0077df70e"
   },
   "answer": {
-   "hash": "91fa0d788ff9c9ff430c2adc6b7b01a6231301959430ac5f12b4900b95603314",
+   "hash": "6d9bfe710e37fe7d92fdc096e60261d5dc744f16d31ea7b8e4c15c7e3061ef4f",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1263,12 +1270,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "7dfbe1f6c3efb835859f6b2da581ea441650c4ded444ec5575099eb8cb874880"
+    "prev": "77a776836799b891913f1cbbf811c5015a518d82430c99faf84ed1db70614e28"
    },
-   "signature": "a64fa5d1f03d84efb2c25d9d460a7cf16d12a032126615a14a51186ad0d17e0accc1e799f4db1058bf8ce4852b994ecaf6c89149dfa8d0783115cc4ade114f0a"
+   "signature": "bb145dda27ba9edc524d45cf1db991c79c66761f4db1d363bc1dbde1ed4a67699ae5008893bc7efcb5c3455c8a0390cf48c32a4a26d4fde75576a96db193ef07"
   },
   "act": {
-   "hash": "3c30a3a42f53f8737359546b6078748e7dd8be3a69eaa414b7f444d6a7c02580",
+   "hash": "5b26e08b4ddecdaf838352305216a42ee56e1a4610a75981913e4ba3d8dba1f7",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1292,9 +1299,158 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "91fa0d788ff9c9ff430c2adc6b7b01a6231301959430ac5f12b4900b95603314"
+    "prev": "6d9bfe710e37fe7d92fdc096e60261d5dc744f16d31ea7b8e4c15c7e3061ef4f"
    },
-   "signature": "a6ff1670901d54f7f2c93ebba76f7405486ebf0e069115ac48f3d2d5fa64da91eab3ffb8e9bd6ded3bde6de213de1dd4e58d873e285ca9495cace3a1aa8b8401"
+   "signature": "d584189830773cdf1da52b4958122e0dbc20ef976e6664aa4d31923e22388f6aeb0119f0557946c20839edf4a30bd9a145b7e6f4c972deecf0a2eebf9eec0404"
+  },
+  "lookup": {
+   "hash": "188c2f3e1d4119019d6d6ddc8209e1896c65efaee65bb0a8c3cfa980badd18e0",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "lookup",
+    "target": "observe.lookup",
+    "fields": {
+     "side": "`offer` or `want`: which side of a deal the asker looks for",
+     "terms": "{ term: value }: each term an item must carry, equal to the value",
+     "text": "words that may go beside it"
+    },
+    "grounds": {
+     "event": "the signer asks any node that keeps a list for the offers (or wants) that fit: refs.what the things or kinds it looks for, state.terms the terms it needs, refs.to optionally the list-keeper it asks (promises.md, Finding). It binds no one"
+    },
+    "at": "2026-10-19T00:00:48.000Z",
+    "audience": "public",
+    "seq": 48
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "5b26e08b4ddecdaf838352305216a42ee56e1a4610a75981913e4ba3d8dba1f7"
+   },
+   "signature": "393d4cc5fc83880837b1b6dc246833d5b8e7a153d458cf0dd00289cb892cd1761761aa1acbea2a580025f87ff036459d4e0cc605a0b97969d1ae0b5338be180b"
+  },
+  "listing": {
+   "hash": "16587f52e89cd4b67ba6498ceec90511ca874713bd166059b33c434c1f7dd269",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "listing",
+    "target": "observe.listing",
+    "fields": {
+     "text": "words that may go beside it"
+    },
+    "grounds": {
+     "event": "a list-keeper answers the lookup in refs.answers with the blocks it found, named in refs.derives_from (none named: it found none). Every item must be a real signed offer or want that fits the lookup, which the door's `listing_check` proves from the blocks themselves: a keeper can leave one out but never make one up. Signing it binds the keeper's name to the list being what it found"
+    },
+    "at": "2026-10-19T00:00:49.000Z",
+    "audience": "public",
+    "seq": 49
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "188c2f3e1d4119019d6d6ddc8209e1896c65efaee65bb0a8c3cfa980badd18e0"
+   },
+   "signature": "7c2d286084cba86d5f2b0db0595239a43f49bcbaddbb18957e6a4d0124922ab2d9cb0853e5a655be0eab2a0ba070c9f6dbcbd3967e2f36bb1a5a3d623e704108"
+  },
+  "check": {
+   "hash": "b0cbf61e2896b17b9a28fe3503ec4cb3c55906e0b2ccd1b9adbd37b43e374174",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "check",
+    "target": "observe.check",
+    "fields": {
+     "of": "the type of block each one it read is (promise, transfer ...), optional",
+     "count": "a whole number: how many it read, optional",
+     "stage": "the stage each promise it read is at (done ...), optional",
+     "text": "what it found, in words: pencil"
+    },
+    "grounds": {
+     "event": "the signer read the record of refs.subject, the blocks named in refs.derives_from, and says what it found (promises.md, A signed check). The door's `check_reads` proves the blocks are held, concern the subject and are as the typed fields say; whether the signer read well is the signer's own word, and the signer answers for it"
+    },
+    "at": "2026-10-19T00:00:50.000Z",
+    "audience": "public",
+    "seq": 50
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "16587f52e89cd4b67ba6498ceec90511ca874713bd166059b33c434c1f7dd269"
+   },
+   "signature": "f2235620661368a1bcadfa727bc099f3a4ee7d4183083d53d6c328c21082658f8156d7e6b068f0e99c35efe2ea8a0eb8c73469931de357dcb2f8b253d61d7e00"
+  },
+  "clearing": {
+   "hash": "b67081200825f56d47f2e130dcc07de4a5ff5765a9bf2304bd773c9fdd7df3f5",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "clearing",
+    "target": "observe.clearing",
+    "fields": {
+     "lines": "[{ deal, reduce, applies?, rate? }]: the first promises it reduces and the amount each is reduced by. `reduce` is money or an amount; `applies`, when `reduce` is in another kind than the deal's price, is the amount in the deal's kind and `rate` the observe of kind rate both sides of that deal signed",
+     "text": "words that may go beside it"
+    },
+    "grounds": {
+     "event": "anyone proposes a circle of IOUs cancelled against each other (promises.md, Clearing). It binds only when every person in it has signed it or a block that confirms it; the door's `clearing_applied` reads each promise reduced. It binds only its signers and moves no title"
+    },
+    "at": "2026-10-19T00:00:51.000Z",
+    "audience": "public",
+    "seq": 51
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "b0cbf61e2896b17b9a28fe3503ec4cb3c55906e0b2ccd1b9adbd37b43e374174"
+   },
+   "signature": "80c2f2e508a1e23b4b5f51f6589f47de19c46df26d2681d85500c8a02b3591593265c087c5691e83e6a84164c9b0ea70b80eacd7d012852481e403d5b87bdf0a"
+  },
+  "rate": {
+   "hash": "c4e5fce5ec015f0a12789836bbe6dfe5f401f87a7640beee14cad711476cc928",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "rate",
+    "target": "observe.rate",
+    "fields": {
+     "give": "money or an amount: this much of one kind ...",
+     "get": "money or an amount: ... is worth this much of another, between the two who signed it"
+    },
+    "grounds": {
+     "event": "two sides say what one kind is worth in another for their own deals, each signing it or a block that confirms it. It is a word between them and binds no one else; a clearing across kinds names it (promises.md, Clearing)"
+    },
+    "at": "2026-10-19T00:00:52.000Z",
+    "audience": "public",
+    "seq": 52
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "b67081200825f56d47f2e130dcc07de4a5ff5765a9bf2304bd773c9fdd7df3f5"
+   },
+   "signature": "6f8899d665e047311347060b9f4f6cf6fe1fa64f9e4b05bfd790831f84255a032888c6289fb6b47c407af3e6a5868ed71d8db7a62ca64715839eb6451b7d4004"
+  },
+  "judging": {
+   "hash": "69fab38f416372a9482286e6658837ca77bc375e0b7539bc3d560c3f12953dfc",
+   "type": "thing",
+   "state": {
+    "kind": "schema",
+    "name": "judging",
+    "target": "promise.judging",
+    "fields": {
+     "what": "what the judge will rule on, in words"
+    },
+    "terms": {
+     "rules_within": "a duration: how fast she rules once named"
+    },
+    "grounds": {
+     "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
+    },
+    "undo": "ok",
+    "at": "2026-10-19T00:00:53.000Z",
+    "audience": "public",
+    "seq": 53
+   },
+   "refs": {
+    "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
+    "prev": "c4e5fce5ec015f0a12789836bbe6dfe5f401f87a7640beee14cad711476cc928"
+   },
+   "signature": "77d7b78060670244970c708a6d84a5bdff39db6c52ccde10a7bf738b6626693c9543ee5a618f8568a427cb059f899cd38ea48602912c9ac81ca169a2dceeee0b"
   }
  }
 }

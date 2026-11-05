@@ -229,6 +229,10 @@ fn condition_holds_read(condition: &Value, blocks: &[Value], now: &str) -> bool 
             }) && crate::identity::counts_in(b, &index)
         });
     }
+    // A judge's ruling awards to a person (promises.md, Rulings)
+    if condition.get("ruled").is_some() {
+        return matches!(crate::fold::ruled(condition, &index, Some(now)), Some(Ok(_)));
+    }
     if condition.get("without").is_some() || condition.get("within").is_some() {
         return by_deadline(condition, blocks, &index, now);
     }
@@ -383,6 +387,9 @@ fn deciders_of(c: &Value, index: &crate::js::Index) -> Vec<String> {
     }
     if let Some(kind) = c.get("signal").and_then(Value::as_str).or_else(|| c.get("kind").filter(|_| c.get("reading").is_some()).and_then(Value::as_str)) {
         return observes(kind);
+    }
+    if c.get("ruled").is_some() {
+        return observes("ruling");
     }
     if c.get("opened").is_some() {
         return index.values().filter(|b| st(b, "opening").is_some()).map(|b| hash_of(b).to_string()).collect();

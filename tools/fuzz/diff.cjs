@@ -45,6 +45,10 @@ const OPS = {
   backed: { oracle: (b, who, held) => fb.door('backed', b, who, held), proj: x => ({ backed: x.backed, chain: x.chain }) }, // `why` is a sentence, never compared
   backed_all: { oracle: (who, held) => fb.door('backed_all', who, held), proj: x => Object.fromEntries(Object.entries(x).map(([h, v]) => [h, v.backed])) }, // `why` is a sentence, never compared
   owed_back: { oracle: (who, held) => fb.door('owed_back', who, held), proj: x => x.owed.map(({ why, ...rest }) => rest) },
+  listing_check: { oracle: (l, a, held) => fb.door('listing_check', l, a, held), proj: x => ({ ok: x.ok, bad: x.bad.map(b => b.hash), left_out: x.left_out }) }, // `why` is a sentence, never compared
+  check_reads: { oracle: (c, held) => fb.door('check_reads', c, held), proj: x => ({ ok: x.ok, read: x.read }) },
+  clearing_applied: { oracle: (c, held) => fb.door('clearing_applied', c, held), proj: x => ({ binds: x.binds, who: x.who, missing: x.missing, lines: x.lines.map(({ why, ...rest }) => rest) }) },
+  ruling_releases: { oracle: (b, held, now) => fb.door('ruling_releases', b, held, now), proj: ({ why, ...rest }) => rest },
   gives: { oracle: (b, who, held) => fb.door('gives', b, who, held), proj: x => x },
   scope_reading: { oracle: scope => fb.door('scope_reading', scope), proj: x => x },
   circle_state: { oracle: (id, held) => fb.circleState(id, held), proj: s => s && s.founder && { founder: s.founder, members: members(s), removed: Object.fromEntries(Object.entries(s.removed || {}).sort()) } },
@@ -168,6 +172,33 @@ function casesOf(seed, size) {
   for (const b of r.shuffle(all.filter(x => x.type === 'promise' || x.type === 'transfer')).slice(0, 12)) for (const p of r.shuffle(w.actors).slice(0, 3)) {
     cases.push({ op: 'gives', args: [b, p.id, heldFor(b)], world: seed });
     cases.push({ op: 'gives', args: [b, p.id, [b, ...heldFor(b)]], world: seed });
+  }
+  // the market's shapes, over the world's own first promises: a lookup and the listings that answer it, a check of someone's record, a clearing across
+  // the promises' own kinds, and a stake that names a judge's ruling (the judge's own rulings, and others', over holdings that miss some blocks)
+  {
+    const firsts = all.filter(x => x.type === 'promise' && !x.refs.answers && !x.refs.updates);
+    if (firsts.length >= 2) {
+      const a = r.pick(w.actors), z = r.pick(w.actors), some = n => r.shuffle(firsts).slice(0, 1 + r.int(n));
+      const kinds = ['GBP', 'KES'], money = () => ({ minor: 1 + r.int(900), currency: r.pick(kinds) });
+      const base = r.pick(firsts), what = base.refs.what ? [].concat(base.refs.what).slice(0, 1) : [];
+      const lookup = w.post(a, 'observe', { kind: 'lookup', side: r.pick(['offer', 'want', 'offer', 'swap']), ...(r.coin(0.3) ? { terms: { price: base.state.terms && base.state.terms.price } } : {}) }, what.length && r.coin(0.7) ? { what } : {});
+      const listing = w.post(z, 'observe', { kind: 'listing' }, { answers: r.coin(0.9) ? lookup.hash : base.hash, derives_from: some(3).map(x => x.hash).sort() });
+      const check = w.post(a, 'observe', { kind: 'check', ...(r.coin(0.5) ? { count: 1 + r.int(3) } : {}), ...(r.coin(0.3) ? { of: 'promise' } : {}), ...(r.coin(0.3) ? { stage: r.pick(['offered', 'accepted', 'done']) } : {}) }, { subject: r.coin(0.8) ? r.pick(w.actors).id : base.hash, derives_from: some(3).map(x => x.hash).sort() });
+      const lines = some(3).map(x => ({ deal: x.hash, reduce: r.coin(0.8) ? money() : { value: String(1 + r.int(9)), unit: 'voucher' }, ...(r.coin(0.2) ? { applies: money(), rate: r.pick(firsts).hash } : {}) }));
+      const clearing = w.post(z, 'observe', { kind: 'clearing', lines }, {});
+      const confirms = r.shuffle(w.actors).slice(0, 3).map(p => w.post(p, 'observe', { kind: 'confirm' }, { confirms: clearing.hash }));
+      const ruling = w.post(a, 'observe', { kind: 'ruling', awards: [{ to: z.id, ...(r.coin(0.7) ? { money: money() } : {}) }] }, { subject: base.hash });
+      const stake = w.post(z, 'promise', { what: 'stake', terms: { price: money(), condition: { ruled: base.hash, by: r.coin(0.8) ? a.id : z.id, awards: z.id } } }, { from: z.id, to: a.id });
+      const extra = [lookup, listing, check, clearing, ...confirms, ruling, stake];
+      cases.push({ op: 'listing_check', args: [lookup, listing, [...heldFor(null), ...extra]], world: seed });
+      cases.push({ op: 'listing_check', args: [lookup, listing, heldFor(null)], world: seed });
+      cases.push({ op: 'check_reads', args: [check, [...heldFor(null), ...extra]], world: seed });
+      cases.push({ op: 'clearing_applied', args: [clearing, [...heldFor(null), ...extra]], world: seed });
+      cases.push({ op: 'clearing_applied', args: [clearing, [...heldFor(null), clearing]], world: seed });
+      cases.push({ op: 'ruling_releases', args: [stake, [...heldFor(null), ...extra], null], world: seed });
+      cases.push({ op: 'ruling_releases', args: [stake, [...heldFor(null), ...extra], '2026-11-01T00:00:00.000Z'], world: seed });
+      cases.push({ op: 'ruling_releases', args: [stake, heldFor(null), null], world: seed });
+    }
   }
   for (const b of r.shuffle(all).slice(0, 4)) { const blk = { ...b, refs: { ...b.refs, as: g.circle.hash } }; cases.push({ op: 'speaks_for', args: [blk, [blk, ...heldFor(b)]], world: seed }); }
   // a grant's scope: the world's own, and scopes built from good and bad parts of every field (what cannot be read is junk, in the core and the oracle alike)

@@ -680,6 +680,26 @@ func doorActCheck[T any](deal any, template any) T {
 	return must[T]("act_check", deal, template)
 }
 
+// doorListingCheck is the door's listing_check(lookup, listing, blocks) -> object.
+func doorListingCheck[T any](lookup any, listing any, blocks []Block) T {
+	return must[T]("listing_check", lookup, listing, plural(blocks))
+}
+
+// doorCheckReads is the door's check_reads(check, blocks) -> object.
+func doorCheckReads[T any](check any, blocks []Block) T {
+	return must[T]("check_reads", check, plural(blocks))
+}
+
+// doorClearingApplied is the door's clearing_applied(clearing, blocks) -> object.
+func doorClearingApplied[T any](clearing any, blocks []Block) T {
+	return must[T]("clearing_applied", clearing, plural(blocks))
+}
+
+// doorRulingReleases is the door's ruling_releases(stake, blocks, now?) -> object.
+func doorRulingReleases[T any](stake any, blocks []Block, now string) T {
+	return must[T]("ruling_releases", stake, plural(blocks), nilIfEmpty(now))
+}
+
 // doorMembersThen is the door's members_then(block, recipient, blocks) -> json.
 func doorMembersThen[T any](block any, recipient string, blocks []Block) T {
 	return must[T]("members_then", block, recipient, plural(blocks))

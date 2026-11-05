@@ -27,6 +27,14 @@ const backed = (block, person, blocks) => door.backed(block, idOf(person), block
 const backedAll = (person, blocks) => door.backedAll(idOf(person), blocks)
 /** Money moved in `person`'s name that they do not back (promises.md, What is owed back): `{ owed: [{ block, minor, currency, to, why }] }`, one line for each transfer whose money is theirs by `gives` and that `backed` says they do not back. `person` is an id or a block. */
 const owedBack = (person, blocks) => door.owedBack(idOf(person), blocks)
+/** A list-keeper's answer against the lookup it answers (promises.md, Finding): `{ ok, why, bad: [{ hash, why }], left_out: [hash] }`. `ok` when every block the listing names is a real signed offer (or want) the lookup asks for: a keeper may leave one out, never make one up. */
+const listingCheck = (lookup, listing, blocks) => door.listingCheck(lookup, listing, blocks)
+/** A signed check of someone's record against the blocks it names (promises.md, A signed check): `{ ok, why, read: [{ hash, held, concerns, stage }] }`. The signer answers for its word; this says whether the blocks are there and are what it says. */
+const checkReads = (check, blocks) => door.checkReads(check, blocks)
+/** A circle of IOUs cancelled (promises.md, Clearing): `{ binds, why, who, missing, lines: [{ deal, ok, why, owed, reduce, left }] }`. Binds only when everyone in it has signed; each line reduces a deal, in its own kind unless a rate both sides signed is named. */
+const clearingApplied = (clearing, blocks) => door.clearingApplied(clearing, blocks)
+/** Whether a judge's ruling releases a stake that names it (promises.md, Rulings): `{ releases, to, money, ruling, why }`. `now` is the reader's clock, or none. */
+const rulingReleases = (stake, blocks, { now } = {}) => door.rulingReleases(stake, blocks, now)
 /** What of `person`'s would become whose if `block` stands (promises.md, What becomes whose): `{ gives: [{ of: 'money' | 'goods' | 'use', to, back, ... }] }`, read only from the block's typed terms and refs, never from any template's words. `back` is the time it comes back, or null (it cannot be counted on to). `person` is an id or a block. */
 const gives = (block, person, blocks) => door.gives(block, idOf(person), blocks)
 /** A deal against the act template it names (promises.md, An act is a template of the one shape): `{ ok, why }`, `why` one plain sentence when not ok (null when it is). */
@@ -57,4 +65,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, backedAll, owedBack, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

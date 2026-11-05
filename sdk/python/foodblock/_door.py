@@ -547,6 +547,22 @@ def act_check(deal, template):
     return call("act_check", deal, template)
 
 
+def listing_check(lookup, listing, blocks):
+    return call("listing_check", lookup, listing, _blocks(blocks))
+
+
+def check_reads(check, blocks):
+    return call("check_reads", check, _blocks(blocks))
+
+
+def clearing_applied(clearing, blocks):
+    return call("clearing_applied", clearing, _blocks(blocks))
+
+
+def ruling_releases(stake, blocks, now=None):
+    return call("ruling_releases", stake, _blocks(blocks), now)
+
+
 def members_then(block, recipient, blocks):
     return call("members_then", block, recipient, _blocks(blocks))
 

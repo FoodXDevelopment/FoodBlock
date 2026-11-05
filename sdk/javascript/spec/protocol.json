@@ -2066,6 +2066,36 @@
      "now"
     ],
     "result": "promises.md, Conditions: whether a condition holds on the blocks held at the reader's clock (condition_shapes: settled, accepted, deed, a reading, a signal, paid, opened or without)"
+   },
+   "listing_check": {
+    "args": [
+     "lookup: an observe of kind lookup",
+     "listing: an observe of kind listing",
+     "held"
+    ],
+    "result": "promises.md, Finding: { ok, why, bad: [{ hash, why }], left_out: [hash] }. ok when every block the listing names in derives_from is, among held, a real signed offer (or want, by the lookup's side) that the lookup asks for: a first promise, backed by its signing side, the other side open, still offered or asked, naming one of the lookup's refs.what and carrying each of its terms. left_out: held blocks that fit the lookup and the listing does not name"
+   },
+   "check_reads": {
+    "args": [
+     "check: an observe of kind check",
+     "held"
+    ],
+    "result": "promises.md, A signed check: { ok, why, read: [{ hash, held, concerns, stage }] }. ok when every block the check names in derives_from is held and concerns refs.subject (they signed it or are a side of it) and each typed claim it makes holds: count (how many it names), of (the type of each), stage (the stage of each, a first promise)"
+   },
+   "clearing_applied": {
+    "args": [
+     "clearing: an observe of kind clearing",
+     "held"
+    ],
+    "result": "promises.md, Clearing: { binds, why, who, missing, lines: [{ deal, ok, why, owed, reduce, left }] }. binds when every line reduces a binding deal by no more than is still owed in the deal's own kind (another kind only by a rate both sides of that deal signed, with applies exactly the rate's worth) and every person in it (each debtor, each owner of what is owed) has signed the clearing or a block that confirms it, backed by them"
+   },
+   "ruling_releases": {
+    "args": [
+     "stake: a promise or a transfer",
+     "held",
+     "now: a time, or null for no clock"
+    ],
+    "result": "promises.md, Rulings: { releases, to, money, ruling, why }. The stake's condition (terms.condition of a promise, condition of a transfer) is { ruled, by, awards }. releases when the judge's head ruling on the deal awards that person something; money is the award's, in the stake's own kind and capped at the stake (the whole stake when the award states none), null when the stake is no money"
    }
   }
  },
@@ -2242,9 +2272,10 @@
   "paid",
   "opened",
   "without",
-  "within"
+  "within",
+  "ruled"
  ],
- "condition_shapes_about": "The condition shapes the protocol reads (promises.md, Conditions), each named by its key: settled (that promise is done, or a refrain elapsed with nothing owed), accepted (that deal binds: its stage is accepted or further along, read from the promise fold; decision H17), deed (that block is held and counts), reading (a sensor's readings, profiles/tasks.md), signal (named signers' observes), paid (that deal's price is paid in full: the price side of the deal, so a transfer of title may wait for the price without waiting for the goods), opened (a counted block carries the opening of a commitment, privacy.md: someone shows the code) and, wrapping any of these, without and within ({ without: <condition>, deadline, keepers }: the inner condition did not hold by the deadline, or, for within, did, each dated by the named clock, blocks.md, A named clock). A condition of any other shape is data for its schema's readers: the protocol says nothing of it.",
+ "condition_shapes_about": "The condition shapes the protocol reads (promises.md, Conditions), each named by its key: settled (that promise is done, or a refrain elapsed with nothing owed), accepted (that deal binds: its stage is accepted or further along, read from the promise fold; decision H17), deed (that block is held and counts), reading (a sensor's readings, profiles/tasks.md), signal (named signers' observes), paid (that deal's price is paid in full: the price side of the deal, so a transfer of title may wait for the price without waiting for the goods), ruled ({ ruled: deal, by: judge, awards: person }: the judge's head ruling on the deal, an observe of kind ruling with refs.subject the deal, awards something to that person; promises.md, Rulings), opened (a counted block carries the opening of a commitment, privacy.md: someone shows the code) and, wrapping any of these, without and within ({ without: <condition>, deadline, keepers }: the inner condition did not hold by the deadline, or, for within, did, each dated by the named clock, blocks.md, A named clock). A condition of any other shape is data for its schema's readers: the protocol says nothing of it.",
  "condition_ops": [
   "lt",
   "le",
@@ -2299,9 +2330,12 @@
    "amount",
    "money",
    "price_per",
-   "range"
+   "range",
+   "lines",
+   "condition",
+   "keepers"
   ],
-  "types_about": "A term's type is a scalar the grammar names (text, integer, bool, time, date, duration, id) or exactly one keyed shape (`shapes`: amount, money, price_per, range). Every type is something the protocol already reads.",
+  "types_about": "A term's type is a scalar the grammar names (text, integer, bool, time, date, duration, id), exactly one keyed shape (`shapes`: amount, money, price_per, range), or one of three the protocol already reads in a deal's terms: `lines` (a non-empty list of `line` objects, each with an `id`), `condition` (an object with a key of `condition_shapes`) and `keepers` (`{ names, needed }`, `names` non-empty). `forfeit` and `backing` are `money` or `amount`, and `band` a decimal `text`. Every type is something the protocol already reads.",
   "moves": {
    "Promise": {},
    "Start": {
