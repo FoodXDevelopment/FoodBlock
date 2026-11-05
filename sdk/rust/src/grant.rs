@@ -134,6 +134,42 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
     wrong
 }
 
+/// The one official reading of a grant's `state.scope` (authority.md, `state.scope` and Scope subset), with every default the spec states and nothing filled in
+/// beyond them. `scope` is the scope object, or null (read as an empty scope). It never fails.
+///
+/// `{ acts, parties, limit, each, every, until, notice, sealed, condition, junk }`:
+/// - `acts`, `parties`: the lists as signed; left out, `[]`: a missing `acts` covers no act, a missing `parties` names no one but the principal.
+/// - `limit`, `each`: the visible fence, money `{ minor, currency }` or an amount `{ value, unit }`; left out, `null`: no money or amount moves
+///   under the grant (invariant 23). A sealed scope shows neither.
+/// - `every`, `notice`: a duration (core.md, section 3); left out, `null`: `every` null makes a limit cover all time, `notice` null names none.
+/// - `until`: a time; left out, `null`: not a wider grant, it lasts until its author stops it.
+/// - `sealed`: `limit_commitment` is there (the amount is the principal's node's alone).
+/// - `condition`: as signed, `null` when left out; the protocol fills nothing in and reads none here.
+/// - `junk`: the names (sorted) of the fields that are there but cannot be read: exactly those the write check refuses in a scope (a list
+///   that is no list of acts or of ids, money or an amount that is malformed or below zero, a duration or a time that is none, a visible
+///   `limit` or `each` beside a commitment, a commitment that is no hash) and any name that is not a scope field; a scope that is no
+///   object is `["scope"]`. An unreadable field reads as `null` or `[]` in the other keys, so **a caller that finds a non-empty `junk` must
+///   hold the grant to no word**: a malformed `until` read as no end would be a wider grant.
+pub fn scope_reading(scope: &Value) -> Value {
+    let empty = json!({});
+    let junk = crate::check::scope_junk(if scope.is_null() { &empty } else { scope });
+    let field = |k: &str| scope.get(k).filter(|_| !junk.iter().any(|j| j == k));
+    let list = |k: &str| field(k).cloned().unwrap_or_else(|| json!([]));
+    let text = |k: &str| field(k).cloned().unwrap_or(Value::Null);
+    json!({
+        "acts": list("acts"),
+        "parties": list("parties"),
+        "limit": text("limit"),
+        "each": text("each"),
+        "every": text("every"),
+        "until": text("until"),
+        "notice": text("notice"),
+        "sealed": scope.get("limit_commitment").is_some(),
+        "condition": scope.get("condition").cloned().unwrap_or(Value::Null),
+        "junk": junk,
+    })
+}
+
 /// The close that ends a person's standing arrangements (profiles/successor.md, What a close ends): a counted `observe` of
 /// kind `close` about them, signed under a successor grant the person gave in their own name, by the successor it names
 /// (someone else), while no stop or decline has ended that grant, with the triggers of as many witnesses as it needs in the

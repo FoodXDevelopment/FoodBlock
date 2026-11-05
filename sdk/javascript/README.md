@@ -63,13 +63,13 @@ with no authority. A schema is a `thing` of kind schema. The verbs: `updates`, `
 - The wire: `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy`.
 - The compact form: `cbor.encode(block, { short })`, `cbor.decode(bytes)`, `encodePush`, `decodePush`, `encodeHeader`, `decodeHeader`
   (a signed public block as CBOR; the id is still the hash of the canonical JSON).
-- Strangers and small profiles: `strangers.receiptCode`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestPaid`.
+- Strangers and small profiles: `strangers.isStranger(receiver, sender, blocks, { block })`, `receiptCode`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestPaid`.
 - The one-time converter (not protocol): `legacy.convert(oldBlocks, { keys, at })`, `legacy.oldHash`.
 - Chains and order: `nextLink`, `checkChain`, `causalOrder`, `pastOf`, `sees`.
 - Identity: `identity.genesis`, `keyGrant`, `identityOf`, `keyTimeline`, `keysOf`, `signedByAuthor`, `chainsOf`,
   `nextLinkFor`, `recoveryKeyHash`, `forkPairs`. A rotation names `countedTo`.
-- Authority: `grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration`.
-- Folds: `fold.promiseStage`, `circleState`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `receiverOf`, `whereNow`,
+- Authority: `grant.scopeWithin`, `scopeReading(scope)` (the one reading of a scope: every default of authority.md, and `junk` for what cannot be read), `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `addDuration`.
+- Folds: `fold.promiseStage`, `circleState`, `mayActAs`, `speaksFor(block, blocks)` (also `fb.speaksFor`: the one party a fold counts a block for, or null), `membersThen`, `ownership`, `ownerOf`, `receiverOf`, `whereNow`,
   `consent`; views: `promiseView`, `liveGrant`, `withdrawalSeen`, `due`, `recoveryReach`; profiles: `successorView`,
   `circleKey`, `countedIn`.
 - Between nodes: `sync.pullRequest`, `signPull`/`signPush` (a `counter` or a `challenge`; no time), `newChallenge`, `pullRefusals`,

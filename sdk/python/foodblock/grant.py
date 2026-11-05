@@ -14,6 +14,7 @@ limit_commitment = door.limit_commitment  # the commitment to a limit and a cap 
 limit_opens = door.limit_opens  # whether the limit observe opens the grant's `scope.limit_commitment`
 scope_within = door.scope_within
 scope_refusals = door.scope_refusals
+scope_reading = door.scope_reading  # the one reading of a grant's state.scope (authority.md): every default of the spec, and `junk` (sorted names) for the fields that are there but cannot be read: hold such a grant to no word
 compare_durations = door.compare_durations
 
 

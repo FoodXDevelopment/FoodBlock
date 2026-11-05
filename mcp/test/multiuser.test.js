@@ -15,7 +15,7 @@ import { remoteIndex } from '../remote.js'
 // The many-person door, end to end and local: a real FoodOS host (the foodx checkout's foodos/), the hub (sign-in with a fake Google, reviewer sign-in,
 // durable tokens), and MCP clients as several people with several assistants. Nothing may cross between people or assistants.
 const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'foodx')
-const have = existsSync(resolve(BACKEND, 'foodos/node/host.js'))
+const have = existsSync(resolve(BACKEND, 'foodos/record/node/host.js'))
 if (!have) console.error(`\n*** SKIPPED (not passing): ${new URL(import.meta.url).pathname.split('/').pop()} needs the foodx checkout with foodos/ at ${BACKEND}. Set FOODOS_BACKEND to run it. ***\n`)
 const load = (path) => import(pathToFileURL(resolve(BACKEND, path)).href)
 const b64 = (buf) => buf.toString('base64url')
@@ -37,9 +37,9 @@ let hubBase = ''
 
 describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS_BACKEND)' }, () => {
   it('keeps every person and every assistant apart, survives a restart, and revokes', async () => {
-    const { Host } = await load('foodos/node/index.js')
-    const { PublicIndex } = await load('foodos/index/index.js')
-    const { handler: indexHandler } = await load('foodos/index/http.js')
+    const { Host } = await load('foodos/record/node/index.js')
+    const { PublicIndex } = await load('foodos/mcp/index/index.js')
+    const { handler: indexHandler } = await load('foodos/mcp/index/http.js')
     const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
     const dir = mkdtempSync(join(tmpdir(), 'hub-')); after(() => rmSync(dir, { recursive: true, force: true }))
     const stateFile = join(dir, 'state.json'), master = randomBytes(40).toString('hex')
@@ -243,7 +243,7 @@ describe('the many-person door', { skip: !have && 'no foodx checkout (set FOODOS
   })
 
   it('rate limits one person without slowing another', async () => {
-    const { Host } = await load('foodos/node/index.js')
+    const { Host } = await load('foodos/record/node/index.js')
     const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
     const dir = mkdtempSync(join(tmpdir(), 'hub2-')); after(() => rmSync(dir, { recursive: true, force: true }))
     const host = new Host(), served = await serveHost({ host }); after(() => served.close())

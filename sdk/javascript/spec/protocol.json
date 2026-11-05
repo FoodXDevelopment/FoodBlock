@@ -1710,6 +1710,13 @@
     ],
     "result": "true or false (folds.md); no code is returned"
    },
+   "speaks_for": {
+    "args": [
+     "full_block",
+     "held"
+    ],
+    "result": "the id of the one party a fold counts the block for (authority.md, Who a block speaks for), or null when it speaks for no one (signed as a circle by an author who does not hold the hands the circle needs, or a block no node would take); the block is read with held as if it were held; no clock is read, the act's own date tests until"
+   },
    "under_ok": {
     "args": [
      "full_block",
@@ -1795,6 +1802,15 @@
      "strangers_today: integer (stated, never defaulted), blocks this node took today from this block's sender, when it is not in parties (each sender is counted alone: decision D17)"
     ],
     "result": "refusals with the codes `not_admitted` and `not_human`"
+   },
+   "is_stranger": {
+    "args": [
+     "receiver id",
+     "sender id",
+     "held",
+     "block?: the sender's full_block (null for none), so that whom its block speaks for is named too (consent follows the principal)"
+    ],
+    "result": "true when the receiver is a stranger to the sender (consent.md): only her accept (a block of hers that binds her and answers one of his accepted), her counter-offer (a promise with no status answering his) or a deal she opened naming him as a side makes him no stranger, and only her own live yes; her declined or stopped answer, any other reply and a recorder's yes do not; the sender is named by itself, its operators and whom its block speaks for"
    },
    "receipt_code": {
     "args": [
@@ -1971,6 +1987,12 @@
      "each: money or amount or null"
     ],
     "result": "the observe of kind limit for the grant, as { type, state, refs, audience } to hand to write, its audience the agent alone"
+   },
+   "scope_reading": {
+    "args": [
+     "scope?: a grant's state.scope, or null (read as an empty scope)"
+    ],
+    "result": "{ acts, parties, limit, each, every, until, notice, sealed, condition, junk }: the one reading of a scope with the defaults of authority.md and nothing else filled in. acts and parties: the lists as signed, [] when left out (no act covered, no one but the principal named); limit and each: the visible money or amount, null when left out (no money or amount moves) or sealed; every and notice: a duration, null when left out (a limit covers all time, no notice named); until: a time, null when left out (the grant lasts until its author stops it); sealed: limit_commitment is there; condition: as signed, null when left out; junk: the sorted names of the fields that are there but cannot be read (what the write check refuses in a scope, and any name that is no scope field; a scope that is no object is [\"scope\"]). An unreadable field reads as null or [] in the other keys, so a non-empty junk means the grant is held to no word"
    },
    "base_fields": {
     "args": [

@@ -6,6 +6,13 @@ condition_holds = door.condition_holds  # whether a condition holds on the block
 earnest_shape_ok = door.earnest_shape_ok
 
 
+def is_stranger(receiver, sender, blocks, block=None) -> bool:
+    """Whether `receiver` is a stranger to `sender` among `blocks` (consent.md): True unless her accept, her counter-offer, a deal she opened
+    naming him or her own live yes makes him no stranger (her declined or stopped answer, any other reply and a recorder's yes do not).
+    `block` is the sender's own block (or None): it names whom the sender speaks for, so one who answered the principal is no stranger to its agent."""
+    return door.is_stranger(receiver, sender, blocks, block)
+
+
 def receipt_code(id_) -> str:
     """The short receipt code of a block: the first 5 bytes of its id in Crockford Base32, XXXX-XXXX."""
     return door.receipt_code(str(id_))

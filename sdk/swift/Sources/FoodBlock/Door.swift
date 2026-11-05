@@ -46,6 +46,7 @@ enum Door {
     static func receiptCode(_ hash: String, _ long: Bool? = nil) throws -> String { try Core.string("receipt_code", hash, long) }
     static func codeMatches(_ code: String, _ typed: String) throws -> Bool { try Core.bool("code_matches", code, typed) }
     static func consent(_ person: String, _ sender: String? = nil, _ blocks: [JSON], _ block: Any? = nil) throws -> JSON { try Core.json("consent", person, sender, blocks, block) }
+    static func isStranger(_ receiver: String, _ sender: String, _ blocks: [JSON], _ block: JSON? = nil) throws -> Bool { try Core.bool("is_stranger", receiver, sender, blocks, block) }
     static func admissionRefusals(_ block: JSON, _ receiver: String, _ blocks: [JSON], _ admission: Any?, _ strangersToday: Int) throws -> [JSON] { try Core.list("admission_refusals", block, receiver, blocks, admission, strangersToday) }
     static func liveGrant(_ act: JSON, _ grants: [JSON], _ now: String) throws -> Bool { try Core.bool("live_grant", act, grants, now) }
     static func due(_ promise: JSON, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("due", promise, arrivals) }
@@ -108,6 +109,7 @@ enum Door {
     static func residencyRefusals(_ block: JSON, _ holdsIn: [String]) throws -> [JSON] { try Core.list("residency_refusals", block, holdsIn) }
     static func scopeWithin(_ child: Any?, _ parent: Any?) throws -> [String] { try Core.strings("scope_within", child, parent) }
     static func scopeRefusals(_ child: Any?, _ parent: Any?) throws -> [JSON] { try Core.list("scope_refusals", child, parent) }
+    static func scopeReading(_ scope: Any? = nil) throws -> JSON { try Core.json("scope_reading", scope) }
     static func operatorsOf(_ agent: String, _ blocks: [JSON], _ now: String? = nil) throws -> [String] { try Core.strings("operators_of", agent, blocks, now) }
     static func whyNotUnder(_ block: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> [String] { try Core.strings("why_not_under", block, blocks, now) }
     static func underOk(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("under_ok", block, blocks) }
@@ -130,6 +132,7 @@ enum Door {
     static func withdrawalSeen(_ withdrawal: JSON, _ block: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil) throws -> Bool { try Core.bool("withdrawal_seen", withdrawal, block, blocks, arrivals) }
     static func circleState(_ circle: String, _ blocks: [JSON], _ within: JSON? = nil) throws -> JSON? { try Core.maybe("circle_state", circle, blocks, within) as? JSON }
     static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], _ role: String? = nil) throws -> Bool { try Core.bool("may_act_as", block, circle, blocks, role) }
+    static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Core.maybe("speaks_for", block, blocks) as? String }
     static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("members_then", block, recipient, blocks) }
     static func whereNow(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("where_now", thing, blocks) }
     static func ownership(_ instance: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ownership", instance, blocks, now) }

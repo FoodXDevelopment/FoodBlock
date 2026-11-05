@@ -4074,27 +4074,34 @@ function consentFold(person, sender, blocks, block) {
   const pick = aboutThem.length ? named : decide(cons.filter(b => b.refs.subject === undefined));
   return pick ? { word: pick.state.word, block: pick.hash } : { word: null, block: null };
 }
+// isStranger(receiver, sender, blocks, block): a stranger to a sender (consent.md) is someone who has dealt with none of the sender's blocks, or of those
+// it is named by, and has no live yes of her own for it. Consent follows the principal: the sender is named by itself, its operators and whom its block
+// speaks for (`block`, the sender's own block, lets the fold name that one).
+function isStranger(receiver, sender, blocks, block) {
+  const pool = poolOf(blocks);
+  const names = namesOf(sender, block, pool);
+  // only her accept, her counter-offer or a deal she opened with him makes a sender no stranger (decision H13): a counted block of hers that answers
+  // one of his accepted, or as a counter (a promise with no status), or a promise of hers, no answer and no stop, naming him as a side. A declined or
+  // stopped answer, or any other, keeps him a stranger. Only a block that counts: a forked one binds no one (core.md, invariant 3)
+  const answersHis = b => asList(b.refs.answers).some(h => { const t = pool.get(h); return t && names.includes(t.refs.author); });
+  const dealt = pool.all().some(b => b.refs.author === receiver && binds(b, pool) &&
+    ((answersHis(b) && (b.state.status === 'accepted' || (b.type === 'promise' && b.state.status === undefined))) ||
+     (b.type === 'promise' && b.refs.answers === undefined && b.refs.updates === undefined && b.state.status === undefined && ['from', 'to'].some(k => isStr(b.refs[k]) && names.includes(b.refs[k])))));
+  // a recorder's yes lifts only a stop it recorded: only the receiver's own yes ends strangerhood (consent.md)
+  const consent = consentFold(receiver, sender, pool, block);
+  const yes = consent.word === 'yes' && (pool.get(consent.block) || { refs: {} }).refs.author === receiver;
+  return !dealt && !yes;
+}
 // admission_refusals(block, recipient, held, rule, arrivedToday): the message refusals of nodes.md and consent.md
 function admissionRefusals(block, recipient, held, rule, today) {
   const pool = poolOf(held);
   rule = rule || {};
   const out = [];
   const author = block.refs.author;
-  const consent = consentFold(recipient, author, pool, block);
   // an autonomous system: one an operator answers for too, or a block under a grant
   const isAgent = autonomous(author, pool, true) || block.refs.under !== undefined;
   // consent follows the principal (consent.md): one who answered the sender, its operators, or the grantor of the live grant it acts under is no stranger
-  const names = namesOf(author, block, pool);
-  // only her accept, her counter-offer or a deal she opened with him makes a sender no stranger (decision H13): a counted block of hers that answers
-  // one of his accepted, or as a counter (a promise with no status), or a promise of hers, no answer and no stop, naming him as a side. A declined or
-  // stopped answer, or any other, keeps him a stranger. Only a block that counts: a forked one binds no one (core.md, invariant 3)
-  const answersHis = b => asList(b.refs.answers).some(h => { const t = pool.get(h); return t && names.includes(t.refs.author); });
-  const dealt = pool.all().some(b => b.refs.author === recipient && binds(b, pool) &&
-    ((answersHis(b) && (b.state.status === 'accepted' || (b.type === 'promise' && b.state.status === undefined))) ||
-     (b.type === 'promise' && b.refs.answers === undefined && b.refs.updates === undefined && b.state.status === undefined && ['from', 'to'].some(k => isStr(b.refs[k]) && names.includes(b.refs[k])))));
-  // a recorder's yes lifts only a stop it recorded: only the receiver's own yes ends strangerhood (consent.md)
-  const yes = consent.word === 'yes' && (pool.get(consent.block) || { refs: {} }).refs.author === recipient;
-  const stranger = !dealt && !yes;
+  const stranger = isStranger(recipient, author, pool, block);
   // a listed party is exempt from the count only for a block whose key still speaks for that party (nodes.md, Admission): a block of a key rotated
   // out past its counted line, frozen or void is counted as anyone else's
   const speaksForAuthor = () => { const p = pool.get(block.hash) ? pool : new Pool([...pool.all(), block]); return identityFold(author, p).signed_by_author[block.hash] === true; };
@@ -4110,6 +4117,44 @@ function admissionRefusals(block, recipient, held, rule, today) {
   const order = Object.keys(P.refusals.codes.message);
   return out.sort((x, y) => order.indexOf(x.code) - order.indexOf(y.code));
 }
+// speaksFor(block, blocks): the one party a fold counts a block for (authority.md, Who a block speaks for): the circle if it is signed `as` one by an author
+// who may sign for it, else the grantor of the live grant it acts under, else its author. null when it speaks for no one: signed as a circle by an author
+// without the hands the circle needs (no_role), or a block no node would take, which is no word (folds.md). It is read with the blocks as if it were held.
+// No clock: the act's own date tests `until`. A genesis has no author to speak for.
+function speaksFor(block, blocks) {
+  if (!isObj(block)) throw argError('argument 0 is a block');
+  const pool = readWith(blocks, block);
+  const held = pool.get(block.hash);
+  if (!held) return null;
+  const who = speakerOf(held, pool);
+  return who === undefined ? null : who;
+}
+// scopeReading(scope): the one reading of a grant's state.scope (authority.md), every default the spec states and nothing else filled in. A missing scope is
+// empty. A field that is there and cannot be read (what the write check refuses in a scope, or a name that is no scope field) is junk and reads as null or
+// [] beside it, so a caller finds that the grant is to be held to no word. junk is sorted as canonical JSON sorts keys.
+function scopeReading(scope) {
+  const none = { acts: [], parties: [], limit: null, each: null, every: null, until: null, notice: null, sealed: false, condition: null, junk: [] };
+  if (scope === undefined || scope === null) return none;
+  if (!isObj(scope)) return { ...none, junk: ['scope'] };
+  const sealed = 'limit_commitment' in scope;
+  const unreadable = {
+    acts: v => !(Array.isArray(v) && v.every(isStr)),
+    parties: v => !(Array.isArray(v) && v.every(x => isStr(x) && RX.id.test(x))) || v.some(x => idProblem(x) === 'unknown_suite'),
+    // a limit, and a cap on each act, are money or an amount, zero or more; a sealed scope keeps both inside its commitment
+    limit: v => sealed || moneyOrAmountProblem(v),
+    each: v => sealed || moneyOrAmountProblem(v),
+    limit_commitment: v => !isStr(v) || !RX.id.test(v) || idProblem(v) !== null,
+    every: v => durationProblem(v) !== null,
+    notice: v => durationProblem(v) !== null,
+    until: v => timeProblem(v) !== null,
+    condition: () => false,
+  };
+  const junk = Object.keys(scope).filter(k => !Object.prototype.hasOwnProperty.call(unreadable, k) || unreadable[k](scope[k])).sort();
+  const read = k => (k in scope && !junk.includes(k) ? scope[k] : null);
+  return { acts: read('acts') || [], parties: read('parties') || [], limit: read('limit'), each: read('each'), every: read('every'), until: read('until'), notice: read('notice'),
+    sealed, condition: 'condition' in scope ? scope.condition : null, junk };
+}
+const moneyOrAmountProblem = v => { const unit = isObj(v) && 'unit' in v; return (unit ? amountProblem(v) : moneyProblem(v)) !== null || (unit ? decCmp(v.value, '0') < 0 : v.minor < 0); };
 // residency (profiles/residency.md): a receiver that states a non-empty holds_in refuses a block whose stays_in does not list every entry of it;
 // one that states none refuses nothing, and a block with no stays_in asks nothing. Labels are compared exactly; none is expanded.
 const residencyRefusals = (block, holdsIn) => {
@@ -4608,6 +4653,7 @@ function door(op, ...a) {
     case 'past_of': return pastOfBlock(a[0], a[1]);
     case 'sees': return pastOfBlock(a[0], a[2]).includes(a[1].hash);
     case 'may_act_as': return mayActAs(a[0], a[1], a[2], a[3]);
+    case 'speaks_for': return speaksFor(a[0], a[1]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
     case 'circle_key': return circleKey(a[0], a[1]); // profiles/rekeys.md
     case 'members_then': return membersThen(a[0], a[1], a[2]);
@@ -4695,6 +4741,10 @@ function door(op, ...a) {
       if (a.length < 4 || !(a[3] === null || isObj(a[3]))) throw argError('admission is the rule\'s state object or an explicit null (no rule): the node states it');
       if (!Number.isInteger(a[4])) throw argError('strangers_today is a whole number: the node states it');
       return admissionRefusals(a[0], a[1], a[2], a[3], a[4]);
+    case 'is_stranger':
+      if (!isStr(a[0]) || !isStr(a[1])) throw argError('receiver and sender are ids (text)');
+      return isStranger(a[0], a[1], a[2], isObj(a[3]) ? a[3] : null);
+    case 'scope_reading': return scopeReading(a[0]);
     case 'receipt_code': return receiptCode(a[0], a[1]);
     case 'code_matches': return codeMatches(a[0], a[1]);
     case 'residency_refusals': return residencyRefusals(a[0], a[1]);
@@ -4712,6 +4762,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

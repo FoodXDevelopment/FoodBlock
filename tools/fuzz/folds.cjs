@@ -54,7 +54,25 @@ const ASK = {
   consent: (p, held, people) => [null, ...people].map((q) => ({ note: ' <- ' + (q ? q.hash.slice(0, 6) : 'anyone'), args: [p.hash, q && q.hash, held, null] }))
 }
 
-/** Every question the folds of protocol.json ask of `held`: [{ fold, op, what, args }]. `label(block)` names a subject. */
+// Reads of the door that no fold of protocol.json names, asked of every world the same way: whom a block speaks for (every block that is signed
+// `as` a circle or acts `under` a grant, and the first of the rest), whether a person is a stranger to a sender (every pair of keyed actors, and a
+// sender's block that acts under a grant or as a circle), and the reading of every grant's scope. { op: (held) => [{ note?, block?, args }] }
+const READS = {
+  speaks_for: (held) => {
+    const acting = held.filter((b) => b.refs && (b.refs.as || b.refs.under)), plain = held.filter((b) => b.refs && !b.refs.as && !b.refs.under).slice(0, 3)
+    return [...acting, ...plain].map((b) => ({ block: b, args: [b, held] }))
+  },
+  is_stranger: (held) => {
+    const people = keyed(held)
+    return people.flatMap((r) => people.filter((q) => q !== r).flatMap((q) => [
+      { note: ` <- ${q.hash.slice(0, 6)}`, block: r, args: [r.hash, q.hash, held] },
+      ...held.filter((b) => b.refs && b.refs.author === q.hash && (b.refs.as || b.refs.under)).slice(0, 2).map((b) => ({ note: ` <- ${q.hash.slice(0, 6)} by ${b.hash.slice(0, 6)}`, block: r, args: [r.hash, q.hash, held, b] })),
+    ]))
+  },
+  scope_reading: (held) => held.filter((b) => b.type === 'grant' && b.state && b.state.scope !== undefined).map((b) => ({ block: b, args: [b.state.scope] }))
+}
+
+/** Every question the folds of protocol.json ask of `held`, and the reads above: [{ fold, op, what, args }]. `label(block)` names a subject. */
 function askAll(held, label = (b) => b.hash.slice(0, 8)) {
   const out = []
   for (const group of ['folds', 'views']) {
@@ -71,6 +89,7 @@ function askAll(held, label = (b) => b.hash.slice(0, 8)) {
       }
     }
   }
+  for (const [op, ask] of Object.entries(READS)) for (const q of ask(held)) out.push({ fold: op, op, what: label(q.block) + (q.note || ''), args: q.args })
   return out
 }
 module.exports = { askAll }

@@ -42,6 +42,8 @@ public enum Fold {
         (try Door.circleState(circle, blocks, within)).map(CircleState.init)
     }
     public static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], role: String? = nil) throws -> Bool { try Door.mayActAs(block, circle, blocks, role) }
+    /// The one party a fold counts a block for (authority.md, Who a block speaks for): its id, or nil when it speaks for no one. The block need not be among `blocks` yet; no clock is read.
+    public static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Door.speaksFor(block, blocks) }
     public static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> [String] { (try Door.membersThen(block, recipient, blocks) as? [String]) ?? [] }
 
     public struct Ownership {
@@ -75,6 +77,9 @@ public enum Fold {
 
 /// Strangers (modules/consent.md) and the small profiles: thin calls into the Rust core.
 public enum Strangers {
+    /// Whether `receiver` is a stranger to `sender` among `blocks` (consent.md): true unless her accept, her counter-offer, a deal she opened naming him or her own live yes makes him no stranger.
+    /// `block` is the sender's own block (or nil): it names whom the sender speaks for.
+    public static func isStranger(_ receiver: String, _ sender: String, _ blocks: [JSON], block: JSON? = nil) throws -> Bool { try Door.isStranger(receiver, sender, blocks, block) }
     /// A model's reading is the person's claim only once the person's own block confirms it.
     public static func readingIsPersonsClaim(_ reading: JSON, _ person: String, _ blocks: [JSON]) throws -> Bool { try Door.readingIsPersonsClaim(reading, person, blocks) }
     /// Tasks profile: whether a `reading_condition` holds on the readings held, at the reader's clock.

@@ -14,6 +14,8 @@ Open work, with enough context to pick up.
 - EPCIS profile vectors not yet written: AssociationEvent, SensorElement, ErrorDeclaration, a circle as covered person (spec/profiles/foodblock-profile-epcis.md §9).
 - Passkeys: a real device's assertion has not been tried (the vectors use a test authenticator that writes the same shapes); the Kotlin tests need a JDK.
 
+- **1.8 wording: who holds a node** (FoodX decided 2026-11-02). protocol.md says "Only people and machines hold nodes." Say instead that a node is held by a person; a machine runs one only as its owner's agent, under her grant, and its words bind her only as far as that grant (only people act). No change to blocks or vectors.
+
 ## Ideas parked on purpose
 
 Each is real and wanted, and none is started. Each says what would start it. The protocol must not grow for them before then.

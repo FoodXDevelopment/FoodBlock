@@ -16,6 +16,8 @@ const promiseViews = (firsts, blocks, { now } = {}) => door.promiseViews(list(fi
 /** A circle's members and roles. Options: `within` (a block: fold only its causal past). */
 const circleState = (circle, blocks, { within } = {}) => door.circleState(idOf(circle), blocks, within || null)
 const mayActAs = (block, circle, blocks, role) => door.mayActAs(block, idOf(circle), blocks, role || null)
+/** The one party a fold counts `block` for (authority.md, Who a block speaks for): an id, or null when it speaks for no one. `block` need not be among `blocks` yet; no clock is read. */
+const speaksFor = (block, blocks) => door.speaksFor(block, blocks)
 const membersThen = door.membersThen
 const ownership = (instance, blocks, now) => door.ownership(blockOf(instance), blocks, now)
 const ownerOf = (instance, blocks) => door.ownerOf(blockOf(instance), blocks)
@@ -40,4 +42,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { promiseStage, promiseView, promiseViews, circleState, mayActAs, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

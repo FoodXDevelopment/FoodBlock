@@ -69,15 +69,15 @@ A refused block raises `fb.Refused`, whose `wrong` lists every reason. Nothing i
 - The commitment: `new_salt`, `salted_hash`, `commit`, `finds_self`, `reveal_for`.
 - Writing: `compose`, `write`, `check`, `refusals`, `valid`, `strict_text` (the checks), `amount`, `money`, `terms`, `Refused`.
 - The wire: `wrap`, `unwrap`, `header`, `seal_copy`, `open_copy`, `header_signed_by`.
-- Strangers and small profiles (`fb.strangers`): `receipt_code`, `reading_is_persons_claim`, `reading_condition_holds`,
+- Strangers and small profiles (`fb.strangers`): `is_stranger(receiver, sender, blocks, block=None)`, `receipt_code`, `reading_is_persons_claim`, `reading_condition_holds`,
   `earnest_shape_ok`, `earnest_paid`. The one-time converter (`fb.legacy`, not protocol): `convert` (`custodian_key` signs only for the ids in `custodian_for`, under a `channel`), `old_hash`.
 - Chains and order: `next_link`, `check_chain` (also `skips`; equivocations are pairs), `causal_order`, `causes_of`, `past_of`, `heads_among`, `sees`.
 - Identity (`fb.identity`): `genesis`, `key_grant`, `identity_of`, `key_timeline`, `keys_of`, `signed_by_author`,
   `signer_of`, `chains_of`, `next_link_for`, `recovery_key_hash`, `fork_pairs`, `identity_state`.
 - Authority (`fb.grant`): `scope_within`, `is_live`, `why_not_live`, `ancestors`, `why_not_under`, `operators_of`,
-  `add_duration`, `why_not_live_undo`, `act_name`, `limit_fence`, `within_limit`.
+  `add_duration`, `why_not_live_undo`, `act_name`, `limit_fence`, `within_limit`, `scope_reading` (every default of authority.md; `junk` names what cannot be read).
 - Folds (`fb.fold`): `promise_stage` (no clock), `promise_view` (the reader's `now`), `circle_state`, `may_act_as`,
-  `members_then`, `ownership`, `owner_of`, `receiver_of`, `where_now`, `consent`, `live_grant`,
+  `members_then`, `speaks_for` (also `fb.speaks_for`), `ownership`, `owner_of`, `receiver_of`, `where_now`, `consent`, `live_grant`,
   `withdrawal_seen`, `due`, `recovery_reach`, `ownership_view`, `successor_view`, `circle_key`, `counted_in`.
 - Between nodes (`fb.sync`): `pull_request`, `sign_pull`, `sign_push` (a `counter` or a `challenge`, no time), `new_challenge`,
   `pull_refusals`, `push_refusals`, `admission_refusals`, `residency_refusals`, `matches`, `heads_of`, `answer_pull`,

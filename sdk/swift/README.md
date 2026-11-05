@@ -56,9 +56,9 @@ A signed pull or push carries exactly one of `counter` or `challenge` and no tim
 | `Legacy.convert`, `oldHash` | The one-time converter for pre-1.6 data (not part of the protocol) |
 | `nextLink`, `checkChain`, `causalOrder`, `sees` | Chains and causal order |
 | `Identity.genesis`, `keyGrant`, `keyTimeline`, `keysOf`, `signedByAuthor`, `identityState`, `counts`, `nextLinkFor`, `recoveryKeyHash`, `forked`, `forkPairs`, `recoveryReach` | Who someone is |
-| `Grant.scopeWithin`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `scopeRefusals`, `whyNotLiveUndo`, `actName` | Authority |
-| `Fold.promiseStage`, `promiseView`, `consent`, `liveGrant`, `withdrawalSeen`, `due`, `circleState`, `mayActAs`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `successorView`, `circleKey`, `countedIn` | The folds |
-| `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestShapeOk`, `earnestPaid`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
+| `Grant.scopeWithin`, `scopeReading`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `scopeRefusals`, `whyNotLiveUndo`, `actName` | Authority |
+| `Fold.promiseStage`, `promiseView`, `consent`, `liveGrant`, `withdrawalSeen`, `due`, `circleState`, `mayActAs`, `speaksFor`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `successorView`, `circleKey`, `countedIn` | The folds |
+| `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.isStranger`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestShapeOk`, `earnestPaid`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
 
 ```swift
 import FoodBlock

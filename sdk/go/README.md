@@ -48,12 +48,12 @@ A small device (a fridge sensor, a scale) can use only the micro part: `Write` (
 | The commitment | `NewSalt`, `SaltedHash`, `Commit`, `FindsSelf`, `RevealFor` |
 | Writing | `Compose`, `Write` (compose, check, sign, chain), `Check`, `Refusals`, `Valid`, `StrictText` (the checks), `Amount`, `Money`, `Confidence`, `Terms`, `Public` |
 | The wire | `Wrap`, `Unwrap`, `Header`, `SealCopy`, `OpenCopy`, `HeaderSignedBy` |
-| Strangers and small profiles | `ReceiptCode`, `ReadingIsPersonsClaim`, `ReadingConditionHolds`, `EarnestShapeOk`, `EarnestPaid` |
+| Strangers and small profiles | `IsStranger`, `ReceiptCode`, `ReadingIsPersonsClaim`, `ReadingConditionHolds`, `EarnestShapeOk`, `EarnestPaid` |
 | The one-time converter (not protocol) | `Convert`, `OldHash` |
 | Chains and causal order | `NextLink`, `CheckChain` (also `Skips`; equivocations are pairs), `CausesOf`, `PastOf`, `HeadsAmong`, `Sees`, `CausalOrder` |
 | Who someone is | `Genesis`, `IsGenesis`, `GenesisOpens`, `RecoveryKeyHash`, `KeyGrant`, `KeyTimeline`, `KeysOf`, `SignedByAuthor`, `IdentityStateOf`, `NextLinkFor`, `Forked`, `ForkPairs` |
-| Authority | `AddDuration`, `CompareDurations`, `ScopeWithin`, `ScopeRefusals`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `WhyNotLiveUndo`, `ActName`, `OperatorsOf`, `LimitFence`, `WithinLimit` |
-| Folds | `PromiseStage` (no clock), `PromiseView` (the reader's now), `CircleStateOf`, `HoldersOf`, `MayActAs`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `ReceiverOf`, `WhereNow`, `Consent`, `LiveGrant`, `WithdrawalSeen`, `Due`, `RecoveryReach`, `SuccessorView`, `CircleKeyOf`, `CountedIn` |
+| Authority | `AddDuration`, `CompareDurations`, `ScopeWithin`, `ScopeRefusals`, `ScopeReading`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `WhyNotLiveUndo`, `ActName`, `OperatorsOf`, `LimitFence`, `WithinLimit` |
+| Folds | `PromiseStage` (no clock), `PromiseView` (the reader's now), `CircleStateOf`, `HoldersOf`, `MayActAs`, `SpeaksFor`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `ReceiverOf`, `WhereNow`, `Consent`, `LiveGrant`, `WithdrawalSeen`, `Due`, `RecoveryReach`, `SuccessorView`, `CircleKeyOf`, `CountedIn` |
 | Between nodes | `PullRequest`, `SignPull`, `SignPush` (a `counter` or a `challenge`, no time), `NewChallenge`, `PullRefusals`, `PushRefusals`, `AdmissionRefusals`, `ResidencyRefusals`, `Matches`, `HeadsOf`, `AnswerPull`, `AnswerSignedBy`, `PushRequest`, `Accept`, `WaitedTooLong`, `PushAnswer`, `WellKnown`, `Announcement`, `WellKnownErrors` |
 
 Nothing a signer left out is filled in. `Compose`, `Write` and `Genesis` need an `Audience` (`[]string{foodblock.Public}`, or

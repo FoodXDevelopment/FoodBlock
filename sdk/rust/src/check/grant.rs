@@ -63,6 +63,45 @@ impl Checker<'_> {
         w
     }
 
+    /// `scope.acts` is a list of text (a name that is no act covers nothing: matched exactly, never checked).
+    fn acts_ok(&self, acts: &Value) -> bool {
+        acts.as_array().is_some_and(|a| a.iter().all(Value::is_string))
+    }
+
+    /// `scope.parties` is a list of ids (the ids the acts may deal with).
+    fn parties_listed(&self, parties: &Value) -> bool {
+        parties.as_array().is_some_and(|a| a.iter().all(|p| self.is("id", Some(p))))
+    }
+
+    /// The fields of a scope that are present but not readable, sorted: every field the write check refuses in
+    /// `state.scope` (`scope_shape`, the times and the durations), by the same rules, and a name that is no scope field. Nothing
+    /// is read as a default here: a caller that finds one holds the grant to no word (authority.md, `state.scope`).
+    pub(super) fn scope_junk(&self, scope: &Value) -> Vec<String> {
+        let Some(map) = scope.as_object() else { return vec!["scope".into()] };
+        let sealed = map.contains_key("limit_commitment");
+        let mut junk: Vec<String> = map
+            .iter()
+            .filter(|(k, v)| {
+                let (k, v) = (k.as_str(), Some(*v));
+                match k {
+                    "acts" => !v.is_some_and(|a| self.acts_ok(a)),
+                    "parties" => !v.is_some_and(|p| self.parties_listed(p) && !p.as_array().is_some_and(|a| a.iter().any(|x| self.unknown_hash(Some(x))))),
+                    // a sealed limit keeps its amount (and each) inside its commitment, never beside it
+                    "limit" | "each" => sealed || !self.limit_shape(v, k).is_empty(),
+                    "limit_commitment" => !self.is("id", v) || self.unknown_hash(v),
+                    "every" | "notice" => !self.duration_shape(v, k).is_empty(),
+                    "until" => !self.time_shape(v, k).is_empty(),
+                    "condition" => false,
+                    _ => true,
+                }
+            })
+            .map(|(k, _)| k.clone())
+            .collect();
+        // sorted as canonical JSON sorts keys, so the same scope gives the same answer whatever order its text was written in
+        junk.sort_by(|a, b| crate::js::cmp16(a, b));
+        junk
+    }
+
     pub(super) fn scope_shape(&self, scope: &Value) -> W {
         let all = &self.spec.scope;
         if !scope.is_object() {
@@ -80,16 +119,10 @@ impl Checker<'_> {
                 )
             })
             .collect();
-        if !scope
-            .get("acts")
-            .is_none_or(|a| a.as_array().is_some_and(|a| a.iter().all(Value::is_string)))
-        {
+        if !scope.get("acts").is_none_or(|a| self.acts_ok(a)) {
             w.push(f("shape", "scope.acts lists acts"));
         }
-        if !scope.get("parties").is_none_or(|a| {
-            a.as_array()
-                .is_some_and(|a| a.iter().all(|p| self.is("id", Some(p))))
-        }) {
+        if !scope.get("parties").is_none_or(|a| self.parties_listed(a)) {
             w.push(f(
                 "grammar",
                 "scope.parties lists hashes (left out, it names no one beyond the principal)",
@@ -214,4 +247,9 @@ impl Checker<'_> {
         }
         w
     }
+}
+
+/// The fields of a scope that are present but not readable (see `Checker::scope_junk`); a scope that is no object is itself unreadable.
+pub(crate) fn scope_junk(scope: &Value) -> Vec<String> {
+    Checker { spec: crate::spec() }.scope_junk(scope)
 }

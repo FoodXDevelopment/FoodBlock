@@ -56,6 +56,14 @@ fn sub_index(blocks: &[&Value]) -> Index {
 }
 
 // ---- Who a block speaks for ----
+/// Who a block speaks for, read among `blocks` (authority.md, Who a block speaks for; the door's `speaks_for`): the one party a fold counts
+/// it for, or None when it speaks for no one: signed `as` a circle by an author who does not hold `sign` there (or not with the hands the
+/// circle needs), or a block no node would take, which is no word (folds.md, A fold reads only what is whole and valid). The block need not be
+/// among `blocks` yet (a first message being checked): it is read with them as if it were. No clock is read: the act's own date tests `until`.
+pub fn who_speaks(block: &Value, blocks: &[Value]) -> Option<String> {
+    let read = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(block)).chain([block]));
+    speaker_of(read.get(hash_of(block))?, &read, None)
+}
 // Who a block speaks for (folds.md, Who a block speaks for): one party. A block that names a circle in `as` speaks for that
 // circle when its author may sign for it (the `sign` power in the circle's fold of the block's causal past), else for
 // no one (`no_role`). Otherwise a block under a live grant, made for its receiver, speaks for the grant's grantor; any other

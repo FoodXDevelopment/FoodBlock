@@ -10,11 +10,11 @@ import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/
 import fb from '@foodxdev/foodblock'
 import { createDoor, newPerson, remoteNode, remoteIndex, serveHttp } from '../server.js'
 
-// The hosted door, end to end and local: a FoodOS host (foodx foodos/node/host.js) and a public index behind one HTTP server, the door
+// The hosted door, end to end and local: a FoodOS host (foodx foodos/record/node/host.js) and a public index behind one HTTP server, the door
 // reaching the person's node there through the host's window, and an assistant reaching the door over Streamable HTTP with OAuth.
 // Needs the foodx checkout (FOODOS_BACKEND, default ~/foodx); skipped without it.
 const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'foodx')
-const have = existsSync(resolve(BACKEND, 'foodos/node/host.js'))
+const have = existsSync(resolve(BACKEND, 'foodos/record/node/host.js'))
 if (!have) console.error(`\n*** SKIPPED (not passing): ${new URL(import.meta.url).pathname.split('/').pop()} needs the foodx checkout with foodos/ at ${BACKEND}. Set FOODOS_BACKEND to run it. ***\n`)
 const load = (path) => import(pathToFileURL(resolve(BACKEND, path)).href)
 const CODE = 'ABCDE-12345'
@@ -27,9 +27,9 @@ const b64 = (buf) => buf.toString('base64url')
 
 describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACKEND)' }, () => {
   it('reaches a real host over HTTP, behind OAuth, and every block it signs lands on the host', async () => {
-    const { Host } = await load('foodos/node/index.js')
-    const { PublicIndex } = await load('foodos/index/index.js')
-    const { handler: indexHandler } = await load('foodos/index/http.js')
+    const { Host } = await load('foodos/record/node/index.js')
+    const { PublicIndex } = await load('foodos/mcp/index/index.js')
+    const { handler: indexHandler } = await load('foodos/mcp/index/http.js')
     const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
 
     // The host keeps the person's node; the seller's blocks are there as if synced in.
@@ -140,7 +140,7 @@ describe('the hosted door', { skip: !have && 'no foodx checkout (set FOODOS_BACK
     // 5. A grant by the person's tap; the seller says yes and counters; the assistant binds, and its block is relayed under the grant.
     const none = (await use(claude, 'foodblock_accept', { audience: 'public', promise: offer.hash })).value
     assert.equal(none.bound, false, 'no grant, no binding')
-    const pairing = (await use(claude, 'foodblock_connect', { audience: 'public', acts: ['promise'], days: 7, limit: { minor: 2000, currency: 'GBP' } })).value
+    const pairing = (await use(claude, 'foodblock_connect', { audience: 'public', acts: ['promise'], parties: [seller.id], days: 7, limit: { minor: 2000, currency: 'GBP' } })).value
     assert.match(pairing.summary, /may bind you on: promise/)
     assert.equal((await tap(pairing.approve_at, CODE)).status, 200)
     await say('observe', { kind: 'consent', word: 'yes' }, { subject: person.id })

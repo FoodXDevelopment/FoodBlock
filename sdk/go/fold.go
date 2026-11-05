@@ -112,6 +112,15 @@ func MayActAs(b Block, circle string, blocks []Block, role string) bool {
 	return doorMayActAs(b, circle, blocks, role)
 }
 
+// SpeaksFor is the one party a fold counts a block for (authority.md, Who a block speaks for): its id, or "" when it speaks for no one.
+// The block need not be among blocks yet; no clock is read.
+func SpeaksFor(b Block, blocks []Block) string {
+	if id := doorSpeaksFor(b, blocks); id != nil {
+		return *id
+	}
+	return ""
+}
+
 // MembersThen is who a circle (or `circle#role`) in a block's audience means.
 func MembersThen(b Block, recipient string, blocks []Block) []string {
 	return plural(doorMembersThen[[]string](b, recipient, blocks))

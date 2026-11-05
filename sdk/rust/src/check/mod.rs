@@ -10,6 +10,7 @@ use crate::prelude::*;
 use crate::spec::Spec;
 use crate::time::is_time;
 use time::time_places;
+pub(crate) use grant::scope_junk;
 
 mod actor;
 mod grant;

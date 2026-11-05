@@ -2,6 +2,17 @@ package foodblock
 
 // Strangers (modules/consent.md) and the small profiles: thin calls into the Rust core.
 
+// IsStranger is whether the receiver is a stranger to the sender among blocks (consent.md): true unless her accept, her counter-offer, a deal
+// she opened naming him or her own live yes makes him no stranger (her declined or stopped answer, any other reply and a recorder's yes do
+// not). The last argument is the sender's own block, or nil: it names whom the sender speaks for.
+func IsStranger(receiver, sender string, blocks []Block, block *Block) bool {
+	var b any
+	if block != nil {
+		b = *block
+	}
+	return doorIsStranger(receiver, sender, blocks, b)
+}
+
 // ReceiptCode is the short receipt code of a block: the first 5 bytes of its id in Crockford Base32, XXXX-XXXX.
 func ReceiptCode(id string) string { return doorReceiptCode(id, false) }
 

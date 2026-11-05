@@ -12,6 +12,9 @@ public enum Grant {
     /// Whether one act of `value` (money or an amount) stays inside a limit; `spent` is what the principal's node has counted in the period:
     /// minor units of money, or an amount's value (a whole number, or a decimal string), compared exactly.
     public static func withinLimit(_ limit: JSON, _ value: JSON, spent: Any) throws -> Bool { try Door.withinLimit(limit, value, spent) }
+    /// The one reading of a grant's `state.scope` (authority.md): acts, parties, limit, each, every, until, notice, sealed, condition and junk, with every default the spec states and nothing else filled in.
+    /// A nil scope reads as an empty one. A non-empty `junk` (sorted names of fields that are there but cannot be read) means the grant is held to no word.
+    public static func scopeReading(_ scope: Any? = nil) throws -> JSON { try Door.scopeReading(scope) }
     public static func scopeWithin(_ child: JSON, _ parent: JSON) throws -> [String] { try Door.scopeWithin(child, parent) }
     public static func whyNotLive(_ grant: JSON?, _ blocks: [JSON], now: String? = nil) throws -> [String] { try Door.whyNotLive(grant ?? [:], blocks, now) }
     public static func isLive(_ grant: JSON?, _ blocks: [JSON], now: String? = nil) throws -> Bool { try Door.isLive(grant ?? [:], blocks, now) }

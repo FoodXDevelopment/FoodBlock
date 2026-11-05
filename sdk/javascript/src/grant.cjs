@@ -7,6 +7,10 @@ const parseDuration = (text) => door.parseDuration(typeof text === 'string' ? te
 const addDuration = (time, duration, sign = 1) => door.addDuration(String(time), String(duration), sign)
 /** Two durations compared by adding both to one instant (§7): -1, 0 or 1. */
 const compareDurations = door.compareDurations
+/** The one official reading of a grant's `state.scope` (authority.md), every default the spec states and nothing else filled in:
+ * { acts, parties, limit, each, every, until, notice, sealed, condition, junk }. A missing scope reads as an empty one. A non-empty `junk` (the names of fields that are
+ * there but unreadable) means the grant cannot be held to its word: a malformed `until` read as no end would be a wider grant. */
+const scopeReading = (scope) => door.scopeReading(scope ?? null)
 const scopeRefusals = door.scopeRefusals
 const scopeWithin = door.scopeWithin
 const whyNotLive = (grant, blocks, { now } = {}) => door.whyNotLive(grant || null, blocks, now || null)
@@ -36,4 +40,4 @@ const termsTotal = (terms, quantity = null) => door.termsTotal(terms ?? null, qu
 /** Whether a child grant's limit keeps to its parent's (authority.md): both limit observes (or { limit, every, each }), periods added to `at`, the parent grant's at. */
 const limitWithinParent = (child, parent, at) => door.limitWithinParent(child ?? null, parent ?? null, at ?? null)
 
-module.exports = { limitFence, limitCommitment, limitOpens, withinLimit, termsTotal, limitWithinParent, whyNotLiveUndo, actName, parseDuration, addDuration, compareDurations, scopeRefusals, scopeWithin, whyNotLive, isLive, ancestors, whyNotUnder, operatorsOf }
+module.exports = { limitFence, limitCommitment, limitOpens, withinLimit, termsTotal, limitWithinParent, whyNotLiveUndo, actName, parseDuration, addDuration, compareDurations, scopeReading, scopeRefusals, scopeWithin, whyNotLive, isLive, ancestors, whyNotUnder, operatorsOf }

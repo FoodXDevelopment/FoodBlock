@@ -14,12 +14,12 @@ import { mcpEndpoint } from '../server.js'
 // FoodX holds keys only where the person knows it does (identity.md, Held keys). A new genesis names FoodX; an identity made before that
 // gets a key grant naming FoodX the next time it is opened. Needs the foodx checkout (FOODOS_BACKEND); skipped without it.
 const BACKEND = process.env.FOODOS_BACKEND || resolve(homedir(), 'foodx')
-const have = existsSync(resolve(BACKEND, 'foodos/node/host.js'))
+const have = existsSync(resolve(BACKEND, 'foodos/record/node/host.js'))
 const load = (path) => import(pathToFileURL(resolve(BACKEND, path)).href)
 
 describe('custody', { skip: !have && 'no foodx checkout (set FOODOS_BACKEND)' }, () => {
   it('names a custodian in a new genesis, and grants one to an older identity when it is opened', async () => {
-    const { Host } = await load('foodos/node/index.js')
+    const { Host } = await load('foodos/record/node/index.js')
     const { serveHost } = await load('foodos/testing/helpers/serve-host.mjs')
     const dir = mkdtempSync(join(tmpdir(), 'custody-')); after(() => rmSync(dir, { recursive: true, force: true }))
     const master = randomBytes(40).toString('hex'), host = new Host(), served = await serveHost({ host }); after(() => served.close())

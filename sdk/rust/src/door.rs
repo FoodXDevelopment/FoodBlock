@@ -365,6 +365,8 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "receipt_code" => json!(if flag_arg(a.v(1)) { crate::strangers::receipt_code_long(a.s(0)?) } else { crate::strangers::receipt_code(a.s(0)?) }),
         "code_matches" => json!(crate::strangers::code_matches(a.s(0)?, a.s(1)?)),
         "consent" => crate::strangers::consent(a.s(0)?, a.opt(1), &a.list(2), Some(a.v(3)).filter(|b| b.is_object())),
+        // a stranger to a sender (consent.md); the sender's block, when given, names the principal it speaks for
+        "is_stranger" => json!(crate::strangers::is_stranger(a.s(0)?, a.s(1)?, &a.list(2), Some(a.v(3)).filter(|b| b.is_object()))),
         // the node's own stated choices: its rule's state (an object) or an explicit null (no rule), and today's count (an integer)
         "admission_refusals" => Value::Array(
             crate::strangers::admission_refusals(a.v(0), a.s(1)?, &a.list(2), stated_admission(a)?, a.v(4).as_u64().ok_or_else(|| Fail::Argument("strangers_today is a whole number: the node states how many blocks it took today from this sender".into()))?)
@@ -594,6 +596,8 @@ fn dispatch(op: &str, a: &Args) -> Out {
         #[cfg(feature = "earnest")]
         "earnest_paid" => json!(crate::profiles::earnest_paid(a.v(0), a.v(1), &a.list(2))),
         "scope_within" => json!(crate::grant::scope_within(a.v(0), a.v(1))),
+        // the one reading of a grant's scope (authority.md): a scope that is null reads as an empty one; a non-empty `junk` holds the grant to no word
+        "scope_reading" => crate::grant::scope_reading(a.v(0)),
         "scope_refusals" => Value::Array(crate::grant::scope_refusals(a.v(0), a.v(1)).iter().map(|r| r.to_json()).collect()),
         "operators_of" => json!(crate::grant::operators_of(a.s(0)?, &a.list(1), a.time_opt(2)?)),
         "why_not_under" => json!(crate::grant::why_not_under(a.v(0), &a.list(1), a.time_opt(2)?)),
@@ -674,6 +678,13 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                 .unwrap_or(Value::Null)
         }
         "may_act_as" => json!(fold::may_act_as(a.v(0), a.s(1)?, &a.list(2), a.opt(3))),
+        // the one party a fold counts a block for (authority.md, Who a block speaks for): its id, or null for no one; no clock
+        "speaks_for" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            json!(fold::who_speaks(a.v(0), &a.list(1)))
+        }
         "members_then" => json!(fold::members_then(a.v(0), a.s(1)?, &a.list(2))),
         "where_now" => json!(fold::where_now(a.v(0), &a.list(1))),
         "ownership" => {

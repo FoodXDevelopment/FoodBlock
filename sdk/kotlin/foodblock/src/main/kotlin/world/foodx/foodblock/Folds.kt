@@ -76,6 +76,9 @@ object Grant {
     fun whyNotLiveUndo(block: JsonObject, blocks: List<JsonObject>): List<String> =
         Door.whyNotLiveUndo(block, JsonArray(blocks)).strings()
 
+    /** The one reading of a grant's `state.scope` (authority.md): acts, parties, limit, each, every, until, notice, sealed, condition and junk, with every default the spec states and nothing else filled in. A null scope reads as an empty one. A non-empty `junk` (sorted names of fields that are there but cannot be read) means the grant is held to no word. */
+    fun scopeReading(scope: JsonElement? = null): JsonObject = Door.scopeReading(scope ?: JsonNull).obj()
+
     /** The act a block is, named `type.kind`. */
     fun actName(block: JsonObject): String = Door.actName(block).string()
 
@@ -164,6 +167,10 @@ object Fold {
 
     fun mayActAs(block: JsonObject, circle: String, blocks: List<JsonObject>, role: String? = null): Boolean =
         Door.mayActAs(block, JsonPrimitive(circle), JsonArray(blocks), text(role)).bool()
+
+    /** The one party a fold counts a block for (authority.md, Who a block speaks for): its id, or null when it speaks for no one. The block need not be among `blocks` yet; no clock is read. */
+    fun speaksFor(block: JsonObject, blocks: List<JsonObject>): String? =
+        Door.speaksFor(block, JsonArray(blocks)).let { if (it is JsonNull) null else it.string() }
 
     /** Who a recipient (a circle or `circle#role`) meant when the block was written. */
     fun membersThen(block: JsonObject, recipient: String, blocks: List<JsonObject>): List<String> =
@@ -298,6 +305,10 @@ object Sync {
 
 /** Strangers (modules/consent.md) and the small profiles. */
 object Strangers {
+    /** Whether `receiver` is a stranger to `sender` among `blocks` (consent.md): true unless her accept, her counter-offer, a deal she opened naming him or her own live yes makes him no stranger. `block` is the sender's own block (or null): it names whom the sender speaks for. */
+    fun isStranger(receiver: String, sender: String, blocks: List<JsonObject>, block: JsonObject? = null): Boolean =
+        Door.isStranger(JsonPrimitive(receiver), JsonPrimitive(sender), JsonArray(blocks), block ?: JsonNull).bool()
+
     /** A model's reading is the person's claim only once the person's own block confirms it. */
     fun readingIsPersonsClaim(reading: JsonObject, person: String, blocks: List<JsonObject>): Boolean =
         Door.readingIsPersonsClaim(reading, JsonPrimitive(person), JsonArray(blocks)).bool()

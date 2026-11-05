@@ -98,3 +98,47 @@ fn a_nodes_own_choices_are_stated_never_filled() {
     assert_eq!(call("compose", &serde_json::json!(["observe", {}, {}, { "author": "a".repeat(64), "at": "2026-10-15T09:00:00.000Z" }]).to_string())["error"], "crypto", "no audience");
     assert_eq!(call("compose", &serde_json::json!(["observe", {}, {}, { "author": "a".repeat(64), "audience": "everyone", "at": "2026-10-15T09:00:00.000Z" }]).to_string())["error"], "argument", "audience is public or a list");
 }
+
+// The reads a product must ask the core and never keep a copy of: a stranger (consent.md), whom a block speaks for (authority.md, Who a
+// block speaks for), and a scope with every default the spec states. The rules are in the vectors; this proves the door answers them.
+#[test]
+fn a_stranger_whom_a_block_speaks_for_and_a_scope_read_through_the_door() {
+    use serde_json::json;
+    let keys = call("keypair", &format!(r#"["{}"]"#, "33".repeat(32)))["ok"].clone();
+    let g = call("genesis", &json!([keys, { "kind": "person", "at": "2026-10-15T09:00:00.000Z", "audience": "public" }]).to_string())["ok"].clone();
+    let id = g["hash"].as_str().unwrap().to_string();
+    let write = |refs: serde_json::Value| call("write", &json!(["observe", { "kind": "note", "text": "hi" }, refs, { "key": keys, "author": id, "at": "2026-10-15T09:00:01.000Z", "audience": "public", "held": [g] }]).to_string());
+    let note = write(json!({}))["ok"].clone();
+    // a plain block speaks for its author; a block signed as a circle that is not held speaks for no one; a block that is no block is an argument error
+    assert_eq!(call("speaks_for", &json!([note, [g]]).to_string())["ok"], json!(id));
+    assert_eq!(call("speaks_for", &json!([note, [g, note]]).to_string())["ok"], json!(id), "held or not, the same");
+    let circle = "c".repeat(64);
+    let as_circle = write(json!({ "as": circle }));
+    assert!(as_circle["ok"].is_object(), "{as_circle}");
+    assert_eq!(call("speaks_for", &json!([as_circle["ok"], [g]]).to_string())["ok"], json!(null), "a circle that is not held: no one");
+    assert_eq!(call("speaks_for", r#"["oops", []]"#)["error"], "argument");
+    assert_eq!(call("speaks_for", &json!([note, "g"]).to_string())["error"], "argument", "held is a list");
+    // a stranger: nothing between two people; the sender's block is optional; receiver and sender are text
+    let other = "d".repeat(64);
+    assert_eq!(call("is_stranger", &json!([other, id, [g, note]]).to_string())["ok"], json!(true));
+    assert_eq!(call("is_stranger", &json!([other, id, [g, note], note]).to_string())["ok"], json!(true));
+    assert_eq!(call("is_stranger", &json!([other, id, [g, note], null]).to_string())["ok"], json!(true));
+    assert_eq!(call("is_stranger", &json!([7, id, []]).to_string())["error"], "argument");
+    // a scope: a missing one is empty; each default is the spec's; what cannot be read is junk, and reads as null or [] beside it
+    let empty = json!({ "acts": [], "parties": [], "limit": null, "each": null, "every": null, "until": null, "notice": null, "sealed": false, "condition": null, "junk": [] });
+    assert_eq!(call("scope_reading", "[null]")["ok"], empty);
+    assert_eq!(call("scope_reading", "[]")["ok"], empty);
+    assert_eq!(call("scope_reading", "[{}]")["ok"], empty);
+    let money = json!({ "minor": 500, "currency": "GBP" });
+    let read = call("scope_reading", &json!([{ "acts": ["promise"], "limit": money, "every": "P1M", "until": "tomorrow", "colour": "red" }]).to_string())["ok"].clone();
+    assert_eq!(read["acts"], json!(["promise"]));
+    assert_eq!(read["limit"], money);
+    assert_eq!(read["every"], json!("P1M"));
+    assert_eq!(read["until"], json!(null), "an unreadable until reads as none, and says so in junk");
+    assert_eq!(read["junk"], json!(["colour", "until"]));
+    let sealed = call("scope_reading", &json!([{ "limit_commitment": "e".repeat(64), "limit": money }]).to_string())["ok"].clone();
+    assert_eq!(sealed["sealed"], json!(true));
+    assert_eq!(sealed["limit"], json!(null));
+    assert_eq!(sealed["junk"], json!(["limit"]));
+    assert_eq!(call("scope_reading", r#"["oops"]"#)["ok"]["junk"], json!(["scope"]));
+}

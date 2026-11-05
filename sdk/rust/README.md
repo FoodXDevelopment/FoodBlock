@@ -60,9 +60,9 @@ let message = foodblock::wrap(&reading);                // { block, signature }:
 Nothing is filled in for the author: `kind`, `at` and `audience` of a genesis, and `audience` and `at` of a block (or `clockless`), are stated, or the call is refused. `write` refuses a block that breaks a rule and returns every refusal (`err.refusals`: `{ code, detail }`, codes from
 protocol.json `refusals.codes`; `err.reasons` the details alone); it never repairs. Other names
 follow the JavaScript reference SDK: `canonical`, `hash`, `sign`, `verify`, `refusals`, `check`, `valid::valid`,
-`next_link`, `check_chain`, `seal`, `open`, `seal_copy`, `open_copy`, `identity::*`, `grant::*`, `fold::*`
-(`promise_stage`, `circle_state`, `members_then`, `where_now`, `ownership`, `successor_state`, `circle_key`), `views::*`
-(`promise_view`, `live_grant`, `due`, `recovery_reach`, `withdrawal_seen`), `strangers::*` (`consent`, `receipt_code`,
+`next_link`, `check_chain`, `seal`, `open`, `seal_copy`, `open_copy`, `identity::*`, `grant::*` (`scope_reading`), `fold::*`
+(`promise_stage`, `circle_state`, `members_then`, `who_speaks`, `where_now`, `ownership`, `successor_state`, `circle_key`), `views::*`
+(`promise_view`, `live_grant`, `due`, `recovery_reach`, `withdrawal_seen`), `strangers::*` (`consent`, `is_stranger`, `receipt_code`,
 `admission_refusals`), and
 `sync::*` (signed pull and push, `accept`, signed answers, `.well-known` discovery, the local announcement and the
 mDNS service `_foodblock._tcp`). A node's own choices are stated, never filled in: `answer_pull` takes `{ cap, serves_pairs }`, `accept` and `accept_sealed` take `{ takes_pairs }`, and `admission_refusals` takes the rule's state or an explicit null, with today's count.

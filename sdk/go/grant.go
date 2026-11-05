@@ -17,6 +17,13 @@ func ScopeRefusals(child, parent Block) []Finding {
 	return doorScopeRefusals(child, parent)
 }
 
+// ScopeReading is the one reading of a grant's state.scope (authority.md): acts, parties, limit, each, every, until, notice, sealed, condition and
+// junk, with every default the spec states and nothing else filled in. A missing scope (nil) reads as an empty one. A non-empty junk (the sorted
+// names of fields that are there but cannot be read) means the grant is held to no word.
+func ScopeReading(scope any) map[string]any {
+	return doorScopeReading[map[string]any](scope)
+}
+
 // ScopeWithin is why a child grant's scope is not within its parent's; empty when it is.
 func ScopeWithin(child, parent Block) []string {
 	return doorScopeWithin(child, parent)

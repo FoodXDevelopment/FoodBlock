@@ -68,6 +68,7 @@ needs(block:block, held:blocks?) -> strings
 receipt_code(hash:text, long:bool?) -> text
 code_matches(code:text, typed:text) -> bool
 consent(person:text, sender:text?, blocks:blocks, block:json?) -> object
+is_stranger(receiver:text, sender:text, blocks:blocks, block:block?) -> bool
 admission_refusals(block:block, receiver:text, blocks:blocks, admission:json, strangers_today:int) -> refusals
 live_grant(act:block, grants:blocks, now:time) -> bool
 due(promise:block, arrivals:arrivals?) -> json
@@ -130,6 +131,7 @@ reading_is_persons_claim(block:block, person:text, blocks:blocks) -> bool
 residency_refusals(block:block, holds_in:strings) -> refusals
 scope_within(child:json, parent:json) -> strings
 scope_refusals(child:json, parent:json) -> refusals
+scope_reading(scope:json?) -> object
 operators_of(agent:text, blocks:blocks, now:time?) -> strings
 why_not_under(block:block, blocks:blocks, now:time?) -> strings
 under_ok(block:block, blocks:blocks) -> bool
@@ -156,6 +158,7 @@ promise_view(first:block, blocks:blocks, options:object) -> object
 withdrawal_seen(withdrawal:block, block:block, blocks:blocks, arrivals:arrivals?) -> bool
 circle_state(circle:text, blocks:blocks, within:block?) -> object?
 may_act_as(block:block, circle:text, blocks:blocks, role:text?) -> bool
+speaks_for(block:block, blocks:blocks) -> text?
 members_then(block:block, recipient:text, blocks:blocks) -> json
 where_now(thing:block, blocks:blocks) -> json
 ownership(instance:block, blocks:blocks, now:time?) -> object

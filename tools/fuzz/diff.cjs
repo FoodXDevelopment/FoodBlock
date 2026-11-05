@@ -40,6 +40,9 @@ const OPS = {
   promise_stage: { oracle: (b, held, o) => fb.promiseStage(b, held), proj: s => s },
   promise_view: { oracle: (b, held, o) => fb.promiseView(b, held, o), proj: s => s },
   consent: { oracle: (p, s, held, block) => fb.consentFold(p, s, held, block), proj: c => pick(c, ['word', 'block']) },
+  is_stranger: { oracle: (r, s, held, block) => fb.door('is_stranger', r, s, held, block), proj: x => x },
+  speaks_for: { oracle: (b, held) => fb.door('speaks_for', b, held), proj: x => x },
+  scope_reading: { oracle: scope => fb.door('scope_reading', scope), proj: x => x },
   circle_state: { oracle: (id, held) => fb.circleState(id, held), proj: s => s && s.founder && { founder: s.founder, members: members(s), removed: Object.fromEntries(Object.entries(s.removed || {}).sort()) } },
   members_then: { oracle: (b, who, held) => fb.membersThen(b, who, held), proj: sorted },
   may_act_as: { oracle: (b, id, held) => fb.mayActAs(b, id, held), proj: x => !!x },
@@ -139,8 +142,34 @@ function casesOf(seed, size) {
       // consent follows the principal: the sender's block acts under a grant, and a word about the grantor is a word about the sender
       const sent = everything.filter(x => x.refs && x.refs.author === s.id && x.refs.under);
       if (sent.length) cases.push({ op: 'consent', args: [a.id, s.id, heldFor(null), r.pick(sent)], world: seed });
+      // a stranger: the same pairs, over the same random holdings, with and without the sender's block
+      cases.push({ op: 'is_stranger', args: [a.id, s.id, heldFor(null)], world: seed });
+      if (sent.length) cases.push({ op: 'is_stranger', args: [a.id, s.id, heldFor(null), r.pick(sent)], world: seed });
     }
   }
+  // whom a block speaks for: blocks signed as a circle or under a grant, over holdings that miss some blocks, and a block forged into one
+  for (const b of r.shuffle(all.filter(x => x.refs && (x.refs.as || x.refs.under))).slice(0, 10)) {
+    cases.push({ op: 'speaks_for', args: [b, heldFor(b)], world: seed });
+    cases.push({ op: 'speaks_for', args: [b, [b, ...heldFor(b)]], world: seed });
+  }
+  for (const b of r.shuffle(all).slice(0, 4)) { const blk = { ...b, refs: { ...b.refs, as: g.circle.hash } }; cases.push({ op: 'speaks_for', args: [blk, [blk, ...heldFor(b)]], world: seed }); }
+  // a grant's scope: the world's own, and scopes built from good and bad parts of every field (what cannot be read is junk, in the core and the oracle alike)
+  const SCOPE_PARTS = {
+    acts: [['promise'], ['observe.note', 'promise'], [], 'promise', ['promise', 3], null, {}],
+    parties: [() => [r.pick(w.actors).id], () => w.actors.map(x => x.id), [], 'nobody', () => ['zz9:' + r.hex(64)], () => [r.hex(64), 'x'], null],
+    limit: [{ minor: 5000, currency: 'GBP' }, { minor: 0, currency: 'EUR' }, { minor: -1, currency: 'GBP' }, { minor: 5, currency: 'gbp' }, { minor: 1.5, currency: 'GBP' }, { value: '1.5', unit: 'kg' }, { value: '-1', unit: 'kg' }, { value: '1,5', unit: 'kg' }, { value: '2', unit: '' }, 5, 'lots', null, [], {}],
+    each: [{ minor: 900, currency: 'GBP' }, { value: '5', unit: 'kg' }, { minor: -1, currency: 'GBP' }, { value: '-0.5', unit: 'kg' }, 7, null],
+    limit_commitment: [() => r.hex(64), () => 'sm3:' + r.hex(64), () => 'zz9:' + r.hex(64), 'not a hash', 5, null],
+    every: ['P1M', 'P7D', 'PT36H', 'P1Y2M3W4DT5H6M7S', 'monthly', 'PT', 'P', 'P1DT', 'P1W2D3', '', 5, null],
+    notice: ['PT48H', 'P2D', 'two days', 'PT', 7, null],
+    until: ['2027-12-31T00:00:00.000Z', '2026-12-31T00:00:00.000Z', 'tomorrow', '2027-02-30T00:00:00.000Z', '2027-12-31', '2027-12-31T24:00:00.000Z', 5, null],
+    condition: [{ settled: 'x' }, ['a', 'b'], 'when ready', 3, null, {}],
+    colour: ['red', 5, null]
+  };
+  const scopeFrom = () => Object.fromEntries(Object.entries(SCOPE_PARTS).filter(() => r.coin(0.35)).map(([k, parts]) => { const v = r.pick(parts); return [k, typeof v === 'function' ? v() : JSON.parse(JSON.stringify(v))]; }));
+  for (const b of everything.filter(x => x.type === 'grant' && x.state && x.state.scope !== undefined)) cases.push({ op: 'scope_reading', args: [b.state.scope], world: seed });
+  cases.push({ op: 'scope_reading', args: [null], world: seed });
+  for (let k = 0; k < 40; k++) cases.push({ op: 'scope_reading', args: [scopeFrom()], world: seed });
   // the compact form: the same bytes from both, and the same verdict on bytes that were bent
   for (const b of r.shuffle(all).slice(0, 12)) {
     const short = r.coin(0.5);

@@ -5,6 +5,7 @@ from .identity import _arrived
 
 circle_state = door.circle_state
 may_act_as = door.may_act_as
+speaks_for = door.speaks_for  # the one party a fold counts a block for (authority.md): an id, or None when it speaks for no one; the block need not be among the blocks yet; no clock
 members_then = door.members_then
 where_now = door.where_now
 ownership = door.ownership

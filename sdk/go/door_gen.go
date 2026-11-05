@@ -220,6 +220,11 @@ func doorConsent[T any](person string, sender string, blocks []Block, block any)
 	return must[T]("consent", person, nilIfEmpty(sender), plural(blocks), block)
 }
 
+// doorIsStranger is the door's is_stranger(receiver, sender, blocks, block?) -> bool.
+func doorIsStranger(receiver string, sender string, blocks []Block, block any) bool {
+	return must[bool]("is_stranger", receiver, sender, plural(blocks), block)
+}
+
 // doorAdmissionRefusals is the door's admission_refusals(block, receiver, blocks, admission, strangers_today) -> refusals.
 func doorAdmissionRefusals(block any, receiver string, blocks []Block, admission any, strangersToday int64) []Finding {
 	return plural(must[[]Finding]("admission_refusals", block, receiver, plural(blocks), admission, strangersToday))
@@ -530,6 +535,11 @@ func doorScopeRefusals(child any, parent any) []Finding {
 	return plural(must[[]Finding]("scope_refusals", child, parent))
 }
 
+// doorScopeReading is the door's scope_reading(scope?) -> object.
+func doorScopeReading[T any](scope any) T {
+	return must[T]("scope_reading", scope)
+}
+
 // doorOperatorsOf is the door's operators_of(agent, blocks, now?) -> strings.
 func doorOperatorsOf(agent string, blocks []Block, now string) []string {
 	return plural(must[[]string]("operators_of", agent, plural(blocks), nilIfEmpty(now)))
@@ -638,6 +648,11 @@ func doorCircleState[T any](circle string, blocks []Block, within any) T {
 // doorMayActAs is the door's may_act_as(block, circle, blocks, role?) -> bool.
 func doorMayActAs(block any, circle string, blocks []Block, role string) bool {
 	return must[bool]("may_act_as", block, circle, plural(blocks), nilIfEmpty(role))
+}
+
+// doorSpeaksFor is the door's speaks_for(block, blocks) -> text?.
+func doorSpeaksFor(block any, blocks []Block) *string {
+	return must[*string]("speaks_for", block, plural(blocks))
 }
 
 // doorMembersThen is the door's members_then(block, recipient, blocks) -> json.

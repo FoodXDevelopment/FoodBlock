@@ -2,6 +2,11 @@
 
 What changed in each version. The spec says what each version means; this page says what moved.
 
+## New door ops: is_stranger, speaks_for, scope_reading, 2026-11-03 (adds to 1.7, no rule changed)
+
+- **Three rules the Rust core already held are now asked through the door**, so a product reads them from the SDK and keeps no copy that can drift. `is_stranger(receiver, sender, blocks, block?)` (consent.md): true unless her accept, her counter-offer, a deal she opened naming him or her own live `yes` makes him no stranger; the sender's block, when given, names whom it speaks for too. `speaks_for(block, blocks)` (authority.md, Who a block speaks for): the id of the one party a fold counts the block for, or null when it speaks for no one; a block no node would take is no word; no clock is read. `scope_reading(scope)` (authority.md): a grant's `state.scope` with every default the spec states and nothing else filled in; `junk` lists the fields that are there but cannot be read (what the write check refuses in a scope, a name that is no scope field), and a caller holds a grant with a non-empty `junk` to no word.
+- JavaScript: `strangers.isStranger(receiver, sender, blocks, { block })`, `fold.speaksFor(block, blocks)` (also `speaksFor`), `grant.scopeReading(scope)`; the other SDKs carry the generated door wrappers and the same names beside their neighbouring ops. The oracle gives the same answers from the spec text alone (vectors from `make-vectors-reads.cjs`; the audit and the differential fuzzer ask all three).
+
 ## Text pass, 2026-10-29 (no rule changed)
 
 The normative text (core, protocol, transport, modules) went from about 41,500 to about 30,200 words and the profiles from about 9,800 to about 7,500. Each rule is now stated once, under the name of its primitive, and the rest point to it: who a block speaks for, ending, the cut, a delayed power (authority.md); built-on stands, a fork is a burden, counts, one whole (folds.md); a node's promise (nodes.md); a commitment (privacy.md). Decision tags were removed from the spec text; this page keeps them.

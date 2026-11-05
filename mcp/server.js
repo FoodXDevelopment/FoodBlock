@@ -104,7 +104,7 @@ function build() {
   const persist = ({ keys, encryption, genesis, chain }) => { if (file) writeFileSync(file, JSON.stringify({ keys, encryption, genesis, chain }, null, 2), { mode: 0o600 }); };
   if (fresh) writeFileSync(`${file}.recovery.json`, JSON.stringify({ id: person.id, recovery: person.recovery }, null, 2), { mode: 0o600 });
   let code = file && existsSync(`${file}.approval`) ? readFileSync(`${file}.approval`, "utf8").trim() : undefined;
-  // FOODBLOCK_NODE_URL: a FoodOS host (its handler, foodos/node/host.js); the door reaches the person's node there, {url}/{personId}, with the
+  // FOODBLOCK_NODE_URL: a FoodOS host (its handler, foodos/record/node/host.js); the door reaches the person's node there, {url}/{personId}, with the
   // credential FOODBLOCK_NODE_TOKEN in a header. Without it the node is in memory.
   const hosted = process.env.FOODBLOCK_NODE_URL;
   const node = hosted ? remoteNode({ base: `${hosted.replace(/\/$/, "")}/${person.id}`, token: process.env.FOODBLOCK_NODE_TOKEN }) : memoryNode();

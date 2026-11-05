@@ -179,6 +179,10 @@ def consent(person, sender, blocks, block=None):
     return call("consent", person, sender, _blocks(blocks), block)
 
 
+def is_stranger(receiver, sender, blocks, block=None):
+    return call("is_stranger", receiver, sender, _blocks(blocks), block)
+
+
 def admission_refusals(block, receiver, blocks, admission, strangers_today):
     return call("admission_refusals", block, receiver, _blocks(blocks), admission, strangers_today)
 
@@ -427,6 +431,10 @@ def scope_refusals(child, parent):
     return call("scope_refusals", child, parent)
 
 
+def scope_reading(scope=None):
+    return call("scope_reading", scope)
+
+
 def operators_of(agent, blocks, now=None):
     return call("operators_of", agent, _blocks(blocks), now)
 
@@ -513,6 +521,10 @@ def circle_state(circle, blocks, within=None):
 
 def may_act_as(block, circle, blocks, role=None):
     return call("may_act_as", block, circle, _blocks(blocks), role)
+
+
+def speaks_for(block, blocks):
+    return call("speaks_for", block, _blocks(blocks))
 
 
 def members_then(block, recipient, blocks):
