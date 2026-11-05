@@ -665,6 +665,11 @@ func doorBacked[T any](block any, person string, blocks []Block) T {
 	return must[T]("backed", block, person, plural(blocks))
 }
 
+// doorBackedAll is the door's backed_all(person, blocks) -> object.
+func doorBackedAll[T any](person string, blocks []Block) T {
+	return must[T]("backed_all", person, plural(blocks))
+}
+
 // doorGives is the door's gives(block, person, blocks) -> object.
 func doorGives[T any](block any, person string, blocks []Block) T {
 	return must[T]("gives", block, person, plural(blocks))
@@ -733,6 +738,11 @@ func doorPot[T any](head any, blocks []Block, now string) T {
 // doorAccountOf is the door's account_of(who, blocks) -> json.
 func doorAccountOf[T any](who string, blocks []Block) T {
 	return must[T]("account_of", who, plural(blocks))
+}
+
+// doorOwedBack is the door's owed_back(person, blocks) -> object.
+func doorOwedBack[T any](person string, blocks []Block) T {
+	return must[T]("owed_back", person, plural(blocks))
 }
 
 // doorReleaseShown is the door's release_shown(subject, blocks) -> json.

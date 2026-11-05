@@ -77,7 +77,7 @@ A refused block raises `fb.Refused`, whose `wrong` lists every reason. Nothing i
 - Authority (`fb.grant`): `scope_within`, `is_live`, `why_not_live`, `ancestors`, `why_not_under`, `operators_of`,
   `add_duration`, `why_not_live_undo`, `act_name`, `limit_fence`, `within_limit`, `scope_reading` (every default of authority.md; `junk` names what cannot be read).
 - Folds (`fb.fold`): `promise_stage` (no clock), `promise_view` (the reader's `now`), `circle_state`, `may_act_as`,
-  `members_then`, `speaks_for` (also `fb.speaks_for`), `backed(block, person, blocks)` (also `fb.backed`: `{backed, why, chain}`), `gives(block, person, blocks)` (what of the person's becomes whose, from typed terms and refs), `act_check(deal, template)` (`{ok, why}`), `ownership`, `owner_of`, `receiver_of`, `where_now`, `consent`, `live_grant`,
+  `members_then`, `speaks_for` (also `fb.speaks_for`), `backed(block, person, blocks)` (also `fb.backed`: `{backed, why, chain}`), `backed_all(person, blocks)` (`backed` for a whole set at once: `{hash: {backed, why}}`), `owed_back(person, blocks)` (money moved in the person's name that they do not back: `{owed: [...]}`), `gives(block, person, blocks)` (what of the person's becomes whose, from typed terms and refs), `act_check(deal, template)` (`{ok, why}`), `ownership`, `owner_of`, `receiver_of`, `where_now`, `consent`, `live_grant`,
   `withdrawal_seen`, `due`, `recovery_reach`, `ownership_view`, `successor_view`, `circle_key`, `counted_in`.
 - Between nodes (`fb.sync`): `pull_request`, `sign_pull`, `sign_push` (a `counter` or a `challenge`, no time), `new_challenge`,
   `pull_refusals`, `push_refusals`, `admission_refusals`, `residency_refusals`, `matches`, `heads_of`, `answer_pull`,

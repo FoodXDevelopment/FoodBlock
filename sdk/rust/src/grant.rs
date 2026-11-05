@@ -116,9 +116,9 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
     if p.get("limit").is_some() && p.get("every").is_none() && c.get("every").is_some() {
         wrong.push(wider("scope.every is left out, as the parent's is: a limit with no period covers all time".into()));
     }
-    // A grant that names a channel is passed on only to that channel.
-    if ss(parent, "channel").is_some_and(|c| ss(child, "channel") != Some(c)) {
-        wrong.push(wider("state.channel is the parent's".into()));
+    // A grant that names a handle is passed on only to that handle.
+    if ss(parent, "handle").is_some_and(|h| ss(child, "handle") != Some(h)) {
+        wrong.push(wider("state.handle is the parent's".into()));
     }
     // a depth is a whole number (left out, 0)
     let depth = int(st(parent, "depth")).unwrap_or(0.0);
@@ -583,9 +583,9 @@ pub fn why_not_under_in(block: &Value, index: &Index, now: Option<&str>) -> Vec<
     if trigger.is_none() && !covers(block, grant) {
         wrong.push(format!("the grant's acts do not cover a {}", act_name(block)));
     }
-    // A block that names a channel (a witness: this channel said yes) is covered only by a grant that names the same one (authority.md).
-    if trigger.is_none() && ss(block, "channel").is_some_and(|c| ss(grant, "channel") != Some(c)) {
-        wrong.push(format!("the grant does not name the channel {}", ss(block, "channel").unwrap_or("")));
+    // A block that names a handle (a witness: this handle said yes) is covered only by a grant that names the same one (authority.md).
+    if trigger.is_none() && ss(block, "handle").is_some_and(|h| ss(grant, "handle") != Some(h)) {
+        wrong.push(format!("the grant does not name the handle {}", ss(block, "handle").unwrap_or("")));
     }
     if trigger.is_none() {
         if let Some(out) = outside_parties(block, grant, index) {

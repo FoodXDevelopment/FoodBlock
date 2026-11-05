@@ -23,6 +23,10 @@ const mayActAs = (block, circle, blocks, role) => door.mayActAs(block, idOf(circ
 const speaksFor = (block, blocks) => door.speaksFor(block, blocks)
 /** Is `block` backed by `person` (authority.md, Backed by a person)? `{ backed, why, chain }`: `why` is a plain sentence when not (null when backed), `chain` the hashes from the block down to the block the person signed. `person` is an id or a block; no clock, no arrival. */
 const backed = (block, person, blocks) => door.backed(block, idOf(person), blocks)
+/** `backed` for a whole set at once: `{ [hash]: { backed, why } }` for every block of `blocks`, each the verdict `backed` gives it among the same blocks, read together (one pass over the store, not one per block). `person` is an id or a block. */
+const backedAll = (person, blocks) => door.backedAll(idOf(person), blocks)
+/** Money moved in `person`'s name that they do not back (promises.md, What is owed back): `{ owed: [{ block, minor, currency, to, why }] }`, one line for each transfer whose money is theirs by `gives` and that `backed` says they do not back. `person` is an id or a block. */
+const owedBack = (person, blocks) => door.owedBack(idOf(person), blocks)
 /** What of `person`'s would become whose if `block` stands (promises.md, What becomes whose): `{ gives: [{ of: 'money' | 'goods' | 'use', to, back, ... }] }`, read only from the block's typed terms and refs, never from any template's words. `back` is the time it comes back, or null (it cannot be counted on to). `person` is an id or a block. */
 const gives = (block, person, blocks) => door.gives(block, idOf(person), blocks)
 /** A deal against the act template it names (promises.md, An act is a template of the one shape): `{ ok, why }`, `why` one plain sentence when not ok (null when it is). */
@@ -53,4 +57,4 @@ const successorView = (grant, blocks, { now, arrivedAt } = {}) => door.successor
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }
+module.exports = { repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, mayActAs, speaksFor, backed, backedAll, owedBack, gives, actCheck, membersThen, ownership, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, bidsShown, useShown, consent, liveGrant, withdrawalSeen, due, recoveryReach, successorView, circleKey, countedIn }

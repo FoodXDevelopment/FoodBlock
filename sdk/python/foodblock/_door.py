@@ -535,6 +535,10 @@ def backed(block, person, blocks):
     return call("backed", block, person, _blocks(blocks))
 
 
+def backed_all(person, blocks):
+    return call("backed_all", person, _blocks(blocks))
+
+
 def gives(block, person, blocks):
     return call("gives", block, person, _blocks(blocks))
 
@@ -589,6 +593,10 @@ def pot(head, blocks, now=None):
 
 def account_of(who, blocks):
     return call("account_of", who, _blocks(blocks))
+
+
+def owed_back(person, blocks):
+    return call("owed_back", person, _blocks(blocks))
 
 
 def release_shown(subject, blocks):

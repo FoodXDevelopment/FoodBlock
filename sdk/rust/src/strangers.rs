@@ -102,8 +102,21 @@ fn names_of(sender: &str, block: Option<&Value>, index: &Index) -> Vec<String> {
     names
 }
 
+/// Whether a block is the person's own word: backed by them (authority.md, Backed by a person). A build without the folds reads only their own signature.
+fn is_hers(block: &Value, person: &str, index: &Index) -> bool {
+    #[cfg(feature = "folds")]
+    {
+        crate::fold::backed_in(block, person, index)
+    }
+    #[cfg(not(feature = "folds"))]
+    {
+        let _ = index;
+        rs(block, "author") == Some(person)
+    }
+}
+
 /// The `consent` fold: a person's live word about a sender (consent.md). The person is the block's
-/// `refs.from`, else its author. The person's own blocks count for every word and bind every sender. Anyone else may
+/// `refs.from`, else its author. The person's own blocks (backed by them) count for every word and bind every sender. Anyone else may
 /// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an autonomous system under
 /// that operator. Only the person lifts a stop: by her own block, or by a `yes` a recorder outside the asker's side
 /// received from her, with the stop in its causal past. The live word is the latest block that names the sender
@@ -130,11 +143,13 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Opti
                 return false;
             }
             let author = rs(b, "author").unwrap_or("");
+            // Her own word: backed by her (her signature, or a chain of her grants that covers it: a witness a host signs under her grant), for a block that
+            // is about her. It counts for every word and binds every sender.
+            if is_hers(b, person, &index) && rs(b, "from").is_none_or(|f| f == person) {
+                return true;
+            }
             if rs(b, "from").or(Some(author)) != Some(person) {
                 return false;
-            }
-            if author == person {
-                return true;
             }
             // A recorder's block counts only for the recorder's own side (its own sending, its operator's, and what acts under them): a stop
             // it recorded binds that side alone, and a yes it recorded lifts only a stop the same recorder recorded, in its causal past. Her own
@@ -147,7 +162,7 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Opti
                     by_asker
                         // her own stop is lifted by her own block alone: a recorded yes that has seen it lifts nothing
                         && !index.values().any(|o| {
-                            ss(o, "word") == Some("stop") && ss(o, "kind") == Some("consent") && rs(o, "author") == Some(person) && sees_in(b, hash_of(o), &index)
+                            ss(o, "word") == Some("stop") && ss(o, "kind") == Some("consent") && is_hers(o, person, &index) && sees_in(b, hash_of(o), &index)
                         })
                         && index.values().any(|o| {
                             ss(o, "word") == Some("stop")
@@ -227,15 +242,15 @@ pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], block: Option
         let promise = type_of(b) == "promise";
         let answers_his = list(rf(b, "answers")).iter().any(|a| sender_blocks.contains(a));
         let names_him = ["from", "to"].iter().any(|k| rs(b, k).is_some_and(|v| names.iter().any(|n| n == v)));
-        rs(b, "author") == Some(receiver)
+        ((answers_his && (ss(b, "status") == Some("accepted") || (promise && st(b, "status").is_none())))
+            || (promise && rf(b, "answers").is_none() && rf(b, "updates").is_none() && st(b, "status").is_none() && names_him))
             && crate::identity::binds_signer(b, &index)
-            && ((answers_his && (ss(b, "status") == Some("accepted") || (promise && st(b, "status").is_none())))
-                || (promise && rf(b, "answers").is_none() && rf(b, "updates").is_none() && st(b, "status").is_none() && names_him))
+            && (rs(b, "author") == Some(receiver) || is_hers(b, receiver, &index))
     });
     // a `yes` ends strangerhood only as her own word: a recorder's yes counts only as the lift of a stop it recorded, never as her consent (release 8)
     let word = consent(receiver, Some(sender), blocks, block);
     let yes = word.get("word").and_then(Value::as_str) == Some("yes")
-        && word.get("block").and_then(Value::as_str).and_then(|h| index.get(h)).is_some_and(|b| rs(b, "author") == Some(receiver));
+        && word.get("block").and_then(Value::as_str).and_then(|h| index.get(h)).is_some_and(|b| is_hers(b, receiver, &index));
     !dealt && !yes
 }
 

@@ -135,6 +135,7 @@ enum Door {
     static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], _ role: String? = nil) throws -> Bool { try Core.bool("may_act_as", block, circle, blocks, role) }
     static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Core.maybe("speaks_for", block, blocks) as? String }
     static func backed(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("backed", block, person, blocks) }
+    static func backedAll(_ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("backed_all", person, blocks) }
     static func gives(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("gives", block, person, blocks) }
     static func actCheck(_ deal: JSON, _ template: JSON) throws -> JSON { try Core.json("act_check", deal, template) }
     static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("members_then", block, recipient, blocks) }
@@ -149,6 +150,7 @@ enum Door {
     static func invasionShown(_ claim: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("invasion_shown", claim, blocks) }
     static func pot(_ head: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> Any? { try Core.maybe("pot", head, blocks, now) }
     static func accountOf(_ who: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("account_of", who, blocks) }
+    static func owedBack(_ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("owed_back", person, blocks) }
     static func releaseShown(_ subject: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("release_shown", subject, blocks) }
     static func bidsShown(_ quarrel: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("bids_shown", quarrel, blocks) }
     static func successorState(_ grant: JSON, _ blocks: [JSON], _ now: String? = nil, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("successor_state", grant, blocks, now, arrivals) }

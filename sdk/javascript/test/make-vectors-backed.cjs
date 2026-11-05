@@ -170,32 +170,111 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   s.say(ann, 'grant', { kind: 'agent', status: 'stopped', stop: 'onward' }, { updates: gc.hash, as: café.hash })
 }
 {
-  // a witness: a block in which a signer says what a channel said; backed by her only under a live grant of hers that names that channel and that signer
+  // a witness: a block in which a signer says what a handle said; backed by her only under a live grant of hers that names that handle and that signer
   const s = story(), her = s.person('bk9-her'), host = s.person('bk9-host', { kind: 'agent' }), other = s.person('bk9-other', { kind: 'agent' })
   const readback = 'a'.repeat(64)
   const deal = s.say(host, 'observe', { kind: 'note', text: 'the read-back she saw' })
-  const word = (who, under, channel = 'sms:+447700900123', extra = {}) => s.say(who, 'observe', { kind: 'witness', channel, said: 'yes', readback, ...extra }, { for: deal.hash, ...(under ? { under: under.hash } : {}) })
+  const word = (who, under, handle = 'sms:+447700900123', extra = {}) => s.say(who, 'observe', { kind: 'witness', handle, said: 'yes', readback, ...extra }, { for: deal.hash, ...(under ? { under: under.hash } : {}) })
   const none = word(host, null)
   backed('a witness with no grant is the host\'s own word, never hers', none, her, s.held, no([none]), [9])
-  const g = s.say(her, 'grant', { kind: 'witness', channel: 'sms:+447700900123', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host.id })
+  const g = s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host.id })
   const w = word(host, g)
-  backed('an SMS witness under her grant, which names the channel and the host as witness, is backed by her', w, her, s.held, yes([w, g]), [9])
-  const wrongChannel = word(host, g, 'sms:+447700900999')
-  backed('a witness for another channel is not covered by that grant', wrongChannel, her, s.held, no([wrongChannel]), [9])
+  backed('an SMS witness under her grant, which names the handle and the host as witness, is backed by her', w, her, s.held, yes([w, g]), [9])
+  const wrongHandle = word(host, g, 'sms:+447700900999')
+  backed('a witness for another handle is not covered by that grant', wrongHandle, her, s.held, no([wrongHandle]), [9])
   const wide = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
   const open = word(other, wide)
-  backed('a grant that names no channel backs no witness of any channel', open, her, s.held, no([open]), [9])
+  backed('a grant that names no handle backs no witness of any handle', open, her, s.held, no([open]), [9])
   const stranger = word(other, g)
   backed('a witness signed by someone the grant is not made for is not backed', stranger, her, s.held, no([stranger]))
-  // a grant that names a channel is passed on only to that channel
-  const hostGrant = s.say(her, 'grant', { kind: 'witness', channel: 'sms:+447700900123', depth: 1, scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
+  // a grant that names a handle is passed on only to that handle
+  const hostGrant = s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', depth: 1, scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
   const widerChild = s.raw(other, 'grant', { kind: 'witness', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host.id, parent: hostGrant.hash })
-  door('backed: a grant passed on from one that names a channel must name the same channel', 'valid', [widerChild, s.held.filter((b) => b.hash !== widerChild.hash), null], { expect: [{ code: 'wider_than_parent' }] })
+  door('backed: a grant passed on from one that names a handle must name the same handle', 'valid', [widerChild, s.held.filter((b) => b.hash !== widerChild.hash), null], { expect: [{ code: 'wider_than_parent' }] })
+  // `channel` is another word: the open label of the link a block came by. It names no one, so no grant reads it, and a block that carries it is covered as before
+  const labelled = s.say(host, 'observe', { kind: 'witness', handle: 'sms:+447700900123', channel: 'sms', said: 'yes', readback }, { for: deal.hash, under: g.hash })
+  backed('a witness that also carries the open label `channel` is covered by the grant that names its handle: no grant reads a channel', labelled, her, s.held, yes([labelled, g]), [9])
   const ended = stop(s, her, g)
-  const after = s.say(host, 'observe', { kind: 'witness', channel: 'sms:+447700900123', said: 'yes', readback }, { for: deal.hash, under: g.hash }, { after: [ended.hash] })
+  const after = s.say(host, 'observe', { kind: 'witness', handle: 'sms:+447700900123', said: 'yes', readback }, { for: deal.hash, under: g.hash }, { after: [ended.hash] })
   backed('once she stops the grant, a witness signed after the host saw it is not backed', after, her, s.held, no([after]), [9])
 }
+{
+  // backed_all: the verdict of every block of a set, read together, is the verdict `backed` gives each among the same blocks
+  const s = story(), her = s.person('bk10-her'), bot = s.person('bk10-bot', { kind: 'agent' }), other = s.person('bk10-other', { kind: 'agent' })
+  const g = agentGrant(s, her, bot)
+  const mine = note(s, her), byBot = note(s, bot, { under: g.hash }), byOther = note(s, other, { under: g.hash }), plain = note(s, other)
+  const stopped = stop(s, her, g)
+  const late = s.say(bot, 'observe', { kind: 'ack', text: 'seen' }, { for: g.hash }, { after: [stopped.hash] })
+  const after = note(s, bot, { under: g.hash })
+  const all = door('backed_all: every block of a set gets its verdict, as `backed` gives it among the same blocks', 'backed_all', [her.id, s.held], {
+    expect: { [mine.hash]: { backed: true, why: null }, [byBot.hash]: { backed: true, why: null }, [byOther.hash]: { backed: false }, [plain.hash]: { backed: false }, [after.hash]: { backed: false }, [g.hash]: { backed: true, why: null }, [stopped.hash]: { backed: true }, [late.hash]: { backed: false } },
+    invariants: [9] })
+  for (const b of s.held) {
+    const one = call('backed', b, her.id, s.held)
+    assert.deepEqual(all[b.hash], { backed: one.backed, why: one.why }, 'the set and the block agree')
+  }
+  assert.equal(Object.keys(all).length, s.held.length)
+  const forged = { ...mine, state: { ...mine.state, text: 'changed' } }
+  const withForged = call('backed_all', her.id, [...s.held, forged])
+  assert.equal(withForged[forged.hash].backed, false, 'a block whose bytes changed is no word')
+  assert.equal(typeof withForged[forged.hash].why, 'string')
+}
+{
+  // owed_back: money moved in her name that she does not back
+  const s = story(), her = s.person('bk11-her'), bot = s.person('bk11-bot', { kind: 'agent' }), host = s.person('bk11-host', { kind: 'agent' }), payee = s.person('bk11-payee')
+  const sack = s.say(payee, 'thing', { kind: 'good', name: 'flour' }, {})
+  const sale = s.say(payee, 'promise', { what: 'flour', terms: { price: M(300), quantity: { value: '5', unit: 'sack' } } }, { from: payee.id, to: her.id, what: sack.hash })
+  const pay = (who, refs = {}, money = M(300)) => s.say(who, 'transfer', { money }, { to_owner: payee.id, for: sale.hash, ...refs })
+  const g = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['transfer'], parties: [payee.id], limit: M(1000), until: LATER } }, { to: bot.id })
+  const narrow = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['observe.note'], parties: [], until: LATER } }, { to: host.id })
+  const own = pay(her), underRule = pay(bot, { under: g.hash }), overFence = pay(bot, { under: g.hash }, M(5000)), outsideActs = pay(host, { under: narrow.hash }), hostOwn = pay(host)
+  const goods = s.say(bot, 'transfer', {}, { what: sale.hash, to_owner: payee.id, under: g.hash })
+  const stoppedAt = stop(s, her, g)
+  const afterStop = s.say(bot, 'transfer', { money: M(300) }, { to_owner: payee.id, for: sale.hash, under: g.hash }, { after: [stoppedAt.hash] })
+  const owed = (m) => ({ block: m.hash, minor: m.state.money.minor, currency: 'GBP', to: payee.id })
+  const forged = { ...own, hash: 'e'.repeat(64), state: { ...own.state, money: M(301) } }
+  door('owed_back: a payment her own signature or a live grant of hers backs is not owed; one under a grant that does not cover it, past its fence, or signed after the signer saw her stop is, exactly that amount', 'owed_back', [her.id, s.held], {
+    expect: { owed: [overFence, outsideActs, afterStop].sort((a, b) => s.held.indexOf(a) - s.held.indexOf(b)).map(owed) }, invariants: [9] })
+  const got = call('owed_back', her.id, s.held).owed
+  assert.deepEqual(got.map((x) => x.block), s.held.filter((b) => [overFence, outsideActs, afterStop].some((m) => m.hash === b.hash)).map((b) => b.hash), 'in the order the blocks were held')
+  assert.ok(got.every((x) => typeof x.why === 'string' && x.why.length > 0), 'each says why it is not backed')
+  assert.ok(![own, underRule, hostOwn, goods].some((m) => got.some((x) => x.block === m.hash)), 'her own word, her live rule, the host\'s own money and a payment of goods are not owed')
+  const withForged = call('owed_back', her.id, [...s.held, forged]).owed
+  assert.ok(withForged.some((x) => x.block === forged.hash && x.minor === 301), 'a transfer no node would hold that claims her name is owed back too')
+  door('owed_back: no one else is owed what is not theirs: the payee has nothing owed back', 'owed_back', [payee.id, s.held], { expect: { owed: [] }, invariants: [9] })
+}
+{
+  // consent: her own word is a block backed by her: a witness a host signs under her grant binds every asker, as her own STOP does
+  const s = story(), her = s.person('bk12-her'), host = s.person('bk12-host', { kind: 'agent' }), asker = s.person('bk12-asker'), op = s.person('bk12-op')
+  const GRANT = (acts) => s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts, parties: [], until: LATER } }, { to: host.id })
+  const g = GRANT(['observe.witness', 'observe.consent'])
+  const word = (who, w, refs = {}, after) => s.say(who, 'observe', { kind: 'consent', word: w, channel: 'sms' }, refs, after ? { after } : {})
+  const stopHer = word(host, 'stop', { under: g.hash })
+  const live = (name, held, sender, expect) => door(`consent: ${name}`, 'consent', [her.id, sender.id, held, null], { expect, exact: true, invariants: [20] })
+  live('her STOP, recorded by the host under her grant, is her own word: it binds every asker', s.held, asker, { word: 'stop', block: stopHer.hash })
+  live('and every other asker too, whoever it is', s.held, op, { word: 'stop', block: stopHer.hash })
+  const s2 = story(), her2 = s2.person('bk12b-her'), host2 = s2.person('bk12b-host', { kind: 'agent' }), asker2 = s2.person('bk12b-asker')
+  const stopOwn = s2.say(host2, 'observe', { kind: 'consent', word: 'stop', channel: 'sms' }, { from: her2.id })
+  door('consent: the same STOP signed under no grant is the recorder\'s word: it binds the recorder\'s own side alone', 'consent', [her2.id, asker2.id, s2.held, null], { expect: { word: null, block: null }, exact: true, invariants: [20] })
+  door('consent: the recorder\'s own side is bound by it', 'consent', [her2.id, host2.id, s2.held, null], { expect: { word: 'stop', block: stopOwn.hash }, exact: true, invariants: [20] })
+  const s3 = story(), her3 = s3.person('bk12c-her'), host3 = s3.person('bk12c-host', { kind: 'agent' }), asker3 = s3.person('bk12c-asker')
+  const narrow = s3.say(her3, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host3.id })
+  s3.say(host3, 'observe', { kind: 'consent', word: 'stop', channel: 'sms' }, { under: narrow.hash })
+  door('consent: a grant that does not cover a consent block makes it the host\'s word, not hers: nothing binds the asker', 'consent', [her3.id, asker3.id, s3.held, null], { expect: { word: null, block: null }, exact: true, invariants: [20] })
+  // her YES, witnessed under her grant after the stop it has seen, lifts it for every asker; one that has not seen the stop does not
+  const yesSeen = s.say(host, 'observe', { kind: 'consent', word: 'yes', channel: 'sms' }, { under: g.hash, subject: asker.id }, { after: [stopHer.hash] })
+  live('her YES, witnessed by the host under her grant with her STOP in its past, lifts it', s.held, asker, { word: 'yes', block: yesSeen.hash })
+  door('consent: a yes naming the asker is hers, so the asker is no stranger to her any more (is_stranger)', 'is_stranger', [her.id, asker.id, s.held, null], { expect: false, invariants: [20] })
+  const s4 = story(), her4 = s4.person('bk12d-her'), host4 = s4.person('bk12d-host', { kind: 'agent' }), other4 = s4.person('bk12d-other', { kind: 'agent' }), asker4 = s4.person('bk12d-asker')
+  const g4 = s4.say(her4, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.consent'], parties: [], until: LATER } }, { to: host4.id })
+  const stop4 = s4.say(host4, 'observe', { kind: 'consent', word: 'stop', channel: 'sms' }, { under: g4.hash, subject: asker4.id })
+  const g4b = s4.say(her4, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.consent'], parties: [], until: LATER } }, { to: other4.id })
+  const blind = s4.say(other4, 'observe', { kind: 'consent', word: 'yes', channel: 'sms' }, { under: g4b.hash, subject: asker4.id })
+  door('consent: her yes witnessed under her grant by a signer whose chain has not seen her stop does not lift it: a stop wins a tie', 'consent', [her4.id, asker4.id, s4.held, null], { expect: { word: 'stop' }, invariants: [20] })
+  void blind, void stop4
+}
 
+kit.retire(['backed: an SMS witness under her grant, which names the channel and the host as witness, is backed by her', 'backed: a witness for another channel is not covered by that grant', 'backed: a grant that names no channel backs no witness of any channel', 'backed: a grant passed on from one that names a channel must name the same channel'])
 vectorsFile.save(V, tags)
 console.log(`${kit.made.size} cases written to ${require('path').relative(process.cwd(), vectorsFile.FILE)}`)
 void call

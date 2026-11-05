@@ -161,6 +161,7 @@ circle_state(circle:text, blocks:blocks, within:block?) -> object?
 may_act_as(block:block, circle:text, blocks:blocks, role:text?) -> bool
 speaks_for(block:block, blocks:blocks) -> text?
 backed(block:block, person:text, blocks:blocks) -> object
+backed_all(person:text, blocks:blocks) -> object
 gives(block:block, person:text, blocks:blocks) -> object
 act_check(deal:block, template:block) -> object
 members_then(block:block, recipient:text, blocks:blocks) -> json
@@ -175,6 +176,7 @@ not_free_shown(block:block, blocks:blocks) -> json
 invasion_shown(claim:block, blocks:blocks) -> json
 pot(head:block, blocks:blocks, now:time?) -> json
 account_of(who:text, blocks:blocks) -> json
+owed_back(person:text, blocks:blocks) -> object
 release_shown(subject:block, blocks:blocks) -> json
 bids_shown(quarrel:block, blocks:blocks) -> json
 # Feature successor

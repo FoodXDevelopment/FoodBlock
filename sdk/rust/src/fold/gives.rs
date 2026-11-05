@@ -17,10 +17,15 @@ pub fn gives(block: &Value, person: &str, blocks: &[Value]) -> Value {
             .filter(|b| hash_of(b) != hash_of(block))
             .chain([block]),
     );
+    gives_in(block, person, &index, blocks)
+}
+
+/// `gives` for a block already read into `index` (with the blocks held in `blocks`): the reading `owed_back` repeats for every transfer.
+pub(super) fn gives_in(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> Value {
     let lines = match type_of(block) {
-        "promise" => of_promise(block, person, &index, blocks),
-        "transfer" if principal(block, &index).as_deref() == Some(person) => {
-            of_transfer(block, person, &index, blocks)
+        "promise" => of_promise(block, person, index, blocks),
+        "transfer" if principal(block, index).as_deref() == Some(person) => {
+            of_transfer(block, person, index, blocks)
         }
         _ => Vec::new(),
     };

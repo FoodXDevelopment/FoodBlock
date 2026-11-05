@@ -281,6 +281,9 @@ impl<'a> Checker<'a> {
         if !g("channel").is_none_or(Value::is_string) {
             w.push(f("shape", "state.channel is an open label (sms, ussd, voice, letter, meeting)"));
         }
+        if !g("handle").is_none_or(Value::is_string) {
+            w.push(f("shape", "state.handle is text: who spoke on a channel (sms:+447700900123)"));
+        }
         w
     }
     fn numbers_only_shapes(&self, state: &Value, _refs: &Value, genesis: bool) -> W {

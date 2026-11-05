@@ -589,12 +589,12 @@
    "name": "witness",
    "target": "observe.witness",
    "fields": {
-    "channel": "the channel that spoke, in the witness's words: `sms:+447700900123`, `voice:+447700900123`. A grant that backs this block names the same one",
-    "said": "what the channel said: `yes`, `stop`, or the words themselves",
-    "readback": "the SHA-256 digest (hex) of the read-back text she was shown and the channel answered"
+    "handle": "who spoke, and on what channel, in the witness's words: `sms:+447700900123`, `voice:+447700900123`. A grant that backs this block names the same one",
+    "said": "what the handle said: `yes`, `stop`, or the words themselves",
+    "readback": "the SHA-256 digest (hex) of the read-back text she was shown and the handle answered"
    },
    "grounds": {
-    "event": "the signer says a channel said something to a read-back (refs.for names the deal or move it was about); the block is the signer's own word and is backed by the person whose channel it is only under a live grant of theirs that names this signer and this channel (authority.md, A witness)"
+    "event": "the signer says a handle said something to a read-back (refs.for names the deal or move it was about); the block is the signer's own word and is backed by the person whose handle it is only under a live grant of theirs that names this signer and this handle (authority.md, A witness)"
    }
   },
   {

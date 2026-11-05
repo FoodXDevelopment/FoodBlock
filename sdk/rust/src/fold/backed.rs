@@ -63,3 +63,58 @@ fn reading(block: &Value, person: &str, read: &crate::js::Index) -> Result<Chain
         refuse(format!("its chain roots in {root}, and {person} is neither {root} nor one of the hands that sign for it"), &chain)
     }
 }
+
+/// Whether `block`, read into `index`, is backed by `person`: the one question, for a fold that has its index already (consent, strangers).
+pub(crate) fn backed_in(block: &Value, person: &str, index: &crate::js::Index) -> bool {
+    reading(block, person, index).is_ok()
+}
+
+/// `backed` for a whole set at once: `{ hash: { backed, why } }` for every block of `blocks`, read once together (one index, one set of forks), where
+/// asking block by block reads the whole store again each time. The verdict of each is the one `backed` gives it among the same blocks.
+pub fn backed_all(person: &str, blocks: &[Value]) -> Value {
+    let read = super::read_all(blocks.iter());
+    let mut out = Map::new();
+    for block in blocks {
+        let hash = hash_of(block);
+        if hash.is_empty() || out.contains_key(hash) {
+            continue;
+        }
+        let (backed, why) = match reading(block, person, &read) {
+            Ok(_) => (true, Value::Null),
+            Err((why, _)) => (false, json!(why)),
+        };
+        out.insert(hash.to_string(), json!({ "backed": backed, "why": why }));
+    }
+    Value::Object(out)
+}
+
+/// `owed_back`: what the person is owed for money moved in their name that they do not back (promises.md, What becomes whose). Every `transfer` among
+/// `blocks` whose money is the person's by `gives` (signed by them, as their circle, or under a chain of their grants) and that `backed` says they
+/// do not back: `{ owed: [{ block, minor, currency, to, why }] }`. A transfer no node would hold (a forged signature, a missing chain) is
+/// not backed either. What the person's own word or a live chain of their grants stands behind is not owed: it is theirs.
+pub fn owed_back(person: &str, blocks: &[Value]) -> Value {
+    let read = super::read_all(blocks.iter());
+    let mut seen = Vec::new();
+    let mut owed = Vec::new();
+    for block in blocks.iter().filter(|b| crate::js::type_of(b) == "transfer") {
+        let hash = hash_of(block);
+        if seen.contains(&hash) {
+            continue;
+        }
+        seen.push(hash);
+        let alone;
+        let index = if read.contains_key(hash) {
+            &read
+        } else {
+            let mut with = read.clone();
+            with.insert(hash.to_string(), block.clone());
+            alone = with;
+            &alone
+        };
+        let Err((why, _)) = reading(block, person, index) else { continue };
+        for line in super::gives::gives_in(block, person, index, blocks)["gives"].as_array().into_iter().flatten().filter(|l| l["of"] == "money") {
+            owed.push(json!({ "block": hash, "minor": line["minor"], "currency": line["currency"], "to": line["to"], "why": why }));
+        }
+    }
+    json!({ "owed": owed })
+}

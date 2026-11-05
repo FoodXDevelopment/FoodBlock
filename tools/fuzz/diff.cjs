@@ -43,6 +43,8 @@ const OPS = {
   is_stranger: { oracle: (r, s, held, block) => fb.door('is_stranger', r, s, held, block), proj: x => x },
   speaks_for: { oracle: (b, held) => fb.door('speaks_for', b, held), proj: x => x },
   backed: { oracle: (b, who, held) => fb.door('backed', b, who, held), proj: x => ({ backed: x.backed, chain: x.chain }) }, // `why` is a sentence, never compared
+  backed_all: { oracle: (who, held) => fb.door('backed_all', who, held), proj: x => Object.fromEntries(Object.entries(x).map(([h, v]) => [h, v.backed])) }, // `why` is a sentence, never compared
+  owed_back: { oracle: (who, held) => fb.door('owed_back', who, held), proj: x => x.owed.map(({ why, ...rest }) => rest) },
   gives: { oracle: (b, who, held) => fb.door('gives', b, who, held), proj: x => x },
   scope_reading: { oracle: scope => fb.door('scope_reading', scope), proj: x => x },
   circle_state: { oracle: (id, held) => fb.circleState(id, held), proj: s => s && s.founder && { founder: s.founder, members: members(s), removed: Object.fromEntries(Object.entries(s.removed || {}).sort()) } },
@@ -156,6 +158,11 @@ function casesOf(seed, size) {
     // and whether it is backed, by each kind of person the world has: over holdings that miss some blocks, a chain with a link gone is not backed
     cases.push({ op: 'backed', args: [b, r.pick(w.actors).id, heldFor(b)], world: seed });
     cases.push({ op: 'backed', args: [b, r.pick(w.actors).id, [b, ...heldFor(b)]], world: seed });
+  }
+  // whose is the whole store, and what money moved in someone's name that they do not back: each person the world has, over holdings that miss some blocks
+  for (const p of r.shuffle(w.actors).slice(0, 3)) {
+    cases.push({ op: 'backed_all', args: [p.id, heldFor(null)], world: seed });
+    cases.push({ op: 'owed_back', args: [p.id, heldFor(null)], world: seed });
   }
   // what becomes whose: promises and transfers (and answers to them), read for each kind of person the world has, over holdings that miss some blocks
   for (const b of r.shuffle(all.filter(x => x.type === 'promise' || x.type === 'transfer')).slice(0, 12)) for (const p of r.shuffle(w.actors).slice(0, 3)) {

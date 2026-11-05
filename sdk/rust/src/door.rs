@@ -702,6 +702,10 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             fold::backed(a.v(0), a.s(1)?, &a.list(2))
         }
+        // the same, for a whole set at once: { hash: { backed, why } }, read together
+        "backed_all" => fold::backed_all(a.s(0)?, &a.list(1)),
+        // money moved in this person's name that they do not back (promises.md, What becomes whose): { owed: [{ block, minor, currency, to, why }] }
+        "owed_back" => fold::owed_back(a.s(0)?, &a.list(1)),
         // a deal against the act template it names (promises.md, An act is a template of the one shape): { ok, why }
         "act_check" => {
             if !a.v(0).is_object() || !a.v(1).is_object() {

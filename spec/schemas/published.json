@@ -1218,19 +1218,19 @@
    "signature": "168e634d39eea87dee61b52142c9d0a54d5a4209ff252717ac6a9a2bc15970b2f02dc40e73992ec33a6ef94c83194205775778d1940f38f074777a7579d71a02"
   },
   "witness": {
-   "hash": "bf481bd6c01d61b7a1a167a278e16f7bb901d0ca62b234f60ba0fb699946183b",
+   "hash": "7dfbe1f6c3efb835859f6b2da581ea441650c4ded444ec5575099eb8cb874880",
    "type": "thing",
    "state": {
     "kind": "schema",
     "name": "witness",
     "target": "observe.witness",
     "fields": {
-     "channel": "the channel that spoke, in the witness's words: `sms:+447700900123`, `voice:+447700900123`. A grant that backs this block names the same one",
-     "said": "what the channel said: `yes`, `stop`, or the words themselves",
-     "readback": "the SHA-256 digest (hex) of the read-back text she was shown and the channel answered"
+     "handle": "who spoke, and on what channel, in the witness's words: `sms:+447700900123`, `voice:+447700900123`. A grant that backs this block names the same one",
+     "said": "what the handle said: `yes`, `stop`, or the words themselves",
+     "readback": "the SHA-256 digest (hex) of the read-back text she was shown and the handle answered"
     },
     "grounds": {
-     "event": "the signer says a channel said something to a read-back (refs.for names the deal or move it was about); the block is the signer's own word and is backed by the person whose channel it is only under a live grant of theirs that names this signer and this channel (authority.md, A witness)"
+     "event": "the signer says a handle said something to a read-back (refs.for names the deal or move it was about); the block is the signer's own word and is backed by the person whose handle it is only under a live grant of theirs that names this signer and this handle (authority.md, A witness)"
     },
     "at": "2026-10-19T00:00:45.000Z",
     "audience": "public",
@@ -1240,10 +1240,10 @@
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
     "prev": "ea3c94333fca970639c4d162157652e5342cd1339534ad3cf093e0d549603d1c"
    },
-   "signature": "fe497144b23f255ee5f2d845a40200ceba5ae933cc592e770a7166c30cfb3e07d106403055d275aa0a929621195f0d05ab04bf714559ac5463544f684f5e2d0e"
+   "signature": "73a8f567a125654ea713109395fdf82a43ee371c20c4f2f9783496bdfd1ba5a3689ea2d17cfa593e5b0c8cc34e369064997f7857946d5d1c6f71ae7a8ac0b30c"
   },
   "answer": {
-   "hash": "2a8e41f2718028beeea53caa965beb2b78761532b8a0fb38f545cdd777ee82dd",
+   "hash": "91fa0d788ff9c9ff430c2adc6b7b01a6231301959430ac5f12b4900b95603314",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1263,12 +1263,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "bf481bd6c01d61b7a1a167a278e16f7bb901d0ca62b234f60ba0fb699946183b"
+    "prev": "7dfbe1f6c3efb835859f6b2da581ea441650c4ded444ec5575099eb8cb874880"
    },
-   "signature": "b027280dded81b712e34e254cc9eceb5fbf8928fae44befc9f5b8a111f23348e43e67db60d8e2cdb46e51ff5459363608f77f8cb1094617ff7e30c75677d4503"
+   "signature": "a64fa5d1f03d84efb2c25d9d460a7cf16d12a032126615a14a51186ad0d17e0accc1e799f4db1058bf8ce4852b994ecaf6c89149dfa8d0783115cc4ade114f0a"
   },
   "act": {
-   "hash": "add05cfff89b058b3403663dc74583d60ee22fe77114fc9c655056571a04b94e",
+   "hash": "3c30a3a42f53f8737359546b6078748e7dd8be3a69eaa414b7f444d6a7c02580",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1292,9 +1292,9 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "2a8e41f2718028beeea53caa965beb2b78761532b8a0fb38f545cdd777ee82dd"
+    "prev": "91fa0d788ff9c9ff430c2adc6b7b01a6231301959430ac5f12b4900b95603314"
    },
-   "signature": "f4d86291d004fde8b7ec36d5fe2516eeadc90205f9f75867357d284a295a636d1a05c7fee9c39094ffa1245c52309171d47fe721751596a82272d8ad1becbb0f"
+   "signature": "a6ff1670901d54f7f2c93ebba76f7405486ebf0e069115ac48f3d2d5fa64da91eab3ffb8e9bd6ded3bde6de213de1dd4e58d873e285ca9495cace3a1aa8b8401"
   }
  }
 }

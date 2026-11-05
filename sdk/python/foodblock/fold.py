@@ -6,6 +6,8 @@ from .identity import _arrived
 circle_state = door.circle_state
 may_act_as = door.may_act_as
 backed = door.backed  # is this block backed by this person (authority.md): {backed, why, chain}; why is a plain sentence when not (None when backed), chain the hashes down to the block the person signed; no clock, no arrival
+backed_all = door.backed_all  # backed for a whole set at once: {hash: {backed, why}}, each the verdict backed gives that block among the same blocks, read together
+owed_back = door.owed_back  # money moved in this person's name that they do not back (promises.md): {owed: [{block, minor, currency, to, why}]}
 gives = door.gives  # what of this person's would become whose if the block stands (promises.md): {gives: [{of: money|goods|use, to, back, ...}]}; read only from typed terms and refs, never from a template's words
 act_check = door.act_check  # a deal against the act template it names (promises.md): {ok, why}; why is a plain sentence when not ok (None when ok)
 speaks_for = door.speaks_for  # the one party a fold counts a block for (authority.md): an id, or None when it speaks for no one; the block need not be among the blocks yet; no clock

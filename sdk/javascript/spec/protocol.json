@@ -203,6 +203,7 @@
    "status",
    "stop",
    "channel",
+   "handle",
    "opening"
   ],
   "actor": [
@@ -1824,6 +1825,20 @@
      "held"
     ],
     "result": "authority.md, Backed by a person: { backed: true or false, why: one plain sentence when not backed, else null, chain: the hashes from the block to the block the person signed }. Backed when the person signed it, or signed it as a circle in which they hold `sign`, or a grantee signed it under a grant that passes why_not_under and whose chain (refs.parent) roots in the person's signature or in a circle they hold `sign` in; every link live and no wider than the one above, judged at the block's own place in time (its causal past). The block is read with held as if it were held; no clock, no arrival"
+   },
+   "backed_all": {
+    "args": [
+     "person: a person's or circle's id",
+     "held"
+    ],
+    "result": "authority.md, Backed by a person: { hash: { backed, why } } for every block of held, read together once. Each verdict is the one `backed` gives that block among the same blocks"
+   },
+   "owed_back": {
+    "args": [
+     "person: a person's id",
+     "held"
+    ],
+    "result": "promises.md, What is owed back: { owed: [{ block, minor, currency, to, why }] }, one line for each transfer of held whose money is the person's by `gives` (signed by them, as their circle, or under a chain of their grants) and that `backed` says they do not back; `why` is backed's sentence. Money their own word or a live chain of their grants backs is not owed"
    },
    "gives": {
     "args": [

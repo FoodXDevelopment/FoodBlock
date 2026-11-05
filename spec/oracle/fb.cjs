@@ -611,7 +611,7 @@ function contentFindings(b, ctx) {
   if (isObj(state.when)) timeAt({ when: state.when }, 'state');
   if (isObj(state.terms)) for (const l of asList(state.terms.lines)) timeAt(l, 'line');
   for (const flag of ['skip', 'withheld']) if (flag in state && state[flag] !== true) add(2, 'shape', 'state.' + flag + ' is true, or left out');
-  for (const k of ['line', 'channel']) if (k in state && !isStr(state[k])) add(2, 'shape', 'state.' + k + ' is text');
+  for (const k of ['line', 'channel', 'handle']) if (k in state && !isStr(state[k])) add(2, 'shape', 'state.' + k + ' is text');
   // an opening (privacy.md, A commitment) is { salt, value }, the salt in its grammar; a conditioned transfer carries its condition whole (things.md)
   if ('opening' in state && !(isObj(state.opening) && Object.keys(state.opening).every(k => P.shapes.reveal.includes(k)) && isStr(state.opening.salt) && RX.salt.test(state.opening.salt) && state.opening.value !== undefined)) add(2, 'shape', 'state.opening is { salt, value }');
   if ('condition' in state && conditionProblem(state.condition)) add(2, 'shape', 'state.condition');
@@ -976,8 +976,8 @@ function scopeWithin(child, parent) {
   if (p.limit_commitment !== undefined && c.limit_commitment === undefined && c.limit === undefined) return false;
   // a limit with no period covers all time: a child with a period under it could spend it again every period
   if (p.limit !== undefined && p.every === undefined && c.every !== undefined) return false;
-  // a grant that names a channel is passed on only to that channel
-  if (parent.channel !== undefined && child.channel !== parent.channel) return false;
+  // a grant that names a handle is passed on only to that handle
+  if (parent.handle !== undefined && child.handle !== parent.handle) return false;
   const pd = parent.depth === undefined ? 0 : parent.depth, cd = child.depth === undefined ? 0 : child.depth;
   return pd >= 1 && cd <= pd - 1;
 }
@@ -2118,8 +2118,8 @@ function whyNotUnder(b, poolIn) {
   if (!trigger && !receives(g, b, pool)) return fail('the signer is not the receiver of the grant');
   if (!grantLive(g, pool, new Set(), b)) return fail('the grant is not live');
   const sc = !trigger && isObj(g.state.scope) ? g.state.scope : {};
-  // a block that names a channel (a witness: this channel said yes) is covered only by a grant that names the same one (authority.md, A witness)
-  if (!trigger && b.state.channel !== undefined && g.state.channel !== b.state.channel) return fail('the grant does not name the channel');
+  // a block that names a handle (a witness: this handle said yes) is covered only by a grant that names the same one (authority.md, A witness)
+  if (!trigger && b.state.handle !== undefined && g.state.handle !== b.state.handle) return fail('the grant does not name the handle');
   const names = actNames(b);
   if (!trigger && (sc.acts === undefined || !names.some(n => asList(sc.acts).includes(n)))) return fail('the act is outside the grant\'s scope');
   // scope.parties: every side the block deals with (its from, to, to_owner and to_holder, and for an answer the sides of the block it answers, or
@@ -4089,15 +4089,17 @@ function consentFold(person, sender, blocks, block) {
   // A recorder binds only its own side: it is named, or one of its operators is.
   const sideOf = (recorder) => has && (names.includes(recorder) || operatorsOf(recorder, pool).some(o => names.includes(o)));
   const personOf = b => b.refs.from !== undefined ? b.refs.from : b.refs.author;
-  const all = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'consent' && personOf(b) === person && counts(b, pool) &&
+  // her own word: a block about her that is backed by her (her signature, or a chain of her grants that covers it: a witness a host signs under her grant)
+  const hers = b => (b.refs.from === undefined || b.refs.from === person) && isHers(b, person, pool);
+  const all = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'consent' && (personOf(b) === person || hers(b)) && counts(b, pool) &&
     !(b.state.word === 'yes' && asList(b.refs.subject).length === 0)); // a yes widens, so it names whom it is about; one that names no one counts for nothing
   const stops = all.filter(b => b.state.word === 'stop');
   const cons = all.filter(b => {
-    if (b.refs.author === person) return true;
+    if (hers(b)) return true;
     if (b.state.word === 'stop') return sideOf(b.refs.author);
     // A recorder's yes counts only for its own side, as the lift of a stop the same recorder recorded, in its causal past: her own stop
     // is lifted by her own block alone (consent.md, Only the person lifts a STOP)
-    if (b.state.word === 'yes') return sideOf(b.refs.author) && !stops.some(st => st.refs.author === person && pool.sees(b.hash, st.hash)) && stops.some(st => st.refs.author === b.refs.author && st.refs.from === person && pool.sees(b.hash, st.hash));
+    if (b.state.word === 'yes') return sideOf(b.refs.author) && !stops.some(st => hers(st) && pool.sees(b.hash, st.hash)) && stops.some(st => st.refs.author === b.refs.author && st.refs.from === person && pool.sees(b.hash, st.hash));
     return false;
   });
   const later = (a, b) => pool.sees(a.hash, b.hash) || (a.state.seq > b.state.seq && signerKeyOf(a, pool) === signerKeyOf(b, pool));
@@ -4125,12 +4127,12 @@ function isStranger(receiver, sender, blocks, block) {
   // one of his accepted, or as a counter (a promise with no status), or a promise of hers, no answer and no stop, naming him as a side. A declined or
   // stopped answer, or any other, keeps him a stranger. Only a block that counts: a forked one binds no one (core.md, invariant 3)
   const answersHis = b => asList(b.refs.answers).some(h => { const t = pool.get(h); return t && names.includes(t.refs.author); });
-  const dealt = pool.all().some(b => b.refs.author === receiver && binds(b, pool) &&
+  const dealt = pool.all().some(b => binds(b, pool) &&
     ((answersHis(b) && (b.state.status === 'accepted' || (b.type === 'promise' && b.state.status === undefined))) ||
-     (b.type === 'promise' && b.refs.answers === undefined && b.refs.updates === undefined && b.state.status === undefined && ['from', 'to'].some(k => isStr(b.refs[k]) && names.includes(b.refs[k])))));
+     (b.type === 'promise' && b.refs.answers === undefined && b.refs.updates === undefined && b.state.status === undefined && ['from', 'to'].some(k => isStr(b.refs[k]) && names.includes(b.refs[k])))) && (b.refs.author === receiver || isHers(b, receiver, pool)));
   // a recorder's yes lifts only a stop it recorded: only the receiver's own yes ends strangerhood (consent.md)
   const consent = consentFold(receiver, sender, pool, block);
-  const yes = consent.word === 'yes' && (pool.get(consent.block) || { refs: {} }).refs.author === receiver;
+  const yes = consent.word === 'yes' && Boolean(pool.get(consent.block)) && isHers(pool.get(consent.block), receiver, pool);
   return !dealt && !yes;
 }
 // admission_refusals(block, recipient, held, rule, arrivedToday): the message refusals of nodes.md and consent.md
@@ -4177,7 +4179,18 @@ function speaksFor(block, blocks) {
 function backed(block, person, blocks) {
   if (!isObj(block)) throw argError('argument 0 is a block');
   if (!isStr(person)) throw argError('person is an id (text)');
-  const pool = readWith(blocks, block);
+  return backedIn(block, person, readWith(blocks, block));
+}
+// the same, for a whole set at once: { hash: { backed, why } }, each the verdict `backed` gives among the same blocks
+function backedAll(person, blocks) {
+  if (!isStr(person)) throw argError('person is an id (text)');
+  const pool = poolOf(blocks), out = {};
+  for (const b of asList(blocks)) if (isStr(b.hash) && !(b.hash in out)) { const r = backedIn(b, person, pool); out[b.hash] = { backed: r.backed, why: r.why }; }
+  return out;
+}
+// whether a block is the person's own word: backed by them (authority.md, Backed by a person)
+const isHers = (b, person, pool) => backedIn(b, person, pool).backed;
+function backedIn(block, person, pool) {
   const b = pool.get(block.hash);
   const no = (why, chain) => ({ backed: false, why, chain });
   if (!b) return no('the block is no word: it is not valid on what it rests on, or rests on a block not held', []);
@@ -4268,7 +4281,9 @@ function actCheck(deal, template) {
 function gives(block, person, blocks) {
   if (!isObj(block)) throw argError('argument 0 is a block');
   if (!isStr(person)) throw argError('person is an id (text)');
-  const pool = readWith(blocks, block);
+  return givesIn(block, person, readWith(blocks, block), blocks);
+}
+function givesIn(block, person, pool, blocks) {
   const line = (of, to, back, parts) => ({ of, ...parts, to: to === undefined ? null : to, back: back === undefined ? null : back });
   // a thing its held record shows another owns is not hers to give; a kind, or a thing not held, is read as hers
   const hers = w => { const t = pool.get(w); if (!t || !t.refs || t.refs.of === undefined) return true; const o = ownershipFold(t, blocks).owner; return o === null || o === person; };
@@ -4315,6 +4330,21 @@ function gives(block, person, blocks) {
     }
   }
   return { gives: out.filter(l => l.to !== person) };
+}
+// owedBack(person, blocks): money moved in the person's name that they do not back (promises.md, What is owed back). { owed: [{ block, minor, currency, to, why }] }:
+// each transfer of `blocks` whose money is the person's by `gives` and that `backed` says they do not back. A transfer no node would hold is not backed either.
+function owedBack(person, blocks) {
+  if (!isStr(person)) throw argError('person is an id (text)');
+  const pool = poolOf(blocks), seen = new Set(), owed = [];
+  for (const b of asList(blocks)) {
+    if (b.type !== 'transfer' || seen.has(b.hash)) continue;
+    seen.add(b.hash);
+    const read = pool.get(b.hash) ? pool : readWith(blocks, b);
+    const verdict = backedIn(b, person, read);
+    if (verdict.backed) continue;
+    for (const l of givesIn(b, person, read, blocks).gives) if (l.of === 'money') owed.push({ block: b.hash, minor: l.minor, currency: l.currency, to: l.to, why: verdict.why });
+  }
+  return { owed };
 }
 // accountOf(who, blocks): where a person says money to them goes (promises.md, Where to pay me). The words counted are the `observe` blocks of kind `account` that `who`
 // signed, that speak for no one else and that a node would take; the head is the one no other of those has in its causal past. null for none, for two heads that
@@ -4980,6 +5010,8 @@ function door(op, ...a) {
     case 'speaks_for': return speaksFor(a[0], a[1]);
     case 'account_of': return accountOf(a[0], a[1]);
     case 'backed': return backed(a[0], a[1], a[2]);
+    case 'backed_all': return backedAll(a[0], a[1]);
+    case 'owed_back': return owedBack(a[0], a[1]);
     case 'gives': return gives(a[0], a[1], a[2]);
     case 'act_check': return actCheck(a[0], a[1]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
@@ -5091,6 +5123,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, liveGrant, withdrawalSeen, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, isStranger, speaksFor, backed, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, backed, backedAll, owedBack, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };
