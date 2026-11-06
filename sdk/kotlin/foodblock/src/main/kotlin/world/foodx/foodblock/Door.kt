@@ -150,6 +150,7 @@ internal object Door {
     fun checkReads(check: JsonElement, blocks: JsonElement): JsonElement = go("check_reads", 2, check, blocks)
     fun clearingApplied(clearing: JsonElement, blocks: JsonElement): JsonElement = go("clearing_applied", 2, clearing, blocks)
     fun rulingReleases(stake: JsonElement, blocks: JsonElement, now: JsonElement = JsonNull): JsonElement = go("ruling_releases", 2, stake, blocks, now)
+    fun rulingAudience(ruling: JsonElement, blocks: JsonElement, now: JsonElement = JsonNull): JsonElement = go("ruling_audience", 2, ruling, blocks, now)
     fun membersThen(block: JsonElement, recipient: JsonElement, blocks: JsonElement): JsonElement = go("members_then", 3, block, recipient, blocks)
     fun whereNow(thing: JsonElement, blocks: JsonElement): JsonElement = go("where_now", 2, thing, blocks)
     fun ownership(instance: JsonElement, blocks: JsonElement, now: JsonElement = JsonNull): JsonElement = go("ownership", 2, instance, blocks, now)

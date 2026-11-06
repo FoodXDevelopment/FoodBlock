@@ -140,6 +140,7 @@ module.exports = {
   checkReads: (check, blocks) => call('check_reads', check, list(blocks)),
   clearingApplied: (clearing, blocks) => call('clearing_applied', clearing, list(blocks)),
   rulingReleases: (stake, blocks, now) => call('ruling_releases', stake, list(blocks), now ?? null),
+  rulingAudience: (ruling, blocks, now) => call('ruling_audience', ruling, list(blocks), now ?? null),
   membersThen: (block, recipient, blocks) => call('members_then', block, recipient, list(blocks)),
   whereNow: (thing, blocks) => call('where_now', thing, list(blocks)),
   ownership: (instance, blocks, now) => call('ownership', instance, list(blocks), now ?? null),

@@ -4515,6 +4515,26 @@ function rulingReleases(stake, blocks, now) {
   }
   return { releases: true, to: r.award.to, money, ruling: r.ruling, why: null };
 }
+// rulingAudience(ruling, blocks, now): whether a judge's ruling is public (promises.md, Rulings). { audience: 'public' | 'private', why }.
+// The judge's offer is a first promise of hers under the base schema `judging`, `refs.to` open; its head (no other offer of hers has it in its causal past)
+// is the one she stands on. Its `terms.rulings` is "public", or absent (private). Whatever it says, a ruling is public when an award line of it has a `due`
+// at or before the reader's clock and no counted transfer `for` the ruling went to the one it awards: unhonoured, a fact and never a verdict.
+function rulingAudience(ruling, blocks, now) {
+  if (!isObj(ruling)) throw argError('argument 0 is a block');
+  const pool = readWith(blocks, ruling), out = (audience, why) => ({ audience, why });
+  if (ruling.type !== 'observe' || ruling.state.kind !== 'ruling') return out('private', 'the block is no ruling (an observe of kind ruling)');
+  const judge = counts(ruling, pool) ? speakerOf(ruling, pool) : null;
+  if (!judge || !backedIn(ruling, judge, pool).backed) return out('private', 'no judge\'s key speaks for this ruling');
+  const clock = isStr(now) ? now : null;
+  const unhonoured = clock !== null && asList(ruling.state.awards).some(l => isObj(l) && isStr(l.due) && l.due <= clock
+    && !pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ruling.hash) && t.refs.to === l.to && counts(t, pool)));
+  if (unhonoured) return out('public', 'an award of the ruling is unpaid past its due date');
+  const offers = pool.all().filter(o => o.type === 'promise' && !o.refs.answers && !o.refs.updates && o.refs.to === undefined && backedIn(o, judge, pool).backed
+    && (s => isObj(s) && s.state.kind === 'schema' && s.state.name === 'judging')(pool.get(o.refs.schema)));
+  const heads = offers.filter(w => !offers.some(o => o !== w && pool.sees(o.hash, w.hash)));
+  if (heads.length === 1 && isObj(heads[0].state.terms) && heads[0].state.terms.rulings === 'public') return out('public', 'the judge\'s offer says her rulings are public');
+  return out('private', 'the judge\'s offer does not say her rulings are public');
+}
 // accountOf(who, blocks): where a person says money to them goes (promises.md, Where to pay me). The words counted are the `observe` blocks of kind `account` that `who`
 // signed, that speak for no one else and that a node would take; the head is the one no other of those has in its causal past. null for none, for two heads that
 // do not see each other, and for a head with no destination (it ends the account).
@@ -5189,6 +5209,7 @@ function door(op, ...a) {
     case 'listing_check': return listingCheck(a[0], a[1], a[2]);
     case 'check_reads': return checkReads(a[0], a[1]);
     case 'clearing_applied': return clearingApplied(a[0], a[1]);
+    case 'ruling_audience': return rulingAudience(a[0], a[1], a[2] === undefined || a[2] === null ? null : a[2]);
     case 'ruling_releases': return rulingReleases(a[0], a[1], a[2] === undefined || a[2] === null ? null : a[2]);
     case 'circle_state': return circleState(a[0], a[1], a[2]);
     case 'circle_key': return circleKey(a[0], a[1]); // profiles/rekeys.md
@@ -5297,6 +5318,6 @@ module.exports = {
   seal, open, suiteOfKey, encPublicOf, check, refusals, strictText, contentFindings, normHeld, Pool, identityFold, operatorsOf, recoveryReachView, reachArrivals, addDur, valid, validStages,
   cborEncode, cborDecode, cborHeader, cborHeaderDecode, cborEncodePush, cborDecodePush, chainFold, forkPairs, nextLink, header, matches, accept,
   whyNotUnder, circleFold, circleState, mayActAs, membersThen, circleKey, countedIn, promiseStage, promiseView, due, ownershipFold, whereNow,
-  successorView, consentFold, isStranger, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
+  successorView, consentFold, isStranger, speaksFor, backed, backedAll, owedBack, listingCheck, checkReads, clearingApplied, rulingReleases, rulingAudience, gives, actCheck, accountOf, scopeReading, admissionRefusals, residencyRefusals, earnestShapeOk, earnestPaid, readingIsPersonsClaim, signMessage, verifyMessage, pullRefusals, pushRefusals,
   answerSignedBy, pushAnswer, pushRequest, wellKnownErrors, announcement, openCopy, headerSignedBy, wrap, unwrap, counts, grantLive,
 };

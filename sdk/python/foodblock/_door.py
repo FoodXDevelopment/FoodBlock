@@ -555,6 +555,10 @@ def ruling_releases(stake, blocks, now=None):
     return call("ruling_releases", stake, _blocks(blocks), now)
 
 
+def ruling_audience(ruling, blocks, now=None):
+    return call("ruling_audience", ruling, _blocks(blocks), now)
+
+
 def members_then(block, recipient, blocks):
     return call("members_then", block, recipient, _blocks(blocks))
 

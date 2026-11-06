@@ -140,6 +140,7 @@ enum Door {
     static func checkReads(_ check: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("check_reads", check, blocks) }
     static func clearingApplied(_ clearing: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("clearing_applied", clearing, blocks) }
     static func rulingReleases(_ stake: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ruling_releases", stake, blocks, now) }
+    static func rulingAudience(_ ruling: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ruling_audience", ruling, blocks, now) }
     static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("members_then", block, recipient, blocks) }
     static func whereNow(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("where_now", thing, blocks) }
     static func ownership(_ instance: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ownership", instance, blocks, now) }

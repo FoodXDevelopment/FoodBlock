@@ -737,6 +737,13 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             fold::ruling_releases(a.v(0), &a.list(1), a.time_opt(2)?)
         }
+        // whether a judge's ruling is public: her offer's `terms.rulings`, or an unhonoured award (promises.md, Rulings): { audience, why }
+        "ruling_audience" => {
+            if !a.v(0).is_object() {
+                return Err(Fail::Argument("argument 0 is a block".into()));
+            }
+            fold::ruling_audience(a.v(0), &a.list(1), a.time_opt(2)?)
+        }
         // what of this person's becomes whose if this block stands, and whether it can come back (promises.md, What becomes whose)
         "gives" => {
             if !a.v(0).is_object() {

@@ -690,6 +690,11 @@ func doorRulingReleases[T any](stake any, blocks []Block, now string) T {
 	return must[T]("ruling_releases", stake, plural(blocks), nilIfEmpty(now))
 }
 
+// doorRulingAudience is the door's ruling_audience(ruling, blocks, now?) -> object.
+func doorRulingAudience[T any](ruling any, blocks []Block, now string) T {
+	return must[T]("ruling_audience", ruling, plural(blocks), nilIfEmpty(now))
+}
+
 // doorMembersThen is the door's members_then(block, recipient, blocks) -> json.
 func doorMembersThen[T any](block any, recipient string, blocks []Block) T {
 	return must[T]("members_then", block, recipient, plural(blocks))

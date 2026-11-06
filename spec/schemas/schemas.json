@@ -690,10 +690,11 @@
     "what": "what the judge will rule on, in words"
    },
    "terms": {
-    "rules_within": "a duration: how fast she rules once named"
+    "rules_within": "a duration: how fast she rules once named",
+    "rulings": "\"public\", or left out: whether her rulings are public. Left out means private, sealed to the two sides alone"
    },
    "grounds": {
-    "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
+    "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast, terms.rulings `public` if her rulings are public, else left out (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
    },
    "undo": "ok"
   }

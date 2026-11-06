@@ -335,3 +335,49 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Va
     };
     json!({ "releases": true, "to": to, "money": money, "ruling": ruling, "why": null })
 }
+
+// ---- Whether a judge's ruling is public ----
+
+/// The judge's offer is a first promise of hers under the base schema `judging`, `refs.to` left open. Its head (no other offer of hers has it in
+/// its causal past) is the offer she stands on now. Its term `terms.rulings` is `"public"` or absent; absent is private, and nothing else is read.
+fn rulings_public_by_offer(judge: &str, index: &Index) -> Option<bool> {
+    let offers: Vec<&Value> = index
+        .values()
+        .filter(|o| first_promise(o) && rs(o, "to").is_none() && backed_in(o, judge, index))
+        .filter(|o| rs(o, "schema").and_then(|s| index.get(s)).is_some_and(|s| ss(s, "kind") == Some("schema") && ss(s, "name") == Some("judging")))
+        .collect();
+    let heads: Vec<&&Value> = offers.iter().filter(|w| !offers.iter().any(|o| hash_of(o) != hash_of(w) && sees_in(o, hash_of(w), index))).collect();
+    match heads.as_slice() {
+        [head] => Some(get(head, "state.terms.rulings").and_then(Value::as_str) == Some("public")),
+        _ => None,
+    }
+}
+
+/// `{ audience, why }`: whether a judge's ruling is public (promises.md, Rulings). `audience` is `public` or `private`. It is public when the judge's
+/// signed offer says `terms.rulings: "public"`; absent means private. Whatever the offer says, it is public when the ruling went unhonoured: an award
+/// line with a `due` time at or before the reader's clock `now` and no counted transfer `for` the ruling to the one it awards. A fact, never a verdict.
+pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> Value {
+    let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(ruling)).chain([ruling]));
+    let out = |audience: &str, why: &str| json!({ "audience": audience, "why": why });
+    if type_of(ruling) != "observe" || ss(ruling, "kind") != Some("ruling") {
+        return out("private", "the block is no ruling (an observe of kind ruling)");
+    }
+    let Some(judge) = super::speaker_of(ruling, &index, now).filter(|j| crate::identity::counts_in(ruling, &index) && backed_in(ruling, j, &index)) else {
+        return out("private", "no judge's key speaks for this ruling");
+    };
+    let hash = hash_of(ruling);
+    let unhonoured = now.is_some_and(|n| {
+        st(ruling, "awards").and_then(Value::as_array).into_iter().flatten().filter_map(|l| l.as_object()).any(|l| {
+            let due = l.get("due").and_then(Value::as_str).is_some_and(|d| d <= n);
+            let to = l.get("to").and_then(Value::as_str);
+            due && !index.values().any(|t| type_of(t) == "transfer" && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index))
+        })
+    });
+    if unhonoured {
+        return out("public", "an award of the ruling is unpaid past its due date");
+    }
+    if rulings_public_by_offer(&judge, &index) == Some(true) {
+        return out("public", "the judge's offer says her rulings are public");
+    }
+    out("private", "the judge's offer does not say her rulings are public")
+}

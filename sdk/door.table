@@ -170,6 +170,7 @@ listing_check(lookup:block, listing:block, blocks:blocks) -> object
 check_reads(check:block, blocks:blocks) -> object
 clearing_applied(clearing:block, blocks:blocks) -> object
 ruling_releases(stake:block, blocks:blocks, now:time?) -> object
+ruling_audience(ruling:block, blocks:blocks, now:time?) -> object
 members_then(block:block, recipient:text, blocks:blocks) -> json
 where_now(thing:block, blocks:blocks) -> json
 ownership(instance:block, blocks:blocks, now:time?) -> object

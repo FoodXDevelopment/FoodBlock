@@ -1426,7 +1426,7 @@
    "signature": "6f8899d665e047311347060b9f4f6cf6fe1fa64f9e4b05bfd790831f84255a032888c6289fb6b47c407af3e6a5868ed71d8db7a62ca64715839eb6451b7d4004"
   },
   "judging": {
-   "hash": "69fab38f416372a9482286e6658837ca77bc375e0b7539bc3d560c3f12953dfc",
+   "hash": "916aac1d8fd08424c771857f84795e3177473e945a800edcb8e75f811aa4a3c4",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1436,10 +1436,11 @@
      "what": "what the judge will rule on, in words"
     },
     "terms": {
-     "rules_within": "a duration: how fast she rules once named"
+     "rules_within": "a duration: how fast she rules once named",
+     "rulings": "\"public\", or left out: whether her rulings are public. Left out means private, sealed to the two sides alone"
     },
     "grounds": {
-     "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
+     "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast, terms.rulings `public` if her rulings are public, else left out (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
     },
     "undo": "ok",
     "at": "2026-10-19T00:00:53.000Z",
@@ -1450,7 +1451,7 @@
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
     "prev": "c4e5fce5ec015f0a12789836bbe6dfe5f401f87a7640beee14cad711476cc928"
    },
-   "signature": "77d7b78060670244970c708a6d84a5bdff39db6c52ccde10a7bf738b6626693c9543ee5a618f8568a427cb059f899cd38ea48602912c9ac81ca169a2dceeee0b"
+   "signature": "524fdc8394cc46f2aed0455ce7f03c27aa71e3ee7d1b9f7ad821eaabb794e8867d45d710150204e22f7cec97f6f293aec1797621e43e919683aa6a6edd350202"
   }
  }
 }

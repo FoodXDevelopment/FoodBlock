@@ -41,7 +41,7 @@ pub use backed::{backed, backed_all, owed_back};
 pub(crate) use backed::backed_in;
 pub use act::act_check;
 pub use gives::gives;
-pub use market::{check_reads, clearing_applied, listing_check, ruling_releases};
+pub use market::{check_reads, clearing_applied, listing_check, ruling_audience, ruling_releases};
 pub(crate) use market::ruled;
 pub use pot::pot;
 pub use release::{bids_shown, release_shown};

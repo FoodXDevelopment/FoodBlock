@@ -186,6 +186,19 @@ const NOW = '2027-03-01T00:00:00.000Z'
   const closed = (name, state, refs, held, codes) => door(name, 'refusals', ['promise', state, refs, held, [J]], { expect: codes.map((code) => ({ code })), exact: false, invariants: [36] })
   closed('judging: a judge\'s offer names her price, what she judges and how fast: nothing to refuse', offerState(), offerRefs, [J], [])
   closed('judging: a term the schema does not declare is refused', offerState({}, { colour: 'red' }), offerRefs, [J], ['undeclared_field'])
+  // whether her rulings are public is the typed term `terms.rulings` of her signed offer; left out means private (promises.md, Rulings)
+  const visible = (name, offerTerms, awardExtra, now, expect) => {
+    const v = story(), d = v.person(`ra-${name.length}-d`), b = v.person(`ra-${name.length}-b`), jd = v.person(`ra-${name.length}-j`)
+    const deal = v.say(d, 'promise', { what: 'the order', terms: { price: M(5000) } }, { from: b.id, to: d.id }); accept(v, b, deal)
+    v.say(jd, 'promise', { what: 'disputes over a delivery of food', terms: { price: M(500), rules_within: 'P14D', ...offerTerms } }, { from: jd.id, schema: J.hash })
+    const r = v.say(jd, 'observe', { kind: 'ruling', text: 'what happened', awards: [{ to: b.id, money: M(3000), ...awardExtra }] }, { subject: deal.hash })
+    door(`judging: ${name}`, 'ruling_audience', [r, [P.genesis, ...P.order.map((n) => P.schemas[n]), ...v.held], now], { expect, exact: true, invariants: [36] })
+  }
+  visible('an offer that says rulings public makes the ruling public', { rulings: 'public' }, {}, null, { audience: 'public', why: 'the judge\'s offer says her rulings are public' })
+  visible('an offer with no rulings term leaves the ruling private', {}, {}, null, { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
+  visible('an offer that says anything but public leaves the ruling private', { rulings: 'sometimes' }, {}, null, { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
+  visible('a private offer and an unhonoured ruling: the ruling is public', {}, { due: '2027-01-01T00:00:00.000Z' }, '2027-02-01T00:00:00.000Z', { audience: 'public', why: 'an award of the ruling is unpaid past its due date' })
+  visible('a private offer and an award not yet due: the ruling stays private', {}, { due: '2027-01-01T00:00:00.000Z' }, '2026-12-01T00:00:00.000Z', { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
 }
 
 // ---- Groups: a circle founded, joined, pooled and left, with what she owes after ----
