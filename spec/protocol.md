@@ -2,7 +2,7 @@
 
 Version 1.7, 2026-10-27. Year zero is 1.6; 1.7 adds to it, except the deletions CHANGELOG.md lists.
 
-This is the index: one core, which opens with the one shape, a promise (*if this happens, this of mine becomes yours, and this person settles it*); eleven modules, optional profiles and a few data files. Where another document disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
+This is the index: one core, which opens with the one shape, a promise (*if this happens, this of mine becomes yours*; a judge is named only for quarrels); eleven modules, optional profiles and a few data files. Where another document disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
 
 ## Files
 
