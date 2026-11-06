@@ -355,7 +355,7 @@ fn rulings_public_by_offer(judge: &str, index: &Index) -> Option<bool> {
 
 /// `{ audience, why }`: whether a judge's ruling is public (promises.md, Rulings). `audience` is `public` or `private`. It is public when the judge's
 /// signed offer says `terms.rulings: "public"`; absent means private. Whatever the offer says, it is public when the ruling went unhonoured: an award
-/// line with a `due` time at or before the reader's clock `now` and no counted transfer `for` the ruling to the one it awards. A fact, never a verdict.
+/// line with a `due` time at or before the reader's clock `now` and no counted transfer `for` the ruling to the one it awards and no release of the ruling signed by her (or by one who speaks for her). A fact, never a verdict.
 pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> Value {
     let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(ruling)).chain([ruling]));
     let out = |audience: &str, why: &str| json!({ "audience": audience, "why": why });
@@ -370,7 +370,13 @@ pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> V
         st(ruling, "awards").and_then(Value::as_array).into_iter().flatten().filter_map(|l| l.as_object()).any(|l| {
             let due = l.get("due").and_then(Value::as_str).is_some_and(|d| d <= n);
             let to = l.get("to").and_then(Value::as_str);
-            due && !index.values().any(|t| type_of(t) == "transfer" && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index))
+            // honoured by a counted transfer `for` the ruling to her, or by her own release of the ruling (promises.md, A release): her word that it is settled
+            let paid = index.values().any(|t| type_of(t) == "transfer" && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index));
+            let let_go = index.values().any(|r| {
+                type_of(r) == "observe" && ss(r, "kind") == Some("release") && st(r, "status").is_none() && rs(r, "subject") == Some(hash)
+                    && crate::identity::counts_in(r, &index) && to.is_some() && super::speaker_of(r, &index, now).as_deref() == to
+            });
+            due && !paid && !let_go
         })
     });
     if unhonoured {

@@ -4527,7 +4527,8 @@ function rulingAudience(ruling, blocks, now) {
   if (!judge || !backedIn(ruling, judge, pool).backed) return out('private', 'no judge\'s key speaks for this ruling');
   const clock = isStr(now) ? now : null;
   const unhonoured = clock !== null && asList(ruling.state.awards).some(l => isObj(l) && isStr(l.due) && l.due <= clock
-    && !pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ruling.hash) && t.refs.to === l.to && counts(t, pool)));
+    && !pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ruling.hash) && t.refs.to === l.to && counts(t, pool))
+    && !pool.all().some(r => r.type === 'observe' && r.state.kind === 'release' && r.state.status === undefined && r.refs.subject === ruling.hash && isStr(l.to) && counts(r, pool) && speakerOf(r, pool) === l.to));
   if (unhonoured) return out('public', 'an award of the ruling is unpaid past its due date');
   const offers = pool.all().filter(o => o.type === 'promise' && !o.refs.answers && !o.refs.updates && o.refs.to === undefined && backedIn(o, judge, pool).backed
     && (s => isObj(s) && s.state.kind === 'schema' && s.state.name === 'judging')(pool.get(o.refs.schema)));

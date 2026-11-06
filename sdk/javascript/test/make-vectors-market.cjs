@@ -199,6 +199,20 @@ const NOW = '2027-03-01T00:00:00.000Z'
   visible('an offer that says anything but public leaves the ruling private', { rulings: 'sometimes' }, {}, null, { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
   visible('a private offer and an unhonoured ruling: the ruling is public', {}, { due: '2027-01-01T00:00:00.000Z' }, '2027-02-01T00:00:00.000Z', { audience: 'public', why: 'an award of the ruling is unpaid past its due date' })
   visible('a private offer and an award not yet due: the ruling stays private', {}, { due: '2027-01-01T00:00:00.000Z' }, '2026-12-01T00:00:00.000Z', { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
+  // her own signed release of the ruling counts as honoured (promises.md, A release): only hers, or one who speaks for her under her grant
+  const settled = (name, signer, expect) => {
+    const v = story(), d = v.person('rs-d'), b = v.person('rs-b'), jd = v.person('rs-j'), bot = v.person('rs-bot', { kind: 'agent' })
+    const deal = v.say(d, 'promise', { what: 'the order', terms: { price: M(5000) } }, { from: b.id, to: d.id }); accept(v, b, deal)
+    v.say(jd, 'promise', { what: 'disputes over a delivery of food', terms: { price: M(500), rules_within: 'P14D' } }, { from: jd.id, schema: J.hash })
+    const r = v.say(jd, 'observe', { kind: 'ruling', text: 'what happened', awards: [{ to: b.id, money: M(3000), due: '2027-01-01T00:00:00.000Z' }] }, { subject: deal.hash })
+    const g = v.say(b, 'grant', { kind: 'agent', scope: { acts: ['observe.release'], parties: [], until: '2030-01-01T00:00:00.000Z' } }, { to: bot.id })
+    const who = { awardee: [b, {}], loser: [d, {}], agent: [bot, { under: g.hash }] }[signer]
+    v.say(who[0], 'observe', { kind: 'release', text: 'paid me in cash, we are settled' }, { subject: r.hash, ...who[1] })
+    door(`judging: ${name}`, 'ruling_audience', [r, [P.genesis, ...P.order.map((n) => P.schemas[n]), ...v.held], '2027-02-01T00:00:00.000Z'], { expect, exact: true, invariants: [36] })
+  }
+  settled('an award past due, settled by a release signed by the awardee: the ruling is private', 'awardee', { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
+  settled('the same release signed by the loser counts for nothing: the ruling is public', 'loser', { audience: 'public', why: 'an award of the ruling is unpaid past its due date' })
+  settled('the same release signed by the awardee\'s agent under her grant: private', 'agent', { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
 }
 
 // ---- Groups: a circle founded, joined, pooled and left, with what she owes after ----
