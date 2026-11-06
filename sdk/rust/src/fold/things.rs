@@ -52,36 +52,40 @@ pub(super) fn answer_stands(transfer: &Value, answer: &Value, index: &Index) -> 
     })
 }
 
-// The conditions being read, so a condition that leads back to the transfer carrying it (a deal whose goods count only if its giver owned
-// them) holds for nothing instead of looping.
+// The transfers whose conditions are being read, so a condition that leads back to the transfer carrying it (a deal whose goods count only if
+// its giver owned them) holds for nothing instead of looping. One rule in every build: a transfer already on the stack is a real repeat and
+// holds for nothing; any other is read, however long the chain of honest conditional transfers. Only where the stack is kept differs: a thread
+// on `std`; the one thread of a micro without it.
 #[cfg(feature = "std")]
 std::thread_local! { static READING: core::cell::RefCell<Vec<String>> = const { core::cell::RefCell::new(Vec::new()) }; }
 #[cfg(not(feature = "std"))]
-static READING: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
+struct Reading(core::cell::UnsafeCell<Vec<String>>);
+// SAFETY: the no-std build is the micro profile, which runs on one thread; nothing reads the stack from two at once.
+#[cfg(not(feature = "std"))]
+unsafe impl Sync for Reading {}
+#[cfg(not(feature = "std"))]
+static READING: Reading = Reading(core::cell::UnsafeCell::new(Vec::new()));
 
-fn while_reading<R>(transfer: &str, f: impl FnOnce() -> R) -> Option<R> {
+fn reading_stack<R>(f: impl FnOnce(&mut Vec<String>) -> R) -> R {
     #[cfg(feature = "std")]
     {
-        if READING.with(|r| r.borrow().iter().any(|h| h == transfer)) {
-            return None;
-        }
-        READING.with(|r| r.borrow_mut().push(transfer.to_string()));
-        let out = f();
-        READING.with(|r| r.borrow_mut().pop());
-        Some(out)
+        READING.with(|r| f(&mut r.borrow_mut()))
     }
     #[cfg(not(feature = "std"))]
     {
-        let _ = transfer;
-        use core::sync::atomic::Ordering::SeqCst;
-        if READING.load(SeqCst) >= 2 {
-            return None;
-        }
-        READING.fetch_add(1, SeqCst);
-        let out = f();
-        READING.fetch_sub(1, SeqCst);
-        Some(out)
+        // SAFETY: see `Reading`; the borrow ends with `f`, and `f` never reads the stack.
+        f(unsafe { &mut *READING.0.get() })
     }
+}
+
+fn while_reading<R>(transfer: &str, f: impl FnOnce() -> R) -> Option<R> {
+    if reading_stack(|r| r.iter().any(|h| h == transfer)) {
+        return None;
+    }
+    reading_stack(|r| r.push(transfer.to_string()));
+    let out = f();
+    reading_stack(|r| r.pop());
+    Some(out)
 }
 
 /// Whether a transfer's condition holds on the blocks `keep` lets in, at `now`. A condition the protocol does not read holds for nothing.

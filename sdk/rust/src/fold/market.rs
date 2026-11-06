@@ -3,7 +3,7 @@
 //! `clearing_applied` (a circle of IOUs cancelled, each promise reduced) and `ruling_releases` (a stake that names a ruling by a named judge).
 //! No word of any block is read, only its typed fields and refs; every sentence in `why` is for people.
 use super::promise::{kind_json, measure};
-use super::{backed_in, read_all};
+use super::{backed_in, binds, promise_stage_in, read_all};
 use crate::decimal::Dec;
 use crate::js::{get, hash_of, list, rf, rs, sorted_set, ss, st, type_of, Index};
 use crate::order::sees_in;
@@ -123,7 +123,7 @@ pub fn check_reads(check: &Value, blocks: &[Value]) -> Value {
     for h in &named {
         let b = index.get(h.as_str());
         let held = b.is_some();
-        let concerns = b.is_some_and(|b| [rs(b, "author"), rs(b, "from"), rs(b, "to"), rs(b, "as")].contains(&Some(subject)));
+        let concerns = b.is_some_and(|b| backed_in(b, subject, &index) || [rs(b, "from"), rs(b, "to")].contains(&Some(subject)));
         let stage = b.filter(|b| first_promise(b)).map(|b| stage_of(b, blocks)).and_then(|s| s.get("stage").and_then(Value::as_str).map(String::from));
         if !held {
             wrong(format!("{h} is not a block the reader holds"));
@@ -273,7 +273,7 @@ pub(crate) fn ruled(condition: &Value, index: &Index, now: Option<&str>) -> Opti
         .values()
         .filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("ruling") && rs(o, "subject") == Some(deal))
         .filter(|o| now.is_none_or(|n| ss(o, "at").is_some_and(|at| at <= n)))
-        .filter(|o| crate::identity::counts_in(o, index) && backed_in(o, judge, index))
+        .filter(|o| backed_in(o, judge, index))
         .collect();
     if mine.is_empty() {
         return Some(Err("the judge has made no ruling on the deal".into()));
@@ -291,12 +291,22 @@ pub(crate) fn ruled(condition: &Value, index: &Index, now: Option<&str>) -> Opti
 /// `state.condition`) is `{ ruled: <deal>, by: <judge>, awards: <person> }`. It is released when the judge's ruling awards that person something,
 /// by the amount the award states in the stake's own kind, capped at the stake (the whole stake when the award states none); nothing is converted.
 pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Value {
-    let index = read_all(blocks.iter());
+    let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(stake)).chain([stake]));
     let no = |why: String| json!({ "releases": false, "to": null, "money": null, "ruling": null, "why": why });
     let condition = match type_of(stake) {
         "promise" => get(stake, "state.terms.condition"),
         "transfer" => st(stake, "condition"),
         _ => None,
+    };
+    // A stake releases only if it binds. A promise binds once its stage says so: the accept consents to the very terms that name the judge, so both
+    // sides signed it and both chose her. A transfer is its giver's own signed move, so it binds her and spends no one else; it counts only if its key
+    // speaks for her and every deal it is `for` binds (a deal still only offered releases nothing).
+    let binding = match type_of(stake) {
+        "promise" => binds(&promise_stage_in(hash_of(stake), &index, &super::StageOptions::default())),
+        _ => {
+            crate::identity::counts_in(stake, &index)
+                && list(rf(stake, "for")).into_iter().all(|d| index.get(d).is_some_and(|_| binds(&promise_stage_in(d, &index, &super::StageOptions::default()))))
+        }
     };
     let Some(Some(verdict)) = condition.map(|c| ruled(c, &index, now)) else { return no("the stake's condition names no ruling (`ruled`)".into()) };
     let (ruling, award) = match verdict {
@@ -304,6 +314,10 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Va
         Err(why) => return no(why),
     };
     let to = award.get("to").cloned().unwrap_or(Value::Null);
+    // read last, so the answer still says which ruling it was: a ruling that reaches a stake no one accepted releases nothing
+    if !binding {
+        return json!({ "releases": false, "to": to, "money": null, "ruling": ruling, "why": "the stake does not bind: it is not signed by both sides who name this judge, or the deal it serves is not accepted" });
+    }
     let staked = match type_of(stake) {
         "promise" => get(stake, "state.terms").map(|t| super::terms_total(t, None)).and_then(|t| measure(&t)),
         _ => st(stake, "money").and_then(measure),

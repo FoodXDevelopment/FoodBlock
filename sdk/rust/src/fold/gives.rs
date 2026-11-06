@@ -2,7 +2,7 @@
 //! stands, and whether it can come back, read only from the block's typed terms and refs: the sides, `refs.what`, the price (by
 //! `terms_total`, in any kind), `terms.until`. No word of any template, schema or text is read, so no word can claim money or an effect.
 use super::promise::terms_total;
-use super::{principal_of, read_all};
+use super::read_all;
 use crate::js::{get, hash_of, list, rf, rs, st, type_of, Index};
 use crate::prelude::*;
 
@@ -17,16 +17,26 @@ pub fn gives(block: &Value, person: &str, blocks: &[Value]) -> Value {
             .filter(|b| hash_of(b) != hash_of(block))
             .chain([block]),
     );
-    gives_in(block, person, &index, blocks)
+    gives_in(block, person, &index)
 }
 
-/// `gives` for a block already read into `index` (with the blocks held in `blocks`): the reading `owed_back` repeats for every transfer.
-pub(super) fn gives_in(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> Value {
+/// `gives` for a block already read into `index`: the reading `owed_back` repeats for every transfer.
+/// A transfer moves a person's things only if `backed` says she backs it: the same reading, never a second copy of the chain walk.
+pub(super) fn gives_in(block: &Value, person: &str, index: &Index) -> Value {
+    // a transfer moves the things of whoever's word it is (the top of its chain), and only if that person backs it
+    // A block not yet signed (the read-back shown before she signs) has no signature to judge: it is read as its signed form would be, by whose word it says it is.
+    let signed = block.get("signature").is_some();
+    if type_of(block) == "transfer" && !(super::backed::claimed_by(block, index).as_deref() == Some(person) && (!signed || super::backed_in(block, person, index))) {
+        return json!({ "gives": [] });
+    }
+    lines_in(block, person, index)
+}
+
+/// The lines of a block read as if the person backed it, with no judgement of who signed it: `owed_back` asks them of a transfer `backed` refused.
+pub(super) fn lines_in(block: &Value, person: &str, index: &Index) -> Value {
     let lines = match type_of(block) {
-        "promise" => of_promise(block, person, index, blocks),
-        "transfer" if principal(block, index).as_deref() == Some(person) => {
-            of_transfer(block, person, index, blocks)
-        }
+        "promise" => of_promise(block, person, index),
+        "transfer" => of_transfer(block, person, index),
         _ => Vec::new(),
     };
     json!({ "gives": lines.into_iter().filter(|l| l["to"].as_str() != Some(person)).collect::<Vec<_>>() })
@@ -45,35 +55,22 @@ fn line(of: &str, to: Option<&str>, back: Option<&str>, parts: &[(&str, Option<V
     Value::Object(m)
 }
 
-// A thing someone else is known to own is not hers to give. A thing not held, or a kind, is read as hers: only what the record shows is subtracted.
-fn hers(thing: &str, person: &str, index: &Index, blocks: &[Value]) -> bool {
+// Whether a thing is hers to give, read at the block's place in time (its causal past), never by today's owner. A thing the record does not
+// hold is not hers, and neither is an instance whose owner there is unknown or someone else: only what the record shows is hers. A held kind is
+// a description, which has no owner; promising goods of a kind is her own word, so it stands.
+fn hers(thing: &str, person: &str, block: &Value, index: &Index) -> bool {
     match index.get(thing) {
+        None => false,
         Some(t) if rf(t, "of").is_some() => {
-            super::owner_of(t, blocks).is_none_or(|owner| owner == person)
+            // a block about to be signed sees everything held; a signed one sees its causal past
+            let owner = if block.get("signature").is_some() { super::owner_seen_by(thing, block, index) } else { super::owner_whole(thing, index) };
+            owner.as_deref() == Some(person)
         }
-        _ => true,
+        Some(_) => true,
     }
 }
 
-// Whose word a block is: the circle it is signed `as`, else, for a block under a grant, the one at the top of the grant's chain (`refs.parent` up to the first
-// grant not passed on), else its author. Whether each grant is live is `backed`'s question, not this reading's.
-fn principal(block: &Value, index: &Index) -> Option<String> {
-    let Some(mut top) = rs(block, "under")
-        .filter(|_| rs(block, "as").is_none_or(str::is_empty))
-        .map(|g| index.get(g))
-    else {
-        return principal_of(block, index);
-    };
-    while let Some(g) = top {
-        match rs(g, "parent").and_then(|h| index.get(h)) {
-            Some(above) => top = Some(above),
-            None => break,
-        }
-    }
-    top.and_then(|g| principal_of(g, index))
-}
-
-fn of_promise(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> Vec<Value> {
+fn of_promise(block: &Value, person: &str, index: &Index) -> Vec<Value> {
     // an answer reads the promise it answers, at the quantity it chooses; only `accepted` moves anything
     let (deal, chosen) = match st(block, "status") {
         None => (block, None),
@@ -103,7 +100,7 @@ fn of_promise(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> V
                 .collect(),
         };
         for (what, quantity) in things {
-            let Some(what) = what.filter(|w| hers(w, person, index, blocks)) else {
+            let Some(what) = what.filter(|w| hers(w, person, block, index)) else {
                 continue;
             };
             let amount = quantity
@@ -137,7 +134,7 @@ fn of_promise(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> V
     out
 }
 
-fn of_transfer(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> Vec<Value> {
+fn of_transfer(block: &Value, person: &str, index: &Index) -> Vec<Value> {
     if st(block, "status").is_some() {
         return Vec::new();
     }
@@ -160,7 +157,7 @@ fn of_transfer(block: &Value, person: &str, index: &Index, blocks: &[Value]) -> 
         ));
     }
     for what in list(rf(block, "what")) {
-        if owner.is_some() && hers(what, person, index, blocks) {
+        if owner.is_some() && hers(what, person, block, index) {
             out.push(line("goods", owner, None, &[("what", Some(json!(what)))]));
         } else if owner.is_none() && holder.is_some() {
             out.push(line("use", holder, until, &[("what", Some(json!(what)))]));

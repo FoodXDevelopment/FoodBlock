@@ -6,7 +6,8 @@
 //! ```
 //!
 //! kind is `argument`, `json`, `refused`, `crypto`, `profile` or `internal`. Every op is a thin call into this crate:
-//! there is no second implementation here, only the names. An op this build's profile leaves out says `profile`.
+//! there is no second implementation here, only the names. Only the ops in spec/protocol.json `door.ops` are the protocol (the vectors bind
+//! them); every other arm is a convenience of this SDK, listed in sdk/door.table, and no vector binds it. An op this build's profile leaves out says `profile`.
 #![allow(clippy::needless_pass_by_value)]
 use crate::chain::Link;
 use crate::error::Error;

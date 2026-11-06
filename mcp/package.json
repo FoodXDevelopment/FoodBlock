@@ -12,7 +12,6 @@
     "door.js",
     "remote.js",
     "auth.js",
-    "hosted.js",
     "store.js",
     "README.md",
     "LICENSE"

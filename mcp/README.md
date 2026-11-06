@@ -28,7 +28,7 @@ It returns a draft and a link. You open the link, check the words, type your cod
 
 ## Six tools
 
-This server is neutral: it names no product and holds no one's agent. A host that runs the person's own agent (FoodX's hub, `hosted.js`) passes its own name, icon and `ask_my_foodos` tool to the endpoint, and nothing else here knows them.
+This server is neutral: it names no product and holds no one's agent. A host that runs the person's own agent passes its own name, icon and `ask_my_foodos` tool to the endpoint, and nothing else here knows them.
 
 | Tool | What it does |
 |---|---|
@@ -70,16 +70,16 @@ assistant may only find, read and draft. A grant never reaches a stranger: the o
 | `FOODBLOCK_HOST` | The HTTP bind address (default `127.0.0.1`). An address beyond this machine needs `FOODBLOCK_AUTH=oauth`: the door will not start open on a network |
 | `FOODBLOCK_REACH` | The recovery window of a new identity, a duration the person states (for example `P30D`); required when no identity file exists yet |
 
-The node is in memory unless you point the door at a FoodOS host (next section). Blocks come in through the SDK's `accept` either way.
+The node is in memory unless you point the door at a node host (next section). Blocks come in through the SDK's `accept` either way.
 
 ## Hosted: a real node, and OAuth
 
-The door can reach a person's node on a FoodOS host over HTTP, and an assistant can reach the door over HTTP with the MCP authorization flow.
+The door can reach a person's node on a node host over HTTP, and an assistant can reach the door over HTTP with the MCP authorization flow.
 
 | Variable | What it does |
 |---|---|
 | `FOODBLOCK_INDEX_URL` | An open index (the foodx checkout's `foodos/index/http.js`). `foodblock_find` for offers asks it and verifies its signed answer; `FOODBLOCK_INDEX_KEY` pins the index's public key (else read once from its well-known). Read, ask and promise stay on the host |
-| `FOODBLOCK_NODE_URL` | A FoodOS host (the foodx checkout's `foodos/node/host.js` `handler`). The door uses the person's window at `{url}/{personId}` |
+| `FOODBLOCK_NODE_URL` | A node host (its `handler`). The door uses the person's window at `{url}/{personId}` |
 | `FOODBLOCK_NODE_TOKEN` | The person's window credential (`host.credential(personId, { scopes: ['read','write'] })`), sent as `Authorization: Bearer`, never in a URL |
 | `FOODBLOCK_AUTH=oauth` | With `--http`: `/mcp` answers 401 until the assistant has a bearer token from the OAuth flow |
 | `FOODBLOCK_PUBLIC_URL` | The address clients reach the door by (HTTPS in production) |
@@ -93,19 +93,14 @@ code with PKCE (S256), refresh with rotation. The person's yes on the consent pa
 A token only says "this assistant may reach the door" (`foodblock:read`: find and read; `foodblock:draft`: ask, connect, promise, accept).
 **Authority to bind is never an OAuth scope**: it is a grant the person signs after the assistant calls `foodblock_connect`.
 
-Try it locally: in the foodx checkout, `node foodos/testing/helpers/serve-host.mjs 7421` starts a host and index; join a person and issue a
-credential from a script, then `FOODBLOCK_NODE_URL=http://127.0.0.1:7421 FOODBLOCK_NODE_TOKEN=... FOODBLOCK_AUTH=oauth node server.js --http`.
-`test/hosted.test.js` does all of this end to end (set `FOODOS_BACKEND` if the foodx checkout is not at `~/foodx`).
+
+A host's own repository tests this end to end against its node.
 
 ## Tests
 
 `npm test` runs the door against a local in-memory node (an assistant finds an offer, drafts an ask, the person
 approves, the seller accepts, the stage reads right; no grant never binds; a STOP'd recipient is never messaged) and
-both transports, then against a real host with OAuth (`test/hosted.test.js`).
+both transports.
 
 ## License
 Public domain (CC0 1.0).
-
-## Hosted, for many people (`hosted.js`)
-
-`createHub` is the door for a public service such as https://mcp.foodx.network. Each person who signs in (Sign in with Google, `openid email profile` only) gets, or reconnects to, a node of their own on a FoodOS host (`provision(genesis) -> { base, token }`). OAuth follows the MCP authorization spec; clients, tokens (hashed), sessions and accounts live in one durable file; people's signing keys are sealed under the operator's master secret (hosted custody, so the door can sign on their tap). FoodX has an identity of its own, kept in the durable state, and every person's genesis names it as `custodian` (a key held by someone else always says so); an identity made before that gets a key grant naming it, which rotates its old key out, the next time it is opened. Each person is shown her recovery key at sign-up and on `/account` until she confirms she saved it, after which the hub deletes its copy; with it she can rotate FoodX out with any FoodBlock tool (for example `fb`) and leave with her record. Every token belongs to one person and one assistant, carries `foodblock:read` / `foodblock:draft` / `foodblock:talk` scopes (talk: `ask_my_foodos` sends the person's words to her FoodX agent; the consent page says so), and is revoked from `/account` or RFC 7009 `/revoke`; Disconnect on `/account` also signs a stop of every grant the person gave that assistant, and forgets its sessions. A draft is approved on `/approve/<id>` by the signed-in owner only. Requests are rate limited per person and per address: the socket's address, unless `FOODBLOCK_TRUST_PROXY=1` (or `createHub({ trustProxy: true })`) says a proxy in front sets `x-foodos-ip`; without it that header is never believed. Tests: `test/multiuser.test.js` (two people, three assistants, restart, revoke). `createHub` also needs `reach` (the recovery window of the identities it makes, a duration) and `trustProxy` (`true` if a proxy you run sets `x-foodos-ip`, `false` if callers reach it directly; or `FOODBLOCK_TRUST_PROXY=1` or `0`): it does not start without them.

@@ -42,15 +42,10 @@ fn reading(block: &Value, person: &str, read: &crate::js::Index) -> Result<Chain
             return refuse(format!("{author} signed it under a grant that does not back it: {}", wrong.join("; ")), &chain);
         }
         // the grant, then each grant above it that it was passed on from, to the first that was not passed on (each live and no wider: why_not_under_in)
-        let mut top = read.get(grant);
-        while let Some(g) = top {
-            chain.push(hash_of(g).to_string());
-            match rs(g, "parent").and_then(|h| read.get(h)) {
-                Some(above) => top = Some(above),
-                None => break,
-            }
-        }
-        match top.and_then(|g| principal_of(g, read)) {
+        let Some(grant) = read.get(grant) else { return refuse(format!("{author} signed it under a grant that is not held"), &chain) };
+        let links = super::grant_chain(grant, read);
+        chain.extend(links.iter().map(|g| hash_of(g).to_string()));
+        match links.last().and_then(|g| principal_of(g, read)) {
             Some(root) => root,
             None => return refuse("the grant at the top of its chain is signed as a circle by one who may not sign for it".into(), &chain),
         }
@@ -88,6 +83,15 @@ pub fn backed_all(person: &str, blocks: &[Value]) -> Value {
     Value::Object(out)
 }
 
+/// Whose word a block says it is, before anyone judges it: the circle it is signed `as`, else the top of the grant chain it names, else its
+/// author. The same chain walk as `backed` (`grant_chain`); `owed_back` asks it of a block `backed` refused.
+pub(super) fn claimed_by(block: &Value, index: &crate::js::Index) -> Option<String> {
+    match rs(block, "under").filter(|_| rs(block, "as").is_none_or(str::is_empty)).and_then(|g| index.get(g)) {
+        Some(grant) => super::principal_of_chain(grant, index),
+        None => principal_of(block, index),
+    }
+}
+
 /// `owed_back`: what the person is owed for money moved in their name that they do not back (promises.md, What becomes whose). Every `transfer` among
 /// `blocks` whose money is the person's by `gives` (signed by them, as their circle, or under a chain of their grants) and that `backed` says they
 /// do not back: `{ owed: [{ block, minor, currency, to, why }] }`. A transfer no node would hold (a forged signature, a missing chain) is
@@ -112,7 +116,11 @@ pub fn owed_back(person: &str, blocks: &[Value]) -> Value {
             &alone
         };
         let Err((why, _)) = reading(block, person, index) else { continue };
-        for line in super::gives::gives_in(block, person, index, blocks)["gives"].as_array().into_iter().flatten().filter(|l| l["of"] == "money") {
+        // only a transfer that claims to be hers (its chain, walked without judging it, tops out at her) is money moved in her name
+        if claimed_by(block, index).as_deref() != Some(person) {
+            continue;
+        }
+        for line in super::gives::lines_in(block, person, index)["gives"].as_array().into_iter().flatten().filter(|l| l["of"] == "money") {
             owed.push(json!({ "block": hash, "minor": line["minor"], "currency": line["currency"], "to": line["to"], "why": why }));
         }
     }

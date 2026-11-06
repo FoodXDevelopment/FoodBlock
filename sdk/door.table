@@ -24,6 +24,10 @@
 #
 # A block may also be given whole as the first argument of canonical, hash, check and refusals (door.rs `Args::block`).
 #
+# Which ops are the protocol. Only the ops named in spec/protocol.json `door.ops` are the protocol: the vectors (spec/vectors.json `door`) bind them,
+# and an implementation conforms by answering them. Every other op below is a convenience of this SDK (a thin call into the core, a builder, a
+# reader of a fold, a codec). It is useful, but another implementation need not offer it, and no vector binds it.
+#
 # Core
 version() -> text
 peers() -> strings

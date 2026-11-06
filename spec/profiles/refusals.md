@@ -14,6 +14,6 @@ Optional. Refusing together is remedy three done together (core.md, section 10):
 - **Its end is a fact.** It ends when the deal is `settled` (promises.md, Conditions), when the creditor takes her signal back (she `defeats` her own `observe`, a signal's way back), or when the deal's referee `defeats` her signal (Disputes). A reader checks each with the shapes that exist. No clock, unless the signers wrote one in `until`.
 
 - **A lead may speak for refusal signals.** A member may sign a grant to a trusted lead ("your refusal signals under this rule speak for me, until D"). The threshold counts whom each signal speaks for, not the key that signed it (promises.md, Conditions: a signer is whom the block speaks for), so forty bakers who each signed one grant reach forty when their lead signs forty signals under them. A signal outside what the grant covers speaks for the lead alone.
-- **A refusal for any other cause is each person's own right.** It is just not a counted threshold under this schema. FoodOS never warns on a boycott of an activity, or on a counter-boycott.
+- **A refusal for any other cause is each person's own right.** It is just not a counted threshold under this schema. A reader never warns on a boycott of an activity, or on a counter-boycott.
 
 Trust the schemas by hash (`spec/schemas/README.md`).

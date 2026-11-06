@@ -11,13 +11,13 @@ fn held_with(block: &Value, blocks: &[Value]) -> Index {
 }
 
 /// The words beside a block (promises.md, The signer's word): an `observe` of kind `not_free` naming the block in `refs.subject`. It counts as
-/// hers only when its author is the block's author; anyone else's is their own observe and is listed as counting for nothing. A word has no
+/// hers only when the block's author backs it (`backed`: she signed it, or a grant of hers did); anyone else's is their own observe and is listed as counting for nothing. A word has no
 /// status, no time limit and no way back: a stop or an `updates` of it is never read here. It is a claim, shown, never a verdict.
 /// Returns `{ shown: [{ block, by, reason, threat, at }], nothing: [{ block, why }] }`, each sorted by block.
 pub fn not_free_shown(block: &Value, blocks: &[Value]) -> Value {
     let index = held_with(block, blocks);
     let subject = hash_of(block).to_string();
-    let author = rs(block, "author");
+    let author = rs(block, "author").unwrap_or("");
     let mut words: Vec<&Value> = index
         .values()
         .filter(|b| type_of(b) == "observe" && ss(b, "kind") == Some("not_free") && st(b, "status").is_none() && rs(b, "subject") == Some(subject.as_str()) && crate::identity::counts_in(b, &index))
@@ -26,7 +26,7 @@ pub fn not_free_shown(block: &Value, blocks: &[Value]) -> Value {
     let (mut shown, mut nothing) = (vec![], vec![]);
     for n in words {
         let by = rs(n, "author");
-        if by.is_some() && by == author {
+        if !author.is_empty() && super::backed_in(n, author, &index) {
             shown.push(json!({ "block": hash_of(n), "by": by, "reason": ss(n, "reason"), "threat": ss(n, "threat"), "at": ss(n, "at") }));
         } else {
             nothing.push(json!({ "block": hash_of(n), "why": "not_signer" }));

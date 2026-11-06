@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // The FoodBlock MCP server: the door (door.js) behind two transports. Any assistant can find, read, ask and promise on
 // FoodBlock. The assistant drafts; the person decides, with one tap on an approval page. Six tools. This server is neutral: it names no product and
-// holds no one's agent. A host that has the person's own agent (FoodX: hosted.js) passes a `brand` that names itself, adds its tools, and makes the door read-only.
+// holds no one's agent. A host that has the person's own agent passes a `brand` that names itself, adds its tools, and makes the door read-only.
 //   foodblock_find, foodblock_read, foodblock_ask, foodblock_promise, foodblock_accept, foodblock_connect
 //
 //   node server.js                 stdio (Claude Desktop, Claude Code, Cursor, Gemini CLI)
@@ -12,7 +12,7 @@
 //                     first run (kept 0600); without it, a new person each run. The approval code lives beside it in
 //                     <file>.approval.
 // FOODBLOCK_INDEX_URL[, FOODBLOCK_INDEX_KEY]   find asks this open index (answer verified) instead of the host's blocks.
-// FOODBLOCK_NODE_URL, FOODBLOCK_NODE_TOKEN   reach the person's node on a FoodOS host over HTTP instead of in memory (see README).
+// FOODBLOCK_NODE_URL, FOODBLOCK_NODE_TOKEN   reach the person's node on a node host over HTTP instead of in memory (see README).
 // FOODBLOCK_AUTH=oauth, FOODBLOCK_PUBLIC_URL  with --http: require the MCP authorization flow on /mcp; the address clients reach the door by.
 // FOODBLOCK_SEED=demo  start with a small demo story to find (a made-up mill and offer, each block says it is a demo); the default is an empty node.
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -104,7 +104,7 @@ function build() {
   const persist = ({ keys, encryption, genesis, chain }) => { if (file) writeFileSync(file, JSON.stringify({ keys, encryption, genesis, chain }, null, 2), { mode: 0o600 }); };
   if (fresh) writeFileSync(`${file}.recovery.json`, JSON.stringify({ id: person.id, recovery: person.recovery }, null, 2), { mode: 0o600 });
   let code = file && existsSync(`${file}.approval`) ? readFileSync(`${file}.approval`, "utf8").trim() : undefined;
-  // FOODBLOCK_NODE_URL: a FoodOS host (its handler, foodos/record/node/host.js); the door reaches the person's node there, {url}/{personId}, with the
+  // FOODBLOCK_NODE_URL: a node host (its handler); the door reaches the person's node there, {url}/{personId}, with the
   // credential FOODBLOCK_NODE_TOKEN in a header. Without it the node is in memory.
   const hosted = process.env.FOODBLOCK_NODE_URL;
   const node = hosted ? remoteNode({ base: `${hosted.replace(/\/$/, "")}/${person.id}`, token: process.env.FOODBLOCK_NODE_TOKEN }) : memoryNode();

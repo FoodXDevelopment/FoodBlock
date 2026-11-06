@@ -90,10 +90,23 @@ fn speaker_now(block: &Value, index: &Index, now: Option<&str>) -> Option<String
     // a block signed `as` a circle speaks for the circle or no one, whatever it acts under
     if rs(block, "as").is_none_or(str::is_empty) {
         if let Some(grant) = acting_grant(block, index, now) {
-            return principal_of(grant, index);
+            return principal_of_chain(grant, index);
         }
     }
     principal_of(block, index)
+}
+/// The grants a grant stands on: itself, then each grant above it that it was passed on (`refs.parent`), to the first that was not passed on.
+/// The one walk: `backed`, `gives` and `speaker_of` all read the top of a chain through it. Whether each link is live is `why_not_under_in`'s question.
+pub(crate) fn grant_chain<'a>(grant: &'a Value, index: &'a Index) -> Vec<&'a Value> {
+    let mut chain = vec![grant];
+    while let Some(above) = rs(chain[chain.len() - 1], "parent").and_then(|h| index.get(h)) {
+        chain.push(above);
+    }
+    chain
+}
+/// Whose word a grant is at the top of its chain: the principal of the last grant of `grant_chain`.
+pub(crate) fn principal_of_chain(grant: &Value, index: &Index) -> Option<String> {
+    grant_chain(grant, index).last().and_then(|top| principal_of(top, index))
 }
 // The grant a block acts under (folds.md, Who a block speaks for): its `refs.under`, when the block passes the same authority test the
 // door reports (`why_not_under`: made for its author, live for it, its act covered by exact name, every side it deals with in the

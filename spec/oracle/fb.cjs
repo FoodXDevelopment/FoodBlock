@@ -3585,9 +3585,13 @@ function speakerOf(b, pool) {
 // author, which is a quote request (promises.md)
 function speakerNow(b, pool) {
   const g = b.refs.as === undefined && b.refs.under !== undefined ? pool.get(b.refs.under) : null;
-  if (g && g.type === 'grant' && grantLive(g, pool, new Set(), b) && receives(g, b, pool) && ((b.type === 'promise' && b.state.status === undefined) || !whyNotUnder(b, pool).length)) return principalOf(g, pool);
+  if (g && g.type === 'grant' && grantLive(g, pool, new Set(), b) && receives(g, b, pool) && ((b.type === 'promise' && b.state.status === undefined) || !whyNotUnder(b, pool).length)) return principalOfChain(g, pool);
   return principalOf(b, pool);
 }
+// the grant at the top of a chain: the grant, then each grant above it that it was passed on from (refs.parent), to the first not passed on. The one walk:
+// backed, gives and speakerOf all read the top of a chain through it. Whether each link is live is whyNotUnder's question.
+function grantTop(g, pool) { for (;;) { const up = g.refs.parent === undefined ? null : pool.get(g.refs.parent); if (!up) return g; g = up; } }
+function principalOfChain(g, pool) { return principalOf(grantTop(g, pool), pool); }
 // whether a receiver's accepted answer to a transfer still counts (things.md, Transfers): a transfer to a named receiver is read like an offer. The
 // giver's withdrawal (their own updates of it, stopped with before) voids an accept that has it in its causal past; on a transfer that carried
 // expires, the giver's declined answer to the accept voids it
@@ -3857,7 +3861,7 @@ function notFreeShown(blockIn, blocks) {
   const words = pool.all().filter(b => b.type === 'observe' && b.state.kind === 'not_free' && b.state.status === undefined && b.refs.subject === block.hash && counts(b, pool)).sort(byHash);
   const shown = [], nothing = [];
   for (const n of words) {
-    if (isStr(n.refs.author) && n.refs.author === block.refs.author) shown.push({ block: n.hash, by: n.refs.author, reason: isStr(n.state.reason) ? n.state.reason : null, threat: isStr(n.state.threat) ? n.state.threat : null, at: isStr(n.state.at) ? n.state.at : null });
+    if (isStr(block.refs.author) && backedIn(n, block.refs.author, pool).backed) shown.push({ block: n.hash, by: n.refs.author, reason: isStr(n.state.reason) ? n.state.reason : null, threat: isStr(n.state.threat) ? n.state.threat : null, at: isStr(n.state.at) ? n.state.at : null });
     else nothing.push({ block: n.hash, why: 'not_signer' });
   }
   return { shown, nothing };
@@ -4196,7 +4200,7 @@ function backedIn(block, person, pool) {
     if (wrong.length) return no('a grant does not back it: ' + wrong.map(w => w.detail).join('; '), chain);
     let g = pool.get(b.refs.under);
     for (;;) { chain.push(g.hash); const up = g.refs.parent === undefined ? null : pool.get(g.refs.parent); if (!up) break; g = up; }
-    root = principalOf(g, pool);
+    root = principalOf(g, pool); // g is grantTop(pool.get(b.refs.under), pool), walked here for the chain
     if (root === null) return no('the grant at the top of its chain is signed as a circle by one who may not sign for it', chain);
   } else return no('it is signed by someone else and names no grant', chain);
   if (root === person) return { backed: true, why: null, chain };
@@ -4277,16 +4281,23 @@ function gives(block, person, blocks) {
   return givesIn(block, person, readWith(blocks, block), blocks);
 }
 function givesIn(block, person, pool, blocks) {
+  // a transfer moves the things of whoever's word it is (the top of its chain), and only if that person backs it: the reading `backed` makes
+  // (a block not yet signed, the read-back shown before she signs, has no signature to judge: it is read as its signed form would be)
+  if (block.type === 'transfer' && !(claimedBy(block, pool) === person && (block.signature === undefined || backedIn(block, person, pool).backed))) return { gives: [] };
+  return linesIn(block, person, pool);
+}
+// whose word a block says it is, before anyone judges it: the circle it is signed `as`, else the top of the grant chain it names, else its author
+function claimedBy(b, pool) {
+  if (b.refs.as !== undefined || b.refs.under === undefined) return principalOf(b, pool);
+  const g = pool.get(b.refs.under);
+  return g ? principalOfChain(g, pool) : null;
+}
+// the lines of a block read as if the person backed it, with no judgement of who signed it (owedBack asks them of a transfer `backed` refused)
+function linesIn(block, person, pool) {
   const line = (of, to, back, parts) => ({ of, ...parts, to: to === undefined ? null : to, back: back === undefined ? null : back });
-  // a thing its held record shows another owns is not hers to give; a kind, or a thing not held, is read as hers
-  const hers = w => { const t = pool.get(w); if (!t || !t.refs || t.refs.of === undefined) return true; const o = ownershipFold(t, blocks).owner; return o === null || o === person; };
-  // whose word a block is: the circle it is signed `as`, else, for a block under a grant, the one at the top of the grant's chain, else its author
-  const principal = b => {
-    if (b.refs.as !== undefined || b.refs.under === undefined) return principalOf(b, pool);
-    let g = pool.get(b.refs.under);
-    while (g && g.refs.parent !== undefined && pool.get(g.refs.parent)) g = pool.get(g.refs.parent);
-    return g ? principalOf(g, pool) : null;
-  };
+  // a thing is hers as of the block's own place in time (its causal past), never by today's owner; a thing not held is not hers; a held kind is a description
+  // with no owner, and promising goods of a kind is her own word
+  const hers = w => { const t = pool.get(w); if (!t) return false; if (!t.refs || t.refs.of === undefined) return true; return ownershipFold(t, pool, block.signature === undefined ? undefined : pool.past(block.hash)).owner === person; };
   const out = [];
   if (block.type === 'promise') {
     let deal = block, chosen;
@@ -4311,7 +4322,7 @@ function givesIn(block, person, pool, blocks) {
       else if (total && total.unit !== undefined) out.push(line('goods', from, null, { amount: total }));
     }
   } else if (block.type === 'transfer') {
-    if (principal(block) !== person || (block.state && block.state.status !== undefined)) return { gives: [] };
+    if (block.state && block.state.status !== undefined) return { gives: [] };
     const owner = block.refs.to_owner, holder = block.refs.to_holder;
     let until;
     for (const d of asList(block.refs.for)) { const x = pool.get(d); if (x && x.state && isObj(x.state.terms) && isStr(x.state.terms.until)) { until = x.state.terms.until; break; } }
@@ -4335,7 +4346,8 @@ function owedBack(person, blocks) {
     const read = pool.get(b.hash) ? pool : readWith(blocks, b);
     const verdict = backedIn(b, person, read);
     if (verdict.backed) continue;
-    for (const l of givesIn(b, person, read, blocks).gives) if (l.of === 'money') owed.push({ block: b.hash, minor: l.minor, currency: l.currency, to: l.to, why: verdict.why });
+    if (claimedBy(b, read) !== person) continue;
+    for (const l of linesIn(b, person, read).gives) if (l.of === 'money') owed.push({ block: b.hash, minor: l.minor, currency: l.currency, to: l.to, why: verdict.why });
   }
   return { owed };
 }
@@ -4400,7 +4412,7 @@ function checkReads(check, blocks) {
   let wrong = null;
   const read = named.map(h => {
     const b = pool.get(h), held = !!b;
-    const concerns = held && [b.refs.author, b.refs.from, b.refs.to, b.refs.as].includes(subject);
+    const concerns = held && (backedIn(b, subject, pool).backed || [b.refs.from, b.refs.to].includes(subject));
     const st = held && firstPromise(b) ? promiseStage(b, pool) : null;
     const stage = st ? st.stage : null;
     if (wrong === null) {
@@ -4483,11 +4495,16 @@ function ruledFor(c, pool, now) {
 }
 function rulingReleases(stake, blocks, now) {
   if (!isObj(stake)) throw argError('argument 0 is a block');
-  const pool = poolOf(blocks), no = why => ({ releases: false, to: null, money: null, ruling: null, why });
+  const pool = readWith(blocks, stake), no = why => ({ releases: false, to: null, money: null, ruling: null, why });
+  // a stake releases only if it binds. A promise binds once its stage says so (the accept consents to the terms that name the judge: both sides chose her);
+  // a transfer is its giver's own signed move, so it counts if its key speaks for her and every deal it is `for` binds
+  const stageBinds = h => { const f = pool.get(h), st = f ? promiseStage(f, pool) : null; return !!st && (['accepted', 'underway', 'done', 'reversed', 'breached'].includes(st.stage) || (st.stage === 'stopped' && st.stop === 'onward')); };
+  const binding = stake.type === 'promise' ? stageBinds(stake.hash) : counts(stake, pool) && asList(stake.refs.for).every(h => !!pool.get(h) && stageBinds(h));
   const cond = stake.type === 'promise' ? (isObj(stake.state.terms) ? stake.state.terms.condition : undefined) : stake.type === 'transfer' ? stake.state.condition : undefined;
   const r = ruledFor(cond, pool, now);
   if (r === null) return no('the stake\'s condition names no ruling');
   if (r.why) return no(r.why);
+  if (!binding) return { releases: false, to: r.award.to, money: null, ruling: r.ruling, why: 'the stake does not bind: it is not signed by both sides who name this judge, or the deal it serves is not accepted' };
   let staked = null;
   if (stake.type === 'promise') { const t = isObj(stake.state.terms) ? termsTotal(stake.state.terms) : null; staked = t ? measureOf(t) : null; } else staked = measureOf(stake.state.money);
   const awarded = measureOf(r.award.money !== undefined ? r.award.money : r.award.amount);

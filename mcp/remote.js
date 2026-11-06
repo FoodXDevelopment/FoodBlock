@@ -1,4 +1,4 @@
-// A remote node for the door: a FoodOS host's window for one person, over HTTP (the foodx checkout's foodos/record/node/host.js `handler`, the same
+// A remote node for the door: a node host's window for one person, over HTTP (any host that serves this window `handler`, the same
 // shape as the index client in foodos/index/http.js: a base URL and an injectable fetch). The door reads and writes through the same
 // { all, get, push } it has with the in-memory node; this one keeps a mirror of what the host holds and sends what the door signs.
 //

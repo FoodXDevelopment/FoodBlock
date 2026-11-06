@@ -1395,7 +1395,7 @@
   }
  },
  "door": {
-  "about": "The door is the one call every implementation answers: an op name and positional arguments (JSON), and a result (JSON). spec/vectors.json `door` holds one or more cases per op below: `args`, then `expect` (a subset match: every key given must match, extra keys in a result do not matter; a list or text must match exactly when the case says `exact`, and lists are compared in order), or `codes` (the refusal codes, in order), or `error`. An implementation conforms when it answers every case. An op outside this table is outside the protocol.",
+  "about": "The door is the one call every implementation answers: an op name and positional arguments (JSON), and a result (JSON). spec/vectors.json `door` holds one or more cases per op below: `args`, then `expect` (a subset match: every key given must match, extra keys in a result do not matter; a list or text must match exactly when the case says `exact`, and lists are compared in order), or `codes` (the refusal codes, in order), or `error`. An implementation conforms when it answers every case. An op outside this table is outside the protocol: the other ops of an SDK door (sdk/door.table) are conveniences of that SDK, and no vector binds them.",
   "conventions": {
    "block": "{ type, state, refs }: a block as written (core.md, section 1).",
    "full_block": "a block with its `hash` (its id), its `signature` (hex) and, when its key's suite is not std, `suite`: { hash, type, state, refs, signature, suite? }. This is what an op that takes blocks held, a story or a store reads. Order in a list of held blocks never matters.",
@@ -2069,6 +2069,97 @@
      "now: a time, or null for no clock"
     ],
     "result": "promises.md, Rulings: { releases, to, money, ruling, why }. The stake's condition (terms.condition of a promise, condition of a transfer) is { ruled, by, awards }. releases when the judge's head ruling on the deal awards that person something; money is the award's, in the stake's own kind and capped at the stake (the whole stake when the award states none), null when the stake is no money"
+   },
+   "live_keys": {
+    "args": [
+     "id: an identity id",
+     "held"
+    ],
+    "result": "the keys of an id that are live: not void, not frozen, not rotated out; sorted (nodes.md, Messages)"
+   },
+   "signed_by_author": {
+    "args": [
+     "block: full_block",
+     "held",
+     "arrivals?",
+     "unknown_arrival?"
+    ],
+    "result": "true when a key of the block's author, live when the block arrived, signed it (identity.md)"
+   },
+   "add_duration": {
+    "args": [
+     "time",
+     "duration: an ISO 8601 duration",
+     "sign?: 1 or -1"
+    ],
+    "result": "the time moved by the duration (sign 1 or -1), or null when either is not valid (core.md, section 3)"
+   },
+   "operators_of": {
+    "args": [
+     "agent: id",
+     "held",
+     "now?"
+    ],
+    "result": "who answers for an autonomous system or machine: the authors of its operator grants that no stop, leaving or death has ended (authority.md)"
+   },
+   "open_copy": {
+    "args": [
+     "message",
+     "x25519_private"
+    ],
+    "result": "open a sealed copy with the recipient's private encryption key: the block, its signature and its reveals (transport.md)"
+   },
+   "members_then": {
+    "args": [
+     "block: full_block",
+     "recipient: id",
+     "held"
+    ],
+    "result": "who a circle (or circle#role) in a block's audience meant: its members in the fold within that block's causal past (circles.md)"
+   },
+   "release_shown": {
+    "args": [
+     "subject: full_block",
+     "held"
+    ],
+    "result": "{ subject, released, kept_open }: who a release lets go of which claims, and the deals left open (promises.md)"
+   },
+   "bids_shown": {
+    "args": [
+     "quarrel: full_block",
+     "held"
+    ],
+    "result": "{ quarrel, currency, in, opened, overlap, middle }: the bids and openings on a quarrel and the middle of their overlap (promises.md)"
+   },
+   "circle_key": {
+    "args": [
+     "circle: id",
+     "held"
+    ],
+    "result": "{ epoch, keys, grants }: a circle's encryption key now, from the key grants signed as the circle by a holder of the power rekey"
+   },
+   "pull_request": {
+    "args": [
+     "request: { since, limit, filter, heads }"
+    ],
+    "result": "a pull as an object { since, limit, filter, heads } (transport.md)"
+   },
+   "push_answer": {
+    "args": [
+     "parts",
+     "node: id",
+     "private_key",
+     "suite?"
+    ],
+    "result": "a node's signed answer to a push { node, taken, waiting, refused, equivocations, signature } (transport.md)"
+   },
+   "waited_too_long": {
+    "args": [
+     "since: time",
+     "now: time",
+     "ttl: whole milliseconds"
+    ],
+    "result": "true when a waiting block has waited past the node's own time to live since it arrived"
    }
   }
  },
