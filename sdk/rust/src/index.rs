@@ -39,6 +39,10 @@ struct Memo {
     speakers: alloc::collections::BTreeMap<String, Option<String>>,
     // each author's identity fold read with no arrivals: a pure answer of the blocks, asked for every block of theirs
     identities: alloc::collections::BTreeMap<String, Rc<crate::identity::Identity>>,
+    // each author's identity fold read without the author's own operators (identity::signed_plain), by id
+    plain_identities: alloc::collections::BTreeMap<String, Rc<crate::identity::Identity>>,
+    // the key grants about each id and the operator grants naming each id, found once (identity::key_grants_of, operator_candidates)
+    grants: Option<Rc<Grants>>,
     // the blocks whose signer was read and none was found, in this state of the blocks (identity::signer_in)
     no_signer: alloc::collections::BTreeSet<String>,
     // which blocks name each hash in `for`, and in `answers` or `updates`
@@ -56,6 +60,17 @@ pub struct Names {
     pub by_answer: alloc::collections::BTreeMap<String, Vec<String>>,
     /// the transfers that name each hash in `what` (a claim handed over names its deal there, promises.md, A claim)
     pub by_what: alloc::collections::BTreeMap<String, Vec<String>>,
+    /// the blocks that name each hash in `of` (a kind is a description once any counted block names it there, things.md)
+    pub by_of: alloc::collections::BTreeMap<String, Vec<String>>,
+}
+
+/// The grants an identity fold reads, found once for the index instead of by a scan of every block per id.
+#[derive(Default)]
+pub struct Grants {
+    /// the hashes of the key grants (`kind` key) that name each id in `refs.subject`, in the index's order
+    pub key_by_subject: alloc::collections::BTreeMap<String, Vec<String>>,
+    /// the hashes of the operator grants (`kind` operator) that name each id in `refs.to`, in the index's order
+    pub operator_by_to: alloc::collections::BTreeMap<String, Vec<String>>,
 }
 
 impl Clone for Index {
@@ -264,6 +279,9 @@ impl Index {
             for f in crate::js::list(crate::js::rf(b, "for")) {
                 names.by_for.entry(f.to_string()).or_default().push(h.clone());
             }
+            for t in crate::js::list(crate::js::rf(b, "of")) {
+                names.by_of.entry(t.to_string()).or_default().push(h.clone());
+            }
             if crate::js::type_of(b) == "transfer" {
                 for t in crate::js::list(crate::js::rf(b, "what")) {
                     names.by_what.entry(t.to_string()).or_default().push(h.clone());
@@ -278,6 +296,47 @@ impl Index {
         let n = Rc::new(names);
         memo.borrow_mut().names = Some(n.clone());
         n
+    }
+
+    /// The key grants and operator grants of every id, read once for the index.
+    pub fn grants_memo(&self) -> Rc<Grants> {
+        let memo = self.memo.borrow().clone();
+        if let Some(g) = memo.borrow().grants.clone() {
+            return g;
+        }
+        let mut grants = Grants::default();
+        for (h, b) in &self.map {
+            if crate::js::type_of(b) != "grant" {
+                continue;
+            }
+            match crate::js::ss(b, "kind") {
+                Some("key") => {
+                    if let Some(subject) = crate::js::rs(b, "subject") {
+                        grants.key_by_subject.entry(subject.to_string()).or_default().push(h.clone());
+                    }
+                }
+                Some("operator") => {
+                    if let Some(to) = crate::js::rs(b, "to") {
+                        grants.operator_by_to.entry(to.to_string()).or_default().push(h.clone());
+                    }
+                }
+                _ => {}
+            }
+        }
+        let g = Rc::new(grants);
+        memo.borrow_mut().grants = Some(g.clone());
+        g
+    }
+
+    /// An author's identity fold read without the author's own operators, read once: `f` answers it the first time.
+    pub fn plain_identity_memo(&self, id: &str, f: impl FnOnce() -> crate::identity::Identity) -> Rc<crate::identity::Identity> {
+        let memo = self.memo.borrow().clone();
+        if let Some(s) = memo.borrow().plain_identities.get(id) {
+            return s.clone();
+        }
+        let s = Rc::new(f());
+        memo.borrow_mut().plain_identities.insert(id.to_string(), s.clone());
+        s
     }
 
     /// An author's identity fold with no arrivals, read once: `f` answers it the first time.

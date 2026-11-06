@@ -98,14 +98,15 @@ pub(super) fn claimed_by(block: &Value, index: &crate::js::Index) -> Option<Stri
 /// not backed either. What the person's own word or a live chain of their grants stands behind is not owed: it is theirs.
 pub fn owed_back(person: &str, blocks: &[Value]) -> Value {
     let read = super::read_all(blocks.iter());
-    let mut seen = Vec::new();
+    let mut seen: alloc::collections::BTreeSet<&str> = Default::default();
     let mut owed = Vec::new();
     for block in blocks.iter().filter(|b| crate::js::type_of(b) == "transfer") {
         let hash = hash_of(block);
-        if seen.contains(&hash) {
+        if !seen.insert(hash) {
             continue;
         }
-        seen.push(hash);
+        // a transfer the record does not hold is read as if it were (it is no word, and the reading says why); that is the only case
+        // that needs an index of its own, so a whole record costs one index
         let alone;
         let index = if read.contains_key(hash) {
             &read

@@ -548,21 +548,20 @@ fn read_authors(index: &Index) -> Vec<(String, String, Option<String>, bool)> {
 }
 // The same, with the reader's arrivals (the recovery reach, a view): a block the reach protects speaks.
 fn read_authors_at(index: &Index, arrived_at: ArrivedAt) -> Vec<(String, String, Option<String>, bool)> {
-    let mut authors: Vec<&str> = Vec::new();
+    // The blocks of each author, in the order first met: one pass, never a pass over every block per author.
+    let mut by_author: indexmap::IndexMap<&str, Vec<&Value>, crate::js::BuildHasher> = Default::default();
     for b in index.values() {
         if let Some(a) = rs(b, "author").filter(|a| !a.is_empty() && b.get("type").is_some() && st(b, "seq").is_some()) {
-            if !authors.contains(&a) {
-                authors.push(a);
-            }
+            by_author.entry(a).or_default().push(b);
         }
     }
     let mut out = Vec::new();
-    for author in authors {
+    for (author, blocks) in by_author {
         if !genesis_opens(index.get(author)) {
             continue;
         }
         let state = identity_in(author, index, arrived_at);
-        for b in index.values().filter(|b| rs(b, "author") == Some(author) && b.get("type").is_some() && st(b, "seq").is_some()) {
+        for b in blocks {
             let key = signer_of(b, &state.keys).or_else(|| recovery_signer_of(b, author, index));
             out.push((hash_of(b).to_string(), author.to_string(), key, signed_with(b, &state, index, arrived_at)));
         }
@@ -790,17 +789,27 @@ pub(crate) fn recovery_defeats_ok(block: &Value, index: &Index) -> bool {
 
 // The authors of every operator grant naming this id (no subject, no status), whether or not it stands.
 fn operator_candidates(id: &str, index: &Index) -> Vec<String> {
-    let authors: Vec<&str> = index
-        .values()
-        .filter(|b| type_of(b) == "grant" && ss(b, "kind") == Some("operator") && rs(b, "to") == Some(id) && rs(b, "subject").is_none() && st(b, "status").is_none())
+    let grants = index.grants_memo();
+    let authors: Vec<&str> = grants
+        .operator_by_to
+        .get(id)
+        .into_iter()
+        .flatten()
+        .filter_map(|h| index.get(h))
+        .filter(|b| rs(b, "subject").is_none() && st(b, "status").is_none())
         .filter_map(|b| rs(b, "author"))
         .collect();
     crate::js::sorted_set(authors)
 }
 fn operators_for(id: &str, index: &Index, relying: Option<&Value>) -> Vec<String> {
-    let authors: Vec<&str> = index
-        .values()
-        .filter(|b| type_of(b) == "grant" && ss(b, "kind") == Some("operator") && rs(b, "to") == Some(id) && operator_grant_stands(b, index, relying))
+    let grants = index.grants_memo();
+    let authors: Vec<&str> = grants
+        .operator_by_to
+        .get(id)
+        .into_iter()
+        .flatten()
+        .filter_map(|h| index.get(h))
+        .filter(|b| operator_grant_stands(b, index, relying))
         .filter_map(|b| rs(b, "author"))
         .collect();
     crate::js::sorted_set(authors)
@@ -813,7 +822,7 @@ fn operator_grant_stands(b: &Value, index: &Index, relying: Option<&Value>) -> b
         && st(b, "status").is_none()
         && crate::grant::operator_stands(b, index, relying)
         // the grant is its author's word: signed by a key that speaks for them (read without their own operators, so no loop)
-        && rs(b, "author").is_some_and(|o| signed_with(b, &identity_depth(o, index, None, 1), index, None))
+        && rs(b, "author").is_some_and(|o| signed_with(b, &plain_identity(o, index), index, None))
 }
 
 /// The one exception to "a stop cuts where it was signed" (identity.md, Keys): a key grant the operator signs under an operator grant counts
@@ -829,12 +838,22 @@ fn operator_grant_cut(grant: &Value, key_grant: &Value, index: &Index) -> bool {
 /// Whether a block is its author's word, read without the author's own operators (so an operator's reading of a machine never loops):
 /// signed by a key that speaks for them.
 pub(crate) fn signed_plain(block: &Value, index: &Index) -> bool {
-    rs(block, "author").is_some_and(|a| signed_with(block, &identity_depth(a, index, None, 1), index, None))
+    rs(block, "author").is_some_and(|a| signed_with(block, &plain_identity(a, index), index, None))
+}
+
+// An author's identity read without their own operators, once for the index (the same answer for every block of theirs).
+fn plain_identity(id: &str, index: &Index) -> alloc::rc::Rc<Identity> {
+    index.plain_identity_memo(id, || identity_depth(id, index, None, 1))
 }
 
 fn key_grants_of(id: &str, index: &Index, operators: &[(String, Identity)]) -> Vec<Value> {
-    let mine: Index = index
-        .iter()
+    let named = index.grants_memo();
+    let mine: Index = named
+        .key_by_subject
+        .get(id)
+        .into_iter()
+        .flatten()
+        .filter_map(|h| index.get_key_value(h))
         .filter(|(_, b)| {
             type_of(b) == "grant"
                 && ss(b, "kind") == Some("key")
@@ -882,7 +901,7 @@ fn identity_depth(id: &str, index: &Index, arrived_at: ArrivedAt, depth: usize) 
         // Every author of an operator grant naming it: whether the grant stands (the machine's accept, no stop, no death) is judged
         // per key grant, from that grant's own causal past (key_grants_of). The operator's own identity says whether a key grant it
         // signed is its word (signed by a key that speaks for it there: a rotated-out key off its line is not).
-        operator_candidates(id, index).into_iter().map(|o| { let st = identity_depth(&o, index, None, 1); (o, st) }).collect()
+        operator_candidates(id, index).into_iter().map(|o| { let st = (*plain_identity(&o, index)).clone(); (o, st) }).collect()
     } else {
         Vec::new()
     };

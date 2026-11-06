@@ -111,3 +111,8 @@ required-features = ["legacy"]
 [[test]]
 name = "fuzz_vectors"
 required-features = ["door", "legacy", "node"]
+
+# Times the folds on a record of N signed blocks: cargo run --release --example fold_timing -- 1000 10000 100000
+[[example]]
+name = "fold_timing"
+required-features = ["node"]

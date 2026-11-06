@@ -416,10 +416,7 @@ pub fn answer_pull(
 
 /// Whether a node's answer (pull or push) is signed by one of the node's keys (any live key of its holder).
 pub fn answer_signed_by(answer: &Value, node_keys: &[String]) -> bool {
-    node_keys.iter().any(|k| {
-        let suite = crate::sign::suite_named_by(k);
-        verify_message_in(&suite, answer, k)
-    })
+    crate::sign::message_signed_by(answer, node_keys)
 }
 
 // ---- Push ----

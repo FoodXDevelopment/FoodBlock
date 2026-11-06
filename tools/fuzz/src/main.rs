@@ -291,7 +291,7 @@ fn run(seed: u64, secs: u64) {
             if let Some(c) = a.get("code").and_then(Value::as_str) { *s.codes.entry(c.into()).or_default() += 1; }
             *s.errors.entry(k).or_default() += 1;
         }
-        if took > Duration::from_secs(5) { let m = format!("SLOW {:?}: {}", took, &case[..case.len().min(3000)]); s.failures.push(m); }
+        if took > Duration::from_secs(5) { if let Ok(dir) = std::env::var("FBFUZZ_SLOW") { let _ = std::fs::write(format!("{dir}/slow-{}-{}.json", op, s.calls), &case); } let m = format!("SLOW {:?}: {}", took, &case[..case.len().min(3000)]); s.failures.push(m); }
         // canonical round trip, on any block-shaped value and on the text of the mutated argument
         let texts: Vec<String> = { let mut t = vec![args.to_string()]; if let Some(f) = args.get(0) { t.push(f.to_string()); } if let Some(x) = args.get(0).and_then(Value::as_str) { t.push(x.to_string()); } t };
         for text in texts {
@@ -365,6 +365,13 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("serve") => serve(),
+        // time one saved case (a SLOW failure written under FBFUZZ_SLOW): fbfuzz time <file>
+        Some("time") => {
+            let case: Value = serde_json::from_slice(&std::fs::read(&args[2]).unwrap()).unwrap();
+            let t = Instant::now();
+            let a = answer(case["op"].as_str().unwrap().as_bytes(), case["args"].to_string().as_bytes());
+            println!("{} {:?} {}", case["op"], t.elapsed(), &a.to_string()[..a.to_string().len().min(200)]);
+        }
         Some("run") => run(args.get(2).and_then(|s| s.parse().ok()).unwrap_or(1), args.get(3).and_then(|s| s.parse().ok()).unwrap_or(10)),
         _ => eprintln!("usage: fbfuzz serve | fbfuzz run <seed> <seconds>"),
     }

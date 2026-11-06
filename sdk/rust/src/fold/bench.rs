@@ -158,7 +158,7 @@ pub(super) fn receipts_of<'a>(targets: &[String], index: &'a crate::js::Index, n
             let taken = a.get("taken").and_then(Value::as_array).is_some_and(|t| t.iter().any(|x| x.as_str() == Some(target)));
             let keys: Vec<String> = crate::identity::identity_in(node, index, None).keys.iter().filter(|k| !k.void && !k.frozen).map(|k| k.key.clone()).collect();
             let at = a.get("at").and_then(Value::as_str)?;
-            (taken && node_ok(o, node) && crate::sync::answer_signed_by(a, &keys)).then(|| (o, at.to_string()))
+            (taken && node_ok(o, node) && crate::sign::message_signed_by(a, &keys)).then(|| (o, at.to_string()))
         })
         .collect()
 }

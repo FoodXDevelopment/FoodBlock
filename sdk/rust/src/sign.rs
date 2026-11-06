@@ -249,6 +249,12 @@ pub fn sign_bytes(bytes: &[u8], private_key: &str) -> Result<String> {
     sign_bytes_in(crate::spec::default_suite(), bytes, private_key)
 }
 
+/// Whether a signed message (a node's answer, a receipt) is signed by one of these keys, each read in the suite it names. In the core, not
+/// in `sync`, so a fold that reads a receipt builds without the sync profile.
+pub fn message_signed_by(message: &Value, keys: &[String]) -> bool {
+    keys.iter().any(|k| verify_message_in(&suite_named_by(k), message, k))
+}
+
 /// Whether a signature (hex) is this key's over these bytes, in a suite. Never fails: anything malformed is false.
 ///
 /// The folds ask the same question again and again (an identity fold reads every key grant of an author each time any
@@ -265,11 +271,14 @@ pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &
         use sha2::Digest;
         use std::cell::RefCell;
         use std::collections::HashMap;
-        // a verdict is remembered by a digest of the four arguments (32 bytes, whatever their size), and the memory is bounded by bytes
+        // a verdict is remembered by a digest of the four arguments (32 bytes, whatever their size), and the memory is bounded by bytes: two
+        // generations, so a full memory forgets the older half and never everything at once. A fold reads every block of a record several
+        // times in one call, in the same order; forgetting all at once made each pass check every block again (a record of 100,000 blocks).
         const ENTRY_BYTES: usize = 96;
-        const MOST_BYTES: usize = 8 << 20;
+        const MOST_BYTES: usize = 64 << 20;
+        type Verdicts = HashMap<[u8; 32], bool>;
         std::thread_local! {
-            static VERDICTS: RefCell<HashMap<[u8; 32], bool>> = RefCell::new(HashMap::new());
+            static VERDICTS: RefCell<(Verdicts, Verdicts)> = RefCell::new((HashMap::new(), HashMap::new()));
         }
         let mut h = sha2::Sha256::new();
         for part in [suite.as_bytes(), public_key.as_bytes(), signature.as_bytes(), bytes] {
@@ -277,16 +286,25 @@ pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &
             h.update(part);
         }
         let key: [u8; 32] = h.finalize().into();
-        if let Some(v) = VERDICTS.with(|m| m.borrow().get(&key).copied()) {
+        let held = VERDICTS.with(|m| {
+            let mut m = m.borrow_mut();
+            if let Some(v) = m.0.get(&key).copied() {
+                return Some(v);
+            }
+            let v = m.1.get(&key).copied()?;
+            m.0.insert(key, v);
+            Some(v)
+        });
+        if let Some(v) = held {
             return v;
         }
         let verdict = verify_bytes_uncached(suite, bytes, signature, public_key);
         VERDICTS.with(|m| {
             let mut m = m.borrow_mut();
-            if (m.len() + 1) * ENTRY_BYTES > MOST_BYTES {
-                m.clear();
+            if (m.0.len() + 1) * ENTRY_BYTES > MOST_BYTES / 2 {
+                m.1 = core::mem::take(&mut m.0);
             }
-            m.insert(key, verdict);
+            m.0.insert(key, verdict);
         });
         return verdict;
     }

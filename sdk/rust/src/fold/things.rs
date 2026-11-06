@@ -42,7 +42,10 @@ pub fn ownership_view(instance: &Value, blocks: &[Value], arrived_at: crate::ide
 pub(super) fn answer_stands(transfer: &Value, answer: &Value, index: &Index) -> bool {
     let giver = speaker_of(transfer, index, None);
     let expires = st(transfer, "expires").is_some();
-    !index.values().any(|w| {
+    // only a block that names the transfer (its withdrawal) or the answer (a decline of it) can void the accept: found by name, not by a pass over every block
+    let names = index.names_memo();
+    let named = |h: &str| names.by_answer.get(h).into_iter().flatten().filter_map(|n| index.get(n));
+    !named(hash_of(transfer)).chain(named(hash_of(answer))).any(|w| {
         type_of(w) == "transfer"
             && crate::identity::counts_in(w, index)
             && giver.is_some()
@@ -107,7 +110,8 @@ pub(super) fn condition_stands(transfer: &Value, index: &Index) -> bool {
 /// the condition held (read on what that answer saw, at its own date: it binds only her). After the condition held, the title is hers
 /// and she hands it on by a transfer of her own.
 pub(super) fn let_go(transfer: &Value, cond: &Value, index: &Index, visible: &dyn Fn(&str) -> bool) -> bool {
-    index.values().any(|a| {
+    let names = index.names_memo();
+    names.by_answer.get(hash_of(transfer)).into_iter().flatten().filter_map(|n| index.get(n)).any(|a| {
         type_of(a) == "transfer"
             && matches!(ss(a, "status"), Some("stopped" | "declined"))
             && visible(hash_of(a))
@@ -123,7 +127,8 @@ pub(super) fn let_go(transfer: &Value, cond: &Value, index: &Index, visible: &dy
 
 /// Whether a transfer to a named receiver was accepted by the receiver, in an answer `visible` lets in.
 pub(super) fn accepted_by_receiver(transfer: &Value, index: &Index, visible: &dyn Fn(&str) -> bool) -> bool {
-    index.values().any(|b| {
+    let names = index.names_memo();
+    names.by_answer.get(hash_of(transfer)).into_iter().flatten().filter_map(|n| index.get(n)).any(|b| {
         type_of(b) == "transfer"
             && ss(b, "status") == Some("accepted")
             && visible(hash_of(b))
@@ -148,7 +153,8 @@ fn ownership_within(thing_hash: &str, index: &Index, visible: &dyn Fn(&str) -> b
         return Ownership { owner: None, transfers: vec![], conflict: None };
     }
     // A kind has no owner (things.md, Things): a thing that some counted thing names in `refs.of` is a description; its instances have owners.
-    if index.values().any(|b| visible(hash_of(b)) && list(rf(b, "of")).contains(&thing_hash) && crate::identity::counts_in(b, index)) {
+    let names = index.names_memo();
+    if names.by_of.get(thing_hash).into_iter().flatten().filter_map(|n| index.get(n)).any(|b| visible(hash_of(b)) && list(rf(b, "of")).contains(&thing_hash) && crate::identity::counts_in(b, index)) {
         return Ownership { owner: None, transfers: vec![], conflict: None };
     }
     // An idea is not property, and the record cannot tell a recipe from a tray: a thing is owned only once its own record shows it is an instance
@@ -169,8 +175,12 @@ fn ownership_within(thing_hash: &str, index: &Index, visible: &dyn Fn(&str) -> b
     // A fork voids what the forker claims, never what they owe (folds.md, A fork is a burden): a giver's transfer to a named receiver that the
     // receiver accepted is owed, and stands though the giver later forked; goods moved to an open receiver on the giver's word alone do not.
     let owed = |b: &Value| rf(b, "to_owner").is_some() && crate::identity::fork_burden(b, index);
-    let candidates: Vec<&Value> = index
-        .values()
+    let candidates: Vec<&Value> = names
+        .by_what
+        .get(thing_hash)
+        .into_iter()
+        .flatten()
+        .filter_map(|n| index.get(n))
         .filter(|b| {
             type_of(b) == "transfer"
                 && visible(hash_of(b))
@@ -181,6 +191,9 @@ fn ownership_within(thing_hash: &str, index: &Index, visible: &dyn Fn(&str) -> b
                 && (rf(b, "to_owner").is_some() || st(b, "count").is_some())
         })
         .collect();
+    // a block that names the thing twice in `what` is listed twice by name: once is enough
+    let mut candidates = candidates;
+    candidates.dedup_by(|a, b| hash_of(a) == hash_of(b));
     // The costly tests (the receiver's accept, the condition) run last, and only on a transfer the current owner signed: a stranger's transfer
     // that names the thing is never read, so it costs the reader nothing.
     let stands = |b: &Value| {
@@ -337,13 +350,14 @@ pub fn receiver_of(promise: &Value, blocks: &[Value]) -> Option<String> {
 /// its own refs.place; a place that is a thing is wherever that thing is (stopping at a repeat). Two moves that do not
 /// see each other give both places. A sorted list of hashes.
 pub fn where_now(thing: &Value, blocks: &[Value]) -> Vec<String> {
-    let index = crate::js::held_index(blocks);
-    let read = read_all(index.values());
-    where_now_in(thing, &index, &read, &mut Vec::new())
+    // the blocks held, closed once and the forks marked once: every level below reads this one index
+    let mut read = crate::js::held_index(blocks);
+    crate::identity::mark_forks_at(&mut read, None);
+    where_now_in(thing, &read, &mut Vec::new())
 }
 
-fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<String>) -> Vec<String> {
-    let me = index.get(hash_of(thing)).unwrap_or(thing).clone();
+fn where_now_in(thing: &Value, read: &Index, seen: &mut Vec<String>) -> Vec<String> {
+    let me = read.get(hash_of(thing)).unwrap_or(thing).clone();
     let h = hash_of(&me).to_string();
     if seen.contains(&h) {
         return vec![h];
@@ -364,41 +378,33 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
         &extended
     };
     // a move counts when its signer owned the thing where that move stands (the ownership fold of its causal past), or holds it for
-    // one who did: a thing sold does not jump back to where it was made, nor away from where its last owner put it (decision F7)
-    let owned_by_signer = |b: &Value| {
-        let signer = speaker_of(b, read, None);
-        signer.is_some() && signer == owner_seen_by(&h, b, with_me)
-    };
-    let all: Vec<&Value> = read
-        .values()
-        .filter(|b| {
-            type_of(b) == "transfer"
-                && st(b, "status").is_none()
-                && list(rf(b, "what")).contains(&h.as_str())
-                && crate::identity::counts_in(b, read)
+    // one who did: a thing sold does not jump back to where it was made, nor away from where its last owner put it (decision F7).
+    // Each transfer that names the thing is asked once: who signed it, and whether that signer owned the thing where it stands.
+    let names = read.names_memo();
+    let mut all: Vec<(&Value, bool)> = names
+        .by_what
+        .get(h.as_str())
+        .into_iter()
+        .flatten()
+        .filter_map(|n| read.get(n))
+        .filter(|b| type_of(b) == "transfer" && st(b, "status").is_none() && list(rf(b, "what")).contains(&h.as_str()) && crate::identity::counts_in(b, read))
+        .map(|b| {
+            let signer = speaker_of(b, read, None);
+            (b, signer.is_some() && signer == owner_seen_by(&h, b, with_me))
         })
         .collect();
-    let mut holders: Vec<Option<String>> = vec![];
-    for b in &all {
-        if owned_by_signer(b) {
-            holders.extend(
-                list(rf(b, "to_holder"))
-                    .into_iter()
-                    .map(|x| Some(x.to_string())),
-            );
-        }
-    }
-    let moves: Vec<Value> = all
+    // a transfer that names the thing twice in `what` is listed twice by name: once is enough
+    all.dedup_by(|a, b| hash_of(a.0) == hash_of(b.0));
+    let holders: alloc::collections::BTreeSet<&str> = all.iter().filter(|(_, owns)| *owns).flat_map(|(b, _)| list(rf(b, "to_holder"))).collect();
+    let moves: Vec<&Value> = all
         .iter()
-        .filter(|b| {
-            rf(b, "to_place").is_some() && (owned_by_signer(b) || holders.contains(&speaker_of(b, read, None)))
-        })
-        .map(|b| (*b).clone())
+        .filter(|(b, owns)| rf(b, "to_place").is_some() && (*owns || speaker_of(b, read, None).is_some_and(|s| holders.contains(s.as_str()))))
+        .map(|(b, _)| *b)
         .collect();
     let places: Vec<String> = if !moves.is_empty() {
         // two moves see each other through every block held, not only through other moves (folds.md: seeing is the causal past)
         let seen: Vec<_> = moves.iter().map(|m| read.past_of(m)).collect();
-        let heads: Vec<&Value> = moves.iter().filter(|b| !seen.iter().any(|p| p.hashes().iter().any(|h| h == hash_of(b)))).collect();
+        let heads: Vec<&&Value> = moves.iter().filter(|b| !seen.iter().any(|p| p.contains(hash_of(b)))).collect();
         unique(heads.iter().flat_map(|b| {
             list(rf(b, "to_place"))
                 .into_iter()
@@ -413,9 +419,9 @@ fn where_now_in(thing: &Value, index: &Index, read: &Index, seen: &mut Vec<Strin
     };
     let mut out: Vec<String> = Vec::new();
     for place in places {
-        match index.get(&place) {
+        match read.get(&place) {
             Some(at) if type_of(at) == "thing" => {
-                let further = where_now_in(at, index, read, seen);
+                let further = where_now_in(at, read, seen);
                 if further.is_empty() {
                     out.push(place);
                 } else {
