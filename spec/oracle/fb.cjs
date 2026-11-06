@@ -4295,9 +4295,10 @@ function claimedBy(b, pool) {
 // the lines of a block read as if the person backed it, with no judgement of who signed it (owedBack asks them of a transfer `backed` refused)
 function linesIn(block, person, pool) {
   const line = (of, to, back, parts) => ({ of, ...parts, to: to === undefined ? null : to, back: back === undefined ? null : back });
-  // a thing is hers as of the block's own place in time (its causal past), never by today's owner; a thing not held is not hers; a held kind is a description
+  // a thing is hers as of the block's own place in time (its causal past), never by today's owner; a thing not held is not hers, and is listed in `unplaced` (no line, but never "nothing"); a held kind is a description
   // with no owner, and promising goods of a kind is her own word
-  const hers = w => { const t = pool.get(w); if (!t) return false; if (!t.refs || t.refs.of === undefined) return true; return ownershipFold(t, pool, block.signature === undefined ? undefined : pool.past(block.hash)).owner === person; };
+  const unplaced = [];
+  const hers = w => { const t = pool.get(w); if (!t) { unplaced.push(w); return false; } if (!t.refs || t.refs.of === undefined) return true; return ownershipFold(t, pool, block.signature === undefined ? undefined : pool.past(block.hash)).owner === person; };
   const out = [];
   if (block.type === 'promise') {
     let deal = block, chosen;
@@ -4333,7 +4334,8 @@ function linesIn(block, person, pool) {
       else if (owner === undefined && holder !== undefined) out.push(line('use', holder, until, { what: w }));
     }
   }
-  return { gives: out.filter(l => l.to !== person) };
+  const unique = [...new Set(unplaced)].sort();
+  return { gives: out.filter(l => l.to !== person), ...(unique.length ? { unplaced: unique } : {}) };
 }
 // owedBack(person, blocks): money moved in the person's name that they do not back (promises.md, What is owed back). { owed: [{ block, minor, currency, to, why }] }:
 // each transfer of `blocks` whose money is the person's by `gives` and that `backed` says they do not back. A transfer no node would hold is not backed either.
@@ -4518,7 +4520,7 @@ function rulingReleases(stake, blocks, now) {
 // rulingAudience(ruling, blocks, now): whether a judge's ruling is public (promises.md, Rulings). { audience: 'public' | 'private', why }.
 // The judge's offer is a first promise of hers under the base schema `judging`, `refs.to` open; its head (no other offer of hers has it in its causal past)
 // is the one she stands on. Its `terms.rulings` is "public", or absent (private). Whatever it says, a ruling is public when an award line of it has a `due`
-// at or before the reader's clock and no counted transfer `for` the ruling went to the one it awards: unhonoured, a fact and never a verdict.
+// at or before the reader's clock and no counted transfers `for` the ruling to the one it awards adding up to its sum (no sum: only her release honours it): unhonoured, a fact and never a verdict.
 function rulingAudience(ruling, blocks, now) {
   if (!isObj(ruling)) throw argError('argument 0 is a block');
   const pool = readWith(blocks, ruling), out = (audience, why) => ({ audience, why });
@@ -4526,8 +4528,20 @@ function rulingAudience(ruling, blocks, now) {
   const judge = counts(ruling, pool) ? speakerOf(ruling, pool) : null;
   if (!judge || !backedIn(ruling, judge, pool).backed) return out('private', 'no judge\'s key speaks for this ruling');
   const clock = isStr(now) ? now : null;
+  // an award with a sum is paid by counted transfers `for` the ruling to the awardee that add up to it in its kind, whoever paid; one with no sum, only a release honours
+  const paidIn = l => {
+    const want = measureOf(l.money !== undefined ? l.money : l.amount);
+    if (want === null) return false;
+    let tot = { n: 0n, d: 1n };
+    for (const t of pool.all()) {
+      if (t.type !== 'transfer' || t.state.status !== undefined || !asList(t.refs.for).includes(ruling.hash) || t.refs.to !== l.to || !counts(t, pool)) continue;
+      const m = measureOf(t.state.money !== undefined ? t.state.money : t.state.amount);
+      if (m && m.kind === want.kind) tot = { n: tot.n * m.v.d + m.v.n * tot.d, d: tot.d * m.v.d };
+    }
+    return fcmp(tot, want.v) >= 0;
+  };
   const unhonoured = clock !== null && asList(ruling.state.awards).some(l => isObj(l) && isStr(l.due) && l.due <= clock
-    && !pool.all().some(t => t.type === 'transfer' && asList(t.refs.for).includes(ruling.hash) && t.refs.to === l.to && counts(t, pool))
+    && !paidIn(l)
     && !pool.all().some(r => r.type === 'observe' && r.state.kind === 'release' && r.state.status === undefined && r.refs.subject === ruling.hash && isStr(l.to) && counts(r, pool) && speakerOf(r, pool) === l.to));
   if (unhonoured) return out('public', 'an award of the ruling is unpaid past its due date');
   const offers = pool.all().filter(o => o.type === 'promise' && !o.refs.answers && !o.refs.updates && o.refs.to === undefined && backedIn(o, judge, pool).backed

@@ -58,7 +58,8 @@ const agentGrant = (s, who, to, scope, refs = {}, depth) => s.say(who, 'grant', 
   door('gives: a promise of the mixer signed after she saw the sale accepted gives nothing of hers', 'gives', [after, her.id, s.held], { expect: { gives: [] }, exact: true })
   const ghost = 'ab'.repeat(32)
   const unheld = s.raw(her, 'promise', { what: 'a mixer', terms: { price: M(100) } }, { from: her.id, to: shop.id, what: ghost })
-  door('gives: a thing the record does not hold is not hers: a missing record is never filled in as ownership', 'gives', [unheld, her.id, s.held], { expect: { gives: [] }, exact: true })
+  door('gives: a thing the record does not hold is not hers: a missing record is never filled in as ownership', 'gives', [unheld, her.id, s.held], { expect: { gives: [], unplaced: [ghost] }, exact: true })
+  door('gives: and it is listed as unplaced, never as nothing: a reader may only raise its bar for it', 'gives', [unheld, shop.id, s.held], { expect: { gives: [{ of: 'money', minor: 100, currency: 'GBP', to: her.id, back: null }] }, exact: true })
 }
 {
   // three honest conditional transfers in a row: the mixer is sold on, each title waiting for its price. A micro reads it to its end as a node does.

@@ -34,12 +34,20 @@ pub(super) fn gives_in(block: &Value, person: &str, index: &Index) -> Value {
 
 /// The lines of a block read as if the person backed it, with no judgement of who signed it: `owed_back` asks them of a transfer `backed` refused.
 pub(super) fn lines_in(block: &Value, person: &str, index: &Index) -> Value {
+    let mut unplaced = Vec::new();
     let lines = match type_of(block) {
-        "promise" => of_promise(block, person, index),
-        "transfer" => of_transfer(block, person, index),
+        "promise" => of_promise(block, person, index, &mut unplaced),
+        "transfer" => of_transfer(block, person, index, &mut unplaced),
         _ => Vec::new(),
     };
-    json!({ "gives": lines.into_iter().filter(|l| l["to"].as_str() != Some(person)).collect::<Vec<_>>() })
+    let mut out = json!({ "gives": lines.into_iter().filter(|l| l["to"].as_str() != Some(person)).collect::<Vec<_>>() });
+    // what the block names that the record does not hold: not hers (no line), and not nothing either. Only present when there is one.
+    unplaced.sort();
+    unplaced.dedup();
+    if !unplaced.is_empty() {
+        out["unplaced"] = json!(unplaced);
+    }
+    out
 }
 
 fn line(of: &str, to: Option<&str>, back: Option<&str>, parts: &[(&str, Option<Value>)]) -> Value {
@@ -57,10 +65,14 @@ fn line(of: &str, to: Option<&str>, back: Option<&str>, parts: &[(&str, Option<V
 
 // Whether a thing is hers to give, read at the block's place in time (its causal past), never by today's owner. A thing the record does not
 // hold is not hers, and neither is an instance whose owner there is unknown or someone else: only what the record shows is hers. A held kind is
-// a description, which has no owner; promising goods of a kind is her own word, so it stands.
-fn hers(thing: &str, person: &str, block: &Value, index: &Index) -> bool {
+// a description, which has no owner; promising goods of a kind is her own word, so it stands. A thing the record does not hold at all is also
+// put in `unplaced`: it makes no line, but a reader must never take that for "nothing" (it can only raise the bar, never lower it).
+fn hers(thing: &str, person: &str, block: &Value, index: &Index, unplaced: &mut Vec<String>) -> bool {
     match index.get(thing) {
-        None => false,
+        None => {
+            unplaced.push(thing.to_string());
+            false
+        }
         Some(t) if rf(t, "of").is_some() => {
             // a block about to be signed sees everything held; a signed one sees its causal past
             let owner = if block.get("signature").is_some() { super::owner_seen_by(thing, block, index) } else { super::owner_whole(thing, index) };
@@ -70,7 +82,7 @@ fn hers(thing: &str, person: &str, block: &Value, index: &Index) -> bool {
     }
 }
 
-fn of_promise(block: &Value, person: &str, index: &Index) -> Vec<Value> {
+fn of_promise(block: &Value, person: &str, index: &Index, unplaced: &mut Vec<String>) -> Vec<Value> {
     // an answer reads the promise it answers, at the quantity it chooses; only `accepted` moves anything
     let (deal, chosen) = match st(block, "status") {
         None => (block, None),
@@ -100,7 +112,7 @@ fn of_promise(block: &Value, person: &str, index: &Index) -> Vec<Value> {
                 .collect(),
         };
         for (what, quantity) in things {
-            let Some(what) = what.filter(|w| hers(w, person, block, index)) else {
+            let Some(what) = what.filter(|w| hers(w, person, block, index, unplaced)) else {
                 continue;
             };
             let amount = quantity
@@ -134,7 +146,7 @@ fn of_promise(block: &Value, person: &str, index: &Index) -> Vec<Value> {
     out
 }
 
-fn of_transfer(block: &Value, person: &str, index: &Index) -> Vec<Value> {
+fn of_transfer(block: &Value, person: &str, index: &Index, unplaced: &mut Vec<String>) -> Vec<Value> {
     if st(block, "status").is_some() {
         return Vec::new();
     }
@@ -157,7 +169,7 @@ fn of_transfer(block: &Value, person: &str, index: &Index) -> Vec<Value> {
         ));
     }
     for what in list(rf(block, "what")) {
-        if owner.is_some() && hers(what, person, block, index) {
+        if owner.is_some() && hers(what, person, block, index, unplaced) {
             out.push(line("goods", owner, None, &[("what", Some(json!(what)))]));
         } else if owner.is_none() && holder.is_some() {
             out.push(line("use", holder, until, &[("what", Some(json!(what)))]));

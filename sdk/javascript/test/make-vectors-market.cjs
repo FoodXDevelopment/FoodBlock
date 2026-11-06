@@ -213,6 +213,22 @@ const NOW = '2027-03-01T00:00:00.000Z'
   settled('an award past due, settled by a release signed by the awardee: the ruling is private', 'awardee', { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
   settled('the same release signed by the loser counts for nothing: the ruling is public', 'loser', { audience: 'public', why: 'an award of the ruling is unpaid past its due date' })
   settled('the same release signed by the awardee\'s agent under her grant: private', 'agent', { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' })
+  // an award is honoured by counted transfers `for` the ruling to the awardee that add up to its sum, whoever paid; an empty or partial one is not
+  const paid = (name, award, pays, expect) => {
+    const v = story(), d = v.person('rp-d'), b = v.person('rp-b'), jd = v.person('rp-j'), friend = v.person('rp-f')
+    const deal = v.say(d, 'promise', { what: 'the order', terms: { price: M(5000) } }, { from: b.id, to: d.id }); accept(v, b, deal)
+    v.say(jd, 'promise', { what: 'disputes over a delivery of food', terms: { price: M(500), rules_within: 'P14D' } }, { from: jd.id, schema: J.hash })
+    const r = v.say(jd, 'observe', { kind: 'ruling', text: 'what happened', awards: [{ to: b.id, due: '2027-01-01T00:00:00.000Z', ...award }] }, { subject: deal.hash })
+    for (const [who, state] of pays) v.say({ d, friend }[who], 'transfer', state, { for: r.hash, to: b.id, to_owner: b.id, ...(state.money ? {} : { what: deal.hash }) })
+    door(`judging: ${name}`, 'ruling_audience', [r, [P.genesis, ...P.order.map((n) => P.schemas[n]), ...v.held], '2027-02-01T00:00:00.000Z'], { expect, exact: true, invariants: [36] })
+  }
+  const unpaid = { audience: 'public', why: 'an award of the ruling is unpaid past its due date' }, done = { audience: 'private', why: 'the judge\'s offer does not say her rulings are public' }
+  paid('an empty transfer to the awardee does not honour the award: the ruling is public', { money: M(3000) }, [['d', {}]], unpaid)
+  paid('a partial sum does not honour the award: the ruling is public', { money: M(3000) }, [['d', { money: M(1000) }]], unpaid)
+  paid('the full sum paid by a friend honours the award: the ruling is private', { money: M(3000) }, [['friend', { money: M(3000) }]], done)
+  paid('two payments that add up to the sum honour the award: private', { money: M(3000) }, [['d', { money: M(1000) }], ['friend', { money: M(2000) }]], done)
+  paid('a sum in another currency does not honour the award: public', { money: M(3000) }, [['d', { money: { minor: 3000, currency: 'EUR' } }]], unpaid)
+  paid('an award with no sum is not honoured by any transfer: public', { what: 'a replacement box' }, [['d', { money: M(3000) }]], unpaid)
 }
 
 // ---- Groups: a circle founded, joined, pooled and left, with what she owes after ----

@@ -355,7 +355,7 @@ fn rulings_public_by_offer(judge: &str, index: &Index) -> Option<bool> {
 
 /// `{ audience, why }`: whether a judge's ruling is public (promises.md, Rulings). `audience` is `public` or `private`. It is public when the judge's
 /// signed offer says `terms.rulings: "public"`; absent means private. Whatever the offer says, it is public when the ruling went unhonoured: an award
-/// line with a `due` time at or before the reader's clock `now` and no counted transfer `for` the ruling to the one it awards and no release of the ruling signed by her (or by one who speaks for her). A fact, never a verdict.
+/// line with a `due` time at or before the reader's clock `now` and no counted transfers `for` the ruling to the one it awards that add up to its sum (an award with no sum is honoured only by a release) and no release of the ruling signed by her (or by one who speaks for her). A fact, never a verdict.
 pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> Value {
     let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(ruling)).chain([ruling]));
     let out = |audience: &str, why: &str| json!({ "audience": audience, "why": why });
@@ -370,8 +370,16 @@ pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> V
         st(ruling, "awards").and_then(Value::as_array).into_iter().flatten().filter_map(|l| l.as_object()).any(|l| {
             let due = l.get("due").and_then(Value::as_str).is_some_and(|d| d <= n);
             let to = l.get("to").and_then(Value::as_str);
-            // honoured by a counted transfer `for` the ruling to her, or by her own release of the ruling (promises.md, A release): her word that it is settled
-            let paid = index.values().any(|t| type_of(t) == "transfer" && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index));
+            // honoured by counted transfers `for` the ruling to her that add up to the award's sum in its own kind (whoever paid: the sum matters, not the
+            // payer), or by her own release of the ruling (promises.md, A release): her word that it is settled. An award with no sum (goods, an act) is
+            // honoured only by her release: nothing else says what was delivered.
+            let owed = l.get("money").or_else(|| l.get("amount")).and_then(measure);
+            let paid = owed.is_some_and(|(sum, kind)| {
+                let got = index.values().filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index))
+                    .filter_map(|t| st(t, "money").or_else(|| st(t, "amount")).and_then(measure)).filter(|(_, k)| *k == kind)
+                    .fold(Dec::zero(), |a, (d, _)| a.add(&d));
+                got.cmp(&sum) != Ordering::Less
+            });
             let let_go = index.values().any(|r| {
                 type_of(r) == "observe" && ss(r, "kind") == Some("release") && st(r, "status").is_none() && rs(r, "subject") == Some(hash)
                     && crate::identity::counts_in(r, &index) && to.is_some() && super::speaker_of(r, &index, now).as_deref() == to
