@@ -5,7 +5,7 @@
 const vectorsFile = require('./vectors-file.cjs')
 const { V, tags } = vectorsFile.load()
 const kit = require('./vectors-kit.cjs')(V)
-const { story, door, LATER, M } = kit
+const { story, door, view, LATER, M } = kit
 
 const accept = (s, who, deal) => s.say(who, 'promise', { status: 'accepted' }, { answers: deal.hash, for: deal.hash, after: [deal.hash] })
 const agentGrant = (s, who, to, scope, refs = {}, depth) => s.say(who, 'grant', { kind: 'agent', scope, ...(depth ? { depth } : {}) }, { to: to.id, ...refs })
@@ -100,6 +100,20 @@ const agentGrant = (s, who, to, scope, refs = {}, depth) => s.say(who, 'grant', 
   const deal2 = s.say(dep, 'promise', { what: 'another order', terms: { price: M(800) } }, { from: bene.id, to: dep.id })
   const esc = s.say(dep, 'transfer', { money: M(800), condition: { ruled: trade.hash, by: judge.id, awards: bene.id } }, { what: deal2.hash, to_owner: bene.id, for: deal2.hash })
   door('ruling: an escrow transfer for a deal that was only offered releases nothing', 'ruling_releases', [esc, s.held, null], { expect: { releases: false }, invariants: [36] })
+}
+{
+  // a circle's offer is judged at its own place: signed while the member held the role, it stands after the role is stopped; one signed after the stop does not
+  const s = story(), ann = s.person('hm-ann'), sam = s.person('hm-sam'), shop = s.person('hm-shop')
+  const cafe = s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }] })
+  const invite = s.say(ann, 'grant', { kind: 'member', roles: ['orders'] }, { subject: cafe.hash, to: sam.id, as: cafe.hash })
+  const yes = s.say(sam, 'grant', { status: 'accepted', kind: 'member' }, { answers: invite.hash, subject: cafe.hash })
+  const early = s.say(sam, 'promise', { what: 'bread' }, { from: cafe.hash, to: shop.id, as: cafe.hash }, { after: [yes.hash] })
+  const stop = s.say(ann, 'grant', { kind: 'member', status: 'stopped', stop: 'onward' }, { updates: invite.hash, as: cafe.hash }, { after: [early.hash] })
+  const late = s.say(sam, 'promise', { what: 'cake' }, { from: cafe.hash, to: shop.id, as: cafe.hash }, { after: [stop.hash] })
+  door('backed: a circle offer signed while the member held the role is the circle\'s still, after the role is stopped', 'backed', [early, cafe.hash, s.held], { expect: { backed: true }, invariants: [9] })
+  door('backed: one signed after the stop is not', 'backed', [late, cafe.hash, s.held], { expect: { backed: false }, invariants: [9] })
+  view('promise_view: the earlier circle offer still stands (offered) when the role is stopped later', early, s.held, null, { stage: 'offered' })
+  door('speaks_for: the later one speaks for no one', 'speaks_for', [late, s.held], { expect: null, exact: true })
 }
 
 vectorsFile.save(V, tags)

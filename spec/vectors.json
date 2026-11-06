@@ -732302,6 +732302,840 @@
    "invariants": [
     36
    ]
+  },
+  {
+   "name": "backed: a circle offer signed while the member held the role is the circle's still, after the role is stopped",
+   "op": "backed",
+   "args": [
+    {
+     "hash": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+     "type": "promise",
+     "state": {
+      "what": "bread",
+      "at": "2026-10-27T12:01:18.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "prev": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+      "after": [
+       "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c"
+      ]
+     },
+     "signature": "c3bd2b5fc0950c06f87b484185d86c206beec10be3c54e4042d3f01066982a34844dd172852a313416b1a8c52c279c96e3a8bc0bb4da328545bd24fe38df5506"
+    },
+    "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+    [
+     {
+      "hash": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:12.000Z",
+       "public_key_sign": "302a300506032b6570032100746f6a0aab41ca3ce4d060bddda8440007e26a15cf42f659ab7aabc047c9353d",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "b00ba6203e2c57a9729b268c2f668eed9ffc7cc9708c0c71ffbf6c87240655111553586ea95e5fac86d98f529c3bdd038b9144541351c23ab0d1fb2719134e05"
+     },
+     {
+      "hash": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:13.000Z",
+       "public_key_sign": "302a300506032b6570032100cdc46b4fd68bd25f63e8850ad4370f7cef65cc0802f350d6692227e4aa03339f",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "de6332c8add60dcfc581ef1d071a674befd5c2c16151b32b00057bb0eabf3df1e327ffdabfe4e980c739d9501c6c853f9291aecb8d5cd73e8d4f47aaaf6fc303"
+     },
+     {
+      "hash": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:14.000Z",
+       "public_key_sign": "302a300506032b657003210061449c5f6a1ab7789138345908f0beb463f75b37ccd248621e0ccd0c9a37d1c4",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "8beb2209fe3e828d976810a1fe8c7b4af57b2f8ff2d5ca739f87e5f53da3ad1b8d0c153c00934103668cf385d8b62e05131b2fbce828c734fc0dc60b26670b0a"
+     },
+     {
+      "hash": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "type": "actor",
+      "state": {
+       "kind": "circle",
+       "removal": {
+        "needed": 1
+       },
+       "name": "Cafe",
+       "roles": [
+        {
+         "name": "owner",
+         "powers": [
+          "sign",
+          "admit",
+          "remove"
+         ]
+        },
+        {
+         "name": "orders",
+         "powers": [
+          "sign"
+         ]
+        }
+       ],
+       "at": "2026-10-27T12:01:15.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d"
+      },
+      "signature": "77877fa059ae8d628334c1580a30936701d8b9a993378badc4e8a7dc2279ae3b2053767dcc9ad9de1e1d955f519ed2cdcc23f8f5fc60df322c2b0e57d890ad09"
+     },
+     {
+      "hash": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "roles": [
+        "orders"
+       ],
+       "at": "2026-10-27T12:01:16.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a"
+      },
+      "signature": "acfe47932cf5b550456805d0ba66ab372a171b32b2c6f9c4b3fa96ee576790714ab29ab6086ffbd020435790b05c3b5e01183efbb23a41f7d26a7269e8a7de02"
+     },
+     {
+      "hash": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+      "type": "grant",
+      "state": {
+       "status": "accepted",
+       "kind": "member",
+       "at": "2026-10-27T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4"
+      },
+      "signature": "32bfac12b8d8fc7d672d1d5979625ac8c3126671a85fd93129aaf059434f3b09408c153bb9725ca3fc5993ebad140e3d3145818a8daad478326d52c2b4602b01"
+     },
+     {
+      "hash": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+      "type": "promise",
+      "state": {
+       "what": "bread",
+       "at": "2026-10-27T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+       "after": [
+        "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c"
+       ]
+      },
+      "signature": "c3bd2b5fc0950c06f87b484185d86c206beec10be3c54e4042d3f01066982a34844dd172852a313416b1a8c52c279c96e3a8bc0bb4da328545bd24fe38df5506"
+     },
+     {
+      "hash": "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-27T12:01:19.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "updates": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "after": [
+        "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55"
+       ]
+      },
+      "signature": "7497c6d4f04e2934e36dbbba194632c24ede18a15fec80d2adee9b772dce7359d80e93a661c5c253fe9a7026da23d02455f1bb979b9c4cd4499ee1e50125a101"
+     },
+     {
+      "hash": "b35498cc19f852105d80388b91b2315db40badf4c92bb68da0d3a4aed5ba06bd",
+      "type": "promise",
+      "state": {
+       "what": "cake",
+       "at": "2026-10-27T12:01:20.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+       "after": [
+        "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c"
+       ]
+      },
+      "signature": "208c1092d99fa90464c12e51845cea44d5d287a8d47d0cedfc6a441de6d686bb8b14f2bc0eb741a336da50d2c3f5480460a1b711c37404c54d4fda546ee7f50d"
+     }
+    ]
+   ],
+   "expect": {
+    "backed": true
+   },
+   "invariants": [
+    9
+   ]
+  },
+  {
+   "name": "backed: one signed after the stop is not",
+   "op": "backed",
+   "args": [
+    {
+     "hash": "b35498cc19f852105d80388b91b2315db40badf4c92bb68da0d3a4aed5ba06bd",
+     "type": "promise",
+     "state": {
+      "what": "cake",
+      "at": "2026-10-27T12:01:20.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "prev": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+      "after": [
+       "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c"
+      ]
+     },
+     "signature": "208c1092d99fa90464c12e51845cea44d5d287a8d47d0cedfc6a441de6d686bb8b14f2bc0eb741a336da50d2c3f5480460a1b711c37404c54d4fda546ee7f50d"
+    },
+    "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+    [
+     {
+      "hash": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:12.000Z",
+       "public_key_sign": "302a300506032b6570032100746f6a0aab41ca3ce4d060bddda8440007e26a15cf42f659ab7aabc047c9353d",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "b00ba6203e2c57a9729b268c2f668eed9ffc7cc9708c0c71ffbf6c87240655111553586ea95e5fac86d98f529c3bdd038b9144541351c23ab0d1fb2719134e05"
+     },
+     {
+      "hash": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:13.000Z",
+       "public_key_sign": "302a300506032b6570032100cdc46b4fd68bd25f63e8850ad4370f7cef65cc0802f350d6692227e4aa03339f",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "de6332c8add60dcfc581ef1d071a674befd5c2c16151b32b00057bb0eabf3df1e327ffdabfe4e980c739d9501c6c853f9291aecb8d5cd73e8d4f47aaaf6fc303"
+     },
+     {
+      "hash": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:14.000Z",
+       "public_key_sign": "302a300506032b657003210061449c5f6a1ab7789138345908f0beb463f75b37ccd248621e0ccd0c9a37d1c4",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "8beb2209fe3e828d976810a1fe8c7b4af57b2f8ff2d5ca739f87e5f53da3ad1b8d0c153c00934103668cf385d8b62e05131b2fbce828c734fc0dc60b26670b0a"
+     },
+     {
+      "hash": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "type": "actor",
+      "state": {
+       "kind": "circle",
+       "removal": {
+        "needed": 1
+       },
+       "name": "Cafe",
+       "roles": [
+        {
+         "name": "owner",
+         "powers": [
+          "sign",
+          "admit",
+          "remove"
+         ]
+        },
+        {
+         "name": "orders",
+         "powers": [
+          "sign"
+         ]
+        }
+       ],
+       "at": "2026-10-27T12:01:15.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d"
+      },
+      "signature": "77877fa059ae8d628334c1580a30936701d8b9a993378badc4e8a7dc2279ae3b2053767dcc9ad9de1e1d955f519ed2cdcc23f8f5fc60df322c2b0e57d890ad09"
+     },
+     {
+      "hash": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "roles": [
+        "orders"
+       ],
+       "at": "2026-10-27T12:01:16.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a"
+      },
+      "signature": "acfe47932cf5b550456805d0ba66ab372a171b32b2c6f9c4b3fa96ee576790714ab29ab6086ffbd020435790b05c3b5e01183efbb23a41f7d26a7269e8a7de02"
+     },
+     {
+      "hash": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+      "type": "grant",
+      "state": {
+       "status": "accepted",
+       "kind": "member",
+       "at": "2026-10-27T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4"
+      },
+      "signature": "32bfac12b8d8fc7d672d1d5979625ac8c3126671a85fd93129aaf059434f3b09408c153bb9725ca3fc5993ebad140e3d3145818a8daad478326d52c2b4602b01"
+     },
+     {
+      "hash": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+      "type": "promise",
+      "state": {
+       "what": "bread",
+       "at": "2026-10-27T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+       "after": [
+        "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c"
+       ]
+      },
+      "signature": "c3bd2b5fc0950c06f87b484185d86c206beec10be3c54e4042d3f01066982a34844dd172852a313416b1a8c52c279c96e3a8bc0bb4da328545bd24fe38df5506"
+     },
+     {
+      "hash": "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-27T12:01:19.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "updates": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "after": [
+        "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55"
+       ]
+      },
+      "signature": "7497c6d4f04e2934e36dbbba194632c24ede18a15fec80d2adee9b772dce7359d80e93a661c5c253fe9a7026da23d02455f1bb979b9c4cd4499ee1e50125a101"
+     },
+     {
+      "hash": "b35498cc19f852105d80388b91b2315db40badf4c92bb68da0d3a4aed5ba06bd",
+      "type": "promise",
+      "state": {
+       "what": "cake",
+       "at": "2026-10-27T12:01:20.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+       "after": [
+        "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c"
+       ]
+      },
+      "signature": "208c1092d99fa90464c12e51845cea44d5d287a8d47d0cedfc6a441de6d686bb8b14f2bc0eb741a336da50d2c3f5480460a1b711c37404c54d4fda546ee7f50d"
+     }
+    ]
+   ],
+   "expect": {
+    "backed": false
+   },
+   "invariants": [
+    9
+   ]
+  },
+  {
+   "name": "promise_view: the earlier circle offer still stands (offered) when the role is stopped later",
+   "op": "promise_view",
+   "args": [
+    {
+     "hash": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+     "type": "promise",
+     "state": {
+      "what": "bread",
+      "at": "2026-10-27T12:01:18.000Z",
+      "audience": "public",
+      "seq": 2
+     },
+     "refs": {
+      "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "prev": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+      "after": [
+       "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c"
+      ]
+     },
+     "signature": "c3bd2b5fc0950c06f87b484185d86c206beec10be3c54e4042d3f01066982a34844dd172852a313416b1a8c52c279c96e3a8bc0bb4da328545bd24fe38df5506"
+    },
+    [
+     {
+      "hash": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:12.000Z",
+       "public_key_sign": "302a300506032b6570032100746f6a0aab41ca3ce4d060bddda8440007e26a15cf42f659ab7aabc047c9353d",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "b00ba6203e2c57a9729b268c2f668eed9ffc7cc9708c0c71ffbf6c87240655111553586ea95e5fac86d98f529c3bdd038b9144541351c23ab0d1fb2719134e05"
+     },
+     {
+      "hash": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:13.000Z",
+       "public_key_sign": "302a300506032b6570032100cdc46b4fd68bd25f63e8850ad4370f7cef65cc0802f350d6692227e4aa03339f",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "de6332c8add60dcfc581ef1d071a674befd5c2c16151b32b00057bb0eabf3df1e327ffdabfe4e980c739d9501c6c853f9291aecb8d5cd73e8d4f47aaaf6fc303"
+     },
+     {
+      "hash": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:14.000Z",
+       "public_key_sign": "302a300506032b657003210061449c5f6a1ab7789138345908f0beb463f75b37ccd248621e0ccd0c9a37d1c4",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "8beb2209fe3e828d976810a1fe8c7b4af57b2f8ff2d5ca739f87e5f53da3ad1b8d0c153c00934103668cf385d8b62e05131b2fbce828c734fc0dc60b26670b0a"
+     },
+     {
+      "hash": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "type": "actor",
+      "state": {
+       "kind": "circle",
+       "removal": {
+        "needed": 1
+       },
+       "name": "Cafe",
+       "roles": [
+        {
+         "name": "owner",
+         "powers": [
+          "sign",
+          "admit",
+          "remove"
+         ]
+        },
+        {
+         "name": "orders",
+         "powers": [
+          "sign"
+         ]
+        }
+       ],
+       "at": "2026-10-27T12:01:15.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d"
+      },
+      "signature": "77877fa059ae8d628334c1580a30936701d8b9a993378badc4e8a7dc2279ae3b2053767dcc9ad9de1e1d955f519ed2cdcc23f8f5fc60df322c2b0e57d890ad09"
+     },
+     {
+      "hash": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "roles": [
+        "orders"
+       ],
+       "at": "2026-10-27T12:01:16.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a"
+      },
+      "signature": "acfe47932cf5b550456805d0ba66ab372a171b32b2c6f9c4b3fa96ee576790714ab29ab6086ffbd020435790b05c3b5e01183efbb23a41f7d26a7269e8a7de02"
+     },
+     {
+      "hash": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+      "type": "grant",
+      "state": {
+       "status": "accepted",
+       "kind": "member",
+       "at": "2026-10-27T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4"
+      },
+      "signature": "32bfac12b8d8fc7d672d1d5979625ac8c3126671a85fd93129aaf059434f3b09408c153bb9725ca3fc5993ebad140e3d3145818a8daad478326d52c2b4602b01"
+     },
+     {
+      "hash": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+      "type": "promise",
+      "state": {
+       "what": "bread",
+       "at": "2026-10-27T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+       "after": [
+        "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c"
+       ]
+      },
+      "signature": "c3bd2b5fc0950c06f87b484185d86c206beec10be3c54e4042d3f01066982a34844dd172852a313416b1a8c52c279c96e3a8bc0bb4da328545bd24fe38df5506"
+     },
+     {
+      "hash": "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-27T12:01:19.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "updates": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "after": [
+        "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55"
+       ]
+      },
+      "signature": "7497c6d4f04e2934e36dbbba194632c24ede18a15fec80d2adee9b772dce7359d80e93a661c5c253fe9a7026da23d02455f1bb979b9c4cd4499ee1e50125a101"
+     },
+     {
+      "hash": "b35498cc19f852105d80388b91b2315db40badf4c92bb68da0d3a4aed5ba06bd",
+      "type": "promise",
+      "state": {
+       "what": "cake",
+       "at": "2026-10-27T12:01:20.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+       "after": [
+        "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c"
+       ]
+      },
+      "signature": "208c1092d99fa90464c12e51845cea44d5d287a8d47d0cedfc6a441de6d686bb8b14f2bc0eb741a336da50d2c3f5480460a1b711c37404c54d4fda546ee7f50d"
+     }
+    ],
+    {
+     "now": null
+    }
+   ],
+   "expect": {
+    "stage": "offered"
+   }
+  },
+  {
+   "name": "speaks_for: the later one speaks for no one",
+   "op": "speaks_for",
+   "args": [
+    {
+     "hash": "b35498cc19f852105d80388b91b2315db40badf4c92bb68da0d3a4aed5ba06bd",
+     "type": "promise",
+     "state": {
+      "what": "cake",
+      "at": "2026-10-27T12:01:20.000Z",
+      "audience": "public",
+      "seq": 3
+     },
+     "refs": {
+      "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "prev": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+      "after": [
+       "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c"
+      ]
+     },
+     "signature": "208c1092d99fa90464c12e51845cea44d5d287a8d47d0cedfc6a441de6d686bb8b14f2bc0eb741a336da50d2c3f5480460a1b711c37404c54d4fda546ee7f50d"
+    },
+    [
+     {
+      "hash": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:12.000Z",
+       "public_key_sign": "302a300506032b6570032100746f6a0aab41ca3ce4d060bddda8440007e26a15cf42f659ab7aabc047c9353d",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "b00ba6203e2c57a9729b268c2f668eed9ffc7cc9708c0c71ffbf6c87240655111553586ea95e5fac86d98f529c3bdd038b9144541351c23ab0d1fb2719134e05"
+     },
+     {
+      "hash": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:13.000Z",
+       "public_key_sign": "302a300506032b6570032100cdc46b4fd68bd25f63e8850ad4370f7cef65cc0802f350d6692227e4aa03339f",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "de6332c8add60dcfc581ef1d071a674befd5c2c16151b32b00057bb0eabf3df1e327ffdabfe4e980c739d9501c6c853f9291aecb8d5cd73e8d4f47aaaf6fc303"
+     },
+     {
+      "hash": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+      "type": "actor",
+      "state": {
+       "kind": "person",
+       "at": "2026-10-27T12:01:14.000Z",
+       "public_key_sign": "302a300506032b657003210061449c5f6a1ab7789138345908f0beb463f75b37ccd248621e0ccd0c9a37d1c4",
+       "audience": "public"
+      },
+      "refs": {},
+      "signature": "8beb2209fe3e828d976810a1fe8c7b4af57b2f8ff2d5ca739f87e5f53da3ad1b8d0c153c00934103668cf385d8b62e05131b2fbce828c734fc0dc60b26670b0a"
+     },
+     {
+      "hash": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+      "type": "actor",
+      "state": {
+       "kind": "circle",
+       "removal": {
+        "needed": 1
+       },
+       "name": "Cafe",
+       "roles": [
+        {
+         "name": "owner",
+         "powers": [
+          "sign",
+          "admit",
+          "remove"
+         ]
+        },
+        {
+         "name": "orders",
+         "powers": [
+          "sign"
+         ]
+        }
+       ],
+       "at": "2026-10-27T12:01:15.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d"
+      },
+      "signature": "77877fa059ae8d628334c1580a30936701d8b9a993378badc4e8a7dc2279ae3b2053767dcc9ad9de1e1d955f519ed2cdcc23f8f5fc60df322c2b0e57d890ad09"
+     },
+     {
+      "hash": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "roles": [
+        "orders"
+       ],
+       "at": "2026-10-27T12:01:16.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a"
+      },
+      "signature": "acfe47932cf5b550456805d0ba66ab372a171b32b2c6f9c4b3fa96ee576790714ab29ab6086ffbd020435790b05c3b5e01183efbb23a41f7d26a7269e8a7de02"
+     },
+     {
+      "hash": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+      "type": "grant",
+      "state": {
+       "status": "accepted",
+       "kind": "member",
+       "at": "2026-10-27T12:01:17.000Z",
+       "audience": "public",
+       "seq": 1
+      },
+      "refs": {
+       "answers": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "subject": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4"
+      },
+      "signature": "32bfac12b8d8fc7d672d1d5979625ac8c3126671a85fd93129aaf059434f3b09408c153bb9725ca3fc5993ebad140e3d3145818a8daad478326d52c2b4602b01"
+     },
+     {
+      "hash": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+      "type": "promise",
+      "state": {
+       "what": "bread",
+       "at": "2026-10-27T12:01:18.000Z",
+       "audience": "public",
+       "seq": 2
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c",
+       "after": [
+        "c857f112fe0aca29efbb0f7274cc4e462cfe8ab7f351cd4f5de93780e194d89c"
+       ]
+      },
+      "signature": "c3bd2b5fc0950c06f87b484185d86c206beec10be3c54e4042d3f01066982a34844dd172852a313416b1a8c52c279c96e3a8bc0bb4da328545bd24fe38df5506"
+     },
+     {
+      "hash": "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c",
+      "type": "grant",
+      "state": {
+       "kind": "member",
+       "status": "stopped",
+       "stop": "onward",
+       "at": "2026-10-27T12:01:19.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "updates": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "6c7efbbc6d7a560b5380ebb6153308ce80cad2eac5e62dc6b9334ee79bbdf46d",
+       "prev": "000af5c42910886e333208d1908661eeea4772fda6daaca492374ce4db950be1",
+       "after": [
+        "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55"
+       ]
+      },
+      "signature": "7497c6d4f04e2934e36dbbba194632c24ede18a15fec80d2adee9b772dce7359d80e93a661c5c253fe9a7026da23d02455f1bb979b9c4cd4499ee1e50125a101"
+     },
+     {
+      "hash": "b35498cc19f852105d80388b91b2315db40badf4c92bb68da0d3a4aed5ba06bd",
+      "type": "promise",
+      "state": {
+       "what": "cake",
+       "at": "2026-10-27T12:01:20.000Z",
+       "audience": "public",
+       "seq": 3
+      },
+      "refs": {
+       "from": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "to": "df1c2565c780017300cdacf2ee65fbf80e21ed139114bfb0a35e9bf257d2e3f9",
+       "as": "1ade619b2a8bf19fdf2422bdcddd067e36a0f156e9d1df9b7dcb8e163712174a",
+       "author": "ba8589316971625621d19459bcc61df628edc5110c0fa3677a2db30d20e234d4",
+       "prev": "27579cbe8d33542231572a339c66fc4a69027967ce8881f9a5c3ee083ae99c55",
+       "after": [
+        "e5855716cfa5094b583b180bf372d2aacd6679c6176caa2a744a0cba56154a1c"
+       ]
+      },
+      "signature": "208c1092d99fa90464c12e51845cea44d5d287a8d47d0cedfc6a441de6d686bb8b14f2bc0eb741a336da50d2c3f5480460a1b711c37404c54d4fda546ee7f50d"
+     }
+    ]
+   ],
+   "expect": null,
+   "exact": true
   }
  ]
 }
