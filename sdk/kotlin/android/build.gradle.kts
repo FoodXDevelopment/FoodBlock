@@ -29,7 +29,7 @@ android {
 kotlin { jvmToolchain(17) }
 
 dependencies {
-    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1")
+    api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
 }
 
 tasks.named("preBuild") {
