@@ -36,7 +36,7 @@ impl Checker<'_> {
             ));
         }
     }
-    // A signing key of any suite (a key named without its suite beside it: `replaces`, `recovery_key`, `orderer`).
+    // A signing key of any suite (a key named without its suite beside it: a key grant's `shown_key`).
     pub(super) fn any_sign_key(&self, key: Option<&Value>, what: &str, w: &mut W) {
         let Some(key) = key else { return };
         let ok = matches!(key, Value::String(k) if self.spec.suites.iter().any(|s| s.sign_key_re.as_ref().is_some_and(|r| r.test(k))) && crate::sign::key_is_sound(k));
@@ -44,21 +44,18 @@ impl Checker<'_> {
             w.push(f("unknown_suite", format!("state.{what} is a signing key of one of the suites")));
         }
     }
-    // state.suite, public_key_sign, public_key_encrypt, recovery_suite on a genesis or a key grant.
+    // state.suite, public_key_sign, public_key_encrypt on a genesis or a key grant.
     pub(super) fn key_checks(&self, state: &Value) -> W {
         let mut w: W = vec![];
         let g = |k: &str| state.get(k);
         let suite = self.suite_named(g("suite"), "suite", &mut w);
         self.key_in_suite(g("public_key_sign"), &suite, "public_key_sign", false, &mut w);
         self.key_in_suite(g("public_key_encrypt"), &suite, "public_key_encrypt", true, &mut w);
-        if g("recovery_suite").is_some() {
-            self.suite_named(g("recovery_suite"), "recovery_suite", &mut w);
-        }
         w
     }
 
     // The genesis (core.md section 4): the one block with no author, prev, after or seq, naming kind, at, audience and its
-    // signing key. A suite, an encryption key, a custodian and the recovery pair are optional. Its audience is any block's: public, or
+    // signing key. A suite, an encryption key, a reach and a clock are optional, the clock required with a reach. Its audience is any block's: public, or
     // a list of commitments with a nonce (decision H10); a reader verifies it once it holds it.
     // What is missing or extra is `bad_genesis`; what is there but malformed is its grammar's code.
     pub(super) fn genesis_errors(&self, state: &Value, refs: &Value) -> W {
@@ -91,19 +88,19 @@ impl Checker<'_> {
             w.push(f("bad_genesis", "state.kind says what they are"));
         }
         w.extend(self.key_checks(state));
-        let pair = state.get("recovery_key_hash").is_some() as u8 + state.get("recovery_reach").is_some() as u8;
-        if pair == 1 {
-            w.push(f(
-                "bad_genesis",
-                "recovery_key_hash and recovery_reach come together or not at all",
-            ));
+        // 1.9 3d-17: a genesis that states her list: its own key is the `key` voice of that list that names it; else it is no genesis
+        if let Some(vs) = state.get("voices").and_then(Value::as_array) {
+            let own = state.get("public_key_sign").and_then(Value::as_str);
+            if !vs.iter().any(|v| v.get("key").and_then(Value::as_str).is_some_and(|k| Some(k) == own)) {
+                w.push(f("shape", "a genesis whose key is no voice of its own list is no genesis"));
+            }
         }
-        if state.get("recovery_suite").is_some() && pair != 2 {
-            w.push(f("bad_genesis", "recovery_suite goes with the recovery pair"));
+        // her first voice's reach is read on her clock: a genesis with a reach names its clocks (identity.md, Her voices)
+        // her first voice's reach is a duration
+        w.extend(self.duration_shape(state.get("reach"), "state.reach"));
+        if state.get("reach").is_some() && state.get("clocks").is_none() {
+            w.push(f("bad_genesis", "a genesis that states a reach states its clocks (blocks.md, A named clock)"));
         }
-        w.extend(self.hash_shape(state.get("recovery_key_hash"), "state.recovery_key_hash"));
-        w.extend(self.duration_shape(state.get("recovery_reach"), "state.recovery_reach"));
-        w.extend(self.hash_shape(state.get("custodian"), "state.custodian"));
         w
     }
 }

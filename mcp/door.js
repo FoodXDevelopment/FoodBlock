@@ -1,21 +1,22 @@
 // The door (the MCP server's logic, with no transport in it). Any assistant can find, read, ask and promise on FoodBlock
 // through it, under six rules:
 //   1. The autonomous system drafts; the person decides. A draft is node-local data (core.md section 10), never a block. The
-//      person's one tap on the approval page signs it with the person's own key.
+//      block is signed by the person's OWN DEVICE (a passkey, or any key she keeps): the door composes the block, shows it, and takes
+//      back only a signature over exactly those bytes. This door holds no key of hers, makes none, and has no way to sign as her.
 //   2. An unanswered ask binds no one (promises.md).
 //   3. A first message to a stranger has a human author (consent.md): `ask` is always a draft; an autonomous system-signed block
 //      goes out only when the SDK's admission check says it may.
 //   4. STOP binds the sender: the `consent` fold is asked before every draft and every send (`stopped`). This is the sender's
 //      own discipline; a node never refuses a block for a STOP (consent.md, invariant 29).
-//   5. It never holds money: there is no transfer, payment or deposit here, and a grant's money limit is the fence.
+//   5. It never holds money: there is no transfer, payment or deposit here, and a grant's limit is the fence.
 //   6. Open types, closed authority: the assistant writes no raw blocks. Every block is one of two shapes, an ask
 //      (the person's) or a promise or accept under a live grant (the autonomous system's, naming it in refs.under).
 // Every protocol rule is the SDK's (Rust core through WebAssembly): this file composes and asks, it checks nothing itself.
 import fb from "@foodxdev/foodblock";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 const clock = () => new Date().toISOString();
-// An identity's own first block (the genesis of a person, an assistant, a host's operator) is what others find a person by: the door states
+// An identity's own first block (the genesis of a person, an assistant) is what others find a person by: the door states
 // it public where it makes one. Every other block names the audience its person chose (a draft carries it; none is filled in).
 export const IDENTITY_AUDIENCE = "public";
 // The door's own choice at the node: both blocks of a pair arriving together are kept as proof and neither is taken.
@@ -45,42 +46,60 @@ export function memoryNode() {
   };
 }
 
-/** Someone who signs: keys, genesis and everything they have signed, so each block takes its place in their chain. A `custodian` (an id) is named in the genesis when someone else holds the key (identity.md, Held keys). */
-export function newPerson(kind = "person", { custodian, reach } = {}) {
-  // the recovery window is the person's own word (identity.md): nothing here states one for them
-  if (typeof reach !== "string" || !reach) throw new Error("newPerson: reach is required: how long after a theft a recovery key may reach back, as a duration the person states (for example P30D)");
-  const keys = fb.generateKeypair(), encryption = fb.generateEncryptionKeypair(), recovery = fb.generateKeypair();
-  const genesis = fb.identity.genesis(keys, { kind, encryptionKey: encryption.public_key_encrypt, recoveryKey: recovery.public_key_sign, reach, at: clock(), audience: IDENTITY_AUDIENCE, ...(custodian ? { custodian } : {}) });
-  return { keys, encryption, genesis, chain: [genesis], id: genesis.hash, recovery };
+/**
+ * An assistant's own session identity: a key for one tool, made by the door for that tool alone, kind `agent`. It is a tool, never a person: it
+ * has no recovery or encryption key and no authority until a grant her device signed. (Not for a person: a person's key is made on her own
+ * device and never reaches a door. Test fixtures that need fictional people make them in mcp/test/ only.)
+ */
+export function newAgent() {
+  const keys = fb.generateKeypair();
+  const genesis = fb.identity.genesis(keys, { kind: "agent", at: clock(), audience: IDENTITY_AUDIENCE });
+  return { keys, genesis, chain: [genesis], id: genesis.hash };
+}
+
+/** The old flow made a person here, with her keys inside the door. It no longer exists; this says where it went. */
+export function newPerson() {
+  throw new Error("this door makes no person and holds no key of hers: make her identity on her own device (a passkey), then give the door her genesis and chain (public blocks only)");
 }
 
 const scopeOf = (grant) => grant?.state?.scope || {};
 
 /**
  * @param node    the node the person's blocks live on ({ all, get, push })
- * @param person  who the person is: { id, keys, chain } (the door signs as them only on their tap)
- * @param options { now, code, base, persist }
+ * @param person  who the person is, PUBLICLY: { id, genesis, chain } (blocks only). It must carry no key: her key stays on her own device.
+ * @param options { now, persist, drafts }
  */
-export function createDoor({ node = memoryNode(), reach, person = newPerson("person", { reach }), now = clock, code, persist = () => {}, drafts = new Map() } = {}) {
-  const approvalCode = code || randomBytes(5).toString("hex").toUpperCase().replace(/(.{5})(.{5})/, "$1-$2");
-  // id -> draft (pending | sent | discarded). A host may pass a durable Map (store.js durableDrafts) with touch(): called after every change, so a restart loses no link.
+export function createDoor({ node = memoryNode(), person, now = clock, persist = () => {}, drafts = new Map() } = {}) {
+  if (!person?.id || !person.genesis) throw new Error("createDoor needs the person's id, genesis and chain (public blocks). This door makes no person and holds no key of hers: make her identity on her own device");
+  for (const secret of ["keys", "key", "recovery", "encryption", "private_key"]) if (person[secret] !== undefined) throw new Error(`the door was handed a ${secret} of the person: a door holds no key of hers. Give it her id, genesis and chain only; her own device signs`);
+  person = { id: person.id, genesis: person.genesis, chain: person.chain || [person.genesis], ...(person.signerKey ? { signerKey: person.signerKey } : {}) };
+  // id -> draft (pending | sent | discarded | locked). A host may pass a durable Map (store.js durableDrafts) with touch(): called after every change, so a restart loses no link.
   const touch = () => drafts.touch?.();
-  const door = { node, person, drafts, approvalCode, base: "", now };
+  const door = { node, person, drafts, base: "", now };
   node.push(person.genesis);
   person.chain.forEach((block) => node.push(block));
 
-  // ---- Signing ----
-  // The person signs on their tap; an autonomous system signs only under a live grant, naming it.
-  const writeAs = (who, spec, extra = {}) => {
-    const signed = fb.write(spec.type, spec.state, spec.refs, { author: who.id, key: who.keys, held: who.chain, at: now(), audience: spec.audience, ...extra });
-    return signed;
+  // ---- Composing, and the person's signature ----
+  // The key her device signs with: the one key of her genesis unless the host names another that speaks for her.
+  const signerKeyOf = () => person.signerKey || person.genesis.state.public_key_sign;
+  // A block as its author states it, ready for a signature (nothing is signed here). Refuses a malformed one: the trial checks it as signed except for the signature.
+  const composeFor = (who, spec, extra = {}) => {
+    const link = fb.identity.nextLinkFor(who.id, who === person ? signerKeyOf() : who.keys.public_key_sign, who.chain);
+    const block = fb.compose(spec.type, spec.state, spec.refs, { author: who.id, at: now(), audience: spec.audience, link, ...extra });
+    // 1.9 3a-3: `valid` judges no value; what a writer would refuse to sign is the SDK's `writeRefusals`, asked of the draft before anyone signs
+    const held = [...node.all(), ...who.chain];
+    const wrong = [...fb.valid({ ...block, signature: "00" }, held).filter((r) => r.code !== "bad_signature"), ...fb.writeRefusals({ type: block.type, state: block.state, refs: block.refs }, held)];
+    if (wrong.length) throw Object.assign(new Error(`the block would be refused: ${wrong.map((r) => r.detail || r.code).join("; ")}`), { wrong: wrong.map((r) => r.detail || r.code) });
+    return block;
   };
-  // A block is the signer's only once the node took it: one the node leaves waiting or refuses is never reported as sent or bound (door/t8).
+  // An assistant signs only under a live grant, naming it, with its own session key.
+  const writeAs = (who, spec, extra = {}) => fb.write(spec.type, spec.state, spec.refs, { author: who.id, key: who.keys, held: who.chain, at: now(), audience: spec.audience, ...extra });
+  // A block is the signer's only once the node took it: one the node leaves unjudged or refuses is never reported as sent or bound (door/t8).
   const keep = (who, signed) => {
     const { salts, ...block } = signed;
     const result = node.push(block);
     if (!result.taken?.some((taken) => taken.hash === block.hash)) {
-      const why = [...(result.refused || []).map((r) => r.detail || r.code), ...(result.waiting || []).map((w) => `waiting for ${[].concat(w.needs || []).join(", ")}`)];
+      const why = [...(result.refused || []).map((r) => r.detail || r.code), ...(result.unjudged || []).map((w) => `missing ${[].concat(w.needs || []).join(", ")}`)];
       throw Object.assign(new Error(`the node did not take it: ${why.join("; ") || "not taken"}`), { wrong: why });
     }
     who.chain.push(block);
@@ -97,58 +116,85 @@ export function createDoor({ node = memoryNode(), reach, person = newPerson("per
   };
 
   // ---- Drafts ----
-  /** Keep a draft for the person to decide. A trial write proves it would sign; the trial is thrown away. */
-  function draft(kind, spec, { to, summary, why } = {}) {
-    const trial = writeAs(person, spec);                 // refuses a malformed block here, not at the tap
+  /** Keep a draft for the person to decide. A trial composition proves it would be accepted; the trial is thrown away. */
+  function draft(kind, spec, { to, why, verb } = {}) {
+    refuseProse(spec.state);
+    const trial = composeFor(person, spec);
     const stopped = to ? admission(trial, to).filter((code) => code === "stopped") : [];
     if (stopped.length) throw Object.assign(new Error(`stopped: ${to.slice(0, 8)} asked for no contact; nothing was drafted`), { wrong: ["stopped"] });
     // the person's list of what waits for a tap is bounded: an assistant cannot bury the one that matters under thousands (agents/t18)
     if ([...drafts.values()].filter((d) => d.status === "pending").length >= MAX_PENDING) throw Object.assign(new Error(`${MAX_PENDING} drafts already wait for the person's tap: ask them to send or discard some first`), { wrong: ["too_many_drafts"] });
     const id = randomBytes(32).toString("hex");
-    const item = { id, kind, spec, audience: spec.audience, to: to || null, summary, why: why || null, status: "pending", at: now(), receipt: fb.receiptCode(id) };
+    const shown = words(trial, node);
+    // the tool is told what the page will show, the same lines: it cannot describe a block as something it is not (F3)
+    const summary = `${verb || kind}: ${shown.slice(1).join("; ")}`;
+    const item = { id, kind, spec, audience: spec.audience, to: to || null, shown, summary, why: why || null, status: "pending", at: now(), receipt: fb.shortCode(id), failures: 0 };
     drafts.set(id, item); touch();
     return view(item);
   }
   const link = (id) => `${door.base}/approve/${id}`;
   const view = (item) => ({ draft: item.id, kind: item.kind, status: item.status, bound: false, receipt: item.receipt, summary: item.summary,
-    ...(item.why ? { why_a_draft: item.why } : {}), approve_at: link(item.id), next: "Give the person this link. Nothing is sent or bound until they tap send." });
+    ...(item.why ? { why_a_draft: item.why } : {}), approve_at: link(item.id), next: "Give the person this link. Nothing is sent or bound until their own device signs it." });
 
-  /** The person's tap: sign the draft with their own key, check STOP once more, keep and send it. */
-  function approve(id, given) {
+  /**
+   * The block her device will sign, composed now: what the approval page shows and the challenge it asks her key to sign (a passkey's challenge, or
+   * the bytes any other key signs). Nothing is signed here. Asking again composes again, at the chain as it stands.
+   */
+  door.signing = (id) => {
+    const item = drafts.get(id);
+    if (!item || item.status !== "pending") return null;
+    const block = composeFor(person, item.spec);
+    item.unsigned = { block, head: person.chain.length, key: signerKeyOf() };
+    item.shown = words(block, node);
+    touch();
+    return { block, challenge: fb.passkeyChallenge(block), key: signerKeyOf(), shown: item.shown, suite: fb.suiteOfKey(signerKeyOf()) };
+  };
+
+  /**
+   * The person's yes: her device's signature over the block `signing` composed. `proof` is { signature } (hex) or
+   * { authenticatorData, clientDataJSON, signature } (a passkey's WebAuthn answer, each as hex). The door checks it is her key's signature over exactly the
+   * block it showed, then keeps and sends the block. A wrong signature counts against the draft, which locks after five.
+   */
+  door.approve = (id, proof) => {
     const item = drafts.get(id);
     if (!item) return { ok: false, reason: "no such draft" };
-    if (!codeOk(given)) return { ok: false, reason: "wrong approval code" };
+    if (item.status === "locked") return { ok: false, reason: "this draft is locked after too many wrong signatures: ask for a new one" };
     if (item.status !== "pending") return { ok: false, reason: `already ${item.status}` };
+    const reject = (reason) => { if (++item.failures >= TRIES) item.status = "locked"; touch(); return { ok: false, reason }; };
+    if (!item.unsigned) return { ok: false, reason: "your device has not been shown this block yet: open the approval page again" };
+    if (item.unsigned.head !== person.chain.length) return { ok: false, reason: "your chain moved since this block was shown: open the approval page again" };
+    let signature;
+    try { signature = proof?.authenticatorData ? fb.passkeySignature(String(proof.authenticatorData), String(proof.clientDataJSON), String(proof.signature)) : String(proof?.signature || "").trim(); }
+    catch (error) { return reject(`that is not a signature: ${error.message}`); }
+    const unsigned = item.unsigned.block;
+    if (!signature || !fb.verify(unsigned, signature, item.unsigned.key)) return reject("that is not your key's signature over this block: nothing was sent");
     try {
-      const signed = writeAs(person, item.spec);
+      const signed = { ...unsigned, signature };
+      // what she signs is what she was shown: the words of this block must be the words the page had
+      if (words(signed, node).join("\n") !== item.shown.join("\n")) return { ok: false, reason: "the block to send differs from the one shown: nothing was sent" };
       if (item.to) {
         const refusals = admission(signed, item.to);
-        if (refusals.includes("stopped")) { item.status = "stopped"; return { ok: false, reason: "stopped: the recipient asked for no contact" }; }
+        if (refusals.includes("stopped")) { item.status = "stopped"; touch(); return { ok: false, reason: "stopped: the recipient asked for no contact" }; }
       }
       const block = keep(person, signed);
-      item.status = "sent"; item.block = block.hash;
-      return { ok: true, block: block.hash, receipt: fb.receiptCode(block.hash), kind: item.kind };
+      item.status = "sent"; item.block = block.hash; delete item.unsigned;
+      if (item.kind === "grant" && item.assistant) item.assistant.grant = block.hash;
+      touch();
+      return { ok: true, block: block.hash, receipt: fb.shortCode(block.hash), kind: item.kind };
     } catch (error) { return { ok: false, reason: reasons(error).join("; ") }; }
-  }
-  const discard = (id, given) => {
-    const item = drafts.get(id);
-    if (!item || !codeOk(given) || item.status !== "pending") return { ok: false };
-    item.status = "discarded"; return { ok: true };
   };
-  // A wrong code costs its sender a small constant wait before the answer (the approval page sleeps, below), and locks nothing: a stranger who
-  // sends wrong codes can no longer lock the person out, and a guess is still a second long (release 50; door/t12).
-  function codeOk(given) {
-    const a = Buffer.from(String(given || "").trim().toUpperCase()), b = Buffer.from(approvalCode);
-    return a.length === b.length && timingSafeEqual(a, b);
-  }
+  door.discard = (id) => {
+    const item = drafts.get(id);
+    if (!item || item.status !== "pending") return { ok: false };
+    item.status = "discarded"; touch(); return { ok: true };
+  };
 
   // ---- The assistant: one autonomous system per connection ----
-  /** A new assistant session: its own identity, no authority until the person approves a grant. */
+  /** A new assistant session: its own tool identity, no authority until the person's device signs a grant. */
   function agent(name = "assistant", { client = null } = {}) {
-    const me = newPerson("agent", { reach: person.genesis.state.recovery_reach });
+    const me = newAgent();
     node.push(me.genesis);
-    const state = { ...me, name, client, grant: null };
-    return state;
+    return { ...me, name, client, grant: null };
   }
 
   /** A restored assistant (a session that outlived a restart) brings its own chain back to the node, so what it signs next takes its place. */
@@ -163,54 +209,39 @@ export function createDoor({ node = memoryNode(), reach, person = newPerson("per
     return live ? grant : null;
   };
 
-  /** connect: pair this assistant to the person's node. The grant is a draft until the person taps. */
-  function connect(assistant, { acts = [], days = 30, limit, audience, parties = [] } = {}) {
+  /** connect: pair this assistant to the person's node. The grant is a draft until her device signs it. */
+  function connect(assistant, { types = [], days = 30, limit, audience, parties = [], on = [] } = {}) {
     const until = plusDays(Math.min(Math.max(days, 1), 365), now());
     // `parties`: the ids the assistant may deal with. A grant that lists none names no one but the person (authority.md): nothing widens it.
-    const scope = { acts: [...new Set(acts)], parties: [...new Set(parties)], until, ...(limit ? { limit } : {}) };
-    const spec = { type: "grant", state: { kind: "assistant", scope }, refs: { to: assistant.id }, audience };
-    const operator = { type: "grant", state: { kind: "operator", scope: {} }, refs: { to: assistant.id }, audience };
-    const item = draft("grant", spec, { summary: describeGrant(assistant.name, scope, assistant) });
-    const held = drafts.get(item.draft);
-    held.also = operator; held.assistant = assistant; touch();
+    // `on`: the promises of hers it may bind her to (1.9 G1: a block under the grant binds her only where it keeps to one of them); a grant
+    // that names one is counted on a line, its `refs.meter`: the assistant's own (stage 4, a meter that is the holder's own id).
+    const ons = [...new Set(on.map((h) => fullId(h, "promise")))];
+    const scope = { types: [...new Set(types)], parties: [...new Set(parties)], ...(ons.length ? { on: ons } : {}), until, ...(limit ? { limit } : {}) };
+    const spec = { type: "grant", state: { kind: "assistant", scope }, refs: { to: assistant.id, ...(ons.length ? { meter: assistant.id } : {}) }, audience };
+    // the name is the one the app gave itself: shown as its words, beside the client and key that are facts (agents/t19)
+    const nolimit = scope.types.length && !limit ? ", with NO limit on what it binds" : "";
+    const item = draft("grant", spec, { verb: `Connect an assistant that calls itself "${plain(assistant.name)}" (${assistant.client ? `app ${plain(assistant.client)}, ` : ""}key ${String(assistant.id).slice(0, 12)})${nolimit}` });
+    drafts.get(item.draft).assistant = assistant;
+    touch();
     return item;
   }
-  // A grant's approval also signs the operator grant (the person answers for this assistant).
-  const approveBase = approve;
-  door.approve = (id, given) => {
-    const item = drafts.get(id);
-    const result = approveBase(id, given);
-    if (result.ok && item?.kind === "grant") {
-      const operator = keep(person, writeAs(person, item.also));
-      item.operator = operator.hash;
-      // the assistant accepts the operator grant: an operator answers for a machine only once the machine has said yes (identity.md). A
-      // remote host's window relays only its person's blocks and an agent's blocks under her grants, so there the accept waits for the
-      // host to relay it.
-      const assistant = item.assistant;
-      if (assistant.keys && !node.remote) keep(assistant, writeAs(assistant, { type: "grant", state: { status: "accepted" }, refs: { answers: operator.hash }, audience: item.audience }, { held: [...assistant.chain, operator] }));
-      item.assistant.grant = result.block;
-    }
-    touch();
-    return result;
-  };
-  door.discard = (id, given) => { const result = discard(id, given); touch(); return result; };
   /**
-   * Disconnect: the person ends an assistant's authority, not only its token. Each live grant they gave to the assistants of this client
-   * (or to every assistant, with no client) is stopped by a block the person signs, and so is its operator grant. Returns the stops signed.
+   * Disconnect: the person ends an assistant's authority, not only its token. For each live grant given to the assistants of this client (or to every
+   * assistant, with no client) the door DRAFTS the stop; her device signs it, as it signs anything of hers. The door never signs a stop as her.
+   * Returns the stop drafts, each with the link to open.
    */
   door.disconnect = (client = null) => {
     const stops = [];
-    for (const item of drafts.values()) {
-      if (item.kind !== "grant" || !item.block || (client && item.assistant?.client !== client)) continue;
-      for (const hash of [item.block, item.operator].filter(Boolean)) {
-        const grant = node.get(hash);
-        if (!grant || !fb.grant.isLive(grant, node.all(), { now: now() })) continue;
-        stops.push(keep(person, writeAs(person, { type: "grant", state: { kind: grant.state.kind, status: "stopped", stop: "onward" }, refs: { updates: grant.hash }, audience: item.audience })).hash);
-      }
-      item.status = "disconnected";
+    for (const item of [...drafts.values()]) {
+      if (item.kind !== "grant" || !item.block || item.status === "disconnecting" || (client && item.assistant?.client !== client)) continue;
+      const grant = node.get(item.block);
+      if (!grant || !fb.grant.isLive(grant, node.all(), { now: now() })) continue;
+      const spec = { type: "grant", state: { kind: grant.state.kind, status: "stopped", stop: "onward" }, refs: { updates: grant.hash }, audience: item.audience };
+      stops.push(draft("stop", spec, { verb: "Stop an assistant's grant" }));
+      item.status = "disconnecting";
     }
     touch();
-    return { stopped: stops };
+    return { stopped: [], drafts: stops, next: stops.length ? "Open each link: nothing ends until your own device signs the stop." : "No live grant to stop." };
   };
 
   // ---- Reading the world ----
@@ -274,7 +305,7 @@ export function createDoor({ node = memoryNode(), reach, person = newPerson("per
     const block = node.get(hash);
     if (!block) throw new Error("No such block here.");
     const others = node.all().filter((b) => b.hash !== block.hash);
-    const out = { block, refusals: fb.valid(block, others), signed_by_author: fb.identity.signedByAuthor(block, node.all()), receipt: fb.receiptCode(block.hash) };
+    const out = { block, refusals: fb.valid(block, others), signed_by_author: fb.identity.signedByAuthor(block, node.all()), receipt: fb.shortCode(block.hash) };
     if (block.type === "promise") {
       const first = block.refs.answers || block.refs.for ? node.get(block.refs.for || block.refs.answers) || block : block;
       out.promise = { first: first.hash, ...pick(fb.promiseView(first, node.all(), { now: now() }), ["stage", "sides", "quantity", "accept", "lines", "total", "paid", "stop", "stopped"]) };
@@ -295,16 +326,17 @@ export function createDoor({ node = memoryNode(), reach, person = newPerson("per
   function ask({ from, what, offer, audience, ...terms }) {
     const source = offer && node.get(fullId(offer, "offer"));
     const target = what || source?.refs?.what;
+    if (!target) throw Object.assign(new Error("nothing to ask for: give an offer or a thing; nothing was drafted"), { wrong: ["no_thing"] });
     const seller = from || source?.refs?.from;
     const refs = { to: person.id, ...(seller ? { from: seller } : {}), ...(target ? { what: target } : {}), ...(source ? { derives_from: source.hash } : {}) };
-    const spec = { type: "promise", state: { terms: termsOf(terms), ...(target ? {} : { what: String(what) }) }, refs, audience };
-    return draft("ask", spec, { to: seller, summary: describe("Ask", node.get(target), seller, spec.state.terms), why: "A first message to a stranger has a human author: you tap send." });
+    const spec = { type: "promise", state: { terms: termsOf(terms) }, refs, audience };
+    return draft("ask", spec, { to: seller, verb: "Ask", why: "A first message to a stranger has a human author: she signs it on her own device." });
   }
 
-  /** promise: the assistant's own binding block, only under a live grant that names the act, never to a stranger. */
+  /** promise: the assistant's own binding block, only under a live grant that covers its type, never to a stranger. */
   function promise(assistant, { to, what, audience, ...terms }) {
     const spec = { type: "promise", state: { terms: termsOf(terms) }, refs: { to: person.id, from: to, what }, audience };
-    return bind(assistant, "promise", spec, to, describe("Promise", node.get(what), to, spec.state.terms));
+    return bind(assistant, "promise", spec, to, "Promise");
   }
 
   /** accept: answer an offer or counter-offer `accepted`, for the person, under a live grant. */
@@ -315,68 +347,41 @@ export function createDoor({ node = memoryNode(), reach, person = newPerson("per
     const seller = offer.refs.author;
     const spec = { type: "promise", state: { status: "accepted", ...(quantity ? { terms: { quantity } } : {}) }, refs: { answers: offer.hash, for: first.hash }, audience };
     // the summary is of what is signed: the offer's terms as this accept binds them (its own quantity, where it names one)
-    return bind(assistant, "accept", spec, seller, describe("Accept", node.get(offer.refs.what), seller, { ...offer.state.terms, ...(quantity ? { quantity } : {}) }), offer);
+    return bind(assistant, "accept", spec, seller, "Accept", offer);
   }
 
-  function bind(assistant, kind, spec, counterparty, summary, offer) {
+  function bind(assistant, kind, spec, counterparty, verb, offer) {
     const grant = grantOf(assistant);
     const why = [];
     if (!grant) why.push("no live grant: this assistant is not connected, or the person's grant ended");
-    else if (!(scopeOf(grant).acts || []).includes("promise")) why.push("the grant does not name the act `promise`: an agent's ask is a quote request");
-    // The person's visible fence: the limit over its period and the cap on each act, held against what the act comes to (the SDK's
-    // total: per-unit price times quantity, lines added up) plus what this assistant already bound under the grant in the period.
+    else if (!(scopeOf(grant).types || []).includes("promise")) why.push("the grant does not cover the type `promise`: an agent's ask is a quote request");
+    // The person's limit is counted by the SDK on the grant's own line (1.9 stage 4, G1: `why_not_under` reads the meter, `keeps_to` and the
+    // limit), never by a copy here.
+    // 1.9 stage 4: a block that binds her under a grant with a limit states what it draws on the grant's line (`state.draws`): the total
+    // the deal comes to (the SDK's terms_total of the offer's terms at the quantity the block chooses); the SDK counts it on the line
     const sc = grant ? scopeOf(grant) : {};
-    const fence = { ...(sc.limit ? { limit: sc.limit } : {}), ...(sc.each ? { each: sc.each } : {}) };
-    if (grant && Object.keys(fence).length) {
-      const value = sizeOf(fence, spec, offer);
-      const spent = spentUnder(grant, assistant, fence);
-      if (value === null) why.push("the act has no total the person's limit can be held against");
-      else if (value !== undefined && !fb.grant.withinLimit(fence, value, spent)) why.push("over the person's limit");
+    if (grant && (sc.limit || sc.each) && !spec.state.draws) {
+      const terms = { ...(offer?.state?.terms || {}), ...(spec.state.terms || {}) };
+      const total = terms.price ? fb.grant.termsTotal(terms, spec.state.terms?.quantity || terms.quantity) : null;
+      if (total && total.unit !== undefined) spec = { ...spec, state: { ...spec.state, draws: { grant: grant.hash, amount: total } } };
     }
     if (!why.length) {
       const refs = { ...spec.refs, under: grant.hash };
       try {
         const signed = writeAs(assistant, { ...spec, refs }, {});
-        const words = { not_human: "counterparty is a stranger: a human sends the first message", stopped: "stopped: the counterparty asked for no contact" };
-        const refusals = [...fb.grant.whyNotUnder(signed, node.all(), { now: now() }).map((r) => r.detail || r.code || String(r)), ...admission(signed, counterparty).map((code) => words[code] || code)];
+        const reading = { not_human: "counterparty is a stranger: a human sends the first message", stopped: "stopped: the counterparty asked for no contact" };
+        const refusals = [...fb.grant.whyNotUnder(signed, node.all(), { now: now() }).map((r) => r.detail || r.code || String(r)), ...admission(signed, counterparty).map((code) => reading[code] || code)];
         if (!refusals.length) {
           const block = keep(assistant, signed);
-          return { bound: true, kind, block: block.hash, receipt: fb.receiptCode(block.hash), summary, signed_under: grant.hash };
+          return { bound: true, kind, block: block.hash, receipt: fb.shortCode(block.hash), summary: `${verb}: ${words(block, node).slice(1).join("; ")}`, signed_under: grant.hash };
         }
         why.push(...refusals);
       } catch (error) { why.push(...reasons(error)); }
     }
     if (why.some((w) => w.startsWith("stopped"))) throw Object.assign(new Error("stopped: the counterparty asked for no contact; nothing was drafted"), { wrong: ["stopped"] });
-    return draft(kind, spec, { to: counterparty, summary, why: why.join("; ") });
+    return draft(kind, spec, { to: counterparty, verb, why: why.join("; ") });
   }
 
-  // What one act comes to, in the fence's measure: money (the terms' total) or an amount (the quantity bound). Undefined when the act
-  // carries nothing the fence measures (no price under a money fence); null when it carries a price or lines with no computable total.
-  function sizeOf(fence, spec, offer) {
-    const own = spec.state.terms || {}, terms = own.price || own.lines ? own : offer?.state?.terms || own;
-    // a standing promise (a repeat) binds every occurrence: one occurrence's price is not what it comes to, so no limit can hold it (agents/t3)
-    if (terms.repeat || own.repeat) return null;
-    const range = (q) => (q && q.max !== undefined ? q.max : q);
-    const quantity = range(own.quantity || (terms === own ? null : terms.quantity)) || null;
-    if ((fence.limit || fence.each).unit !== undefined) return quantity && quantity.value !== undefined ? quantity : terms.lines ? null : undefined;
-    if (!terms.price && !terms.lines) return undefined;
-    return fb.grant.termsTotal(terms, quantity);
-  }
-  // What this assistant has already bound under the grant in the fence's period (all time, when the grant names no `every`): the same measure, summed.
-  function spentUnder(grant, assistant, fence) {
-    const since = scopeOf(grant).every ? fb.grant.addDuration(now(), scopeOf(grant).every, -1) : null;
-    const measure = fence.limit || fence.each;
-    let sum = "0"; // exact: a total past 2^53 comes as decimal text
-    for (const b of node.all()) {
-      if (b.refs?.author !== assistant.id || b.refs?.under !== grant.hash || b.type !== "promise") continue;
-      if (since && !(b.state?.at >= since)) continue;
-      const v = sizeOf(fence, b, b.refs.answers ? node.get(b.refs.answers) : null);
-      if (!v) continue;
-      const same = measure.unit !== undefined ? v.unit === measure.unit : v.currency === measure.currency;
-      if (same) sum = addDecimals(sum, measure.unit !== undefined ? v.value : v.minor);
-    }
-    return sum;
-  }
 
   // ---- A remote node: read what the host holds before a call, send what was signed after it ----
   /** Before a call: the node's truth (a remote node pulls), and the person's chain rebuilt from it so the next block takes its place after any the person signed elsewhere. */
@@ -401,72 +406,131 @@ function addDecimals(a, b) {
   const total = big[0] + big[1], neg = total < 0n, digits = (neg ? -total : total).toString().padStart(scale + 1, "0");
   return (neg ? "-" : "") + (scale ? digits.slice(0, -scale) + "." + digits.slice(-scale) : digits);
 }
-// Money as people read it: minor units over the currency's own decimals (ISO 4217, as the platform's Intl knows it: 0 for JPY, 3 for KWD),
-// an issuer's unit over the decimals it names. Exact, from the integer: never a float.
-const decimalsOf = (currency) => {
-  if (currency && typeof currency === "object") return Number.isInteger(currency.decimals) ? currency.decimals : 0;
-  try { return new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions().maximumFractionDigits; } catch { return 0; }
-};
-const nameOf = (currency) => (currency && typeof currency === "object" ? `${plain(currency.unit)} (${plain(currency.issuer)})` : plain(currency));
-const mark = (m) => {
-  if (!m || m.minor === undefined) return null;
-  const places = decimalsOf(m.currency), raw = BigInt(String(m.minor).replace(/^-/, "")), neg = String(m.minor).startsWith("-");
-  const digits = raw.toString().padStart(places + 1, "0");
-  return `${neg ? "-" : ""}${places ? `${digits.slice(0, -places)}.${digits.slice(-places)}` : digits} ${nameOf(m.currency)}`;
-};
-// A name its author chose, as text the page shows plainly: no direction controls (they can reorder what follows), at most 120 characters.
 const MAX_PENDING = 100;
 const WRONG_CODE_MS = 1000;
-const plain = (text) => { const t = String(text ?? "").replace(/[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/g, ""); return t.length > 120 ? `${t.slice(0, 120)}…` : t; };
-function describe(verb, thing, party, terms) {
-  const price = terms?.price?.money ? `${mark(terms.price.money)} per ${plain(terms.price.per?.value ?? 1)} ${plain(terms.price.per?.unit ?? "")}`.trim() : terms?.price?.minor !== undefined ? mark(terms.price) : null;
-  const q = terms?.quantity, ranged = q?.max !== undefined;
-  const quantity = q ? (ranged ? `${plain(q.min?.value ?? 0)} to ${plain(q.max.value)} ${plain(q.max.unit)}` : `${plain(q.value)} ${plain(q.unit)}`) : null;
-  let total = null;
-  try { const t = terms ? fb.grant.termsTotal(terms, ranged ? q.max : q || null) : null; total = t ? mark(t) : null; } catch {}
-  // a thing's name is its author's words, shown as theirs and cut short: terms are only what the block itself says (agents/t7)
-  return [verb, quantity, thing ? `${plain(thing.state.kind)} its seller names "${plain(thing.state.name || thing.state.kind)}"` : null,
-    party ? `with ${plain(party)}` : "to anyone", price ? `at ${price}` : "(no price: they will quote)", total ? `(${ranged ? "up to " : ""}${total} in all)` : null,
-    terms?.repeat ? `repeating ${plain(typeof terms.repeat === "string" ? terms.repeat : JSON.stringify(terms.repeat))}${terms.until ? ` until ${plain(terms.until)}` : " with no end"}` : null,
-    terms?.deliver_by ? `by ${plain(terms.deliver_by)}` : null, `until ${plain(terms?.expires || "-")}`].filter(Boolean).join(" ");
+const TRIES = 5;
+// A text its author chose, as text the page shows plainly: no direction controls (they can reorder what follows), at most 120 characters.
+const BIDI = /[؜‎‏‪-‮⁦-⁩]/g;
+const plain = (text) => { const t = String(text ?? "").replace(BIDI, ""); return t.length > 120 ? `${t.slice(0, 120)}…` : t; };
+// An amount as people read it: its value and its unit, as the block says them. Exact: a decimal text, never a float.
+const mark = (a) => (a && typeof a === "object" && a.value !== undefined && a.unit !== undefined ? `${plain(a.value)} ${plain(a.unit)}` : null);
+// A unit is one token (kg, GBP, {tray}); words in a unit are a tool writing prose into a field a person reads as a fact. Refused at the draft, before anyone is shown it (F3).
+const UNIT = /^\S{1,32}$/u;
+function refuseProse(value, path = "state") {
+  if (Array.isArray(value)) return value.forEach((x, i) => refuseProse(x, `${path}[${i}]`));
+  if (!value || typeof value !== "object") return;
+  for (const [k, v] of Object.entries(value)) {
+    if (k === "unit" && typeof v === "string" && !UNIT.test(v)) throw Object.assign(new Error(`${path}.unit is one token such as kg or GBP, not words: put words in a text field. Nothing was drafted.`), { wrong: ["prose_in_unit"] });
+    refuseProse(v, `${path}.${k}`);
+  }
 }
-function describeGrant(name, scope, assistant = {}) {
-  const acts = scope.acts.length ? `may bind you on: ${scope.acts.map(plain).join(", ")}` : "may find, read and draft only; it cannot bind you";
-  const limit = scope.acts.length ? (scope.limit ? `, up to ${mark(scope.limit)}` : ", with no limit on what it binds") : "";
-  // the name is the one the app gave itself: shown as its words, beside the client and key that are facts (agents/t19: a hostile app named
-  // itself "assistant" and looked like a trusted one)
-  const who = `${assistant.client ? `app ${plain(assistant.client)}, ` : ""}key ${String(assistant.id || "").slice(0, 12)}`;
-  return `Connect an assistant that calls itself "${plain(name)}" (${who}): it ${acts}, until ${plain(scope.until)}${limit}. The same tap signs that you answer for this assistant (an operator grant).`;
+const SHORT = (id) => `${String(id).slice(0, 8)}…${String(id).slice(-4)}`;
+
+/**
+ * Terms as one reading: the total the terms come to, from the SDK, so a person sees the sum and not only its parts.
+ */
+function totalOf(block, byHash) {
+  try { const offer = block.refs?.answers && byHash.get(block.refs.answers); const t = offer ? { ...offer.state?.terms, ...block.state?.terms } : block.state?.terms; if (!t) return null; const q = t.quantity?.max !== undefined ? t.quantity.max : t.quantity; return mark(fb.grant.termsTotal(t, q || null)); } catch { return null; }
+}
+
+/**
+ * What the person signs, in plain fields, from the block itself: who may read it first, then every field of its state and refs (the signer's own
+ * bookkeeping aside). The approval page shows this and nothing else, so nothing signed can be absent from it, and the summary the tool receives is these
+ * same lines. Every id is shown by what signed blocks the node holds say of it: a thing by its signed name, kind and maker; a person by who they are to
+ * this deal; any id also in full. Words an author wrote are marked as theirs. A reader who is no party to the deal is flagged. Two held things with the
+ * same name and kind are called out, so a look-alike cannot stand in for the one meant.
+ */
+function words(block, node) {
+  const held = node ? node.all() : [];
+  const byHash = new Map(held.map((b) => [b.hash, b]));
+  const parties = new Set([block.refs?.author, ...["from", "to", "to_owner", "to_holder"].map((r) => block.refs?.[r])].filter(Boolean));
+  const idLine = (id) => {
+    const b = byHash.get(id);
+    if (b && b.type === "thing") {
+      const same = held.filter((o) => o.type === "thing" && o.hash !== b.hash && o.state?.name === b.state?.name && o.state?.kind === b.state?.kind);
+      const twin = same.length ? ` WARNING: ${same.length} other held thing${same.length > 1 ? "s share" : " shares"} this name and kind (${same.map((o) => SHORT(o.hash)).join(", ")}): check it is the one you mean` : "";
+      return `${b.state?.name ? `"${plain(b.state.name)}"` : "a thing with no name"} (their words), kind ${plain(b.state?.kind ?? "none")}, made by ${SHORT(b.refs?.author ?? id)} (author id ${b.refs?.author ?? id}); id ${id}${twin}`;
+    }
+    if (b && b.type === "actor") return `${plain(b.state?.kind ?? "someone")} ${SHORT(id)}; id ${id}`;
+    if (b) return `a ${plain(b.type)} block${b.state?.kind ? ` of kind ${plain(b.state.kind)}` : ""} by ${SHORT(b.refs?.author ?? "?")} (author id ${b.refs?.author ?? "?"}); id ${id}`;
+    return `${SHORT(id)} (not held here); id ${id}`;
+  };
+  const ID = new RegExp(fb.PROTOCOL.grammar.id);
+  const readers = block.state.audience === "public" ? "anyone" : Object.keys(block.salts || {}).sort().map((id) => `${idLine(id)}${parties.has(id) ? "" : " [also readable by an id that is not a party]"}`).join(" | ");
+  const lines = [`Who may read this: ${readers}`];
+  const bare = (t) => String(t).replace(BIDI, "");   // no direction controls: they can reorder what follows
+  const walk = (path, v, mine) => {
+    if (v && typeof v === "object" && !Array.isArray(v) && v.value !== undefined && v.unit !== undefined) lines.push(`${path}: ${bare(mark(v))}${v.of ? ` of ${idLine(v.of)}` : ""}`);
+    else if (Array.isArray(v) && v.every((x) => typeof x !== "object")) lines.push(`${path}: ${v.map((x) => (typeof x === "string" && ID.test(x) ? idLine(x) : bare(x))).join(", ")}`);
+    else if (v && typeof v === "object" && Object.keys(v).length) Object.entries(v).forEach(([k, x]) => walk(`${path}.${bare(k)}`, x, mine));
+    else if (typeof v === "string" && ID.test(v)) lines.push(`${path}: ${idLine(v)}`);
+    else if (typeof v === "string" && !fb.isTime(v) && !/^[0-9.]+$/.test(v) && mine) lines.push(`${path} (their words): "${bare(plain(v))}"`);
+    else lines.push(`${path}: ${bare(typeof v === "string" ? v : JSON.stringify(v))}`);
+  };
+  for (const [field, v] of Object.entries(block.state)) if (!["audience", "at", "seq", "nonce"].includes(field)) walk(field, v, field !== "status" && field !== "stop");
+  for (const [role, v] of Object.entries(block.refs || {})) if (!["author", "prev"].includes(role)) walk(`refs.${role}`, v, false);
+  // an answer binds by the terms of what it answers: those are shown too, as the offer states them
+  const answered = block.refs?.answers && byHash.get(block.refs.answers);
+  if (answered?.state?.terms) walk("the offer's terms", answered.state.terms, false);
+  const total = totalOf(block, byHash);
+  if (total) lines.push(`what it comes to: ${total} in all`);
+  return lines;
 }
 
 // ---- The approval page (the person's tap) ----
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const page = (body) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Approval</title><body style="font:18px system-ui;max-width:32rem;margin:2rem auto;padding:0 1rem">${body}<p style="font-size:13px;color:#777">Built on the open FoodBlock protocol.</p></body>`;
+const hex = (buffer) => [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, "0")).join("");
 
-/** Serve /approve/<draft>: GET shows exactly what would be signed; POST with the approval code signs or discards. */
+/**
+ * Serve /approve/<draft>: GET shows exactly what would be signed and the challenge her device signs; POST takes the signature (a passkey's answer, or the
+ * signature of any key she keeps, pasted) or a discard. The door signs nothing: it holds no key of hers. A wrong signature waits a second before it is answered.
+ */
 export function approvalHandler(door) {
   return async (req, res) => {
     const match = /^\/approve\/([0-9a-f]{64})$/.exec(new URL(req.url, "http://x").pathname);
     if (!match) return false;
     const id = match[1], item = door.drafts.get(id);
-    const send = (status, html) => { res.writeHead(status, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-frame-options": "DENY", "content-security-policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'" }); res.end(page(html)); return true; };
+    const nonce = randomBytes(16).toString("base64");
+    const send = (status, html, script = false) => { res.writeHead(status, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store", "x-frame-options": "DENY", "x-content-type-options": "nosniff", "content-security-policy": `default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'${script ? `; script-src 'nonce-${nonce}'` : ""}` }); res.end(page(html)); return true; };
     if (!item) return send(404, "<p>No such draft.</p>");
     if (req.method === "POST") {
-      let raw = ""; for await (const chunk of req) { raw += chunk; if (raw.length > 4096) break; }
+      let raw = ""; for await (const chunk of req) { raw += chunk; if (raw.length > 8192) break; }
       const form = new URLSearchParams(raw);
       let result;
       try {
         await door.sync();
-        result = form.get("do") === "discard" ? door.discard(id, form.get("code")) : door.approve(id, form.get("code"));
+        result = form.get("do") === "discard" ? door.discard(id) : door.approve(id, { signature: form.get("signature"), authenticatorData: form.get("authenticatorData"), clientDataJSON: form.get("clientDataJSON") });
         if (!result.ok) await new Promise((done) => setTimeout(done, WRONG_CODE_MS));
         if (result.ok) await door.flush();
       } catch (error) { result = { ok: false, reason: `the node did not take it: ${error.message}` }; }
-      return send(result.ok ? 200 : 403, result.ok ? `<h2>${form.get("do") === "discard" ? "Discarded" : "Sent"}</h2>${result.receipt ? `<p>Receipt <b>${esc(result.receipt)}</b></p>` : ""}` : `<h2>Not done</h2><p>${esc(result.reason || "wrong approval code")}</p>`);
+      return send(result.ok ? 200 : 403, result.ok ? `<h2>${form.get("do") === "discard" ? "Discarded" : "Sent"}</h2>${result.receipt ? `<p>Receipt <b>${esc(result.receipt)}</b></p>` : ""}` : `<h2>Not done</h2><p>${esc(result.reason || "not done")}</p>`);
     }
     if (item.status !== "pending") return send(200, `<p>This draft is ${esc(item.status)}.</p>`);
-    return send(200, `<h2>${esc(item.kind)}</h2><p>${esc(item.summary)}</p><p>Receipt <b>${esc(item.receipt)}</b></p>
-      <form method="post"><p><input name="code" placeholder="your approval code" autocomplete="off" style="font:inherit;width:100%"></p>
-      <button name="do" value="send" style="font:inherit">Send as me</button> <button name="do" value="discard" style="font:inherit">Discard</button></form>
-      <p style="color:#666;font-size:14px">Nothing is sent or bound until you tap. Reply STOP-style contact limits are checked again at the tap.</p>`);
+    let signing;
+    try { await door.sync(); signing = door.signing(id); } catch (error) { return send(500, `<p>${esc(error.message)}</p>`); }
+    if (!signing) return send(200, `<p>This draft is ${esc(item.status)}.</p>`);
+    const passkey = signing.suite === "p256";
+    const script = passkey ? `<script nonce="${nonce}">
+const b = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0));
+const h = ${hex.toString()};
+document.getElementById("pk").onclick = async () => {
+  try {
+    const got = await navigator.credentials.get({ publicKey: { challenge: b(${JSON.stringify(signing.challenge)}), userVerification: "required", timeout: 120000 } });
+    const f = document.getElementById("f");
+    f.authenticatorData.value = h(got.response.authenticatorData); f.clientDataJSON.value = h(got.response.clientDataJSON); f.signature.value = h(got.response.signature);
+    f.requestSubmit(document.getElementById("send"));
+  } catch (e) { document.getElementById("err").textContent = "Your device did not sign: " + e.message; }
+};
+</script>` : "";
+    return send(200, `<h2>${esc(item.kind)}</h2>${item.shown.map((line) => `<p style="margin:.3rem 0;overflow-wrap:anywhere">${esc(line)}</p>`).join("")}<p>Receipt <b>${esc(item.receipt)}</b></p>
+      <form id="f" method="post"><input type="hidden" name="authenticatorData"><input type="hidden" name="clientDataJSON">
+      ${passkey ? `<p><button type="button" id="pk" style="font:inherit">Sign with my passkey</button> <span id="err" style="color:#a00"></span></p>` : ""}
+      <p style="font-size:14px;color:#555">Or paste the signature your own device made over this block (hex). The block, for a device that signs by hand:</p>
+      <details><summary>block to sign</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">${esc(JSON.stringify(signing.block))}</pre></details>
+      <p style="font-size:13px;color:#555">Passkey challenge: <code style="overflow-wrap:anywhere">${esc(signing.challenge)}</code></p>
+      <p><input name="signature" placeholder="signature from your device" autocomplete="off" style="font:inherit;width:100%"></p>
+      <button id="send" name="do" value="send" style="font:inherit">Send as me</button> <button name="do" value="discard" style="font:inherit">Discard</button></form>
+      <p style="color:#666;font-size:14px">Nothing is sent or bound until your own device signs it. This page holds no key of yours. STOP-style contact limits are checked again at the tap.</p>${script}`, passkey);
   };
 }

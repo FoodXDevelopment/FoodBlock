@@ -92,6 +92,13 @@ fn a_fold_over_many_blocks_is_not_quadratic_in_signature_checks() {
     }
     let started = std::time::Instant::now();
     let o = foodblock::fold::ownership(&blocks[1], &blocks);
-    assert_eq!(o.owner.as_deref(), Some(id.as_str()));
+    // the first transfer holds the whole thing from where it is signed (no answer lands it); each later one is past what is left
+    // (1.9: the draw itself says it holds, `state: held`; CORE-SET 3c)
+    assert_eq!(o["owner"], json!(null));
+    let draws = o["draws"].as_array().unwrap();
+    assert_eq!(draws.len(), 299);
+    assert_eq!(draws.iter().filter(|d| d["why"] == json!("past")).count(), 298);
+    assert_eq!(draws.iter().filter(|d| d["state"] == json!("held")).count(), 1);
+    let _ = id;
     assert!(started.elapsed().as_secs() < 5, "ownership over 301 blocks took {:?}", started.elapsed());
 }

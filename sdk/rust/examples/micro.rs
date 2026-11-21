@@ -6,7 +6,6 @@ use serde_json::json;
 
 fn main() -> Result<(), foodblock::Error> {
     let keys = keypair_from_seed(&"5e".repeat(32))?;
-    let recovery = keypair_from_seed(&"7e".repeat(32))?;
     let me = genesis(
         &keys,
         &GenesisOptions {
@@ -14,9 +13,6 @@ fn main() -> Result<(), foodblock::Error> {
             at: "2026-10-15T09:00:00.000Z".into(),
             audience: Some(foodblock::Readers::Public),
             encryption_key: "0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",
-            recovery_key: &recovery.public_key_sign,
-            reach: "P30D",
-            custodian: "",
             ..Default::default()
         },
     )?;
@@ -35,7 +31,7 @@ fn main() -> Result<(), foodblock::Error> {
     };
     let reading = write(
         "observe",
-        &json!({ "kind": "reading", "amount": amount("3.9", "Cel") }),
+        &json!({ "kind": "reading", "amount": amount("3.9", "Cel", None) }),
         &json!({ "subject": id }),
         &options,
     )?;

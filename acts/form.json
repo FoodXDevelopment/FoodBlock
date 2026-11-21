@@ -1,0 +1,2829 @@
+{
+ "about": "The grammar of an act: a family, its nouns, its facts, its fields and the moves worked out from them. Every act in acts.json is checked against it by tools/check.py. Rules in PATTERNS.md, fields in FIELDS.md.",
+ "verbs": {
+  "Buy": {
+   "doing": "Buying",
+   "about": "getting something for money",
+   "facts": {
+    "who is in it": [
+     "others"
+    ],
+    "which way": [
+     "in"
+    ],
+    "in exchange": [
+     "money",
+     "goods",
+     "a share of the outcome",
+     "a claim"
+    ],
+    "consent": [
+     "by consent"
+    ]
+   }
+  },
+  "Sell": {
+   "doing": "Selling",
+   "about": "giving something for money",
+   "facts": {
+    "who is in it": [
+     "others"
+    ],
+    "which way": [
+     "out"
+    ],
+    "in exchange": [
+     "money",
+     "goods",
+     "a share of the outcome",
+     "a claim"
+    ],
+    "consent": [
+     "by consent"
+    ]
+   }
+  },
+  "Swap": {
+   "doing": "Swapping",
+   "about": "goods for goods, no money",
+   "facts": {
+    "who is in it": [
+     "others"
+    ],
+    "which way": [
+     "both"
+    ],
+    "in exchange": [
+     "money",
+     "goods",
+     "a share of the outcome",
+     "a claim"
+    ],
+    "consent": [
+     "by consent"
+    ]
+   }
+  },
+  "Give": {
+   "doing": "Giving",
+   "about": "giving, with nothing back",
+   "facts": {
+    "which way": [
+     "out"
+    ],
+    "in exchange": [
+     "nothing"
+    ],
+    "consent": [
+     "by consent"
+    ]
+   }
+  },
+  "Get": {
+   "doing": "Getting",
+   "about": "receiving, with nothing back",
+   "facts": {
+    "which way": [
+     "in"
+    ],
+    "in exchange": [
+     "nothing",
+     "a claim"
+    ],
+    "consent": [
+     "by consent"
+    ]
+   }
+  },
+  "Lend": {
+   "doing": "Lending",
+   "about": "letting someone have something of yours for a while",
+   "facts": {
+    "which way": [
+     "out",
+     "none"
+    ],
+    "changes": [
+     "who holds it",
+     "what's agreed"
+    ]
+   }
+  },
+  "Borrow": {
+   "doing": "Borrowing",
+   "about": "having someone else's thing for a while",
+   "facts": {
+    "which way": [
+     "in"
+    ],
+    "changes": [
+     "who holds it",
+     "what's agreed"
+    ]
+   }
+  },
+  "Tell": {
+   "doing": "Telling",
+   "about": "letting others know something",
+   "facts": {
+    "which way": [
+     "out"
+    ],
+    "changes": [
+     "what's known"
+    ]
+   }
+  },
+  "Find out": {
+   "doing": "Finding out",
+   "about": "coming to know something",
+   "facts": {
+    "which way": [
+     "in",
+     "none"
+    ],
+    "changes": [
+     "what's known"
+    ]
+   }
+  },
+  "Teach": {
+   "doing": "Teaching",
+   "about": "passing on a skill",
+   "facts": {
+    "which way": [
+     "out",
+     "both",
+     "none"
+    ],
+    "changes": [
+     "what's known"
+    ]
+   }
+  },
+  "Learn": {
+   "doing": "Learning",
+   "about": "gaining a skill",
+   "facts": {
+    "which way": [
+     "in",
+     "both",
+     "none"
+    ],
+    "changes": [
+     "what's known"
+    ]
+   }
+  },
+  "Log": {
+   "doing": "Logging",
+   "about": "writing down what happened",
+   "facts": {
+    "who is in it": [
+     "alone"
+    ],
+    "changes": [
+     "what's known"
+    ]
+   },
+   "typed by her": true
+  },
+  "Set": {
+   "doing": "Setting",
+   "about": "deciding a standing price, limit or rule",
+   "facts": {
+    "changes": [
+     "what's agreed"
+    ],
+    "runs": [
+     "until ended"
+    ]
+   }
+  },
+  "Plan": {
+   "doing": "Planning",
+   "about": "deciding the steps you mean to take",
+   "facts": {
+    "who is in it": [
+     "alone",
+     "your group"
+    ],
+    "changes": [
+     "what's agreed"
+    ]
+   }
+  },
+  "Agree": {
+   "doing": "Agreeing",
+   "about": "one decision both sides make",
+   "facts": {
+    "who is in it": [
+     "others"
+    ],
+    "changes": [
+     "what's agreed",
+     "who owns it"
+    ]
+   }
+  },
+  "Create": {
+   "doing": "Creating",
+   "about": "making a new kind of thing that lasts: a recipe, a product, a group",
+   "facts": {
+    "changes": [
+     "what it is",
+     "what's agreed",
+     "what's known"
+    ]
+   }
+  },
+  "Make": {
+   "doing": "Making",
+   "about": "turning what goes in into something new",
+   "facts": {
+    "changes": [
+     "what it is"
+    ]
+   }
+  },
+  "Grow": {
+   "doing": "Growing",
+   "about": "raising living things over time",
+   "facts": {
+    "changes": [
+     "what it is"
+    ]
+   }
+  },
+  "Keep": {
+   "doing": "Keeping",
+   "about": "looking after something so it stays as it is",
+   "facts": {
+    "changes": [
+     "what it is",
+     "what's known",
+     "who holds it",
+     "where it is"
+    ]
+   }
+  },
+  "Carry": {
+   "doing": "Carrying",
+   "about": "moving something to another place",
+   "facts": {
+    "changes": [
+     "where it is"
+    ]
+   }
+  },
+  "Eat": {
+   "doing": "Eating",
+   "about": "eating and feeding",
+   "facts": {
+    "changes": [
+     "what it is",
+     "who owns it"
+    ]
+   }
+  },
+  "Share": {
+   "doing": "Sharing",
+   "about": "putting in together and sharing out",
+   "facts": {}
+  },
+  "Comply": {
+   "doing": "Complying",
+   "about": "doing what a rule backed by force requires: a licence, a fine, a tax, an inspection, a report",
+   "facts": {
+    "consent": [
+     "compelled by a rule",
+     "compelled by force"
+    ]
+   }
+  }
+ },
+ "nouns": [
+  "food",
+  "living things",
+  "by-products",
+  "energy",
+  "equipment",
+  "space, land and water",
+  "rights and claims",
+  "a permission",
+  "time",
+  "work",
+  "a job",
+  "an idea",
+  "money",
+  "a record",
+  "knowledge",
+  "people"
+ ],
+ "moves": {
+  "about": "Moves are the prefixes every act takes: one choice by one person inside one act, signed, never edited. A move gets its own name when it is a different choice with a different consequence (who must agree, what it costs, how it is undone, what proves it); when only the button's word differs it stays one move. A deal is done when every side's part is in (handed over, paid, received); a standing act gets a Hand over or a Note for each occurrence and ends by End or its term. Four stages need no move: an idea (FoodOS proposing, in pencil), expired (time), stalled (underway, and the proof its next move needs is overdue) and reversed (undoing after a yes is a new act, such as a refund). Which moves an act takes follows from its shape, then from its stage, whose turn it is and its terms. Buttons keep the act's everyday word (End reads Cancel on a one-off; a Promise reads Ask or Offer by which way the thing goes, and Bid at an auction; Hand over on a sale reads Serve).",
+  "Promise": {
+   "group": "opening",
+   "by": "either side: proposing a promise, its terms and what moves. Signed by the one who gives, it reads Offer; signed by the one who receives, it reads Ask (Bid at an auction). A Promise to everyone is a want or an offer anyone may take.",
+   "stage": "asked or offered, read from who signed it",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "ids": [
+     "promise"
+    ]
+   }
+  },
+  "Start": {
+   "group": "opening",
+   "by": "whoever does the work: alone, or after a yes",
+   "stage": "underway",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "kind": "start",
+    "ids": [
+     "start"
+    ]
+   }
+  },
+  "Accept": {
+   "group": "replying",
+   "by": "the other side, to a Promise, Change, Invite, Pass or Remove",
+   "stage": "accepted, when it answers a Promise; otherwise it settles only that proposal and the act keeps its stage",
+   "known by": [
+    "the other side's yes",
+    "the group's rule",
+    "every party's yes"
+   ],
+   "part": "An Accept may take part of a Promise: it names the quantity it takes, as an amount and a unit in the Promise's own unit, never more than is left; the rest stays offered until the offerer withdraws it or its answer-by time passes.",
+   "says": {
+    "status": "accepted",
+    "ids": [
+     "accept"
+    ]
+   }
+  },
+  "Decline": {
+   "group": "replying",
+   "by": "the other side, to a Promise, Change, Invite, Pass or Remove; or to a Hand over or Pay that arrived (a rejected delivery, a bounced payment), where the terms decide what follows",
+   "stage": "declined, when it answers a Promise; otherwise it settles only that proposal and the act keeps its stage",
+   "known by": [
+    "the other side's yes"
+   ],
+   "says": {
+    "status": "declined",
+    "ids": [
+     "decline"
+    ]
+   }
+  },
+  "Change": {
+   "group": "shaping",
+   "by": "either side, once it is open",
+   "stage": "no change: the act runs on the agreed terms until the other side accepts the new ones; in an act done alone nobody else needs to agree",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "ids": [
+     "change"
+    ]
+   }
+  },
+  "Question": {
+   "group": "shaping",
+   "by": "either side",
+   "stage": "no change",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "kind": "question",
+    "ids": [
+     "ask"
+    ]
+   }
+  },
+  "Answer": {
+   "group": "shaping",
+   "by": "the one asked; a vote is an answer",
+   "stage": "no change",
+   "known by": [
+    "the group's rule"
+   ],
+   "says": {
+    "kind": "answer",
+    "ids": [
+     "answer"
+    ]
+   }
+  },
+  "Note": {
+   "group": "shaping",
+   "by": "either side: a signed statement. In a deal it is signed into the deal and the other side reads it (a bill, a warning, a heads-up; a bill is a reading, what is owed comes from the earlier promise), so it cannot be untold; done alone it stays in her node (a reading, a count, an occurrence)",
+   "stage": "no change",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "kind": "note",
+    "ids": [
+     "remark",
+     "send"
+    ]
+   }
+  },
+  "Invite": {
+   "group": "people",
+   "by": "anyone in an act between people, bringing someone in; in a group, only whoever the group's rule allows; they Accept or Decline",
+   "stage": "no change",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "grant": "member",
+    "ids": [
+     "invite"
+    ]
+   }
+  },
+  "Pass": {
+   "group": "people",
+   "by": "whoever does a part, handing it to someone else: two signatures move the work, hers passing and the receiver's accepting (Accept); until the receiver signs she still owes it; once they accept they do it. Nothing the two sign binds the one she promised: she stays answerable to them until they free her with their own yes to the pass (Accept), an optional third signature, and the receiver answers to them for it too. Passing on a claim (an IOU) is the hand-over of what she is owed: it needs only the receiver's yes while the original payer stays answerable; releasing them needs the other side's yes too",
+   "stage": "no change",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "kind": "pass",
+    "ids": [
+     "pass"
+    ]
+   }
+  },
+  "Leave": {
+   "group": "people",
+   "by": "anyone in an act of several people; it carries on for the others",
+   "stage": "no change",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "stop": "onward",
+    "ids": [
+     "leave"
+    ]
+   }
+  },
+  "Remove": {
+   "group": "people",
+   "by": "whoever the terms allow (a group's own rule), taking someone else out; it carries on for the others",
+   "stage": "no change",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "stop": "onward",
+    "grant": "member",
+    "ids": [
+     "remove"
+    ]
+   }
+  },
+  "Hand over": {
+   "group": "doing",
+   "by": "the giver, delivering the goods, work or time; may be partial; once per occurrence of a standing act. It passes custody (holding it), ownership, or both; holding is not owning, and in a relay each next holder signs Receive",
+   "stage": "towards done: done when every side's part is in",
+   "known by": [
+    "a reading or photo",
+    "a code only the receiver holds",
+    "the seller's own count",
+    "named witnesses",
+    "your word"
+   ],
+   "says": {
+    "kind": "delivery",
+    "ids": [
+     "handover"
+    ]
+   }
+  },
+  "Pay": {
+   "group": "doing",
+   "by": "whoever owes money, proven by a receipt; a deposit or tip is a Pay. One Pay can answer many sales at once (settling a tab); set-off is a Pay with no money moving",
+   "stage": "towards done: done when every side's part is in",
+   "known by": [
+    "a receipt",
+    "the seller's own count",
+    "your word"
+   ],
+   "says": {
+    "kind": "payment",
+    "ids": [
+     "pay"
+    ]
+   }
+  },
+  "Receive": {
+   "group": "doing",
+   "by": "the receiver, signing for what arrived or for work done, maybe partly",
+   "stage": "towards done: done when every side's part is in",
+   "known by": [
+    "the holder's receipt",
+    "the other side's yes",
+    "your word"
+   ],
+   "says": {
+    "status": "accepted",
+    "ids": [
+     "receive"
+    ]
+   }
+  },
+  "Done": {
+   "group": "doing",
+   "by": "whoever finishes their part: the doer's work in a deal where nothing changes hands, or the whole of an act done alone or in one block; once, at the end of that part. A step that repeats (each picking, each batch reading) is a Note",
+   "stage": "done when every side's part is in (alone or in one block, at once)",
+   "known by": [
+    "a reading or photo",
+    "a device's reading",
+    "your word",
+    "the block itself",
+    "a named third party's word",
+    "the other side's yes"
+   ],
+   "says": {
+    "kind": "done",
+    "ids": [
+     "done"
+    ]
+   }
+  },
+  "Withdraw": {
+   "group": "stopping",
+   "by": "whoever opened it, before a yes: free",
+   "stage": "withdrawn",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "stop": "before",
+    "ids": [
+     "withdraw"
+    ]
+   }
+  },
+  "End": {
+   "group": "stopping",
+   "by": "either side, after a yes: only what has not happened stops, on the agreed terms; in an act done alone, simply stopping it",
+   "stage": "ended",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "stop": "onward",
+    "ids": [
+     "end"
+    ]
+   }
+  },
+  "Pause": {
+   "group": "stopping",
+   "by": "either side, for named occurrences; it resumes by itself, or early when whoever signed it Resumes",
+   "stage": "paused",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "stop": "occurrences",
+    "ids": [
+     "pause"
+    ]
+   }
+  },
+  "Resume": {
+   "group": "stopping",
+   "by": "whoever signed the pause, early, alone; the other side asks, and her Resume is her yes. It ends only a pause: no other stop is taken back",
+   "stage": "the stage it had before the pause",
+   "known by": [
+    "the block itself"
+   ],
+   "says": {
+    "status": "resumed",
+    "ids": [
+     "resume"
+    ]
+   }
+  },
+  "shapes": {
+   "about": "An act's shape is a label read from its facts, never a list of moves: every act goes through one skeleton (propose, reply, do its parts, close), and a step is skipped only for a reason its facts give: no other plan's yes (alone), nothing asked of anyone (standing), a posted price (exchange: the buyer's yes is the sale), one block, or no consent (ordered). Which moves an act takes is one rule per move, worked out in tools/moves.py.",
+   "deal": {
+    "means": "another plan's yes is needed and something is done between them"
+   },
+   "alone": {
+    "means": "done in her own plan, by her or her household"
+   },
+   "standing": {
+    "means": "a standing setting, offer or grant that lasts until ended, about what is known or agreed, with nothing back"
+   },
+   "one block": {
+    "means": "said and done in one signed block (a log, a review, eating)"
+   },
+   "ordered": {
+    "means": "compelled and dealing with the one who claims it: received, done, contested in its own act"
+   },
+   "exchange": {
+    "means": "a once-off sale at a posted price where nobody waits: one record signed by the seller",
+    "batch": "Sales at a counter may be recorded one by one or as one batch per period: the seller's own count (what sold, how many, at which posted price) signed by the seller. A buyer who wants a record of their own asks for a receipt, which is that one exchange."
+   }
+  },
+  "move words": "A kind of act names the words people use for its own moves ('move words': Leave a job is End on Working for someone; Harvest is Done on Growing crops), with their cards, triggers and examples. An act is its whole lifecycle, so a stage of another act's life is never a kind of act of its own. Words that fit any deal live here once, under 'on any deal'.",
+  "on any deal": [
+   {
+    "moves": [
+     "Change"
+    ],
+    "words": "Ask for a better price",
+    "card": "You buy 20 loaves a week from the bakery. Ask for a regular's price?",
+    "note": "Change the terms of a deal that already exists or is being agreed, from either side: ask for a lower price, change an offer, a regulars' deal, a held price, pay early for less, a slow slot, a regular order for a cut, ask why a price rose, ask a platform about a fee, a worker asking for a rise or better terms (together, through a union). Haggling over a first sale is the Promise and Change moves of Buy and Sell. Out of sight by default: agents negotiate, people see the best outcome. No card face to face.",
+    "examples": [
+     {
+      "id": "M035",
+      "card": "Ask a seller for a lower price or counter an offer.",
+      "filled": "Counter the supplier quote with 8 percent less, citing volume."
+     },
+     {
+      "id": "M030",
+      "card": "Ask a place you visit often for a deal for regulars.",
+      "filled": "Ask your local cafe for a regulars' price."
+     },
+     {
+      "id": "M045",
+      "card": "Offer to collect or take a slow slot for a lower price.",
+      "filled": "Offer to collect your order from the farm for less."
+     },
+     {
+      "id": "M053",
+      "card": "Offer to pay early in return for a lower price.",
+      "filled": "Offer to pay each week in advance for a smaller bill."
+     },
+     {
+      "id": "M476",
+      "card": "Ask for a pay rise or better hours.",
+      "filled": "Ask for R$3 more an hour: similar roles nearby pay more."
+     },
+     {
+      "id": "B13544",
+      "card": "Ask for the difference under a shop's price promise.",
+      "filled": "You paid 9.50 for a 5 kg bag of rice on the 10th; the same shop posts 8.20 today and promises to match within 14 days. Ask for the 1.30 back?"
+     },
+     {
+      "id": "B13545",
+      "card": "Ask to be paid into your own account.",
+      "filled": "Your last 6 milk lots were paid into the household head's account. Ask the co-op to pay future lots into your own wallet?"
+     }
+    ],
+    "trigger": "A deal of hers has run long enough to be renewed, her record shows steady buying or selling at one price, or an open price (a rival's offer, a market price) is better than hers.",
+    "when": [
+     "priced",
+     "receives",
+     "chosen"
+    ]
+   },
+   {
+    "moves": [
+     "Question",
+     "Note"
+    ],
+    "words": "Chase a payment",
+    "card": "The hotel owes you KSh 34,000 for eggs, 5 days late. Send a reminder?",
+    "note": "Late invoices, claiming a work meal back. A Question on the deal it is owed for: chasing is its own decision, so it keeps its own words and card. If they paid you by hand, you say so, and that is the payment received in your word.",
+    "examples": [
+     {
+      "id": "M161",
+      "card": "Ask whoever owes you to pay by a date.",
+      "filled": "Tom still owes $14 from Friday's dinner, so ask him to pay by Sunday."
+     },
+     {
+      "id": "M856",
+      "card": "Chase a late loan repayment.",
+      "filled": "Otieno, 2 weeks late."
+     },
+     {
+      "id": "B13567",
+      "card": "Chase what was paid below the posted price.",
+      "filled": "Your slip shows a lower price than the board price posted that day for your 180 kg. Chase the difference?"
+     }
+    ],
+    "trigger": "A payment owed to her is past the date the deal says, or an invoice she sent is unpaid after its terms.",
+    "when": [
+     "money",
+     "sends",
+     "priced"
+    ]
+   },
+   {
+    "moves": [
+     "Withdraw",
+     "End"
+    ],
+    "words": "Cancel it",
+    "card": "Your veg box has gone unopened for 3 weeks. Cancel it?",
+    "note": "Calling it off: before a yes it is a Withdraw and free; after a yes it is an End on the agreed terms, and only what has not happened stops.",
+    "examples": [
+     {
+      "id": "M164",
+      "card": "Cancel a food subscription or box you no longer use.",
+      "filled": "Cancel the weekly veg box you have skipped four times."
+     },
+     {
+      "id": "M555",
+      "card": "Move a booking away from a place whose hygiene rating has dropped.",
+      "filled": "The caterer's hygiene rating fell to 1: move Saturday's order to the other quote."
+     }
+    ],
+    "trigger": "Something she arranged has gone unused for several rounds in her record, or the cut-off before its next charge is near."
+   },
+   {
+    "moves": [
+     "Pause"
+    ],
+    "words": "Skip it",
+    "card": "You're away next week. Skip the veg box and the Saturday bread?",
+    "note": "Skipping one or more times; it comes back by itself.",
+    "examples": [
+     {
+      "id": "M008",
+      "card": "Cancel or pause a booking before the cut-off.",
+      "filled": "Skip next week box before Wednesday noon and get your deposit back."
+     }
+    ],
+    "trigger": "Her calendar or plans show she is away or will not need the next delivery, and the cut-off for skipping is near.",
+    "when": [
+     "recurs"
+    ]
+   },
+   {
+    "moves": [
+     "Change"
+    ],
+    "words": "Move it",
+    "card": "You're 20 minutes from Tabla, table at 8. Move it to 8:30?",
+    "note": "A new time or place; the other side must say yes.",
+    "examples": [
+     {
+      "id": "M015",
+      "card": "Move a booking or delivery to another time.",
+      "filled": "Move Friday's delivery to Saturday morning."
+     },
+     {
+      "id": "M455",
+      "card": "Cancel or move a meal you planned.",
+      "filled": "Move Saturday's dinner to Sunday and tell all six guests."
+     },
+     {
+      "id": "M770",
+      "card": "Ask to move a loan payment.",
+      "filled": "Friday's payment moved to Monday."
+     }
+    ],
+    "trigger": "A booking of hers clashes with where she is or what she has planned, or a public notice (a closure, the weather, a transport strike) affects its time or place."
+   },
+   {
+    "moves": [
+     "Question"
+    ],
+    "words": "Ask why the price changed",
+    "card": "Hill Mill's flour is up 12% since last month. Ask them why?",
+    "note": "Asking the other side why a price, fee or rate of pay moved, up or down, with the old and the new from your own record: a supplier's price that rose, a dairy cutting what it pays, a rider's pay per drop that fell. Their answer is their word.",
+    "examples": [
+     {
+      "id": "M550",
+      "card": "Notice when a supplier's price has risen and ask why.",
+      "filled": "Flour is up 12 percent on last month's invoice; ask the mill why."
+     },
+     {
+      "id": "M398",
+      "card": "Ask a platform why a fee or decision was set as it was.",
+      "filled": "Ask the delivery app why your commission rose to 30%."
+     },
+     {
+      "id": "B13543",
+      "card": "Ask why a pack got smaller at the same price.",
+      "filled": "The cereal you buy was 500 g on 18 August and is 440 g now, at the same price. Ask the maker and the shop why, swap it, or keep buying it?"
+     }
+    ],
+    "trigger": "A price she pays has risen between her last two orders by more than open prices have moved.",
+    "when": [
+     "priced"
+    ]
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Send a bill",
+    "card": "You delivered 40 loaves to the café this week. Send the bill for £96?",
+    "note": "Billing comes before chasing: what was supplied, the amount, when it's due, any late-payment terms.",
+    "examples": [
+     {
+      "id": "M167",
+      "card": "Send a bill to the person you supplied, with a due date.",
+      "filled": "send the cafe a bill for 3 crates of eggs, due in 14 days."
+     },
+     {
+      "id": "M185",
+      "card": "Charge interest on late payments.",
+      "filled": "add 2% a month to invoices unpaid after 30 days."
+     }
+    ],
+    "trigger": "She has supplied something in her record that has not been billed, and the invoice date in the terms has come.",
+    "when": [
+     "money",
+     "sends",
+     "priced"
+    ]
+   },
+   {
+    "moves": [
+     "End"
+    ],
+    "words": "Let off the rest",
+    "card": "Joe paid £48 of £50. Let off the last £2?",
+    "note": "Letting off a small amount owed; the opposite of chasing.",
+    "examples": [
+     {
+      "id": "M417",
+      "card": "Let off the last small amount when someone settles.",
+      "filled": "Ravi pays ₹480 of ₹500, so let off the last ₹20."
+     }
+    ],
+    "trigger": "A balance owed to her is smaller than the limit she has set for letting it go.",
+    "when": [
+     "credit"
+    ]
+   },
+   {
+    "moves": [
+     "Question"
+    ],
+    "words": "Appeal a decision",
+    "card": "Your hygiene rating dropped to 3 for a missing log you have. Appeal within 21 days?",
+    "note": "A rating, a fine, a tax assessment, an app deactivation or a refused claim: a deadline and evidence.",
+    "examples": [
+     {
+      "id": "M773",
+      "card": "Appeal a decision with your evidence before the deadline.",
+      "filled": "Rating appeal with the temperature logs, by the 21st."
+     },
+     {
+      "id": "B13500",
+      "card": "Appeal an inspector's finding with your own readings.",
+      "filled": "The inspector wrote that the walk-in fridge was above the limit at 10:40 on 2 February; your own sensor shows 3 to 4°C all day. The appeal closes on the 20th. Appeal, with your readings?"
+     },
+     {
+      "id": "B13501",
+      "card": "Answer a bank that took a payment back.",
+      "filled": "The bank took back 540 for a three-night stay. You have 12 days to answer, and your record holds the signed check-in, the key-card log and four messages. Send them?"
+     }
+    ],
+    "trigger": "A rating, fine, assessment, deactivation or refused claim has arrived, and the time allowed to appeal is still open.",
+    "when": [
+     "compelled"
+    ]
+   },
+   {
+    "moves": [
+     "Promise"
+    ],
+    "words": "Ask for sign-off",
+    "card": "This order is £640 and your limit is £500. Ask the budget holder to sign it off?",
+    "note": "Asking someone on your own side to approve what is over your limit: a requisition to the budget holder.",
+    "examples": [
+     {
+      "id": "M877",
+      "card": "Ask for approval above your limit.",
+      "filled": "£640 order sent to the budget holder."
+     }
+    ],
+    "trigger": "An order or spend of hers is over the limit her own side has set for her.",
+    "when": [
+     "money",
+     "receives"
+    ]
+   },
+   {
+    "moves": [
+     "Receive",
+     "Decline"
+    ],
+    "words": "Check it in",
+    "card": "Chicken arrived at 9°C; the limit is 8. Refuse it and ask for credit?",
+    "note": "The goods-in check at the door or the tailgate: the count, the weight on your own scale or a photo of the weighbridge ticket, the temperature, damage, dates, lot codes and the bottom layer of the box. Then you receive it, part of it, or refuse it; the driver may sign what you counted, and his signature is his word.",
+    "examples": [
+     {
+      "id": "M018",
+      "card": "Check what arrived against what you ordered.",
+      "filled": "The delivery was missing a case of milk: report it."
+     },
+     {
+      "id": "M350",
+      "card": "Check food for quality, freshness and damage.",
+      "filled": "check the delivered chicken for temperature and smell."
+     },
+     {
+      "id": "B13579",
+      "card": "Check a delivery's batch against the maker's list.",
+      "filled": "Your delivery of spray carries batch H-5531, and the maker's signed list for that batch does not name your supplier. Check it in, or hold it?"
+     },
+     {
+      "id": "B13580",
+      "card": "Note the lot at check-in.",
+      "filled": "Your last 4 chicken deliveries have no lot noted, and you make quiche from them. Photograph the label at check-in from now on?"
+     }
+    ],
+    "trigger": "A delivery of hers has arrived at the door, or the time it was due has passed.",
+    "when": [
+     "hands"
+    ]
+   },
+   {
+    "moves": [
+     "Change"
+    ],
+    "words": "Renew it",
+    "when": [
+     "lasts"
+    ],
+    "card": "Your pitch licence at the Saturday market ends on 30 June. Renew it on the same terms?",
+    "note": "Keeping something that lasts going past its end date, on the same terms or new ones: a licence, a lease, a subscription, a contract, a certificate.",
+    "examples": [
+     {
+      "id": "N10358",
+      "card": "Renew a lease before it ends.",
+      "filled": "The lease on your unit in Leeds ends in 8 weeks. Ask to renew for 3 more years?"
+     },
+     {
+      "id": "B13583",
+      "card": "Book the re-check of a trade scale.",
+      "filled": "The seal on your scale ends on 30 November, and the weights office re-checks every year. Book the re-check?"
+     }
+    ],
+    "trigger": "Something she holds or agreed has an end date in its terms, and the date is near."
+   },
+   {
+    "moves": [
+     "Pay"
+    ],
+    "words": "Pay a deposit",
+    "when": [
+     "money",
+     "backed"
+    ],
+    "card": "The hall wants a £100 deposit to hold Saturday for you. Pay it?",
+    "note": "Money paid to back a promise: to hold a booking, to cover damage, or as part paid ahead. The terms say what it is and when it comes back.",
+    "examples": [
+     {
+      "id": "N10359",
+      "card": "Pay a deposit to hold a booking.",
+      "filled": "The caterer in Accra asks GH₵ 500 to hold your date. Pay it?"
+     }
+    ],
+    "trigger": "A deal of hers asks for money up front to back it, and she has not paid it."
+   },
+   {
+    "moves": [
+     "Promise"
+    ],
+    "words": "Same again",
+    "when": [
+     "priced",
+     "chosen"
+    ],
+    "card": "Your Friday order from Mama Oliech was 2 tilapia and ugali. Order the same again?",
+    "note": "Repeating a deal she made before, with the same terms, as a new proposal the other side answers.",
+    "examples": [
+     {
+      "id": "N10361",
+      "card": "Repeat last week's order.",
+      "filled": "You ordered 40 kg of flour from Hill Mill last Tuesday. Order the same again?"
+     }
+    ],
+    "trigger": "She has made the same deal with the same side before, and the time she usually makes it has come."
+   },
+   {
+    "moves": [
+     "Pay"
+    ],
+    "words": "Pay in your share",
+    "when": [
+     "group",
+     "money"
+    ],
+    "card": "Your KSh 3,000 for this month's chama is due Friday. Pay it?",
+    "note": "Paying what a group's signed rule asks of each member (dues, a contribution, a turn, a fine), with the amount, payee and date read from the rule; the group's own word for it is the label.",
+    "examples": [
+     {
+      "id": "N10362",
+      "card": "Pay what the group's rule asks.",
+      "filled": "Your £14 union dues are due this month. Pay them?"
+     }
+    ],
+    "trigger": "A group she belongs to has a payment due from her by its rule, and her record shows it unpaid."
+   },
+   {
+    "moves": [
+     "Pay",
+     "Hand over"
+    ],
+    "words": "Share it out",
+    "when": [
+     "group"
+    ],
+    "card": "The co-op's beans are in: 40 kg for 12 members by work days. Share them out?",
+    "note": "Dividing what a group holds among its members by the weight its rule names (hours, work days, points, equal shares, custom): money by Pay, goods by Hand over.",
+    "examples": [
+     {
+      "id": "N10363",
+      "card": "Share out a group's takings by its rule.",
+      "filled": "This week's tips are £2,140 for 9 staff by points. Send each their share?"
+     }
+    ],
+    "trigger": "A group she runs or belongs to has something to share out, and its rule says when and by what."
+   },
+   {
+    "moves": [
+     "Promise",
+     "Receive"
+    ],
+    "words": "Take what you're owed",
+    "when": [
+     "claim"
+    ],
+    "card": "Your savings in the chama are KSh 18,400 at the year's close. Take them out?",
+    "note": "Calling a claim you hold and taking what it pays out: savings, a share, a pot, a policy, a guarantee, a voucher. The claim names who owes it and when.",
+    "examples": [
+     {
+      "id": "N10364",
+      "card": "Cash in a claim you hold.",
+      "filled": "Your £20 bakery voucher in York ends Sunday. Use it today?"
+     },
+     {
+      "id": "B13578",
+      "card": "Take what you are owed in grain.",
+      "filled": "A farmer offers 12 bags of maize for his 24,000 tab, and posted prices today run 3,100 to 3,600 a bag. Take grain, at what price, or cash?"
+     }
+    ],
+    "trigger": "A claim she holds has fallen due, is about to end, or can be called now."
+   },
+   {
+    "moves": [
+     "Pay"
+    ],
+    "words": "Pay with points or credit",
+    "when": [
+     "priced",
+     "receives",
+     "money"
+    ],
+    "card": "You have 300 stamps at the bakery in Manchester that end Friday. Spend them on bread?",
+    "note": "Paying for all or part of what you take with what a seller gave or sold you: points, stamps, store credit, a voucher, refund credit. It is how you pay, not a new deal; if the seller closes, what you held may be lost.",
+    "examples": [
+     {
+      "id": "F0009",
+      "card": "Pay with points, a voucher or store credit.",
+      "filled": "You have R$30 of credit at the market co-op in São Paulo, ending Friday. Use it on this week's shop?"
+     },
+     {
+      "id": "F0010",
+      "card": "Pay with points, a voucher or store credit.",
+      "filled": "You have 2,400 points at the suya spot in Lagos, enough for a free meal. Use them tonight?"
+     }
+    ],
+    "trigger": "She holds points, a voucher or credit with this seller, and is paying them."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Count it at the handover",
+    "when": [
+     "hands",
+     "other",
+     "handed"
+    ],
+    "card": "The buyer's scale says 412 kg. You counted 9 full bags at home. Put your count beside his weight?",
+    "note": "Each side's count, weight or state when goods change hands goes side by side: your count of bags beside the buyer's scale, the slip photographed, the seal number on the truck. Your measure stays as you say it (tins, bags, heaps) and gets a weight only from someone's signed weighing. It is the first proof in any later dispute. A grade, a moisture reading or a cut belongs here too: yours beside theirs, with a signed lab or weighing where there is one.",
+    "examples": [
+     {
+      "id": "B11000",
+      "card": "Put your own count beside the other side's slip.",
+      "filled": "Your 40 litres of milk at the collection centre in Kiambu are written as 37 on the slip. Photograph the slip and add your own reading?"
+     },
+     {
+      "id": "B11001",
+      "card": "Note what left, before it goes.",
+      "filled": "The truck leaves for Mombasa with seal 48812 and 320 cartons you counted. Note it before it goes?"
+     },
+     {
+      "id": "B13421",
+      "card": "Weigh one bag on a scale you trust before the next sale.",
+      "filled": "Your count of 40 bags came to 1,820 kg on the buyer's slip: 45.5 kg a bag. The co-op scale weighed the same bags at 50 kg last month. Weigh one bag there first?"
+     },
+     {
+      "id": "B13422",
+      "card": "Watch the weighing at the next delivery.",
+      "filled": "Your last 4 deliveries to the collection centre weighed 6 to 11 kg under your own record. Be there for the weighing at the next one?"
+     }
+    ],
+    "trigger": "Goods of hers are being handed over, weighed or loaded."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "It didn't happen",
+    "when": [
+     "due"
+    ],
+    "card": "The tanker was due at 7 for your milk and has not come by 10. Note that it didn't come?",
+    "note": "Something the other side was due to do did not happen: the buyer did not come, the load was not collected, nobody answered the door, the ration or the water turn never came, the worker did not turn up. It goes on your record as your word, with the time, until they answer. A guest who did not come for a booking, or a slot that was not given, is the same.",
+    "examples": [
+     {
+      "id": "B11002",
+      "card": "A buyer did not come.",
+      "filled": "The trader who promised to collect your 20 sacks on Tuesday did not come. Note it?"
+     },
+     {
+      "id": "B11003",
+      "card": "Nobody was there to take it.",
+      "filled": "Nobody answered at flat 4 and the soup is going cold. Note it and take it back?"
+     },
+     {
+      "id": "B11004",
+      "card": "What was due never came.",
+      "filled": "Your family's ration was due at Monday's distribution and none came. Note that it never came?"
+     },
+     {
+      "id": "B13602",
+      "card": "Note a member who did not pay in.",
+      "filled": "A member took the pot in month 2 and has not paid in months 5 and 6. Note it for the group?"
+     }
+    ],
+    "trigger": "Something the other side was due to do by a time has not happened by then."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Record a loss",
+    "when": [
+     "losable"
+    ],
+    "card": "Frost last night blackened a third of your potato rows. Record the loss while you can still show it?",
+    "note": "Something you hold, grow, carry or keep for someone is lost: frost, flood, pests, disease, a dead animal, spoilage, breakage, theft, or food that went off and was thrown out, with how much. You say what and why, with a photo if you can, while it is still provable. Every later claim, payment or count reads it, so a shortfall shows as a loss with its cause, not a mystery.",
+    "examples": [
+     {
+      "id": "B11005",
+      "card": "Animals died.",
+      "filled": "Three hens died overnight and a fox got in. Record the loss?"
+     },
+     {
+      "id": "B11006",
+      "card": "Food spoiled.",
+      "filled": "The cold room failed and 60 litres of soup went off. Record it before you bin it?"
+     },
+     {
+      "id": "B11007",
+      "card": "Pests got into the store.",
+      "filled": "Weevils got into two bags in your store. Record what was lost?"
+     },
+     {
+      "id": "B13464",
+      "card": "Record dead hives with photos.",
+      "filled": "Five of six hives had dead bees at the entrance on 12 May; a neighbour posted spraying on the 10th. Record the loss with photos?"
+     },
+     {
+      "id": "B13465",
+      "card": "Record goods taken by officials.",
+      "filled": "Officers took your cart, a gas cylinder and 40 plates of stock on Tuesday and gave no receipt. You have a photo. Record it, then ask for them back or contest it?"
+     }
+    ],
+    "trigger": "She holds or grows something and part of it has been lost, died, spoiled or been taken."
+   },
+   {
+    "moves": [
+     "Promise"
+    ],
+    "words": "Countersign the work",
+    "when": [
+     "countersign"
+    ],
+    "card": "You picked 46 crates today and the foreman wrote 40. Ask him to sign your count?",
+    "note": "Asking whoever you worked for to sign what you did: the hours, the crates or kilos, the day. If they will not, ask someone else who saw it (a coworker, the weigh slip, the till, a customer); the work still counts by who stands behind it. It stays on your own record and goes with you. Someone who helped with what you grow or make (a neighbour, someone in your family) can ask you to sign their day too.",
+    "examples": [
+     {
+      "id": "F9951",
+      "card": "Ask for your hours to be signed.",
+      "filled": "Your Friday shift at the Nairobi hotel kitchen ran 2 to 11. Ask the head chef to sign it?"
+     },
+     {
+      "id": "B11008",
+      "card": "Get a day's hours signed.",
+      "filled": "You worked the wedding from 3 to midnight. Ask the caterer to sign your hours?"
+     },
+     {
+      "id": "B11009",
+      "card": "Get a piece count signed.",
+      "filled": "You unloaded 60 sacks at the depot. Ask the clerk to sign the count before you are paid?"
+     }
+    ],
+    "trigger": "She has worked for someone and the hours, pieces or day are not yet signed."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Note a reading",
+    "when": [
+     "readable"
+    ],
+    "card": "Your brew read 1.040 on Monday and 1.012 this morning. Note the reading?",
+    "note": "A measurement you took by hand: a temperature, a strength or sugar reading, a pH, a weighed sample, a meter, the date on the pack. It sits on the record with the time, so what went wrong or right can be worked out later. A meter reading each period, or the hours on a machine, is one too.",
+    "examples": [
+     {
+      "id": "M110",
+      "card": "Record measurements for each batch, crop or animal.",
+      "filled": "Batch 12: pH 4.2."
+     },
+     {
+      "id": "B11010",
+      "card": "A hand reading in a greenhouse.",
+      "filled": "The feed in bay 3 reads 2.4 this morning. Note it?"
+     },
+     {
+      "id": "B13423",
+      "card": "Set a reading beside the buyer's limit.",
+      "filled": "Your meter reads 16 percent on the maize; the mill posts that it takes 13.5 percent or less. Dry it two more days, or sell it as it is?"
+     },
+     {
+      "id": "B13424",
+      "card": "Weigh a sample of what you cannot count.",
+      "filled": "You netted 40 tilapia from cage 2 and they weighed 19.2 kg. Note the sample?"
+     }
+    ],
+    "trigger": "She has taken a reading or a measurement."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Note a missed sale",
+    "when": [
+     "posted",
+     "sends",
+     "other",
+     "things"
+    ],
+    "card": "Sold out of bread by 10, and 6 more people asked. Note the missed sales?",
+    "note": "Someone wanted to buy and you could not sell: you sold out, did not have it, or had to say no. Demand that never became a sale is otherwise invisible; noted, it shows how much to make or stock next time.",
+    "examples": [
+     {
+      "id": "B11011",
+      "card": "Asked for what you do not stock.",
+      "filled": "Two customers asked for oat milk you don't stock. Note it?"
+     },
+     {
+      "id": "B11012",
+      "card": "Turned an order away.",
+      "filled": "You turned away a cake order for Saturday because you were full. Note it?"
+     },
+     {
+      "id": "B13487",
+      "card": "Note why a sale was missed.",
+      "filled": "A man wanted to pay by mobile money and you take cash only. Note it as a missed sale?"
+     },
+     {
+      "id": "B13488",
+      "card": "Note when there was nothing left to give.",
+      "filled": "The food ran out at 11:40 and 9 households were sent away, the third time in six weeks. Note it?"
+     }
+    ],
+    "trigger": "She sold out, lacked something asked for, or turned an order away."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Note the wait",
+    "when": [
+     "waits"
+    ],
+    "card": "Your lorry has stood at the gate since 7:15 for a 6:30 slot. Note the wait with the gate's time?",
+    "note": "How long you waited at a handover past the time agreed (at a gate, a dock, a counter, a collection point), with the time you came and the time it started, and the other side's own time where they keep one. It is your proof when waiting costs you: a missed slot, spoiled goods, a driver's day.",
+    "examples": [
+     {
+      "id": "B12071",
+      "card": "Note the wait.",
+      "filled": "Your lorry from Fresh Direct has stood at the Hanwell gate since 7:15 for a 6:30 slot. Do you note the wait for the haulier's extra charge, or let it go this time?"
+     },
+     {
+      "id": "B12072",
+      "card": "Note the wait.",
+      "filled": "You reached the cold store gate at 7 and were let in at 1. Note the wait with the gate clerk?"
+     },
+     {
+      "id": "B13600",
+      "card": "Note waits at the same place.",
+      "filled": "At one depot you noted a wait 8 times in 6 weeks, 2 to 5 hours each. Take the notes to your next rate talk?"
+     }
+    ],
+    "trigger": "She arrives for a handover at the agreed time and it has not started within the usual wait."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "Count what you have",
+    "when": [
+     "holds"
+    ],
+    "card": "Your record puts the flock at 46 hens after the two sales and the fox. Count them tonight?",
+    "note": "Counting what you hold, at a time you choose: the herd at the evening round, the bags in the store, what came up in a bed, the trees in a block, the cash in a group's box, what is left on the stall at the end of the day. Your count sits beside what your record says, and the remainder is shown.",
+    "examples": [
+     {
+      "id": "B12008",
+      "card": "Count the herd or flock.",
+      "filled": "Your record puts the flock at 46 hens after the two sales and the fox. Count them tonight at roost?"
+     },
+     {
+      "id": "B12109",
+      "card": "Count what came up.",
+      "filled": "The beans you sowed on 20 April should be up by now. How many came up, and do you resow the gaps?"
+     },
+     {
+      "id": "B12110",
+      "card": "Count what came up.",
+      "filled": "The old pea packet you tested on damp paper: how many sprouted, and do you sow it or buy new?"
+     },
+     {
+      "id": "B12111",
+      "card": "Count what came up.",
+      "filled": "The swapped squash seed from number 9 should be up. Did it come, and do you tell her?"
+     },
+     {
+      "id": "B12101",
+      "card": "Count the box.",
+      "filled": "The box at your Kisumu group's meeting holds KSh 41,300 and the book says KSh 42,300. Count it again with the key holders?"
+     }
+    ],
+    "trigger": "A round, a closing time or a season's end comes, or her record has gone a while without a count of something she holds."
+   },
+   {
+    "moves": [
+     "Hand over",
+     "Receive",
+     "Note"
+    ],
+    "words": "Check it over at the start",
+    "when": [
+     "kept",
+     "things"
+    ],
+    "card": "Your booking at the Ealing kitchen starts at 7. Take dated photos of the room and kit now and record the condition with the owner?",
+    "note": "At the start of a rental, you and the owner each record the condition with dated photos. The record is what a deposit is later judged against.",
+    "examples": [
+     {
+      "id": "F9210",
+      "card": "Record the state of a space as you take it.",
+      "filled": "You pick up the keys to a market kitchen in Hanoi at noon. Photograph the room and the stoves and send them to the owner?"
+     },
+     {
+      "id": "F9211",
+      "card": "Record the state of a machine as you collect it.",
+      "filled": "You collect a hired grain mill in Pune with a Rs 2,000 deposit. Photograph it and record its condition with the owner?"
+     }
+    ],
+    "trigger": "A rental booking of hers starts today and no start-of-rental condition is on record."
+   },
+   {
+    "moves": [
+     "Hand over",
+     "Receive",
+     "Note"
+    ],
+    "words": "Check it over at the end",
+    "when": [
+     "kept",
+     "things"
+    ],
+    "card": "Your kitchen hire ends at 10. Record the condition again and hand it back so your £150 deposit follows the record?",
+    "note": "At the end of a rental, you record the condition again and hand it back. The deposit then follows the two records.",
+    "examples": [
+     {
+      "id": "F9212",
+      "card": "Record the state of a space as you hand it back.",
+      "filled": "Your Sunday hire of a commercial kitchen in Dublin ends at 4. Photograph it and hand it back so the €200 deposit is released?"
+     },
+     {
+      "id": "F9213",
+      "card": "Record the state of a machine as you return it.",
+      "filled": "The hired press in Tamale goes back tonight. Photograph it and hand it back against the 100 cedi deposit?"
+     }
+    ],
+    "trigger": "A rental of hers is due back, a start condition is on her record, no end condition is, and a deposit is held under its terms."
+   },
+   {
+    "moves": [
+     "Question"
+    ],
+    "words": "Ask for the papers",
+    "when": [
+     "receives",
+     "things",
+     "separate",
+     "priced"
+    ],
+    "card": "The seed dealer has not shown the lot certificate for the maize he offers. Ask him for the papers before you pay?",
+    "note": "Asking the seller for the proof that should come with what you buy: the lot certificate and germination figure for seed and fertiliser, the vet's health papers for animals, the papers for a used machine. The answer is the seller's signed word; if none comes, that shows too.",
+    "examples": [
+     {
+      "id": "S20001",
+      "card": "Ask a seller for the papers that should come with what you buy.",
+      "filled": "The dealer sends the lot certificate: 85 in 100 sprout, tested 10 February."
+     },
+     {
+      "id": "S20002",
+      "card": "Ask for the vet's papers before buying animals.",
+      "filled": "The hatchery sends the vet's signed paper for the 20 chicks, dated 4 May."
+     }
+    ],
+    "trigger": "A seller offers seed, fertiliser, animals or kit and no papers for the lot are on record."
+   },
+   {
+    "moves": [
+     "Question"
+    ],
+    "words": "Check the deductions",
+    "when": [
+     "money",
+     "sends",
+     "priced"
+    ],
+    "card": "The processor's slip takes 0.3 tonnes off your cane for trash. Your contract takes trash off only above 5 percent. Check the deductions against it?",
+    "note": "Each line taken off what you were paid (a fee, a cut, transport, inputs repaid, a 'marketing contribution') set beside the term you signed and your own record, and the payer asked to show how any line that does not match was worked out. If the answer does not settle it, Appeal a decision or Asking for a ruling on a dispute follow.",
+    "examples": [
+     {
+      "id": "S20003",
+      "card": "Set each line taken off a payment beside the term you signed.",
+      "filled": "The slip takes 0.3 t off for trash; your contract allows it only above 5%. Ask how it was worked out."
+     },
+     {
+      "id": "S20004",
+      "card": "Question a cut taken from what you were paid.",
+      "filled": "The co-op took 4% for marketing; nothing you signed names it. Ask for the term it rests on."
+     }
+    ],
+    "trigger": "A slip, statement or payout shows lines taken off what she delivered or sold."
+   },
+   {
+    "moves": [
+     "Question"
+    ],
+    "words": "Chase an answer",
+    "when": [
+     "priced",
+     "sends"
+    ],
+    "card": "Your quote for an 80-guest lunch went out 12 days ago with no answer. Your accepted quotes came back within 4 days. Chase it, hold the date longer, or let it go?",
+    "note": "Asking after an offer or quote you made that has had no answer, by the date it holds until. It is not Chase a payment: nothing is owed yet.",
+    "examples": [
+     {
+      "id": "S20005",
+      "card": "Ask after a quote that has had no answer.",
+      "filled": "Your quote for the 80-guest lunch went out 12 days ago. Ask if they still want the date."
+     }
+    ],
+    "trigger": "An offer she made has had no answer for longer than her past offers usually took."
+   },
+   {
+    "moves": [
+     "Note"
+    ],
+    "words": "How it turned out",
+    "when": [
+     "receives",
+     "things",
+     "separate",
+     "priced"
+    ],
+    "card": "The seed you bought from Kamau in March: 40 in 100 came up. Tell him how it turned out?",
+    "note": "How something you bought turned out in use, signed into that deal so the seller reads it: the seed that did not sprout, the feed that did not grow the fish, the spray that did not work, the oven that keeps tripping. It is neither a complaint asking for a fix nor a public review; it builds the seller's track record in your own record, shared only by your grant.",
+    "examples": [
+     {
+      "id": "S20006",
+      "card": "Tell a seller how what you bought turned out.",
+      "filled": "The fertiliser from the agro-dealer: no difference on the plot you used it on. Tell him?"
+     },
+     {
+      "id": "S20007",
+      "card": "Note that a seed lot did not come up.",
+      "filled": "Only 40 of 100 of the bean seed came up. Tell the seller, with the lot number?"
+     }
+    ],
+    "trigger": "Something she bought has been in use long enough to show how it works: a crop is up, a batch is fed, a season of use has passed."
+   }
+  ],
+  "who must agree": {
+   "about": "Who must say yes before a move counts: a set of signers and how many of them, named in the deal's terms, never implied, and only within the act: one of one (the other side), all of every party, k of n keyholders, the number a group's rule names, or one named third. How many yeses close an open offer is the act's `closes`. A group's money: its one holder moves it alone up to the limit the group signed, and above that the signers its rule names; holding it is not controlling it. In a group, a member acts for it under a role the group gave: the block names who acted (it goes on their own record) and who answers (the group). Removing a member returns what leaving would, less fines they signed. A member who cannot answer is answered for under a grant (Answering for someone), and their own limits and record stay theirs. An informal group with no written rule: each member answers only for what they Accept, and an organiser answers for what they signed and recovers it by Splitting costs.",
+   "kinds": {
+    "the other side": "the usual case: one person or business on the other side",
+    "every party": "all named parties, together or not at all (clearing a ring of debts)",
+    "k of n": "a set number of named keyholders (two of three keys on a savings box)",
+    "the group's rule": "a group decides by its own signed rule (Deciding as a group); the rule may name one holder who moves money alone up to a limit it signed (a treasurer, a chief, a market master)",
+    "a named third party": "someone named in a deal between two others who is not a side: a holder of money or goods until both are happy, a judge, a guarantor, a witness, a relay courier. They answer by accepting the role, and their own act points at that deal (refs.for), never at one of its sides"
+   }
+  },
+  "money and machines": "Money carries who issued it: a tab, a voucher or credit is someone's promise, so paying with one points to its issuer's promise and partial redemption is allowed. Settle in money people already use; FoodX never holds the pot, sets prices or sets credit limits. A machine signs readings and moves only under an operator grant and never answers for anything; any yes it gives is answered for by whoever holds that grant (its owner, unless the owner granted operation to someone else, as with a leased machine).",
+  "move rules": {
+   "about": "What every move needs to know, worked out in tools/moves.py from the act's facts and the move's group; nothing is listed per act.",
+   "effect": [
+    "nothing yet",
+    "a promise",
+    "binds another person",
+    "money",
+    "something changes hands",
+    "something moves",
+    "something is made or changed",
+    "what is known"
+   ],
+   "undo": [
+    "by you alone",
+    "with the other side's yes",
+    "by a new act",
+    "no"
+   ],
+   "record": [
+    "a promise, asked or offered",
+    "a plan of your own",
+    "an acceptance",
+    "a decline",
+    "a vote",
+    "a receipt",
+    "a new promise answering the old",
+    "an update",
+    "a grant",
+    "a transfer",
+    "a transfer, under compulsion",
+    "an exchange, signed by the seller",
+    "a transform",
+    "an observation",
+    "an update, stopped",
+    "a message, done when read",
+    "a part passed on",
+    "a claim handed on",
+    "a pause ended",
+    "an answer to a question"
+   ],
+   "part": [
+    "only you",
+    "alone",
+    "drafts for your tap"
+   ],
+   "answer by": "Every move that waits on someone (a Promise, an Invite, a Pass, a Change in a deal, a Question) carries an answer-by time: from the terms, else from how long the act runs. Past it, the act is expired.",
+   "undo judged": "Who holds the power to undo: by you alone (nothing yet, or your own proposal before an answer), with the other side's yes (a yes given, money or goods handed over, someone removed), by a new act (what you moved or made on your own, when it can come back), or no (what was told, or made for good). Whether what an act makes or changes can come back is judged once per act by a model and stored as `undo`, one of the facts in `judged`; with no `undo` it cannot come back. FoodOS acts alone only on what she can undo by herself, unless her scope names it.",
+   "law": "Whether the law needs a named person to make a move comes from signed rules for each place, read like any signed rule, never from a list here. Until a place has one, a move whose other side is an authority waits for the person.",
+   "scope": "A scope names acts by their id and moves, the parties a move may reach, and bounds every measure a move carries: each limit has an amount, a unit and a direction (at most for money or goods going out, at least for a price coming in), a period with a running total, and an end only if she named one (a scope with no until has no end). FoodOS acts alone only when the act and move are named, the move reaches only parties the scope names, every measure it carries is present, in the same unit and inside its bound with the running total, the date is before its until if it has one, and she could undo it by herself (or the scope names it as not). A measure missing or unreadable means outside. A grant is always hers to sign. A scope may name a compelled-by-a-rule act (a standing tax payment); a demand with no rule behind it always waits for her. Authority only narrows: a scope passed on is inside the one it came from, and a scope carries to a newer version of an act only if it is no wider on effect, undo, consent and limits.",
+   "expect": "A move that opens or accepts a bet she carries (who carries the outcome: her or shared) records what she expects, in her own words, as a private block of her own that never travels with the promise: expected, would not surprise me (a range), review by; blank is allowed. She may revise it alone; the history stays. When it lands, the gap is the surprise; her profit or loss is money in less money out, read in her node from her own signed records, never printed by FoodOS.",
+   "numbers": "A number is shown only where her record holds many like cases (Saturdays, late payers of a kind). A one-off future (a new stall, next year's price) gets the factors and a blank for her own judgement, never a probability.",
+   "reach": [
+    "nobody",
+    "the other side",
+    "a named person",
+    "anyone"
+   ],
+   "needs": [
+    "the other side",
+    "what and how much",
+    "terms: how much",
+    "where and when",
+    "how often",
+    "what must happen first",
+    "when each side's part arrives",
+    "what backs it",
+    "what leaving costs",
+    "what you expect",
+    "the proposal it answers",
+    "the field it changes and its new value",
+    "who"
+   ],
+   "first move order": [
+    "the other side",
+    "what and how much",
+    "terms: how much",
+    "where and when",
+    "how often",
+    "what must happen first",
+    "what you expect",
+    "when each side's part arrives",
+    "what backs it",
+    "what leaving costs"
+   ],
+   "first move at most": 2,
+   "effect judged": "What a move does is read from what it carries and where the act stands: a Promise to another plan is a promise once answered; an Accept, a Change, an End, a Leave or a Pause in a deal with another plan binds or changes what was agreed; a Question, Answer or Decline to another plan tells them something that cannot be untold; Invite, Pass and Remove bind another person. Only an unanswered proposal of hers, Withdraw, Resume, a Note and moves in an act done alone are 'nothing yet'.",
+   "reach about": "Who a move reaches: nobody (it stays in her node), the other side of the deal, a named person (Invite, Pass, Remove), or anyone (a post or a warning to everyone). A move that reaches beyond the deal's other side needs her grant; a standing grant can cover a kind of move once, so it costs no tap after.",
+   "first move": "An opening move asks at most two things; the rest are filled from her record, asked when they matter (at Accept), or left as 'not agreed', which is shown and recorded.",
+   "serves": "A deal made to make another possible (an advance against a catch, an agent's sale of it, a loan for the kit) names that deal as what it serves, by its first block, so the chain is read from signed links and never from notes."
+  },
+  "live by stage": {
+   "about": "Which moves fit where an act stands, inside what the act can ever take; live_moves adds the moves of every open proposal (`pending`), whatever the stage. Stalled and expired are readings: they add moves and remove none, and a late move is recorded as late.",
+   "not started": [
+    "Promise",
+    "Start",
+    "Hand over",
+    "Pay",
+    "Receive",
+    "Done",
+    "Question",
+    "Note",
+    "Invite"
+   ],
+   "accepted": [
+    "Promise",
+    "Start",
+    "Hand over",
+    "Pay",
+    "Receive",
+    "Done",
+    "Change",
+    "Question",
+    "Answer",
+    "Note",
+    "Invite",
+    "Pass",
+    "Leave",
+    "Remove",
+    "End",
+    "Pause"
+   ],
+   "underway": [
+    "Promise",
+    "Hand over",
+    "Pay",
+    "Receive",
+    "Done",
+    "Change",
+    "Question",
+    "Answer",
+    "Note",
+    "Invite",
+    "Pass",
+    "Leave",
+    "Remove",
+    "End",
+    "Pause"
+   ],
+   "paused": [
+    "Resume",
+    "End",
+    "Note",
+    "Question",
+    "Answer"
+   ],
+   "done": [
+    "Note",
+    "Question",
+    "Answer"
+   ],
+   "ended": [
+    "Note",
+    "Question",
+    "Answer"
+   ],
+   "withdrawn": [
+    "Note",
+    "Promise"
+   ],
+   "declined": [
+    "Note",
+    "Promise"
+   ],
+   "expired": [
+    "Promise",
+    "Accept",
+    "Change",
+    "End",
+    "Note",
+    "Question"
+   ],
+   "stalled": [
+    "Hand over",
+    "Pay",
+    "Receive",
+    "Done",
+    "Question",
+    "Answer",
+    "Change",
+    "End",
+    "Note"
+   ],
+   "asked": [
+    "Change",
+    "Question",
+    "Answer",
+    "Note"
+   ],
+   "offered": [
+    "Change",
+    "Question",
+    "Answer",
+    "Note"
+   ]
+  },
+  "pending": {
+   "about": "A proposal (a Promise, a Change, an Invite, a Pass, a Remove or a Question, or a Hand over or Pay waiting for its Receive) stays open until it is answered, withdrawn or its answer-by time passes, whatever stage the act is in. While one waits on her she can answer it; while hers waits on them she can take it back.",
+   "waiting on you": [
+    "Accept",
+    "Decline",
+    "Receive",
+    "Question",
+    "Answer",
+    "Note"
+   ],
+   "waiting on them": [
+    "Withdraw",
+    "Question",
+    "Note"
+   ]
+  },
+  "record forms": {
+   "about": "What each record word of the move rules is as a FoodBlock (spec: promises.md, things.md, authority.md), written once and read by every part that writes a move (acts/write.mjs). `type`: the block's type, or 'as the anchor' (an answer or a stop has the type of the block it answers or updates). `tie`: how it points at the block it is about (`on`): answers (the other side's reply), updates (the author's own new version), updates or answers (the author stops their own; the other side replies), for (made for the deal), none. `sides`: mine to theirs (from and to by which way the act goes), mine to mine, kept (the anchor's own sides), none. `needs`: terms the move must carry for the block to be whole; a missing one is asked for, never made up. `words`: the words the block carries. A move's own `says` adds what it is (a status, a kind, a stop); `writes: false` with a reason is a move the protocol has no block for yet. A move's `ids` are the words the screen and her AI name it by (foodx/app/kit/moves.js); the move's own name matches too. Words follow the core (PRODUCT.md): `observe` is a reading (is), `promise` a promise (must), `grant` a grant (may); each record form names exactly one, or is `pencil`, which writes no block (her own information, never signed, never owned). An acceptance and a vote are her signature on the promise (a vote signs the circle's new version); a decline is a reading, never the anchor's type; a part passed on is a promise with two signatures (novation); a pause ended is the author's own grant ending a stop. A receipt (the receiver's \"I received it\") is a reading: the giver's transfer, a promise with its condition met, is what moves title. The one `as the anchor` that remains is an update of her own thing.",
+   "a promise, asked or offered": {
+    "type": "promise",
+    "tie": "none",
+    "sides": "mine to theirs",
+    "needs": [
+     "what"
+    ],
+    "words": [
+     "what",
+     "terms"
+    ]
+   },
+   "a plan of your own": {
+    "type": "pencil",
+    "tie": "none",
+    "sides": "mine to mine",
+    "needs": [],
+    "words": [],
+    "writes": false,
+    "because": "her own information: no one is bound and nothing is said, so it stays in pencil, never a block; what she types or does herself is her reading (an observation, a transform)"
+   },
+   "an acceptance": {
+    "type": "promise",
+    "tie": "answers",
+    "sides": "kept",
+    "needs": [],
+    "words": [
+     "status",
+     "quantity"
+    ]
+   },
+   "a decline": {
+    "type": "observe",
+    "tie": "answers",
+    "sides": "none",
+    "needs": [],
+    "words": [
+     "kind",
+     "status",
+     "text"
+    ]
+   },
+   "a vote": {
+    "type": "promise",
+    "tie": "answers",
+    "sides": "kept",
+    "needs": [],
+    "words": [
+     "status"
+    ]
+   },
+   "a receipt": {
+    "type": "observe",
+    "tie": "answers",
+    "sides": "none",
+    "needs": [],
+    "words": [
+     "kind",
+     "status",
+     "text"
+    ]
+   },
+   "an answer to a question": {
+    "type": "observe",
+    "tie": "answers",
+    "sides": "none",
+    "needs": [
+     "field",
+     "value"
+    ],
+    "words": [
+     "kind",
+     "field",
+     "value",
+     "text"
+    ]
+   },
+   "a new promise answering the old": {
+    "type": "promise",
+    "tie": "answers",
+    "sides": "kept",
+    "needs": [
+     "terms"
+    ],
+    "words": [
+     "what",
+     "terms"
+    ]
+   },
+   "an update": {
+    "type": "as the anchor",
+    "tie": "updates",
+    "sides": "none",
+    "needs": [
+     "field",
+     "value"
+    ],
+    "words": [
+     "changed"
+    ]
+   },
+   "an update, stopped": {
+    "type": "as the anchor",
+    "tie": "updates or answers",
+    "sides": "kept",
+    "needs": [],
+    "words": [
+     "status",
+     "stop"
+    ]
+   },
+   "a transfer": {
+    "type": "transfer",
+    "tie": "for",
+    "sides": "mine to theirs",
+    "needs": [],
+    "words": [
+     "kind",
+     "money",
+     "amount"
+    ]
+   },
+   "a transfer, under compulsion": {
+    "type": "transfer",
+    "tie": "for",
+    "sides": "mine to theirs",
+    "needs": [],
+    "words": [
+     "kind",
+     "money",
+     "amount"
+    ]
+   },
+   "an exchange, signed by the seller": {
+    "type": "transfer",
+    "tie": "for",
+    "sides": "mine to theirs",
+    "needs": [],
+    "words": [
+     "kind",
+     "money",
+     "amount"
+    ]
+   },
+   "a transform": {
+    "type": "transform",
+    "tie": "for",
+    "sides": "none",
+    "needs": [],
+    "words": [
+     "kind",
+     "what",
+     "amount"
+    ]
+   },
+   "an observation": {
+    "type": "observe",
+    "tie": "for",
+    "sides": "none",
+    "needs": [],
+    "words": [
+     "kind",
+     "text"
+    ]
+   },
+   "a message, done when read": {
+    "type": "observe",
+    "tie": "for",
+    "sides": "none",
+    "needs": [
+     "text"
+    ],
+    "words": [
+     "kind",
+     "text"
+    ]
+   },
+   "a part passed on": {
+    "type": "promise",
+    "tie": "for",
+    "sides": "mine to theirs",
+    "needs": [
+     "who"
+    ],
+    "words": [
+     "kind",
+     "text"
+    ]
+   },
+   "a claim handed on": {
+    "type": "transfer",
+    "tie": "none",
+    "sides": "none",
+    "needs": [
+     "who"
+    ],
+    "words": []
+   },
+   "a pause ended": {
+    "type": "grant",
+    "tie": "updates",
+    "sides": "none",
+    "needs": [],
+    "words": [
+     "status"
+    ]
+   },
+   "a grant": {
+    "type": "grant",
+    "tie": "by the move",
+    "sides": "none",
+    "needs": [
+     "who"
+    ],
+    "words": [
+     "kind",
+     "roles"
+    ]
+   }
+  }
+ },
+ "stages": {
+  "about": "Where an act's moves have got to, worked out from the moves (each move names the stage it reaches). Four stages need no move: an idea (FoodOS proposing, in pencil), expired (a move waiting on someone passed its answer-by time), stalled (underway, and the proof its next move needs is overdue) and reversed (undoing after a yes is a new act). After expired or stalled, FoodOS asks a model one closed question about her record: ask again, change the terms, ask someone else, or let go; each answer is an ordinary move.",
+  "no move": [
+   "an idea",
+   "expired",
+   "stalled",
+   "reversed"
+  ]
+ },
+ "fields": {
+  "who": {
+   "question": "who does it, and who answers for it (the doer unless said)",
+   "kinds": [
+    "you",
+    "your people",
+    "together",
+    "someone you deal with",
+    "a business or professional",
+    "anyone",
+    "a machine",
+    "FoodOS for you",
+    "a member for the group"
+   ]
+  },
+  "the other side": {
+   "question": "with whom: one of the values of the act's other side, for this deal",
+   "kinds": [
+    "a person or household",
+    "a business",
+    "an institution or the state",
+    "a group",
+    "a market or platform",
+    "anyone"
+   ]
+  },
+  "for whom": {
+   "question": "who it is for",
+   "kinds": [
+    "you",
+    "your people",
+    "someone you care for",
+    "someone you deal with",
+    "anyone",
+    "a cause or institution"
+   ]
+  },
+  "terms": {
+   "question": "on what deal, including who pays",
+   "kinds": [
+    "how much",
+    "extras",
+    "not money",
+    "how long",
+    "if it goes wrong",
+    "conditions",
+    "when the sides disagree",
+    "who pays",
+    "if another act fails",
+    "default if nobody acts",
+    "a floating quantity",
+    "deposits from each side",
+    "a promise not to act",
+    "who pays a group's debts",
+    "answer by",
+    "when each side's part arrives",
+    "what backs it",
+    "what leaving costs",
+    "how often it repeats",
+    "who issued it",
+    "what it pays out in",
+    "whether it can be passed on",
+    "what covers it"
+   ],
+   "about": " Promises can also take effect only if another act fails, have a default if nobody acts, float with what there turns out to be, take deposits from each side, promise not to act, and say who pays a group's debts. A deal where one side's part comes later is credit: it says when each part arrives, the gap between them (interest), and what backs it (who goes first, who is exposed, a deposit, a guarantor, a judge). A lasting deal says what leaving costs, agreed up front. A claim (a voucher, points, shop credit, an IOU) names who issued it, what it pays out in, when, whether it can be passed on and what covers it; custody (the holder may not use it), a deposit (hers on demand) and a loan (theirs until repaid) are told apart by these terms."
+  },
+  "where and when": {
+   "question": "the act's place and time, including how often",
+   "kinds": [
+    "here, where you are",
+    "nearby",
+    "a set place",
+    "their place",
+    "on the way",
+    "now",
+    "a set time",
+    "ahead, for later",
+    "regularly",
+    "for a term",
+    "until taken back"
+   ]
+  },
+  "what it must fit": {
+   "question": "the limits and preferences it must meet",
+   "kinds": [
+    "diet, allergy, health",
+    "a money limit",
+    "law and rules",
+    "a time limit",
+    "how many",
+    "a safe range",
+    "a running total",
+    "taste",
+    "values",
+    "effort and skill",
+    "price or quality",
+    "what you have, going off first",
+    "offers, season, nearby",
+    "your skills, kit, plot",
+    "people and spare",
+    "language"
+   ]
+  },
+  "what it serves": {
+   "question": "the goal or bigger act it is for (a link, never free text in a real act)",
+   "kinds": [
+    "a goal of yours",
+    "a bigger act",
+    "an occasion",
+    "selling it on",
+    "company",
+    "pleasure",
+    "safety",
+    "someone else's need"
+   ]
+  },
+  "what you expect": {
+   "question": "What do you expect to happen, by when, and what would surprise you?",
+   "kinds": [
+    "a number and a date",
+    "in your own words",
+    "left blank"
+   ]
+  }
+ },
+ "every value": "Each value in a real deal carries where it came from and what would prove it wrong, with an as-of date. A number appears only where her record holds many like cases, with the cases listed; a single deal never carries one. An act's usual case carries none.",
+ "facts": {
+  "about": "Facts on every act carry the rules: which moves it takes, which term rules hold, what FoodOS may do alone, its other side, whether it is inside one plan or between plans. Verbs are only family names. The facts a model judged (consent, who waits, who carries the outcome, the other side, how the price is set) are the act's usual case, stamped once with who judged and no number; a real deal carries its own value, and counts from real deals replace the usual case once they exist.",
+  "changes": [
+   "who owns it",
+   "who holds it",
+   "where it is",
+   "what it is",
+   "what's known",
+   "what's agreed"
+  ],
+  "who is in it": [
+   "alone",
+   "your group",
+   "others"
+  ],
+  "my side": [
+   "just me",
+   "a group I belong to"
+  ],
+  "which way": [
+   "out",
+   "in",
+   "both",
+   "none"
+  ],
+  "undoes": [
+   "no",
+   "yes"
+  ],
+  "in exchange": [
+   "money",
+   "goods",
+   "nothing",
+   "a share of the outcome",
+   "a claim"
+  ],
+  "runs": [
+   "in one go",
+   "once",
+   "until ended"
+  ],
+  "recurs": [
+   "no",
+   "yes"
+  ],
+  "consent": [
+   "by consent",
+   "compelled by a rule",
+   "compelled by force"
+  ],
+  "other end": {
+   "out": "in",
+   "in": "out",
+   "both": "both"
+  },
+  "notes": {
+   "who is in it": "Who else is in it. Alone: nobody else (wild food, a pet, an offering are hers alone, with nature as a condition). Your group: people who share one plan and one purse (a household, an owner-run crew), so it is inside an economy. Others: separate plans dealing with each other, the catallaxy; a co-op, chama or club of separate owners under a rule is others, with a group as the other side.",
+   "which way": "Which way the thing moves for her: out (she gives, sells, tells), in (she gets, buys, finds), both (a swap, a settling up), none (done alone).",
+   "in exchange": "One value: what goes the other way. Empty exactly when everyone in it shares one plan (alone, or her household or crew): inside one purse nothing is exchanged. Goods means goods or work in kind. A share of the outcome is a claim on what the thing earns. A claim is paying with someone's promise (points, a voucher, circle credit). A price of nothing or a free version is a term, not a second value.",
+   "runs": "How long one deal runs: in one go, once (one span with an end) or until ended. It is the deal's, not how often she does the act.",
+   "consent": "By consent; compelled by a rule (a law, a court order, a published rule backed by force: a tax, a fine, a licence, a compulsory report); or compelled by force (a demand with no rule behind it). The usual case; a real deal carries its own, and may only move toward compelled. Where a signed rule for her place exists, it decides.",
+   "other side": "Who the other side usually is, when separate plans deal: a person or household, a business, an institution or the state, a group, a market or platform, or anyone (told to everyone). Empty when nobody else is in it or they share one plan.",
+   "price set by": "How the price is usually found: set by the one who offers it, bargained, by bidding, by a formula (a share, a cut, a royalty), by a rule she signed (a scheme, a group's rule), or by a law. Empty when nothing goes the other way.",
+   "who waits": "Whose part comes later in a deal: nobody (both at once), she waits (she gives first), they wait (they give first), or by turn (each member's turn decides, so the early taker owes and the late one is owed). One side waiting in a priced deal, with no condition, is credit.",
+   "who carries the outcome": "Who gains or loses from this deal if the thing turns out better or worse than hoped, beyond the other side keeping its part, read from her side: her, shared, or nobody (her result is fixed). Each side of a deal says its own: the buyer of stock carries what it sells for, the seller does not. What she expects is asked only when it is her or shared.",
+   "may the holder use it": "When something is held but not owned, or lent: may the holder use it? No (custody), yes and give the same thing back (a loan of a thing), yes and give the same amount back (a loan of money or grain, a deposit), or yes but only for what was agreed (money held for a purpose: a pot, a collection).",
+   "back when": "When what is held comes back: on demand, on a date, on a condition, or never (it is used up or passes on).",
+   "recurs": "Whether the act has dated occurrences inside it (a weekly box, wages, rent, a milking, a pot's turns): then how often is a term, and an occurrence can be skipped (Pause) or swapped (Pass).",
+   "on a condition": "Whether a part comes only if something happens (a loss, a pass, a death, a win, a return). A conditional part is not credit: it is a bet on the condition, shown with what decides it.",
+   "my side": "Who is on her side of a deal between separate plans: just her (the usual case, left unsaid), or a group of separate owners she belongs to, acting together (selling as a group, a strike, a group buy). A group on her side brings the group's rules: leaving, what leaving costs, and a rule that binds only its signers.",
+   "closes": "How many yeses close an open offer: at the first yes (the usual case, left unsaid), when enough say yes (a threshold, nobody bound before it), when every party says yes (or none), each yes stands alone (an offer to many), or one is picked (by bid, by a judge or by a draw, said in the terms).",
+   "audience": "Who may read what she does alone: her node only (the usual case, left unsaid), people she names, whoever must know by her grant (a diet, a need), or anyone (a standing offer: prices, hours, what she sells). It decides who a move reaches.",
+   "undoes": "Whether the act undoes an earlier deal (a return, taking back what was sold): it keeps that deal's family, runs the other way, and points at the deal it undoes."
+  },
+  "other side": [
+   "a person or household",
+   "a business",
+   "an institution or the state",
+   "a group",
+   "a market or platform",
+   "anyone"
+  ],
+  "price set by": [
+   "the one who offers it",
+   "bargained",
+   "bidding",
+   "a formula",
+   "a rule she signed",
+   "a law"
+  ],
+  "closes": [
+   "at the first yes",
+   "when enough say yes",
+   "when every party says yes",
+   "each yes stands alone",
+   "one is picked"
+  ],
+  "who waits": [
+   "nobody",
+   "she waits",
+   "they wait",
+   "by turn"
+  ],
+  "on a condition": [
+   "no",
+   "yes"
+  ],
+  "who carries the outcome": [
+   "her",
+   "shared",
+   "nobody"
+  ],
+  "may the holder use it": [
+   "no",
+   "yes, the same thing back",
+   "yes, the same amount back",
+   "yes, only for what was agreed"
+  ],
+  "back when": [
+   "on demand",
+   "on a date",
+   "on a condition",
+   "never"
+  ],
+  "audience": [
+   "her node only",
+   "people she names",
+   "whoever must know, by her grant",
+   "anyone"
+  ],
+  "who waits, other end": {
+   "nobody": "nobody",
+   "she waits": "they wait",
+   "they wait": "she waits",
+   "by turn": "by turn"
+  }
+ },
+ "questions": {
+  "about": "The closed questions FoodOS asks, through Jev or the Decisions API, to find which act a moment is: one per fact, in her words, each answer one value. Code narrows the library to the acts whose facts fit the answers and asks next the question that splits what is left most evenly (tools/pick.py; acts/index.mjs). When no fact splits what is left, Jev chooses among those few acts by their names and the opening sentence of each note, still a closed choice. Jev answers from what it sees; she is asked only when it cannot tell and only when the choice commits her. Never a small model guessing the act from free text.",
+  "which way": {
+   "question": "Which way is it going for me?",
+   "answers": {
+    "out": "I give, sell, tell or hand something over",
+    "in": "I get, buy, find or receive something",
+    "both": "Things go both ways at once (a swap, settling up)",
+    "none": "Nothing goes to or from anyone; I do it myself"
+   }
+  },
+  "who is in it": {
+   "question": "Who else is in it with me?",
+   "answers": {
+    "alone": "Nobody else",
+    "your group": "People who share my plan and purse (my household, my own crew)",
+    "others": "Someone with their own plan (another person, a business, a group of separate owners)"
+   }
+  },
+  "changes": {
+   "question": "What changes because of it?",
+   "many": true,
+   "answers": {
+    "who owns it": "Who owns something",
+    "who holds it": "Who has something in their hands, without owning it",
+    "where it is": "Where something is",
+    "what it is": "What something is (cooked, grown, made, mended)",
+    "what's known": "What someone knows",
+    "what's agreed": "What someone has promised or allowed"
+   }
+  },
+  "in exchange": {
+   "question": "What goes the other way?",
+   "answers": {
+    "money": "Money",
+    "goods": "Goods or work in kind",
+    "nothing": "Nothing",
+    "a share of the outcome": "A share of what it earns or yields",
+    "a claim": "Someone's promise (points, a voucher, credit)"
+   }
+  },
+  "runs": {
+   "question": "How long does one go of it last?",
+   "answers": {
+    "in one go": "A single moment",
+    "once": "One stretch with an end",
+    "until ended": "It lasts until someone ends it"
+   }
+  },
+  "consent": {
+   "question": "Could I say no?",
+   "answers": {
+    "by consent": "Yes, freely",
+    "compelled by a rule": "No: a law, an order or a published rule requires it",
+    "compelled by force": "No: someone demands it with no rule behind it"
+   }
+  },
+  "other side": {
+   "question": "Who is on the other side?",
+   "answers": {
+    "a person or household": "A person or a household",
+    "a business": "A business",
+    "an institution or the state": "An institution or the state",
+    "a group": "A group I belong to",
+    "a market or platform": "A market or a platform",
+    "anyone": "Anyone who sees it"
+   }
+  },
+  "price set by": {
+   "question": "Who sets the price?",
+   "answers": {
+    "the one who offers it": "Whoever offers it posts the price",
+    "bargained": "We bargain",
+    "bidding": "Bidders set it",
+    "a formula": "A formula we agreed",
+    "a rule she signed": "A rule I signed",
+    "a law": "A law sets it"
+   }
+  },
+  "who waits": {
+   "question": "Does one side's part come later?",
+   "answers": {
+    "nobody": "No, both parts at once",
+    "she waits": "Yes, I give first and wait for theirs",
+    "they wait": "Yes, they give first and wait for mine",
+    "by turn": "It goes by turns among us"
+   }
+  },
+  "who carries the outcome": {
+   "question": "If it turns out better or worse than hoped, do I gain or lose?",
+   "answers": {
+    "her": "Yes, I do",
+    "shared": "We both do",
+    "nobody": "No, my result is fixed"
+   }
+  },
+  "may the holder use it": {
+   "question": "May whoever holds it use it?",
+   "answers": {
+    "no": "No, they only keep it",
+    "yes, the same thing back": "Yes, and give the same thing back",
+    "yes, the same amount back": "Yes, and give the same amount back",
+    "yes, only for what was agreed": "Yes, but only for what was agreed"
+   }
+  },
+  "back when": {
+   "question": "When does it come back?",
+   "answers": {
+    "on demand": "Whenever I ask",
+    "on a date": "On a set date",
+    "on a condition": "When something happens",
+    "never": "Never"
+   }
+  },
+  "nouns": {
+   "question": "What is it about?",
+   "many": true,
+   "answers": {
+    "food": "food",
+    "living things": "living things",
+    "by-products": "by-products",
+    "energy": "energy",
+    "equipment": "equipment",
+    "space, land and water": "space, land and water",
+    "rights and claims": "something someone owes: a voucher, points, a share, quota, a receipt, an IOU, a certificate",
+    "a permission": "a right to use, enter or act that someone grants and can end: a licence, a rental, a mandate, a grant of authority",
+    "time": "time",
+    "work": "a person's work sold as it is done, priced by time",
+    "a job": "a finished piece of work sold or done, priced by the result",
+    "an idea": "an idea",
+    "money": "money",
+    "a record": "a record",
+    "knowledge": "knowledge",
+    "people": "people"
+   }
+  },
+  "verb": {
+   "question": "Which word fits what I am doing?",
+   "answers": {
+    "Buy": "Buy",
+    "Sell": "Sell",
+    "Swap": "Swap",
+    "Give": "Give",
+    "Get": "Get",
+    "Lend": "Lend",
+    "Borrow": "Borrow",
+    "Tell": "Tell",
+    "Find out": "Find out",
+    "Teach": "Teach",
+    "Learn": "Learn",
+    "Log": "Log",
+    "Set": "Set",
+    "Plan": "Plan",
+    "Agree": "Agree",
+    "Create": "Create",
+    "Make": "Make",
+    "Grow": "Grow",
+    "Keep": "Keep",
+    "Carry": "Carry",
+    "Eat": "Eat",
+    "Share": "Share",
+    "Comply": "Comply"
+   }
+  },
+  "recurs": {
+   "question": "Does it come round again and again inside?",
+   "answers": {
+    "no": "No",
+    "yes": "Yes: it has dated turns, deliveries or payments"
+   }
+  },
+  "on a condition": {
+   "question": "Does a part come only if something happens?",
+   "answers": {
+    "no": "No",
+    "yes": "Yes, only if something happens (a loss, a pass, a win)"
+   }
+  },
+  "my side": {
+   "question": "Am I doing it on my own or with a group?",
+   "answers": {
+    "just me": "On my own",
+    "a group I belong to": "With a group I belong to, together"
+   }
+  },
+  "closes": {
+   "question": "How many yeses does it take?",
+   "answers": {
+    "at the first yes": "The first yes closes it",
+    "when enough say yes": "It counts only when enough say yes",
+    "when every party says yes": "Everyone must say yes, or nobody is bound",
+    "each yes stands alone": "Each yes is its own deal",
+    "one is picked": "Many answer and one is picked"
+   }
+  },
+  "audience": {
+   "question": "Who may see it?",
+   "answers": {
+    "her node only": "Only me",
+    "people she names": "People I name",
+    "whoever must know, by her grant": "Whoever must know, by my grant",
+    "anyone": "Anyone"
+   }
+  },
+  "undoes": {
+   "question": "Am I undoing a deal I made before?",
+   "answers": {
+    "no": "No",
+    "yes": "Yes, I am returning or taking back"
+   }
+  }
+ },
+ "proof": {
+  "the other side's yes": "the other side answers it accepted, or signs for what arrived",
+  "a reading or photo": "a scale, probe, sensor or camera frame, signed by the device or the person",
+  "a receipt": "a payment rail's reference or a signed transfer",
+  "your word": "the person's own record, marked as one-sided; the reader decides what it is worth",
+  "the block itself": "saying it is doing it: the signed block is the proof",
+  "the group's rule": "a group's yes, given by its own signed rule: a quorum, k of n keyholders, a steward, one member one vote",
+  "every party's yes": "every named party accepts, and it counts only once all have (a ring of debts cancels together or not at all)",
+  "the holder's receipt": "whoever holds goods they don't own signs for them at each hand: a pickup host, a relay courier, a store",
+  "a code only the receiver holds": "the receiver shows a code to prove it reached them",
+  "the reader's receipt": "the other side signs that they read it; telling is done only then",
+  "a device's reading": "a sensor, scale, probe or machine's own log, signed by the device under its owner's or operator's grant; it grounds a claim and settles nothing alone",
+  "a named third party's word": "someone both sides named signs what they saw (a coworker for a shift, a market master for a weighing)",
+  "named witnesses": "people named in advance each sign that it happened (a cash handover, a death, a seizure)",
+  "the seller's own count": "the seller signs what was sold under a posted price; the till or the day's count backs it"
+ },
+ "term rules": {
+  "about": "Rules about a deal's terms, each written once here and held by every act its facts select (tools/moves.py, terms_for). A note never repeats one.",
+  "compelled": "Done because force would follow a refusal: by a rule (a law, an order, a published rule) or by force alone. Shown as compelled, never as buying, selling or giving, with what it rests on, what refusing costs and where it can be contested (Contesting a charge, or Appeal a decision on the deal); a demand with no rule behind it always waits for her.",
+  "a signed price": "A price shown is one a side signed, with its source and date; never a market price from FoodX. A 'was' price, a scarcity or a countdown is shown only if true, fees are inside the price shown, and a paid place is labelled. Closed prices are shared (the thing, the place, the time, no names) only under her standing grant to Telling others a price, signed once at setup and stopped any day; FoodOS never asks deal by deal.",
+  "credit": "One side's part comes later in a priced deal, so it is credit: the card shows when each part arrives and the gap between the two signed prices, unsplit (it carries both time and risk), in the deal's own period first and a yearly figure on request. With only one price signed it says so; FoodX supplies no rate. Money paid ahead is recorded as agreed: whether the one who holds it may use it before their part, and what comes back if that part never comes.",
+  "what backs it": "Who goes first, who is exposed, and what backs the promise (money held as security, a guarantor, a pledge, a named judge) are agreed up front; 'not agreed' is a valid answer, shown as such.",
+  "what leaving costs": "What leaving costs is agreed up front and shown before she joins, and it is only ever a sum: leaving early, or at short notice, costs the forfeit sum she signed (a notice period or a minimum term is that sum, never a duty to stay or to work), plus what comes back. Nothing binds her body or her time, she can always leave, and a later change binds her only if she signs it.",
+  "held, not owned": "Whoever holds what is not theirs uses it only as the terms allow (not at all, or only for what was agreed), answers for it as agreed, and gives it back or accounts for it by the terms; a receipt is signed at each hand.",
+  "a claim": "A claim (a voucher, points, a ticket, a certificate, quota, a receipt, money held and lent on, a share) names who owes it, what it pays out in, until when, whether and in what pieces it can be passed on, and what covers it. Whoever passes it on stays answerable unless released.",
+  "done when read": "Telling counts for each person once they have read it, and the card shows who has, if they let read receipts be seen.",
+  "what you expect": "A move that commits her to a bet she carries records what she expects, privately; the gap with what happens is the surprise, and her profit or loss is read from her own records, never printed by FoodOS.",
+  "the wait": "She spends now for a return later: the card shows what is tied up and until when, beside her other live choices, leaving it among them, each with the plain facts of what it uses; never what it costs her, which only she can judge. FoodX supplies no rate.",
+  "a signed rule binds only its signers": "A rule binds only those who signed it, never stops anyone outside selling or buying, and those who disagree can leave on the terms agreed when they joined.",
+  "the law's floor": "Where her place's law sets a minimum (a cooling-off right, a refund, a wage floor, a portability right), the card shows it from the signed rule for that place; FoodOS refuses nothing on that ground.",
+  "tax on a price": "A tax inside a price is shown on its own line: the rate, who collects it, and whether she can claim it back.",
+  "what's taken off": "Anything taken off what someone is paid or owed (a fee, a cut, a grade, a commission, transport, inputs repaid, a deduction from pay for housing, tools or a recruitment fee, a short ration, a miller's share) is its own line, pointing to the signed fact it rests on: the term both sides signed, a count, a weighing, a grade. A line with no signed fact behind it shows as unmatched. Questioned by Check the deductions.",
+  "the remainder": "For anything held, made, carried or stored: what came in, less what went out, less what was already noted (sold, used, given, lost), set against a count, gives one figure, the remainder: what nobody wrote down. It is shown with the counts it comes from. FoodOS never names its cause; she says in her own words where it went, if she wants to: sold, used, given or lost. Along a chain of signed handovers it is the mass balance: nobody hands on more than came in. Counted by Count what you have.",
+  "where it came from": "A thing that is handed over names the lots it came from: what is made, split, repacked or broken from bulk derives from what went in (FoodBlock derives_from), and a handover names the thing. So a recall follows the signed chain, by each holder's grant, to whoever holds the food, and spares those who never did.",
+  "where Austrians differ": "Where the Austrian school itself is split, the act library takes a side and names its source each time (docs/PRODUCT.md, decided): money held on demand is custody, so lending it out without the owner's word is fraud, and custody, a deposit and a loan are never mixed (Rothbard); a tax is compelled, never consent (Rothbard); an idea is not property, so a recipe or a method binds only those who signed a deal about it (Kinsella); a promise of future work binds only what was pledged, never her body, which she never acquired and no word hands on (Kinsella, revising Rothbard); and whose money a payment ahead is until the goods come is what the condition both signed says, the act filling in nothing.",
+  "a shared pot": "Every payment in and out of a pot a group holds is shown to every member; its one holder moves money alone only up to the limit the group signed, and leaving returns a member's share by the terms."
+ },
+ "card rules": {
+  "about": "Rules every card follows, whatever the act, written once here and never in a note.",
+  "live choices": "Every decision card shows her live choices, leaving it among them, with the plain facts of what each uses (time, stock, money, kit); never what a choice costs her, which only she can judge.",
+  "signed word": "A statement (a rating, a diagnosis, a test, a grade, a label, advice, a price seen) is its maker's signed word, with what it rests on and its date; readers decide what it is worth. A word given for a reward or a fee says so beside it.",
+  "her grant": "Nothing about her leaves her node without her grant (who, what, why, until when). A search reads open listings and her own record and sends nothing until she asks, offers or applies.",
+  "falsehood": "FoodOS refuses one thing: a falsehood. A fake scarcity or countdown, a 'was' price that never was, a hidden fee or a shrunk pack, a short weight or a fake lot, a second pledge of the same thing, a label or claim her own record contradicts, unlabelled paid placement, or a word rewarded without saying so.",
+  "figures": "Only signed or counted figures are shown. FoodOS never prints a profit, a payback, a value or odds for a one-off; those are hers. A verdict is a named line (her limit, a programme's line, a maker's date) applied to counted records, with the line shown; what stands out crosses a line she set or repeats in her own record.",
+  "calling it off": "Before a yes either side withdraws freely; after it, either side ends on the agreed terms, and only what has not happened stops.",
+  "who answers": "Every block names who acted and who answers: the operator of a machine, she herself for FoodOS acting under her grant, the group for a member acting under its role.",
+  "the law": "A tax, duty, fee, permit or report the law adds to a chosen act is shown apart, with its source from the signed rules for her place, and is done in its own compelled act; FoodOS forbids nothing on that ground."
+ },
+ "glossary": {
+  "about": "One word, one meaning. Each word here means this and nothing else across the library, the cards and the code.",
+  "a permission": "a right to use, enter or act that someone grants and can end: a licence, a rental, a mandate, a grant of authority",
+  "rights and claims": "something someone owes: a voucher, points, a share, quota, a receipt, an IOU, a certificate",
+  "held for you": "money or goods someone keeps for you and may not use (custody); replaces 'deposit' in that sense",
+  "held as security": "money or goods kept until a promise is kept, then returned or kept by the terms; replaces 'deposit' in that sense",
+  "paid ahead": "money paid before the goods or work, which the seller owes back in goods or work; replaces 'deposit' in that sense",
+  "a job": "a finished piece of work sold or done, priced by the result",
+  "work": "a person's work sold as it is done, priced by time",
+  "a grant": "a signed permission or authority; money given for a purpose is 'a grant of money' only in Applying for a grant and Awarding a grant",
+  "credit": "a priced deal where one side's part comes later",
+  "the remainder": "what came in, less what went out and what was noted, against a count: what nobody wrote down. Never 'gap' (the gap between two signed prices is credit's; the gap with what she expected is her profit or loss)",
+  "what's taken off": "a line taken off what someone is paid or owed, pointing to the signed fact it rests on"
+ },
+ "properties": {
+  "who is in it": {
+   "alone": {
+    "plans": "one",
+    "parties": "none"
+   },
+   "your group": {
+    "plans": "one",
+    "parties": "many"
+   },
+   "others": {
+    "plans": "separate",
+    "parties": "one or many"
+   }
+  },
+  "my side": {
+   "just me": {
+    "many": false
+   },
+   "a group I belong to": {
+    "many": true
+   }
+  },
+  "which way": {
+   "out": {
+    "sends": true,
+    "receives": false
+   },
+   "in": {
+    "sends": false,
+    "receives": true
+   },
+   "both": {
+    "sends": true,
+    "receives": true
+   },
+   "none": {
+    "sends": false,
+    "receives": false
+   }
+  },
+  "changes": {
+   "who owns it": {
+    "hands": true,
+    "title": true
+   },
+   "who holds it": {
+    "hands": true,
+    "custody": true
+   },
+   "where it is": {
+    "hands": true,
+    "place": true
+   },
+   "what it is": {
+    "makes": true
+   },
+   "what's known": {
+    "knows": true
+   },
+   "what's agreed": {
+    "binds": true
+   }
+  },
+  "in exchange": {
+   "money": {
+    "priced": true,
+    "money": true
+   },
+   "goods": {
+    "priced": true
+   },
+   "a share of the outcome": {
+    "priced": true
+   },
+   "a claim": {
+    "priced": true,
+    "claim": true
+   },
+   "nothing": {
+    "priced": false
+   }
+  },
+  "runs": {
+   "in one go": {
+    "span": "instant"
+   },
+   "once": {
+    "span": "once"
+   },
+   "until ended": {
+    "span": "lasts"
+   }
+  },
+  "recurs": {
+   "no": {
+    "recurs": false
+   },
+   "yes": {
+    "recurs": true
+   }
+  },
+  "consent": {
+   "by consent": {
+    "forced": false,
+    "force": 0
+   },
+   "compelled by a rule": {
+    "forced": true,
+    "rule": true,
+    "force": 1
+   },
+   "compelled by force": {
+    "forced": true,
+    "rule": false,
+    "force": 2
+   }
+  },
+  "who waits": {
+   "nobody": {
+    "ordered": false
+   },
+   "she waits": {
+    "ordered": true
+   },
+   "they wait": {
+    "ordered": true
+   },
+   "by turn": {
+    "ordered": true
+   }
+  },
+  "on a condition": {
+   "no": {
+    "contingent": false
+   },
+   "yes": {
+    "contingent": true
+   }
+  },
+  "who carries the outcome": {
+   "her": {
+    "bet": true
+   },
+   "shared": {
+    "bet": true
+   },
+   "nobody": {
+    "bet": false
+   }
+  },
+  "other side": {
+   "a person or household": {},
+   "a business": {},
+   "an institution or the state": {},
+   "a group": {
+    "many": true
+   },
+   "a market or platform": {},
+   "anyone": {
+    "open": true
+   }
+  },
+  "price set by": {
+   "the one who offers it": {
+    "posted": true
+   },
+   "bargained": {},
+   "bidding": {},
+   "a formula": {},
+   "a rule she signed": {
+    "signed rule": true
+   },
+   "a law": {
+    "law": true
+   }
+  },
+  "closes": {
+   "at the first yes": {
+    "yeses": "one"
+   },
+   "when enough say yes": {
+    "yeses": "enough"
+   },
+   "when every party says yes": {
+    "yeses": "all"
+   },
+   "each yes stands alone": {
+    "yeses": "each"
+   },
+   "one is picked": {
+    "yeses": "pick"
+   }
+  },
+  "may the holder use it": {
+   "no": {
+    "custody": true,
+    "claim": false,
+    "held": true
+   },
+   "yes, the same thing back": {
+    "custody": false,
+    "claim": false,
+    "held": true
+   },
+   "yes, the same amount back": {
+    "custody": false,
+    "claim": true,
+    "held": false
+   },
+   "yes, only for what was agreed": {
+    "custody": true,
+    "claim": false,
+    "held": true
+   }
+  },
+  "audience": {
+   "her node only": {
+    "reach": "nobody"
+   },
+   "people she names": {
+    "reach": "a named person"
+   },
+   "whoever must know, by her grant": {
+    "reach": "a named person"
+   },
+   "anyone": {
+    "reach": "anyone"
+   }
+  },
+  "nouns": {
+   "food": {
+    "thing": true,
+    "perishes": true
+   },
+   "living things": {
+    "thing": true,
+    "perishes": true
+   },
+   "by-products": {
+    "thing": true,
+    "perishes": true
+   },
+   "energy": {
+    "thing": true,
+    "read": true
+   },
+   "equipment": {
+    "thing": true,
+    "read": true
+   },
+   "space, land and water": {
+    "thing": true
+   },
+   "rights and claims": {
+    "promise": "must",
+    "carrier": true
+   },
+   "a permission": {
+    "promise": "may"
+   },
+   "time": {},
+   "work": {
+    "service": true,
+    "carrier": true
+   },
+   "a job": {
+    "service": true,
+    "carrier": true
+   },
+   "an idea": {
+    "idea": true,
+    "copied": true
+   },
+   "money": {
+    "money": true
+   },
+   "a record": {
+    "copied": true
+   },
+   "knowledge": {
+    "copied": true,
+    "carrier": true
+   },
+   "people": {}
+  },
+  "about": "What each value means to the code: every rule in tools/moves.py reads these, never the words. A new value is added here with its properties, and every rule reads it at once.",
+  "undoes": {
+   "no": {
+    "undoes": false
+   },
+   "yes": {
+    "undoes": true
+   }
+  }
+ },
+ "labels": "An act's name, card, note and examples are its English labels. Another language adds `labels`: {<language code>: {name, card, note, examples}}, and may leave any of them out. The id, the facts and the moves are the same in every language; code reads ids and facts, never labels. An act that is both ends of one deal names them in `sides` ({from, to}); `known as` lists the names of the acts merged into it and `was` their ids.",
+ "verbs_about": "Each family names the facts its acts share (`facts`): a value list a fact must take, or for `changes` at least one of the list. An act that undoes an earlier deal (`undoes`) keeps that deal's family and runs the other way. check.py holds every act to its family, so a family is a label the facts agree with, never a rule of its own. Since 2026-11-05 a family is a browsing label only: nothing picks, builds or restrains by it."
+}

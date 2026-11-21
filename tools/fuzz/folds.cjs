@@ -5,6 +5,7 @@
 // each op. A fold or op this file cannot ask throws, so a new fold is compared everywhere or the tools fail. How an answer is compared
 // is OPS in diff.cjs, the one projection table.
 const P = require('../../spec/protocol.json');
+const C = require('../../spec/conventions.json'); // `views` is a reading's list (conventions.json)
 
 const keyed = (held) => held.filter((b) => b.type === 'actor' && b.state.public_key_sign);
 const SUBJECTS = {
@@ -25,16 +26,22 @@ const ASK = {
   promise_stage: (b, held) => [{ args: [b, held, {}] }],
   promise_view: (b, held) => CLOCKS.map((now) => ({ note: ' @' + now.slice(0, 4), args: [b, held, { now }] })),
   ownership: (t, held) => [{ args: [t, held] }],
+  made_from: (t, held) => [{ args: [t, held] }],
   where_now: (t, held) => [{ args: [t, held] }],
   shares_on: (t, held) => [{ args: [t, held] }],
+  machine_lock: (t, held) => [null, ...CLOCKS].map((now) => ({ note: ' @' + (now || 'none').slice(0, 4), args: [t, held, now] })),
   use_shown: (t, held) => [{ args: [t, held, null] }],
   pot: (b, held) => [null, ...CLOCKS].map((now) => ({ note: ' @' + (now || 'none').slice(0, 4), args: [b, held, now] })),
   release_shown: (b, held) => [{ args: [b, held] }],
+  recovery_shown: (p, held) => CLOCKS.map((now) => ({ note: ' @' + now.slice(0, 4), args: [p.hash, held, now, null] })),
   bids_shown: (b, held) => [{ args: [b, held] }],
   not_free_shown: (b, held) => [{ args: [b, held] }],
   invasion_shown: (b, held) => [{ args: [b, held] }],
-  may_act_as: (b, held) => [{ args: [b, b.refs.as, held, null] }],
+  // 1.9 stage 6: may_act_as is gone; row_holds reads the circle from refs.as
+  row_holds: (b, held) => [{ args: [b, held] }],
   identity_state: (k, held) => [{ args: [k.hash, held, null] }],
+  // stage 1's op (blocks.md, Finality): whether each of a key's blocks stands, asked of its first few
+  stands: (k, held) => held.filter((b) => b.refs && b.refs.author === k.hash).slice(0, 4).map((b) => ({ block: b, args: [b, held] })),
   key_timeline: (k, held) => [{ args: [k.hash, held, null] }],
   // a key's own chain: the blocks it wrote that carry a seq, when each names one before it (a store with a hole is not asked)
   check_chain: (k, held) => {
@@ -47,9 +54,10 @@ const ASK = {
       ? [{ args: [mine.reduce((a, x) => (!a || x.state.seq > a.state.seq ? x : a), null), k.hash] }] : []
   },
   circle_state: (c, held) => [{ args: [c.hash, held, null] }],
+  circle_versions: (c, held) => [{ args: [c.hash, held] }],
+  ways_in: (c, held) => [{ args: [c.hash, held] }],
   members_then: (c, held) => {
-    const roles = (c.state.roles || []).map((r) => r.name)
-    return held.filter((x) => x.refs.as === c.hash).flatMap((b) => [c.hash, ...roles.map((r) => `${c.hash}#${r}`)].map((who) => ({ note: ' ' + who.slice(0, 6), args: [b, who, held], block: b })))
+    return held.filter((x) => x.refs.as === c.hash).map((b) => ({ note: ' ' + c.hash.slice(0, 6), args: [b, c.hash, held], block: b }))
   },
   consent: (p, held, people) => [null, ...people].map((q) => ({ note: ' <- ' + (q ? q.hash.slice(0, 6) : 'anyone'), args: [p.hash, q && q.hash, held, null] }))
 }
@@ -80,7 +88,7 @@ const READS = {
 function askAll(held, label = (b) => b.hash.slice(0, 8)) {
   const out = []
   for (const group of ['folds', 'views']) {
-    for (const [fold, def] of Object.entries(P[group])) {
+    for (const [fold, def] of Object.entries(group === 'views' ? C.views : P[group])) {
       if (!def || typeof def !== 'object' || !def.over) continue
       const subjects = SUBJECTS[def.over]
       if (!subjects) throw new Error(`fold ${fold} is asked of "${def.over}", which folds.cjs does not pick`)

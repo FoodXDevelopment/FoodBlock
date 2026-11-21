@@ -1,0 +1,20 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "types": [
+    "promise"
+   ],
+   "limit": {
+    "minor": 5,
+    "currency": "gbp"
+   },
+   "each": {
+    "minor": 900,
+    "currency": "GBP"
+   },
+   "condition": 3
+  }
+ ],
+ "world": 5
+}

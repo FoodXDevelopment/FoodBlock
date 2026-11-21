@@ -1,31 +1,32 @@
 #!/usr/bin/env node
-// One version for every package: spec/protocol.json `version` + ".0" (1.6 -> 1.6.0). Nothing else names a version.
+// One version for every package: the JavaScript package's (sdk/javascript/package.json). A package carries its own package number;
+// that is the package's business, not the protocol's (GOVERNANCE.md): protocol.json names no version (a rule set is named by its hash).
 //
 //   node tools/version-sync.cjs           check (CI): fail if any manifest, copy or tag rule differs
 //   node tools/version-sync.cjs --write   make every manifest say the version
 //   node tools/version-sync.cjs --pack    check, then dry-run each package where its tool exists (never publishes)
 //
 // Where each package is published from (a release is a tag + the registry's own command, run by a person):
-//   npm      sdk/javascript (@foodxdev/foodblock), mcp (foodblock-mcp), cli (foodblock-cli), server (foodblock-node)
+//   npm      sdk/javascript (@foodxdev/foodblock), mcp (foodblock-mcp), cli (foodblock-cli), host (foodblock-host)
 //   PyPI     sdk/python (foodblock)             crates.io  sdk/rust (foodblock)
 //   Maven    sdk/kotlin (world.foodx:foodblock: a jar with natives for macOS arm64/x64, Linux x64/arm64, Windows x64,
 //            and an Android AAR for arm64-v8a, armeabi-v7a, x86_64)
 //   Go       sdk/go: git tag  sdk/go/v<version>   (pure Go: the core is the embedded foodblock.wasm, run by wazero)
 //   SwiftPM  the repository root Package.swift, git tag <version>   (the core is an XCFramework binaryTarget)
-// mcp, cli and server depend on the SDK by `file:../sdk/javascript` in the repo (so a checkout tests what it holds);
+// mcp, cli and host depend on the SDK by `file:../sdk/javascript` in the repo (so a checkout tests what it holds);
 // the packed copy says `^<version>` (--pack does this in a scratch copy, the repo's manifests stay as they are).
 const fs = require('fs'), path = require('path'), os = require('os'), cp = require('child_process')
 const ROOT = path.join(__dirname, '..')
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8')
 const write = (p, s) => fs.writeFileSync(path.join(ROOT, p), s)
-const VERSION = JSON.parse(read('spec/protocol.json')).version + '.0'
+const VERSION = JSON.parse(read('sdk/javascript/package.json')).version
 const WRITE = process.argv.includes('--write'), PACK = process.argv.includes('--pack')
 const SDK = '@foodxdev/foodblock'
 let wrong = 0
 const bad = (m) => { wrong++; console.log('✗ ' + m) }
 
 // JSON manifests
-const NPM = { 'sdk/javascript': SDK, mcp: 'foodblock-mcp', cli: 'foodblock-cli', server: 'foodblock-node' }
+const NPM = { 'sdk/javascript': SDK, mcp: 'foodblock-mcp', cli: 'foodblock-cli', host: 'foodblock-host' }
 for (const [dir, name] of Object.entries(NPM)) {
   const f = dir + '/package.json', j = JSON.parse(read(f))
   if (j.name !== name) bad(`${f}: name ${j.name}, want ${name}`)
@@ -51,8 +52,15 @@ function text(file, re, replace, what) {
 text('sdk/python/pyproject.toml', /^version = "([^"]+)"/m, `version = "${VERSION}"`, 'version')
 text('sdk/rust/Cargo.toml', /^version = "([^"]+)"/m, `version = "${VERSION}"`, 'package version')
 text('CITATION.cff', /^version: (\S+)$/m, `version: ${VERSION}`, 'citation version')
+// the core's label (sdk/rust/src/lib.rs VERSION, the door's `version`): the packages' major and minor
+{
+  const label = VERSION.split('.').slice(0, 2).join('.'), f = 'sdk/rust/src/lib.rs', re = /^pub const VERSION: &str = "([^"]+)";/m
+  const s = read(f), m = s.match(re)
+  if (!m) bad(`${f}: no VERSION`)
+  else if (m[1] !== label) { if (WRITE) write(f, s.replace(re, `pub const VERSION: &str = "${label}";`)); else bad(`${f}: VERSION ${m[1]}, want ${label}`) }
+}
 // Kotlin reads the protocol file itself; Go is versioned by git tag; Swift by git tag and the release URL in Package.swift.
-if (!/protocol\.json/.test(read('sdk/kotlin/build.gradle.kts'))) bad('sdk/kotlin/build.gradle.kts must read the version from spec/protocol.json')
+if (!/javascript\/package\.json/.test(read('sdk/kotlin/build.gradle.kts'))) bad('sdk/kotlin/build.gradle.kts must read the version from sdk/javascript/package.json')
 if (!/^module github\.com\/FoodXDevelopment\/foodblock\/sdk\/go$/m.test(read('sdk/go/go.mod'))) bad('sdk/go/go.mod: module path')
 text('Package.swift', /^let version = "([^"]+)"/m, `let version = "${VERSION}"`, 'version (the XCFramework release URL)')
 if (/unsafeFlags/.test(read('Package.swift'))) bad('Package.swift: unsafeFlags make the package unusable as a dependency')
@@ -66,11 +74,10 @@ if (/unsafeFlags/.test(read('Package.swift'))) bad('Package.swift: unsafeFlags m
   for (const f of fs.readdirSync(path.join(ROOT, 'sdk/go')).filter((n) => n.endsWith('.go'))) if (/import "C"/.test(read('sdk/go/' + f))) bad(`sdk/go/${f}: cgo`)
 }
 // the licence, and exact copies carried inside packages
-for (const d of ['sdk/javascript', 'sdk/python', 'sdk/rust', 'sdk/go', 'sdk/swift', 'sdk/kotlin', 'mcp', 'cli', 'server'])
+for (const d of ['sdk/javascript', 'sdk/python', 'sdk/rust', 'sdk/go', 'sdk/swift', 'sdk/kotlin', 'mcp', 'cli', 'host'])
   if (!fs.existsSync(path.join(ROOT, d, 'LICENSE')) || read(d + '/LICENSE') !== read('LICENSE')) {
     if (WRITE) write(d + '/LICENSE', read('LICENSE')); else bad(`${d}/LICENSE differs from LICENSE`)
   }
-if (read('server/schema.sql') !== read('sql/schema.sql')) { if (WRITE) write('server/schema.sql', read('sql/schema.sql')); else bad('server/schema.sql differs from sql/schema.sql') }
 
 if (PACK) {
   const have = (c) => cp.spawnSync(c, ['--version']).status === 0 || cp.spawnSync(c, ['version']).status === 0
@@ -142,7 +149,7 @@ if (PACK) {
 // The year-zero and converter texts name 1.6 on purpose and never put the number after the name.
 {
   const stale = /FoodBlock\s+(\d+\.\d+)\b/g, here = VERSION.replace(/\.0$/, '')
-  const files = cp.spawnSync('git', ['ls-files', 'sdk', 'server', 'mcp', 'cli', 'sql', 'tools', 'spec/profiles', 'spec/schemas/schemas.json'], { cwd: ROOT, encoding: 'utf8' }).stdout.split('\n')
+  const files = cp.spawnSync('git', ['ls-files', 'sdk', 'host', 'mcp', 'cli', 'tools', 'spec/profiles', 'spec/schemas/schemas.json'], { cwd: ROOT, encoding: 'utf8' }).stdout.split('\n')
     .filter((f) => f && /\.(md|js|cjs|mjs|rs|h|hpp|py|go|swift|kt|kts|json|toml|sql|yml|tla)$/.test(f) && !/(^|\/)(legacy|CHANGELOG|aliases-)/.test(f) && !f.endsWith('vectors.json'))
   for (const f of files) {
     let text

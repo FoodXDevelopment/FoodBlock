@@ -1,0 +1,24 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "types": [
+    "observe.note",
+    "promise",
+    "transfer"
+   ],
+   "parties": [
+    "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+    "1d55d1b23d6de89ff1cfab7d255dd5acb597752c6588eaa122491fbba95333cc",
+    "3d7c033f499a27e8c630618485b76dd2e73635c52990611cd60791fa18c50c70"
+   ],
+   "limit": {
+    "minor": 9000,
+    "currency": "GBP"
+   },
+   "every": "P7D",
+   "until": "2026-12-31T00:00:00.000Z"
+  }
+ ],
+ "world": 1
+}

@@ -107,10 +107,6 @@ func HoldersOf(state *CircleState, role string) []string {
 	return out
 }
 
-// MayActAs is whether a block may be signed as a circle.
-func MayActAs(b Block, circle string, blocks []Block, role string) bool {
-	return doorMayActAs(b, circle, blocks, role)
-}
 
 // SpeaksFor is the one party a fold counts a block for (authority.md, Who a block speaks for): its id, or "" when it speaks for no one.
 // The block need not be among blocks yet; no clock is read.
@@ -134,10 +130,9 @@ func BackedAll(person string, blocks []Block) map[string]any {
 	return doorBackedAll[map[string]any](person, blocks)
 }
 
-// OwedBack is money moved in a person's name that they do not back (promises.md, What is owed back):
-// { owed: [{ block, minor, currency, to, why }] }.
-func OwedBack(person string, blocks []Block) map[string]any {
-	return doorOwedBack[map[string]any](person, blocks)
+// ToComeBack is what moved in a person's name that they do not back, and so is to come back to them (D12; was OwedBack).
+func ToComeBack(person string, blocks []Block) map[string]any {
+	return doorToComeBack[map[string]any](person, blocks)
 }
 
 // Gives is what of a person's would become whose if a block stands (promises.md, What becomes whose):
@@ -150,12 +145,6 @@ func Gives(b Block, person string, blocks []Block) map[string]any {
 // from their own newest account word, or nil.
 func AccountOf(who string, blocks []Block) map[string]any {
 	return doorAccountOf[map[string]any](who, blocks)
-}
-
-// ActCheck is a deal against the act template it names (promises.md, An act is a template): { ok, why }; why is one
-// plain sentence when not ok (nil when it is).
-func ActCheck(deal, template Block) map[string]any {
-	return doorActCheck[map[string]any](deal, template)
 }
 
 // ListingCheck is a list-keeper's answer against the lookup it answers (promises.md, Finding): { ok, why, bad, left_out }.
@@ -239,25 +228,6 @@ func Consent(person, sender string, blocks []Block, block *Block) map[string]any
 // Due is when a promise falls due, on the reader's arrival log (of the blocks it names).
 func Due(promise Block, arrivedAt ArrivedAt, named []Block) any {
 	return doorDue[any](promise, arrivals(arrivedAt, append([]Block{promise}, named...)))
-}
-
-// RecoveryReach lists the voided blocks a recovery rotation's reach protects.
-func RecoveryReach(rotation Block, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) any {
-	return doorRecoveryReach[any](rotation, blocks, arrivals(arrivedAt, append(append([]Block{}, blocks...), rotation)), unknownFor(arrivedAt, unknown))
-}
-
-// Successor is where a successor grant's trigger stands.
-type Successor struct {
-	Events    []string `json:"events"`
-	Cancelled []string `json:"cancelled"`
-	Since     any      `json:"since"`
-	Fires     any      `json:"fires"`
-	Fired     bool     `json:"fired"`
-}
-
-// SuccessorView is where a successor grant's trigger stands on the reader's own clock (now) and arrival log.
-func SuccessorView(grant Block, blocks []Block, now string, arrivedAt ArrivedAt) Successor {
-	return doorSuccessorView[Successor](grant, blocks, now, arrivals(arrivedAt, blocks))
 }
 
 // CircleKey is a circle's encryption key now: its epoch (0 is the key in the circle's actor), the open keys and the

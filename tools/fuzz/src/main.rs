@@ -295,9 +295,9 @@ fn run(seed: u64, secs: u64) {
         // canonical round trip, on any block-shaped value and on the text of the mutated argument
         let texts: Vec<String> = { let mut t = vec![args.to_string()]; if let Some(f) = args.get(0) { t.push(f.to_string()); } if let Some(x) = args.get(0).and_then(Value::as_str) { t.push(x.to_string()); } t };
         for text in texts {
-            if let Ok(parsed) = foodblock::canonical::parse_strict(&text) {
+            if let Ok(parsed) = foodblock::canonical::parse_wire(&text) {
                 let c = foodblock::canonical_json(&parsed);
-                match foodblock::canonical::parse_strict(&c) {
+                match foodblock::canonical::parse_wire(&c) {
                     Ok(again) => { let c2 = foodblock::canonical_json(&again); s.rt += 1; if c2 != c { s.failures.push(format!("ROUNDTRIP not idempotent: {}", &text[..text.len().min(2000)])); } }
                     Err(e) => s.failures.push(format!("ROUNDTRIP canonical output not strict ({e}): {}", &text[..text.len().min(2000)])),
                 }
@@ -320,9 +320,9 @@ fn run(seed: u64, secs: u64) {
                 }
             }
             let text = String::from_utf8_lossy(&bytes).to_string();
-            if let Ok(parsed) = foodblock::canonical::parse_strict(&text) {
+            if let Ok(parsed) = foodblock::canonical::parse_wire(&text) {
                 let c = foodblock::canonical_json(&parsed);
-                if foodblock::canonical::parse_strict(&c).map(|a| foodblock::canonical_json(&a)) != Ok(c.clone()) {
+                if foodblock::canonical::parse_wire(&c).map(|a| foodblock::canonical_json(&a)) != Ok(c.clone()) {
                     s.failures.push(format!("ROUNDTRIP (bent bytes) {}", &text[..text.len().min(1000)]));
                 }
                 s.rt += 1;

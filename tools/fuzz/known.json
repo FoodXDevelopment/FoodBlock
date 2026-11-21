@@ -1,1 +1,274 @@
-{}
+{
+ "row new-F: found/new-F-promise_stage-not_shown | random world seed 2, reduced | promise_stage over lines with headers and gaps": {
+  "row": "new-F",
+  "group": "corpus",
+  "kind": "DIFF",
+  "op": "promise_stage",
+  "source": "random world seed 2, reduced",
+  "detail": "answer: core answers {accept,answerable,by,disputed,due,forks,from,lines,live,moved,occurrences,offer,over_allocated,owed,owed_on,owing,paid,paid_at,passed,price_fixed,quantity,received_at,referee_ties,sides,stage,stop,stopped,takers,total,unanswered,uncovered} | oracle not_shown",
+  "example": "[{\"hash\":\"24cd78\",\"type\":\"promise\",\"state\":{\"terms\":{\"quantity\":{\"value\":\"7\",\"unit\":\"loaf\"},\"price\":{\"amount\":{\"value\":\"20\",\"unit\":\"KES\"},\"per\":{\"value\":\"2\",\"unit\":\"loaf\"}}},\"at\":\"2026-11-12T00:18:00.000Z\",\"audience\":\"public\",\"seq\":3},\"refs\":{\"what\":\"628168\",\"from\":\"933e71\",\"to\":\"dbf3e8\",\"author\":\"9",
+  "note": "Open text question (end pass 2026-11-20): whether a header of the buyer, after her accept, held only as its header, hides a deal's stage. 3b-7 says such a header could name each measure her line held at its place; the core counts the bread she received there (its draws do not change the stage), the oracle does not. A payment `for` the deal is a plain sum, not a draw, so 3b-7 does not say it is a measure her line holds. Both answer not_shown here (B0's line lacks blocks); they differ only in which ids `lacks` lists."
+ },
+ "P5 (core): ownership: owners [] while N signed transfer(s) accepted by their receiver name someone": {
+  "row": "P5",
+  "group": "P5",
+  "kind": "P5",
+  "op": "ownership",
+  "detail": "ownership: owners [] while 2 signed transfer(s) accepted by their receiver name someone",
+  "example": "[{\"hash\":\"aca87b\",\"type\":\"thing\",\"state\":{\"kind\":\"eggs\",\"at\":\"2026-11-12T00:09:00.000Z\",\"audience\":\"public\",\"seq\":1},\"refs\":{\"of\":\"7e0df1\",\"key\":\"907af1\",\"author\":\"8e770a\",\"prev\":\"907af1\",\"after\":[\"f850cf\"]},\"signature\":\"a7110a\"},[{\"hash\":\"8e770a\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-1",
+  "note": "a finding, never a failure: owners [] beside a signed, accepted transfer (part 08: 50 V4, 03 f1)"
+ },
+ "P1 made_from DIFF: answer: core answers [] | oracle not_shown": {
+  "row": "new-E",
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "made_from",
+  "detail": "answer: core answers [] | oracle not_shown",
+  "example": "[{\"hash\":\"c24c87\",\"type\":\"thing\",\"state\":{\"kind\":\"eggs\",\"pack\":{\"value\":\"100\",\"unit\":\"kg\"},\"at\":\"2026-11-12T00:14:00.000Z\",\"audience\":\"public\",\"seq\":3},\"refs\":{\"of\":\"7e0df1\",\"author\":\"d6b399\",\"prev\":\"9774fb\"},\"signature\":\"4d7dba\"},[{\"hash\":\"ef3154\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-",
+  "note": "NEW E: made_from over a line holding a block the oracle does not read: oracle not_shown, core answers (sentence 5 applied by one engine; row 33 in another fold)"
+ },
+ "P5 (oracle): ownership: owners [] while N signed transfer(s) accepted by their receiver name someone": {
+  "row": "P5",
+  "group": "P5",
+  "kind": "P5",
+  "op": "ownership",
+  "detail": "ownership: owners [] while 2 signed transfer(s) accepted by their receiver name someone",
+  "example": "[{\"hash\":\"79f1f2\",\"type\":\"thing\",\"state\":{\"kind\":\"maize\",\"pack\":{\"value\":\"10\",\"unit\":\"piece\"},\"at\":\"2026-11-12T00:06:00.000Z\",\"audience\":\"public\",\"seq\":1},\"refs\":{\"of\":\"abbed9\",\"author\":\"711ce3\",\"prev\":\"711ce3\"},\"signature\":\"695bf4\"},[{\"hash\":\"711ce3\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"20",
+  "note": "a finding, never a failure: owners [] beside a signed, accepted transfer (part 08: 50 V4, 03 f1)"
+ },
+ "P1 ownership DIFF: .draws[].state: core \"held\" | oracle null": {
+  "row": 47,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "detail": ".draws[].state: core \"held\" | oracle null",
+  "example": "[{\"hash\":\"b9e578\",\"type\":\"thing\",\"state\":{\"kind\":\"bread\",\"at\":\"2026-11-12T00:34:00.000Z\",\"audience\":\"public\",\"seq\":3},\"refs\":{\"of\":\"dc1c2b\",\"author\":\"f4f264\",\"prev\":\"a20476\"},\"signature\":\"1a1f21\"},[{\"hash\":\"bebd72\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-11-12T00:01:00.000Z\",\"public_key_s",
+  "note": "a sale off the line (foreign prev), no yes yet"
+ },
+ "P1 ownership DIFF: .lacks: core N item(s) | oracle N": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 35,
+  "example": "asks of leila: thing 2 | held [leila: thing 0; amara: thing 1; leila: thing 2; leila: deal 3: the offer; [header] leila: paid yes 3; leila: received 3; leila: deliver 3; amara: make 4; amara: output 4; leila: draw 5; [header] amara: deal 6: the accept; leila: out of place foreign prev 9; leila: twin",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); row 34 family: lacks or waiting in one form against another"
+ },
+ "P1 promise_stage DIFF: .lacks: core N item(s) | oracle N": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "promise_stage",
+  "detail": ".lacks: core 5 item(s) | oracle 3",
+  "example": "[{\"hash\":\"24cd78\",\"type\":\"promise\",\"state\":{\"terms\":{\"quantity\":{\"value\":\"7\",\"unit\":\"loaf\"},\"price\":{\"amount\":{\"value\":\"20\",\"unit\":\"KES\"},\"per\":{\"value\":\"2\",\"unit\":\"loaf\"}}},\"at\":\"2026-11-12T00:18:00.000Z\",\"audience\":\"public\",\"seq\":3},\"refs\":{\"what\":\"628168\",\"from\":\"933e71\",\"to\":\"dbf3e8\",\"author\":\"9",
+  "note": "3e-1 / 3b-7, stage 5 text: a stage that is not shown names the lacks of the first ownership it reads that is not shown; the oracle reads the hand-overs of what is to come first, the core the transfers for the deal: which thing's lacks a stage names is unsaid (promises.md, stage 5)"
+ },
+ "P4 (core): one block held as its header: ownership: another owner named once a block is a header": {
+  "row": "P4",
+  "group": "P4",
+  "kind": "P4",
+  "op": "ownership",
+  "detail": "ownership: another owner named once a block is a header",
+  "example": "[{\"hash\":\"1ece49\",\"type\":\"thing\",\"state\":{\"kind\":\"maize\",\"pack\":{\"value\":\"20\",\"unit\":\"sack\"},\"at\":\"2026-11-12T00:08:00.000Z\",\"audience\":\"public\",\"seq\":1},\"refs\":{\"of\":\"abbed9\",\"author\":\"ef3154\",\"prev\":\"ef3154\"},\"signature\":\"450f1a\"},[{\"hash\":\"ef3154\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"202",
+  "note": "both engines name another owner when a reader lacks a block on the measure's line, or holds it as its header (part 08: seat 32 F1, B', H1; to be fixed by part 02 with O5 and V6)"
+ },
+ "P1 promise_stage DIFF: .lines[].moved.value: core \"N\" | oracle \"N\"": {
+  "row": 49,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "promise_stage",
+  "detail": ".lines[].moved.value: core \"0.4\" | oracle \"12\"",
+  "example": "[{\"hash\":\"ac00f9\",\"type\":\"promise\",\"state\":{\"at\":\"2026-11-12T00:53:00.000Z\",\"audience\":\"public\",\"seq\":20,\"terms\":{\"quantity\":{\"value\":\"1\",\"unit\":\"sack\"},\"price\":{\"amount\":{\"value\":\"10\",\"unit\":\"KES\"},\"per\":{\"value\":\"3\",\"unit\":\"sack\"}}}},\"refs\":{\"author\":\"f49478\",\"prev\":\"27f444\",\"what\":\"a2e17a\",\"from\"",
+  "note": "two accepts of one draw, the second stating less (row 49, read in the deal's fold)"
+ },
+ "P1 ownership DIFF: .owners[].amount.value: core \"N\" | oracle \"N\"": {
+  "row": 49,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "detail": ".owners[].amount.value: core \"0.4\" | oracle \"2\"",
+  "example": "[{\"hash\":\"66f66a\",\"type\":\"thing\",\"state\":{\"kind\":\"bread\",\"pack\":{\"value\":\"6\",\"unit\":\"kg\"},\"at\":\"2026-11-12T00:07:00.000Z\",\"audience\":\"public\",\"seq\":1},\"refs\":{\"of\":\"dc1c2b\",\"author\":\"7dd6e8\",\"prev\":\"7dd6e8\"},\"signature\":\"9fe068\"},[{\"hash\":\"07e88a\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-1",
+  "note": "two accepts of one draw, the second stating less"
+ },
+ "P1 promise_view DIFF: .lines[].moved.value: core \"N\" | oracle \"N\"": {
+  "row": 49,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "promise_view",
+  "detail": ".lines[].moved.value: core \"0.4\" | oracle \"12\"",
+  "example": "[{\"hash\":\"ac00f9\",\"type\":\"promise\",\"state\":{\"at\":\"2026-11-12T00:53:00.000Z\",\"audience\":\"public\",\"seq\":20,\"terms\":{\"quantity\":{\"value\":\"1\",\"unit\":\"sack\"},\"price\":{\"amount\":{\"value\":\"10\",\"unit\":\"KES\"},\"per\":{\"value\":\"3\",\"unit\":\"sack\"}}}},\"refs\":{\"author\":\"f49478\",\"prev\":\"27f444\",\"what\":\"a2e17a\",\"from\"",
+  "note": "two accepts of one draw, the second stating less (row 49, read in the deal's fold)"
+ },
+ "P4 (core): one block missing: ownership: another owner named once a block is missing": {
+  "row": "P4",
+  "group": "P4",
+  "kind": "P4",
+  "op": "ownership",
+  "detail": "ownership: another owner named once a block is missing",
+  "example": "[{\"hash\":\"1ece49\",\"type\":\"thing\",\"state\":{\"kind\":\"maize\",\"pack\":{\"value\":\"20\",\"unit\":\"sack\"},\"at\":\"2026-11-12T00:08:00.000Z\",\"audience\":\"public\",\"seq\":1},\"refs\":{\"of\":\"abbed9\",\"author\":\"ef3154\",\"prev\":\"ef3154\"},\"signature\":\"450f1a\"},[{\"hash\":\"ef3154\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"202",
+  "note": "both engines name another owner when a reader lacks a block on the measure's line, or holds it as its header (part 08: seat 32 F1, B', H1; to be fixed by part 02 with O5 and V6)"
+ },
+ "P4 (oracle): one block missing: ownership: another owner named once a block is missing": {
+  "row": "P4",
+  "group": "P4",
+  "kind": "P4",
+  "op": "ownership",
+  "detail": "ownership: another owner named once a block is missing",
+  "example": "[{\"hash\":\"c28574\",\"type\":\"thing\",\"state\":{\"at\":\"2026-11-12T00:36:00.000Z\",\"audience\":\"public\",\"seq\":4,\"kind\":\"bread\",\"pack\":{\"value\":\"100\",\"unit\":\"kg\"}},\"refs\":{\"author\":\"499cc5\",\"prev\":\"617f97\",\"of\":\"dc1c2b\"},\"signature\":\"75a8bd\"},[{\"hash\":\"933e71\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026",
+  "note": "both engines name another owner when a reader lacks a block on the measure's line, or holds it as its header (part 08: seat 32 F1, B', H1; to be fixed by part 02 with O5 and V6)"
+ },
+ "P1 read_whole DIFF: .lacks[]: core \"H\" | oracle \"H\"": {
+  "row": 34,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "read_whole",
+  "detail": ".lacks[]: core \"H\" | oracle \"H\"",
+  "example": "[\"977e4b\",\"711ce3\",[{\"hash\":\"711ce3\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-11-12T00:01:00.000Z\",\"public_key_sign\":\"302a30\",\"audience\":\"public\"},\"refs\":{},\"signature\":\"ef1290\"},{\"hash\":\"6d409e\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-11-12T00:02:00.000Z\",\"public_key_sign\":\"302",
+  "note": "lacks in one form against another"
+ },
+ "P1 ownership DIFF: .draws[].state: core \"landed\" | oracle null": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 31,
+  "example": "asks of maria: thing 7 | held [amara: device of amara; amara: device of amara (signed again); sam: device of sam; maria: device of maria; maria: device of maria (signed again); [header] shop: receipt 1; amara: thing 3; maria: thing 5; maria: thing 6; maria: thing 7; maria: second device 8; amara: ou",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); out-of-place lines (rows 6, 12, 47, 50 family) or makes after a broken line (new B family): not yet reduced to one cause"
+ },
+ "P1 made_from DIFF: answer: core N item(s) | oracle N": {
+  "row": "new-B",
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "made_from",
+  "detail": "answer: core 0 item(s) | oracle 1",
+  "example": "[{\"hash\":\"aca87b\",\"type\":\"thing\",\"state\":{\"kind\":\"eggs\",\"at\":\"2026-11-12T00:09:00.000Z\",\"audience\":\"public\",\"seq\":1},\"refs\":{\"of\":\"7e0df1\",\"key\":\"907af1\",\"author\":\"8e770a\",\"prev\":\"907af1\",\"after\":[\"f850cf\"]},\"signature\":\"a7110a\"},[{\"hash\":\"8e770a\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-1",
+  "note": "NEW B: a make after its key's line breaks, in made_from"
+ },
+ "P4 (oracle): one block held as its header: ownership: another owner named once a block is a header": {
+  "row": "P4",
+  "group": "P4",
+  "kind": "P4",
+  "op": "ownership",
+  "detail": "ownership: another owner named once a block is a header",
+  "example": "[{\"hash\":\"300c4a\",\"type\":\"thing\",\"state\":{\"kind\":\"maize\",\"pack\":{\"value\":\"100\",\"unit\":\"kg\"},\"at\":\"2026-11-12T00:56:00.000Z\",\"audience\":\"public\",\"seq\":6},\"refs\":{\"of\":\"abbed9\",\"author\":\"d6b399\",\"prev\":\"e5a673\"},\"signature\":\"a5b8fa\"},[{\"hash\":\"ef3154\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026",
+  "note": "both engines name another owner when a reader lacks a block on the measure's line, or holds it as its header (part 08: seat 32 F1, B', H1; to be fixed by part 02 with O5 and V6)"
+ },
+ "P1 ownership DIFF: .draws[].why: core \"not_on_line\" | oracle \"pair\"": {
+  "row": 6,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "detail": ".draws[].why: core \"not_on_line\" | oracle \"pair\"",
+  "example": "[{\"hash\":\"92f3a8\",\"type\":\"thing\",\"state\":{\"kind\":\"bread\",\"pack\":{\"value\":\"6\",\"unit\":\"kg\"},\"at\":\"2026-11-12T00:35:00.000Z\",\"audience\":\"public\",\"seq\":16},\"refs\":{\"of\":\"dc1c2b\",\"author\":\"f49478\",\"prev\":\"001e5c\"},\"signature\":\"76e83a\"},[{\"hash\":\"145bce\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"2026-",
+  "note": "a pair that is also off the measure's line (a second key): which reason"
+ },
+ "P1 ownership DIFF: .lacks[]: core \"H\" | oracle \"H\"": {
+  "row": 34,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "detail": ".lacks[]: core \"H\" | oracle \"H\"",
+  "example": "[{\"hash\":\"fd33d0\",\"type\":\"thing\",\"state\":{\"at\":\"2026-11-12T00:31:00.000Z\",\"audience\":\"public\",\"seq\":5,\"kind\":\"maize\",\"pack\":{\"value\":\"100\",\"unit\":\"sack\"}},\"refs\":{\"author\":\"56435c\",\"prev\":\"820060\",\"of\":\"abbed9\"},\"signature\":\"266b6b\"},[{\"hash\":\"57ea49\",\"type\":\"actor\",\"state\":{\"kind\":\"person\",\"at\":\"20",
+  "note": "lacks in one form against another"
+ },
+ "P1 ownership DIFF: .draws[].state: core \"freed\" | oracle \"held\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 33,
+  "example": "asks of leila: thing 1 | held [amara: device of amara; sam: thing 0; leila: thing 1; leila: draw 2; sam: stop 4]",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); NEW J: a stop or withdraw: the core frees the draw, the oracle does not"
+ },
+ "P1 read_whole DIFF: .lacks: core N item(s) | oracle N": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "read_whole",
+  "seed": 55,
+  "example": "asks of sam: draw 34 (hand-signed) | genesis sam | held [leila: device of leila; [header] sam: device of sam; [header] sam: device of sam (signed again); leila: thing 0; [header] leila: twin A 1; sam: yes 5; sam: yes 6; [header] sam: note 9; [header] sam: yes 10; sam: thing 18; [header] sam: second ",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); row 34 family: lacks or waiting in one form against another"
+ },
+ "P1 ownership DIFF: .draws[].state: core \"freed\" | oracle \"landed\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 58,
+  "example": "asks of harry: thing 15 (hand-signed) | held [amara: device of amara; harry: thing 2; harry: thing 4; harry: thing 5; [header] leila: yes again 8; harry: thing 15 (hand-signed); harry: out of place below start 19; [header] leila: resale 20; leila: stop 21; harry: draw 23 (hand-signed); [header] harr",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); NEW J: a stop or withdraw: the core frees the draw, the oracle does not"
+ },
+ "P1 ownership DIFF: .draws[].state: core null | oracle \"landed\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 72,
+  "example": "asks of harry: thing 0 | held [harry: list of harry; harry: list again harry; harry: thing 0; harry: deal 2: the offer; amara: deal 2: the accept; amara: pay 2; harry: paid yes 2; harry: deliver 2; amara: yes again 4; amara: resale 6; harry: deal 7: the offer; harry: deliver 7; harry: note 8; harry:",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); out-of-place lines (rows 6, 12, 47, 50 family) or makes after a broken line (new B family): not yet reduced to one cause"
+ },
+ "P1 ownership DIFF: .draws[].why: core null | oracle \"past\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 75,
+  "example": "asks of amara: thing 7 | held [leila: list of leila; leila: list again leila; leila: device of leila; amara: thing 0; amara: thing 4; amara: let go 6 (hand-signed); amara: thing 7; amara: out of place jumped seq 9; amara: draw 10; amara: thing 13; amara: thing 14; amara: make 18; amara: output 18; a",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); out-of-place lines (rows 6, 12, 47, 50 family) or makes after a broken line (new B family): not yet reduced to one cause"
+ },
+ "P1 ownership DIFF: .held.value: core \"N\" | oracle \"N\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 133,
+  "example": "asks of harry: thing 9 | held [sam: yes 4; amara: thing 5; harry: thing 7; harry: thing 9; sam: yes 10; amara: thing 11; sam: yes again 12; sam: resale 14; harry: deal 15: the offer; sam: deal 15: the accept; sam: pay 15; harry: paid yes 15; harry: deliver 15; amara: yes again 16; harry: thing 18; h",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); out-of-place lines (rows 6, 12, 47, 50 family) or makes after a broken line (new B family): not yet reduced to one cause"
+ },
+ "P1 ownership DIFF: .draws[].why: core \"not_owner\" | oracle \"past\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 138,
+  "example": "asks of leila: thing 11 | held [amara: note 3; leila: yes 5; leila: yes again 6; leila: resale 10; leila: thing 11; amara: resale 12; amara: thing 13; amara: deal 14: the accept; amara: pay 14; leila: deal 16: the offer; amara: deal 16: the accept; amara: pay 16; leila: paid yes 16; leila: deliver 1",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); out-of-place lines (rows 6, 12, 47, 50 family) or makes after a broken line (new B family): not yet reduced to one cause"
+ },
+ "P1 read_whole ERROR: core error argument the line runs in a ring | oracle answers {\"lacks\":[\"H\",\"H\",\"H\"],\"whole\":false}": {
+  "row": null,
+  "group": "P1",
+  "kind": "ERROR",
+  "op": "read_whole",
+  "seed": 158,
+  "example": "asks of leila: out of place below start 26 | genesis leila | held [[header] leila: list of leila; leila: device of leila; [header] leila: device of leila (signed again); amara: thing 0; leila: thing 1; amara: thing 2; amara: draw 3; amara: draw 4; [header] shop: yes 5; [header] leila: yes again 6; a",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); NEW H: read_whole: the core refuses a line that runs in a ring (blocks below their start), the oracle answers whole false"
+ },
+ "P1 ownership DIFF: .draws[].state: core \"freed\" | oracle null": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 182,
+  "example": "asks of maria: thing 0 | held [sam: list of sam; sam: list again sam; sam: device of sam; sam: device of sam (signed again); maria: thing 0; amara: thing 3; maria: out of place foreign prev 8; sam: no 12]",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); NEW J: a stop or withdraw: the core frees the draw, the oracle does not"
+ },
+ "P1 ownership DIFF: .draws[].why: core \"past\" | oracle \"pair\"": {
+  "row": null,
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "ownership",
+  "seed": 195,
+  "example": "asks of leila: thing 14 | held [harry: device of harry; sam: device of sam; maria: device of maria; [header] maria: device of maria (signed again); amara: thing 1; amara: twin A 2; [header] amara: twin B 2; [header] amara: deal 4: the offer (hand-signed); amara: received 4 (hand-signed); leila: out ",
+  "note": "found by the long run of 2026-11-13 (seeds 26 to 212, size 35); out-of-place lines (rows 6, 12, 47, 50 family) or makes after a broken line (new B family): not yet reduced to one cause"
+ },
+ "P1 promise_stage DIFF: .lacks[]: core \"H\" | oracle \"H\"": {
+  "row": "extra",
+  "group": "P1",
+  "kind": "DIFF",
+  "op": "promise_stage",
+  "source": "random world seed 18 (end pass, 2026-11-21, short run)",
+  "detail": ".lacks[]: core \"H\" | oracle \"H\"",
+  "example": "P1 promise_stage DIFF: .lacks[]: core \"H\" | oracle \"H\"",
+  "note": "Open, not yet fixed (end pass 2026-11-21): a receiver whose accept of the deal is in a draw's past (so the draw lands where it is signed, folds.md Lands), who later declines it and later accepts it again. Her line for the thing starts at that first yes (One start), so each later block of hers held only as its header could name it (3b-7). The oracle lists the first such header and not a later one whose key it cannot place; the core starts her line at a later yes and lists only the later header. Both answer not_shown; only the ids in lacks differ. The fix is in both engines (start at the yes the draw landed on; list every later header of that key)."
+ }
+}

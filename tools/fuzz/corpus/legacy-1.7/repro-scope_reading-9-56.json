@@ -1,0 +1,19 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "parties": [
+    "f5eda940ce80a276e6cc2f0bc3fa9958ef6e31d56310b83ce0b430757626e485"
+   ],
+   "limit": {
+    "minor": 0,
+    "currency": "EUR"
+   },
+   "each": {
+    "minor": 900,
+    "currency": "GBP"
+   }
+  }
+ ],
+ "world": 9
+}

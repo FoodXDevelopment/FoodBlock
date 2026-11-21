@@ -3,7 +3,7 @@
 const fs = require('fs')
 const { fb, World, kindOf } = require('./lib.cjs')
 const P = require('../../spec/schemas/published.json')
-const GBP = (minor) => ({ minor, currency: 'GBP' })
+const GBP = (value) => ({ value, unit: 'GBP' })
 const w = new World('case11 base schemas')
 w.useSchemas = true
 // The publisher's chain is held first, as a node holds the schemas it has seen.
@@ -13,16 +13,13 @@ const S = (name) => P.schemas[name].hash
 w.baseSchemas = Object.fromEntries(P.order.map((n) => [n, S(n)]))
 
 const ann = w.person('ann'), mo = w.person('mo'), nan = w.person('nan'), cook = w.person('cook'), buyer = w.person('buyer'), teacher = w.person('teacher'), learner = w.person('learner')
-const gran = w.person('gran'), heir = w.person('heir'), doc = w.person('doc')
+const gran = w.person('gran'), heir = w.person('heir')
 
-// ---- shareholding: holding shares of a kind is a vote under a ballots rule (the share_vote schema) ----
-const acme = w.w(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Acme', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }] }, {}, 'circle Acme')
-const shareKind = w.w(ann, 'thing', { kind: 'share', name: 'Acme share' }, { as: acme.hash }, 'share kind (made as Acme)')
-const shares = [0, 1, 2, 3, 4].map((i) => w.w(ann, 'thing', { kind: 'share', lot: 'S' + i }, { of: shareKind.hash, as: acme.hash }, 'share ' + i))
-const give = (share, to, note) => { const t = w.w(ann, 'transfer', {}, { what: share.hash, to_owner: to.id, as: acme.hash }, note); w.w(to, 'transfer', { status: 'accepted' }, { answers: t.hash }, note + ' accepted') }
-give(shares[0], mo, 'S0 to mo'); give(shares[1], mo, 'S1 to mo'); give(shares[2], nan, 'S2 to nan')
-const vote = (p, note) => w.w(p, 'observe', { kind: 'vote', choice: 'f'.repeat(64) }, { of: shareKind.hash, schema: S('share_vote') }, note)
-vote(mo, 'mo votes'); vote(nan, 'nan votes'); vote(ann, 'ann votes (owns none)')
+// ---- shareholding: 1.9 circles. Acme's 5 parts are its shares; Ann hands Mo 2 and Nan 1 (a transfer and the receiver's yes). The
+// share_vote schema is deleted (changes-1.9/06-circles.md, section 4): a count by share is a parts row, so no vote is written here.
+const acme = w.w(ann, 'actor', { kind: 'circle', name: 'Acme', pack: { value: '5', unit: 'part' }, rules: [{ parts: 1, scope: { types: ['promise', 'transfer', 'observe', 'thing', 'grant'] } }] }, {}, 'circle Acme')
+const give = (n, to, note) => { const t = w.w(ann, 'transfer', { amount: { value: String(n), unit: 'part' } }, { what: acme.hash, to_owner: to.id }, note); w.w(to, 'transfer', { status: 'accepted' }, { answers: t.hash }, note + ' accepted') }
+give(2, mo, '2 parts to mo'); give(1, nan, '1 part to nan')
 
 // ---- the facts of each promise the cook gave: its stage and who ended it (no verdict: batch 2 P3 deleted the kept_and_broken schema) ----
 const offer = (n, note) => w.w(cook, 'promise', { what: 'loaf ' + n, terms: { expires: '2027-06-01T00:00:00.000Z' } }, { from: cook.id, to: buyer.id, what: loaf(n).hash }, note)
@@ -38,20 +35,24 @@ const k6 = offer(6, 'cook promise 6'); accept(k6, 'accept 6'); const s6 = w.w(co
 w.w(buyer, 'observe', { kind: 'agree', text: 'fine' }, { confirms: s6.hash, for: k6.hash }, 'buyer agrees to the stop of 6')
 const k7 = w.w(cook, 'promise', { what: 'a loaf every Friday', when: '2026-10-23T08:00:00.000Z', terms: { repeat: 'FREQ=WEEKLY;BYDAY=FR', zone: 'UTC', expires: '2027-06-01T00:00:00.000Z' } }, { from: cook.id, to: buyer.id, what: loaf(7).hash }, 'cook weekly promise 7')
 accept(k7, 'accept 7'); w.w(cook, 'promise', { status: 'stopped', stop: 'onward' }, { updates: k7.hash }, 'cook ends the weekly 7')
-// promises not to do something (refrains): disputed by the side they were made to (batch 2 P4), left alone by the promiser, released by the other side
-const refrain = (n, note) => w.w(cook, 'promise', { what: 'no rival bread ' + n, terms: { refrain: true, until: '2027-12-31T00:00:00.000Z', expires: '2027-06-01T00:00:00.000Z' } }, { from: cook.id, to: buyer.id, what: loaf(n).hash }, note)
+// promises not to do something (1.9 R-H8: no refs.what, `state.what` says what its signer will not do, `terms.until` until when; `terms.refrain`
+// is deleted, 05-deals.md section 8): disputed by the side they were made to (batch 2 P4), left alone by the promiser, released by the other side
+const refrain = (n, note) => w.w(cook, 'promise', { what: 'no rival bread ' + n, terms: { until: '2027-12-31T00:00:00.000Z', expires: '2027-06-01T00:00:00.000Z' } }, { from: cook.id, to: buyer.id }, note)
 const k8 = refrain(8, 'cook refrain 8'); const a8 = accept(k8, 'accept 8')
 w.w(buyer, 'observe', { kind: 'report', text: 'rival bread on the shelf', when: '2027-03-01T00:00:00.000Z' }, { defeats: k8.hash, for: k8.hash, after: [a8.hash] }, 'buyer shows 8 was broken')
 const k9 = refrain(9, 'cook refrain 9'); accept(k9, 'accept 9'); w.w(cook, 'promise', { status: 'stopped', stop: 'onward' }, { updates: k9.hash }, 'cook leaves refrain 9 alone, early')
 const k10 = refrain(10, 'cook refrain 10'); const a10 = accept(k10, 'accept 10'); w.w(buyer, 'promise', { status: 'stopped', stop: 'onward' }, { answers: k10.hash, for: k10.hash, after: [a10.hash] }, 'buyer lets refrain 10 go')
 // a promise to yourself is never counted
 const k11 = w.w(cook, 'promise', { what: 'bake one for me', terms: { expires: '2027-06-01T00:00:00.000Z' } }, { from: cook.id, to: cook.id, what: loaf(11).hash }, 'cook promise to self 11')
-// a refrain whose promiser died: a death ends authority, never a promise (batch 2 P7)
-const k12 = w.w(gran, 'promise', { what: 'no rival jam', terms: { refrain: true, until: '2027-12-31T00:00:00.000Z', expires: '2027-06-01T00:00:00.000Z' } }, { from: gran.id, to: buyer.id, what: loaf(12).hash }, 'gran refrain 12')
-accept(k12, 'accept 12')
-const heirGrant = w.w(gran, 'grant', { kind: 'successor', witnesses: [doc.id], needed: 1, wait: 'P7D' }, { to: heir.id }, 'gran names her heir')
-const sign = w.w(doc, 'observe', { kind: 'trigger' }, { under: heirGrant.hash, subject: gran.id }, 'the doctor records her death')
-w.w(heir, 'observe', { kind: 'close' }, { under: heirGrant.hash, subject: gran.id, after: [sign.hash] }, 'the heir closes her chain')
+// a promise not to do whose promiser's list closed: a close ends authority, never a promise (batch 2 P7). 1.9 R-H7 (D9): there is no successor;
+// her will is her own transfer on `{ closed: <her id> }`, and her close is a key grant that leaves no voice of her list (3d-15).
+const k12 = w.w(gran, 'promise', { what: 'no rival jam', terms: { until: '2027-12-31T00:00:00.000Z', expires: '2027-06-01T00:00:00.000Z' } }, { from: gran.id, to: buyer.id }, 'gran refrain 12')
+const a12 = accept(k12, 'accept 12')
+const jam = w.w(gran, 'thing', { kind: 'jam pan', name: 'gran\'s jam pan' }, { of: kindOf('jam pan') }, 'gran\'s jam pan')
+const will = w.w(gran, 'transfer', { condition: { closed: gran.id } }, { what: jam.hash, to_owner: heir.id }, 'gran wills her jam pan to her heir')
+w.w(heir, 'transfer', { status: 'accepted' }, { answers: will.hash }, 'the heir accepts the will')
+const close = w.w(gran, 'grant', { kind: 'key', voices: [] }, { subject: gran.id, updates: gran.id, after: [a12.hash] }, 'gran closes her list')
+w.will = { jam: jam.hash, will: will.hash, close: close.hash, gran: gran.id, heir: heir.id }
 w.promises = [k1, k2, k3, k4, k5, k6, k7, k8, k9, k10, k11, k12].map((p) => p.hash)
 
 // ---- person-confirmed: "delivered by Friday", the receiver confirms by accepting the transfer ----
@@ -72,16 +73,17 @@ const teach = w.w(teacher, 'promise', { what: 'teach sourdough, 2 hours', terms:
 w.w(learner, 'promise', { status: 'accepted' }, { answers: teach.hash, for: teach.hash }, 'learner accepts the lesson')
 const lesson = w.w(teacher, 'observe', { kind: 'work', text: 'taught 2h', amount: { value: '2', unit: 'h' } }, { for: teach.hash, schema: S('work') }, 'lesson (work)')
 w.w(learner, 'observe', { status: 'accepted' }, { answers: lesson.hash, for: teach.hash }, 'learner confirms the lesson')
-w.w(learner, 'transform', { kind: 'adapt', shares: [{ from: recipe.hash, share: '0.05' }] }, { derives_from: recipe.hash, schema: S('make') }, 'learner adapts the recipe, 5% to the teacher')
+// a recipe is cited, never consumed (things.md, A make): the make names it and draws nothing; a lineage share is a promise, never an input
+w.w(learner, 'transform', { kind: 'adapt' }, { derives_from: recipe.hash, schema: S('make') }, 'learner adapts the recipe (cited)')
 w.teach = teach.hash
 
 // ---- loan and payout as records of work ----
-const loan = w.w(ann, 'promise', { what: 'loan of 100 GBP, repay 110', principal: GBP(10000), terms: { price: GBP(11000), expires: '2026-12-31T00:00:00.000Z' } }, { from: ann.id, to: mo.id, schema: S('loan') }, 'loan offer (price = the repayment)')
+const loan = w.w(ann, 'promise', { what: 'loan of 100 GBP, repay 110', principal: GBP('100'), terms: { price: GBP('110'), expires: '2026-12-31T00:00:00.000Z' } }, { from: ann.id, to: mo.id, schema: S('loan') }, 'loan offer (price = the repayment)')
 w.w(mo, 'promise', { status: 'accepted' }, { answers: loan.hash, for: loan.hash }, 'mo accepts the loan')
-const lent = w.w(ann, 'transfer', { money: GBP(10000) }, { to_owner: mo.id, for: loan.hash }, 'ann lends 100'); w.w(mo, 'transfer', { status: 'accepted' }, { answers: lent.hash, for: loan.hash }, 'mo takes it')
-const back = w.w(mo, 'transfer', { money: GBP(11000) }, { to_owner: ann.id, for: loan.hash }, 'mo repays 110'); w.w(ann, 'transfer', { status: 'accepted' }, { answers: back.hash, for: loan.hash }, 'ann takes it')
-const advance = w.w(ann, 'observe', { kind: 'work', amount: GBP(10000), text: 'advanced 100 GBP' }, { for: loan.hash, derives_from: lent.hash, schema: S('payout') }, 'the advance, as a payout record')
+const lent = w.w(ann, 'transfer', { amount: GBP('100') }, { to_owner: mo.id, for: loan.hash }, 'ann lends 100'); w.w(mo, 'transfer', { status: 'accepted' }, { answers: lent.hash, for: loan.hash }, 'mo takes it')
+const back = w.w(mo, 'transfer', { amount: GBP('110') }, { to_owner: ann.id, for: loan.hash }, 'mo repays 110'); w.w(ann, 'transfer', { status: 'accepted' }, { answers: back.hash, for: loan.hash }, 'ann takes it')
+const advance = w.w(ann, 'observe', { kind: 'work', amount: GBP('100'), text: 'advanced 100 GBP' }, { for: loan.hash, derives_from: lent.hash, schema: S('payout') }, 'the advance, as a payout record')
 w.w(mo, 'observe', { status: 'accepted' }, { answers: advance.hash, for: loan.hash }, 'mo accepts the advance record')
 w.loan = loan.hash
 w.report()
-module.exports = { w, ann, mo, nan, shareKind, shares }
+module.exports = { w, ann, mo, nan, acme }

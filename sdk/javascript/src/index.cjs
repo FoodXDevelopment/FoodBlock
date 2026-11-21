@@ -1,5 +1,5 @@
-// The FoodBlock 1.7 reference SDK: its whole API. Every closed list comes from spec/protocol.json (PROTOCOL). There is no
-// earlier version in the protocol: old data enters once, through `legacy.convert`. The names match the other SDKs:
+// The FoodBlock 1.9 reference SDK: its whole API. Every closed list comes from spec/protocol.json (PROTOCOL). There is no
+// earlier version in the protocol. The names match the other SDKs:
 // `sign` signs, `seal` encrypts.
 const spec = require('./spec.cjs')
 const { create, hash, idOf } = require('./block.cjs')
@@ -10,7 +10,6 @@ const audience = require('./audience.cjs')
 const write = require('./write.cjs')
 const protocol = require('./protocol.cjs')
 const strangers = require('./strangers.cjs')
-const legacy = require('./legacy.cjs')
 const chain = require('./chain.cjs')
 const order = require('./order.cjs')
 const identity = require('./identity.cjs')
@@ -23,7 +22,7 @@ const cbor = require('./cbor.cjs')
 
 module.exports = {
   // The protocol, as data
-  VERSION: spec.VERSION, PROTOCOL: spec.PROTOCOL, TYPES: spec.TYPES, VERBS: spec.VERBS, REF_KEYS: spec.REF_KEYS, SUITES: spec.SUITES,
+  VERSION: spec.VERSION, PROTOCOL: spec.PROTOCOL, CONVENTIONS: spec.CONVENTIONS, TYPES: spec.TYPES, VERBS: spec.VERBS, REF_KEYS: spec.REF_KEYS, SUITES: spec.SUITES,
   FIELDS: protocol.FIELDS, PEERS: spec.PEERS,
 
   // A block: its canonical form and its id
@@ -39,25 +38,28 @@ module.exports = {
   newSalt: audience.newSalt, saltedHash: audience.saltedHash, commit: audience.commit, findsSelf: audience.findsSelf, revealFor: audience.revealFor,
 
   // Writing: compose, check, sign, chain (`write` does all four); the wire
-  PUBLIC: write.PUBLIC, compose: write.compose, write: write.write, check: protocol.check, refusals: protocol.refusals, valid: protocol.valid, strictText: protocol.strictText, CODES: protocol.CODES,
-  amount: protocol.amount, money: protocol.money, terms: protocol.terms, isTime: protocol.isTime, isDate: protocol.isDate,
+  PUBLIC: write.PUBLIC, compose: write.compose, write: write.write, valid: protocol.valid, read: protocol.read, writeRefusals: protocol.writeRefusals, binds: protocol.binds, schemasFrom: protocol.schemasFrom, strictText: protocol.strictText, CODES: protocol.CODES,
+  amount: protocol.amount, terms: protocol.terms, isTime: protocol.isTime, isDate: protocol.isDate,
   wrap: write.wrap, unwrap: write.unwrap, header: write.header, sealCopy: write.sealCopy, openCopy: write.openCopy, headerSignedBy: write.headerSignedBy,
 
   // The compact form: a public block as CBOR for small links (the id is still the hash of the canonical JSON)
   cbor,
 
-  // Strangers, short form, tasks and earnest (the small rules)
-  strangers, receiptCode: strangers.receiptCode, codeMatches: strangers.codeMatches,
+  // Strangers, short form and conditions (the small rules)
+  strangers, shortCode: strangers.shortCode, codeMatches: strangers.codeMatches,
 
   // The one-time converter for pre-1.6 data (not part of the protocol)
-  legacy,
 
   // Chains and causal order
-  nextLink: chain.nextLink, checkChain: chain.checkChain, causalOrder: order.causalOrder, pastOf: order.pastOf, sees: order.sees,
+  nextLink: chain.nextLink, checkChain: chain.checkChain, readWhole: chain.readWhole, causalOrder: order.causalOrder, pastOf: order.pastOf, sees: order.sees,
 
   // Who someone is; authority; the folds; between nodes
   identity, grant, fold, sync, merkle,
-  promiseStage: fold.promiseStage, repeatOccurrences: fold.repeatOccurrences, promiseView: fold.promiseView, consent: fold.consent, speaksFor: fold.speaksFor, backed: fold.backed, backedAll: fold.backedAll, owedBack: fold.owedBack, listingCheck: fold.listingCheck, checkReads: fold.checkReads, clearingApplied: fold.clearingApplied, rulingReleases: fold.rulingReleases, gives: fold.gives, actCheck: fold.actCheck, circleState: fold.circleState, identityState: identity.identityState, membersThen: fold.membersThen, whereNow: fold.whereNow, ownerOf: fold.ownerOf,
+  promiseStage: fold.promiseStage, repeatOccurrences: fold.repeatOccurrences, promiseView: fold.promiseView, consent: fold.consent, speaksFor: fold.speaksFor, backed: fold.backed, backedAll: fold.backedAll, toComeBack: fold.toComeBack, listingCheck: fold.listingCheck, checkReads: fold.checkReads, clearingApplied: fold.clearingApplied, rulingReleases: fold.rulingReleases, gives: fold.gives, circleState: fold.circleState, circleVersions: fold.circleVersions, machineLock: fold.machineLock, feeBack: fold.feeBack, countOf: fold.countOf, identityState: identity.identityState, membersThen: fold.membersThen, whereNow: fold.whereNow, ownerOf: fold.ownerOf,
+  rowHolds: fold.rowHolds, waysIn: fold.waysIn, keepsTo: fold.keepsTo, meter: fold.meter, worstCase: fold.worstCase, lowestOffer: fold.lowestOffer,
+  readback: fold.readback, render: fold.render, readbackRedo: fold.readbackRedo,
+  // 1.9 stage 7: a rule set named by its hash; a door that keeps blocks between calls (library)
+  ruleSet: require('./door.cjs').ruleSet, mount: require('./door.cjs').mount, unmount: require('./door.cjs').unmount,
 
   // Keys kept on a person's device, locked with a recovery code (product custody, not protocol)
   keystore

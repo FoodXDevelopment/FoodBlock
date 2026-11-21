@@ -1,0 +1,19 @@
+{
+ "kept": 2870,
+ "renewed": [],
+ "deleted": [],
+ "added": [],
+ "faults": [],
+ "resigned": 0,
+ "rekeyed": 0,
+ "ids": 0,
+ "counts": {
+  "kept": 2870,
+  "renewed": 0,
+  "deleted": 0,
+  "added": 0,
+  "faults": 0,
+  "protocol": 1998,
+  "conventions": 872
+ }
+}

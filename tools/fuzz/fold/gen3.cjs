@@ -277,8 +277,8 @@ function genWorld(seed, opts = {}) {
     if (ref2) { answerP(ref2, person, { status: 'accepted' }); stuff.push(ref2.ix) }
     const once = offer(far, person, { terms: { price: M(900), expires: '2028-06-01T00:00:00.000Z' }, author: far })
     if (once) { answerP(once, person, { status: 'accepted' }); stuff.push(once.ix) }
-    const auth = say(person, 'grant', { kind: 'authority', scope: { acts: ['observe'], until: '2028-12-01T00:00:00.000Z' } }, { to: ref(P.g) })
-    const auth2 = say(person, 'grant', { kind: 'authority', scope: { acts: ['observe'], until: '2028-12-01T00:00:00.000Z' } }, { to: ref(P.g) })
+    const auth = say(person, 'grant', { kind: 'authority', scope: { types: ['observe'], until: '2028-12-01T00:00:00.000Z' } }, { to: ref(P.g) })
+    const auth2 = say(person, 'grant', { kind: 'authority', scope: { types: ['observe'], until: '2028-12-01T00:00:00.000Z' } }, { to: ref(P.g) })
     stuff.push(auth, auth2)
     let circ = circles.length ? pick(circles) : null
     let myRec = null
@@ -369,7 +369,7 @@ function genWorld(seed, opts = {}) {
     const bank = pick([P.c, P.d, P.e, P.f])
     const role = pick(circ.roles).name
     const mode = R()
-    const scope = { acts: pick([['observe'], ['observe', 'promise'], ['note']]), until: '2028-12-01T00:00:00.000Z' }
+    const scope = { types: pick([['observe'], ['observe', 'promise'], ['note']]), until: '2028-12-01T00:00:00.000Z' }
     let g
     if (mode < 0.55) g = say(bank, 'grant', { kind: 'statements', to_role: role, scope }, { to: ref(circ.ix) }, { after: AF([circ.ix]) })
     else if (mode < 0.7) g = say(chance(0.7) ? (circ.founder === 'a' ? P.a : P[circ.founder]) : bank, 'grant', { kind: 'authority', to_role: role, scope }, { to: ref(circ.ix), as: ref(circ.ix) }, { after: AF([circ.ix]) })
@@ -430,16 +430,16 @@ function genWorld(seed, opts = {}) {
     const big = [100, 1000, '9007199254740992', '9007199254740993', '0.5', '2.50', 5]
     const unit = pick(['kg', 'kg', 'L'])
     const mk = (v) => chance(0.5) ? AMT(v, unit) : M(typeof v === 'number' || /^\d+$/.test(String(v)) ? Number(v) : 1)
-    const scope = { acts: ['promise'], per: pick(['P7D', 'P1D', 'P1M']), until: '2028-12-01T00:00:00.000Z' }
+    const scope = { types: ['promise'], per: pick(['P7D', 'P1D', 'P1M']), until: '2028-12-01T00:00:00.000Z' }
     if (chance(0.7)) scope.limit = mk(pick(big))
     if (chance(0.6)) scope.each = mk(pick(big))
     const parent = say(P.a, 'grant', { kind: 'authority', depth: 1, scope }, { to: ref(P.g) })
     if (parent < 0) return
     for (let i = 0; i < 3; i++) {
-      const cs = { acts: ['promise'], per: pick(['P7D', 'P1D', 'P1M', 'P2W']), until: pick(['2028-12-01T00:00:00.000Z', '2029-12-01T00:00:00.000Z']) }
+      const cs = { types: ['promise'], per: pick(['P7D', 'P1D', 'P1M', 'P2W']), until: pick(['2028-12-01T00:00:00.000Z', '2029-12-01T00:00:00.000Z']) }
       if (chance(0.6)) cs.limit = chance(0.5) ? scope.limit || mk(pick(big)) : mk(pick(big))
       if (chance(0.6)) cs.each = chance(0.5) ? scope.each || mk(pick(big)) : mk(pick(big))
-      if (chance(0.3)) cs.acts = pick([['promise'], ['observe'], ['promise', 'observe']])
+      if (chance(0.3)) cs.types = pick([['promise'], ['observe'], ['promise', 'observe']])
       const c = say(P.g, 'grant', { kind: 'authority', scope: cs }, { parent: ref(parent), to: ref(pick([P.b, P.c])) })
       if (c >= 0) say(P.b, 'observe', { kind: 'note', text: 'x' }, { under: ref(c) }, { after: AF([c]) })
     }
@@ -653,7 +653,7 @@ function genWorld(seed, opts = {}) {
     const each = chance(0.55) ? mk(pick(bigs), chance(0.9) ? mode : (mode === 'money' ? 'amount' : 'money')) : null
     const per = chance(0.8) ? pick(['P7D', 'P1D', 'P1M', 'PT1H', 'P1Y']) : null
     const sealed = chance(0.5) && (lim || each)
-    const scope = { acts: pick([['promise'], ['promise', 'transfer'], ['observe', 'promise']]), until: pick(['2028-12-01T00:00:00.000Z', '2027-01-01T00:00:00.000Z']) }
+    const scope = { types: pick([['promise'], ['promise', 'transfer'], ['observe', 'promise']]), until: pick(['2028-12-01T00:00:00.000Z', '2027-01-01T00:00:00.000Z']) }
     if (per) scope.per = per
     let salt = null
     if (sealed) {
@@ -674,7 +674,7 @@ function genWorld(seed, opts = {}) {
     limitCases.push(rec)
     // children
     for (let i = 0; i < int(0, 3); i++) {
-      const cs = { acts: chance(0.8) ? ['promise'] : pick([['observe'], ['promise', 'observe'], ['transfer']]), until: pick(['2028-12-01T00:00:00.000Z', '2029-12-01T00:00:00.000Z', '2027-01-01T00:00:00.000Z']) }
+      const cs = { types: chance(0.8) ? ['promise'] : pick([['observe'], ['promise', 'observe'], ['transfer']]), until: pick(['2028-12-01T00:00:00.000Z', '2029-12-01T00:00:00.000Z', '2027-01-01T00:00:00.000Z']) }
       const cper = chance(0.8) ? pick(['P7D', 'P1D', 'P1M', 'P2W', 'PT1H', 'P1Y']) : null
       if (cper) cs.per = cper
       const cl = chance(0.7) ? (chance(0.4) && lim ? lim : mk(pick(bigs), chance(0.9) ? mode : 'amount')) : null

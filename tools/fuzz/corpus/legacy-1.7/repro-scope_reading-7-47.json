@@ -1,0 +1,16 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "types": [
+    "observe.note",
+    "promise"
+   ],
+   "limit": {
+    "minor": 5000,
+    "currency": "GBP"
+   }
+  }
+ ],
+ "world": 7
+}

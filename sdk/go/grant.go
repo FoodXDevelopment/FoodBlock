@@ -29,47 +29,17 @@ func ScopeWithin(child, parent Block) []string {
 	return doorScopeWithin(child, parent)
 }
 
-// LimitFence is the observe of kind limit for a grant, to hand to Write: its audience is the autonomous system alone.
-func LimitFence(grantHash, agent string, limit map[string]any, every string) map[string]any {
-	return doorLimitFence[map[string]any](grantHash, agent, limit, every, "", nil)
-}
 
-// LimitFenceSealed is LimitFence with the salt that opens the grant's scope.limit_commitment, and each, a cap on any
-// single act (nil for none).
-func LimitFenceSealed(grantHash, agent string, limit map[string]any, every, salt string, each map[string]any) map[string]any {
-	return doorLimitFence[map[string]any](grantHash, agent, limit, every, salt, each)
-}
 
-// LimitCommitment is the commitment to a limit, for a grant's scope.limit_commitment (authority.md). suite is "" for std.
-func LimitCommitment(limit map[string]any, every, salt, suite string) string {
-	return doorLimitCommitment(limit, every, salt, suite, nil)
-}
 
-// LimitCommitmentEach is LimitCommitment with each, a cap on any single act, inside the commitment.
-func LimitCommitmentEach(limit map[string]any, every, salt, suite string, each map[string]any) string {
-	return doorLimitCommitment(limit, every, salt, suite, each)
-}
 
-// LimitOpens is whether the limit observe opens the grant's scope.limit_commitment.
-func LimitOpens(grant, fence Block, suite string) bool {
-	return doorLimitOpens(grant, fence, suite)
-}
 
-// WithinLimit is whether one act of value (money or an amount) stays inside a limit (the limit observe, its state, or
-// the limit); spent is what the principal's node has counted in the period: minor units, or the amount's value (an int
-// or a decimal string), compared exactly.
-func WithinLimit(limit, money any, spent any) bool {
-	return doorWithinLimit(limit, money, spent)
-}
 
 // WhyNotLiveUndo is why an act that cannot be undone (its schema says `undo: never`) is not live: empty when it has a
 // specific accepted ask or a grant that names it with a limit.
 func WhyNotLiveUndo(b Block, blocks []Block) []string {
 	return doorWhyNotLiveUndo(b, blocks)
 }
-
-// ActName is the act a block is, named `type.kind`.
-func ActName(b Block) string { return doorActName(b) }
 
 // ParseDuration reads an ISO 8601 duration (nil when it is not one).
 func ParseDuration(text string) map[string]any {
@@ -96,10 +66,6 @@ func WhyNotUnder(b Block, blocks []Block, options ...LiveOptions) []string {
 	return doorWhyNotUnder(b, blocks, nowOf(options))
 }
 
-// OperatorsOf are the people who answer for an autonomous system.
-func OperatorsOf(agent string, blocks []Block, options ...LiveOptions) []string {
-	return doorOperatorsOf(agent, blocks, nowOf(options))
-}
 
 // AddDuration moves a time by an ISO 8601 duration (sign -1 goes back), months and years by the UTC calendar. "" when
 // either is not readable.

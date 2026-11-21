@@ -205,7 +205,7 @@ const NOW = '2027-03-01T00:00:00.000Z'
     const deal = v.say(d, 'promise', { what: 'the order', terms: { price: M(5000) } }, { from: b.id, to: d.id }); accept(v, b, deal)
     v.say(jd, 'promise', { what: 'disputes over a delivery of food', terms: { price: M(500), rules_within: 'P14D' } }, { from: jd.id, schema: J.hash })
     const r = v.say(jd, 'observe', { kind: 'ruling', text: 'what happened', awards: [{ to: b.id, money: M(3000), due: '2027-01-01T00:00:00.000Z' }] }, { subject: deal.hash })
-    const g = v.say(b, 'grant', { kind: 'agent', scope: { acts: ['observe.release'], parties: [], until: '2030-01-01T00:00:00.000Z' } }, { to: bot.id })
+    const g = v.say(b, 'grant', { kind: 'agent', scope: { types: ['observe.release'], parties: [], until: '2030-01-01T00:00:00.000Z' } }, { to: bot.id })
     const who = { awardee: [b, {}], loser: [d, {}], agent: [bot, { under: g.hash }] }[signer]
     v.say(who[0], 'observe', { kind: 'release', text: 'paid me in cash, we are settled' }, { subject: r.hash, ...who[1] })
     door(`judging: ${name}`, 'ruling_audience', [r, [P.genesis, ...P.order.map((n) => P.schemas[n]), ...v.held], '2027-02-01T00:00:00.000Z'], { expect, exact: true, invariants: [36] })
@@ -281,29 +281,6 @@ const NOW = '2027-03-01T00:00:00.000Z'
   door('voucher: passed on, it is Bo\'s, and the issuer\'s promise goes to whoever holds it', 'ownership', [note, s.held, null], { expect: { owner: bo.id } })
 }
 
-
-// ---- Act templates: the terms a deal of lists and conditions carries (promises.md, An act is a template of the one shape) ----
-{
-  const s = story(), co = s.person('at-coop'), buyer = s.person('at-buyer'), judge = s.person('at-judge')
-  const move = (type) => ({ type, tie: 'none', sides: 'mine to theirs', needs: [], words: ['what', 'terms'] })
-  const tpl = (takes, needs = []) => s.say(co, 'thing', { kind: 'act', name: 'A boxed order with a deposit', words: 'A priced list.', sides: { from: 'the co-op', to: 'the buyer' }, takes, needs, record: { Promise: move('promise') } }, {})
-  const eggs = s.say(co, 'thing', { kind: 'eggs' }, {})
-  const deal = (t, terms) => s.raw(co, 'promise', { what: 'a box', terms }, { from: co.id, to: buyer.id, what: eggs.hash, act: t.hash }) // raw: the writer refuses a badly written list, and a template must still say so
-  const lines = [{ id: 'a', what: eggs.hash, quantity: { value: '12', unit: 'egg' }, price: M(300) }]
-  const cond = { ruled: eggs.hash, by: judge.id, awards: co.id }
-  const T = tpl({ lines: 'lines', condition: 'condition', keepers: 'keepers', band: 'text', forfeit: 'money', backing: 'amount' }, ['lines'])
-  const chk = (name, d, t, ok) => { const got = door(`act: ${name}`, 'act_check', [d, t], { expect: { ok }, invariants: [32] }); assert.equal(typeof got.why, ok ? 'object' : 'string') }
-  chk('a template may take a priced list, a condition, a named clock, a band, a forfeit and a backing', deal(T, { lines, condition: cond, keepers: { names: [judge.id] }, band: '0.05', forfeit: M(100), backing: { value: '2', unit: 'heifer' } }), T, true)
-  chk('a list of lines with no id is not a list the template takes', deal(T, { lines: [{ what: eggs.hash }] }), T, false)
-  chk('a list with a key a line has not is refused', deal(T, { lines: [{ id: 'a', colour: 'red' }] }), T, false)
-  chk('an empty list is no list', deal(T, { lines: [] }), T, false)
-  chk('a condition of a shape the protocol reads', deal(T, { lines, condition: { signal: 'rain', by: [judge.id] } }), T, true)
-  chk('an object with no shape the protocol reads is no condition', deal(T, { lines, condition: { when: 'rain' } }), T, false)
-  chk('a clock with no names is no clock', deal(T, { lines, keepers: { names: [] } }), T, false)
-  chk('a clock with a key a clock has not', deal(T, { lines, keepers: { names: [judge.id], boss: 1 } }), T, false)
-  const W = tpl({ lines: 'list' })
-  chk('a type the protocol does not read is not whole', deal(W, {}), W, false)
-}
 
 vectorsFile.save(V, tags)
 console.log(`${kit.made.size} cases written to ${require('path').relative(process.cwd(), vectorsFile.FILE)}`)

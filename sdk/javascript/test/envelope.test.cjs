@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 
-// FoodBlock 1.7 (privacy.md, Envelope): the envelope names no recipient; a sealed copy carries its signed public header;
+// FoodBlock 1.9 (privacy.md, Envelope): the envelope names no recipient; a sealed copy carries its signed public header;
 // the suite names the key agreement and the cipher.
 const vectors = require('../../../spec/vectors.json')
 
@@ -31,9 +31,12 @@ test('a sealed copy: its header is public and signed; its body and reveals are f
   const block = fb.compose('observe', { kind: 'note', text: 'two trays kept' }, {}, { author: 'a'.repeat(64), audience: ['b'.repeat(64)], link: { seq: 1, prev: 'a'.repeat(64) }, at: '2026-10-15T09:00:00.000Z' })
   const { salts, ...unsalted } = block
   const signed = { ...unsalted, signature: fb.sign(unsalted, keys.private_key) }
-  const message = fb.sealCopy(signed, { keys: [bob.public_key_encrypt], reveals: [fb.revealFor(salts, 'b'.repeat(64))], privateKey: keys.private_key })
+  const message = fb.sealCopy(signed, { keys: [bob.public_key_encrypt], reveals: [fb.revealFor(salts, 'b'.repeat(64))] })
   assert.deepEqual(message.header, { author: 'a'.repeat(64), seq: 1, prev: 'a'.repeat(64), hash: signed.hash })
   assert.equal(fb.headerSignedBy(message, keys.public_key_sign), true)
+  // one signature: a private block is signed over its header, and that one signature is the header's (privacy.md, The public header)
+  assert.equal(message.header_signature, signed.signature)
+  assert.deepEqual(Object.keys(fb.open(message.envelope, bob.x25519_private)).sort(), ['block', 'reveals'], 'the plaintext carries no second signature')
   const opened = fb.openCopy(message, bob.x25519_private)
   assert.deepEqual([opened.hash, fb.verify(opened, opened.signature, keys.public_key_sign), fb.findsSelf(opened, 'b'.repeat(64), opened.reveals[0].salt)], [signed.hash, true, true])
   assert.throws(() => fb.openCopy({ ...message, header: { ...message.header, hash: 'f'.repeat(64) } }, bob.x25519_private), /another block/)

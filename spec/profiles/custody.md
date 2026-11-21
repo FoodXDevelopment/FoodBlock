@@ -1,13 +1,16 @@
-# Profile: witness hardening (custody)
+# Profile: custody (what a witnessing host promises)
 
-Optional. Rules for hosts that witness a key-less person's words by SMS, so a stolen SIM does not become a stolen yes. Nobody signs as her: the host signs a witness in its own name (identity.md, Held keys).
+Optional. Rules for a host that hears people on a basic phone. Nobody signs as her (identity.md, One signature, once). Each line binds only a host that publishes it, as its own word (nodes.md, A node's word).
 
-**Adds:** the observe kind `custody_policy`, and rules a host may promise. Each binds only a host that publishes it, as its own word (nodes.md, A node's promise);
+**Adds:** the observe kind `custody_policy`, and the lines below.
 
-- **The policy.** An `observe` of kind `custody_policy`: `quiet` (a duration), `step_up` (a money limit), `assisted` (true if it takes help from autonomous systems). Readers weigh a host by it; the protocol counts it as no lesser.
-- **A quiet period after a SIM change.** Once it learns a SIM changed, it witnesses nothing for the person above a small amount for `quiet`. It tells their other contacts only if her own grant or standing word names it.
-- **A step-up above a limit.** Above `step_up` it needs a second proof of her word: another channel, a second device, or a person who knows her. The block names how in `state.proof`, an open label list.
-- **An assisted channel.** A village agent or shop helper may write the words for someone who cannot. `state.channel` is the link, `state.assisted_by` the helper's id; her own yes to the echoed terms still binds. The helper is not a side of the deal.
-- **Speaking only for its own client.** It speaks only in her name, to people already in that conversation, never first to a stranger nobody chose and never after her STOP. Her `YES <code>` to a first ask counts only from the number the ask was sent to, or one she tied to it (short-form.md, The ask code); the host then holds that number's custody.
-- **An ordinary ask.** A first ask it carries is ordinary and never pitches; its receipt, in the same thread, is the door into an app.
-- **Handing back.** When she moves to a key of her own, it records the end of its grant and signs nothing more under it (identity.md, Held keys).
+- **With no key.** A witness of a person who has signed nothing is the host's word. The host says so in every such block by naming no grant, and tells whoever relies on it. A witness written public puts her handle where any index serves it; a host that promised her silence seals it. She may still be named as a side in another's promise, which binds its signer; be paid; deliver; say STOP, which binds the side that recorded it (consent.md); and be stood behind by a vouch anyone signs in their own name (profiles/vouches.md).
+- **The first yes.** Her key is made inside a thing she holds and keeps: a SIM, a card, her phone. The host's device, or a helper's, lends only a screen, a reader, a time and a link. It never makes, sees or stores her key or her PIN where the thing has its own keys to type on. Her genesis, her list and her first grant are shown or spoken to her whole before her key signs each.
+- **Her grant to the host** names the host, her handle, `observe.witness`, the parties, an `each` or a `limit`, and an `until`. The host drafts none without all of them, and witnesses nothing past them. Her grant may end on her STOP by text: `scope.ends_on: { witness: <the host>, said: "STOP" }` (authority.md, A witness). The host's witness of it binds only the host; the ending is her own word.
+- **The policy.** An `observe` of kind `custody_policy`: `quiet` (a duration), `quiet_under` (an amount), `step_up` (an amount), `proofs` (the second proofs it takes), `assisted` (true if autonomous systems help). Readers weigh a host by it; no fold ranks hosts.
+- **A SIM change.** Once it learns the SIM behind a handle changed, the host witnesses nothing for that handle above `quiet_under` for `quiet`, and nothing at all once her own key says the handle is no longer hers.
+- **A second proof above `step_up`.** A thing only she holds: her key's short reply (profiles/short-form.md), a code from a list whose commitments her grant carries, opened in `state.opening`, or a helper's own witness. The block names which in `state.proof`.
+- **A shared handle.** A handle more than one person answers is no one's handle. The host that knows it is shared witnesses nothing for it under a grant without a second proof.
+- **A helper.** One who reads or types for her signs his own `observe` of kind `witness` (`channel: meeting`, `said`, `readback`) in his own name, about what he showed or spoke and what she said. Her block, or the host's witness, names it in `refs.confirms`. He never holds her card or her PIN and signs nothing as her. He is not a side of the deal.
+- **Speaking only for its own client.** It speaks only in her name, to people already in that conversation, never first to a stranger nobody chose and never after her STOP.
+- **Handing back.** When her own key takes over, the host signs nothing more under her grant after her stop. A key the host once made for her is the host's (identity.md, A key a host made).

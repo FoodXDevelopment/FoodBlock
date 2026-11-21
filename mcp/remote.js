@@ -6,7 +6,7 @@
 //   flush()    send what the door signed since (POST {base}/window/submit); the host's SDK judges every block, and a refusal throws
 //   fold(name, ...args) / propose(type, state, refs)   the host's folds and the draft of the person's next block, for a caller that wants them
 //
-// The credential goes in the Authorization header, never in a URL. The host never holds the person's key: the door signs, the host judges.
+// The credential goes in the Authorization header, never in a URL. Neither the host nor the door holds the person's key: her device signs, the door relays, the host judges.
 import fb from "@foodxdev/foodblock";
 
 export function remoteNode({ base, token, fetch: request = globalThis.fetch } = {}) {
@@ -28,7 +28,7 @@ export function remoteNode({ base, token, fetch: request = globalThis.fetch } = 
       const { salts, ...block } = signed;
       const result = fb.sync.accept([block], all(), { takesPairs: false });
       result.taken.forEach((taken) => { mirror.set(taken.hash, taken); queue.push(taken); });
-      return { taken: result.taken, refused: result.refused, waiting: result.waiting };
+      return { taken: result.taken, refused: result.refused, unjudged: result.unjudged };
     },
     /** The mirror becomes the host's truth, plus what the door signed and has not sent yet. */
     async refresh() {
@@ -73,7 +73,7 @@ export function remoteIndex({ base, key, fetch: request = globalThis.fetch } = {
     for (const block of blocks) {
       const author = block.refs?.author ?? block.hash;
       let good = false;
-      try { const keys = fb.identity.keysOf(author, blocks.filter((b) => b.hash === author || (b.refs?.author === author && isIdentity(b)))); good = keys.some((k) => fb.verify(block, block.signature, k)) && fb.hash(block.type, block.state, block.refs) === block.hash; } catch { good = false; }
+      try { const keys = fb.identity.liveKeys(author, blocks.filter((b) => b.hash === author || (b.refs?.author === author && isIdentity(b)))); good = keys.some((k) => fb.verify(block, block.signature, k)) && fb.hash(block.type, block.state, block.refs) === block.hash; } catch { good = false; }
       if (!good) out.push(`block ${String(block.hash).slice(0, 8)} is not as its author signed it`);
     }
     for (const [name, value] of Object.entries(asked)) if (JSON.stringify(answer.query?.[name]) !== JSON.stringify(value) && !(name === "limit" && answer.query?.limit <= value)) out.push(`the answer is not to the query asked (${name})`);

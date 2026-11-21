@@ -7,10 +7,9 @@
 //   node server.js                 stdio (Claude Desktop, Claude Code, Cursor, Gemini CLI)
 //   node server.js --http [port]   Streamable HTTP at /mcp (ChatGPT, remote clients), default port 7420
 //
-// FOODBLOCK_REACH     the recovery window of a new identity, as a duration the person states (for example P30D); required when no identity file exists yet.
-// FOODBLOCK_IDENTITY  a file holding the person's keys, genesis and chain (the CLI's format: `fb init` makes one), made on
-//                     first run (kept 0600); without it, a new person each run. The approval code lives beside it in
-//                     <file>.approval.
+// FOODBLOCK_IDENTITY  a file holding the person's PUBLIC side: { genesis, chain } (blocks only). Required. Her key is never here: it stays on her own
+//                     device (a passkey), which signs each draft on the approval page. A file that holds a private key is refused. The door writes
+//                     the blocks her device signed back into it.
 // FOODBLOCK_INDEX_URL[, FOODBLOCK_INDEX_KEY]   find asks this open index (answer verified) instead of the host's blocks.
 // FOODBLOCK_NODE_URL, FOODBLOCK_NODE_TOKEN   reach the person's node on a node host over HTTP instead of in memory (see README).
 // FOODBLOCK_AUTH=oauth, FOODBLOCK_PUBLIC_URL  with --http: require the MCP authorization flow on /mcp; the address clients reach the door by.
@@ -22,8 +21,8 @@ import { z } from "zod";
 import fb from "@foodxdev/foodblock";
 import http from "node:http";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { createDoor, approvalHandler, memoryNode, newPerson } from "./door.js";
+import { existsSync, readFileSync, writeFileSync, renameSync, chmodSync } from "node:fs";
+import { createDoor, approvalHandler, memoryNode, newAgent, newPerson } from "./door.js";
 import { remoteNode, remoteIndex } from "./remote.js";
 import { doorProvider, authorizedApp } from "./auth.js";
 
@@ -36,18 +35,17 @@ export const failure = (error) => {
 };
 
 const amount = z.object({ value: z.string(), unit: z.string() }).describe('an amount: { value: "2", unit: "kg" } (a decimal string, never a float)');
-const money = z.object({ minor: z.number().int(), currency: z.string() }).describe("money: whole minor units, e.g. { minor: 450, currency: \"GBP\" }");
 // Who may read the block: the person's choice, asked for every time (nothing is filled in, so there is no default).
 const audience = z.union([z.literal("public"), z.array(z.string()).min(1)]).describe('REQUIRED, the person\'s choice of who may read this block: "public", or a list of ids (the person\'s and anyone they want to read it). Ask the person; never choose for them.');
 const terms = {
-  quantity: amount.optional(), price: z.any().optional().describe("money, or { money, per } for a unit price; leave out to ask for a quote"),
+  quantity: amount.optional(), price: z.any().optional().describe("an amount { value: \"4.50\", unit: \"GBP\" } (the total), or { amount, per } for a unit price; leave out to ask for a quote"),
   deliver_by: z.string().optional().describe("UTC time YYYY-MM-DDTHH:MM:SS.sssZ"), expires: z.string().optional().describe("when this lapses if unanswered; default 7 days"),
 };
 
 /** One assistant's view of the door: its own autonomous system identity, six tools (each with a title and honest annotations). */
 export function createServer({ door, name = "assistant", assistant: given, brand = {} } = {}) {
   // `brand` is the host's own: { title, websiteUrl, icons, instructions, readOnly, tools(server, tool, door) }. Without it this is a neutral protocol server.
-  door ||= createDoor({ reach: process.env.FOODBLOCK_REACH });
+  if (!door) throw new Error("createServer needs a door (createDoor({ person })): this server makes no person and holds no key of hers");
   const index = door.index || null; // the open index, when one is set: find asks it; read, ask and promise stay on the host
   const assistant = given || door.agent(name); // a restored session passes the assistant it had
   const server = new McpServer({ name: "foodblock", title: brand.title || "FoodBlock", version: fb.VERSION, ...(brand.websiteUrl ? { websiteUrl: brand.websiteUrl } : {}), ...(brand.icons ? { icons: brand.icons } : {}) },
@@ -88,31 +86,31 @@ export function createServer({ door, name = "assistant", assistant: given, brand
   if (!hosted) tool("foodblock_accept", "Accept an offer under a grant, or draft it", "Accept an offer or counter-offer for the person. Binds ONLY under a live grant that names `promise`; otherwise it returns a draft for the person to approve. Moves no money. Ask the person who may read it (`audience`) first; there is no default.",
     { audience, promise: z.string().describe("the offer's hash"), quantity: amount.optional() }, { openWorldHint: true }, async (input) => door.accept(assistant, input), "foodblock:draft");
 
-  if (!hosted) tool("foodblock_connect", "Pair this assistant with a grant draft", "Pair this assistant to the person's node. Returns a grant draft and an approval link for the person. With no acts you may only find, read and draft. Ask for `promise` only if the person wants you to bind for them. `audience` (who may read the grant) is the person's choice: ask first.",
-    { audience, acts: z.array(z.string()).default([]).describe("block types or type.kind names you may sign, e.g. [\"promise\"]; default none"), days: z.number().int().min(1).max(365).default(30), limit: money.optional().describe("the most money one act may involve"), parties: z.array(z.string()).default([]).describe("ids the assistant may deal with under this grant; none listed means no one but the person") },
+  if (!hosted) tool("foodblock_connect", "Pair this assistant with a grant draft", "Pair this assistant to the person's node. Returns a grant draft and an approval link for the person. With no types you may only find, read and draft. Ask for `promise` only if the person wants you to bind for them. `audience` (who may read the grant) is the person's choice: ask first.",
+    { audience, types: z.array(z.string()).default([]).describe("block types or type.kind names you may sign, e.g. [\"promise\"]; default none"), days: z.number().int().min(1).max(365).default(30), limit: amount.optional().describe("the most all the blocks under this grant may draw, counted on its line, as an amount in one unit: { value: \"20.00\", unit: \"GBP\" }"), parties: z.array(z.string()).default([]).describe("ids the assistant may deal with under this grant; none listed means no one but the person"), on: z.array(z.string()).default([]).describe("full ids of the person's own promises (her ask or offer) the assistant may bind her to; a block binds her only where it keeps to one of them (FoodBlock 1.9). None: the assistant can bind nothing") },
     {}, async (input) => door.connect(assistant, input), "foodblock:draft");
 
   return server;
 }
 
 // ---- The person and the node this process runs ----
+// The person is public here: her genesis and chain. Her key is on her own device; the door composes what she is shown and takes back her signature.
 function build() {
   const file = process.env.FOODBLOCK_IDENTITY;
-  const fresh = file && !existsSync(file);
-  const saved = file && !fresh ? JSON.parse(readFileSync(file, "utf8")) : null;
-  const person = saved ? { ...saved, id: saved.genesis.hash } : newPerson("person", { reach: process.env.FOODBLOCK_REACH });
-  const persist = ({ keys, encryption, genesis, chain }) => { if (file) writeFileSync(file, JSON.stringify({ keys, encryption, genesis, chain }, null, 2), { mode: 0o600 }); };
-  if (fresh) writeFileSync(`${file}.recovery.json`, JSON.stringify({ id: person.id, recovery: person.recovery }, null, 2), { mode: 0o600 });
-  let code = file && existsSync(`${file}.approval`) ? readFileSync(`${file}.approval`, "utf8").trim() : undefined;
+  if (!file || !existsSync(file)) throw new Error("FOODBLOCK_IDENTITY must name a file holding her genesis and chain ({ genesis, chain }, public blocks), made on her own device. This door makes no person and holds no key of hers");
+  const saved = JSON.parse(readFileSync(file, "utf8"));
+  if (saved.keys || saved.recovery || saved.encryption || saved.key) throw new Error(`${file} holds a private key. A door never reads one: give it a file with only { genesis, chain }, and keep the key on her device`);
+  const person = { id: saved.genesis.hash, genesis: saved.genesis, chain: saved.chain || [saved.genesis] };
+  // the blocks her device signed are written back (public blocks only), whole, beside the file and renamed into place, private to her
+  const persist = ({ genesis, chain }) => { const temp = `${file}.${process.pid}.tmp`; writeFileSync(temp, JSON.stringify({ genesis, chain }, null, 2), { mode: 0o600 }); renameSync(temp, file); };
+  try { chmodSync(file, 0o600); } catch {}
   // FOODBLOCK_NODE_URL: a node host (its handler); the door reaches the person's node there, {url}/{personId}, with the
   // credential FOODBLOCK_NODE_TOKEN in a header. Without it the node is in memory.
   const hosted = process.env.FOODBLOCK_NODE_URL;
   const node = hosted ? remoteNode({ base: `${hosted.replace(/\/$/, "")}/${person.id}`, token: process.env.FOODBLOCK_NODE_TOKEN }) : memoryNode();
-  const door = createDoor({ node, person, code, persist });
+  const door = createDoor({ node, person, persist });
   // FOODBLOCK_INDEX_URL: an open index (foodos/index/http.js); find goes there and its signed answer is verified. FOODBLOCK_INDEX_KEY pins its key.
   if (process.env.FOODBLOCK_INDEX_URL) door.index = remoteIndex({ base: process.env.FOODBLOCK_INDEX_URL, key: process.env.FOODBLOCK_INDEX_KEY });
-  if (file && !code) writeFileSync(`${file}.approval`, door.approvalCode, { mode: 0o600 });
-  persist(person);
   if (process.env.FOODBLOCK_SEED === "demo") seed(door);
   return door;
 }
@@ -120,11 +118,12 @@ function build() {
 // A small story to find: a mill, its flour, an open offer of it, and the place it is in.
 // (the demo's blocks are public by design)
 function seed({ node }) {
-  const mill = newPerson("person", { reach: "P30D" }), say = (type, state, refs) => { const s = fb.write(type, state, refs, { author: mill.id, key: mill.keys, held: mill.chain, at: new Date().toISOString(), audience: "public" }); mill.chain.push(s); node.push(s); return s; };
+  // the mill's key exists for this function alone: it signs the demo blocks and is dropped with the function (no door keeps a person's key)
+  const millKeys = fb.generateKeypair(), millGenesis = fb.identity.genesis(millKeys, { kind: "person", at: new Date().toISOString(), audience: "public" }), mill = { keys: millKeys, genesis: millGenesis, chain: [millGenesis], id: millGenesis.hash }, say = (type, state, refs) => { const s = fb.write(type, state, refs, { author: mill.id, key: mill.keys, held: mill.chain, at: new Date().toISOString(), audience: "public" }); mill.chain.push(s); node.push(s); return s; };
   node.push(mill.genesis);
   const place = say("thing", { kind: "place", name: "Hartley Mill (demo, not a real place)", text: "A made-up demo block, not a real mill or offer." }, {});
   const flour = say("thing", { kind: "flour", name: "Strong white flour (demo)", text: "A made-up demo block, not a real product." }, { place: place.hash });
-  say("promise", { what: "Demo offer: made up, not a real one.", terms: { price: { money: fb.money(150, "GBP"), per: fb.amount("1", "kg") }, quantity: fb.amount("100", "kg"),
+  say("promise", { what: "Demo offer: made up, not a real one.", terms: { price: { amount: fb.amount("1.50", "GBP"), per: fb.amount("1", "kg") }, quantity: fb.amount("100", "kg"),
     expires: new Date(Date.now() + 30 * 864e5).toISOString() } }, { from: mill.id, what: flour.hash, place: place.hash });
 }
 
@@ -194,7 +193,8 @@ async function serveHttp(door, port, { oauth = false, publicUrl = process.env.FO
   // beyond this machine the door answers only behind the authorization flow: a door open on a network is a door anyone on it can use (release 52)
   if (!oauth && !["127.0.0.1", "localhost", "::1"].includes(bind)) throw new Error("FOODBLOCK_HOST names an address beyond this machine: set FOODBLOCK_AUTH=oauth, or leave the door on loopback");
   if (oauth) {
-    const provider = doorProvider({ approvalCode: door.approvalCode });
+    // the yes to connect an assistant: a code made for each request, shown only on this process's own terminal (she started it), never in a file or a page
+    const provider = doorProvider({ announce: ({ client, code }) => console.error(`Consent to connect "${String(client).slice(0, 80)}": your code is ${code} (valid five minutes, five tries)`) });
     const { app, mount } = authorizedApp({ door, mcp, approve, provider });
     const server = http.createServer(app);
     await new Promise((done) => server.listen(port, bind, done));
@@ -228,14 +228,20 @@ if (isDirectRun) {
   if (flag > -1) {
     const server = await serveHttp(door, Number(process.argv[flag + 1]) || Number(process.env.PORT) || 7420, { oauth: process.env.FOODBLOCK_AUTH === "oauth" });
     // the code is never printed: an assistant's client often shows this process's output to the assistant itself (agents/t6)
-    console.error(`FoodBlock MCP on ${door.base}/mcp\nYour approval code is in ${process.env.FOODBLOCK_IDENTITY ? `${process.env.FOODBLOCK_IDENTITY}.approval` : "no file (set FOODBLOCK_IDENTITY to keep one)"}.`);
+    console.error(`FoodBlock MCP on ${door.base}/mcp\nDrafts are signed on your own device through their approval links; this door holds no key of yours.`);
   } else {
     // stdio carries the protocol, so the approval page gets its own local port.
     const handle = approvalHandler(door);
-    const approval = http.createServer(async (req, res) => { if (!(await handle(req, res))) res.writeHead(404).end(); });
+    // the approval page answers only its own pages: another Host or Origin is refused, so a web page cannot reach it by DNS rebinding (F13)
+    const approval = http.createServer(async (req, res) => {
+      const port = approval.address().port, hosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`]);
+      const origin = req.headers.origin ? (() => { try { return new URL(req.headers.origin).host; } catch { return "?"; } })() : null;
+      if (!hosts.has(String(req.headers.host || "")) || (origin && !hosts.has(origin))) { res.writeHead(403).end("this page answers only its own address"); return; }
+      if (!(await handle(req, res))) res.writeHead(404).end();
+    });
     await new Promise((done) => approval.listen(Number(process.env.FOODBLOCK_APPROVE_PORT) || 0, "127.0.0.1", done));
     door.base = `http://127.0.0.1:${approval.address().port}`;
-    console.error(`FoodBlock approval page: ${door.base}\nYour approval code is in ${process.env.FOODBLOCK_IDENTITY ? `${process.env.FOODBLOCK_IDENTITY}.approval` : "no file (set FOODBLOCK_IDENTITY to keep one)"}.`);
+    console.error(`FoodBlock approval page: ${door.base}\nDrafts are signed on your own device through their approval links; this door holds no key of yours.`);
     await createServer({ door }).connect(new StdioServerTransport());
   }
 }

@@ -65,4 +65,4 @@ Compressions that were tried or weighed for 1.6 (revised 2026-10-19), kept or no
 
 ## Found by the necessity table
 
-See [`NECESSITY.md`](NECESSITY.md). Listed things that no vector needed were given vectors (`sdk/javascript/test/make-vectors-necessity.cjs`) or, if nothing read them, deleted.
+See [`NECESSITY.md`](NECESSITY.md). Listed things that no vector needed were given vectors or, if nothing read them, deleted.

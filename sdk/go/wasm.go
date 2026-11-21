@@ -68,7 +68,8 @@ func callCore(op string, args []byte) ([]byte, error) {
 		}
 	}
 	out, err := invoke(ctx, []byte(op), args)
-	if err != nil { // a trap: the core stopped mid-call. Start again from a clean instance and say so.
+	if err != nil { // a trap: the core stopped mid-call. Close it (wazero keeps an unclosed module and its memory), start again clean, and say so.
+		_ = instance.Close(ctx)
 		instance = nil
 		return nil, errInternal
 	}

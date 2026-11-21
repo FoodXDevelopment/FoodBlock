@@ -1,5 +1,6 @@
-//! Signing (core.md, Suites): a signature over the canonical UTF-8 bytes of `{ type, state, refs }`, by the algorithm
-//! of the signing key's suite. `std` is Ed25519 (a key is SPKI DER hex, a private key PKCS#8 DER hex or the 32-byte
+//! Signing (core.md, section 2): a key signs canonical JSON of four shapes only: a block's header, a genesis's own bytes, a signed
+//! request and a signed answer. Every block but a genesis is signed over its header (privacy.md, The public header), so one signature
+//! serves a reader who holds only the header and one who holds the body. The algorithm is the signing key's suite's. `std` is Ed25519 (a key is SPKI DER hex, a private key PKCS#8 DER hex or the 32-byte
 //! seed); `p256` is ECDSA P-256 with SHA-256 and `sm` is SM2 with SM3 (a key is SPKI DER hex, a private key the
 //! 32-byte scalar in hex; a signature is `r` then `s`, 32 bytes each, hex). A signed message part is signed over its
 //! canonical JSON without its `signature` key.
@@ -98,7 +99,9 @@ fn in_grammar(suite: &str, signature: &str, public_key: &str) -> bool {
     // the grammars are a prefix and so many lowercase hex characters (protocol.json): read as such, cheaply, before anything is decoded
     let key = public_key.strip_prefix(info.spki_prefix.as_str()).is_some_and(|rest| rest.len() == 2 * info.raw_key_bytes && hex(rest));
     let plain = signature.len() == 2 * info.signature_bytes && hex(signature);
-    let passkey = info.passkey_re.is_some() && signature.len() > 2 * info.signature_bytes + 4 && signature.len() % 2 == 0 && hex(signature);
+    // a signature in any suite, a passkey's included, is at most limits.signature_bytes (encoding.md, Bytes): a longer one opens with no key
+    let most = 2 * crate::js::get(&crate::spec().protocol, "limits.signature_bytes").and_then(Value::as_u64).unwrap_or(0) as usize;
+    let passkey = info.passkey_re.is_some() && signature.len() > 2 * info.signature_bytes + 4 && signature.len() <= most && signature.len().is_multiple_of(2) && hex(signature);
     key && (plain || passkey)
 }
 
@@ -341,6 +344,10 @@ fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key:
         return match suite {
             "p256" => {
                 use p256::ecdsa::signature::Verifier as _;
+                // 1.9 3a-10: a p256 key's point is written uncompressed, first byte 04; any other spelling (06, 07 hybrid) is no key
+                if point.first() != Some(&0x04) {
+                    return false;
+                }
                 let Ok(key) = p256::ecdsa::VerifyingKey::from_sec1_bytes(&point) else {
                     return false;
                 };
@@ -392,8 +399,8 @@ fn base64url(bytes: &[u8]) -> String {
     out
 }
 
-/// The challenge a passkey must be asked to sign for these signed bytes (a block's canonical bytes, or a message
-/// part's): base64url, no padding, of their SHA-256 (spec/modules/encoding.md, Passkeys). For a block it is its id.
+/// The challenge a passkey must be asked to sign for these signed bytes (a block's header, a genesis's own bytes, or a message part's):
+/// base64url, no padding, of their SHA-256 (spec/modules/encoding.md, Passkeys). For a genesis it is its id.
 pub fn passkey_challenge_of(bytes: &[u8]) -> String {
     use sha2::Digest;
     base64url(&sha2::Sha256::digest(bytes))
@@ -425,22 +432,21 @@ pub fn passkey_signature(authenticator_data: &str, client_data_json: &str, signa
     Ok(hex(&out))
 }
 
-/// What a passkey signature (more than 64 bytes) really signed, and `r || s`: `authenticatorData || SHA-256(clientDataJSON)`.
-/// None unless the user was present (authenticator data flag `UP`), `clientDataJSON` is a JSON object with no repeated
-/// key whose `type` is `webauthn.get` and whose `challenge` is the challenge of `bytes`. Nothing else is read: not
-/// `rpIdHash`, not `origin`, not the counter (spec/modules/encoding.md, Passkeys).
+/// What a passkey signature (more than 64 bytes) really signed, and `r || s`: `authenticatorData || SHA-256(clientDataJSON)` (encoding.md,
+/// Passkeys, The check). None unless bits 0 (user present) and 2 (user verified, 1.9 3d-13: a touch alone signs nothing) of the flags byte
+/// are set and `clientDataJSON` begins with exactly the 91 bytes
+/// `{"type":"webauthn.get","challenge":"`, the challenge of `bytes`, `","origin":"`. Nothing after them is read and no JSON is parsed.
 #[cfg(feature = "suites")]
 fn passkey_message<'a>(bytes: &[u8], sig: &'a [u8]) -> Option<(Vec<u8>, &'a [u8])> {
     use sha2::Digest;
     let n = usize::from(u16::from_be_bytes([*sig.get(64)?, *sig.get(65)?]));
     let auth = sig.get(66..66 + n)?;
     let cdj = sig.get(66 + n..)?;
-    if auth.len() < 37 || cdj.is_empty() || auth[32] & 1 == 0 {
+    if auth.len() < 37 || cdj.is_empty() || auth[32] & 0b101 != 0b101 {
         return None;
     }
-    let data = crate::canonical::parse_strict(core::str::from_utf8(cdj).ok()?).ok()?;
-    let ok = |k: &str, want: &str| data.get(k).and_then(Value::as_str) == Some(want);
-    if !data.is_object() || !ok("type", "webauthn.get") || !ok("challenge", &passkey_challenge_of(bytes)) {
+    let frame = format!("{{\"type\":\"webauthn.get\",\"challenge\":\"{}\",\"origin\":\"", passkey_challenge_of(bytes));
+    if !cdj.starts_with(frame.as_bytes()) {
         return None;
     }
     let mut message = auth.to_vec();
@@ -453,20 +459,34 @@ pub fn verify_bytes(bytes: &[u8], signature: &str, public_key: &str) -> bool {
     verify_bytes_in(crate::spec::default_suite(), bytes, signature, public_key)
 }
 
-/// The author's signature over a block's canonical form, hex, in the key's suite.
-pub fn sign_in(suite: &str, block: &Value, private_key: &str) -> Result<String> {
+/// The bytes a key signs for a block (core.md, section 2): its header as canonical JSON (privacy.md, The public header), the block named
+/// by its id in `suite`; a genesis (a block with no author) has no header and is signed over its own bytes. A block held by its header
+/// alone (no `type`) is signed over that header, its id as it is held.
+pub fn signed_bytes(suite: &str, block: &Value) -> String {
     let (t, s, r) = parts(block);
-    sign_bytes_in(suite, canonical(t, s, r).as_bytes(), private_key)
+    if block.get("type").is_none() {
+        return canonical_json(&crate::write::header(block));
+    }
+    if r.get("author").is_none() {
+        return canonical(t, s, r);
+    }
+    let mut named = serde_json::json!({ "type": t, "state": s, "refs": r });
+    named["hash"] = Value::String(crate::block::hash_suite(suite, t, s, r));
+    canonical_json(&crate::write::header(&named))
 }
-/// The author's `std` signature over a block's canonical form, hex.
+
+/// The author's signature over a block, hex, in the key's suite: over its header, a genesis over its own bytes (`signed_bytes`).
+pub fn sign_in(suite: &str, block: &Value, private_key: &str) -> Result<String> {
+    sign_bytes_in(suite, signed_bytes(suite, block).as_bytes(), private_key)
+}
+/// The author's `std` signature over a block.
 pub fn sign(block: &Value, private_key: &str) -> Result<String> {
     sign_in(crate::spec::default_suite(), block, private_key)
 }
 
-/// Whether a signature is this key's over exactly this block, in a suite. Never fails.
+/// Whether a signature is this key's over exactly this block, in a suite: over its header (a genesis: its own bytes). Never fails.
 pub fn verify_in(suite: &str, block: &Value, signature: &str, public_key: &str) -> bool {
-    let (t, s, r) = parts(block);
-    verify_bytes_in(suite, canonical(t, s, r).as_bytes(), signature, public_key)
+    verify_bytes_in(suite, signed_bytes(suite, block).as_bytes(), signature, public_key)
 }
 /// Whether a `std` signature is this key's over exactly this block.
 pub fn verify(block: &Value, signature: &str, public_key: &str) -> bool {
@@ -507,6 +527,14 @@ pub fn verify_message_in(suite: &str, part: &Value, public_key: &str) -> bool {
         public_key,
     )
 }
+// Whether a message part is a block's own signed bytes: a header, or a block `{ type, state, refs }` (a genesis is signed over these).
+pub fn is_block_bytes(part: &Value) -> bool {
+    let Some(m) = part.as_object() else { return false };
+    let keys: Vec<&str> = m.keys().map(String::as_str).filter(|k| *k != "signature").collect();
+    let header = ["author", "seq", "prev", "hash"].iter().all(|k| keys.contains(k)) && keys.iter().all(|k| matches!(*k, "author" | "seq" | "prev" | "hash" | "key" | "skip"));
+    let block = keys.len() == 3 && ["type", "state", "refs"].iter().all(|k| keys.contains(k));
+    header || block
+}
 pub fn verify_message(part: &Value, public_key: &str) -> bool {
     verify_message_in(crate::spec::default_suite(), part, public_key)
 }
@@ -517,7 +545,8 @@ pub fn suite_of_key(public_key: &str) -> Option<String> {
     crate::spec()
         .suites
         .iter()
-        .find(|s| !s.spki_prefix.is_empty() && lower.starts_with(&s.spki_prefix))
+        // 1.9 3a-10: a key is in a suite only when it is spelled as that suite spells a key (a p256 point uncompressed, first byte 04)
+        .find(|s| !s.spki_prefix.is_empty() && lower.starts_with(&s.spki_prefix) && s.sign_key_re.as_ref().is_none_or(|r| r.test(&lower)))
         .map(|s| s.name.clone())
 }
 

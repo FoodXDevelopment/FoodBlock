@@ -1,856 +1,1221 @@
-//! A circle (circles.md): its members and roles, folded from its member grants.
+//! A circle (circles.md, 1.9 stage 6): people who own things together by parts, and the rows by which some of them act for the owners.
+//! A circle never signs and holds no key: every block `as` it is a person's word, and speaks for the owners only where one row holds for it
+//! (counted in one place, every hand past its ends, no hand of one the move gives to) or where hands that own every part persons own sign it.
+//!
+//! Parts are read as any amount is (the ownership fold of the founding block, its `pack` the measure). A hand's parts are read in the fold of
+//! the hand's own causal past, each block there read as it is among all held (one memo for every reading of one store). A reading that meets
+//! an asker of its own still being read (a ring) reads it as holding nothing and is not remembered (`Index::taint`).
 use super::read_all;
-use crate::grant::{ending, End};
-use crate::js::{cmp16, count_stated, get, hash_of, int, list, quorum, rf, rs, sorted_set, ss, st, type_of, unique, Index, Past};
+use crate::decimal::{Amount, Dec};
+use crate::js::{get, hash_of, list, rf, rs, sorted_set, ss, st, type_of, Index};
 use crate::prelude::*;
 use alloc::collections::{BTreeMap, BTreeSet};
-use core::cell::RefCell;
+use core::cmp::Ordering;
 
-/// One member of a circle: the roles they hold and the grant that made them a member (with several current grants that do not
-/// see each other, the roles of all of them, and the grant with the lowest hash, to name one).
-#[derive(Debug, Clone, PartialEq)]
-pub struct Member {
-    pub roles: Vec<String>,
-    pub grant: Option<String>,
-    /// Every current grant (the heads that have not ended).
-    pub grants: Vec<String>,
-}
+// ---- One memo for the circle's readings, with a busy mark for a ring ----
 
-/// A circle's members and roles: `{ founder, members: { id: { roles, grant, counted_to } }, removed: { id: null } }` (a circle
-/// reads no `counted_to`: a stop always cuts at itself, so both are null).
-#[derive(Debug, Clone, PartialEq)]
-pub struct CircleState {
-    pub founder: String,
-    pub members: indexmap::IndexMap<String, Member, crate::js::BuildHasher>,
-    pub removed: indexmap::IndexMap<String, Option<String>, crate::js::BuildHasher>,
-    /// For each grant that ended: who held it, the grant, and the cut of every stop that ended it (the stop itself).
-    pub cuts: Vec<(String, String, String)>,
-    /// The blocks signed as the circle by a member after the cut of a grant that ended: they carry no authority for the circle.
-    pub void: alloc::collections::BTreeSet<String>,
-    /// The stops the cut never sets aside: a member's own leaving (their word, not the circle's).
-    pub kept: alloc::collections::BTreeSet<String>,
-    /// A removal in a crossing (a pair or a ring), with the cut it is kept from: only the cut of the stop in the crossing that removes
-    /// its own author (the crossing rule judges them). Any other cut sets it aside like any block of theirs.
-    pub crossing: alloc::collections::BTreeSet<(String, String)>,
-}
-
-impl CircleState {
-    pub fn to_json(&self) -> Value {
-        json!({
-            "founder": self.founder,
-            "members": Value::Object(self.members.iter().map(|(k, m)| (k.clone(), json!({ "roles": m.roles, "grant": m.grant, "counted_to": null }))).collect()),
-            "removed": Value::Object(self.removed.iter().map(|(k, v)| (k.clone(), json!(v))).collect()),
-        })
+/// A reading remembered under `key`: `busy` while it is being read (a ring meets it), and not remembered where it met one.
+fn memo(index: &Index, key: &str, busy: Value, f: impl FnOnce() -> Value) -> Value {
+    if let Some(v) = index.stage_peek(key) {
+        return v;
     }
-}
-
-/// A circle's roles from its actor: `[(name, powers)]`, the founder holding the first.
-fn roles_table(root: &Value) -> Vec<(String, Vec<String>)> {
-    match get(root, "state.roles") {
-        Some(Value::Array(list)) => list
-            .iter()
-            .map(|r| {
-                (
-                    r.get("name").and_then(Value::as_str).unwrap_or("").to_string(),
-                    r.get("powers").and_then(Value::as_array).map(|p| p.iter().filter_map(Value::as_str).map(String::from).collect()).unwrap_or_default(),
-                )
-            })
-            .collect(),
-        _ => Vec::new(),
+    let mark = format!("busy:{key}");
+    if index.stage_peek(&mark).is_some() {
+        index.taint_bump();
+        busy_hit(key);
+        return busy;
     }
+    index.stage_put(&mark, Value::Bool(true));
+    let t0 = index.taint();
+    let v = f();
+    index.stage_drop(&mark);
+    if index.taint() == t0 {
+        index.stage_put(key, v.clone());
+    }
+    v
 }
-
-/// Whether any of these role names carries a power, in a circle's roles.
-fn holds_power(table: &[(String, Vec<String>)], roles: &[String], power: &str) -> bool {
-    table.iter().any(|(name, powers)| roles.contains(name) && powers.iter().any(|p| p == power))
+fn held_here(b: &Value, index: &Index) -> bool {
+    index.get(hash_of(b)).is_some_and(|x| core::ptr::eq(x, b) || x == b)
 }
-
-struct Circle<'a> {
-    index: &'a Index,
-    id: String,
-    founder: String,
-    /// The circle's roles: `[(name, powers)]`, the founder holding the first.
-    roles: Vec<(String, Vec<String>)>,
-    // the circle's stated `removal.needed` (a whole number of at least 1); with none stated, or malformed, no removal-like act stands
-    removal_needed: Option<f64>,
-    related: Vec<Value>,
-    /// The folds already made, by the set read (a fold being made reads as empty, so a cycle ends).
-    memo: RefCell<BTreeMap<String, CircleState>>,
-    /// The folds of a held block's causal past, by its hash (its past is fixed, so its fold is too).
-    at: RefCell<BTreeMap<String, CircleState>>,
-    closes: core::cell::OnceCell<Vec<String>>,
-}
-
-/// A stop of a member grant: its block, its signer, whether it is the member's own leaving (else a removal by a holder of
-/// `remove`), and whether it stands on its own (step 5; a stop not judged stands).
-struct Stop<'b> {
-    block: &'b Value,
-    by: String,
-    leave: bool,
-    stands: bool,
-}
-
-/// One member's joining by one invitation: their first acceptances (two from two devices that do not see each other are both
-/// first), the roles it gives them, and every stop of it.
-struct Joining<'b> {
-    inv: &'b Value,
-    who: String,
-    accepts: Vec<&'b Value>,
-    roles: Vec<String>,
-    stops: Vec<Stop<'b>>,
-}
-
-// A stop's cut (circles.md, The cut), with who held the grant and the grant: the stop itself. A circle reads no `counted_to`.
-fn cut(j: &Joining, s: &Stop) -> (String, String, String) {
-    (j.who.clone(), hash_of(j.inv).to_string(), hash_of(s.block).to_string())
-}
-fn author_of(b: &Value) -> String {
-    rs(b, "author").unwrap_or("").to_string()
-}
-fn no_answers(b: &Value) -> bool {
-    list(rf(b, "answers")).is_empty()
-}
-fn roles_of(b: &Value) -> Vec<String> {
-    match st(b, "roles") {
-        Some(Value::Array(r)) => unique(r.iter().filter_map(Value::as_str)),
+fn ids_of(v: Option<&Value>) -> Vec<&str> {
+    match v {
+        Some(Value::String(x)) => vec![x.as_str()],
+        Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).collect(),
         _ => vec![],
     }
 }
 
-// The roles a member holds for a block (decision H11): a member grant with `scope.until` gives its roles to no block it cuts
-// (`ran_out`). Holding through several grants, the member keeps the roles of those still running. None when no grant of theirs runs.
-fn roles_at(member: &Member, block: &Value, index: &Index) -> Option<Vec<String>> {
-    let ended = |g: &str| index.get(g).is_some_and(|g| crate::grant::ran_out(g, block));
-    let running: Vec<&String> = member.grants.iter().filter(|g| !ended(g)).collect();
-    if running.len() == member.grants.len() {
-        return Some(member.roles.clone());
-    }
-    if running.is_empty() {
-        return None;
-    }
-    // the founding block gives the founder's roles; a member grant, the roles it names
-    let given: Vec<String> = running.iter().flat_map(|g| index.get(g.as_str()).map(|b| if type_of(b) == "actor" { member.roles.clone() } else { roles_of(b) }).unwrap_or_default()).collect();
-    Some(member.roles.iter().filter(|r| given.contains(r)).cloned().collect())
+// ---- The founding block, its parts and its rows ----
+
+/// The founding block of a circle: an `actor` of kind `circle` that updates nothing and is `as` nothing (a version updates one).
+pub(crate) fn founding<'a>(circle: &str, index: &'a Index) -> Option<&'a Value> {
+    index.get(circle).filter(|r| is_circle_actor(r) && rf(r, "updates").is_none() && rf(r, "as").is_none())
+}
+fn is_circle_actor(b: &Value) -> bool {
+    type_of(b) == "actor" && ss(b, "kind") == Some("circle")
+}
+fn is_version_of(b: &Value, circle: &str) -> bool {
+    is_circle_actor(b) && rs(b, "as") == Some(circle) && rs(b, "updates").is_some()
 }
 
-impl<'a> Circle<'a> {
-    fn new(root: &Value, index: &'a Index, related: Vec<Value>) -> Self {
-        Circle {
-            index,
-            id: hash_of(root).to_string(),
-            founder: rs(root, "author").unwrap_or("").to_string(),
-            roles: roles_table(root),
-            // the fold fills in no number (folds.md, Counts): a circle that states none removes no holder of admit or remove
-            removal_needed: count_stated(get(root, "state.removal.needed"), None),
-            related,
-            memo: Default::default(),
-            at: Default::default(),
-            closes: Default::default(),
-        }
+/// A circle's `pack` (C1): whole parts, `unit` `part`, at least 1, no `of`. None where it states none (C3: owners unsaid).
+pub(crate) fn pack_of(founding: &Value) -> Option<Dec> {
+    let a = Amount::of(st(founding, "pack"))?;
+    (a.kind.unit == "part" && a.kind.of.is_none() && whole(&a.value) && a.value.cmp(&Dec::parse("1").unwrap()) != Ordering::Less).then_some(a.value)
+}
+pub(crate) fn whole(d: &Dec) -> bool {
+    crate::check::is_whole_parts(d)
+}
+fn dec_of_int(v: Option<&Value>) -> Option<u64> {
+    v.and_then(Value::as_u64).filter(|n| *n >= 1)
+}
+fn one() -> Dec {
+    Dec::parse("1").unwrap()
+}
+fn dec_n(n: u64) -> Dec {
+    Dec::of(Some(&json!(n))).unwrap()
+}
+
+/// How a row counts (C10): parts between its hands, or that many of the ids `to` names (or of the holders of a grant it names).
+#[derive(Clone, Debug)]
+enum Count {
+    Parts(u64),
+    Named { to: Vec<String>, needed: u64 },
+}
+#[derive(Clone, Debug)]
+struct Row {
+    at: usize,
+    count: Count,
+    scope: Value,
+}
+fn rows_in(holder: &Value) -> Vec<Row> {
+    st(holder, "rules").and_then(Value::as_array).into_iter().flatten().enumerate().filter_map(|(at, r)| row_of(at, r)).collect()
+}
+fn row_of(at: usize, r: &Value) -> Option<Row> {
+    let o = r.as_object()?;
+    let scope = o.get("scope").filter(|s| s.is_object())?.clone();
+    if o.len() == 2 {
+        return Some(Row { at, count: Count::Parts(dec_of_int(o.get("parts"))?), scope });
     }
-    fn empty(&self) -> CircleState {
-        let mut members = indexmap::IndexMap::default();
-        members.insert(
-            self.founder.clone(),
-            Member {
-                roles: self.roles.first().map(|(n, _)| vec![n.clone()]).unwrap_or_default(),
-                grant: Some(self.id.clone()),
-                grants: vec![self.id.clone()],
-            },
-        );
-        CircleState {
-            founder: self.founder.clone(),
-            members,
-            removed: Default::default(),
-            cuts: Vec::new(),
-            void: Default::default(),
-            kept: Default::default(),
-            crossing: Default::default(),
-        }
-    }
-    fn past_fold(&self, block: &Value) -> CircleState {
-        let h = hash_of(block);
-        let held = self.index.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block);
-        if held {
-            if let Some(s) = self.at.borrow().get(h) {
-                return s.clone();
+    let to: Vec<String> = match o.get("to")? {
+        Value::String(s) => vec![s.clone()],
+        Value::Array(a) if !a.is_empty() => a.iter().map(|x| x.as_str().map(String::from)).collect::<Option<_>>()?,
+        _ => return None,
+    };
+    Some(Row { at, count: Count::Named { to, needed: dec_of_int(o.get("needed"))? }, scope })
+}
+fn scope_types(scope: &Value) -> Option<Vec<String>> {
+    scope.get("types").and_then(Value::as_array).map(|a| a.iter().filter_map(Value::as_str).map(String::from).collect())
+}
+fn names_actor(r: &Row) -> bool {
+    scope_types(&r.scope).is_some_and(|t| t.iter().any(|t| t == "actor" || t.starts_with("actor.")))
+}
+
+// ---- Versions (C19) ----
+
+/// The versions of a circle held: `actor`s of kind `circle` signed `as` it that update the founding block or an earlier version, counted.
+fn versions<'a>(circle: &str, index: &'a Index) -> Vec<&'a Value> {
+    let hs = memo(index, &format!("c6vers:{circle}"), json!([]), || {
+        let cand: Vec<&Value> = index.values().filter(|b| is_version_of(b, circle) && crate::identity::counts_in(b, index)).collect();
+        let mut known: BTreeSet<String> = core::iter::once(circle.to_string()).collect();
+        let mut out: Vec<String> = Vec::new();
+        loop {
+            let more: Vec<&Value> = cand.iter().copied().filter(|b| !known.contains(hash_of(b)) && rs(b, "updates").is_some_and(|u| known.contains(u))).collect();
+            if more.is_empty() {
+                break;
+            }
+            for b in more {
+                known.insert(hash_of(b).to_string());
+                out.push(hash_of(b).to_string());
             }
         }
-        let state = self.fold_within(&self.index.past_of(block));
-        if held {
-            self.at.borrow_mut().insert(h.to_string(), state.clone());
-        }
-        state
-    }
-    // The fold of the blocks in a causal past. A past that does not hold the circle has no members (the circle is not yet).
-    fn fold_within(&self, past: &Past) -> CircleState {
-        if !past.contains(&self.id) {
-            let mut none = self.empty();
-            none.members.clear();
-            return none;
-        }
-        let set: Vec<Value> = self.related.iter().filter(|b| past.contains(hash_of(b))).cloned().collect();
-        self.fold_scoped(&set, Some(past))
-    }
-    fn fold_all(&self) -> CircleState {
-        self.fold_scoped(&self.related, None)
-    }
-    // The blocks beside the member grants that the fold also reads: the closes (a death), within `scope`.
-    fn beside(&self, scope: Option<&Past>) -> Vec<String> {
-        // every close held, found once per circle (sorted), then cut to the scope
-        let all = self.closes.get_or_init(|| {
-            let mut out: Vec<String> = self
-                .index
-                .values()
-                .filter(|b| type_of(b) == "observe" && ss(b, "kind") == Some("close"))
-                .map(|b| hash_of(b).to_string())
-                .collect();
-            out.sort();
-            out
-        });
-        all.iter().filter(|h| scope.is_none_or(|s| s.contains(*h))).cloned().collect()
-    }
-    fn fold_scoped(&self, set: &[Value], scope: Option<&Past>) -> CircleState {
-        let mut hashes: Vec<&str> = set.iter().map(hash_of).collect();
-        hashes.sort();
-        let beside = self.beside(scope);
-        let key = format!("{}|{}", hashes.join(","), beside.join(","));
-        if let Some(s) = self.memo.borrow().get(&key) {
-            return s.clone();
-        }
-        self.memo.borrow_mut().insert(key.clone(), self.empty());
-        let state = self.fold_now(set, &beside);
-        self.memo.borrow_mut().insert(key, state.clone());
-        state
-    }
-    // The fold reads the whole set at once, never in an order a reader met the blocks in nor by a hash (folds are pure):
-    // 1. the invitations; 2. each invitation's versions, joiners and the roles each holds by it; 3. its stops, and which stand on their
-    // own (the quorum); 4. a standing stop that came before the answer; 5. the crossing rule (pairs and rings); 6. an answer after a
-    // removal to an invitation from before it counts for nothing; 7. the heads, their roles, who is out, the cuts.
-    fn fold_now(&self, set: &[Value], beside: &[String]) -> CircleState {
-        let f = Fold {
-            circle: self,
-            set,
-            pasts: set.iter().map(|b| (hash_of(b), self.index.past_of(b))).collect(),
-            powers: crate::spec().list("powers"),
-            answering: naming(set, "answers"),
-            updating: naming(set, "updates"),
+        json!(out)
+    });
+    hs.as_array().into_iter().flatten().filter_map(Value::as_str).filter_map(|h| index.get(h)).collect()
+}
+
+/// The block whose rows, clocks and meter stand for a block (C19, D15): of the versions that hold in its causal past (all held where `at`
+/// is None), the one every other is in the past of; where two are rivals, the latest block (a version or the founding block) both have in
+/// their past; with none, the founding block.
+fn standing_version<'a>(circle: &str, at: Option<&Value>, index: &'a Index) -> Option<&'a Value> {
+    let f = founding(circle, index)?;
+    let key = format!("c6now:{circle}:{}", at.map(hash_of).unwrap_or(""));
+    let busy = json!(circle);
+    let h = memo(index, &key, busy, || {
+        let past = at.map(|b| index.past_of(b));
+        let seen = |h: &str| past.as_ref().is_none_or(|p| p.contains(h));
+        let holding: Vec<&Value> = versions(circle, index).into_iter().filter(|v| seen(hash_of(v)) && holds_in(v, circle, index)).collect();
+        let sees = |a: &Value, b: &Value| index.past_of(a).contains(hash_of(b));
+        let heads: Vec<&Value> = holding.iter().copied().filter(|v| !holding.iter().any(|o| hash_of(o) != hash_of(v) && sees(o, v))).collect();
+        let v = match heads.as_slice() {
+            [] => f,
+            [one] => *one,
+            many => {
+                let common: Vec<&Value> = holding.iter().copied().filter(|v| many.iter().all(|h| sees(h, v))).collect();
+                let latest: Vec<&Value> = common.iter().copied().filter(|v| common.iter().all(|o| hash_of(o) == hash_of(v) || sees(v, o))).collect();
+                latest.first().copied().unwrap_or(f)
+            }
         };
-        let invitations = f.invitations();
-        let (joined, early) = f.joinings(&invitations);
-        // The rivals a removal may cross: every early removal and every removal that stands on its own, by the member it removes.
-        let rivals: Vec<(&str, &Stop)> =
-            early.iter().chain(&joined).flat_map(|j| j.stops.iter().filter(|s| !s.leave && s.stands).map(move |s| (j.who.as_str(), s))).collect();
-        // Each standing stop of a joining that never was is a cut. The cut never sets aside a leaving; a removal in a crossing is kept
-        // only from the cut of the stop in it that removes its own author (circles.md, The cut).
-        let mut cuts: Vec<(String, String, String)> = early.iter().flat_map(|j| j.stops.iter().filter(|s| s.stands).map(move |s| cut(j, s))).collect();
-        let mut kept: BTreeSet<String> = early.iter().flat_map(|j| &j.stops).filter(|s| s.leave).map(|s| hash_of(s.block).to_string()).collect();
-        let mut crossing: BTreeSet<(String, String)> = BTreeSet::new();
-        let mut ended: Vec<(&Joining, Vec<&Stop>)> = Vec::new();
-        for j in &joined {
-            let mut ends = Vec::new();
-            for s in &j.stops {
-                if s.leave {
-                    kept.insert(hash_of(s.block).to_string());
+        json!(hash_of(v))
+    });
+    h.as_str().and_then(|h| index.get(h)).or(Some(f))
+}
+
+/// The rows that stand for a block `as` the circle. For a version (type `actor`), only the founding block's rows whose `scope.types` names
+/// `actor` are read (no rule votes itself in); for any other block, rows naming `actor` are never read from a version.
+fn rows_for(circle: &str, block: &Value, index: &Index) -> Vec<Row> {
+    let Some(f) = founding(circle, index) else { return vec![] };
+    if type_of(block) == "actor" {
+        return rows_in(f).into_iter().filter(names_actor).collect();
+    }
+    let v = standing_version(circle, Some(block), index).unwrap_or(f);
+    let from_founding = hash_of(v) == hash_of(f);
+    rows_in(v).into_iter().filter(|r| from_founding || !names_actor(r)).collect()
+}
+/// The clock that stands for a block (C20): the standing block's `clocks`.
+fn clocks_at(circle: &str, at: Option<&Value>, index: &Index) -> Option<crate::tasks::Clocks> {
+    let v = standing_version(circle, at, index)?;
+    st(v, "clocks").and_then(crate::tasks::clocks_of)
+}
+/// The meter that stands (C21, D8): the standing block's `refs.meter`; a version that names none leaves the circle with none.
+fn meter_at<'a>(circle: &str, at: Option<&Value>, index: &'a Index) -> Option<&'a str> {
+    standing_version(circle, at, index).and_then(|v| rs(v, "meter"))
+}
+/// The meter of a circle among all held (the circle's line, C21).
+pub(crate) fn circle_meter<'a>(circle: &str, index: &'a Index) -> Option<&'a str> {
+    founding(circle, index)?;
+    meter_at(circle, None, index)
+}
+
+// ---- Parts, read in a block's causal past ----
+
+/// Who owns parts of a circle in the causal past of `at` (all held where None): for each owner, the parts she may still draw on (`free`:
+/// what she owns less what her draws hold, each draw in `add_back` added back, D1) and her title (`title`: what she owns, held draws
+/// included). The circle's own entry is its unissued parts. `None` when the circle has no pack; `Err(lacks)` when not shown to this reader.
+type Owners = BTreeMap<String, (Dec, Dec)>;
+fn owners_at(circle: &str, at: Option<&Value>, add_back: &[String], index: &Index) -> Option<Result<Owners, Value>> {
+    let f = founding(circle, index)?;
+    pack_of(f)?;
+    let key = format!("c6own:{circle}:{}:{}", at.map(hash_of).unwrap_or(""), add_back.join(","));
+    let v = memo(index, &key, Value::Null, || {
+        let v = match at {
+            None => super::things::own_value(circle, index),
+            Some(b) if held_here(b, index) => {
+                if !index.past_of(b).contains(circle) {
+                    return Value::Null;
                 }
-                let rings = f.rings(&rivals, j, s);
-                // each stop of a ring is kept from the cut of the one before it (the stop that removes its author)
-                for ring in &rings {
-                    for (i, x) in ring.iter().enumerate() {
-                        let before = ring[(i + ring.len() - 1) % ring.len()];
-                        crossing.insert((hash_of(x.block).to_string(), hash_of(before.block).to_string()));
+                super::things::own_value_vis(circle, index, Some(hash_of(b)))
+            }
+            // a block not held is read on an index of its past alone
+            Some(b) => {
+                let past = index.past_of(b);
+                let sub = read_all(index.values().filter(|x| past.contains(hash_of(x))));
+                if sub.get(circle).is_none() {
+                    return Value::Null;
+                }
+                super::things::own_value(circle, &sub)
+            }
+        };
+        if v.get("not_shown") == Some(&Value::Bool(true)) {
+            return json!({ "not_shown": true, "lacks": v["lacks"] });
+        }
+        let mut out: BTreeMap<String, (Dec, Dec)> = BTreeMap::new();
+        for o in v["owners"].as_array().into_iter().flatten() {
+            let (Some(who), Some(d)) = (o["owner"].as_str(), o["amount"]["value"].as_str().and_then(Dec::parse)) else { continue };
+            let e = out.entry(who.to_string()).or_insert((Dec::zero(), Dec::zero()));
+            *e = (e.0.add(&d), e.1.add(&d));
+        }
+        for d in v["draws"].as_array().into_iter().flatten().filter(|d| d["takes"] == Value::Bool(true) && d["state"] == json!("held")) {
+            let (Some(by), Some(a)) = (d["by"].as_str(), d["amount"]["value"].as_str().and_then(Dec::parse)) else { continue };
+            let e = out.entry(by.to_string()).or_insert((Dec::zero(), Dec::zero()));
+            e.1 = e.1.add(&a);
+            // D1: a draw of hers that the move (or a move it confirms) answers is no end of her hand for that move: hers until the yes lands
+            if by != circle && d["block"].as_str().is_some_and(|h| add_back.iter().any(|x| x == h)) {
+                e.0 = e.0.add(&a);
+            }
+        }
+        Value::Object(out.into_iter().map(|(k, (fr, ti))| (k, json!([fr.text(), ti.text()]))).collect())
+    });
+    if v.is_null() {
+        return Some(Ok(BTreeMap::new()));
+    }
+    if v.get("not_shown") == Some(&Value::Bool(true)) {
+        return Some(Err(v["lacks"].clone()));
+    }
+    let out = v
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter_map(|(k, p)| Some((k.clone(), (Dec::parse(p[0].as_str()?)?, Dec::parse(p[1].as_str()?)?))))
+        .collect();
+    Some(Ok(out))
+}
+
+// ---- Who a move gives to (C16, D6) ----
+
+/// The ids a block gives anything to: a transfer's `to_owner` and `to_holder`; a grant's holders; an offer's or order's sides; an accept of
+/// a promise, that promise's sides and author. An accept of a transfer gives nothing (it receives). Never the circle itself.
+fn gives_to(block: &Value, circle: &str, index: &Index) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let t = type_of(block);
+    let status = ss(block, "status");
+    if t == "transfer" && st(block, "status").is_none() {
+        out.extend(list(rf(block, "to_owner")).into_iter().chain(list(rf(block, "to_holder"))).map(String::from));
+    } else if t == "grant" && st(block, "status").is_none() {
+        out.extend(list(rf(block, "to")).into_iter().map(String::from));
+    } else if t == "promise" && st(block, "status").is_none() && rf(block, "answers").is_none() {
+        out.extend(["from", "to"].iter().flat_map(|k| list(rf(block, k))).map(String::from));
+    } else if status == Some("accepted") {
+        if let Some(p) = rs(block, "answers").and_then(|h| index.get(h)).filter(|p| type_of(p) == "promise") {
+            out.extend(["from", "to", "author"].iter().flat_map(|k| list(rf(p, k))).map(String::from));
+        }
+    }
+    sorted_set(out.into_iter().filter(|x| x != circle))
+}
+
+/// Whether `r` is `who` or hers for C16: herself, a key linked to hers (a two-key link), a tool of hers (the holder of a counted grant she
+/// signed in her own name, in the move's past), or a circle in which her hand could count.
+fn is_hers(r: &str, who: &str, block: &Value, index: &Index) -> bool {
+    if r == who || super::grants::linked(r, who, index) {
+        return true;
+    }
+    let past = index.past_of(block);
+    let tool = index.values().any(|g| {
+        type_of(g) == "grant" && st(g, "status").is_none() && rs(g, "author") == Some(who) && rs(g, "as").is_none() && list(rf(g, "to")).contains(&r) && past.contains(hash_of(g)) && crate::identity::counts_in(g, index)
+    });
+    tool || (founding(r, index).is_some() && r != who && hand_could_count(who, r, Some(block), index))
+}
+/// Whether a move gives to `who` (C16).
+fn gives_to_who(block: &Value, receivers: &[String], who: &str, index: &Index) -> bool {
+    receivers.iter().any(|r| is_hers(r, who, block, index))
+}
+
+/// Whether `who`'s hand could count in a circle, read in the causal past of `at` (all held where None): she owns parts of it by title, or a
+/// row's `to` names her (or names a grant `as` the circle whose holders name her).
+pub(crate) fn hand_could_count(who: &str, circle: &str, at: Option<&Value>, index: &Index) -> bool {
+    if let Some(Ok(o)) = owners_at(circle, at, &[], index) {
+        if o.get(who).is_some_and(|(_, title)| title.is_pos()) && who != circle {
+            return true;
+        }
+    }
+    let rows = standing_version(circle, at, index).map(rows_in).unwrap_or_default();
+    rows.iter().any(|r| match &r.count {
+        Count::Named { to, .. } => named_ids(to, circle, at, index).iter().any(|x| x == who),
+        Count::Parts(_) => false,
+    })
+}
+
+// ---- Seen, on the circle's clock (D11) ----
+
+/// Whether block `x` has seen `e` (an end): `e` is in its causal past, or the circle's clock received `e` before `x` (its `needed` lines).
+fn seen_by(x: &Value, e: &str, clocks: Option<&crate::tasks::Clocks>, index: &Index) -> bool {
+    e == hash_of(x) || index.past_of(x).contains(e) || clocks.is_some_and(|k| crate::line::end_first(hash_of(x), e, k, index, &|_| true))
+}
+
+// ---- A row's `to` (C11, D16) ----
+
+/// The ids a row's `to` names, read in the causal past of `at`: each id, or for an id that is a grant `as` the circle that holds, the
+/// holders that grant names as it stands.
+fn named_ids(to: &[String], circle: &str, at: Option<&Value>, index: &Index) -> Vec<String> {
+    let key = format!("c6named:{circle}:{}:{}", to.join(","), at.map(hash_of).unwrap_or(""));
+    let v = memo(index, &key, json!([]), || {
+        let mut out: Vec<String> = Vec::new();
+        for id in to {
+            match index.get(id.as_str()).filter(|g| type_of(g) == "grant" && rs(g, "as") == Some(circle)) {
+                Some(g) => out.extend(grant_holders(g, circle, at, index)),
+                None => out.push(id.clone()),
+            }
+        }
+        json!(sorted_set(out))
+    });
+    v.as_array().into_iter().flatten().filter_map(Value::as_str).map(String::from).collect()
+}
+/// The holders a head-count grant names as it stands in `at`'s past (D16): the newest of its newer words `as` the circle that hold; none
+/// where a stop of it that counts is seen (a stop `as` the circle that holds, or its author's while her hand could count there); where two
+/// newer words do not see each other, only the ids both name; less each holder who ended her own place. Seen on the circle's clock (D11).
+fn grant_holders(g: &Value, circle: &str, at: Option<&Value>, index: &Index) -> Vec<String> {
+    let clocks = clocks_at(circle, at, index);
+    let seen = |h: &str| match at {
+        None => true,
+        Some(x) => seen_by(x, h, clocks.as_ref(), index),
+    };
+    if !at.is_none_or(|x| index.past_of(x).contains(hash_of(g)) || hash_of(x) == hash_of(g)) || !holds_in(g, circle, index) {
+        return vec![];
+    }
+    let gh = hash_of(g);
+    let names = index.names_memo();
+    let named: Vec<&Value> = names.by_answer.get(gh).into_iter().flatten().filter_map(|n| index.get(n)).filter(|w| seen(hash_of(w)) && crate::identity::counts_in(w, index)).collect();
+    if named.iter().any(|w| type_of(w) == "grant" && crate::grant::ending(w, gh) == Some(crate::grant::End::Stop) && stop_counts(w, g, circle, index)) {
+        return vec![];
+    }
+    let newer: Vec<&Value> = named.iter().copied().filter(|w| type_of(w) == "grant" && st(w, "status").is_none() && rs(w, "updates") == Some(gh) && rs(w, "as") == Some(circle) && holds_in(w, circle, index)).collect();
+    let heads: Vec<&Value> = newer.iter().copied().filter(|w| !newer.iter().any(|o| hash_of(o) != hash_of(w) && index.past_of(o).contains(hash_of(w)))).collect();
+    let ids: Vec<String> = match heads.as_slice() {
+        [] => list(rf(g, "to")).into_iter().map(String::from).collect(),
+        [one] => list(rf(one, "to")).into_iter().map(String::from).collect(),
+        many => {
+            let sets: Vec<Vec<&str>> = many.iter().map(|w| list(rf(w, "to"))).collect();
+            sets[0].iter().filter(|x| sets.iter().all(|s| s.contains(x))).map(|x| x.to_string()).collect()
+        }
+    };
+    let own_end = |who: &str| named.iter().any(|b| rs(b, "author") == Some(who) && rs(b, "as").is_none() && crate::grant::ending(b, gh).is_some());
+    ids.into_iter().filter(|x| !own_end(x) && !crate::identity::closes_of(x, index).iter().any(|c| seen(c))).collect()
+}
+/// Whether a stop of a grant signed `as` a circle counts (D17): a stop `as` the circle that holds (a row, or every owner), or its author's
+/// own stop while her hand could still count there.
+pub(crate) fn stop_counts(stop: &Value, grant: &Value, circle: &str, index: &Index) -> bool {
+    if rs(stop, "as") == Some(circle) {
+        return holds_in(stop, circle, index);
+    }
+    rs(stop, "as").is_none() && rs(stop, "author") == rs(grant, "author") && hand_could_count(rs(stop, "author").unwrap_or(""), circle, Some(stop), index)
+}
+
+// ---- A row's scope, read as a grant's is (C10, C12, C13, C4; D2, D9, D10) ----
+
+fn type_names(block: &Value) -> Vec<String> {
+    let t = type_of(block);
+    let mut names = vec![t.to_string()];
+    if let Some(kind) = ss(block, "kind") {
+        names.push(format!("{t}.{kind}"));
+    }
+    names
+}
+/// What a block binds the circle to hand over, as one amount in the bound's kind, where it names one (D10; the owner's decision of
+/// 2026-11-19, stage 4's rule for a grant's draw): the quantity where the bound is of the quantity's kind, else the deal's total at that
+/// quantity. A transfer's amount; a transfer `for` a deal whose amount is of another kind than the bound (a till's loaf under "up to £300
+/// a deal") is read as the deal's total at that amount. An offer's or order's total, or its quantity; an accept's, of the promise it
+/// accepts. No other block has one.
+fn block_amount(block: &Value, index: &Index, bound: Option<&crate::decimal::Kind>) -> Option<Amount> {
+    let t = type_of(block);
+    if t == "transfer" && st(block, "status").is_none() {
+        let a = Amount::of(st(block, "amount"))?;
+        if bound.is_none_or(|k| *k == a.kind) {
+            return Some(a);
+        }
+        let Some(deal) = rs(block, "for").and_then(|h| index.get(h)) else { return Some(a) };
+        let on = if ss(deal, "status") == Some("accepted") { rs(deal, "answers").and_then(|h| index.get(h)).unwrap_or(deal) } else { deal };
+        let terms = get(on, "state.terms")?;
+        return Amount::of(Some(&super::terms_total(terms, st(block, "amount"))));
+    }
+    let on = if t == "promise" && st(block, "status").is_none() && rf(block, "answers").is_none() {
+        Some(block)
+    } else if ss(block, "status") == Some("accepted") {
+        rs(block, "answers").and_then(|h| index.get(h)).filter(|p| type_of(p) == "promise")
+    } else {
+        None
+    }?;
+    let terms = get(on, "state.terms")?;
+    let quantity = get(block, "state.terms.quantity").or_else(|| terms.get("quantity"));
+    if let (Some(k), Some(q)) = (bound, Amount::of(quantity)) {
+        if q.kind == *k {
+            return Some(q);
+        }
+    }
+    Amount::of(Some(&super::terms_total(terms, quantity)))
+}
+/// Why a row's scope does not cover a block, or None where it does. A row's scope bounds only what it states (D2).
+fn scope_misfit(block: &Value, row: &Row, circle: &str, index: &Index) -> Option<&'static str> {
+    let s = &row.scope;
+    if let Some(types) = scope_types(s) {
+        if !type_names(block).iter().any(|n| types.contains(n)) {
+            return Some("types");
+        }
+    }
+    // C4: the circle's own parts move only by a row whose `scope.what` names the circle; a row that names `what` reaches only those
+    let named = list(rf(block, "what"));
+    match s.get("what") {
+        Some(w) => {
+            let ok = ids_of(Some(w));
+            if named.iter().any(|x| !ok.contains(x)) {
+                return Some("what");
+            }
+        }
+        None => {
+            if named.contains(&circle) {
+                return Some("what");
+            }
+        }
+    }
+    if let Some(parties) = s.get("parties").and_then(Value::as_array) {
+        let ok: Vec<&str> = parties.iter().filter_map(Value::as_str).collect();
+        if gives_to(block, circle, index).iter().any(|r| !ok.contains(&r.as_str())) {
+            return Some("parties");
+        }
+    }
+    // a row that names promises covers a payment only `for` one of them, and an answer only answering one (D4)
+    if let Some(on) = s.get("on") {
+        let ons = ids_of(Some(on));
+        let pays = type_of(block) == "transfer" && st(block, "status").is_none();
+        if pays && !list(rf(block, "for")).iter().any(|f| ons.contains(f)) {
+            return Some("on");
+        }
+        if rf(block, "answers").is_some() && !list(rf(block, "answers")).iter().any(|f| ons.contains(f)) {
+            return Some("on");
+        }
+    }
+    // C13 (D2, D3): a grant from a row is no wider than the row; one that is wider is covered by no row and waits
+    if type_of(block) == "grant" && st(block, "status").is_none() && wider_than_row(block, s) {
+        return Some("wider_than_parent");
+    }
+    // C12: bounds. A row that states a bound bounds every kind: an amount of another kind is above it, as under a grant.
+    let each = s.get("each").and_then(|v| Amount::of(Some(v)));
+    let limit = s.get("limit").and_then(|v| Amount::of(Some(v)));
+    if each.is_some() || limit.is_some() {
+        let bound = each.as_ref().or(limit.as_ref()).map(|x| x.kind.clone());
+        if let Some(a) = block_amount(block, index, bound.as_ref()).filter(|_| !counted_when_bound(block, circle, index)) {
+            if let Some(e) = &each {
+                if a.kind != e.kind || a.value.cmp(&e.value) == Ordering::Greater {
+                    return Some("each");
+                }
+            }
+            if let Some(l) = &limit {
+                let a = block_amount(block, index, Some(&l.kind)).unwrap_or(a.clone());
+                if a.kind != l.kind {
+                    return Some("limit");
+                }
+                // D9: what this same row held for in the block's causal past, in the same period, each counted once, plus this one
+                let past = index.past_of(block);
+                let period = row_period(block, s, circle, index);
+                let mut used = a.value.clone();
+                for b in index.values().filter(|b| past.contains(hash_of(b)) && rs(b, "as") == Some(circle)) {
+                    if counted_when_bound(b, circle, index) || row_period(b, s, circle, index) != period {
+                        continue;
+                    }
+                    let j = judge(b, circle, index);
+                    if j["holds"] == Value::Bool(true) && j["row"].as_u64() == Some(row.at as u64) {
+                        if let Some(x) = block_amount(b, index, Some(&l.kind)).filter(|x| x.kind == l.kind) {
+                            used = used.add(&x.value);
+                        }
                     }
                 }
-                if f.ends(s) {
-                    ends.push(s);
+                if used.cmp(&l.value) == Ordering::Greater {
+                    return Some("limit");
                 }
             }
-            ended.push((j, ends));
         }
-        // 6. An answer counts only if the invitation came after the removal: a joining whose first acceptances all come after (or beside)
-        // a removal that ended another of the member's grants, by an invitation that has not seen that removal, never was.
-        // Voiding a joining that gives admit or remove this way is a removal-like act: it needs a removal that `removal.needed` different
-        // removers made (clean round 1, circles/a6: one steward stopped a member's old plain grant and so wiped the steward grant beside it).
-        let needed = f.circle.removal_needed;
-        let removals: Vec<(&str, &str, bool)> = ended
-            .iter()
-            .flat_map(|(j, ends)| {
-                let quorum = quorum(ends.iter().filter(|s| !s.leave).map(|s| s.by.as_str()), needed);
-                ends.iter().filter(|s| !s.leave).map(move |s| (j.who.as_str(), hash_of(s.block), quorum))
+    }
+    if let Some(until) = s.get("until").and_then(Value::as_str) {
+        if ss(block, "at").is_none_or(|at| at >= until) {
+            return Some("until");
+        }
+    }
+    None
+}
+/// Which period of a row's `every` a block is read in (D9): the cutoffs on the circle's meter line whose `refs.subject` is the circle and
+/// whose `when` is a span no shorter than `every`, before the block (in its causal past, or before the meter's receipt of it). With no
+/// meter, or no `every`, no period turns.
+fn row_period(block: &Value, scope: &Value, circle: &str, index: &Index) -> usize {
+    let Some(every) = scope.get("every").and_then(Value::as_str) else { return 0 };
+    let Some(meter) = meter_at(circle, Some(block), index) else { return 0 };
+    let Some(line) = crate::line::line_named(meter, index) else { return 0 };
+    let long_enough = |w: &str| crate::time::parse_duration(w).is_some() && crate::grant::cmp_value(&json!(w), &json!(every)).is_some_and(|o| o != Ordering::Less);
+    let cuts: Vec<&Value> = index
+        .values()
+        .filter(|c| type_of(c) == "observe" && ss(c, "kind") == Some("cutoff") && rs(c, "subject") == Some(circle) && ss(c, "when").is_some_and(long_enough) && crate::line::on_line(c, &line, index) && crate::identity::counts_in(c, index))
+        .collect();
+    let past = index.past_of(block);
+    let receipt = crate::line::receipts_of(hash_of(block), &line, index, &|_| true).into_iter().min_by_key(|r| index.past_of(r).len());
+    cuts.iter().filter(|c| past.contains(hash_of(c)) || receipt.is_some_and(|r| index.past_of(r).contains(hash_of(c)))).count()
+}
+/// A block `for` a deal the circle bound, where the binding block `as` the circle holds in its causal past, is counted once, when the deal
+/// stood (stage 4's counted-once rule, 05 R7c; C12's kept word): a row's bounds do not count it again.
+fn counted_when_bound(block: &Value, circle: &str, index: &Index) -> bool {
+    let past = index.past_of(block);
+    list(rf(block, "for")).iter().any(|d| {
+        let names_deal = |b: &Value| hash_of(b) == *d || list(rf(b, "for")).contains(d) || list(rf(b, "answers")).contains(d);
+        index.values().any(|b| {
+            past.contains(hash_of(b)) && rs(b, "as") == Some(circle) && type_of(b) == "promise" && names_deal(b) && (st(b, "status").is_none() || ss(b, "status") == Some("accepted")) && holds_in(b, circle, index)
+        })
+    })
+}
+
+/// Whether a grant signed `as` the circle is wider than a row's scope (C13, D2): types not a subset; a bound the row states and the grant does
+/// not keep within; `what` beyond the row's. A field the row leaves out bounds nothing.
+fn wider_than_row(grant: &Value, row: &Value) -> bool {
+    let gs = st(grant, "scope").cloned().unwrap_or(json!({}));
+    if let Some(rt) = scope_types(row) {
+        // a grant that names no types acts for no type (a key grant, a rekey): it is no wider
+        if scope_types(&gs).unwrap_or_default().iter().any(|t| !rt.contains(t)) {
+            return true;
+        }
+    }
+    let amt = |v: &Value, k: &str| v.get(k).and_then(|x| Amount::of(Some(x)));
+    let within = |g: Option<Amount>, r: &Amount| g.is_some_and(|g| g.kind == r.kind && g.value.cmp(&r.value) != Ordering::Greater);
+    if let Some(re) = amt(row, "each") {
+        if !(within(amt(&gs, "each"), &re) || (amt(&gs, "each").is_none() && within(amt(&gs, "limit"), &re))) {
+            return true;
+        }
+    }
+    if let Some(rl) = amt(row, "limit") {
+        if !within(amt(&gs, "limit"), &rl) {
+            return true;
+        }
+    }
+    if let Some(w) = row.get("what") {
+        let ok = ids_of(Some(w));
+        if list(rf(grant, "what")).iter().any(|x| !ok.contains(x)) {
+            return true;
+        }
+    }
+    false
+}
+
+// ---- Hands, and whether a move holds (C6, C10, C15, C16, C18; invariant 27) ----
+
+struct Hand<'a> {
+    block: &'a Value,
+    /// whose hand it is: the signer; for a confirm `as` another circle, that circle; for a confirm `as` the very circle, the circle
+    who: String,
+    /// why it counts for nothing whatever the row: `pair`, `waiting`, `not_voice`
+    fixed: Option<&'static str>,
+    /// her free parts of the circle in her hand's own causal past (D1's add-back applied); None with no pack
+    parts: Option<Dec>,
+}
+
+/// The reading of one move: its hands, rows, the meter's word on its unissued parts, read once.
+struct Move<'a> {
+    block: &'a Value,
+    circle: String,
+    hands: Vec<Hand<'a>>,
+    rows: Vec<Row>,
+    receivers: Vec<String>,
+    add_back: Vec<String>,
+    clocks: Option<crate::tasks::Clocks>,
+    candidates: Vec<&'a Value>,
+    is_version: bool,
+}
+
+/// What a candidate (the move or a confirm of it) shows: the row that holds there, or every owner; each hand's count and why.
+struct At {
+    row: Option<usize>,
+    every: bool,
+    counts: Vec<bool>,
+    why: Vec<Option<&'static str>>,
+}
+
+#[cfg(feature = "std")]
+std::thread_local! {
+    static DRAFTED: core::cell::RefCell<Option<String>> = const { core::cell::RefCell::new(None) };
+}
+/// Read `f` with the unsigned draft of id `draft` taken as a hand that counts (the owner's decision of 2026-11-19, for `binds`): a draft
+/// signed `as` a circle binds where her row would hold, as if her hand counts. Only the draft's own hand; every other rule is read as it is.
+pub(crate) fn as_drafted<T>(draft: &str, f: impl FnOnce() -> T) -> T {
+    #[cfg(feature = "std")]
+    {
+        let before = DRAFTED.with(|d| d.borrow_mut().replace(draft.to_string()));
+        let out = f();
+        DRAFTED.with(|d| *d.borrow_mut() = before);
+        out
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        let _ = draft;
+        f()
+    }
+}
+fn is_drafted(h: &str) -> bool {
+    #[cfg(feature = "std")]
+    {
+        DRAFTED.with(|d| d.borrow().as_deref() == Some(h))
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        let _ = h;
+        false
+    }
+}
+
+impl<'a> Move<'a> {
+    fn read(block: &'a Value, circle: &str, index: &'a Index) -> Option<Move<'a>> {
+        let f = founding(circle, index)?;
+        let bh = hash_of(block);
+        // D1: the draws the move, or a move it confirms, answers
+        let mut add_back: Vec<String> = list(rf(block, "answers")).into_iter().map(String::from).collect();
+        for c in list(rf(block, "confirms")).into_iter().filter_map(|h| index.get(h)) {
+            add_back.extend(list(rf(c, "answers")).into_iter().map(String::from));
+        }
+        let add_back = sorted_set(add_back);
+        let pairs: BTreeSet<String> = crate::identity::pair_groups_in(index).into_iter().flatten().collect();
+        let names = index.names_memo();
+        let mut hand_blocks: Vec<&Value> = vec![index.get(bh).filter(|x| *x == block).unwrap_or(block)];
+        hand_blocks.extend(names.by_confirms.get(bh).into_iter().flatten().filter_map(|n| index.get(n)).filter(|c| hash_of(c) != bh && c.get("type").is_some() && rs(c, "author").is_some()));
+        let pack = pack_of(f);
+        let hands: Vec<Hand> = hand_blocks
+            .into_iter()
+            .map(|b| {
+                let author = rs(b, "author").unwrap_or("").to_string();
+                let fork = pairs.contains(hash_of(b));
+                let (who, fixed_as): (String, Option<&'static str>) = match rs(b, "as").filter(|c| !c.is_empty() && hash_of(b) != bh) {
+                    // a confirm `as` the very circle: a hand on its unissued parts (C4)
+                    Some(c) if c == circle => (circle.to_string(), Some("not_voice")),
+                    // a confirm `as` another circle: that circle's hand, where a row of it holds for the confirm (C5)
+                    Some(c) => (c.to_string(), (!holds_in(b, c, index)).then_some("waiting")),
+                    None => (author, None),
+                };
+                let fixed = if fork {
+                    Some("pair")
+                } else if is_drafted(hash_of(b)) {
+                    None
+                } else if !crate::identity::counts_in(b, index) {
+                    Some("not_voice")
+                } else if fixed_as.is_some() {
+                    fixed_as
+                } else if !crate::identity::stands_own(b, index).stands {
+                    Some("waiting")
+                } else {
+                    None
+                };
+                let parts = pack.as_ref().map(|_| match owners_at(circle, Some(b), &add_back, index) {
+                    // a hand `as` the very circle shows its unissued parts (C4): they count in no row
+                    Some(Ok(o)) => o.get(&who).map(|p| p.0.clone()).unwrap_or_else(Dec::zero),
+                    _ => Dec::zero(),
+                });
+                Hand { block: b, who, fixed, parts }
             })
             .collect();
-        ended.retain(|(j, _)| {
-            let guarded = j.roles.iter().any(|r| f.guarded(r));
-            !removals.iter().any(|(who, r, quorum)| {
-                *who == j.who && (*quorum || !guarded) && !f.sees(hash_of(j.inv), r) && !j.accepts.iter().any(|a| f.sees(r, hash_of(a)))
-            })
-        });
-        // 7. Each member, by name: their cuts, then what they hold, or out. No one is in but by a joining (the founder by the founding block).
-        let mut state = self.empty();
-        state.members.clear();
-        for who in sorted_set(ended.iter().map(|(j, _)| j.who.as_str())) {
-            let who = who.as_str();
-            let mine: Vec<&(&Joining, Vec<&Stop>)> = ended.iter().filter(|(j, _)| j.who == who).collect();
-            cuts.extend(mine.iter().flat_map(|(j, ends)| ends.iter().map(|s| cut(j, s))));
-            f.place(&mut state, who, &mine);
-        }
-        cuts.extend(self.remove_deaths(&mut state, beside));
-        state.cuts = cuts;
-        state.kept = kept;
-        state.crossing = crossing;
-        state
+        let mut candidates: Vec<&Value> = hands.iter().map(|h| h.block).collect();
+        candidates.sort_by(|a, b| index.past_of(a).len().cmp(&index.past_of(b).len()).then_with(|| hash_of(a).cmp(hash_of(b))));
+        candidates.dedup_by(|a, b| hash_of(a) == hash_of(b));
+        Some(Move {
+            block,
+            circle: circle.to_string(),
+            rows: rows_for(circle, block, index),
+            receivers: gives_to(block, circle, index),
+            clocks: clocks_at(circle, Some(block), index),
+            is_version: is_version_of(block, circle),
+            hands,
+            add_back,
+            candidates,
+        })
     }
-    // A member's roles and grants from their live heads, sorted when more than one grant gives them (the founder's first grant is the
-    // founding block itself, read like any other).
-    fn member(&self, _who: &str, mut live: Vec<&Joining>) -> Member {
-        live.sort_by(|a, b| cmp16(hash_of(a.inv), hash_of(b.inv)));
-        let mut roles: Vec<String> = unique(live.iter().flat_map(|j| j.roles.iter()));
-        let mut grants: Vec<String> = live.iter().map(|j| hash_of(j.inv).to_string()).collect();
-        if live.len() > 1 {
-            roles.sort_by(|a, b| cmp16(a, b));
-        }
-        grants.sort_by(|a, b| cmp16(a, b));
-        Member { roles, grant: grants.first().cloned(), grants }
-    }
-    // A member who has died is out from the close (profiles/successor.md), unless it carries their membership on.
-    // A death puts a member out from the close, and the close cuts like a removal (decision d2): each of their grants keeps the close
-    // as its cut.
-    fn remove_deaths(&self, state: &mut CircleState, beside: &[String]) -> Vec<(String, String, String)> {
-        let visible = |h: &str| beside.iter().any(|b| b == h);
-        let members: Vec<(String, Vec<String>)> = state.members.iter().map(|(k, m)| (k.clone(), m.grants.clone())).collect();
-        let mut cuts = Vec::new();
-        for (who, grants) in members {
-            let keep: Vec<&str> = core::iter::once(self.id.as_str()).chain(grants.iter().map(String::as_str)).collect();
-            if let Some(close) = crate::grant::closed_by(&who, &keep, self.index, &visible) {
-                state.members.shift_remove(&who);
-                state.removed.insert(who.clone(), None);
-                cuts.extend(grants.iter().map(|g| (who.clone(), g.clone(), close.clone())));
-            }
-        }
-        cuts
-    }
-    // The cut (circles.md): a block by a member whose grant ended that is neither the cut nor in the cut's causal past carries no
-    // authority from the circle, whether or not it saw the stop: signed as the circle, a confirm that would add a hand, an act under a
-    // grant to a role, a signal from a holder of circle#role, a removal (one in a crossing is kept only from the cut of the stop in it
-    // that removes its author). Their own answers to grants are theirs, not the circle's, and are never set aside, nor is a block someone
-    // outside the circle built on before the stop.
-    fn void(&self, state: &CircleState) -> BTreeSet<String> {
-        let read = self.index;
-        let past = |h: &str| -> Past { read.get(h).map(|x| read.past_of(x)).unwrap_or_else(|| Past::empty(read)) };
-        // cut: a stop cuts where it was signed. A block is beyond a cut when it is neither the stop nor in the stop's causal past (each cut's past is read once).
-        let cut_pasts: BTreeMap<&str, Past> = state.cuts.iter().map(|(_, _, cut)| (cut.as_str(), past(cut))).collect();
-        let beyond = |h: &str, cut: &str| h != cut && !cut_pasts[cut].contains(h);
-        // What others built on stands (decision C6): a counted block by another, no member of the circle in the fold of its causal past,
-        // that names the block itself (by any ref but its own `prev`: an accept of a deal, an `after` that saw it), or whose own act the
-        // block accepts (the circle's yes to the outsider's transfer: a payment taken, a delivery received), and that has none of the
-        // member's cuts in its causal past (it had not seen the removal). Then no cut sets the block aside: the circle is bound by what it
-        // let them sign.
-        let relied_on = |b: &Value, author: &str| {
-            read.values().any(|o| {
-                let Some(by) = rs(o, "author").filter(|a| *a != author) else { return false };
-                let ho = hash_of(o);
-                crate::identity::relied_on(o, b)
-                    && !state.cuts.iter().any(|(m, _, cut)| m == author && (cut == ho || past(ho).contains(cut)))
-                    && crate::identity::counts_in(o, read)
-                    && !self.past_fold(o).members.contains_key(by)
-            })
+
+    /// "Every part persons own" for the move read at `x` (C6, D8): the pack where no part is unissued; else the pack less the unissued parts
+    /// the meter's receipt of the move states (several held must agree). None where there is no such way.
+    fn persons_own(&self, x: &Value, index: &Index) -> Option<Dec> {
+        let f = founding(&self.circle, index)?;
+        let pack = pack_of(f)?;
+        let unissued = match owners_at(&self.circle, Some(x), &self.add_back, index)? {
+            Ok(o) => o.get(&self.circle).map(|p| p.1.clone()).unwrap_or_else(Dec::zero),
+            Err(_) => return None,
         };
-        read.values()
-            .filter(|b| {
-                let Some(author) = rs(b, "author").filter(|a| state.cuts.iter().any(|(m, _, _)| m == a)) else { return false };
-                let h = hash_of(b);
-                if (type_of(b) == "grant" && !no_answers(b)) || state.kept.contains(h) {
-                    return false;
-                }
-                let at = self.past_fold(b);
-                let Some(member) = at.members.get(author) else { return false };
-                state.cuts.iter().any(|(m, g, cut)| {
-                    m == author && member.grants.contains(g) && beyond(h, cut) && !state.crossing.contains(&(h.to_string(), cut.clone()))
-                }) && !relied_on(b, author)
-            })
-            .map(|b| hash_of(b).to_string())
-            .collect()
-    }
-}
-
-/// One fold of a set of a circle's blocks, with the causal past of each (every block it is asked about is in the set).
-struct Fold<'b> {
-    circle: &'b Circle<'b>,
-    set: &'b [Value],
-    pasts: BTreeMap<&'b str, Past<'b>>,
-    powers: Vec<String>,
-    /// The blocks of the set that name a hash in `answers`, and in `updates`, by their place in the set (read once, so no step
-    /// scans the set for each grant).
-    answering: BTreeMap<&'b str, Vec<usize>>,
-    updating: BTreeMap<&'b str, Vec<usize>>,
-}
-
-// The blocks of a set that name each hash under a ref, by their place in the set.
-fn naming<'b>(set: &'b [Value], key: &str) -> BTreeMap<&'b str, Vec<usize>> {
-    let mut out: BTreeMap<&'b str, Vec<usize>> = BTreeMap::new();
-    for (i, b) in set.iter().enumerate() {
-        for h in list(rf(b, key)) {
-            let at = out.entry(h).or_default();
-            if at.last() != Some(&i) {
-                at.push(i);
-            }
+        if !unissued.is_pos() {
+            return Some(pack);
+        }
+        let meter = meter_at(&self.circle, Some(self.block), index)?;
+        let line = crate::line::line_named(meter, index)?;
+        let stated: Vec<Dec> = crate::line::receipts_of(hash_of(self.block), &line, index, &|_| true)
+            .into_iter()
+            .filter(|r| crate::identity::counts_in(r, index))
+            .filter_map(|r| Amount::of(st(r, "unissued")).filter(|a| a.kind.unit == "part" && a.kind.of.is_none()).map(|a| a.value))
+            .collect();
+        match stated.as_slice() {
+            [] => None,
+            many if many.iter().all(|x| x.cmp(&many[0]).is_eq()) => Some(pack.sub(&many[0])),
+            _ => None,
         }
     }
+
+    /// Whether a hand's ends (C15, D7) are seen by `x` (in its past, or by the circle's clock, D11): for a parts row (and every owner), any
+    /// draw of hers on the circle's parts signed after her hand, bar one the move answers (D1), or her close; for a `to` row, every end of
+    /// her place (read by `named_ids` at `x`) and her close.
+    fn ended(&self, h: &Hand, x: &Value, parts_way: bool, index: &Index) -> bool {
+        let hp = index.past_of(h.block);
+        let after = |b: &str| b != hash_of(h.block) && !hp.contains(b) && seen_by(x, b, self.clocks.as_ref(), index);
+        if crate::identity::closes_of(&h.who, index).iter().any(|c| after(c)) {
+            return true;
+        }
+        if !parts_way {
+            return false;
+        }
+        let names = index.names_memo();
+        // (the cheap tests first: whose transfer it is, then whether it was seen and counts; one conjunction, so no answer changes)
+        names.by_what.get(&self.circle).into_iter().flatten().filter_map(|n| index.get(n)).any(|t| {
+            type_of(t) == "transfer"
+                && st(t, "status").is_none()
+                && match rs(t, "as").filter(|c| !c.is_empty()) {
+                    None => rs(t, "author") == Some(h.who.as_str()),
+                    Some(c) => c == h.who,
+                }
+                && !self.add_back.iter().any(|a| a == hash_of(t))
+                && after(hash_of(t))
+                && crate::identity::counts_in(t, index)
+        })
+    }
+
+    /// Whether a row's (or a grant's) `scope.on` names a promise the move is `for` that names her in `from` or `to` (C16's last clause).
+    fn on_names(&self, r: &Row, who: &str, index: &Index) -> bool {
+        let ons = ids_of(r.scope.get("on"));
+        let fors = list(rf(self.block, "for"));
+        ons.iter().filter(|p| fors.contains(p)).filter_map(|p| index.get(*p)).any(|p| ["from", "to"].iter().any(|k| list(rf(p, k)).contains(&who)))
+    }
+
+    /// What candidate `present` shows (`x` the block that completes it, None for "every hand held, every end seen by any").
+    fn eval(&self, x: Option<&Value>, index: &Index) -> At {
+        let n = self.hands.len();
+        let present: Vec<usize> = match x {
+            Some(x) => {
+                let xp = index.past_of(x);
+                (0..n).filter(|&i| hash_of(self.hands[i].block) == hash_of(x) || xp.contains(hash_of(self.hands[i].block))).collect()
+            }
+            None => (0..n).collect(),
+        };
+        let cache: core::cell::RefCell<BTreeMap<(usize, bool), bool>> = Default::default();
+        let ended = |i: usize, parts_way: bool| {
+            if let Some(v) = cache.borrow().get(&(i, parts_way)) {
+                return *v;
+            }
+            let v = match x {
+                Some(x) => self.ended(&self.hands[i], x, parts_way, index),
+                None => self.candidates.iter().any(|c| self.ended(&self.hands[i], c, parts_way, index)),
+            };
+            cache.borrow_mut().insert((i, parts_way), v);
+            v
+        };
+        let at = x.unwrap_or_else(|| self.candidates.last().copied().unwrap_or(self.block));
+        let gives = |who: &str| gives_to_who(self.block, &self.receivers, who, index);
+        // a hand's weight in a row: parts, or 1 where `to` names her; None where it adds nothing
+        let weight = |i: usize, r: &Row| -> Option<Dec> {
+            let h = &self.hands[i];
+            if h.fixed.is_some() || h.who == self.circle {
+                return None;
+            }
+            match &r.count {
+                Count::Parts(_) => {
+                    if ended(i, true) {
+                        return None;
+                    }
+                    h.parts.clone().filter(|d| d.is_pos())
+                }
+                Count::Named { to, .. } => {
+                    let then = named_ids(to, &self.circle, Some(h.block), index);
+                    let now = named_ids(to, &self.circle, Some(at), index);
+                    (then.contains(&h.who) && (x.is_none() || now.contains(&h.who)) && !ended(i, false)).then(one)
+                }
+            }
+        };
+        // each id once (A count counts ids): her hand with the most parts (or place), ties to the lowest block hash
+        let tally = |r: Option<&Row>| -> BTreeMap<String, (usize, Dec)> {
+            let mut by_who: BTreeMap<String, (usize, Dec)> = BTreeMap::new();
+            for &i in &present {
+                let h = &self.hands[i];
+                let w = match r {
+                    Some(r) => {
+                        if gives(&h.who) && !self.on_names(r, &h.who, index) {
+                            continue;
+                        }
+                        weight(i, r)
+                    }
+                    None => (h.fixed.is_none() && h.who != self.circle && !ended(i, true)).then(|| h.parts.clone()).flatten().filter(|p| p.is_pos()),
+                };
+                let Some(w) = w else { continue };
+                match by_who.get(&h.who) {
+                    Some((j, e)) if e.cmp(&w).is_gt() || (e.cmp(&w).is_eq() && hash_of(self.hands[*j].block) < hash_of(h.block)) => {}
+                    _ => {
+                        by_who.insert(h.who.clone(), (i, w));
+                    }
+                }
+            }
+            by_who
+        };
+        let total = |t: &BTreeMap<String, (usize, Dec)>| t.values().fold(Dec::zero(), |s, (_, d)| s.add(d));
+        let mut row_held = None;
+        let mut first_cover: Option<&Row> = None;
+        for r in &self.rows {
+            if scope_misfit(self.block, r, &self.circle, index).is_some() {
+                continue;
+            }
+            if first_cover.is_none() {
+                first_cover = Some(r);
+            }
+            let t = tally(Some(r));
+            let enough = match &r.count {
+                Count::Parts(p) => total(&t).cmp(&dec_n(*p)) != Ordering::Less,
+                Count::Named { needed, .. } => t.len() as u64 >= *needed,
+            };
+            if enough {
+                row_held = Some(r.at);
+                break;
+            }
+        }
+        // every owner together: hands that own every part persons own
+        let mut every = false;
+        if row_held.is_none() {
+            if let Some(need) = self.persons_own(at, index) {
+                every = need.is_pos() && total(&tally(None)).cmp(&need) != Ordering::Less;
+            }
+        }
+        // each hand's count in the way read: the row that holds; else every owner where it holds; else the first row whose scope covers the
+        // move; else every owner
+        let read: Option<&Row> = match row_held {
+            Some(at) => self.rows.iter().find(|r| r.at == at),
+            None if every => None,
+            None => first_cover,
+        };
+        let chosen = tally(read);
+        let mut counts = vec![false; n];
+        for (i, _) in chosen.values() {
+            counts[*i] = true;
+        }
+        let why: Vec<Option<&'static str>> = (0..n).map(|i| if counts[i] { None } else { Some(self.hands[i].fixed.unwrap_or("not_voice")) }).collect();
+        At { row: row_held, every, counts, why }
+    }
+
+    /// Whether the move holds at candidate `x` (remembered).
+    fn holds_at(&self, x: &Value, index: &Index) -> bool {
+        let key = format!("c6at:{}:{}", hash_of(self.block), hash_of(x));
+        let v = memo(index, &key, json!(false), || {
+            let a = self.eval(Some(x), index);
+            json!(a.row.is_some() || a.every)
+        });
+        v == Value::Bool(true) && self.parent_holds(index)
+    }
+    /// A version holds only where what it updates is the founding block or a version that holds (C19, D15).
+    fn parent_holds(&self, index: &Index) -> bool {
+        if !self.is_version {
+            return true;
+        }
+        match rs(self.block, "updates") {
+            Some(u) if u == self.circle => true,
+            Some(u) => index.get(u).is_some_and(|p| is_version_of(p, &self.circle) && holds_in(p, &self.circle, index)),
+            None => false,
+        }
+    }
+}
+
+/// Whether a block `as` a circle holds (`row_holds(...).holds`).
+pub(crate) fn holds_in(block: &Value, circle: &str, index: &Index) -> bool {
+    rs(block, "as") == Some(circle) && judge(block, circle, index)["holds"] == Value::Bool(true)
+}
+/// Whether a block `as` a circle holds as a relier sees it: at a candidate (the move or a confirm) in the relier's causal past.
+pub(crate) fn holds_seen(block: &Value, circle: &str, index: &Index, past: &crate::js::Past) -> bool {
+    if rs(block, "as") != Some(circle) || !holds_in(block, circle, index) {
+        return false;
+    }
+    let Some(m) = Move::read(block, circle, index) else { return false };
+    m.candidates.iter().filter(|c| past.contains(hash_of(c))).any(|c| m.holds_at(c, index))
+}
+
+/// The circle's judgement of a block signed `as` it: `{ circle, holds, row, every_owner, at, hands: [{ id, block, parts, counts, why }],
+/// waiting, listed }` (`row_holds`). Remembered for a held block.
+pub(crate) fn judge(block: &Value, circle: &str, index: &Index) -> Value {
+    let no = json!({ "circle": circle, "holds": false, "row": null, "every_owner": false, "at": null, "hands": [], "waiting": [{ "block": hash_of(block), "on": "hands" }] });
+    if !held_here(block, index) {
+        return judge_read(block, circle, index);
+    }
+    // a reading of another index (a fold that reads its own copy of the blocks) can ask about the same move: read once on this thread
+    let key = format!("c6row:{circle}:{}", hash_of(block));
+    if index.stage_peek(&key).is_none() && judging(&key, true) {
+        index.taint_bump();
+        busy_hit(&key);
+        return no;
+    }
+    let from = busy_mark();
+    let v = memo(index, &key, no, || judge_read(block, circle, index));
+    judging(&key, false);
+    // a judgement whose only placeholder was itself (the move asked about while it was being read, a ring of one) is what every later
+    // reading of it reads too, since that reading meets itself the same way: remember it, so the move is not read again for each of its
+    // hands (end pass 2026-11-20: a move that waits for hands was read once per hand; no answer changes)
+    if index.stage_peek(&key).is_none() && busy_since(from).iter().all(|k| *k == key) {
+        index.stage_put(&key, v.clone());
+    }
+    v
+}
+#[cfg(feature = "std")]
+std::thread_local! { static BUSY_LOG: core::cell::RefCell<Vec<String>> = const { core::cell::RefCell::new(Vec::new()) }; }
+/// A reading met a placeholder for `key` (an asker of its own still being read).
+fn busy_hit(key: &str) {
+    #[cfg(feature = "std")]
+    BUSY_LOG.with(|l| l.borrow_mut().push(key.to_string()));
+    #[cfg(not(feature = "std"))]
+    let _ = key;
+}
+fn busy_mark() -> usize {
+    #[cfg(feature = "std")]
+    {
+        BUSY_LOG.with(|l| l.borrow().len())
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        usize::MAX
+    }
+}
+/// The placeholders met since `from` (none known without std: then nothing more is remembered than before).
+fn busy_since(from: usize) -> Vec<String> {
+    #[cfg(feature = "std")]
+    {
+        BUSY_LOG.with(|l| l.borrow().get(from..).map(<[String]>::to_vec).unwrap_or_default())
+    }
+    #[cfg(not(feature = "std"))]
+    {
+        let _ = from;
+        vec![String::from("unknown")]
+    }
+}
+#[cfg(feature = "std")]
+std::thread_local! { static JUDGING: core::cell::RefCell<BTreeSet<String>> = const { core::cell::RefCell::new(BTreeSet::new()) }; }
+/// Whether the move is already being judged on this thread (`enter`: mark it; else unmark it).
+#[cfg(feature = "std")]
+fn judging(key: &str, enter: bool) -> bool {
+    JUDGING.with(|j| if enter { !j.borrow_mut().insert(key.to_string()) } else { j.borrow_mut().remove(key); false })
+}
+#[cfg(not(feature = "std"))]
+fn judging(_key: &str, _enter: bool) -> bool {
+    false
+}
+
+fn judge_read(block: &Value, circle: &str, index: &Index) -> Value {
+    let bh = hash_of(block);
+    let no = || json!({ "circle": circle, "holds": false, "row": null, "every_owner": false, "at": null, "hands": [], "waiting": [{ "block": bh, "on": "hands" }] });
+    if founding(circle, index).is_none() || rs(block, "as") != Some(circle) {
+        return no();
+    }
+    if !crate::js::needs_missing(block, index).is_empty() || !index.past_of(block).contains(circle) {
+        return no();
+    }
+    let Some(m) = Move::read(block, circle, index) else { return no() };
+    let chosen = m.candidates.iter().copied().find(|x| m.holds_at(x, index));
+    let holds = chosen.is_some();
+    let shown = m.eval(chosen, index);
+    let xp = chosen.map(|x| index.past_of(x));
+    let mut hands: Vec<Value> = m
+        .hands
+        .iter()
+        .enumerate()
+        .filter(|(_, h)| match (&chosen, &xp) {
+            (Some(x), Some(p)) => hash_of(h.block) == hash_of(x) || p.contains(hash_of(h.block)),
+            _ => true,
+        })
+        .map(|(i, h)| {
+            json!({
+                "id": h.who,
+                "block": hash_of(h.block),
+                "parts": h.parts.as_ref().map(|p| json!({ "value": p.text(), "unit": "part" })),
+                "counts": shown.counts[i],
+                "why": if shown.counts[i] { Value::Null } else { json!(shown.why[i]) },
+            })
+        })
+        .collect();
+    hands.sort_by(|a, b| a["block"].as_str().cmp(&b["block"].as_str()));
+    json!({
+        "circle": circle,
+        "holds": holds,
+        "row": if holds { json!(shown.row) } else { Value::Null },
+        "every_owner": holds && shown.row.is_none() && shown.every,
+        "at": chosen.map(hash_of),
+        "hands": hands,
+        "waiting": if holds { json!([]) } else { json!([{ "block": bh, "on": "hands" }]) },
+    })
+}
+
+/// C9b, the listing (a reading, D: door shape 1): where the move gives to an owner (an id owning parts by title, held-for-sale parts
+/// included), a tool of hers, or a circle in which her hand could count, the promises signed `as` the circle that hold, are not in the
+/// move's causal past, are not the move, and whose stage is not done, stopped or declined; sorted. Else none.
+fn listed(m: &Move, index: &Index) -> Vec<String> {
+    if m.receivers.is_empty() {
+        return vec![];
+    }
+    let owners: Vec<String> = match owners_at(&m.circle, Some(m.block), &[], index) {
+        Some(Ok(o)) => o.iter().filter(|(w, (_, t))| **w != m.circle && t.is_pos()).map(|(w, _)| w.clone()).collect(),
+        _ => vec![],
+    };
+    if !owners.iter().any(|o| gives_to_who(m.block, &m.receivers, o, index)) {
+        return vec![];
+    }
+    let past = index.past_of(m.block);
+    let bh = hash_of(m.block);
+    sorted_set(
+        index
+            .values()
+            .filter(|w| type_of(w) == "promise" && rs(w, "as") == Some(m.circle.as_str()) && hash_of(w) != bh && !past.contains(hash_of(w)))
+            .filter(|w| crate::identity::counts_in(w, index) && holds_in(w, &m.circle, index))
+            .filter(|w| {
+                let s = super::promise::promise_stage_in(hash_of(w), index, &super::StageOptions::default());
+                s.get("stage").and_then(Value::as_str).is_some_and(|st| !matches!(st, "done" | "stopped" | "declined"))
+            })
+            .map(hash_of),
+    )
+}
+
+/// `row_holds(block, held)`: the circle's judgement of a block signed `as` it (folds.md, 1.9 stage 6). The circle is the block's `refs.as`.
+/// Null where it names no circle held. The block is read with `held` as if it were held.
+pub fn row_holds(block: &Value, blocks: &[Value]) -> Value {
+    let Some(circle) = rs(block, "as").filter(|c| !c.is_empty()) else { return Value::Null };
+    let read = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(block)).chain([block]));
+    if founding(circle, &read).is_none() {
+        return Value::Null;
+    }
+    let b = read.get(hash_of(block)).unwrap_or(block);
+    let mut v = judge(b, circle, &read);
+    let listed = Move::read(b, circle, &read).map(|m| listed(&m, &read)).unwrap_or_default();
+    v["listed"] = json!(listed);
+    v
+}
+
+/// Whether `person` signed a hand that counted for a block `as` a circle (authority.md, Backed by a person: P signed a hand of the circle it is
+/// signed as).
+pub(crate) fn is_hand_at(person: &str, circle: &str, block: &Value, read: &Index) -> bool {
+    rs(block, "as") == Some(circle)
+        && judge(block, circle, read)["hands"].as_array().into_iter().flatten().any(|h| h["counts"] == Value::Bool(true) && h["id"].as_str() == Some(person))
+}
+/// The signers of a move's hands, and the tools and grant holders of theirs (D13): no one of them is "another person" joined to it.
+pub(crate) fn gathered(block: &Value, index: &Index) -> Vec<String> {
+    let bh = hash_of(block);
+    let names = index.names_memo();
+    let mut signers: Vec<String> = rs(block, "author").map(String::from).into_iter().collect();
+    signers.extend(names.by_confirms.get(bh).into_iter().flatten().filter_map(|n| index.get(n)).filter_map(|c| rs(c, "author")).map(String::from));
+    let signers = sorted_set(signers);
+    // a tool of hers, and anyone under a grant she gave: the holders of grants signed in her own name
+    let mut out = signers.clone();
+    for g in index.values().filter(|g| type_of(g) == "grant" && st(g, "status").is_none() && rs(g, "as").is_none() && rs(g, "author").is_some_and(|a| signers.iter().any(|s| s == a))) {
+        out.extend(list(rf(g, "to")).into_iter().map(String::from));
+    }
+    sorted_set(out)
+}
+
+// ---- The readings ----
+
+fn owners_json(circle: &str, o: &Owners, index: &Index) -> Vec<Value> {
+    o.iter()
+        .filter(|(w, (f, _))| w.as_str() != circle && f.is_pos())
+        .map(|(w, (f, _))| json!({ "owner": w, "amount": { "value": f.text(), "unit": "part" }, "no_person": no_person(w, index, &mut vec![circle.to_string()]) }))
+        .collect()
+}
+/// Whether the owners of an owner end in no person (C5): a circle whose owners are all circles whose owners end in no person (a ring).
+fn no_person(who: &str, index: &Index, seen: &mut Vec<String>) -> bool {
+    if founding(who, index).is_none() {
+        return false;
+    }
+    if seen.iter().any(|s| s == who) {
+        return true;
+    }
+    seen.push(who.to_string());
+    let out = match owners_at(who, None, &[], index) {
+        Some(Ok(o)) => {
+            let others: Vec<&String> = o.iter().filter(|(w, (_, t))| w.as_str() != who && t.is_pos()).map(|(w, _)| w).collect();
+            !others.is_empty() && others.iter().all(|w| no_person(w, index, seen))
+        }
+        _ => false,
+    };
+    seen.pop();
     out
 }
 
-impl<'b> Fold<'b> {
-    // The blocks of the set that name any of these hashes under `answers` (or `updates`), in the set's order.
-    fn named_by(&self, hashes: &[&str], updates: bool) -> Vec<&'b Value> {
-        self.named_in(hashes, &[if updates { &self.updating } else { &self.answering }])
+/// `circle_state(circle, held, within)`: `{ founder, pack, owners, unissued, rules, clocks, meter }` (folds.md, Circle fold); `owners`
+/// `[{ owner, amount, no_person }]` sorted, or `{ not_said: true }`; `{ not_shown, lacks }` where an owner's line is not read whole. Within a
+/// block: as of that block's causal past. Null where the circle is not held there. Rows, clocks and meter from the standing block (D15).
+pub fn circle_state(circle: &str, blocks: &[Value], within: Option<&Value>) -> Value {
+    let index = read_all(blocks.iter().chain(within));
+    circle_state_in(circle, &index, within.and_then(|w| index.get(hash_of(w))))
+}
+pub(crate) fn circle_state_in(circle: &str, index: &Index, within: Option<&Value>) -> Value {
+    let Some(f) = founding(circle, index) else { return Value::Null };
+    if within.is_some_and(|w| !index.past_of(w).contains(circle)) {
+        return Value::Null;
     }
-    fn named_in(&self, hashes: &[&str], maps: &[&BTreeMap<&'b str, Vec<usize>>]) -> Vec<&'b Value> {
-        let mut at: Vec<usize> = maps.iter().flat_map(|map| hashes.iter().filter_map(|h| map.get(h)).flatten().copied()).collect();
-        at.sort_unstable();
-        at.dedup();
-        at.into_iter().map(|i| &self.set[i]).collect()
-    }
-    fn sees(&self, later: &str, earlier: &str) -> bool {
-        self.pasts.get(later).is_some_and(|p| p.contains(earlier))
-    }
-    // Whether a member holds a power in the fold of a block's causal past.
-    fn holds(&self, who: &str, power: &str, at: &Value) -> bool {
-        let c = self.circle;
-        c.past_fold(at).members.get(who).and_then(|m| roles_at(m, at, c.index)).is_some_and(|roles| holds_power(&c.roles, &roles, power))
-    }
-    // Of these blocks, those no other sees (the last).
-    fn latest<'v>(&self, among: &[&'v Value]) -> Vec<&'v Value> {
-        among.iter().copied().filter(|v| !among.iter().any(|o| hash_of(o) != hash_of(v) && self.sees(hash_of(o), hash_of(v)))).collect()
-    }
-    // An open member grant (no refs.to) carries no power: one that names a role with sign, admit or remove counts for nothing, and so
-    // does a change of it that does (circles.md, Membership).
-    fn powerless(&self, open: bool, b: &Value) -> bool {
-        !open || !self.powers.iter().any(|p| holds_power(&self.circle.roles, &roles_of(b), p))
-    }
-    // The founding block: the founder's first member grant, accepted by being written (circles.md, The founder).
-    fn founding(&self, b: &Value) -> bool {
-        hash_of(b) == self.circle.id
-    }
-    // A grant open to anyone who accepts it: no refs.to (the founding block names its one member, the founder).
-    fn open(&self, inv: &Value) -> bool {
-        rf(inv, "to").is_none() && !self.founding(inv)
-    }
-    // The role names a version lists: the founding block gives the first role.
-    fn listed(&self, v: &Value) -> Vec<String> {
-        if self.founding(v) {
-            return self.circle.roles.first().map(|(n, _)| vec![n.clone()]).unwrap_or_default();
+    let pack = pack_of(f);
+    let (owners, unissued) = match owners_at(circle, within, &[], index) {
+        None => (json!({ "not_said": true }), Value::Null),
+        Some(Err(lacks)) => return json!({ "not_shown": true, "lacks": lacks }),
+        Some(Ok(o)) => {
+            let un = o.get(circle).map(|x| x.1.clone()).unwrap_or_else(Dec::zero);
+            (Value::Array(owners_json(circle, &o, index)), json!({ "value": un.text(), "unit": "part" }))
         }
-        roles_of(v)
-    }
-    // Powers narrow as they pass: a block gives a role only when its signer holds, in the fold of its causal past, every power the role
-    // carries (circles.md, Membership). The founding block gives the first role by the circle itself.
-    fn may_give(&self, v: &Value, role: &str) -> bool {
-        self.founding(v)
-            || self.circle.roles.iter().filter(|(n, _)| n == role).all(|(_, p)| p.iter().all(|x| self.holds(&author_of(v), x, v)))
-    }
-    // 1. The invitations: the founding block, and member grants signed as the circle by a holder of `admit` in the fold of their causal
-    // past.
-    fn invitations(&self) -> Vec<&'b Value> {
-        let id = self.circle.id.as_str();
-        self.set.iter()
-            .filter(|b| no_answers(b) && list(rf(b, "updates")).is_empty() && st(b, "status").is_none())
-            .filter(|b| self.founding(b) || (rs(b, "as") == Some(id) && self.powerless(self.open(b), b) && self.holds(&author_of(b), "admit", b)))
-            .collect()
-    }
-    // 2. An invitation's versions: a change updates the grant or an earlier change of it, signed as the circle by a holder of admit;
-    // all are the same grant (circles.md). The base first; the changes are a set, read by causal order alone.
-    fn versions(&self, inv: &'b Value) -> Vec<&'b Value> {
-        let (id, open) = (self.circle.id.as_str(), self.open(inv));
-        let mut chain = vec![inv];
-        loop {
-            let known = |h: &str| chain.iter().any(|v| hash_of(v) == h);
-            let hashes: Vec<&str> = chain.iter().map(|v| hash_of(v)).collect();
-            let next: Vec<&Value> = self.named_by(&hashes, true).into_iter()
-                .filter(|u| !known(hash_of(u)) && st(u, "status").is_none() && no_answers(u))
-                .filter(|u| matches!(st(u, "roles"), Some(Value::Array(_))) && self.powerless(open, u))
-                .filter(|u| list(rf(u, "updates")).iter().any(|h| known(h)))
-                .filter(|u| rs(u, "as") == Some(id) && self.holds(&author_of(u), "admit", u))
-                .collect();
-            if next.is_empty() {
-                return chain;
-            }
-            chain.extend(next);
-        }
-    }
-    // A member's acceptances of a version. The founder accepted the founding block by writing it.
-    fn accepts(&self, v: &Value, who: &str) -> Vec<&'b Value> {
-        if self.founding(v) {
-            return if who == self.circle.founder { self.set.iter().filter(|b| self.founding(b)).collect() } else { vec![] };
-        }
-        self.named_by(&[hash_of(v)], false).into_iter().filter(|a| ss(a, "status") == Some("accepted") && rs(a, "author") == Some(who)).collect()
-    }
-    // Who joined by an invitation: the one it names, or, for an open grant (no refs.to), everyone who accepts it. A `to` that
-    // names a set of ids names no one (authority.md).
-    fn joiners(&self, inv: &Value) -> Vec<String> {
-        if self.founding(inv) {
-            return vec![self.circle.founder.clone()];
-        }
-        match rf(inv, "to") {
-            Some(to) => to.as_str().filter(|t| !self.accepts(inv, t).is_empty()).map(String::from).into_iter().collect(),
-            None => {
-                sorted_set(self.named_by(&[hash_of(inv)], false).into_iter().filter(|a| ss(a, "status") == Some("accepted")).map(author_of))
-            }
-        }
-    }
-    // 2-4. Each member's joining by each invitation, and the joinings that never were: a standing stop that saw none of the member's
-    // accepts comes before the answer, whichever a reader meets first, and the member never joined by that grant (its removals still
-    // cross). A stop that does not stand on its own (step 3) changes nothing.
-    fn joinings(&self, invitations: &[&'b Value]) -> (Vec<Joining<'b>>, Vec<Joining<'b>>) {
-        let (mut joined, mut early) = (Vec::new(), Vec::new());
-        for &inv in invitations {
-            let chain = self.versions(inv);
-            let joiners = self.joiners(inv);
-            for who in &joiners {
-                let mine = self.accepts(inv, who);
-                let stops = self.judge(inv, &chain, who, &mine, self.stops(inv, &chain, &joiners, who));
-                if stops.iter().any(|s| s.stands && !self.saw_any(s, &mine)) {
-                    early.push(Joining { inv, who: who.clone(), accepts: vec![], roles: vec![], stops });
-                } else if !mine.is_empty() {
-                    joined.push(Joining { inv, who: who.clone(), accepts: crate::order::earliest(&mine, self.circle.index), roles: self.roles(inv, &chain, who, false), stops });
-                }
-            }
-        }
-        (joined, early)
-    }
-    fn saw_any(&self, s: &Stop, accepts: &[&Value]) -> bool {
-        accepts.iter().any(|a| self.sees(hash_of(s.block), hash_of(a)))
-    }
-    // 3. Every stop of a version that names this member: their own (an answer that stops or declines, or a stop they sign: leaving,
-    // whatever they hold: no power, no quorum, no crossing), or a removal signed as the circle by a holder of `remove` (an open grant's
-    // joiner who stops it ends it for themselves alone, whatever they hold).
-    fn stops(&self, inv: &Value, chain: &[&Value], joiners: &[String], who: &str) -> Vec<Stop<'b>> {
-        let open_joiner = |by: &str| self.open(inv) && joiners.iter().any(|j| j == by);
-        // A remover's stop of an open grant (decision H12): with no `refs.to` it ends only the joins it has not seen (no one joins by it
-        // after), and every member who joined by it stays; naming a joiner in `refs.to`, it removes that joiner, by the circle's removal
-        // rule. A `refs.to` that is not one id names no one.
-        let mine = self.accepts(inv, who);
-        let reaches = |b: &Value| {
-            !self.open(inv)
-                || match rf(b, "to") {
-                    None => !mine.iter().any(|a| self.sees(hash_of(b), hash_of(a))),
-                    Some(t) => t.as_str() == Some(who),
-                }
-        };
-        let hashes: Vec<&str> = chain.iter().map(|v| hash_of(v)).collect();
-        self.named_in(&hashes, &[&self.answering, &self.updating]).into_iter()
-            .filter_map(|b| {
-                let by = author_of(b);
-                let ended = chain.iter().filter_map(|v| ending(b, hash_of(v))).collect::<Vec<_>>();
-                let updates = ended.contains(&End::Stop);
-                let leave = by == who && !ended.is_empty();
-                let removal = updates && by != who && rs(b, "as") == Some(self.circle.id.as_str()) && !open_joiner(&by) && reaches(b) && self.holds(&by, "remove", b);
-                (leave || removal).then_some(Stop { block: b, by, leave, stands: true })
-            })
-            .collect()
-    }
-    // Whether a role carries admit or remove: taking it away is like a removal (circles.md, The removal rule).
-    fn guarded(&self, role: &str) -> bool {
-        self.circle.roles.iter().any(|(n, p)| n == role && p.iter().any(|x| x == "admit" || x == "remove"))
-    }
-    // The roles a member holds by an invitation: roles taken away count at once; a role added counts once the member accepts that
-    // change (`assume`: as if they accepted every change). A change starts from the roles held at the changes it saw (those that no
-    // other it saw follows), and keeps a role only where every one of them holds it; the member holds what every last change holds.
-    // A role that carries admit or remove is taken away only once `removal.needed` different holders of remove have each made a change
-    // that drops it (one that lists it not, having seen a version that lists it). No order of changes that do not see each other is
-    // read.
-    fn roles(&self, inv: &Value, chain: &[&'b Value], who: &str, assume: bool) -> Vec<String> {
-        let meet = |held: &[(&str, Vec<String>)], at: &[&Value]| -> Vec<String> {
-            let sets: Vec<&Vec<String>> = held.iter().filter(|(h, _)| at.iter().any(|v| hash_of(v) == *h)).map(|(_, r)| r).collect();
-            sets.first().map(|f| f.iter().filter(|r| sets.iter().all(|s| s.contains(r))).cloned().collect()).unwrap_or_default()
-        };
-        let dropped = |role: &str| -> bool {
-            let by = chain
-                .iter()
-                .filter(|v| hash_of(v) != hash_of(inv) && !self.listed(v).iter().any(|r| r == role))
-                .filter(|v| chain.iter().any(|u| hash_of(u) != hash_of(v) && self.sees(hash_of(v), hash_of(u)) && self.listed(u).iter().any(|r| r == role)))
-                .filter(|v| self.holds(&author_of(v), "remove", v))
-                .map(|v| author_of(v));
-            quorum(by, self.circle.removal_needed)
-        };
-        let mut held: Vec<(&str, Vec<String>)> = Vec::new();
-        let mut order = chain.to_vec();
-        order.sort_by_key(|v| self.pasts[hash_of(v)].len());
-        for v in order {
-            let roles = if hash_of(v) == hash_of(inv) {
-                self.listed(inv).into_iter().filter(|r| self.may_give(inv, r)).collect()
-            } else {
-                let seen: Vec<&Value> = chain.iter().copied().filter(|u| hash_of(u) != hash_of(v) && self.sees(hash_of(v), hash_of(u))).collect();
-                let before = meet(&held, &self.latest(&seen));
-                let ack = assume || !self.accepts(v, who).is_empty();
-                let listed = self.listed(v);
-                // a role kept is not given; a role added counts once accepted, and only if its changer holds every power it carries
-                let mut roles: Vec<String> = listed.iter().filter(|r| before.contains(r) || (ack && self.may_give(v, r))).cloned().collect();
-                roles.extend(before.iter().filter(|r| !listed.contains(r) && self.guarded(r) && !dropped(r)).cloned());
-                roles
-            };
-            held.push((hash_of(v), roles));
-        }
-        let last = self.latest(chain);
-        let mut roles = meet(&held, &last);
-        if last.len() > 1 {
-            roles.sort_by(|a, b| cmp16(a, b));
-        }
-        roles
-    }
-    // 3. Which stops stand on their own. A removal of a holder of admit or remove stands with `removal.needed` different holders of
-    // remove stopping that same grant (whether they hold it is read in the fold of the stop's causal past), and so does a stop that saw
-    // none of the member's accepts of a grant that gives admit or remove (as if they had accepted every version the stop has seen). A
-    // leaving always stands.
-    fn judge(&self, inv: &Value, chain: &[&'b Value], who: &str, mine: &[&Value], mut stops: Vec<Stop<'b>>) -> Vec<Stop<'b>> {
-        let quorum = quorum(stops.iter().filter(|s| !s.leave).map(|s| s.by.as_str()), self.circle.removal_needed);
-        for s in &mut stops {
-            let gives = || {
-                let seen: Vec<&Value> = chain.iter().copied().filter(|v| self.sees(hash_of(s.block), hash_of(v))).collect();
-                !seen.is_empty() && self.roles(inv, &seen, who, true).iter().any(|r| self.guarded(r))
-            };
-            s.stands = s.leave || quorum || !(self.holds(who, "admit", s.block) || self.holds(who, "remove", s.block) || (!self.saw_any(s, mine) && gives()));
-        }
-        stops
-    }
-    // The crossings a standing removal is in: rings of standing removals, each removing the author of the next, that come back to its
-    // own author, no stop of a ring seeing another (two removers each removing the other is a ring of two). Each ring lists its stops,
-    // this one first.
-    fn rings<'r>(&self, rivals: &[(&'r str, &'r Stop<'b>)], j: &'r Joining<'b>, s: &'r Stop<'b>) -> Vec<Vec<&'r Stop<'b>>> {
-        let mut out = Vec::new();
-        if s.stands && !s.leave {
-            self.walk(rivals, &j.who, &s.by, &mut vec![s], &mut vec![s.by.as_str(), j.who.as_str()], &mut out);
-        }
-        out
-    }
-    fn walk<'r>(&self, rivals: &[(&'r str, &'r Stop<'b>)], at: &str, home: &str, path: &mut Vec<&'r Stop<'b>>, nodes: &mut Vec<&'r str>, out: &mut Vec<Vec<&'r Stop<'b>>>) {
-        let apart = |x: &Stop, y: &Stop| !self.sees(hash_of(x.block), hash_of(y.block)) && !self.sees(hash_of(y.block), hash_of(x.block));
-        for &(m, x) in rivals {
-            if x.by != at || path.iter().any(|p| hash_of(p.block) == hash_of(x.block) || !apart(p, x)) {
-                continue;
-            }
-            if m == home {
-                let mut ring = path.clone();
-                ring.push(x);
-                out.push(ring);
-            } else if !nodes.contains(&m) {
-                path.push(x);
-                nodes.push(m);
-                self.walk(rivals, m, home, path, nodes, out);
-                path.pop();
-                nodes.pop();
-            }
-        }
-    }
-    // Whether a stop ends its grant: it stands (decision D13: every removal in a ring stands, so no crossing comes after a removal and no
-    // member, the founder included, is immune; the ring only keeps each of its stops from the cut of the one before).
-    fn ends(&self, s: &Stop) -> bool {
-        s.stands
-    }
-    // 6. One member: what their heads give them, or the stop that put them out. A grant is superseded once the member accepted
-    // another having seen any acceptance of it (a second acceptance of a grant they hold makes nothing new): no acceptance is chosen
-    // by its hash.
-    fn place(&self, state: &mut CircleState, who: &str, mine: &[&(&Joining, Vec<&Stop>)]) {
-        let superseded = |j: &Joining| {
-            mine.iter().any(|(o, _)| hash_of(o.inv) != hash_of(j.inv) && o.accepts.iter().any(|ao| j.accepts.iter().any(|ai| self.sees(hash_of(ao), hash_of(ai)))))
-        };
-        let heads: Vec<&&(&Joining, Vec<&Stop>)> = mine.iter().filter(|(j, _)| !superseded(j)).collect();
-        let live: Vec<&Joining> = heads.iter().filter(|(_, ends)| ends.is_empty()).map(|(j, _)| *j).collect();
-        if !live.is_empty() {
-            state.members.insert(who.to_string(), self.circle.member(who, live));
-            return;
-        }
-        // Out (a circle reads no counted_to, so removed names none).
-        if !heads.is_empty() {
-            state.removed.insert(who.to_string(), None);
-        }
+    };
+    let v = standing_version(circle, within, index).unwrap_or(f);
+    json!({
+        "founder": rs(f, "author"),
+        "pack": pack.map(|p| json!({ "value": p.text(), "unit": "part" })),
+        "owners": owners,
+        "unissued": unissued,
+        "rules": st(v, "rules").cloned().unwrap_or(json!([])),
+        "clocks": st(v, "clocks").cloned().unwrap_or(Value::Null),
+        "meter": rs(v, "meter"),
+    })
+}
+
+/// The ids that own parts of a circle by title in the causal past of a block (C8): parts held for a sale count for the seller until the
+/// receiver's yes. Its own unissued parts name no one.
+pub(crate) fn owners_then(circle: &str, block: Option<&Value>, index: &Index) -> Vec<String> {
+    match owners_at(circle, block, &[], index) {
+        Some(Ok(o)) => sorted_set(o.iter().filter(|(w, (_, t))| w.as_str() != circle && t.is_pos()).map(|(w, _)| w)),
+        _ => vec![],
     }
 }
 
-/// A circle's member grants that count (with seq, or as their author's history), and every grant that answers or updates one of
-/// them (an acceptance, a leaving, a stop): it need carry no `kind` or `subject` of its own.
-fn member_grants(root: &Value, read: &Index) -> Vec<Value> {
-    let id = hash_of(root);
-    // The founding block is the founder's first member grant (circles.md, The founder): it is read with the member grants, and every
-    // grant that answers or updates it is a change, a leaving or a stop of the founder's membership.
-    let mut related: Vec<Value> = core::iter::once(root.clone())
-        .chain(read.values().filter(|b| {
-            type_of(b) == "grant" && ss(b, "kind") == Some("member") && list(rf(b, "subject")).contains(&id) && crate::identity::counts_in(b, read)
-        }).cloned())
+/// `circle_versions(circle, held)`: `{ circle, versions: [{ version, updates, author, holds, hands }], now }` (C19): each version held (not
+/// the founding block), sorted by version; `hands` the ids whose hands counted; `now` the standing version's id, else the founding block's.
+pub fn circle_versions(circle: &str, blocks: &[Value]) -> Value {
+    let index = read_all(blocks.iter());
+    if founding(circle, &index).is_none() {
+        return Value::Null;
+    }
+    let mut out = vec![];
+    for v in versions(circle, &index) {
+        let j = judge(v, circle, &index);
+        let hands: Vec<String> = sorted_set(j["hands"].as_array().into_iter().flatten().filter(|h| h["counts"] == Value::Bool(true)).filter_map(|h| h["id"].as_str()));
+        out.push(json!({ "version": hash_of(v), "updates": rs(v, "updates"), "author": rs(v, "author"), "holds": j["holds"], "hands": hands }));
+    }
+    out.sort_by(|a, b| a["version"].as_str().cmp(&b["version"].as_str()));
+    json!({ "circle": circle, "versions": out, "now": standing_version(circle, None, &index).map(hash_of) })
+}
+
+/// `ways_in(circle, held)`, a reading: for each row its `least` (a `to` row its `needed`, null where fewer ids are named; a parts row the
+/// fewest owners whose free parts reach `parts`, null where none can), and the every-owner way with `least` the number of ids that own parts
+/// (null where there is no such way: no pack, or unissued parts and no meter). No row's `least` is above the every-owner way's.
+pub fn ways_in(circle: &str, blocks: &[Value]) -> Value {
+    let index = read_all(blocks.iter());
+    let Some(f) = founding(circle, &index) else { return Value::Null };
+    let owners = match owners_at(circle, None, &[], &index) {
+        Some(Err(lacks)) => return json!({ "not_shown": true, "lacks": lacks }),
+        Some(Ok(o)) => Some(o),
+        None => None,
+    };
+    let persons: Vec<Dec> = owners.iter().flatten().filter(|(w, (fr, _))| w.as_str() != circle && fr.is_pos()).map(|(_, (fr, _))| fr.clone()).collect();
+    let unissued = owners.as_ref().and_then(|o| o.get(circle)).is_some_and(|x| x.1.is_pos());
+    let every: Option<u64> = (owners.is_some() && !(unissued && meter_at(circle, None, &index).is_none())).then_some(persons.len() as u64);
+    let v = standing_version(circle, None, &index).unwrap_or(f);
+    let rows: Vec<Value> = rows_in(v)
+        .iter()
+        .map(|r| {
+            let least: Option<u64> = match &r.count {
+                Count::Named { to, needed } => (named_ids(to, circle, None, &index).len() as u64 >= *needed).then_some(*needed),
+                Count::Parts(p) => {
+                    let mut free = persons.clone();
+                    free.sort_by(|a, b| b.cmp(a));
+                    let want = dec_n(*p);
+                    let mut sum = Dec::zero();
+                    free.iter()
+                        .position(|d| {
+                            sum = sum.add(d);
+                            sum.cmp(&want) != Ordering::Less
+                        })
+                        .map(|i| i as u64 + 1)
+                }
+            };
+            let least = match (least, every) {
+                (Some(l), Some(e)) => Some(l.min(e)),
+                (l, _) => l,
+            };
+            json!({ "row": r.at, "least": least })
+        })
         .collect();
-    loop {
-        let known: Vec<String> = related.iter().map(|b| hash_of(b).to_string()).collect();
-        let more: Vec<Value> = read
-            .values()
-            .filter(|b| {
-                type_of(b) == "grant"
-                    && !known.iter().any(|k| k == hash_of(b))
-                    && list(rf(b, "answers")).iter().chain(list(rf(b, "updates")).iter()).any(|h| known.iter().any(|k| k == h))
-                    && crate::identity::counts_in(b, read)
-            })
-            .cloned()
-            .collect();
-        if more.is_empty() {
-            return related;
-        }
-        related.extend(more);
-    }
+    json!({ "circle": circle, "rows": rows, "every_owner": every.map(|e| json!({ "least": e })) })
 }
 
-/// A circle's members and roles from its member grants (already read), optionally only within a block's causal past.
-pub fn circle_state_in(circle: &str, read: &Index, within: Option<&Value>) -> Option<CircleState> {
-    // A circle is an actor of kind circle (circles.md): any other block has no circle state.
-    let root = read.get(circle).filter(|r| type_of(r) == "actor" && ss(r, "kind") == Some("circle"))?;
-    // Within a block whose causal past does not hold the circle, there is no circle yet (folds.md).
-    let within = within.map(|w| read.get(hash_of(w)).unwrap_or(w));
-    // a block no node would take on what it rests on is in no circle's time: there is none within it (folds.md: a fold reads only valid blocks)
-    if within.is_some_and(|w| !read.contains_key(hash_of(w)) && !crate::js::readable(w, read)) {
-        return None;
-    }
-    if within.is_some_and(|w| !read.past_of(w).contains(circle)) {
-        return None;
-    }
-    let related = member_grants(root, read);
-    // The fold reads the stops, sets aside the blocks outside a cut (Circle::void), and reads the grants again, until what it sets
-    // aside no longer changes (a removal set aside gives its member back their blocks).
-    let mut void: BTreeSet<String> = Default::default();
-    let mut circle = Circle::new(root, read, related.clone());
-    let mut state = circle.fold_all();
-    let mut tried: Vec<BTreeSet<String>> = Vec::new();
-    loop {
-        let next = circle.void(&state);
-        if next == void || tried.contains(&next) {
-            break;
-        }
-        tried.push(core::mem::replace(&mut void, next));
-        circle = Circle::new(root, read, related.iter().filter(|b| !void.contains(hash_of(b))).cloned().collect());
-        state = circle.fold_all();
-    }
-    let mut out = within.map_or(state, |w| circle.past_fold(w));
-    out.void = void;
-    Some(out)
-}
-
-/// A circle's members and roles (protocol.md §8, §11). A member grant counts if signed as the circle by someone holding
-/// admin in the fold of its own causal past; a member holds its roles once their own answer accepts it; roles taken
-/// away count at once, roles added once answered. `within`: fold only that block's causal past.
-pub fn circle_state(circle: &str, blocks: &[Value], within: Option<&Value>) -> Option<CircleState> {
-    circle_state_in(circle, &read_all(blocks), within)
-}
-
-/// The holders of a role in a circle (the members holding it), sorted.
-pub fn holders_of(state: Option<&CircleState>, role: &str) -> Vec<String> {
-    let Some(state) = state else { return vec![] };
-    sorted_set(state.members.iter().filter(|(_, m)| m.roles.iter().any(|r| r == role)).map(|(k, _)| k))
-}
-
-/// Whether `person` holds `sign` in the circle's fold of the block's causal past: one of the circle's hands (authority.md, Backed by a person).
-pub(crate) fn is_hand_at(person: &str, circle: &str, block: &Value, read: &Index) -> bool {
-    let (Some(root), Some(state)) = (read.get(circle), circle_state_in(circle, read, Some(block))) else { return false };
-    state.members.get(person).and_then(|m| roles_at(m, block, read)).is_some_and(|roles| holds_power(&roles_table(root), &roles, "sign"))
-}
-
-pub(crate) fn may_act_as_in(block: &Value, circle: &str, read: &Index, role: Option<&str>) -> bool {
-    may_with_in(block, circle, read, role, "sign")
-}
-
-// Whether the block's author, in the circle's fold of the block's causal past, holds `role` if one is named (a grant to a
-// role), else, for a block signed `as` the circle, a role with the power. A block outside a cut of its author's ended grant
-// holds nothing (circles.md, The cut).
-pub(super) fn may_with_in(block: &Value, circle: &str, read: &Index, role: Option<&str>, power: &str) -> bool {
-    // a block that rests on blocks not held is not read yet
-    if !crate::js::unmet_in(block, read).is_empty() {
-        return false;
-    }
-    if role.is_none() && rs(block, "as") != Some(circle) {
-        return false;
-    }
-    let Some(roles) = roles_then(block, circle, read) else { return false };
-    match role {
-        Some(r) => roles.iter().any(|x| x == r),
-        None => {
-            let root = &read[circle];
-            if !holds_power(&roles_table(root), &roles, power) {
-                return false;
-            }
-            // Where the circle needs N holders of sign, N different holders sign the block: its author, and holders who confirm
-            // it, each holding the power in the fold of their own block's past (`needed` is for sign alone).
-            let stated = get(root, "state.needed.sign");
-            // `needed.sign: "all"` (folds.md, Counts): every current holder of sign, counted in the fold of the block's causal past
-            let needed = if power != "sign" {
-                1.0
-            } else if stated.and_then(Value::as_str) == Some("all") {
-                circle_state_in(circle, read, Some(block))
-                    .map(|st| st.members.values().filter(|m| roles_at(m, block, read).is_some_and(|r| holds_power(&roles_table(root), &r, power))).count() as f64)
-                    .unwrap_or(1.0)
-            } else if let Some((p, q)) = stated.and_then(|x| x.get("of_members")).and_then(Value::as_str).and_then(crate::bound::share_of_members) {
-                // `needed.sign: { of_members: "2/3" }` (folds.md, Counts): that share of the members in the fold of the block's causal past, rounded up
-                let members = circle_state_in(circle, read, Some(block)).map(|st| st.members.values().filter(|m| roles_at(m, block, read).is_some()).count() as u64).unwrap_or(0);
-                ((members * p).div_ceil(q)).max(1) as f64
-            } else {
-                int(stated).unwrap_or(1.0)
-            };
-            let own = core::iter::once(rs(block, "author").unwrap_or(""));
-            let confirmers = read.values().filter(|c| list(rf(c, "confirms")).contains(&hash_of(block))).filter_map(|c| {
-                // each confirmer holds the power in the fold of their confirm's past, with no quorum of its own
-                (crate::identity::counts_in(c, read) && roles_then(c, circle, read).is_some_and(|r| holds_power(&roles_table(root), &r, power))).then(|| rs(c, "author")).flatten()
-            });
-            quorum(own.chain(confirmers), Some(needed))
-        }
-    }
-}
-
-// The roles a block's author holds in the circle's fold of the block's causal past: None when they are no member then, or the
-// block is outside a cut of theirs (circles.md, The cut).
-fn roles_then(block: &Value, circle: &str, read: &Index) -> Option<Vec<String>> {
-    let mut state = circle_state_in(circle, read, Some(block))?;
-    if state.void.contains(hash_of(block)) {
-        return None;
-    }
-    state.members.shift_remove(rs(block, "author")?).and_then(|m| roles_at(&m, block, read))
-}
-
-/// Whether a block may be signed as a circle: its author holds, in the fold of its causal past, `role` if one is
-/// named, else a role with the power `sign`.
-pub fn may_act_as(block: &Value, circle: &str, blocks: &[Value], role: Option<&str>) -> bool {
-    may_act_as_in(block, circle, &read_all(blocks), role)
-}
-
-/// Who a circle (or `circle#role`) in a block's audience means: the members (or holders) in the fold of the circle's
-/// grants within that block's causal past. A name with more than one `#`, or an empty part, means no one.
+/// Who a circle in a block's audience means (C8): the owners of its parts by title in the circle fold of that block's causal past.
 pub fn members_then(block: &Value, recipient: &str, blocks: &[Value]) -> Vec<String> {
-    let circle = recipient.split_once('#').map_or(recipient, |(c, _)| c);
     let index = crate::js::held_index(blocks);
-    if !index.contains_key(circle) {
+    if !index.contains_key(recipient) {
         return vec![];
     }
     let read = read_all(index.values());
-    if !read.contains_key(hash_of(block)) && !crate::js::readable(block, &read) {
+    if !read.contains_key(hash_of(block)) && !crate::valid::is_read(block, &read) {
         return vec![];
     }
-    if recipient.contains('#') {
-        return holds_then(block, recipient, &read).unwrap_or_default();
+    let b = read.get(hash_of(block)).unwrap_or(block);
+    if !read.past_of(b).contains(recipient) {
+        return vec![];
     }
-    let Some(state) = circle_state_in(circle, &read, Some(block)) else { return vec![] };
-    let void_author = rs(block, "author").filter(|_| state.void.contains(hash_of(block)));
-    sorted_set(state.members.iter().filter(|(k, m)| Some(k.as_str()) != void_author && roles_at(m, block, &read).is_some()).map(|(k, _)| k))
+    owners_then(recipient, Some(b), &read)
 }
 
-/// Who a name means at a block: an id is itself; `circle#role` (one `#`, neither part empty) is the holders of the role in the
-/// circle's fold of the block's causal past, less the block's author when the block is outside a cut of theirs (circles.md, The
-/// cut). Any other name means no one (None).
-pub(crate) fn holds_then(block: &Value, name: &str, read: &Index) -> Option<Vec<String>> {
-    match name.split_once('#') {
-        None => Some(vec![name.to_string()]),
-        Some((circle, role)) if !circle.is_empty() && !role.is_empty() && !role.contains('#') => {
-            let state = circle_state_in(circle, read, Some(block))?;
-            let mut out = holders_of(Some(&state), role);
-            if state.void.contains(hash_of(block)) {
-                out.retain(|h| Some(h.as_str()) != rs(block, "author"));
-            }
-            // a holder whose grant giving the role ended at or before the block's date holds it no more there (decision H11)
-            out.retain(|h| state.members.get(h).and_then(|m| roles_at(m, block, read)).is_some_and(|r| r.iter().any(|x| x == role)));
-            Some(out)
-        }
-        _ => None,
-    }
-}

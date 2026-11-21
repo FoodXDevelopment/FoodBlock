@@ -1,0 +1,18 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "parties": null,
+   "limit": {
+    "minor": 5,
+    "currency": "gbp"
+   },
+   "each": {
+    "value": "-0.5",
+    "unit": "kg"
+   },
+   "condition": {}
+  }
+ ],
+ "world": 10
+}

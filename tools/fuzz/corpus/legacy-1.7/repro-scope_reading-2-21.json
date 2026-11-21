@@ -1,0 +1,18 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "types": {},
+   "limit": {
+    "minor": 0,
+    "currency": "EUR"
+   },
+   "each": {
+    "value": "-0.5",
+    "unit": "kg"
+   },
+   "colour": null
+  }
+ ],
+ "world": 2
+}

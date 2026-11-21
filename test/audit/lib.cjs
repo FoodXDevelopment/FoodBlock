@@ -12,6 +12,13 @@ class World {
     this.people[label] = p
     return p
   }
+  // a key of `p` on a device she sets up: her key grant brings it in (her first voice's word stands when signed, 3d-18), and what the device
+  // signs with it is her word (identity.md, A voice is her, whole). 1.9: a device signs a sensor's readings for its owner this way (end pass 2026-11-20)
+  deviceKey(p, label) {
+    const keys = fb.generateKeypair()
+    this.w(p, 'grant', { kind: 'key', public_key_sign: keys.public_key_sign }, { subject: p.id }, `key grant: ${label} (a key of ${p.label})`)
+    return { label, keys, id: p.id, g: p.g }
+  }
   add(b, note) {
     const held = this.blocks.slice()
     let r1, r2
@@ -44,7 +51,7 @@ class World {
     const full = { type, state: { seq: last.seq, at: T(), audience: [], ...state }, refs: { author: p.id, prev: last.prev, ...refs } }
     full.state.audience = 'public'
     const created = fb.create(full.type, full.state, full.refs)
-    const signature = fb.sign(created, p.keys.private_key)
+    const signature = handSign(created, p.keys.private_key)
     const b = { ...created, signature }
     return this.add(b, note)
   }
@@ -56,4 +63,15 @@ class World {
 }
 // A thing is owned only once its own record shows it is an instance (things.md, Things): the audit's instances name their kind, a kind no world holds.
 const kindOf = (word) => require('crypto').createHash('sha256').update('kind: ' + word, 'utf8').digest('hex')
-module.exports = { fb, oracle, World, T, kindOf }
+// A block signed by hand over its header, as a careless or hostile device signs it (1.9 3a-3: `sign` refuses what `read` refuses); same as tools/fuzz/lib18.cjs.
+const handSign = (block, key) => fb.signMessage(fb.header(block), key).signature
+// 1.9 R-C1 (05-deals.md, section 6; 3c-6): a condition has no reader's clock. It is read for a block: what is in that block's causal past counts,
+// and a reading's window ends at that block's own `at`. `readFor` writes such a block (not added to any world): `who`'s note at `at`, naming in
+// refs.after the heads of every block held whose own `at` is not later (the sensor, its owner's grants and the readings).
+const readFor = (blocks, who, at) => {
+  const seen = blocks.filter((b) => b.state && typeof b.state.at === 'string' && b.state.at <= at)
+  const named = new Set(seen.flatMap((b) => [].concat(b.refs.prev || [], b.refs.after || [])))
+  const heads = seen.filter((b) => !named.has(b.hash)).map((b) => b.hash).sort() // refs.after names at most 16 heads
+  return fb.write('observe', { kind: 'note', text: 'read for' }, { after: heads }, { author: who.id, key: who.keys, held: blocks, at, audience: 'public' })
+}
+module.exports = { fb, oracle, World, T, kindOf, handSign, readFor }

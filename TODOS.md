@@ -11,9 +11,10 @@ Open work, with enough context to pick up.
   person's node; an index needs the filter and `heads` in SQL.
 - **Publishing 1.7.** See `DISTRIBUTION.md`.
 - Decide before the freeze: rename the actor kind value `agent` (needs FoodOS change).
-- EPCIS profile vectors not yet written: AssociationEvent, SensorElement, ErrorDeclaration, a circle as covered person (spec/profiles/foodblock-profile-epcis.md §9).
+- EPCIS profile vectors not yet written: AssociationEvent, SensorElement, ErrorDeclaration, a circle as covered person (spec/patterns/foodblock-profile-epcis.md §9).
 - Passkeys: a real device's assertion has not been tried (the vectors use a test authenticator that writes the same shapes); the Kotlin tests need a JDK.
 
+- **1.8 proposals** are collected in `CHANGES-1.8.md` (proposed, nothing changed yet): the first block as a grant to its own key, a block travelling with its pieces, a grant that can cover a stranger's request on her own offer, linking what a kept animal is given to what it produces, a recall naming the maker, an operator never making anyone "dealt with", and the wording below.
 - **1.8 wording: who holds a node** (FoodX decided 2026-11-02). protocol.md says "Only people and machines hold nodes." Say instead that a node is held by a person; a machine runs one only as its owner's agent, under her grant, and its words bind her only as far as that grant (only people act). No change to blocks or vectors.
 
 ## Ideas parked on purpose

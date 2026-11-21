@@ -1,0 +1,45 @@
+# Stage 5 (deals): where the text was silent or split, as the Rust core built it
+
+Each item: the section, the reading built (the one closest to the centre: only a signed word binds, and only its signer; nothing fills anyone's silence), and the test that pins it (`sdk/rust/tests/stage5.rs` unless named). Built 2026-11-19, without reading the oracle.
+
+1. **Named readings with no rule set** (R-C3, T2; the text's SILENT 4). `settled`, `paid` and a bare sensor `reading` are named readings: the core runs none, so a condition naming one is *not read* (`condition_holds` answers null) and never holds; what it holds stays held until its receiver lets it go. The list is data: `protocol.json` `named_readings` (new, with `named_readings_about`). A block that states `state.rule_set` is `unknown_rules` as 3a-13 already says. Pins: `t2_when_title_passes`, `r_c3_named_readings`.
+
+2. **Is `ruled` a named reading?** (R-H9, R-C3; the text's SILENT 3). R-C3 lists it as one, but R-H8 and R-H9 expect the stake to land on the ruling, and its reading is signed fields only (the judge's head ruling's `awards`). Built: the core reads `ruled`. Pins: `r_h8_a_promise_not_to_do_and_its_stake`, `r_h9_ruled_and_its_end`.
+
+3. **"Ended only for blocks that had not used it"** (R-H9, R-C1; the text's SILENT 5). A conditioned transfer's condition holds where it holds on every block seen, or where it holds in the causal past of a counted draw on the same thing by its receiver that has the transfer in its past (that draw used it). Built for every condition, not only `ruled`. With no ruling ever, `ruled` has no end; wrapped `within` a deadline it dies at the clock's cutoff. Pins: `r_h9_ruled_and_its_end` (worlds A, B, C).
+
+4. **When a will takes** (R-H7, 3d-16; the text's SILENT 16). A will (her transfer on `{ closed: <her id> }`) is no draw at all until her close is held. Then it is read where her first close is (after every other draw of hers, wills among themselves in the order of her line), so a will whose thing is gone takes nothing. Her stop of the will counts where it is in the close's causal past. Her close (3d-15) frees her other draws, never a will. Pins: `r_h7_a_will` (worlds A, B, C); `core_set_b.rs` `d3_16_a_will_holds_nothing_in_life` (now run).
+
+5. **3d-15 and an earlier sale** (R-H7 world A). As built in the one set, her close frees a draw of hers whose receiver's yes is not in the close's causal past, even after it landed. The test's close has Sam's yes in its past (her node holds it). Left as the one set built it; flagged because a close that has not seen the buyer's yes would undo the sale. Pin: `r_h7_a_will`.
+
+6. **What "moves nothing" means for `elapsed`** (R-H10). A promise whose offer names no `refs.what`, no `terms.lines` and no `terms.quantity`: nothing goes from its signer. Past its `terms.until` on the reader's clock, an `accepted` or `underway` view reads `elapsed`. Pin: `r_h10_elapsed`.
+
+7. **`requests`, its spelling and when it shows** (R-H2, R-B1; 1.8 P12 "kept", never built in the core). `requests: [{ accept, open }]`, `open` a list of `which`, `whose`, `when` the accept leaves open, sorted by accept; shown only while no accept binds; an accept that is ended (her own earlier decline in its past, his decline of it on an offer with `expires`, or his stop before in its past) is not a request. 1.8's `crossed`, `per_accept`, `waiting`, `bench` outputs are still not built in the core. Pins: `r_h2_lands_or_frees_as_her_yes_binds`, `r_b1_when`.
+
+8. **R-H1 against CORE-SET 3c-1: a yes to an order.** R-H1's sentence says a yes to an order is a draw that holds; 3c-1 as decided in building says it holds nothing (the hold starts at the seller's own word naming the instance), "for the owner to confirm". Kept 3c-1. `gives` lines carry `held`: true for an offer (no status, answering nothing, to a named receiver other than its signer) or a transfer that names an instance of hers; false otherwise. The `draw` field on `gives` (the text's SILENT 6) is not built; `bench` on `gives` (§11) is not built (no shape given). Pin: `t1_what_a_promise_is`.
+
+9. **T4's stage after a ruling.** The text expects `accepted`; the judge defeats the delivery, and Maria's payment still counts, so the fold says `underway`. F stays Leila's. Pin: `t4_a_ruling_and_finality`.
+
+10. **A spot exchange** (R-P5). The seller's transfer `for` the buyer's order, naming what it moves, `to_owner` the buyer, binds the order where no promise accepts it (his yes and his delivery in one block); the buyer's order naming that instance is her yes for the landing; the seller's own `covers` on that transfer is the payee's word toward the price (the check now allows `covers` there). World B (`covers` 0): the text says `accepted`; the delivery counted, so the fold says `underway`. Pin: `r_p5_a_spot_exchange`.
+
+11. **The payee's signal and the stage** (R-P6). The signal gates Due of what moves under `waits_on: price`; it does not raise `paid` in the stage (the story expects `underway` after it). Due is checked where a tool's delivery or payment is under her grant (`why_not_under`, `not_due`); the binding accept may be the other side's accept of her own offer, read only where no accept under the grant or by her hand exists. Pin: `r_p6_waits_on_and_due`.
+
+12. **R-C2: `{ accepted: X }` gates Due, not binding.** Built from the text: a promise so conditioned binds on its own accept (the stage no longer waits on X); Due reads the deal's condition in the performing block's causal past (`not_due`, "the deal's condition has not held"). Pin: `r_c2_the_shapes`.
+
+13. **Work** (R-P7; the text's SILENT 2). Whose word counts is read from `terms.condition`: a `signal` of the work's own kind (`work`) whose `by` names its signer (or a role she holds); else the receiving side's `accepted` answer, as before. A payment counts the doer's work blocks in its causal past that are not otherwise counted, up to the pieces it pays for at the unit price. There is no output for a job's hours: the stage's `moved` names the dates both sides moved, so "moved 40 h" is pinned through `uncovered.to` being £0 ("uncovered null" read as nothing uncovered). Pin: `r_p7_work`.
+
+14. **`forfeit`** (R-P9). Kept only where an onward stop speaking for the paying side (`to`) is among the first onward stops of the deal and none speaking for the payee is; with no stop at all it is the payer's. Pin: `r_p9_forfeit`.
+
+15. **A judge named late** (R-J2). "Named after the deal binds": the referee grant is not in the binding accept's causal past. "Every holder of what either side has to come": the holders of the receiving places (`to_come`) read on every hand-over held. World A: the text says `done` for an unpaid credit sale; the fold says `underway`; the test pins that Zed's ruling moves nothing and the £60 to come is Leila's. Pin: `r_j2_a_judge_named_late`.
+
+16. **A claim's hand-over** (R-J5). A transfer naming in `refs.what` any held block that is not a `thing` waits on its key's `reach` (a block not held names nothing). `invasion_shown` still takes an `observe` of kind `invasion`; a naming or ruling by a side, or by a judge no one named, is simply not listed (the `nothing` list is gone). Pin: `r_j5_a_claims_hand_over_waits_on_reach`.
+
+17. **The door ops that lost their clock** (R-C1, §11). `condition_holds(condition, held, at)`: `at` the block it is read for (a block, or an id held), or null for every block held; a time there is now an argument error. `reading_condition_holds(condition, observes, at)`: the readings in the past of the block it is read for, the window ending at that block's own `at` (her word, read against her); no `at` holds nothing. `ruling_releases(stake, held)`: the head among all held. `ownership_view` and `promise_view` keep their clock argument; the condition beside a view is read with none. Pins: `r_h7_a_will` (world B), `r_c2_the_shapes`, `r_c1_no_readers_clock`.
+
+18. **`{ stopped: <first promise>, side }`** (R-C2, §8 in place of `notice`). Holds where any counted onward stop of that deal speaks for that side (not only the first). It never dies by itself: a stake on it is held until the stop, or until its receiver lets it go. Pins: `r_c2_the_shapes`, `a_deposit_held_that_names_a_thing`.
+
+19. **What replaces the successor profile in circles and grants.** The profile's death reading in the circle fold (a member out at a death) is deleted with it and not replaced (stage 6's to say). A grant now ends at her close (3d-15) for blocks that have the close in their causal past. A grant of kind `successor` is an ordinary grant: no power at a close. Pin: `a_successor_only_by_her_own_will`.
+
+20. **A stake on a promise whose own `terms.condition` has not held** (the text's SILENT 7). The stake's landing reads only its own condition (`ruled`); the promise's gate is not read. Not pinned by a world.
+
+21. **A machine handed over to her key** (asked for; no stage 5 text). No machine rule: the machine's own list is replaced by a key grant putting her key first; her key then speaks for it and the maker's no longer does. Pin: `a_machine_identity_handed_over_to_her_key`.

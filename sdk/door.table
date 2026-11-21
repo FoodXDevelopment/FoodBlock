@@ -14,15 +14,13 @@
 #   strings   a list of text                json     any JSON value
 #   suite     the name of a suite; missing = the default suite (protocol.json suites.default)
 #   arrivals  { hash: time } for a reader that keeps when blocks arrived, else missing
-# `unknown_arrival` is text, `inside` or `outside`: what a reader of the recovery reach reads a block whose arrival it does not know as. It is
-# required whenever arrivals are given, and there is no default (identity.md, Recovery reach).
 # `?` after a type: it may be missing (null). A missing trailing argument is left out of the call.
 #
 # Result types: text, bool, int, block, blocks, object, strings, refusals ([{ code, detail }]), json; `?` after one: it may be null.
 # `!` after the result: the call may fail as a normal answer (a refusal, a bad key or a signature that does not open): the SDK
 # hands the failure to its caller. Without `!` a failure is a bug or a wrong argument type, which stops the call.
 #
-# A block may also be given whole as the first argument of canonical, hash, check and refusals (door.rs `Args::block`).
+# A block may also be given whole as the first argument of canonical and hash (door.rs `Args::block`).
 #
 # Which ops are the protocol. Only the ops named in spec/protocol.json `door.ops` are the protocol: the vectors (spec/vectors.json `door`) bind them,
 # and an implementation conforms by answering them. Every other op below is a convenience of this SDK (a thin call into the core, a builder, a
@@ -60,33 +58,34 @@ finds_self(block:json, recipient:text, salt:text) -> bool
 reveal_for(salts:json, id:text) -> json
 compose(type:text, state:json, refs:json, options:object) -> block !
 new_salt() -> text !
-check(type:text, state:json, refs:json, held:blocks, schemas:blocks?) -> strings
-refusals(type:json, state:json, refs:json, held:blocks, schemas:blocks?) -> refusals
-amount(value:text, unit:text) -> object
-money(minor:int, currency:json) -> object
+amount(value:text, unit:text, of:text?) -> object
 terms(terms:json) -> object
-valid(block:block, held:blocks, schemas:blocks?) -> refusals
+valid(block:block, held:blocks) -> refusals
+read(block:block, held:blocks, schemas:blocks?, runs:strings?) -> refusals
+schemas_from(held:blocks) -> blocks
 strict_text(text:text) -> refusals
+# 1.9 3a-3: what a writer refuses to sign, asked of an unsigned draft { type, state, refs }, read against held; [] when it may be signed
+write_refusals(draft:object, held:blocks) -> refusals
 strict_push(text:text) -> json !
 needs(block:block, held:blocks?) -> strings
-receipt_code(hash:text, long:bool?) -> text
+short_code(hash:text) -> text
+short_reply(answer:block) -> text?
+short_reply_open(text:text, signer:text, blocks:blocks) -> block?
 code_matches(code:text, typed:text) -> bool
 consent(person:text, sender:text?, blocks:blocks, block:json?) -> object
 is_stranger(receiver:text, sender:text, blocks:blocks, block:block?) -> bool
-admission_refusals(block:block, receiver:text, blocks:blocks, admission:json, strangers_today:int) -> refusals
+admission_refusals(block:block, receiver:text, blocks:blocks, admission:json, asks_today:int) -> refusals
 due(promise:block, arrivals:arrivals?) -> json
 repeat_occurrences(promise:block, from:time, to:time) -> strings
-recovery_reach(rotation:block, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> json
 next_link(last:block?, brought_in:text?) -> object !
 check_chain(blocks:blocks, id:text) -> object
+read_whole(block:text, start:text, held:blocks) -> object
 causes_of(block:block) -> strings
 past_of(block:block, blocks:blocks) -> json
 heads_among(blocks:blocks) -> blocks
 is_time(value:json) -> bool
 is_date(value:json) -> bool
 parse_duration(text:text?) -> object?
-identity_of(id:text, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> object
-signer_of(block:block, keys:json) -> text?
 chains_of(id:text, blocks:blocks) -> json
 causal_order(blocks:blocks) -> blocks
 sees(a:block, b:block, blocks:blocks) -> bool
@@ -97,10 +96,14 @@ header(block:block) -> object
 header_signed_by(message:block, public_key:text) -> bool
 genesis(keys:object, options:object) -> block !
 live_keys(id:text, blocks:blocks) -> strings
-keys_of(id:text, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> json
-key_timeline(id:text, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> json
-signed_by_author(block:block, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> bool
+key_timeline(id:text, blocks:blocks) -> json
+signed_by_author(block:block, blocks:blocks) -> bool
+stands(block:block, blocks:blocks) -> object
 spec() -> object
+# 1.9 stage 7 (B5, Job F): a rule set named by its hash; a door that keeps blocks between calls
+rule_set(files:object) -> object !
+mount(blocks:blocks, into:text?) -> text !
+unmount(mount:text) -> bool !
 spec_list(name:text) -> json
 add_duration(time:text, duration:text, sign:int?) -> text?
 compare_durations(a:text, b:text, from:text) -> int
@@ -110,11 +113,10 @@ grammar(name:text?, value:json) -> bool
 merkle_root(chunks:strings) -> text
 merkle_proof(chunks:strings, index:int) -> strings
 merkle_verify(block:block, chunk:text, index:int, proof:strings) -> bool
-recovery_key_hash(public_key:text, suite:suite?) -> text
+key_hash(public_key:text, suite:suite?) -> text
 is_genesis(block:block?) -> bool
 genesis_opens(block:block?) -> bool
-key_grant(id:text, new_key:text?, signer:object, options:object) -> block !
-identity_state(id:text, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?) -> object
+identity_state(id:text, blocks:blocks) -> object
 counts(block:block, blocks:blocks) -> bool
 forked(block:block, blocks:blocks) -> bool
 fork_pairs(blocks:blocks) -> json
@@ -122,35 +124,27 @@ next_link_for(id:text, public_key:text, blocks:blocks) -> object !
 is_live(grant:block, blocks:blocks, now:time?) -> bool
 ancestors(grant:block, blocks:blocks) -> json
 terms_total(terms:json?, quantity:json?) -> json
-within_limit(limit:json?, value:json?, spent:json?) -> bool
-limit_within_parent(child:json?, parent:json?, at:time) -> bool
-limit_fence(grant_hash:text, agent:text, limit:json?, every:text?, salt:text?, each:json?) -> object
-limit_commitment(limit:json?, every:text?, salt:text, suite:suite?, each:json?) -> text
-limit_opens(grant:block, fence:block, suite:suite?) -> bool
 recipients_of(for_whom:json, hash:text) -> strings
 children_of(id:text, blocks:blocks) -> json
 why_not_live_undo(block:block, blocks:blocks) -> strings
-act_name(block:block) -> text
 reading_is_persons_claim(block:block, person:text, blocks:blocks) -> bool
 residency_refusals(block:block, holds_in:strings) -> refusals
 scope_within(child:json, parent:json) -> strings
 scope_refusals(child:json, parent:json) -> refusals
 scope_reading(scope:json?) -> object
-operators_of(agent:text, blocks:blocks, now:time?) -> strings
+fence_reading(fence:json?, at:time, readings:json?, heard:time?) -> object
 why_not_under(block:block, blocks:blocks, now:time?) -> strings
 under_ok(block:block, blocks:blocks) -> bool
 why_not_live(grant:block, blocks:blocks, now:time?) -> strings
-# Feature legacy (the one-time converter)
-convert(old:blocks, options:object) -> object !
-old_hash(block:block) -> text !
 # Feature earnest
-earnest_shape_ok(block:block) -> bool
-earnest_paid(ask:block, earnest:block, blocks:blocks) -> bool
 # Feature envelope
-seal(value:json, keys:strings, suite:suite?, fixed:object?) -> block !
+seal(value:json, keys:strings, suite:suite?, fixed:object?, pad:bool?) -> block !
 open(envelope:block, x25519_private:text) -> json !
-seal_copy(block:block, keys:strings, reveals:json, private_key:text, fixed:object?, suite:suite?, sign_suite:suite?) -> block !
+seal_copy(block:block, keys:strings, reveals:json, fixed:object?, suite:suite?) -> block !
 open_copy(message:block, x25519_private:text) -> block !
+# 1.9 stage 7 (A1): the size a padding sealer pads to; a copy wrapped to a mailbox key
+padded_size(bytes:int) -> int
+wrap_copy(copy:block, mailbox:text, suite:suite?, fixed:object?) -> block !
 encryption_keypair(suite:suite?) -> object !
 encryption_key_of(private_key:text, suite:suite?) -> text !
 # Feature folds
@@ -160,21 +154,38 @@ promise_stage(first:block, blocks:blocks, options:object) -> object
 promise_views(firsts:strings, blocks:blocks, options:object) -> object
 promise_view(first:block, blocks:blocks, options:object) -> object
 circle_state(circle:text, blocks:blocks, within:block?) -> object?
-may_act_as(block:block, circle:text, blocks:blocks, role:text?) -> bool
+machine_lock(machine:block, held:blocks, now:time?) -> object
+circle_versions(circle:text, blocks:blocks) -> object?
+# 1.9 stage 6: whether a row of the circle a block is `as` holds for it; the fewest hands each row needs
+row_holds(block:block, blocks:blocks) -> object
+ways_in(circle:text, blocks:blocks) -> object
+# 1.9 stage 4: keeps to, the meter, the worst case, the lowest offer
+keeps_to(c:block, a:block, blocks:blocks) -> object
+meter(grant:block, blocks:blocks, block:block?) -> object
+worst_case(grant:block, blocks:blocks) -> object
+lowest_offer(grant:block, blocks:blocks) -> object
+to_come_back(person:text, blocks:blocks) -> object
+# 1.9 stage 7 (Job C), readings: the read-back, a renderer, a second reader's redo
+readback(block:json, held:blocks, to:text?, renderer:text?, digits:json?) -> object !
+render(answer:object, renderer:text) -> text !
+readback_redo(rb:block, held:blocks) -> object !
 speaks_for(block:block, blocks:blocks) -> text?
 backed(block:block, person:text, blocks:blocks) -> object
 backed_all(person:text, blocks:blocks) -> object
 gives(block:block, person:text, blocks:blocks) -> object
-act_check(deal:block, template:block) -> object
+binds(draft:object, held:blocks) -> bool
 listing_check(lookup:block, listing:block, blocks:blocks) -> object
 check_reads(check:block, blocks:blocks) -> object
 clearing_applied(clearing:block, blocks:blocks) -> object
 ruling_releases(stake:block, blocks:blocks, now:time?) -> object
 ruling_audience(ruling:block, blocks:blocks, now:time?) -> object
+count_of(needed:json, members:int) -> int?
+fee_back(offer:block, deal:block, blocks:blocks) -> object
 members_then(block:block, recipient:text, blocks:blocks) -> json
 where_now(thing:block, blocks:blocks) -> json
 ownership(instance:block, blocks:blocks, now:time?) -> object
-ownership_view(instance:block, blocks:blocks, arrivals:arrivals?, unknown_arrival:text?, now:time?) -> object
+ownership_view(instance:block, blocks:blocks, now:time?) -> object
+made_from(instance:block, blocks:blocks) -> json
 receiver_of(promise:block, blocks:blocks) -> json
 owner_of(instance:block, blocks:blocks) -> json
 shares_on(thing:block, blocks:blocks) -> json
@@ -183,17 +194,13 @@ not_free_shown(block:block, blocks:blocks) -> json
 invasion_shown(claim:block, blocks:blocks) -> json
 pot(head:block, blocks:blocks, now:time?) -> json
 account_of(who:text, blocks:blocks) -> json
-owed_back(person:text, blocks:blocks) -> object
 release_shown(subject:block, blocks:blocks) -> json
-bids_shown(quarrel:block, blocks:blocks) -> json
 # Feature successor
-successor_state(grant:block, blocks:blocks, now:time?, arrivals:arrivals?) -> json
-successor_view(grant:block, blocks:blocks, now:time?, arrivals:arrivals?) -> json
 # Feature ballots
 counted_in(result:json?, commitment:text, counter:text) -> bool
 # Feature rekeys
 circle_key(circle:text, blocks:blocks) -> json
-# Feature sync (a node's own choices are stated in one object, never filled: answer_pull's choices { cap, serves_pairs }, accept's and accept_sealed's { takes_pairs })
+# Feature sync (a node's own choices are stated in one object, never filled: answer_pull's choices { cap, serves_pairs }, accept's { takes_pairs })
 pull_request(request:json) -> object
 push_request(messages:blocks, for_whom:json?) -> object
 new_challenge() -> text !
@@ -204,12 +211,13 @@ pull_refusals(message:block, fresh:object) -> refusals
 push_refusals(message:block, fresh:object) -> refusals
 answer_pull(log:json, request:object, node:text, private_key:text?, choices:object, asker:text?, held:blocks?, suite:suite?, through:int?) -> object !
 push_answer(parts:object, node:text, private_key:text, suite:suite?) -> block !
-well_known(node:text, holds:strings, speaks_for:strings, admission:text?, endpoints:object) -> object
+well_known(node:text, reads:strings, admission:text?, endpoints:object, log:text?) -> object
+log_shown(receipts:blocks, request:block, answer:block, held:blocks) -> object
+export_whole(document:object, log:text, last:text) -> object
 waited_too_long(since:text, now:text, ttl:int) -> bool
 matches(block:block, filter:json?, held:blocks) -> bool
 heads_of(blocks:blocks) -> blocks
-accept(incoming:blocks, held:blocks, choices:object, schemas:blocks?) -> object
-accept_sealed(messages:blocks, held:blocks, choices:object) -> object
+accept(incoming:blocks, held:blocks, choices:object, schemas:blocks?, push:object?) -> object
 answer_signed_by(answer:block, node_keys:strings) -> bool
 well_known_errors(doc:json?) -> strings
 announcement(doc:json) -> object

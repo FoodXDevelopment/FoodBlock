@@ -18,13 +18,11 @@ int main() {
   try {
     // Fixed seeds so the run is the same every time. A real device makes its key once, on the device: keypair().
     const std::string keys = foodblock::keypair("5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e");
-    const std::string recovery = foodblock::keypair("7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e7e");
     const std::string public_key = field(keys, "public_key_sign");
 
     // Who the sensor is: its genesis. Its hash is the sensor's id.
     const std::string me = foodblock::genesis(keys, R"({"kind":"sensor","at":"2026-10-15T09:00:00.000Z","audience":"public",)"
-        R"("encryption_key":"0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",)"
-        R"("recovery_key":")" + field(recovery, "public_key_sign") + R"(","reach":"P30D"})");
+        R"("encryption_key":"0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729"})");
     const std::string id = field(me, "hash");
     std::cout << "sensor id      " << id << "\n";
 

@@ -9,36 +9,133 @@ use crate::prelude::*;
 
 const CROCKFORD: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/// The short receipt code of a block (profiles/short-form.md): the first 5 bytes (40 bits) of its id, in Crockford
-/// Base32, shown as `XXXX-XXXX`. A lookup key inside one custodian, not an id and not an authority.
-pub fn receipt_code(id: &str) -> Option<String> {
-    code_of(id, 8)
+/// The short code of a block (profiles/short-form.md): the first 5 bytes (40 bits) of its id's digest, in Crockford Base32, shown as
+/// `XXXX-XXXX`; with `long`, ten characters (50 bits) as `XXXXX-XXXXX`, for a receiver that holds two blocks with one short code. A
+/// lookup key, never an id or an authority.
+pub fn short_code(id: &str) -> Option<String> {
+    let c = crockford(id, 8)?;
+    Some(format!("{}-{}", &c[..4], &c[4..]))
 }
 
-/// The long form, for the rare custodian whose own index holds two blocks with the same short code: the first 50 bits
-/// of the id, ten characters, shown as `XXXXX-XXXXX`.
-pub fn receipt_code_long(id: &str) -> Option<String> {
-    code_of(id, 10)
-}
-
-fn code_of(id: &str, chars: usize) -> Option<String> {
+// The first `chars` Crockford characters of an id's digest, five bits each; None when the id is too short.
+fn crockford(id: &str, chars: usize) -> Option<String> {
     let hex_part = id.rsplit(':').next().unwrap_or(id);
-    let bytes = crate::block::unhex(hex_part.get(..14)?)?;
-    let n = bytes.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);   // 56 bits
+    let bits: Vec<u8> = hex_part.chars().map(|c| c.to_digit(16).map(|d| d as u8)).collect::<Option<Vec<_>>>()?.into_iter().flat_map(|d| (0..4).rev().map(move |i| (d >> i) & 1)).collect();
+    if chars * 5 > bits.len() {
+        return None;
+    }
+    Some((0..chars).map(|i| CROCKFORD[bits[i * 5..i * 5 + 5].iter().fold(0usize, |acc, b| acc << 1 | *b as usize)] as char).collect())
+}
+
+const B64URL: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+fn b64url(bytes: &[u8]) -> String {
     let mut out = String::new();
-    for i in 0..chars {
-        out.push(CROCKFORD[((n >> (51 - 5 * i)) & 31) as usize] as char);
-        if i + 1 == chars / 2 {
-            out.push('-');
+    for chunk in bytes.chunks(3) {
+        let n = chunk.iter().enumerate().fold(0u32, |acc, (i, b)| acc | (*b as u32) << (16 - 8 * i));
+        for i in 0..=chunk.len() {
+            out.push(B64URL[((n >> (18 - 6 * i)) & 63) as usize] as char);
+        }
+    }
+    out
+}
+fn unb64url(text: &str) -> Option<Vec<u8>> {
+    let vals: Vec<u32> = text.bytes().map(|c| B64URL.iter().position(|x| *x == c).map(|p| p as u32)).collect::<Option<_>>()?;
+    let mut out = Vec::new();
+    for chunk in vals.chunks(4) {
+        if chunk.len() == 1 {
+            return None;
+        }
+        let n = chunk.iter().enumerate().fold(0u32, |acc, (i, v)| acc | v << (18 - 6 * i));
+        for i in 0..chunk.len() - 1 {
+            out.push((n >> (16 - 8 * i)) as u8);
         }
     }
     Some(out)
 }
 
+/// The short reply (profiles/short-form.md, way 1): only what the receiver cannot rebuild, as `FB1 ` and base64url with no padding of the
+/// signature (64 bytes), the first 5 bytes of the answered block's id, the answer (`01` accepted, `02` declined), `at` (6 bytes, milliseconds
+/// since 1970, all zero when a decline carries none) and `seq` (the rest, no leading zero). None for a block that is no such answer.
+pub fn short_reply(answer: &Value) -> Option<String> {
+    let profile = crate::spec().conventions.pointer("/profiles/short-form/short_reply")?.clone();
+    let sig = crate::block::unhex(answer.get("signature")?.as_str()?).filter(|s| s.len() == 64)?;
+    let answered = crate::block::unhex(rs(answer, "answers")?.rsplit(':').next()?)?;
+    let code = profile.get("answers")?.as_object()?.iter().find(|(_, v)| v.as_str() == ss(answer, "status"))?.0.clone();
+    let at: u64 = match ss(answer, "at") {
+        Some(t) => crate::time::parse(t)? as u64,
+        None if ss(answer, "status") == Some("declined") => 0,
+        None => return None,
+    };
+    let seq = st(answer, "seq")?.as_u64()?;
+    let mut bytes = sig;
+    bytes.extend_from_slice(answered.get(..5)?);
+    bytes.extend(crate::block::unhex(&code)?);
+    bytes.extend_from_slice(&at.to_be_bytes()[2..]);
+    let seq_bytes = seq.to_be_bytes();
+    let first = seq_bytes.iter().position(|b| *b != 0).unwrap_or(7);
+    bytes.extend_from_slice(&seq_bytes[first..]);
+    Some(format!("{}{}", profile.get("prefix")?.as_str()?, b64url(&bytes)))
+}
+
+/// A short reply rebuilt (profiles/short-form.md, way 1): for each held block whose id starts with the 5 bytes, the answer template is
+/// filled with the signer's id, the head of each key of hers the receiver holds, `refs.key` from her list (none for her genesis key) and
+/// the reply's values; the block whose signature opens is the block. An accept is a `promise` deriving from a `readback` for the block
+/// answered; a decline an `observe`. None when none opens: nothing was said.
+pub fn short_reply_open(text: &str, signer: &str, blocks: &[Value]) -> Option<Value> {
+    let profile = crate::spec().conventions.pointer("/profiles/short-form/short_reply")?.clone();
+    let body = text.strip_prefix(profile.get("prefix")?.as_str()?)?;
+    let bytes = unb64url(body)?;
+    if bytes.len() < 64 + 5 + 1 + 6 + 1 {
+        return None;
+    }
+    // 1.9 3a-10: a short reply opens only from its exact spelling: strict base64url, no padding, `seq` in its fewest bytes (no leading
+    // zero). Any other text opens nothing.
+    if b64url(&bytes) != body || bytes[76] == 0 || bytes.len() > 76 + 8 {
+        return None;
+    }
+    let (sig, answered, answer, at, seq) = (&bytes[..64], &bytes[64..69], bytes[69], &bytes[70..76], &bytes[76..]);
+    let status = profile.get("answers")?.get(crate::block::hex(&[answer]))?.as_str()?.to_string();
+    let ms = at.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);
+    let seq = seq.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);
+    let index = crate::js::held_index(blocks);
+    let prefix = crate::block::hex(answered);
+    let sig = crate::block::hex(sig);
+    for x in index.values().filter(|b| hash_of(b).rsplit(':').next().is_some_and(|h| h.starts_with(&prefix))) {
+        let readbacks: Vec<Option<&str>> = if status == "accepted" {
+            index.values().filter(|r| type_of(r) == "observe" && ss(r, "kind") == Some("readback") && list(rf(r, "for")).contains(&hash_of(x))).map(|r| Some(hash_of(r))).collect()
+        } else {
+            vec![None]
+        };
+        for k in crate::identity::key_timeline_in(signer, &index) {
+            let Ok(link) = crate::identity::next_link_for_in(signer, &k.key, &index, false) else { continue };
+            for rb in &readbacks {
+                let mut state = json!({ "audience": "public", "seq": seq, "status": status });
+                if ms != 0 || status == "accepted" {
+                    state["at"] = json!(crate::time::iso(ms as i64));
+                }
+                let mut refs = json!({ "answers": hash_of(x), "author": signer, "for": hash_of(x), "prev": link.prev });
+                if let Some(r) = rb {
+                    refs["derives_from"] = json!([r]);
+                }
+                if let Some(key) = crate::identity::key_ref_for(signer, &k.key, &index) {
+                    refs["key"] = json!(key);
+                }
+                let t = if status == "accepted" { "promise" } else { "observe" };
+                let Ok(mut b) = crate::block::create_in(&k.suite, t, &state, &refs) else { continue };
+                if crate::sign::verify_in(&k.suite, &b, &sig, &k.key) {
+                    b["signature"] = json!(sig);
+                    return Some(b);
+                }
+            }
+        }
+    }
+    None
+}
+
 /// Does a typed code name this block (profiles/short-form.md)? The code is read the way a person types it: case does
 /// not matter, spaces and hyphens are ignored, and the letters Crockford leaves out are read as the digits they look
-/// like (`O` as 0, `I` and `L` as 1). Eight characters match the short code, ten the long one; any other length
-/// matches nothing.
+/// like (`O` as 0, `I` and `L` as 1). Eight characters match the short code, and more characters match more of the id, five
+/// bits at a time; fewer match nothing.
 pub fn code_matches(text: &str, id: &str) -> bool {
     let typed: String = text
         .chars()
@@ -49,18 +146,8 @@ pub fn code_matches(text: &str, id: &str) -> bool {
             other => other,
         })
         .collect();
-    let want = match typed.chars().count() {
-        8 => receipt_code(id),
-        10 => receipt_code_long(id),
-        _ => None,
-    };
-    want.map_or(false, |w| w.replace('-', "") == typed)
-}
-
-/// The live operators of an actor: the authors of its live `operator` grants naming it in `refs.to`, sorted.
-fn operators(agent: &str, index: &Index) -> Vec<String> {
-    let blocks: Vec<Value> = index.values().cloned().collect();
-    crate::grant::operators_of(agent, &blocks, None)
+    // eight characters are the short code; more are more of the id, five bits at a time
+    typed.chars().count() >= 8 && crockford(id, typed.chars().count()).is_some_and(|w| w == typed)
 }
 
 /// The party a sender's block speaks for (authority.md, Who a block speaks for): the one `speaks_for` definition, scope test and
@@ -93,7 +180,6 @@ fn principal(sender: &str, block: Option<&Value>, index: &Index) -> Option<Strin
 /// Consent follows the principal, so a word about any of them is a word about the sender.
 fn names_of(sender: &str, block: Option<&Value>, index: &Index) -> Vec<String> {
     let mut names = vec![sender.to_string()];
-    names.extend(operators(sender, index));
     if let Some(p) = principal(sender, block, index) {
         if !names.contains(&p) {
             names.push(p);
@@ -154,8 +240,7 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Opti
             // A recorder's block counts only for the recorder's own side (its own sending, its operator's, and what acts under them): a stop
             // it recorded binds that side alone, and a yes it recorded lifts only a stop the same recorder recorded, in its causal past. Her own
             // stop is lifted by her own block alone: no one else's yes reaches it (consent.md, Only the person lifts a STOP; clean round 1, c1/c2).
-            let by_asker = asker_side.iter().any(|a| a == author)
-                || operators(author, &index).iter().any(|o| asker_side.iter().any(|a| a == o));
+            let by_asker = asker_side.iter().any(|a| a == author);
             match ss(b, "word") {
                 Some("stop") => by_asker,
                 Some("yes") => {
@@ -215,10 +300,7 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Opti
 pub fn is_agents(block: &Value, index: &Index) -> bool {
     let author = rs(block, "author");
     let kind_agent = author.and_then(|a| index.get(a)).is_some_and(crate::identity::autonomous);
-    // an author someone answers for as a machine (a live operator grant it accepted, identity.md) is an autonomous system, whatever kind its
-    // genesis gives itself: the one place the protocol says so (clean round 1, r7)
-    let operated = author.is_some_and(|a| !crate::identity::operators_in(a, index).is_empty());
-    kind_agent || operated || rf(block, "under").is_some()
+    kind_agent || rf(block, "under").is_some()
 }
 
 /// A stranger to a sender: someone who has accepted none of the sender's blocks, countered none, opened no deal with the sender (decision
@@ -267,19 +349,22 @@ pub fn admission_refusals(
     receiver: &str,
     blocks: &[Value],
     admission: &Value,
-    strangers_today: u64,
+    asks_today: u64,
 ) -> Vec<Refusal> {
     let mut w = Vec::new();
     let index = crate::js::held_index(blocks.iter());
     let sender = rs(block, "author").unwrap_or("");
     let parties: Vec<&str> = list(admission.get("parties"));
     // A listed party is exempt from the count only for a block whose key still speaks for that party (nodes.md, Admission): a block
-    // of a key rotated out past its counted line, frozen or void is counted as anyone else's, so a thief with an old key fills nothing.
-    let listed = parties.contains(&sender) && crate::identity::signed_by_author_in(block, &index, None);
-    if !listed {
+    // of a key whose end it has seen (identity.md, invariant 8) is counted as anyone else's, so a thief with an old key fills nothing.
+    let listed = parties.contains(&sender) && crate::identity::signed_by_author_in(block, &index);
+    // `per_stranger` counts asks (nodes.md, Admission): a block that names one of the node's people in a ref. A block's pieces, and the
+    // blocks its answer reads, name no one there and are never counted, nor refused by the count.
+    let ask = block.get("refs").and_then(Value::as_object).is_some_and(|r| r.iter().any(|(k, v)| k != "author" && list(Some(v)).contains(&receiver)));
+    if !listed && ask {
         if let Some(n) = admission.get("per_stranger").and_then(Value::as_u64) {
-            if strangers_today >= n {
-                w.push(Refusal::new("not_admitted", "the node took its per_stranger blocks for the day"));
+            if asks_today >= n {
+                w.push(Refusal::new("not_admitted", "the node took its per_stranger asks for the day from this sender"));
             }
         }
     }
@@ -305,8 +390,9 @@ pub fn admission_refusals(
 /// in her own step: a block of hers with the reading in `derives_from` that names someone other than herself in
 /// `refs.to` or `refs.to_owner`. True when `person` has done so among these blocks.
 pub fn reading_is_persons_claim(reading: &Value, person: &str, blocks: &[Value]) -> bool {
+    let index = crate::js::held_index(blocks);
     ss(reading, "kind") == Some("reading")
-        && blocks.iter().any(|b| {
+        && index.values().any(|b| {
             rs(b, "author") == Some(person)
                 && list(rf(b, "derives_from")).contains(&hash_of(reading))
                 && ["to", "to_owner"]

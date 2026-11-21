@@ -4,7 +4,9 @@ const door = require('./door.cjs')
 
 /** Where the next block for a key goes: { seq, prev }. */
 const nextLink = (last, broughtIn) => door.nextLink(last || null, broughtIn)
-/** Check one key's chain: { head, length, gaps, skips, equivocations (pairs naming one prev), broken, ok }. */
+/** Check one key's chain: { head, length, gaps, skips, equivocations (pairs naming one prev or stating one seq), broken, ok }. */
 const checkChain = (blocks, broughtIn) => door.checkChain(blocks, String(broughtIn))
+/** Whether the line is read whole from a block back to a start (folds.md, A line): { whole, lacks }. */
+const readWhole = (block, start, held = []) => door.readWhole(String(block), String(start), held)
 
-module.exports = { nextLink, checkChain }
+module.exports = { nextLink, checkChain, readWhole }

@@ -69,7 +69,7 @@ internal fun audienceJson(audience: List<String>): JsonElement? = when {
 /**
  * What `write` needs beside the words. `held` is the author's genesis, key grants and blocks (so the chain stays one
  * line) and anything the block names. `audience` is required: [PUBLIC], or the recipients (a private block is written as
- * commitments, not names); `at` is required, a time the caller states. Left out, the core refuses; nothing is filled in.
+ * commitments, not names); `at` is required, a time the caller states (or `clockless`). Left out, the core refuses; nothing is filled in.
  * `salts` and `nonce` only reproduce a vector.
  */
 data class WriteOptions(
@@ -85,6 +85,7 @@ data class WriteOptions(
     val nonce: String? = null,
     val suite: String? = null,
     val skip: Boolean = false,
+    val clockless: Boolean = false,
 ) {
     internal fun toJson(): JsonObject = buildJsonObject {
         put("author", author)
@@ -99,6 +100,7 @@ data class WriteOptions(
         nonce?.let { put("nonce", it) }
         (suite ?: key.suite)?.let { put("suite", it) }
         if (skip) put("skip", true)
+        if (clockless) put("clockless", true)
     }
 }
 
@@ -107,10 +109,10 @@ private fun JsonObject.part(name: String): JsonElement = this[name] ?: EMPTY
 private fun JsonObject.typeName(): String = (this["type"] as? JsonPrimitive)?.content ?: ""
 
 /**
- * FoodBlock 1.7. A block is `{ type, state, refs }` signed by its author's key; its id is the SHA-256 of its
+ * FoodBlock 1.9. A block is `{ type, state, refs }` signed by its author's key; its id is the SHA-256 of its
  * canonical form. Blocks are JSON objects (`{ hash, type, state, refs, signature }`), the same shape on every SDK
  * and on the wire. Names follow the JavaScript reference: `sign` signs, `seal` encrypts, `open` opens. There is no
- * alias table and no reading of an older shape (year zero); old data enters once, through [Legacy].
+ * alias table and no reading of an older shape (year zero).
  */
 object FoodBlock {
     /** The protocol version this library writes (protocol.json `version`). */
@@ -196,66 +198,57 @@ object FoodBlock {
     fun findsSelf(block: JsonObject, recipient: String, salt: String? = null): Boolean =
         Door.findsSelf(block, JsonPrimitive(recipient), JsonPrimitive(salt ?: "")).bool()
 
-    // ---- The write check and its words ----
+    // ---- The checks and their words (core.md, section 8) ----
+
+    private fun refusalsOf(e: JsonElement): List<Refusal> =
+        e.jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
 
     /**
-     * What is wrong with a block, as every node checks it before writing: every reason, empty when it is
-     * well-formed. `held` are blocks it may name; `schemas` the schema blocks it is checked against.
+     * What a writer refuses to sign (1.9 3a-3), asked of an unsigned draft before anyone signs it: every code `write`
+     * would refuse it with, read against the blocks `held`. Empty when it may be signed.
      */
-    fun check(
-        type: String, state: JsonElement, refs: JsonElement,
-        held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null,
-    ): List<String> = Door.check(JsonPrimitive(type), state, refs, JsonArray(held), schemas?.let(::JsonArray) ?: JsonNull,
-    ).strings()
+    fun writeRefusals(draft: JsonObject, held: List<JsonObject> = emptyList()): List<Refusal> =
+        refusalsOf(Door.writeRefusals(draft, JsonArray(held)))
 
-    fun check(block: JsonObject, held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null) =
-        check(block.typeName(), block.part("state"), block.part("refs"), held, schemas)
+    fun writeRefusals(type: String, state: JsonElement, refs: JsonElement, held: List<JsonObject> = emptyList()): List<Refusal> =
+        writeRefusals(buildJsonObject { put("type", type); put("state", state); put("refs", refs) }, held)
 
-    /**
-     * The same check, as refusals: each a code from protocol.json `refusals.codes` (the code carries the meaning)
-     * and free text for people. Empty when the block is well-formed.
-     */
-    fun refusals(
-        type: String, state: JsonElement, refs: JsonElement,
-        held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null,
-    ): List<Refusal> = Door.refusals(JsonPrimitive(type), state, refs, JsonArray(held), schemas?.let(::JsonArray) ?: JsonNull,
-    ).jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
+    /** Whether an unsigned draft, once signed, binds anyone: an accept, or a word under which something of its author would move. */
+    fun binds(draft: JsonObject, held: List<JsonObject> = emptyList()): Boolean =
+        Door.binds(draft, JsonArray(held)).bool()
 
-    fun refusals(block: JsonObject, held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null) =
-        refusals(block.typeName(), block.part("state"), block.part("refs"), held, schemas)
-
-    /** A quantity: a decimal string and a UCUM unit, never a float. `amount("3.9", "Cel")`. */
-    fun amount(value: String, unit: String): JsonObject =
-        Door.amount(JsonPrimitive(value), JsonPrimitive(unit)).obj()
-
-    /** Money in minor units of an ISO 4217 currency. `money(450, "GBP")`. */
-    fun money(minor: Long, currency: String): JsonObject =
-        Door.money(JsonPrimitive(minor), JsonPrimitive(currency)).obj()
-
-    /** Money in an issuer's own unit: `currency` is `{ issuer, unit, decimals }`. */
-    fun money(minor: Long, currency: JsonObject): JsonObject =
-        Door.money(JsonPrimitive(minor), currency).obj()
+    /** A block's amount: a decimal string and a unit, never a float. `amount("3.9", "Cel")`; money is an amount: `amount("4.20", "GBP")`. `of` names a kind. */
+    fun amount(value: String, unit: String, of: String? = null): JsonObject =
+        Door.amount(JsonPrimitive(value), JsonPrimitive(unit), text(of)).obj()
 
     fun terms(given: JsonObject): JsonObject = Door.terms(given).obj()
 
     /**
-     * valid(block, context): every refusal of a signed block against the blocks held (empty when valid). `arrivals`
-     * is the reader's log of when each block arrived, where the rules need it.
+     * valid(block, held): who said these bytes (core.md, section 8): every refusal of a signed block (or a held header)
+     * against the blocks `held`, empty when valid. It reads no arrival and no clock.
      */
-    fun valid(
-        block: JsonObject, held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null,
-        arrivals: Map<String, String>? = null,
-    ): List<Refusal> = Native.invoke("valid", block, JsonArray(held), schemas?.let(::JsonArray) ?: JsonNull, arrivals(arrivals))
-        .jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
+    fun valid(block: JsonObject, held: List<JsonObject> = emptyList()): List<Refusal> =
+        refusalsOf(Door.valid(block, JsonArray(held)))
 
-    /** Strict writing from JSON text: a repeated key, then every refusal of the block it holds. */
-    fun strictText(text: String): List<Refusal> = Door.strictText(JsonPrimitive(text))
-        .jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
+    /**
+     * read(block, held, schemas, runs): whether this reader can read a valid block; every code found, empty when it is read.
+     * `schemas` is the schema store ([schemasFrom]); `runs` the ids of the rule sets this reader runs (core.md, section 11).
+     */
+    fun read(block: JsonObject, held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null, runs: List<String>? = null): List<Refusal> =
+        refusalsOf(Door.read(block, JsonArray(held), schemas?.let(::JsonArray) ?: JsonNull, runs?.let(::texts) ?: JsonNull))
 
-    /** The short receipt code of a block id: `XXXX-XXXX` (Crockford Base32 of its first 5 bytes). */
-    fun receiptCode(id: String): String = Door.receiptCode(JsonPrimitive(id)).string()
-    /** The ten-character form (first 50 bits, `XXXXX-XXXXX`), for a custodian whose index holds two blocks with one short code. */
-    fun receiptCodeLong(id: String): String = Door.receiptCode(JsonPrimitive(id), JsonPrimitive(true)).string()
+    /** The schema store of the blocks held: every thing of kind schema among them, ids ascending. */
+    fun schemasFrom(held: List<JsonObject>): List<JsonObject> = Door.schemasFrom(JsonArray(held)).jsonArray.map { it.obj() }
+
+    /** A block's bytes as they came (JSON text): size_limit, not_canonical, else the strict checks. */
+    fun strictText(text: String): List<Refusal> = refusalsOf(Door.strictText(JsonPrimitive(text)))
+
+    /** Whether a value is a real UTC time (`YYYY-MM-DDTHH:MM:SS.sssZ`), or a real date. */
+    fun isTime(value: JsonElement): Boolean = Door.isTime(value).bool()
+    fun isDate(value: JsonElement): Boolean = Door.isDate(value).bool()
+
+    /** The short code of a block id: `XXXX-XXXX` (Crockford Base32 of its first 5 bytes; profiles/short-form.md). */
+    fun shortCode(id: String): String = Door.shortCode(JsonPrimitive(id)).string()
     /** Whether a typed code names this block: case, spaces and hyphens ignored, O read as 0, I and L as 1; 8 characters match the short code, 10 the long one. */
     fun codeMatches(text: String, id: String): Boolean = Door.codeMatches(JsonPrimitive(text), JsonPrimitive(id)).bool()
 
@@ -279,6 +272,19 @@ object FoodBlock {
             broken = c["broken"]!!.strings(),
         )
     }
+
+    /** Whether the line is read whole from a block back to a start (folds.md, A line): `{ whole, lacks }`. */
+    fun readWhole(block: String, start: String, held: List<JsonObject> = emptyList()): JsonObject =
+        Door.readWhole(JsonPrimitive(block), JsonPrimitive(start), JsonArray(held)).obj()
+
+    /** The hashes a block names, through every ref. */
+    fun causesOf(block: JsonObject): List<String> = Door.causesOf(block).strings()
+
+    /** Every held block in a block's causal past (hashes; the block itself is not in it). */
+    fun pastOf(block: JsonObject, blocks: List<JsonObject>): List<String> = Door.pastOf(block, JsonArray(blocks)).strings()
+
+    /** The blocks no other block among them has in its causal past. */
+    fun headsAmong(blocks: List<JsonObject>): List<JsonElement> = Door.headsAmong(JsonArray(blocks)).jsonArray.toList()
 
     /** Blocks in causal order: causes before what they cause. */
     fun causalOrder(blocks: List<JsonObject>): List<JsonObject> =
@@ -320,11 +326,11 @@ object FoodBlock {
     fun open(envelope: JsonObject, x25519Private: String): JsonElement =
         Door.open(envelope, JsonPrimitive(x25519Private))
 
-    /** A signed block sealed to recipients, with a header signed by the block's key, and what it `reveals`. */
+    /** A signed block sealed to recipients, and what it `reveals`. A private block is signed once, over its header, so its own signature is the header's. */
     fun sealCopy(
-        signed: JsonObject, recipientKeys: List<String>, reveals: JsonArray, privateKey: String,
+        signed: JsonObject, recipientKeys: List<String>, reveals: JsonArray,
         suite: String = "std", fixed: JsonObject? = null,
-    ): JsonObject = Door.sealCopy(signed, texts(recipientKeys), reveals, JsonPrimitive(privateKey), fixed ?: JsonNull, JsonPrimitive(suite),
+    ): JsonObject = Door.sealCopy(signed, texts(recipientKeys), reveals, fixed ?: JsonNull, JsonPrimitive(suite),
     ).obj()
 
     fun openCopy(message: JsonObject, x25519Private: String): JsonObject =

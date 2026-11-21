@@ -63,7 +63,9 @@ class VectorsTest {
         want is JsonObject -> got is JsonObject && want.all { (k, w) -> subset(got[k], w) }
         else -> got != null && deepEq(got, want)
     }
-    private fun strict(block: JsonElement) = FoodBlock.check(block.f("type").s(), block.f("state"), block.f("refs"))
+    /** What a block's own bytes say (checks 1 to 4, core.md, section 8): the 1.7 `refusals` is gone; its halves are `valid` and `read`. */
+    private fun bytesRefusals(type: String, state: JsonElement, refs: JsonElement): List<Refusal> =
+        try { FoodBlock.strictText(FoodBlock.canonical(type, state, refs)) } catch (e: FoodBlockException) { listOf(Refusal(e.code ?: "not_canonical", e.message ?: "")) }
     private fun suiteOf(b: JsonElement) = b.f("suite").s().ifEmpty { "std" }
     private fun keySuite(signer: String) = v.f("keys").f(signer).f("suite").s().ifEmpty { "std" }
     private fun texts(list: List<String>) = JsonArray(list.map(::JsonPrimitive))
@@ -91,8 +93,10 @@ class VectorsTest {
 
     @Test fun versionMatchesProtocolJson() {
         val p = load("spec/protocol.json").o()
-        assertEquals(p.f("version").s(), FoodBlock.VERSION)
-        for (peer in FoodBlock.PEERS) assertTrue(p.f("peers").o().containsKey(peer), "$peer is a protocol.json peer")
+        // protocol.json names no version in this tree (the JS suite compares with its package.json): compare only where it does
+        if (p.f("version") !is JsonNull) assertEquals(p.f("version").s(), FoodBlock.VERSION)
+        assertTrue(FoodBlock.VERSION.isNotEmpty())
+        for (peer in FoodBlock.PEERS) assertTrue(load("spec/conventions.json").f("peers").o().containsKey(peer), "$peer is a conventions.json peer")
         println("peers in this build: ${FoodBlock.PEERS}")
         // The core's built-in spec is spec/protocol.json exactly (the door's `spec` op).
         assertTrue(deepEq(FoodBlock.call("spec").f("protocol"), p), "the core's built-in protocol.json differs from spec/")
@@ -108,18 +112,19 @@ class VectorsTest {
                 (c.f("canonical_contains") is JsonNull || text.contains(c.f("canonical_contains").s())) &&
                 (c.f("canonical") is JsonNull || text == c.f("canonical").s()) &&
                 (c.f("refused") !is JsonArray || c.f("refused").arr().all { code ->
-                    FoodBlock.refusals(b.f("type").s(), b.f("state"), b.f("refs")).any { it.code == code.s() } })
+                    // what a writer refuses of the value (write_refusals: a float is `float`, not the wire's `not_canonical`)
+                    FoodBlock.writeRefusals(b.f("type").s(), b.f("state"), b.f("refs")).any { it.code == code.s() } })
             r.ok(ok, c.f("name").s())
         }
         for (c in v.f("canonical").arr()) {
             val b = c.f("block").o()
             r.ok(FoodBlock.canonical(b) == c.f("canonical").s() && FoodBlock.hash(b) == c.f("hash").s(), c.f("name").s())
         }
-        // test/vectors.json: the older cross-language cases that still hash identically under 1.6.
+        // test/vectors.json: the cross-language canonical edge cases (numbers, strings, nesting, order).
         for (c in load("test/vectors.json").arr()) {
             val text = FoodBlock.canonical(c.f("type").s(), c.f("state"), c.f("refs"))
             val hash = FoodBlock.hash(c.f("type").s(), c.f("state"), c.f("refs"))
-            r.ok(text == c.f("expected_canonical").s() && hash == c.f("expected_hash").s(), "older: ${c.f("name").s()}") { "got $text" }
+            r.ok(text == c.f("expected_canonical").s() && hash == c.f("expected_hash").s(), "edge: ${c.f("name").s()}") { "got $text" }
         }
         r.done()
     }
@@ -161,7 +166,7 @@ class VectorsTest {
             r.ok(pair.publicKeySign == k.f("public_key_sign").s() && pair.privateKey == k.f("private_key").s(), "key from seed: $name")
             r.ok(FoodBlock.encryptionKeyOf(k.f("x25519_private").s(), suite) == k.f("public_key_encrypt").s(), "encryption key: $name")
             r.ok(FoodBlock.suiteOfKey(k.f("public_key_sign").s()) == suite, "suite of key: $name")
-            if (k.f("hash") !is JsonNull) r.ok(Identity.recoveryKeyHash(k.f("public_key_sign").s(), suite) == k.f("hash").s(), "recovery hash: $name")
+            if (k.f("hash") !is JsonNull) r.ok(Identity.keyHash(k.f("public_key_sign").s(), suite) == k.f("hash").s(), "key hash: $name")
         }
         r.done()
     }
@@ -169,12 +174,6 @@ class VectorsTest {
     /** Every story's blocks, as the runner lists them: (group, name, blocks). */
     private fun stories(): List<Triple<String, String, JsonElement>> {
         val out = mutableListOf<Triple<String, String, JsonElement>>()
-        fun add(group: String, list: JsonElement) = list.arr().forEach { out += Triple(group, it.f("name").s(), it.f("blocks")) }
-        add("identity", v.f("identities")); add("deal", v.f("deals")); add("circle", v.f("circles"))
-        for ((k, g) in listOf("promises" to "promise fold", "circles" to "circle fold", "audience" to "audience fold",
-            "things" to "thing fold", "successors" to "successor fold", "rekeys" to "rekey fold", "ballots" to "ballot fold")) add(g, v.f("folds").f(k))
-        out += Triple("refusal", "stories", v.f("refusals").f("blocks"))
-        for (c in v.f("refusals").f("cases").arr()) if (c.f("blocks") !is JsonNull) out += Triple("refusal", c.f("name").s(), c.f("blocks"))
         out += Triple("sealed", "stories", v.f("sealed").f("blocks"))
         return out
     }
@@ -196,7 +195,7 @@ class VectorsTest {
                 if (FoodBlock.hash(block.f("type").s(), block.f("state"), block.f("refs"), suiteOf(b)) != b.f("hash").s()) wrong += "$label: hash"
                 if (!FoodBlock.verify(full(b), b.f("signature").s(), public(b.f("signer").s()))) wrong += "$label: signature"
                 if (keySuite(b.f("signer").s()) != suiteOf(b)) wrong += "$label: suite"
-                val found = FoodBlock.refusals(block)
+                val found = bytesRefusals(block.f("type").s(), block.f("state"), block.f("refs"))
                 if (found.isNotEmpty()) wrong += "$label: ${found.joinToString { it.code }}"
             }
             r.ok(wrong.isEmpty(), "$group: $name: ${list.arr().size} blocks hash, verify and pass the check") { wrong.joinToString(" | ") }
@@ -223,8 +222,9 @@ class VectorsTest {
         val index = byHash()
         for (c in v.f("headers").arr()) {
             val block = withHash(index.getValue(c.f("hash").s()).f("block"), c.f("hash"))
-            val part = JsonObject(c.f("header").o() + ("signature" to c.f("header_signature")))
-            r.ok(deepEq(FoodBlock.header(block), c.f("header")) && FoodBlock.verifyMessage(part, public(c.f("signer").s())), c.f("name").s())
+            // a header is no message (core.md, section 2): its signature is the block's, over the header
+            val message = JsonObject(mapOf("header" to c.f("header"), "header_signature" to c.f("header_signature")))
+            r.ok(deepEq(FoodBlock.header(block), c.f("header")) && FoodBlock.headerSignedBy(message, public(c.f("signer").s())), c.f("name").s())
         }
         r.done()
     }
@@ -247,13 +247,13 @@ class VectorsTest {
             } ?: false
             r.ok(ok, "sealed: ${c.f("name").s()}") { got.exceptionOrNull()?.message ?: "" }
         }
-        // A copy sealed here opens, and its header is signed by the block's key.
-        val c = v.f("signatures").arr()[0]
+        // A private block sealed here opens, and its header carries the block's one signature.
+        val c = v.f("sealed").f("cases").arr()[1]
         val signer = c.f("signer").s()
-        val block = full(byHash().getValue(c.f("hash").s()))
-        val copy = FoodBlock.sealCopy(block, listOf(key("bob", "public_key_encrypt")), JsonArray(emptyList()), key(signer, "private_key"), keySuite(signer))
+        val block = full(byHash().getValue(c.f("opens_to").f("hash").s()))
+        val copy = FoodBlock.sealCopy(block, listOf(key("bob", "public_key_encrypt")), JsonArray(emptyList()), keySuite("bob"))
         val opened = FoodBlock.openCopy(copy, key("bob", "x25519_private"))
-        r.ok(opened.f("hash") == c.f("hash") && FoodBlock.headerSignedBy(copy, public(signer)), "a copy sealed here opens and its header verifies")
+        r.ok(opened.f("hash") == c.f("opens_to").f("hash") && FoodBlock.headerSignedBy(copy, public(signer)), "a copy sealed here opens and its header verifies")
         // And a value sealed here opens, in every suite.
         for (suite in listOf("std", "p256", "sm")) {
             val pair = FoodBlock.generateEncryptionKeypair(suite)
@@ -264,200 +264,6 @@ class VectorsTest {
         r.done()
     }
 
-    @Test fun identities() {
-        val r = Report("identities")
-        for (c in v.f("identities").arr()) {
-            val held = blocksOf(c.f("blocks"))
-            val arrivals = arrivalsOf(c.f("arrivals"))
-            val unknown = c.f("unknown_arrival").s().ifEmpty { null }
-            val name = c.f("name").s()
-            val id = c.f("id").s()
-            for (b in held) {
-                val want = c.f("signed_by_author").f(b.f("hash").s())
-                if (want is JsonNull) continue
-                val label = c.f("blocks").arr().firstOrNull { it.f("hash") == b.f("hash") }.f("name").s()
-                r.ok(Identity.signedByAuthor(b, held, arrivals, unknown) == want.bool(), "$name: $label ${if (want.bool()) "stands" else "is void"}")
-            }
-            if (c.f("keys") !is JsonNull) {
-                val got = Identity.keysOf(id, held, arrivals, unknown).sorted()
-                r.ok(texts(got) == c.f("keys"), "$name: the keys that speak") { got.toString() }
-            }
-            if (c.f("frozen") !is JsonNull) {
-                val got = Identity.keyTimeline(id, held).filter { it.frozen }.map { it.key }.sorted()
-                r.ok(texts(got) == c.f("frozen"), "$name: the frozen keys")
-            }
-            if (c.f("operators") !is JsonNull) r.ok(texts(Grant.operatorsOf(id, held)) == c.f("operators"), "$name: its operators")
-            run {
-                val state = Identity.identityState(id, held, arrivals, unknown)
-                val signed = state.f("signed_by_author").o()
-                val ok = deepEq(state.f("keys"), c.f("keys")) && (c.f("frozen") is JsonNull || deepEq(state.f("frozen"), c.f("frozen"))) &&
-                    (c.f("signed_by_author") as? JsonObject)?.all { (h, want) -> signed[h]?.let { it == want } ?: true } ?: true
-                r.ok(ok, "$name: the identity fold (signed_by_author, keys, frozen)") { state.toString() }
-            }
-            (c.f("fence") as? JsonObject)?.let { f ->
-                val limit = find(held, f.f("block"))
-                val grant = find(held, f.f("grant"))
-                val lstate = limit.f("state").o()
-                r.ok(limit.f("refs").f("for") == f.f("grant") && lstate.f("kind").s() == "limit" && deepEq(lstate.f("limit"), f.f("limit")) &&
-                    FoodBlock.findsSelf(limit, f.f("agent").s(), f.f("salt").s()) && !FoodBlock.findsSelf(limit, f.f("principal").s(), f.f("salt").s()) &&
-                    lstate.f("audience").arr().size == 1, "$name: sealed to the agent alone")
-                val without = held.filter { it != limit }
-                r.ok(grant.f("state").f("scope").o()["limit"] == null && (c.f("under") as? JsonObject)!!.keys.all { h ->
-                    Grant.whyNotUnder(find(held, JsonPrimitive(h)), held) == Grant.whyNotUnder(find(held, JsonPrimitive(h)), without)
-                }, "$name: the grant check never reads the limit")
-                r.ok(f.f("within").arr().all { w -> Grant.withinLimit(limit, w.f("money").o(), w.f("spent").jsonPrimitive.content.toLong()) == w.f("within").bool() },
-                    "$name: the principal's node checks the limit (withinLimit)")
-            }
-            (c.f("under") as? JsonObject)?.forEach { (h, ok) ->
-                r.ok(Grant.whyNotUnder(find(held, JsonPrimitive(h)), held).isEmpty() == ok.bool(), "$name: a block under the grant speaks for its grantor")
-            }
-        }
-        r.done()
-    }
-
-    private fun stageOf(c: JsonElement): JsonObject {
-        val held = blocksOf(c.f("blocks"))
-        return Fold.promiseStage(find(held, c.f("first")), held)
-    }
-
-    @Test fun promiseFolds() {
-        if (!edge) return excluded("promise fold", "edge")
-        val r = Report("promise fold")
-        for (c in v.f("deals").arr() + v.f("folds").f("promises").arr()) {
-            val got = stageOf(c)
-            r.ok(subset(got, c.f("expected")), "${c.f("name").s()}: ${c.f("expected").f("stage").s()}") { got.toString() }
-        }
-        r.done()
-    }
-
-    @Test fun circleFolds() {
-        if (!edge) return excluded("circle fold", "edge")
-        val r = Report("circle fold")
-        for (c in v.f("circles").arr() + v.f("folds").f("circles").arr()) {
-            val held = blocksOf(c.f("blocks"))
-            val circle = c.f("circle").s()
-            val state = Fold.circleState(circle, held, null) ?: fail("no circle $circle")
-            val membersOf = state.f("members").o()
-            val members: JsonElement = if (c.f("expected").f("members") is JsonArray) texts(membersOf.keys.sorted())
-                else JsonObject(membersOf.mapValues { (_, m) -> texts(m.f("roles").arr().map { it.s() }.sorted()) })
-            val removed = texts(state.f("removed").o().keys.sorted())
-            val mayAct = (c.f("may_act") as? JsonObject)?.all { (h, ok) -> Fold.mayActAs(find(held, JsonPrimitive(h)), circle, held) == ok.bool() } ?: true
-            r.ok(deepEq(members, c.f("expected").f("members")) && removed == c.f("expected").f("removed") && mayAct &&
-                (c.f("expected").f("counted_to") as? JsonObject)?.all { (who, h) -> state.f("removed").o()[who] == h } ?: true, c.f("name").s()) { state.toString() }
-        }
-        r.done()
-    }
-
-    @Test fun audienceFolds() {
-        if (!edge) return excluded("audience fold", "edge")
-        val r = Report("audience fold")
-        for (c in v.f("folds").f("audience").arr()) {
-            val held = blocksOf(c.f("blocks"))
-            for (case in c.f("cases").arr()) {
-                val got = Fold.membersThen(find(held, case.f("block")), case.f("recipient").s(), held)
-                r.ok(texts(got) == case.f("members"), case.f("name").s()) { got.toString() }
-            }
-        }
-        r.done()
-    }
-
-    @Test fun thingsWhereAndOwner() {
-        if (!edge) return excluded("thing fold", "edge")
-        val r = Report("thing fold")
-        for (c in v.f("folds").f("things").arr()) {
-            val held = blocksOf(c.f("blocks"))
-            for (case in c.f("where").arr()) {
-                val got = Fold.whereNow(find(held, case.f("thing")), held)
-                r.ok(texts(got) == case.f("places"), "where now: ${case.f("name").s()}") { got.toString() }
-            }
-            for (case in c.f("owners").arr()) {
-                val got = Fold.ownership(find(held, case.f("thing")), held)
-                val owner: JsonElement = got.owner?.let(::JsonPrimitive) ?: JsonNull
-                val conflict: JsonElement = got.conflict?.let(::texts) ?: JsonNull
-                r.ok(owner == case.f("owner") && conflict == case.f("conflict"), "owner: ${case.f("name").s()}") { got.toString() }
-            }
-        }
-        r.done()
-    }
-
-    @Test fun successors() {
-        if (!edge) return excluded("successor fold", "edge")
-        val r = Report("successor fold")
-        for (c in v.f("folds").f("successors").arr()) {
-            val held = blocksOf(c.f("blocks"))
-            val got = Fold.successorView(find(held, c.f("grant")), held, c.f("now").s().ifEmpty { null }, arrivalsOf(c.f("arrivals")) ?: emptyMap())
-            r.ok(subset(got, c.f("expected")), c.f("name").s()) { got.toString() }
-        }
-        r.done()
-    }
-
-    @Test fun ballotsAndRekeys() {
-        if (!edge) return excluded("ballot and rekey folds", "edge")
-        val r = Report("ballot and rekey folds")
-        for (c in v.f("folds").f("ballots").arr()) {
-            val held = blocksOf(c.f("blocks"))
-            for (case in c.f("cases").arr()) {
-                r.ok(Fold.countedIn(find(held, case.f("result")), case.f("commitment").s(), case.f("counter").s()) == case.f("counted").bool(), "ballot: ${case.f("name").s()}")
-            }
-        }
-        for (c in v.f("folds").f("rekeys").arr()) {
-            val got = Fold.circleKey(c.f("circle").s(), blocksOf(c.f("blocks")))
-            r.ok(subset(got, c.f("expected")), "circle key: ${c.f("name").s()}") { got.toString() }
-        }
-        r.done()
-    }
-
-    @Test fun refusals() {
-        val r = Report("refusals")
-        val known = LinkedHashMap<String, JsonObject>()
-        (blocksOf(v.f("refusals").f("blocks")) + stories().flatMap { blocksOf(it.third) }).forEach { known.putIfAbsent(it.f("hash").s(), it) }
-        val get = { h: JsonElement -> known[h.s()] ?: fail("no block $h") }
-        for (c in v.f("refusals").f("cases").arr()) {
-            val name = "refused (${c.f("by").s()}): ${c.f("name").s()}"
-            val held = c.f("held").arr().map(get)
-            when (c.f("by").s()) {
-                "check" -> {
-                    // The codes exactly, as protocol.json orders them. The block goes to the door as written: a state that is a list stays a list.
-                    val b = c.f("block").o()
-                    val got = codesOf(FoodBlock.call("refusals", b.f("type"), b.f("state"), b.f("refs"), JsonArray(held), JsonNull).arr().map { it.f("code").s() })
-                    r.ok(got == c.f("codes"), name) { got.toString() }
-                }
-                "valid" -> {
-                    val got = codesOf(FoodBlock.valid(c.f("block").o(), held).map { it.code })
-                    r.ok(got == c.f("codes"), name) { got.toString() }
-                }
-                "accept" -> if (!edge) excluded(name, "edge") else {
-                    val incoming = if (c.f("inline") is JsonArray) c.f("inline").arr().map { it.o() } else c.f("incoming").arr().map(get)
-                    val got = Sync.accept(incoming, held, takesPairs = false)
-                    val refused = got.f("refused").arr()
-                    val ok = when {
-                        // The second of a pair is neither taken nor refused: it is listed in its pair.
-                        c.f("equivocations") !is JsonNull -> got.f("taken") == c.f("taken") && refused.isEmpty() && got.f("equivocations") == c.f("equivocations")
-                        c.f("waiting") !is JsonNull -> got.f("waiting").arr().map { it.f("hash") } == c.f("waiting").arr() && refused.isEmpty()
-                        c.f("taken") !is JsonNull -> got.f("taken") == c.f("taken")
-                        else -> incoming.all { b -> refused.any { it.f("hash") == b.f("hash") } } && codesOf(refused.map { it.f("code").s() }) == c.f("codes")
-                    }
-                    r.ok(ok, name) { got.toString() }
-                }
-                "fold" -> if (!edge) excluded(name, "edge") else {
-                    val got = stageOf(c)
-                    r.ok(subset(got, c.f("expected")), name) { got.toString() }
-                }
-                "may_act_as" -> {
-                    val blocks = blocksOf(c.f("blocks"))
-                    r.ok(Fold.mayActAs(find(blocks, c.f("block")), c.f("circle").s(), blocks) == c.f("ok").bool(), name)
-                }
-                "under" -> r.ok(Grant.whyNotUnder(get(c.f("block")), known.values.toList()).isEmpty() == c.f("live").bool(), name)
-                "open" -> if (!node) excluded(name, "node") else {
-                    val got = runCatching { FoodBlock.openCopy(c.f("message").o(), key(c.f("recipient").s(), "x25519_private")) }
-                    val code = (got.exceptionOrNull() as? FoodBlockException)?.code
-                    r.ok(got.isFailure && texts(listOfNotNull(code)) == c.f("codes"), name) { "${got.exceptionOrNull()?.message} code=$code" }
-                }
-                else -> r.ok(false, "$name: unknown refusal kind ${c.f("by").s()}")
-            }
-        }
-        r.done()
-    }
     private fun codesOf(codes: List<String>) = texts(codes.distinct())
 
     @Test fun messages() {
@@ -485,13 +291,13 @@ class VectorsTest {
         val ours = Sync.signPull(buildJsonObject { put("since", 0) }, pm.f("signer").s(), nodeId, key(pull.f("signer").s(), "private_key"), counter = 9)
         r.ok(Sync.pullRefusals(ours, Freshness(nodeId, listOf(jem), 8)).isEmpty() && ours["at"] == null && ours["nonce"] == null, "a pull signed here is taken")
         r.ok(Sync.newChallenge().length == 32, "a new challenge")
-        r.ok(nodeKey in Identity.keysOf(nodeId, blocksOf(v.f("sealed").f("blocks"))), "the node key is a key of its holder, brought in by a key grant")
+        r.ok(nodeKey in Identity.liveKeys(nodeId, blocksOf(v.f("sealed").f("blocks"))), "the node key is a key of its holder, brought in by a key grant")
         val answer = m.f("pull_answer").f("message").o()
         r.ok(Sync.answerSignedBy(answer, listOf(nodeKey)) && answer.f("blocks").arr().size == m.f("pull_answer").f("matches").jsonPrimitive.content.toInt(),
             "a pull answer is signed by the node")
         val push = m.f("push_answer").f("message").o()
         r.ok(Sync.answerSignedBy(push, listOf(nodeKey)), "a push answer is signed by the node")
-        val spec = load("spec/protocol.json").f("messages")
+        val spec = load("spec/conventions.json").f("messages")
         val known = load("spec/protocol.json").f("refusals").f("codes").o().values.flatMap { it.o().keys }.toSet()
         r.ok(push.keys.toList() == spec.f("push_answer").arr().map { it.s() }.filter { it in push.keys || it !in spec.f("push_answer_optional").arr().map { k -> k.s() } } &&
             push.f("refused").arr().all { it.o().keys.toList() == spec.f("refusal").arr().map { k -> k.s() } && it.f("code").s() in known } &&
@@ -537,7 +343,8 @@ class VectorsTest {
     // list (each once, in order), `error` a failure (matching `kind` and `code` when given). Core-only cases run too.
     @Test fun door() {
         val r = Report("door")
-        val cases = v.f("door").arr()
+        // the protocol's cases, then every other op's (spec/conventions-vectors.json)
+        val cases = v.f("door").arr() + load("spec/conventions-vectors.json").f("door").arr()
         assertTrue(cases.size > 50, "the door section has its cases")
         for (d in cases) {
             val name = d.f("name").s()
@@ -563,9 +370,8 @@ class VectorsTest {
 
     // Every section of spec/vectors.json is one this runner reads: a new section cannot pass unseen.
     @Test fun everySectionIsRun() {
-        val read = setOf("\$comment", "comment", "keys", "hashes", "ledger", "canonical", "audience", "signatures", "bad_signatures", "envelopes", "identities",
-            "deals", "circles", "folds", "refusals", "sealed", "headers", "messages", "cbor", "door")
+        val read = setOf("\$comment", "comment", "invariant_numbers", "keys", "hashes", "ledger", "canonical", "audience", "signatures", "bad_signatures", "envelopes",
+            "sealed", "headers", "messages", "cbor", "door")
         assertEquals(emptySet(), v.keys - read, "sections in spec/vectors.json this runner does not run")
-        assertEquals(emptySet(), v.f("folds").o().keys - setOf("promises", "circles", "audience", "things", "successors", "rekeys", "ballots"))
     }
 }

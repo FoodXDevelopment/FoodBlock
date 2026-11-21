@@ -33,7 +33,7 @@ pub fn causes_of(block: &Value) -> Vec<String> {
             }
         }
     }
-    // A block sees the block it counts to (protocol.json `causal_state`): a rotation's causal past holds the chain it cuts.
+    // A block sees the block it counts to (protocol.json `causal_state`): a key grant's causal past holds the line it cuts.
     for key in crate::spec().list("causal_state") {
         if let Some(h) = block.get("state").and_then(|s| s.get(&key)).and_then(Value::as_str) {
             if is_hash(h) && !out.iter().any(|o| o == h) {

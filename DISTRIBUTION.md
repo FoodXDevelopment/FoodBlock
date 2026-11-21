@@ -25,7 +25,7 @@ not published yet.
 | `sdk/javascript/package.json` | `@foodxdev/foodblock` | npm has 0.5.0 only. 1.7: from source, `npm install ./sdk/javascript` |
 | `mcp/package.json` | `foodblock-mcp` | npm has 0.5.2 only. 1.7: from source, `npm install ./sdk/javascript && npm install ./mcp` |
 | `cli/package.json` | `foodblock-cli` (bins `fb`, `foodblock-cli`) | npm has 0.5.1 only. 1.7: from source, `npm install ./sdk/javascript && npm install ./cli` |
-| `server/package.json` | `foodblock-node` | not a package; from source (`cd server && npm install`) or its Dockerfile |
+| `host/package.json` | `foodblock-host` | not a package; from source (`cd host && npm install`) or its Dockerfile |
 | `sdk/python/pyproject.toml` | `foodblock` | PyPI has 0.1.0 only. 1.7: from source, `pip install ./sdk/python` |
 | `sdk/rust/Cargo.toml` | `foodblock` | not on crates.io; from source, `foodblock = { path = "sdk/rust" }` in `Cargo.toml` |
 | `sdk/go/go.mod` | `github.com/FoodXDevelopment/foodblock/sdk/go` | not tagged yet; from source, `replace` it to `./sdk/go` in `go.mod` |
@@ -36,8 +36,7 @@ not published yet.
 
 Every package is at `1.7.0`, and the protocol version each one reports is read from `spec/protocol.json`.
 
-1. **The JS SDK carries its spec copy.** The JS SDK and the Rust crate carry an exact copy of `protocol.json` (and
-   the crate the converter's `aliases-0.x.json`), made by `node test/sync-spec.cjs` and checked by their tests; the
+1. **The JS SDK carries its spec copy.** The JS SDK and the Rust crate carry an exact copy of `protocol.json`, made by `node test/sync-spec.cjs` and checked by their tests; the
    other languages read the spec through the Rust core. Year zero: no `aliases.json` is shipped anywhere.
 2. **The MCP server and CLI name the SDK by version.** In this repository they depend on
    `file:../sdk/javascript`. npm does not rewrite that on publish, so at release it becomes `"^1.7.0"`, once the SDK
@@ -49,12 +48,12 @@ Every package is at `1.7.0`, and the protocol version each one reports is read f
    the jar (natives for five platforms) and the Android AAR are built by `.github/workflows/packages.yml`; a person
    downloads its artifacts and publishes. `node tools/version-sync.cjs --pack` dry-runs all of it where the tools exist.
 
-The node (`server/`) is not a package: run it from this repository or with its Dockerfile.
+The host (`host/`) is not a package: run it from this repository or with its Dockerfile.
 
 ## Before a revised core is deployed: replay the stored blocks
 
-A node keeps every block exactly as it arrived (`sql/schema.sql`). Before a revised core replaces the one that wrote them, check what it would say about them. `tools/replay-check.cjs` reads exported blocks and prints counts and reason codes only, never a block, an id or a key. It never connects to anything.
+A node keeps every block exactly as it arrived (`host/src/postgres/schema.sql`). Before a revised core replaces the one that wrote them, check what it would say about them. `tools/replay-check.cjs` reads exported blocks and prints counts and reason codes only, never a block, an id or a key. It never connects to anything.
 
 1. On the machine that holds the node's database, export the messages to a private file: `psql "$DATABASE_URL" -At -c "select message::text from blocks order by n" > blocks.jsonl`.
 2. In a checkout of the revised core: `node tools/replay-check.cjs blocks.jsonl` (`--json` for a machine-readable result, `--limit N` to judge the first N only).
-3. Read the counts. A block that fails would be refused by the revised core; fix the cause, or convert the data once with `fb convert`, before deploying. Delete the export afterwards.
+3. Read the counts. A block that fails would be refused by the revised core; fix the cause before deploying. Delete the export afterwards.

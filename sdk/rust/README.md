@@ -9,8 +9,7 @@ identity, sign what it measures or does, keep its own chain of blocks, check eve
 
 The rules come from the repository's `spec/` folder: `spec/core.md` and `spec/modules/` (normative) and
 `spec/protocol.json` (every list and grammar). The crate builds the JSON in, and you can hand it your own copy at
-runtime (`Spec::from_json`). No list is copied into code. There is no earlier version in the protocol: the feature
-`legacy` adds the one-time converter (`legacy::convert`), which reads `spec/legacy/aliases-0.x.json`.
+runtime (`Spec::from_json`). No list is copied into code. There is no earlier version in the protocol.
 
 Public domain (CC0 1.0).
 
@@ -25,8 +24,7 @@ The protocol names three sizes of peer (`peers` in protocol.json). Pick one with
 | node | `node` (default) | envelopes (X25519, HKDF-SHA256, AES-256-GCM) and sealed copies | a person's or machine's always-on node |
 
 More features: `suites` (the suites `p256` and `sm` beside `std`: ECDSA and ECDH on P-256; SM2, SM3 and SM4), the
-optional profiles `successor`, `ballots`, `rekeys`, `earnest`, `door` (the JSON door, in the default build), `legacy`
-(the converter), and the doors `ffi`, `jni` and `wasm`. A suite not built in is refused with `unknown_suite`.
+optional profiles `successor`, `ballots`, `rekeys`, `earnest`, `door` (the JSON door, in the default build), and the doors `ffi`, `jni` and `wasm`. A suite not built in is refused with `unknown_suite`.
 
 The micro core is `no_std` + `alloc`: build it with `--no-default-features --features micro`. Without the `std`
 feature it has no clock and no randomness of its own, so you pass `at`, salts and nonces in (every option that needs
@@ -46,7 +44,7 @@ use serde_json::json;
 
 let keys = foodblock::generate_keypair()?;              // made once, on the device
 let me = genesis(&keys, &GenesisOptions { kind: "sensor", at: "2026-10-15T09:00:00.000Z".into(), audience: Some(Readers::Public),
-    encryption_key: &my_x25519_public, recovery_key: &offline_recovery_public, reach: "P30D", ..Default::default() })?;
+    encryption_key: &my_x25519_public, ..Default::default() })?;
 let id = me["hash"].as_str().unwrap().to_string();
 
 // The one write path: compose, check, sign, chain. A reading is a decimal string, never a float.
@@ -61,8 +59,8 @@ Nothing is filled in for the author: `kind`, `at` and `audience` of a genesis, a
 protocol.json `refusals.codes`; `err.reasons` the details alone); it never repairs. Other names
 follow the JavaScript reference SDK: `canonical`, `hash`, `sign`, `verify`, `refusals`, `check`, `valid::valid`,
 `next_link`, `check_chain`, `seal`, `open`, `seal_copy`, `open_copy`, `identity::*`, `grant::*` (`scope_reading`), `fold::*`
-(`promise_stage`, `circle_state`, `members_then`, `who_speaks`, `where_now`, `ownership`, `successor_state`, `circle_key`), `views::*`
-(`promise_view`, `due`, `recovery_reach`), `strangers::*` (`consent`, `is_stranger`, `receipt_code`,
+(`promise_stage`, `circle_state`, `members_then`, `who_speaks`, `where_now`, `ownership`, `circle_key`), `views::*`
+(`promise_view`, `due`), `strangers::*` (`consent`, `is_stranger`, `short_code`, `short_reply`,
 `admission_refusals`), and
 `sync::*` (signed pull and push, `accept`, signed answers, `.well-known` discovery, the local announcement and the
 mDNS service `_foodblock._tcp`). A node's own choices are stated, never filled in: `answer_pull` takes `{ cap, serves_pairs }`, `accept` and `accept_sealed` take `{ takes_pairs }`, and `admission_refusals` takes the rule's state or an explicit null, with today's count.
@@ -161,10 +159,9 @@ cargo test --features ffi                                     # with the C ABI c
 
 `tests/vectors.rs` runs every section of `spec/vectors.json` and `spec/canonical-vectors.json` through the JSON door
 the way `spec/run-vectors.cjs` runs the reference SDK: canonical strings and hashes, `valid`, chains, audience
-commitments, signatures, headers, envelopes and sealed copies, identities (rotations, recovery reach, frozen and void
-keys, operators), every fold and view, refusals (their codes, exactly), the messages between nodes, the compact form
-and the `door` section (suites, strict writing, skips, forks, consent, roles, relative time, tasks). `tests/legacy.rs`
-tests the converter against the old 0.x examples in `tests/fixtures/`. `tests/api.rs` checks the suites, the
+commitments, signatures, headers, envelopes and sealed copies, identities (her list of voices, waits and reaches, keys under a voice,
+operators), every fold and view, refusals (their codes, exactly), the messages between nodes, the compact form
+and the `door` section (suites, strict writing, skips, forks, consent, roles, relative time, tasks). `tests/api.rs` checks the suites, the
 envelopes and the canonical example.
 
 ## The compact form, algorithms and money

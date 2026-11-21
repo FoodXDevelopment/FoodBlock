@@ -1,6 +1,6 @@
 //! Times the folds a node runs most on a record of N signed blocks (stories of: a thing, a sale accepted, a shelf, a move, an offer
 //! and its accept). Run: cargo run --release --example fold_timing -- 1000 10000 100000
-use foodblock::fold::{backed_all, owed_back, ownership, promise_stage, where_now, StageOptions};
+use foodblock::fold::{backed_all, to_come_back, ownership, promise_stage, where_now, StageOptions};
 use foodblock::identity::{genesis, GenesisOptions};
 use foodblock::{create_in, keypair_from_seed, sign, Keypair, Readers};
 use serde_json::{json, Value};
@@ -88,14 +88,14 @@ fn main() {
         let (blocks, probes) = world(n);
         println!("{} blocks (built in {:.1} s)", blocks.len(), t.elapsed().as_secs_f64());
         let (thing, offer) = &probes[probes.len() / 2];
-        // FT_LOOP=ownership|where_now|promise_stage|owed_back: repeat one op, to sample it
+        // FT_LOOP=ownership|where_now|promise_stage|to_come_back: repeat one op, to sample it
         if let Ok(op) = std::env::var("FT_LOOP") {
             loop {
                 match op.as_str() {
                     "ownership" => drop(ownership(thing, &blocks)),
                     "where_now" => drop(where_now(thing, &blocks)),
                     "promise_stage" => drop(promise_stage(offer, &blocks, &StageOptions::default())),
-                    _ => drop(owed_back(blocks[0]["hash"].as_str().unwrap(), &blocks)),
+                    _ => drop(to_come_back(blocks[0]["hash"].as_str().unwrap(), &blocks)),
                 }
             }
         }
@@ -103,8 +103,8 @@ fn main() {
         let w = time("where_now", || where_now(thing, &blocks));
         let p = time("promise_stage", || promise_stage(offer, &blocks, &StageOptions::default()));
         let person = blocks[0]["hash"].as_str().unwrap().to_string();
-        let ob = time("owed_back", || owed_back(&person, &blocks));
+        let ob = time("to_come_back", || to_come_back(&person, &blocks));
         let ba = time("backed_all", || backed_all(&person, &blocks));
-        println!("  checksum owner {:?} where {:?} {} {} {}", o.owner.is_some(), w, p["stage"], ob.to_string().len(), ba.to_string().len());
+        println!("  checksum owner {:?} where {:?} {} {} {}", o["owner"].is_string(), w, p["stage"], ob.to_string().len(), ba.to_string().len());
     }
 }

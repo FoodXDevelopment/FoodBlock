@@ -1,0 +1,16 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "limit": {
+    "minor": 5,
+    "currency": "gbp"
+   },
+   "notice": "two days",
+   "condition": {
+    "settled": "x"
+   }
+  }
+ ],
+ "world": 4
+}

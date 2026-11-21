@@ -1,10 +1,9 @@
 //! A circle's key, by epoch (§8, the rekeys profile).
-use super::circle::may_with_in;
 use super::read_all;
 use crate::js::{hash_of, int, list, rf, rs, sorted_set, ss, st, type_of};
 use crate::prelude::*;
 
-/// A circle's encryption key now: the key grants signed as the circle by a holder of the power rekey, each with state.epoch one higher,
+/// A circle's encryption key now: the key grants signed as the circle, where a row holds for it (1.9 stage 6), each with state.epoch one higher,
 /// naming epoch n-1 in after. Two rekeys in one epoch both open; the next settles. Returns `{ epoch, keys, grants }`.
 pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
     let read = read_all(blocks);
@@ -22,7 +21,7 @@ pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
                 && ss(b, "public_key_encrypt").is_some()
                 && crate::identity::counts_in(b, &read)
         })
-        .filter(|b| may_with_in(b, circle, &read, None, "rekey"))
+        .filter(|b| super::circle::holds_in(b, circle, &read))
         .collect();
     let mut epoch = 0i64;
     let mut open: Vec<(String, String)> = vec![(

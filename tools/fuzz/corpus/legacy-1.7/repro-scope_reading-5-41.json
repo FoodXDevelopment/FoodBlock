@@ -1,0 +1,13 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "limit": {
+    "minor": 0,
+    "currency": "EUR"
+   },
+   "notice": "two days"
+  }
+ ],
+ "world": 5
+}

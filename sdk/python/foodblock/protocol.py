@@ -10,8 +10,12 @@ ALG = PROTOCOL["suites"]["std"]["envelope"]
 
 canonical_json = door.canonical_json
 new_salt = door.new_salt
-amount = door.amount
-money = door.money
+
+def amount(value, unit, of=None) -> dict:
+    """An amount: amount("2.5", "kg"), or amount("1", "credit", kind). Money is an amount: amount("4.20", "GBP"). The value is a decimal string."""
+    return door.amount(str(value), unit, of)
+
+
 is_time = door.is_time
 is_date = door.is_date
 causes_of = door.causes_of
@@ -24,18 +28,12 @@ open_copy = door.open_copy
 next_link = door.next_link
 reveal_for = door.reveal_for
 sign_message = door.sign_message
+id_of = door.id_of  # a block's id, in the suite of the key that signed it (found among `held`)
 verify = door.verify
 verify_message = door.verify_message
 passkey_challenge = door.passkey_challenge  # the challenge to ask a passkey to sign: base64url of the SHA-256 of the signed bytes (for a block, its id)
 strict_text = door.strict_text  # strict writing from JSON text: a repeated key, then every refusal of the block it holds
 open = door.open  # noqa: A001 (the protocol's word)
-
-
-def _blocks(held):
-    """Blocks as a list, from a list or a hash -> block dict (or None)."""
-    if held is None:
-        return None
-    return list(held.values()) if isinstance(held, dict) else list(held)
 
 
 # ---- A block ----
@@ -85,9 +83,9 @@ def encryption_key_of(private_hex, suite=None) -> str:
     return door.encryption_key_of(private_hex, suite)
 
 
-def seal(value, recipient_keys, suite=None, fixed=None) -> dict:
-    """`fixed` exists only to reproduce a vector."""
-    return door.seal(value, list(recipient_keys), suite, fixed)
+def seal(value, recipient_keys, suite=None, fixed=None, pad=None) -> dict:
+    """`fixed` exists only to reproduce a vector; `pad` pads the envelope to a size bucket."""
+    return door.seal(value, list(recipient_keys), suite, fixed, pad)
 
 
 # ---- The commitment ----
@@ -103,18 +101,30 @@ def finds_self(block, recipient, salt_hex) -> bool:
     return door.finds_self(block, recipient, salt_hex or "")
 
 
-# ---- The write check and the words it asks for ----
-def refusals(type_, state=None, refs=None, schemas=None, held=None) -> list:
-    return door.refusals(type_, {} if state is None else state, {} if refs is None else refs, _blocks(held) or [], _blocks(schemas))
+# ---- A block's questions: who said these bytes, whether this reader can read it, whether a draft may be signed ----
+def valid(block, held=None) -> list:
+    """Who said these bytes (core.md, section 8): every refusal of a signed block, or a held header, against the blocks held ([] when valid)."""
+    return door.valid(block, held or [])
 
 
-def check(type_, state=None, refs=None, schemas=None, held=None) -> list:
-    return door.check(type_, {} if state is None else state, {} if refs is None else refs, _blocks(held) or [], _blocks(schemas))
+def read(block, held=None, schemas=None, runs=None) -> list:
+    """Whether this reader can read a valid block: every code found ([] when read), the value codes among them. `runs`: the ids of the rule sets this reader runs."""
+    return door.read(block, held or [], schemas, runs)
 
 
-def valid(block, held=None, schemas=None, arrivals=None) -> list:
-    """Every refusal of a signed block against the blocks held ([] when valid). Validity reads no arrival: `arrivals` is accepted and unused."""
-    return door.valid(block, _blocks(held) or [], _blocks(schemas))
+def write_refusals(draft, held=None) -> list:
+    """What a writer refuses to sign, asked of an unsigned draft { type, state, refs } before anyone signs it; [] when it may be signed."""
+    return door.write_refusals(draft, held or [])
+
+
+def binds(draft, held=None) -> bool:
+    """Whether an unsigned draft, once signed, binds anyone: an accept, or a block that would move something of the one whose word it is."""
+    return door.binds(draft, held or [])
+
+
+def schemas_from(held=None) -> list:
+    """The schema store of the blocks held (core.md, section 8): every thing of kind schema among them, ids ascending. Pass it as `schemas` to valid, check or refusals."""
+    return door.schemas_from(held or [])
 
 
 def terms(given=None, **more) -> dict:
@@ -127,8 +137,25 @@ def check_chain(blocks, brought_in) -> dict:
     return door.check_chain(blocks, brought_in)
 
 
+def read_whole(block, start, held=None) -> dict:
+    """Whether the line is read whole from a block back to a start (folds.md, A line): { whole, lacks }."""
+    return door.read_whole(str(block), str(start), held or [])
+
+
 def sees(later, earlier, blocks) -> bool:
-    return door.sees(later, earlier, blocks)
+    """Whether `later` has `earlier` (a block or its hash) in its causal past."""
+    if not later or not earlier:
+        return False
+    return door.sees(later, {"hash": earlier} if isinstance(earlier, str) else earlier, blocks)
+
+
+def rule_set(files) -> dict:
+    """A rule set named by its hash (core.md, section 11)."""
+    return door.rule_set(files)
+
+
+mount = door.mount  # a door that keeps blocks between calls (library): returns the mount's name
+unmount = door.unmount
 
 
 # ---- Writing and the wire ----
@@ -153,7 +180,7 @@ def write(type_, state=None, refs=None, author=None, key=None, held=(), schemas=
         raise FoodBlockError("argument", "write: a block is signed by a key { public_key_sign, private_key }")
     given = _options(author=author, key=key, held=list(held or []), link=link, **options)
     if schemas is not None:
-        given["schemas"] = _blocks(schemas)
+        given["schemas"] = list(schemas.values()) if isinstance(schemas, dict) else list(schemas)
     return door.write(type_, state or {}, refs or {}, given)
 
 
@@ -167,5 +194,7 @@ def unwrap(message, held=None) -> dict:
     return door.unwrap(message, held)
 
 
-def seal_copy(signed, keys, reveals=(), private_key=None, fixed=None, suite=None) -> dict:
-    return door.seal_copy(signed, list(keys), list(reveals or []), private_key, fixed, suite)
+def seal_copy(signed, keys, reveals=(), fixed=None, suite=None) -> dict:
+    """A sealed copy: { header, header_signature, envelope }. A private block is signed once, over its header, so its own
+    signature is the header's and no key is needed."""
+    return door.seal_copy(signed, list(keys), list(reveals or []), fixed, suite)

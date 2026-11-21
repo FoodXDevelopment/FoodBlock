@@ -1,0 +1,15 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "limit": {
+    "minor": 5,
+    "currency": "gbp"
+   },
+   "notice": null,
+   "until": "tomorrow",
+   "condition": "when ready"
+  }
+ ],
+ "world": 1
+}

@@ -1,0 +1,15 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "limit": {
+    "minor": 5,
+    "currency": "gbp"
+   },
+   "every": "P7D",
+   "notice": "PT48H",
+   "colour": "red"
+  }
+ ],
+ "world": 8
+}

@@ -131,32 +131,32 @@ def new_salt():
     return call("new_salt")
 
 
-def check(type_, state, refs, held, schemas=None):
-    return call("check", type_, state, refs, _blocks(held), None if schemas is None else _blocks(schemas))
-
-
-def refusals(type_, state, refs, held, schemas=None):
-    return call("refusals", type_, state, refs, _blocks(held), None if schemas is None else _blocks(schemas))
-
-
-def amount(value, unit):
-    return call("amount", value, unit)
-
-
-def money(minor, currency):
-    return call("money", minor, currency)
+def amount(value, unit, of=None):
+    return call("amount", value, unit, of)
 
 
 def terms(terms):
     return call("terms", terms)
 
 
-def valid(block, held, schemas=None):
-    return call("valid", block, _blocks(held), None if schemas is None else _blocks(schemas))
+def valid(block, held):
+    return call("valid", block, _blocks(held))
+
+
+def read(block, held, schemas=None, runs=None):
+    return call("read", block, _blocks(held), None if schemas is None else _blocks(schemas), runs)
+
+
+def schemas_from(held):
+    return call("schemas_from", _blocks(held))
 
 
 def strict_text(text):
     return call("strict_text", text)
+
+
+def write_refusals(draft, held):
+    return call("write_refusals", draft, _blocks(held))
 
 
 def strict_push(text):
@@ -167,8 +167,16 @@ def needs(block, held=None):
     return call("needs", block, None if held is None else _blocks(held))
 
 
-def receipt_code(hash_, long=None):
-    return call("receipt_code", hash_, long)
+def short_code(hash_):
+    return call("short_code", hash_)
+
+
+def short_reply(answer):
+    return call("short_reply", answer)
+
+
+def short_reply_open(text, signer, blocks):
+    return call("short_reply_open", text, signer, _blocks(blocks))
 
 
 def code_matches(code, typed):
@@ -183,8 +191,8 @@ def is_stranger(receiver, sender, blocks, block=None):
     return call("is_stranger", receiver, sender, _blocks(blocks), block)
 
 
-def admission_refusals(block, receiver, blocks, admission, strangers_today):
-    return call("admission_refusals", block, receiver, _blocks(blocks), admission, strangers_today)
+def admission_refusals(block, receiver, blocks, admission, asks_today):
+    return call("admission_refusals", block, receiver, _blocks(blocks), admission, asks_today)
 
 
 def due(promise, arrivals=None):
@@ -195,16 +203,16 @@ def repeat_occurrences(promise, from_, to):
     return call("repeat_occurrences", promise, from_, to)
 
 
-def recovery_reach(rotation, blocks, arrivals=None, unknown_arrival=None):
-    return call("recovery_reach", rotation, _blocks(blocks), arrivals, unknown_arrival)
-
-
 def next_link(last=None, brought_in=None):
     return call("next_link", last, brought_in)
 
 
 def check_chain(blocks, id_):
     return call("check_chain", _blocks(blocks), id_)
+
+
+def read_whole(block, start, held):
+    return call("read_whole", block, start, _blocks(held))
 
 
 def causes_of(block):
@@ -229,14 +237,6 @@ def is_date(value):
 
 def parse_duration(text=None):
     return call("parse_duration", text)
-
-
-def identity_of(id_, blocks, arrivals=None, unknown_arrival=None):
-    return call("identity_of", id_, _blocks(blocks), arrivals, unknown_arrival)
-
-
-def signer_of(block, keys):
-    return call("signer_of", block, keys)
 
 
 def chains_of(id_, blocks):
@@ -279,20 +279,32 @@ def live_keys(id_, blocks):
     return call("live_keys", id_, _blocks(blocks))
 
 
-def keys_of(id_, blocks, arrivals=None, unknown_arrival=None):
-    return call("keys_of", id_, _blocks(blocks), arrivals, unknown_arrival)
+def key_timeline(id_, blocks):
+    return call("key_timeline", id_, _blocks(blocks))
 
 
-def key_timeline(id_, blocks, arrivals=None, unknown_arrival=None):
-    return call("key_timeline", id_, _blocks(blocks), arrivals, unknown_arrival)
+def signed_by_author(block, blocks):
+    return call("signed_by_author", block, _blocks(blocks))
 
 
-def signed_by_author(block, blocks, arrivals=None, unknown_arrival=None):
-    return call("signed_by_author", block, _blocks(blocks), arrivals, unknown_arrival)
+def stands(block, blocks):
+    return call("stands", block, _blocks(blocks))
 
 
 def spec():
     return call("spec")
+
+
+def rule_set(files):
+    return call("rule_set", files)
+
+
+def mount(blocks, into=None):
+    return call("mount", _blocks(blocks), into)
+
+
+def unmount(mount):
+    return call("unmount", mount)
 
 
 def spec_list(name):
@@ -331,8 +343,8 @@ def merkle_verify(block, chunk, index, proof):
     return call("merkle_verify", block, chunk, index, proof)
 
 
-def recovery_key_hash(public_key, suite=None):
-    return call("recovery_key_hash", public_key, suite)
+def key_hash(public_key, suite=None):
+    return call("key_hash", public_key, suite)
 
 
 def is_genesis(block=None):
@@ -343,12 +355,8 @@ def genesis_opens(block=None):
     return call("genesis_opens", block)
 
 
-def key_grant(id_, new_key, signer, options):
-    return call("key_grant", id_, new_key, signer, options)
-
-
-def identity_state(id_, blocks, arrivals=None, unknown_arrival=None):
-    return call("identity_state", id_, _blocks(blocks), arrivals, unknown_arrival)
+def identity_state(id_, blocks):
+    return call("identity_state", id_, _blocks(blocks))
 
 
 def counts(block, blocks):
@@ -379,26 +387,6 @@ def terms_total(terms=None, quantity=None):
     return call("terms_total", terms, quantity)
 
 
-def within_limit(limit=None, value=None, spent=None):
-    return call("within_limit", limit, value, spent)
-
-
-def limit_within_parent(child, parent, at):
-    return call("limit_within_parent", child, parent, at)
-
-
-def limit_fence(grant_hash, agent, limit=None, every=None, salt=None, each=None):
-    return call("limit_fence", grant_hash, agent, limit, every, salt, each)
-
-
-def limit_commitment(limit, every, salt, suite=None, each=None):
-    return call("limit_commitment", limit, every, salt, suite, each)
-
-
-def limit_opens(grant, fence, suite=None):
-    return call("limit_opens", grant, fence, suite)
-
-
 def recipients_of(for_whom, hash_):
     return call("recipients_of", for_whom, hash_)
 
@@ -409,10 +397,6 @@ def children_of(id_, blocks):
 
 def why_not_live_undo(block, blocks):
     return call("why_not_live_undo", block, _blocks(blocks))
-
-
-def act_name(block):
-    return call("act_name", block)
 
 
 def reading_is_persons_claim(block, person, blocks):
@@ -435,8 +419,8 @@ def scope_reading(scope=None):
     return call("scope_reading", scope)
 
 
-def operators_of(agent, blocks, now=None):
-    return call("operators_of", agent, _blocks(blocks), now)
+def fence_reading(fence, at, readings=None, heard=None):
+    return call("fence_reading", fence, at, readings, heard)
 
 
 def why_not_under(block, blocks, now=None):
@@ -451,36 +435,28 @@ def why_not_live(grant, blocks, now=None):
     return call("why_not_live", grant, _blocks(blocks), now)
 
 
-def convert(old, options):
-    return call("convert", _blocks(old), options)
-
-
-def old_hash(block):
-    return call("old_hash", block)
-
-
-def earnest_shape_ok(block):
-    return call("earnest_shape_ok", block)
-
-
-def earnest_paid(ask, earnest, blocks):
-    return call("earnest_paid", ask, earnest, _blocks(blocks))
-
-
-def seal(value, keys, suite=None, fixed=None):
-    return call("seal", value, keys, suite, fixed)
+def seal(value, keys, suite=None, fixed=None, pad=None):
+    return call("seal", value, keys, suite, fixed, pad)
 
 
 def open(envelope, x25519_private):  # noqa: A001
     return call("open", envelope, x25519_private)
 
 
-def seal_copy(block, keys, reveals, private_key, fixed=None, suite=None, sign_suite=None):
-    return call("seal_copy", block, keys, reveals, private_key, fixed, suite, sign_suite)
+def seal_copy(block, keys, reveals, fixed=None, suite=None):
+    return call("seal_copy", block, keys, reveals, fixed, suite)
 
 
 def open_copy(message, x25519_private):
     return call("open_copy", message, x25519_private)
+
+
+def padded_size(bytes):
+    return call("padded_size", bytes)
+
+
+def wrap_copy(copy, mailbox, suite=None, fixed=None):
+    return call("wrap_copy", copy, mailbox, suite, fixed)
 
 
 def encryption_keypair(suite=None):
@@ -515,8 +491,52 @@ def circle_state(circle, blocks, within=None):
     return call("circle_state", circle, _blocks(blocks), within)
 
 
-def may_act_as(block, circle, blocks, role=None):
-    return call("may_act_as", block, circle, _blocks(blocks), role)
+def machine_lock(machine, held, now=None):
+    return call("machine_lock", machine, _blocks(held), now)
+
+
+def circle_versions(circle, blocks):
+    return call("circle_versions", circle, _blocks(blocks))
+
+
+def row_holds(block, blocks):
+    return call("row_holds", block, _blocks(blocks))
+
+
+def ways_in(circle, blocks):
+    return call("ways_in", circle, _blocks(blocks))
+
+
+def keeps_to(c, a, blocks):
+    return call("keeps_to", c, a, _blocks(blocks))
+
+
+def meter(grant, blocks, block=None):
+    return call("meter", grant, _blocks(blocks), block)
+
+
+def worst_case(grant, blocks):
+    return call("worst_case", grant, _blocks(blocks))
+
+
+def lowest_offer(grant, blocks):
+    return call("lowest_offer", grant, _blocks(blocks))
+
+
+def to_come_back(person, blocks):
+    return call("to_come_back", person, _blocks(blocks))
+
+
+def readback(block, held, to=None, renderer=None, digits=None):
+    return call("readback", block, _blocks(held), to, renderer, digits)
+
+
+def render(answer, renderer):
+    return call("render", answer, renderer)
+
+
+def readback_redo(rb, held):
+    return call("readback_redo", rb, _blocks(held))
 
 
 def speaks_for(block, blocks):
@@ -535,8 +555,8 @@ def gives(block, person, blocks):
     return call("gives", block, person, _blocks(blocks))
 
 
-def act_check(deal, template):
-    return call("act_check", deal, template)
+def binds(draft, held):
+    return call("binds", draft, _blocks(held))
 
 
 def listing_check(lookup, listing, blocks):
@@ -559,6 +579,14 @@ def ruling_audience(ruling, blocks, now=None):
     return call("ruling_audience", ruling, _blocks(blocks), now)
 
 
+def count_of(needed, members):
+    return call("count_of", needed, members)
+
+
+def fee_back(offer, deal, blocks):
+    return call("fee_back", offer, deal, _blocks(blocks))
+
+
 def members_then(block, recipient, blocks):
     return call("members_then", block, recipient, _blocks(blocks))
 
@@ -571,8 +599,12 @@ def ownership(instance, blocks, now=None):
     return call("ownership", instance, _blocks(blocks), now)
 
 
-def ownership_view(instance, blocks, arrivals=None, unknown_arrival=None, now=None):
-    return call("ownership_view", instance, _blocks(blocks), arrivals, unknown_arrival, now)
+def ownership_view(instance, blocks, now=None):
+    return call("ownership_view", instance, _blocks(blocks), now)
+
+
+def made_from(instance, blocks):
+    return call("made_from", instance, _blocks(blocks))
 
 
 def receiver_of(promise, blocks):
@@ -607,24 +639,8 @@ def account_of(who, blocks):
     return call("account_of", who, _blocks(blocks))
 
 
-def owed_back(person, blocks):
-    return call("owed_back", person, _blocks(blocks))
-
-
 def release_shown(subject, blocks):
     return call("release_shown", subject, _blocks(blocks))
-
-
-def bids_shown(quarrel, blocks):
-    return call("bids_shown", quarrel, _blocks(blocks))
-
-
-def successor_state(grant, blocks, now=None, arrivals=None):
-    return call("successor_state", grant, _blocks(blocks), now, arrivals)
-
-
-def successor_view(grant, blocks, now=None, arrivals=None):
-    return call("successor_view", grant, _blocks(blocks), now, arrivals)
 
 
 def counted_in(result, commitment, counter):
@@ -675,8 +691,16 @@ def push_answer(parts, node, private_key, suite=None):
     return call("push_answer", parts, node, private_key, suite)
 
 
-def well_known(node, holds, speaks_for, admission, endpoints):
-    return call("well_known", node, holds, speaks_for, admission, endpoints)
+def well_known(node, reads, admission, endpoints, log=None):
+    return call("well_known", node, reads, admission, endpoints, log)
+
+
+def log_shown(receipts, request, answer, held):
+    return call("log_shown", _blocks(receipts), request, answer, _blocks(held))
+
+
+def export_whole(document, log, last):
+    return call("export_whole", document, log, last)
 
 
 def waited_too_long(since, now, ttl):
@@ -691,12 +715,8 @@ def heads_of(blocks):
     return call("heads_of", _blocks(blocks))
 
 
-def accept(incoming, held, choices, schemas=None):
-    return call("accept", _blocks(incoming), _blocks(held), choices, None if schemas is None else _blocks(schemas))
-
-
-def accept_sealed(messages, held, choices):
-    return call("accept_sealed", _blocks(messages), _blocks(held), choices)
+def accept(incoming, held, choices, schemas=None, push=None):
+    return call("accept", _blocks(incoming), _blocks(held), choices, None if schemas is None else _blocks(schemas), push)
 
 
 def answer_signed_by(answer, node_keys):

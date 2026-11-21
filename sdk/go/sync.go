@@ -169,7 +169,7 @@ func Accept(incoming, held []Block, o AcceptOptions) Accepted {
 		Waiting       []Waiting  `json:"waiting"`
 		Refused       []Refusal  `json:"refused"`
 		Equivocations [][]string `json:"equivocations"`
-	}](incoming, held, map[string]any{"takes_pairs": o.TakesPairs}, blockList(o.Schemas))
+	}](incoming, held, map[string]any{"takes_pairs": o.TakesPairs}, blockList(o.Schemas), nil)
 	byHash := map[string]Block{}
 	for _, b := range incoming {
 		byHash[b.id()] = b
@@ -192,13 +192,6 @@ func Accept(incoming, held []Block, o AcceptOptions) Accepted {
 		out.Taken = append(out.Taken, b)
 	}
 	return out
-}
-
-// AcceptSealed is what a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that
-// speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. incoming are
-// sealed messages { header, header_signature, ... }; held whole blocks, sealed messages or their headers. Taken are the hashes.
-func AcceptSealed(incoming, held []Block, takesPairs bool) map[string]any {
-	return doorAcceptSealed[map[string]any](incoming, held, map[string]any{"takes_pairs": takesPairs})
 }
 
 // WaitedTooLong is whether a waiting block has waited past the node's own time to live since it arrived.
@@ -239,9 +232,9 @@ func ResidencyRefusals(b Block, holdsIn []string) []Finding {
 // Discovery is what a node publishes at `.well-known/foodblock`. Admission is the hash of its owner's admission block,
 // or "".
 type Discovery struct {
-	Node, Admission  string
-	Holds, SpeaksFor []string
-	Endpoints        map[string]string
+	Node, Admission, Log string
+	SpeaksFor            []string
+	Endpoints            map[string]string
 }
 
 // WellKnown is the `.well-known/foodblock` document.
@@ -250,7 +243,7 @@ func WellKnown(d Discovery) map[string]any {
 	if endpoints == nil {
 		endpoints = map[string]string{}
 	}
-	return doorWellKnown[map[string]any](d.Node, d.Holds, d.SpeaksFor, d.Admission, endpoints)
+	return doorWellKnown[map[string]any](d.Node, d.SpeaksFor, d.Admission, endpoints, d.Log)
 }
 
 // Announcement is a local announcement (mDNS / DNS-SD or a short-range link): { protocol, version, node, endpoints }.

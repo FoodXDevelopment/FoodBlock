@@ -7,14 +7,15 @@ public enum Fold {
         try Door.promiseStage(firstBlock, blocks, [:])
     }
     /// The view: the same answer, with stage `expired` once the reader's `now` passes `expires` and nothing binds.
-    /// `arrivals` (hash to arrival time) is read with `unknownArrival` ("inside" or "outside"), which it then requires.
-    public static func promiseView(_ firstBlock: JSON, _ blocks: [JSON], now: String? = nil, arrivals: [String: String]? = nil, unknownArrival: String? = nil) throws -> JSON {
-        var o: JSON = [:]
-        if let n = now { o["now"] = n }
-        if let a = arrivals { o["arrivals"] = a }
-        if let u = unknownArrival { o["unknown_arrival"] = u }
-        return try Door.promiseView(firstBlock, blocks, o)
+    public static func promiseView(_ firstBlock: JSON, _ blocks: [JSON], now: String? = nil) throws -> JSON {
+        try Door.promiseView(firstBlock, blocks, now.map { ["now": $0] } ?? [:])
     }
+    /// The views of many deals of one store at once, read against one reading of it: { hash: view }. Each first promise is among `blocks`.
+    public static func promiseViews(_ firsts: [String], _ blocks: [JSON], now: String? = nil) throws -> JSON {
+        try Door.promiseViews(firsts, blocks, now.map { ["now": $0] } ?? [:])
+    }
+    /// The occurrences of a standing promise's calendar repeat from `from` up to, not including, `to`: UTC start times.
+    public static func repeatOccurrences(_ promise: JSON, _ from: String, _ to: String) throws -> [String] { try Door.repeatOccurrences(promise, from, to) }
 
     /// A member, as the spec names it: { roles, grant, counted_to } (counted_to nil for a current member).
     public final class Member {
@@ -41,7 +42,6 @@ public enum Fold {
     public static func circleState(_ circle: String, _ blocks: [JSON], within: JSON? = nil) throws -> CircleState? {
         (try Door.circleState(circle, blocks, within)).map(CircleState.init)
     }
-    public static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], role: String? = nil) throws -> Bool { try Door.mayActAs(block, circle, blocks, role) }
     /// The one party a fold counts a block for (authority.md, Who a block speaks for): its id, or nil when it speaks for no one. The block need not be among `blocks` yet; no clock is read.
     public static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Door.speaksFor(block, blocks) }
     public static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> [String] { (try Door.membersThen(block, recipient, blocks) as? [String]) ?? [] }
@@ -58,10 +58,6 @@ public enum Fold {
     }
     public static func ownerOf(_ instance: JSON, _ blocks: [JSON]) throws -> String? { try Door.ownerOf(instance, blocks) as? String }
     public static func whereNow(_ thing: JSON, _ blocks: [JSON]) throws -> [String] { (try Door.whereNow(thing, blocks) as? [String]) ?? [] }
-    /// The optional successor profile's view: a grant's events, whether it fired, read at `now` and the arrivals.
-    public static func successorView(_ grant: JSON, _ blocks: [JSON], now: String? = nil, arrivedAt: Identity.Arrival? = nil) throws -> JSON {
-        (try Door.successorView(grant, blocks, now, Identity.log(arrivedAt, blocks)) as? JSON) ?? [:]
-    }
     public static func receiverOf(_ promise: JSON, _ blocks: [JSON]) throws -> String? { try Door.receiverOf(promise, blocks) as? String }
     /// The consent fold: a person's live word about a sender (or none): { word, block }. `block` is the sender's block (or nil).
     public static func consent(_ person: String, _ sender: String?, _ blocks: [JSON], block: JSON?) throws -> JSON { try Door.consent(person, sender, blocks, block) }
@@ -69,6 +65,41 @@ public enum Fold {
     public static func due(_ promise: JSON, arrivedAt: Identity.Arrival? = nil, held: [JSON] = []) throws -> Any? { try Door.due(promise, Identity.log(arrivedAt, held + [promise])) }
     public static func circleKey(_ circle: String, _ blocks: [JSON]) throws -> JSON { (try Door.circleKey(circle, blocks) as? JSON) ?? [:] }
     public static func countedIn(_ result: JSON?, _ commitment: String, _ counter: String) throws -> Bool { try Door.countedIn(result ?? [:], commitment, counter) }
+    // ---- 1.9 readings: thin calls, each returns what the core's door gives ----
+    /// An amount moved in `person`'s name that they do not back (promises.md, What is to come back): { to_come: [{ block, amount, to, why }] }.
+    public static func toComeBack(_ person: String, _ blocks: [JSON]) throws -> JSON { try Door.toComeBack(person, blocks) }
+    /// Is `block` backed by `person`? { backed, why, chain }.
+    public static func backed(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Door.backed(block, person, blocks) }
+    /// `backed` for a whole set at once: { hash: { backed, why } }.
+    public static func backedAll(_ person: String, _ blocks: [JSON]) throws -> JSON { try Door.backedAll(person, blocks) }
+    /// What of `person`'s would become whose if `block` stands: { gives, bench }.
+    public static func gives(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Door.gives(block, person, blocks) }
+    public static func listingCheck(_ lookup: JSON, _ listing: JSON, _ blocks: [JSON]) throws -> JSON { try Door.listingCheck(lookup, listing, blocks) }
+    public static func checkReads(_ check: JSON, _ blocks: [JSON]) throws -> JSON { try Door.checkReads(check, blocks) }
+    public static func clearingApplied(_ clearing: JSON, _ blocks: [JSON]) throws -> JSON { try Door.clearingApplied(clearing, blocks) }
+    /// Whether a judge's ruling releases a stake that names it. No reader's clock.
+    public static func rulingReleases(_ stake: JSON, _ blocks: [JSON], now: String? = nil) throws -> JSON { try Door.rulingReleases(stake, blocks, now) }
+    public static func feeBack(_ offer: JSON, _ deal: JSON, _ blocks: [JSON]) throws -> JSON { try Door.feeBack(offer, deal, blocks) }
+    public static func countOf(_ needed: Any?, _ members: Int) throws -> Int? { intOf(try Door.countOf(needed, members)) }
+    public static func ownershipView(_ instance: JSON, _ blocks: [JSON], now: String? = nil) throws -> JSON { try Door.ownershipView(instance, blocks, now) }
+    public static func madeFrom(_ instance: JSON, _ blocks: [JSON]) throws -> Any? { try Door.madeFrom(instance, blocks) }
+    public static func sharesOn(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Door.sharesOn(thing, blocks) }
+    public static func pot(_ head: JSON, _ blocks: [JSON]) throws -> Any? { try Door.pot(head, blocks) }
+    /// Where `who` says money to them goes: { who, destinations, hash, at }, or nil.
+    public static func accountOf(_ who: String, _ blocks: [JSON]) throws -> Any? { try Door.accountOf(who, blocks) }
+    public static func releaseShown(_ subject: JSON, _ blocks: [JSON]) throws -> Any? { try Door.releaseShown(subject, blocks) }
+    public static func useShown(_ place: JSON, _ blocks: [JSON], keepers: Any? = nil) throws -> Any? { try Door.useShown(place, blocks, keepers) }
+    public static func notFreeShown(_ block: JSON, _ blocks: [JSON]) throws -> Any? { try Door.notFreeShown(block, blocks) }
+    public static func invasionShown(_ claim: JSON, _ blocks: [JSON]) throws -> Any? { try Door.invasionShown(claim, blocks) }
+    public static func circleVersions(_ circle: String, _ blocks: [JSON]) throws -> JSON? { try Door.circleVersions(circle, blocks) }
+    /// Whether a row of the circle a block is `as` holds for it (circles.md): the fewest hands each row needs.
+    public static func rowHolds(_ block: JSON, _ blocks: [JSON]) throws -> JSON { try Door.rowHolds(block, blocks) }
+    public static func waysIn(_ circle: String, _ blocks: [JSON]) throws -> JSON { try Door.waysIn(circle, blocks) }
+    /// The read-back of a block to the person `to`: { answer, text, state }; a renderer's words for an answer; a second reader's redo.
+    public static func readback(_ block: Any?, _ held: [JSON], to: String? = nil, renderer: String? = nil, digits: Any? = nil) throws -> JSON { try Door.readback(block, held, to, renderer, digits) }
+    public static func render(_ answer: JSON, _ renderer: String) throws -> String { try Door.render(answer, renderer) }
+    public static func readbackRedo(_ rb: JSON, _ held: [JSON]) throws -> JSON { try Door.readbackRedo(rb, held) }
+
 }
 
 /// Strangers (modules/consent.md) and the small profiles: thin calls into the Rust core.
@@ -83,9 +114,6 @@ public enum Strangers {
     /// Whether a condition holds on the blocks held, at the reader's clock (promises.md, Conditions): settled, a deed, a reading or a signal.
     /// It reads three ways: true, false, or nil for a condition of a shape the protocol does not read.
     public static func conditionHolds(_ condition: JSON, _ blocks: [JSON], now: String) throws -> Bool? { try Door.conditionHolds(condition, blocks, now) }
-    /// Earnest profile: the shape of an admission's earnest, and whether an ask's earnest is paid.
-    public static func earnestShapeOk(_ earnest: Any?) throws -> Bool { try Door.earnestShapeOk((earnest as? JSON) ?? [:]) }
-    public static func earnestPaid(_ ask: JSON, _ earnest: JSON, _ blocks: [JSON]) throws -> Bool { try Door.earnestPaid(ask, earnest, blocks) }
     /// What a node's admission and consent rules refuse of a block for a person: not_admitted, not_human. `admission` is the rule's
     /// state or an explicit nil (no rule); `strangersToday` a whole number. Both are stated.
     public static func admissionRefusals(_ block: JSON, receiver: String, _ blocks: [JSON], admission: JSON?, strangersToday: Int) throws -> [FoodBlock.Finding] {
@@ -93,22 +121,4 @@ public enum Strangers {
     }
     /// Residency (profiles/residency.md): a block that stays in regions its node does not hold in.
     public static func residencyRefusals(_ block: JSON, holdsIn: [String]) throws -> [FoodBlock.Finding] { FoodBlock.findings(try Door.residencyRefusals(block, holdsIn)) }
-}
-
-/// The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol: no node reads an older shape.
-public enum Legacy {
-    /// Convert old blocks into fresh 1.6 blocks, each deriving from the old hash, signed by the key given for each old identity.
-    /// `keys` maps each old identity to `{ public_key_sign, private_key, suite? }`; `at` is the conversion time. `schemas` are published
-    /// schemas a block may name instead of a new one; `custodianKey` signs only for the old ids in `custodianFor`, and only under a `channel`.
-    /// Returns { blocks, map, skipped, deliveries }.
-    public static func convert(_ oldBlocks: [JSON], keys: JSON, at: String, map: JSON = [:], existing: [JSON] = [], channel: String? = nil, requestHash: String? = nil,
-                               schemas: [JSON] = [], custodianKey: JSON? = nil, custodianFor: [String] = []) throws -> JSON {
-        var o: JSON = ["keys": keys, "map": map, "existing": existing, "schemas": schemas, "at": at, "custodian_for": custodianFor]
-        if let c = channel { o["channel"] = c }
-        if let r = requestHash { o["request_hash"] = r }
-        if let k = custodianKey { o["custodian_key"] = k }
-        return try Door.convert(oldBlocks, o)
-    }
-    /// The id an old block had under the old canonical form.
-    public static func oldHash(_ block: JSON) throws -> String { try Door.oldHash(block) }
 }

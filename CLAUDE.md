@@ -41,8 +41,7 @@ v1.6 paper, kept as the paper; where it and the spec differ, the spec is current
 - **Compress, don't expand.** Every change should make the system simpler.
 - **The SDK decides; everything else asks it.** The server, MCP server and CLI never check a block themselves.
 - **Strict.** Year zero: there is no earlier version in the protocol. Write and read only the current version's shapes. Never change
-  signed content: refuse it, and the author re-signs. Old data enters once, through the converter outside the protocol
-  (`fb convert`, `sdk/rust` feature `legacy`, `spec/legacy/`); it writes fresh blocks that name the old hash.
+  signed content: refuse it, and the author re-signs.
 - **Append-only.** A stored block is never updated or deleted. A change is a new block that `updates` the old one.
 - **The protocol describes itself.** Kinds, fields and roles are schemas (a `thing` of kind schema), not code.
 - **Every SDK reproduces the vectors.** `spec/vectors.json` exactly: hashes, signatures, commitments, envelopes.
@@ -54,7 +53,7 @@ v1.6 paper, kept as the paper; where it and the spec differ, the spec is current
 
 ```
 spec/core.md, modules/  the protocol (1.7, normative; protocol.md is the index); profiles/ (optional); protocol.json
-                        (every list), canonical.md, transport.md, vectors.json beside it; legacy/ is the one-time converter's data
+                        (every list), canonical.md, transport.md, vectors.json beside it
 spec/oracle/            an implementation written from the spec text alone; `node spec/oracle/run.cjs` checks the vectors
 spec/schemas/           the base schemas as signed things with stable ids (`schemas.json` is the source, `published.json` the result; `node sdk/javascript/test/make-schemas.cjs`)
 sdk/rust/               the one core (every rule, once): crate, C library, WebAssembly, JNI
@@ -62,15 +61,14 @@ spec/run-vectors.cjs    the conformance runner
 sdk/javascript/         the reference SDK (src/index.cjs is its whole API)
 sdk/python, go, swift,  the same protocol in other languages, thin layers over the Rust core (Go runs its WebAssembly in
 kotlin                  wazero; Swift links an XCFramework; Kotlin bundles JNI natives); each runs every vector section
-server/                 a node: node.js (store + signed pull / push / .well-known), index.js (runs it)
-sql/schema.sql          the node's store: append-only, each block kept exactly as it arrived
+host/                   one host, two stores: src/files/ (plain files) and src/postgres/ (node.js: store + signed pull / push / .well-known, index.js runs it, schema.sql: append-only, each block kept exactly as it arrived)
 mcp/                    the MCP door: six tools (find, read, ask, promise, accept, connect); the autonomous system drafts, the person signs
-cli/bin/fb.js           fb init | key | create | check | valid | convert | verify
-test/vectors.json       cross-language canonical vectors (they hash the same under the current version)
+cli/bin/fb.js           fb init | key | create | check | valid | verify
+test/vectors.json       cross-language canonical edge cases (numbers, strings, nesting, order); every SDK hashes them alike
 test/audit/             the audit's worlds as permanent tests: every fold computed by the core and the oracle must be identical (`run.cjs`)
 test/necessity.cjs      spec/NECESSITY.md is current and nothing listed in protocol.json is dead or untested (`node tools/necessity.cjs` measures it by deleting each thing in turn)
 tools/replay-check.cjs  judges exported stored blocks with the current core: counts and reason codes only (DISTRIBUTION.md)
-test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript packages (and legacy/aliases-0.x.json into the Rust crate); --check proves they match
+test/sync-spec.cjs      copies spec/protocol.json into the Rust and JavaScript packages; --check proves they match
 ```
 
 ## Testing

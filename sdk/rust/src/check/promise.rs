@@ -1,6 +1,6 @@
 //! A promise's own rules (promises.md): its sides, its deal, and its terms.
 use super::{f, s, Checker, W};
-use crate::js::{get, hash_of, is_obj, keys_within, rf, sorted_set, str_of, Index};
+use crate::js::{hash_of, is_obj, keys_within, rf, sorted_set, str_of, Index};
 use crate::prelude::*;
 
 impl Checker<'_> {
@@ -22,8 +22,12 @@ impl Checker<'_> {
         if r("updates").is_some() && r("answers").is_none() && !matches!(g("status").and_then(Value::as_str), Some("stopped" | "resumed")) {
             w.push(f("required", "an updates of a promise is its author's stop (state.status stopped), or the end of a pause of their own (resumed): terms are fixed once written; change them with a counter-offer or a new offer"));
         }
-        if !answering && r("what").is_none() && g("what").is_none() {
-            w.push(f("required", "a promise names what moves: refs.what, or state.what for time or a job"));
+        // a promise of an amount of a good names it in terms.quantity: money now for money later is one; there is no loan type (core.md 7)
+        // (a range of amounts names it too: stage 5 compare, as the oracle reads it)
+        let is_amount = |q: &Value| q.get("value").is_some() && q.get("unit").is_some();
+        let of_amount = g("terms").and_then(|t| t.get("quantity")).is_some_and(|q| is_amount(q) || ["min", "max"].iter().any(|k| q.get(*k).is_some_and(is_amount)));
+        if !answering && r("what").is_none() && g("what").is_none() && !of_amount {
+            w.push(f("required", "a promise names what moves: refs.what, state.what for time or a job, or terms.quantity for an amount of a good"));
         }
         // A deal block names the deal's first promise in refs.for, exactly; it is signed by a side of the deal.
         let target = r("answers").or(r("updates")).and_then(Value::as_str).and_then(|h| held.and_then(|h2| h2.get(h)));
@@ -92,34 +96,52 @@ impl Checker<'_> {
                 let named = |x: &Value| x.as_str().is_some_and(|x| !x.is_empty());
                 let ok = keys_within(r, &self.list("repeat.keys"))
                     && r.get("after").is_some_and(named)
-                    && r.get("by").is_none_or(|b| b.as_array().is_some_and(|a| !a.is_empty() && a.iter().all(|x| self.is("id", Some(x)) || self.is("role_ref", Some(x)))));
+                    && r.get("by").is_none_or(|b| b.as_array().is_some_and(|a| !a.is_empty() && a.iter().all(|x| self.is("id", Some(x)))));
                 if !ok {
-                    w.push(f("shape", "terms.repeat as an event is { after (an observe kind), by (ids or circle#role), wait (a duration) }"));
+                    w.push(f("shape", "terms.repeat as an event is { after (an observe kind), by (ids), wait (a duration) }"));
                 }
                 w.extend(self.duration_shape(r.get("wait"), "terms.repeat.wait"));
             }
             Some(_) => w.push(f("grammar", "terms.repeat is an RFC 5545 RRULE value (FREQ=WEEKLY;BYDAY=FR), or { after, by, wait }")),
         }
-        // A condition wrapped in `without` names its deadline and keepers (promises.md, Conditions); `keepers` names the clock an offer's
+        // A condition wrapped in `without` names its deadline and clocks (promises.md, Conditions); `clocks` names the clock an offer's
         // `expires` and an event `when` are read on (blocks.md, A named clock).
         if let Some(m) = t.get("condition").and_then(crate::tasks::condition_malformed) {
             w.push(f("shape", format!("terms.condition: {m}")));
         }
-        if let Some(k) = t.get("keepers") {
-            if crate::tasks::keepers_of(k).is_none() {
-                w.push(f("shape", "terms.keepers is { names (ids or circle#role), needed }: needed when there is more than one name"));
+        if let Some(k) = t.get("clocks") {
+            if crate::tasks::clocks_of(k).is_none() {
+                w.push(f("shape", "terms.clocks is { names (ids), needed }: needed when there is more than one name"));
             }
         }
-        // What the payer gives up if the deal ends before it is done (folds.md, Uncovered): money. A claim that cannot be handed on: true.
-        w.extend(self.money_shape(t.get("forfeit"), "terms.forfeit"));
-        // What the signer puts behind the promise: money, or a count of one named kind (an amount: "up to 2 heifers").
-        if t.get("backing").is_some_and(|b| b.get("unit").is_some()) {
-            w.extend(self.amount_shape(t.get("backing"), "terms.backing"));
-        } else {
-            w.extend(self.money_shape(t.get("backing"), "terms.backing"));
+        // What the payer gives up if the deal ends before it is done (folds.md, Uncovered), and what the signer puts behind the promise
+        // ("£800", "up to 2 heifers"): each an amount.
+        w.extend(self.amount_shape(t.get("forfeit"), "terms.forfeit"));
+        w.extend(self.amount_shape(t.get("backing"), "terms.backing"));
+        // 1.9 3e-7: the least payable amount its signers take, an amount in the price's unit
+        w.extend(self.amount_shape(t.get("step"), "terms.step"));
+        // 1.9 3c-4 (00-shared, Deals): what the landing waits on, `goods` or `price`; 3e-3 (D4): her word that the goods are in her hand
+        if t.get("waits_on").is_some_and(|x| !matches!(x.as_str(), Some("goods" | "price"))) {
+            w.push(f("shape", "terms.waits_on is goods or price"));
         }
-        if t.get("personal").is_some_and(|x| x != &Value::Bool(true)) {
-            w.push(f("shape", "terms.personal is true: the claim cannot be handed on"));
+        if t.get("in_hand").is_some_and(|x| x != &Value::Bool(true)) {
+            w.push(f("shape", "terms.in_hand is true: her word that the goods are in her hand"));
+        }
+        // A judge's offer that tries to settle first, and the part of the fee she gives back if the sides settle (promises.md, Rulings): `conciliation`
+        // is true; `fee_back` is a decimal from 0 to 1, the part of the fee paid, and means nothing without a conciliation.
+        if t.get("conciliation").is_some_and(|x| x != &Value::Bool(true)) {
+            w.push(f("shape", "terms.conciliation is true: she tries to settle the sides before she rules"));
+        }
+        if let Some(b) = t.get("fee_back") {
+            let within = b.as_str().and_then(crate::decimal::Dec::parse).is_some_and(|d| {
+                let (zero, one) = (crate::decimal::Dec::zero(), crate::decimal::Dec::parse("1").unwrap_or_else(crate::decimal::Dec::zero));
+                d.cmp(&zero) != core::cmp::Ordering::Less && d.cmp(&one) != core::cmp::Ordering::Greater
+            });
+            if !within {
+                w.push(f("shape", "terms.fee_back is a decimal from 0 to 1: the part of her fee she gives back if the sides settle"));
+            } else if t.get("conciliation") != Some(&Value::Bool(true)) {
+                w.push(f("shape", "terms.fee_back needs terms.conciliation: a fee is given back only when the sides settle through her"));
+            }
         }
         // Catch weight: how far what is delivered may fall from the quantity chosen, either way, as a fraction of it, from 0 to 1.
         if let Some(b) = t.get("band") {
@@ -134,14 +156,6 @@ impl Checker<'_> {
         if let Some(z) = t.get("zone") {
             if !self.is("zone", Some(z)) {
                 w.push(f("grammar", "terms.zone is shaped like an IANA time zone name (Europe/London, or UTC)"));
-            }
-        }
-        // A promise not to do something: kept by its until unless a counted defeats breaks it (folds.md).
-        if let Some(x) = t.get("refrain") {
-            if x != &Value::Bool(true) {
-                w.push(f("shape", "terms.refrain is true: a promise not to do something"));
-            } else if t.get("until").is_none() {
-                w.push(f("required", "a promise not to do something carries terms.until, the instant it is kept to"));
             }
         }
         if t.get("needs")
@@ -187,11 +201,9 @@ impl Checker<'_> {
                         ));
                         // a line's quantity is an amount: no answer can choose within a range on one line (an answer names only
                         // the top-level quantity), so a range there could never be chosen (promises.md, Terms)
-                        if line.get("quantity").is_some_and(|q| q.get("min").is_some() || q.get("max").is_some()) {
-                            w.push(f("lines", format!("terms.lines[{i}].quantity is an amount, never a range")));
-                        }
+
                         if line.get("price").is_some_and(|p| p.get("figure").is_some()) {
-                            w.push(f("lines", format!("terms.lines[{i}].price is money or an amount: a price fixed later is on the whole promise")));
+                            w.push(f("lines", format!("terms.lines[{i}].price is an amount or an amount per unit: a price fixed later is on the whole promise")));
                         }
                         if line.get("price").is_some() {
                             w.extend(self.price_shape(
@@ -210,17 +222,17 @@ impl Checker<'_> {
                     if ids.len() != lines.len() {
                         w.push(f("lines", "each line id is unique in the promise"));
                     }
-                    // One promise has one currency: every line's price is in it (money in different currencies is never added).
-                    let mut currencies: Vec<String> = lines
+                    // Every line's price is of one kind (amounts of two kinds are never added).
+                    let mut kinds: Vec<crate::decimal::Kind> = lines
                         .iter()
                         .filter_map(|l| l.get("price"))
-                        .filter_map(|p| p.get("currency").or_else(|| get(p, "money.currency")))
-                        .map(crate::canonical::canonical_json)
+                        .filter_map(|p| crate::decimal::Amount::of(Some(p)).or_else(|| crate::decimal::Amount::of(p.get("amount"))))
+                        .map(|a| a.kind)
                         .collect();
-                    currencies.sort();
-                    currencies.dedup();
-                    if currencies.len() > 1 {
-                        w.push(f("lines", "every line of one promise is priced in one currency"));
+                    kinds.sort();
+                    kinds.dedup();
+                    if kinds.len() > 1 {
+                        w.push(f("lines", "every line's price of one promise is of one kind"));
                     }
                     if t.get("price").is_some() || t.get("quantity").is_some() {
                         w.push(f(

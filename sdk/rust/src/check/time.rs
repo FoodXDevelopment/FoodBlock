@@ -101,6 +101,9 @@ impl Checker<'_> {
             let name = format!("{path}.{key}");
             if key == "when" {
                 w.extend(self.when_shape(Some(value), &name));
+            } else if (key == "pay_by" || key == "deliver_by") && (value.is_object() || value.as_str().is_some_and(|d| crate::time::parse_duration(d).is_some())) {
+                // 1.9 stage 4: at pay_by and deliver_by a range, a list (read by set_shape) or a duration
+                continue;
             } else if self.spec.time_fields.iter().any(|t| t == key) {
                 w.extend(self.time_shape(Some(value), &name));
             } else if self.spec.date_fields.iter().any(|t| t == key) {

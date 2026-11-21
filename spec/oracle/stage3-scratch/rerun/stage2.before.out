@@ -1,0 +1,110 @@
+1 not read | valid(41) block with state.sparkle => []
+1 not read | read(41) => ["undeclared_field"]
+1 not read | valid(42), only 41 held beyond her genesis and 1 => []
+1 not read | read(42) => []
+1 not read | valid(43), the thing that names 41 in refs.for => []
+1 not read | read(43): names_unread, with the id => [["names_unread",[]]]
+1 not read | accept(41, 42, 43): taken / unread => ["0e7347","68d0c7","e996b7"] / [["68d0c7",["names_unread"]],["e996b7",["undeclared_field"]]]
+1 not read | what a fold reads of 41: its header, no type => undefined sealed
+1 not read | what a fold reads of 42: the block => thing
+1 not read | signed_by_author(42) => true
+1 not read | read(41) once the reader knows the field: a schema declaring sparkle, named in refs.schema => (see story 1b)
+1b not read, then read | read(41 naming a schema it declares), schema not held => ["names_missing"]
+1b not read, then read | read(41 naming the schema), the schema held => []
+2 lost block | valid(4) with 3 not held => []
+2 lost block | check_chain: gaps / broken => [3] / 1
+2 lost block | read_whole(4, 1): whole, lacks (3 named by 4's prev) => false [true]
+2 lost block | a fold that reads the line (onLine) answers => {"not_shown":true,"lacks":["<3>"]}
+2 lost block | read_whole(4, 1) with 3 held => {"whole":true,"lacks":[]}
+2 lost block | the fold now answers => "an answer"
+2 lost block | read_whole(c4 seq 4 prev block 2, 1): lacks by number => {"whole":true,"lacks":[]}
+2 lost block | read_whole(4, 1) with 3 held as its header only => false ["<3>"]
+2 lost block | read_whole with the genesis as start => no error
+3 key grant | valid(tablet's first block), key grant not held => [["unmet","pieces not held: <KG>"]]
+3 key grant | valid(tablet's first block), key grant held => []
+3 key grant | accept(tablet block) with no key grant: unjudged needs the key grant => {"taken":0,"unjudged":[["<KG>"]]}
+3 key grant | accept(key grant, then the tablet block, in one push) => {"taken":2,"unjudged":0}
+3 key grant | valid(a key grant signed by the key it brings in, no refs.key) => ["bad_signature"]
+3 key grant | valid(a block naming the forged key grant) => ["bad_piece"]
+3 key grant | valid(refs.key names a genesis, not a key grant) => ["bad_signature"]
+3 key grant | valid(refs.key names a key grant whose subject is another author) => ["bad_signature"]
+3 key grant | valid(block of a key brought in by a not-read key grant) => []
+3 key grant | read(that key grant): undeclared_field => ["undeclared_field"]
+3 key grant | signed_by_author(block of a key a not-read key grant brings in) => false
+4 unknown suite | valid(a key grant naming suite pq1) => ["unknown_suite"]
+4 unknown suite | valid(a key grant adding a key that fits no suite) => ["unknown_suite"]
+4 unknown suite | valid(a block whose key grant names a suite not known) => ["unknown_suite"]
+4 unknown suite | accept(both): taken / unjudged / refused => 0 / 2 / 0
+5 held header | valid({ header, header_signature }) with its pieces held => []
+5 held header | the header carries key => true
+5 held header | valid(the header with key left out) => ["bad_signature"]
+5 held header | valid(the header with key changed to the genesis id) => ["bad_signature"]
+5 held header | valid(the header with seq 2) => ["bad_signature"]
+5 held header | valid(the header with another prev) => ["bad_signature"]
+5 held header | valid(the header with an extra key) => ["shape"]
+5 held header | valid(the header, key grant not held) => ["unmet"]
+5 held header | valid(the header: a bare unsigned header) => ["shape"]
+5 held header | valid(the block signed over its own bytes: the body form) => ["bad_signature"]
+5 held header | verify(block, signature, key) over the header => true
+5 held header | verify(block, body-form signature, key) => false
+5 held header | a header held beside its body is nothing new: accept(header) taken => []
+5 held header | a header that does not describe the body held => ["bad_hash"]
+5 held header | a body arrives for a header held under its hash that names another prev: taken / false_headers => 1 / ["612f07"]
+6 pairs | fork_pairs: two blocks of one key on one prev => [["cfd811","f6bc37"]] ["cfd811","f6bc37"]
+6 pairs | check_chain equivocations => 1
+6 pairs | fork_pairs: two blocks at one seq, one naming a made-up prev => [["6f4a8c","8caa79"]] ["6f4a8c","8caa79"]
+6 pairs | accept(c2b) when c2 is held, takes_pairs false: taken / equivocations / refused / unjudged => 0 / 1 / 0 / 0
+6 pairs | the same with takes_pairs true: taken => 1
+6 pairs | both of the pair in one push, takes_pairs false: taken / equivocations => 0 / 1
+6 pairs | counts(b2a), counts(b2b), counts(b1), counts(b3 after the pair) => [false,false,true,false]
+6 pairs | fork_pairs of two held headers => [["cfd811","f6bc37"]]
+6 pairs | a block of another key on the same prev as two a (not a pair); pairs are still just the old one => 0
+7 wire | strict_text(the canonical bytes) => []
+7 wire | strict_text(450.0 for 450) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(450 written 4.5e2) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(keys reordered: refs first) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(a space after a colon) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(a newline at the end) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(an escape that is not the shortest, \u0073 for s) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(a repeated key) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(-0) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(2^53) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(2^53 - 1) => []
+7 wire | strict_text(a null) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(not JSON) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(a set not sorted in refs: check 1 on a canonical text) => [["not_canonical","hash of these bytes"]]
+7 wire | strict_text(nested deeper than limits.depth) => [["size_limit","hash of these bytes"]]
+7 wire | strict_text(over limits.block_bytes) => [["size_limit","hash of these bytes"]]
+7 wire | strict_text(over the limit and not canonical: size_limit first) => [["size_limit","hash of these bytes"]]
+7 wire | strict_push(canonical) => [[],[]]
+7 wire | strict_push(message keys out of order) => [{"hash":"<h>","code":"not_canonical","detail":"not the canonical bytes of the value"}]
+7 wire | strict_push(450.0 inside a block of a canonical-looking push) => [{"hash":"<h>","code":"not_canonical","detail":"a number token that is not canonical"}]
+7 wire | strict_push(a block with a null inside canonical bytes): the block alone is refused => [[{"hash":"7f87e41a31b6fd8a2924e693bf75a01db720967cada865c033157c2b2dbf0d12","code":"not_canonical","detail":"null at state.z"}],[]]
+7 wire | unwrap(message): the id is the hash of the bytes as written in the suite of her key => true
+7 wire | unwrap(a message with suite) => shape
+7 wire | unwrap(a message with version) => shape
+8 text | the two spellings are two texts: two ids => true
+8 text | strict_text(composed), strict_text(decomposed) => [[],[]]
+8 text | valid(composed), valid(decomposed) => ["[]","[]"]
+8 text | accept(both) takes_pairs true: taken (they also stand on one seq: a pair) => 2 1
+8 text | a key not in NFC => []
+8 text | strict_text(a lone surrogate written as an escape) => ["not_canonical"]
+/Users/patrickreynolds/foodblock/spec/oracle/stage3-scratch/cmp/spec/oracle/fb.cjs:5986
+  if (a.some(notText)) throw argError('an argument holds a string that is not well-formed text');
+                       ^
+
+Error: an argument holds a string that is not well-formed text
+    at argError (/Users/patrickreynolds/foodblock/spec/oracle/stage3-scratch/cmp/spec/oracle/fb.cjs:5358:37)
+    at Object.door (/Users/patrickreynolds/foodblock/spec/oracle/stage3-scratch/cmp/spec/oracle/fb.cjs:5986:30)
+    at Object.<anonymous> (/Users/patrickreynolds/foodblock/spec/oracle/stage3-scratch/cmp/spec/oracle/stage2-scratch/stories.cjs:231:67)
+    at Module._compile (node:internal/modules/cjs/loader:1812:14)
+    at Object..js (node:internal/modules/cjs/loader:1943:10)
+    at Module.load (node:internal/modules/cjs/loader:1533:32)
+    at Module._load (node:internal/modules/cjs/loader:1335:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47 {
+  kind: 'argument'
+}
+
+Node.js v24.14.0

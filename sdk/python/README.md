@@ -34,14 +34,14 @@ build does not have raises `FoodBlockError` with `kind == "profile"`.
 ```python
 import foodblock as fb
 
-keys, encryption, recovery = fb.generate_keypair(), fb.generate_encryption_keypair(), fb.generate_keypair()
+keys, encryption = fb.generate_keypair(), fb.generate_encryption_keypair()
 AT = "2026-10-15T09:00:00.000Z"  # you state the time; nothing reads a clock for you
-me = fb.identity.genesis(keys, kind="person", at=AT, audience="public", encryption_key=encryption["public_key_encrypt"], recovery_key=recovery["public_key_sign"], reach="P30D")
+me = fb.identity.genesis(keys, kind="person", at=AT, audience="public", encryption_key=encryption["public_key_encrypt"])
 
 # The one write path: compose, check, sign, chain. `at` and `audience` ("public" or a list of recipients) are always
-# yours to state; a missing one is refused, never filled. Money is { minor, currency }; amounts are decimal strings.
+# yours to state; a missing one is refused, never filled. Money is an amount, { value, unit }; values are decimal strings.
 eggs = fb.write("thing", {"kind": "eggs", "name": "Free-range eggs"}, {}, author=me["hash"], key=keys, held=[me], at=AT, audience="public")
-offer = fb.write("promise", {"terms": {"price": fb.money(450, "GBP"), "quantity": fb.amount("2", "{tray}"),
+offer = fb.write("promise", {"terms": {"price": fb.amount("4.50", "GBP"), "quantity": fb.amount("2", "{tray}"),
                                        "expires": "2026-10-20T00:00:00.000Z"}},
                  {"from": me["hash"], "what": eggs["hash"]}, author=me["hash"], key=keys, held=[me, eggs], at=AT, audience="public")
 
@@ -51,9 +51,8 @@ fb.promise_view(offer, [me, eggs, offer], now="2026-10-21T00:00:00.000Z")["stage
 ```
 
 A node states its own choices too: `fb.sync.answer_pull(log, request, node, private_key, cap, serves_pairs)`,
-`fb.sync.accept(incoming, held, takes_pairs)`, `fb.sync.accept_sealed(incoming, held, takes_pairs)`,
-`fb.sync.admission_refusals(block, receiver, blocks, admission, strangers_today)`. None has a default. Reading with
-`arrived_at` takes `unknown_arrival="inside"` or `"outside"`, the reader's own choice.
+`fb.sync.accept(incoming, held, takes_pairs)` (blocks and sealed header messages alike),
+`fb.sync.admission_refusals(block, receiver, blocks, admission, asks_today)`. None has a default. No fold reads an arrival or a clock except a view, which takes the reader's `now`.
 
 A refused block raises `fb.Refused`, whose `wrong` lists every reason. Nothing is ever repaired.
 
@@ -67,22 +66,22 @@ A refused block raises `fb.Refused`, whose `wrong` lists every reason. Nothing i
 - Encryption: `generate_encryption_keypair`, `encryption_key_of`, `seal(value, keys, suite, fixed)`,
   `open(envelope, x25519_private)`, `ALG`. Envelopes name no recipient.
 - The commitment: `new_salt`, `salted_hash`, `commit`, `finds_self`, `reveal_for`.
-- Writing: `compose`, `write`, `check`, `refusals`, `valid`, `strict_text` (the checks), `amount`, `money`, `terms`, `Refused`.
-- The wire: `wrap`, `unwrap`, `header`, `seal_copy`, `open_copy`, `header_signed_by`.
-- Strangers and small profiles (`fb.strangers`): `is_stranger(receiver, sender, blocks, block=None)`, `receipt_code`, `reading_is_persons_claim`, `reading_condition_holds`,
-  `earnest_shape_ok`, `earnest_paid`. The one-time converter (`fb.legacy`, not protocol): `convert` (`custodian_key` signs only for the ids in `custodian_for`, under a `channel`), `old_hash`.
-- Chains and order: `next_link`, `check_chain` (also `skips`; equivocations are pairs), `causal_order`, `causes_of`, `past_of`, `heads_among`, `sees`.
-- Identity (`fb.identity`): `genesis`, `key_grant`, `identity_of`, `key_timeline`, `keys_of`, `signed_by_author`,
-  `signer_of`, `chains_of`, `next_link_for`, `recovery_key_hash`, `fork_pairs`, `identity_state`.
-- Authority (`fb.grant`): `scope_within`, `is_live`, `why_not_live`, `ancestors`, `why_not_under`, `operators_of`,
-  `add_duration`, `why_not_live_undo`, `act_name`, `limit_fence`, `within_limit`, `scope_reading` (every default of authority.md; `junk` names what cannot be read).
-- Folds (`fb.fold`): `promise_stage` (no clock), `promise_view` (the reader's `now`), `circle_state`, `may_act_as`,
-  `members_then`, `speaks_for` (also `fb.speaks_for`), `backed(block, person, blocks)` (also `fb.backed`: `{backed, why, chain}`), `backed_all(person, blocks)` (`backed` for a whole set at once: `{hash: {backed, why}}`), `owed_back(person, blocks)` (money moved in the person's name that they do not back: `{owed: [...]}`), `listing_check(lookup, listing, blocks)`, `check_reads(check, blocks)`, `clearing_applied(clearing, blocks)`, `ruling_releases(stake, blocks, now)` (promises.md: finding, checks, clearing, rulings), `gives(block, person, blocks)` (what of the person's becomes whose, from typed terms and refs), `act_check(deal, template)` (`{ok, why}`), `ownership`, `owner_of`, `receiver_of`, `where_now`, `consent`,
-  `due`, `recovery_reach`, `ownership_view`, `successor_view`, `circle_key`, `counted_in`.
+- Writing: `compose`, `write`, `valid` (who said these bytes), `read` (whether this reader can read it), `write_refusals` (what a writer refuses to sign, of an unsigned draft), `binds`, `strict_text`, `schemas_from`, `amount`, `terms`, `Refused`. Money is an amount: `amount("4.20", "GBP")`.
+- The wire: `wrap`, `unwrap`, `header`, `seal_copy`, `open_copy`, `header_signed_by`, `id_of`.
+- Strangers and small profiles (`fb.strangers`): `is_stranger(receiver, sender, blocks, block=None)`, `short_code`, `short_reply`, `short_reply_open`, `code_matches`, `reading_is_persons_claim`, `reading_condition_holds`, `condition_holds`.
+- Chains and order: `next_link`, `check_chain` (also `skips`; equivocations are pairs), `read_whole`, `causal_order`, `causes_of`, `past_of`, `heads_among`, `sees`.
+- Identity (`fb.identity`): `genesis`, `key_grant`, `confirm`, `key_hash`, `key_timeline`, `live_keys`, `signed_by_author`, `stands`,
+  `chains_of`, `next_link_for`, `fork_pairs`, `identity_state`.
+- Authority (`fb.grant`): `scope_within`, `scope_refusals`, `is_live`, `why_not_live`, `ancestors`, `why_not_under`, `add_duration`, `why_not_live_undo`,
+  `scope_reading` (every default of authority.md; `junk` names what cannot be read), `fence_reading`, `terms_total`; with `keeps_to`, `meter`, `worst_case`, `lowest_offer` (also in `fb.fold`).
+- Folds (`fb.fold`): `promise_stage` (no clock), `promise_view` and `promise_views` (the reader's `now`), `circle_state`, `circle_versions`, `circle_key`, `row_holds`, `ways_in`, `machine_lock`, `count_of`,
+  `members_then`, `speaks_for`, `backed(block, person, blocks)` (`{backed, why, chain}`), `backed_all(person, blocks)`, `to_come_back(person, blocks)` (money moved in the person's name that they do not back: `{to_come: [...]}`), `listing_check`, `check_reads`, `clearing_applied`, `ruling_releases`, `fee_back`, `gives(block, person, blocks)` (what of the person's becomes whose, from typed terms and refs), `ownership`, `ownership_view`, `owner_of`, `receiver_of`, `where_now`, `consent`,
+  `due`, `counted_in`, `readback`, `render`, `readback_redo`.
 - Between nodes (`fb.sync`): `pull_request`, `sign_pull`, `sign_push` (a `counter` or a `challenge`, no time), `new_challenge`,
-  `pull_refusals`, `push_refusals`, `admission_refusals`, `residency_refusals`, `matches`, `heads_of`, `answer_pull`,
-  `answer_signed_by`, `push_request`, `accept`, `push_answer`, `waited_too_long`, `well_known`, `announcement`,
+  `pull_refusals`, `push_refusals`, `message_refusals`, `admission_refusals`, `residency_refusals`, `matches`, `heads_of`, `answer_pull`,
+  `answer_signed_by`, `push_request`, `strict_push`, `accept`, `push_answer`, `log_shown`, `export_whole`, `waited_too_long`, `well_known(node, reads, admission, endpoints, log)`, `announcement`,
   `well_known_errors`.
+- Rule sets and a kept door: `rule_set`, `mount`, `unmount`.
 
 The reference's `keystore` (keeping a private key locked on a device) is product custody, not protocol, and is not
 here.

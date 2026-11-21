@@ -1,0 +1,58 @@
+{
+  "name": "foodblock-host",
+  "version": "1.9.0",
+  "description": "A FoodBlock host with two stores: plain files, or Postgres for the blocks; HTTP for signed pull, push and .well-known/foodblock",
+  "keywords": [
+    "food",
+    "foodblock",
+    "host",
+    "node",
+    "postgres",
+    "protocol",
+    "provenance"
+  ],
+  "author": "FoodX <developers@foodx.com>",
+  "homepage": "https://www.foodx.network/developers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FoodXDevelopment/FoodBlock.git",
+    "directory": "host"
+  },
+  "bugs": {
+    "url": "https://github.com/FoodXDevelopment/FoodBlock/issues"
+  },
+  "type": "module",
+  "main": "src/postgres/node.js",
+  "bin": {
+    "foodblock-node": "./src/postgres/index.js",
+    "foodblock-host": "./src/files/cli.mjs"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node src/postgres/index.js",
+    "prepublishOnly": "node -e \"const p=require('./package.json');const bad=Object.entries({...p.dependencies,...p.optionalDependencies}).filter(([,v])=>/^(file|link|git|https?):/.test(v));if(bad.length){console.error('refusing to publish with local dependencies: '+bad.map(([k,v])=>k+'@'+v).join(', '));process.exit(1)}\"",
+    "test": "node --test test/postgres/node.test.js test/files/*.test.mjs",
+    "test:postgres": "node --test test/postgres/node.test.js",
+    "test:files": "node --test test/files/*.test.mjs"
+  },
+  "dependencies": {
+    "@foodxdev/foodblock": "file:../sdk/javascript",
+    "express": "5.3.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "pg-mem": "3.0.14",
+    "supertest": "7.3.1"
+  },
+  "license": "CC0-1.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

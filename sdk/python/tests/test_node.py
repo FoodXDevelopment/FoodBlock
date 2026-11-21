@@ -10,8 +10,7 @@ AT = "2026-10-15T09:00:00.000Z"
 def person():
     keys = fb.generate_keypair()
     encryption = fb.generate_encryption_keypair()
-    me = fb.identity.genesis(keys, kind="person", at=AT, audience="public", encryption_key=encryption["public_key_encrypt"],
-                             recovery_key=fb.generate_keypair()["public_key_sign"], reach="P30D")
+    me = fb.identity.genesis(keys, kind="person", at=AT, audience="public", encryption_key=encryption["public_key_encrypt"])
     return {"keys": keys, "encryption": encryption, "me": me, "id": me["hash"], "held": [me]}
 
 
@@ -22,17 +21,17 @@ def say(who, type_, state, refs=None, audience="public", **options):
 
 
 class Reading(unittest.TestCase):
-    def test_the_door_reads_of_this_week_have_friendly_names(self):
+    def test_the_readers_have_friendly_names(self):
         ann = person()
         eggs = say(ann, "thing", {"kind": "eggs", "name": "Free-range eggs"})
-        offer = say(ann, "promise", {"when": "2026-11-03T09:00:00.000Z", "terms": {"price": fb.money(450, "GBP"), "repeat": "FREQ=WEEKLY;BYDAY=TU",
+        offer = say(ann, "promise", {"when": "2026-11-03T09:00:00.000Z", "terms": {"price": fb.amount("4.50", "GBP"), "repeat": "FREQ=WEEKLY;BYDAY=TU",
                                                                               "zone": "Europe/London", "expires": "2026-12-20T00:00:00.000Z"}},
                     {"from": ann["id"], "what": eggs["hash"]})
         self.assertTrue(fb.backed(offer, ann["id"], ann["held"])["backed"])  # her own block is backed by her
         self.assertTrue(fb.backed_all(ann["id"], ann["held"])[offer["hash"]]["backed"])
-        self.assertEqual(fb.owed_back(ann["id"], ann["held"]), {"owed": []})
+        self.assertEqual(fb.to_come_back(ann["id"], ann["held"]), {"to_come": []})
         self.assertIsNone(fb.account_of(ann["id"], ann["held"]))  # she has said nowhere to pay her
-        self.assertEqual(fb.gives(offer, ann["id"], ann["held"])["gives"][0]["of"], "goods")
+        self.assertEqual(fb.gives(offer, ann["id"], ann["held"])["gives"][0]["what"], eggs["hash"])  # her goods, named by `what`
         self.assertEqual(fb.repeat_occurrences(offer, "2026-11-01T00:00:00.000Z", "2026-11-20T00:00:00.000Z"),
                          ["2026-11-03T09:00:00.000Z", "2026-11-10T09:00:00.000Z", "2026-11-17T09:00:00.000Z"])
         self.assertEqual(fb.fold.account_of, fb.account_of)
@@ -44,21 +43,24 @@ class Writing(unittest.TestCase):
         self.assertEqual(fb.identity.genesis(keys, kind="person", at=AT, audience="public")["state"]["audience"], "public")  # kind, at, audience and the key are enough
         listed = fb.identity.genesis(keys, kind="person", at=AT, audience=["a" * 64])  # a list audience carries its salts
         self.assertIn("salts", listed)
-        with self.assertRaises(ValueError):  # the recovery key and its reach come as a pair
-            fb.identity.genesis(keys, kind="person", at=AT, audience="public", recovery_key=fb.generate_keypair()["public_key_sign"])
         for missing in ("kind", "at", "audience"):  # nothing is filled in
             given = {"kind": "person", "at": AT, "audience": "public"}
             del given[missing]
             with self.assertRaises(fb.FoodBlockError, msg=missing):
                 fb.identity.genesis(keys, **given)
         ann = person()
-        self.assertEqual(fb.check(ann["me"]["type"], ann["me"]["state"], ann["me"]["refs"]), [])
+        self.assertEqual(fb.valid(ann["me"], []), [])
+        self.assertEqual(fb.read(ann["me"], []), [])
+        self.assertEqual(fb.write_refusals({"type": ann["me"]["type"], "state": ann["me"]["state"], "refs": ann["me"]["refs"]}, []), [])
+        self.assertTrue(fb.identity.is_genesis(ann["me"]) and fb.identity.genesis_opens(ann["me"]))
         self.assertTrue(fb.identity.signed_by_author(ann["me"], [ann["me"]]))
+        self.assertEqual(fb.identity.live_keys(ann["id"], ann["held"]), [ann["keys"]["public_key_sign"]])
+        self.assertEqual(len(fb.identity.key_hash(ann["keys"]["public_key_sign"])), 64)
 
     def test_write_places_each_block_in_the_key_chain(self):
         ann = person()
         eggs = say(ann, "thing", {"kind": "eggs", "name": "Free-range eggs"})
-        offer = say(ann, "promise", {"terms": {"price": fb.money(450, "GBP"), "quantity": fb.amount("2", "{tray}"),
+        offer = say(ann, "promise", {"terms": {"price": fb.amount("4.50", "GBP"), "quantity": fb.amount("2", "{tray}"),
                                                "expires": "2026-10-20T00:00:00.000Z"}}, {"from": ann["id"], "what": eggs["hash"]})
         self.assertEqual([eggs["state"]["seq"], eggs["refs"]["prev"], offer["state"]["seq"], offer["refs"]["prev"]], [1, ann["id"], 2, eggs["hash"]])
         self.assertTrue(fb.identity.signed_by_author(offer, ann["held"]))
@@ -74,19 +76,25 @@ class Writing(unittest.TestCase):
                 fb.compose("observe", {"kind": "note", "text": "x"}, {}, author=ann["id"], **given)
         self.assertNotIn("version", fb.wrap(say(ann, "observe", {"kind": "note", "text": "y"})))
 
-    def test_key_grant_needs_its_time(self):
-        keys, new = fb.generate_keypair(), fb.generate_keypair()
-        g = fb.identity.genesis(keys, kind="person", at=AT, audience="public")
-        signer = {"private_key": keys["private_key"], "last": None, "brought_in": g["hash"]}
-        with self.assertRaises(fb.FoodBlockError):
-            fb.identity.key_grant(g["hash"], new["public_key_sign"], signer)
+    def test_a_key_grant_brings_a_key_under_her_voice(self):
+        ann, new = person(), fb.generate_keypair()
+        grant = fb.identity.key_grant(ann["id"], {"author": ann["id"], "keys": ann["keys"], "held": ann["held"], "at": AT}, key=new["public_key_sign"])
+        ann["held"].append(grant)
+        self.assertEqual(grant["state"]["kind"], "key")
+        self.assertEqual(grant["refs"]["subject"], ann["id"])
+        self.assertEqual(sorted(fb.identity.live_keys(ann["id"], ann["held"])), sorted([ann["keys"]["public_key_sign"], new["public_key_sign"]]))
+        self.assertEqual(fb.identity_state(ann["id"], ann["held"])["keys"], fb.identity.live_keys(ann["id"], ann["held"]))
+        self.assertTrue(fb.identity.stands(grant, ann["held"])["stands"])
+        with self.assertRaises(fb.FoodBlockError):  # `at` is the writer's to state
+            fb.identity.key_grant(ann["id"], {"author": ann["id"], "keys": ann["keys"], "held": ann["held"]}, key=new["public_key_sign"])
 
-    def test_arrivals_need_the_readers_choice(self):
+    def test_validity_reads_no_arrival(self):
         ann = person()
-        arrivals = {ann["id"]: AT}
-        with self.assertRaises(fb.FoodBlockError):
-            fb.identity.keys_of(ann["id"], ann["held"], arrivals)
-        self.assertEqual(fb.identity.keys_of(ann["id"], ann["held"], arrivals, "inside"), [ann["keys"]["public_key_sign"]])
+        eggs = say(ann, "thing", {"kind": "eggs", "name": "Free-range eggs"})
+        self.assertEqual(fb.valid(eggs, ann["held"][:1]), [])
+        self.assertEqual(fb.read(eggs, ann["held"][:1]), [])
+        self.assertEqual(fb.valid(eggs, [])[0]["code"], "unmet")  # the key that signed it is not held: it waits
+        self.assertEqual(fb.write_refusals({"type": "thing", "state": {"kind": "eggs", "x": None}, "refs": {}}, [])[0]["code"], "not_canonical")  # a null is refused, never repaired
 
     def test_write_refuses_never_repairs(self):
         ann = person()
@@ -101,8 +109,7 @@ class Writing(unittest.TestCase):
         ann, bob = person(), person()
         note = say(ann, "observe", {"kind": "note", "text": "for Bob"}, audience=[bob["id"]])
         self.assertTrue(fb.finds_self(note, bob["id"], note["salts"][bob["id"]]))
-        copy = fb.seal_copy(note, [bob["encryption"]["public_key_encrypt"]], reveals=[fb.reveal_for(note["salts"], bob["id"])],
-                            private_key=ann["keys"]["private_key"])
+        copy = fb.seal_copy(note, [bob["encryption"]["public_key_encrypt"]], reveals=[fb.reveal_for(note["salts"], bob["id"])])
         self.assertNotIn("key_hash", copy["envelope"]["recipients"][0])
         opened = fb.open_copy(copy, bob["encryption"]["x25519_private"])
         self.assertEqual([opened["hash"], opened["reveals"][0]["value"]], [note["hash"], bob["id"]])
@@ -130,19 +137,19 @@ class Writing(unittest.TestCase):
                 self.assertTrue(fb.verify(block, fb.sign(block, keys["private_key"], suite), keys["public_key_sign"]))
                 self.assertEqual(fb.open(fb.seal({"x": 1}, [enc["public_key_encrypt"]], suite), enc["x25519_private"]), {"x": 1})
 
-    def test_year_zero_has_no_old_readers(self):
-        for gone in ("read_as", "is_a", "ALIASES", "ALG_RAW", "PROFILES"):
-            self.assertFalse(hasattr(fb, gone), gone)
+    def test_peers(self):
         self.assertIn("micro", fb.PEERS)
 
 
 class BetweenNodes(unittest.TestCase):
-    def test_push_waits_for_prev_and_catches_equivocation(self):
+    def test_push_takes_a_gap_and_catches_equivocation(self):
         ann = person()
         one = say(ann, "observe", {"kind": "note", "text": "two trays"})
         two = say(ann, "observe", {"kind": "note", "text": "one tray left"})
-        early = fb.sync.accept([two], [ann["me"]], False)
-        self.assertEqual(early["waiting"], [{"hash": two["hash"], "needs": [one["hash"]]}])
+        early = fb.sync.accept([two], [ann["me"]], False)  # validity waits on no earlier block of the chain: the gap is the chain check's to show
+        self.assertEqual([b["hash"] for b in early["taken"]], [two["hash"]])
+        self.assertEqual(fb.check_chain([two], ann["id"])["gaps"], [1])
+        self.assertEqual(fb.valid(two, [ann["me"]]), [])
         late = fb.sync.accept([one, two], [ann["me"]], False)
         self.assertEqual(sorted(b["hash"] for b in late["taken"]), sorted([one["hash"], two["hash"]]))
         other = fb.write("observe", {"kind": "note", "text": "five trays"}, {}, author=ann["id"], key=ann["keys"],
@@ -169,12 +176,13 @@ class BetweenNodes(unittest.TestCase):
         for cap, pairs in ((None, True), (0, True), (500, None)):
             with self.assertRaises(fb.FoodBlockError, msg=str((cap, pairs))):
                 fb.sync.answer_pull(log, {"since": 0}, node["id"], None, cap, pairs)
-        with self.assertRaises(fb.FoodBlockError):  # accept_sealed refuses a missing choice too
-            fb.sync.accept_sealed([], [], None)
+        with self.assertRaises(fb.FoodBlockError):  # accept refuses a sealed push with a missing choice too
+            fb.sync.accept([], [], None)
         with self.assertRaises(TypeError):
             fb.sync.admission_refusals(note, ann["id"], [])
-        with self.assertRaises(fb.FoodBlockError):  # admission null is stated; strangers_today missing is not
+        with self.assertRaises(fb.FoodBlockError):  # admission null is stated; asks_today missing is not
             fb.sync.admission_refusals(note, ann["id"], [], None, None)
+        self.assertEqual(fb.sync.admission_refusals(note, ann["id"], [], None, 0), [])
 
     def test_signed_pull_and_signed_answers(self):
         ann, node = person(), person()
@@ -200,30 +208,30 @@ class BetweenNodes(unittest.TestCase):
 
     def test_discovery(self):
         node = person()
-        doc = fb.sync.well_known(node=node["id"], holds=[node["id"]], speaks_for=[node["id"]], admission=None,
-                                 endpoints={"pull": "https://n.example/pull", "push": "https://n.example/push"})
+        doc = fb.sync.well_known(node["id"], [], None, {"pull": "https://n.example/pull", "push": "https://n.example/push"})
         self.assertEqual(fb.sync.well_known_errors(doc), [])
-        self.assertEqual(sorted(fb.sync.announcement(doc)), ["endpoints", "node", "protocol", "version"])
+        self.assertEqual(doc["reads"], [])  # the rule sets it runs; it no longer lists what it holds or speaks for
+        self.assertNotIn("holds", doc)
+        self.assertNotIn("speaks_for", doc)
+        self.assertEqual(sorted(fb.sync.announcement(doc)), ["endpoints", "node", "protocol", "reads"])
+        with self.assertRaises(TypeError):  # admission is stated, never filled in
+            fb.sync.well_known(node["id"], [])
 
-    def test_custody_the_limit_and_push_for_a_list(self):
-        keys, recovery, coop = fb.generate_keypair(), fb.generate_keypair(), "c" * 64
-        g = fb.identity.genesis(keys, kind="person", at=AT, audience="public", recovery_key=recovery["public_key_sign"], reach="P30D", custodian=coop)
-        self.assertEqual(g["state"]["custodian"], coop)
-        self.assertEqual(fb.refusals("actor", g["state"], {}), [])
-        fence = fb.grant.limit_fence("a" * 64, "b" * 64, fb.money(5000, "GBP"), "P7D")
-        self.assertEqual(fence["audience"], ["b" * 64])
-        self.assertTrue(fb.grant.within_limit(fence["state"], fb.money(3000, "GBP"), 2000))
-        self.assertFalse(fb.grant.within_limit(fence["state"], fb.money(3001, "GBP"), 2000))
-        # a sealed limit: the grant carries the commitment, the observe carries the salt that opens it
-        salt = "ab" * 16
-        commitment = fb.grant.limit_commitment(fb.money(5000, "GBP"), "P7D", salt)
-        grant = fb.write("grant", {"kind": "authority", "scope": {"acts": ["transfer"], "limit_commitment": commitment, "until": "2027-01-01T00:00:00.000Z"}}, {"to": "b" * 64}, author=g["hash"], key=keys, held=[g], at=AT, audience="public")
-        sealed = fb.grant.limit_fence(grant["hash"], "b" * 64, fb.money(5000, "GBP"), "P7D", salt)
-        observe = {"hash": "c" * 64, "type": "observe", "state": sealed["state"], "refs": sealed["refs"]}
-        self.assertTrue(fb.grant.limit_opens(grant, observe))
-        self.assertFalse(fb.grant.limit_opens(grant, {**observe, "state": {**observe["state"], "limit": fb.money(9000, "GBP")}}))
+    def test_a_push_for_a_list_and_the_money_a_deal_moves(self):
         self.assertEqual(fb.sync.push_request([], {"d" * 64: ["e" * 64]})["for"], {"d" * 64: ["e" * 64]})
         self.assertEqual(fb.sync.recipients_of({"d" * 64: ["e" * 64, "f" * 64]}, "d" * 64), ["e" * 64, "f" * 64])
+        self.assertEqual(fb.amount("4.20", "GBP"), {"value": "4.20", "unit": "GBP"})  # money is an amount
+        self.assertEqual(fb.amount("1", "credit", "f" * 64)["of"], "f" * 64)
+        self.assertEqual(fb.terms({"price": fb.amount("4.20", "GBP")})["price"], {"value": "4.20", "unit": "GBP"})
+
+    def test_a_grant_is_read_on_its_meter(self):
+        ann, bot = person(), person()
+        grant = say(ann, "grant", {"kind": "authority", "scope": {"types": ["observe"], "until": "2027-01-01T00:00:00.000Z"}}, {"to": bot["id"]})
+        self.assertEqual(fb.grant.scope_reading(grant["state"]["scope"])["junk"], [])
+        self.assertTrue(fb.grant.is_live(grant, ann["held"]))
+        self.assertEqual(fb.grant.why_not_live(grant, ann["held"]), [])
+        self.assertIn("at_most", fb.worst_case(grant, ann["held"]))
+        self.assertEqual(fb.meter(grant, ann["held"])["grant"], grant["hash"])
 
     def test_large_content_merkle(self):
         chunks = [x * 8 for x in ["00", "11", "22", "33", "44"]]

@@ -34,33 +34,33 @@ enum Door {
     static func revealFor(_ salts: Any?, _ id: String) throws -> Any? { try Core.maybe("reveal_for", salts, id) }
     static func compose(_ type: String, _ state: Any?, _ refs: Any?, _ options: JSON) throws -> JSON { try Core.json("compose", type, state, refs, options) }
     static func newSalt() throws -> String { try Core.string("new_salt") }
-    static func check(_ type: String, _ state: Any?, _ refs: Any?, _ held: [JSON], _ schemas: [JSON]? = nil) throws -> [String] { try Core.strings("check", type, state, refs, held, schemas) }
-    static func refusals(_ type: Any?, _ state: Any?, _ refs: Any?, _ held: [JSON], _ schemas: [JSON]? = nil) throws -> [JSON] { try Core.list("refusals", type, state, refs, held, schemas) }
-    static func amount(_ value: String, _ unit: String) throws -> JSON { try Core.json("amount", value, unit) }
-    static func money(_ minor: Int, _ currency: Any?) throws -> JSON { try Core.json("money", minor, currency) }
+    static func amount(_ value: String, _ unit: String, _ of: String? = nil) throws -> JSON { try Core.json("amount", value, unit, of) }
     static func terms(_ terms: Any?) throws -> JSON { try Core.json("terms", terms) }
-    static func valid(_ block: JSON, _ held: [JSON], _ schemas: [JSON]? = nil) throws -> [JSON] { try Core.list("valid", block, held, schemas) }
+    static func valid(_ block: JSON, _ held: [JSON]) throws -> [JSON] { try Core.list("valid", block, held) }
+    static func read(_ block: JSON, _ held: [JSON], _ schemas: [JSON]? = nil, _ runs: [String]? = nil) throws -> [JSON] { try Core.list("read", block, held, schemas, runs) }
+    static func schemasFrom(_ held: [JSON]) throws -> [JSON] { try Core.list("schemas_from", held) }
     static func strictText(_ text: String) throws -> [JSON] { try Core.list("strict_text", text) }
+    static func writeRefusals(_ draft: JSON, _ held: [JSON]) throws -> [JSON] { try Core.list("write_refusals", draft, held) }
     static func strictPush(_ text: String) throws -> Any? { try Core.maybe("strict_push", text) }
     static func needs(_ block: JSON, _ held: [JSON]? = nil) throws -> [String] { try Core.strings("needs", block, held) }
-    static func receiptCode(_ hash: String, _ long: Bool? = nil) throws -> String { try Core.string("receipt_code", hash, long) }
+    static func shortCode(_ hash: String) throws -> String { try Core.string("short_code", hash) }
+    static func shortReply(_ answer: JSON) throws -> String? { try Core.maybe("short_reply", answer) as? String }
+    static func shortReplyOpen(_ text: String, _ signer: String, _ blocks: [JSON]) throws -> JSON? { try Core.maybe("short_reply_open", text, signer, blocks) as? JSON }
     static func codeMatches(_ code: String, _ typed: String) throws -> Bool { try Core.bool("code_matches", code, typed) }
     static func consent(_ person: String, _ sender: String? = nil, _ blocks: [JSON], _ block: Any? = nil) throws -> JSON { try Core.json("consent", person, sender, blocks, block) }
     static func isStranger(_ receiver: String, _ sender: String, _ blocks: [JSON], _ block: JSON? = nil) throws -> Bool { try Core.bool("is_stranger", receiver, sender, blocks, block) }
-    static func admissionRefusals(_ block: JSON, _ receiver: String, _ blocks: [JSON], _ admission: Any?, _ strangersToday: Int) throws -> [JSON] { try Core.list("admission_refusals", block, receiver, blocks, admission, strangersToday) }
+    static func admissionRefusals(_ block: JSON, _ receiver: String, _ blocks: [JSON], _ admission: Any?, _ asksToday: Int) throws -> [JSON] { try Core.list("admission_refusals", block, receiver, blocks, admission, asksToday) }
     static func due(_ promise: JSON, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("due", promise, arrivals) }
     static func repeatOccurrences(_ promise: JSON, _ from: String, _ to: String) throws -> [String] { try Core.strings("repeat_occurrences", promise, from, to) }
-    static func recoveryReach(_ rotation: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> Any? { try Core.maybe("recovery_reach", rotation, blocks, arrivals, unknownArrival) }
     static func nextLink(_ last: JSON? = nil, _ broughtIn: String? = nil) throws -> JSON { try Core.json("next_link", last, broughtIn) }
     static func checkChain(_ blocks: [JSON], _ id: String) throws -> JSON { try Core.json("check_chain", blocks, id) }
+    static func readWhole(_ block: String, _ start: String, _ held: [JSON]) throws -> JSON { try Core.json("read_whole", block, start, held) }
     static func causesOf(_ block: JSON) throws -> [String] { try Core.strings("causes_of", block) }
     static func pastOf(_ block: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("past_of", block, blocks) }
     static func headsAmong(_ blocks: [JSON]) throws -> [JSON] { try Core.list("heads_among", blocks) }
     static func isTime(_ value: Any?) throws -> Bool { try Core.bool("is_time", value) }
     static func isDate(_ value: Any?) throws -> Bool { try Core.bool("is_date", value) }
     static func parseDuration(_ text: String? = nil) throws -> JSON? { try Core.maybe("parse_duration", text) as? JSON }
-    static func identityOf(_ id: String, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> JSON { try Core.json("identity_of", id, blocks, arrivals, unknownArrival) }
-    static func signerOf(_ block: JSON, _ keys: Any?) throws -> String? { try Core.maybe("signer_of", block, keys) as? String }
     static func chainsOf(_ id: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("chains_of", id, blocks) }
     static func causalOrder(_ blocks: [JSON]) throws -> [JSON] { try Core.list("causal_order", blocks) }
     static func sees(_ a: JSON, _ b: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("sees", a, b, blocks) }
@@ -71,10 +71,13 @@ enum Door {
     static func headerSignedBy(_ message: JSON, _ publicKey: String) throws -> Bool { try Core.bool("header_signed_by", message, publicKey) }
     static func genesis(_ keys: JSON, _ options: JSON) throws -> JSON { try Core.json("genesis", keys, options) }
     static func liveKeys(_ id: String, _ blocks: [JSON]) throws -> [String] { try Core.strings("live_keys", id, blocks) }
-    static func keysOf(_ id: String, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> Any? { try Core.maybe("keys_of", id, blocks, arrivals, unknownArrival) }
-    static func keyTimeline(_ id: String, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> Any? { try Core.maybe("key_timeline", id, blocks, arrivals, unknownArrival) }
-    static func signedByAuthor(_ block: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> Bool { try Core.bool("signed_by_author", block, blocks, arrivals, unknownArrival) }
+    static func keyTimeline(_ id: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("key_timeline", id, blocks) }
+    static func signedByAuthor(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("signed_by_author", block, blocks) }
+    static func stands(_ block: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("stands", block, blocks) }
     static func spec() throws -> JSON { try Core.json("spec") }
+    static func ruleSet(_ files: JSON) throws -> JSON { try Core.json("rule_set", files) }
+    static func mount(_ blocks: [JSON], _ into: String? = nil) throws -> String { try Core.string("mount", blocks, into) }
+    static func unmount(_ mount: String) throws -> Bool { try Core.bool("unmount", mount) }
     static func specList(_ name: String) throws -> Any? { try Core.maybe("spec_list", name) }
     static func addDuration(_ time: String, _ duration: String, _ sign: Int? = nil) throws -> String? { try Core.maybe("add_duration", time, duration, sign) as? String }
     static func compareDurations(_ a: String, _ b: String, _ from: String) throws -> Int { guard let v = intOf(try Core.maybe("compare_durations", a, b, from)) else { throw FoodBlockError.invalid("foodblock: compare_durations gave no whole number") }; return v }
@@ -84,11 +87,10 @@ enum Door {
     static func merkleRoot(_ chunks: [String]) throws -> String { try Core.string("merkle_root", chunks) }
     static func merkleProof(_ chunks: [String], _ index: Int) throws -> [String] { try Core.strings("merkle_proof", chunks, index) }
     static func merkleVerify(_ block: JSON, _ chunk: String, _ index: Int, _ proof: [String]) throws -> Bool { try Core.bool("merkle_verify", block, chunk, index, proof) }
-    static func recoveryKeyHash(_ publicKey: String, _ suite: String? = nil) throws -> String { try Core.string("recovery_key_hash", publicKey, suite) }
+    static func keyHash(_ publicKey: String, _ suite: String? = nil) throws -> String { try Core.string("key_hash", publicKey, suite) }
     static func isGenesis(_ block: JSON? = nil) throws -> Bool { try Core.bool("is_genesis", block) }
     static func genesisOpens(_ block: JSON? = nil) throws -> Bool { try Core.bool("genesis_opens", block) }
-    static func keyGrant(_ id: String, _ newKey: String? = nil, _ signer: JSON, _ options: JSON) throws -> JSON { try Core.json("key_grant", id, newKey, signer, options) }
-    static func identityState(_ id: String, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil) throws -> JSON { try Core.json("identity_state", id, blocks, arrivals, unknownArrival) }
+    static func identityState(_ id: String, _ blocks: [JSON]) throws -> JSON { try Core.json("identity_state", id, blocks) }
     static func counts(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("counts", block, blocks) }
     static func forked(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("forked", block, blocks) }
     static func forkPairs(_ blocks: [JSON]) throws -> Any? { try Core.maybe("fork_pairs", blocks) }
@@ -96,32 +98,24 @@ enum Door {
     static func isLive(_ grant: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> Bool { try Core.bool("is_live", grant, blocks, now) }
     static func ancestors(_ grant: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("ancestors", grant, blocks) }
     static func termsTotal(_ terms: Any? = nil, _ quantity: Any? = nil) throws -> Any? { try Core.maybe("terms_total", terms, quantity) }
-    static func withinLimit(_ limit: Any? = nil, _ value: Any? = nil, _ spent: Any? = nil) throws -> Bool { try Core.bool("within_limit", limit, value, spent) }
-    static func limitWithinParent(_ child: Any? = nil, _ parent: Any? = nil, _ at: String) throws -> Bool { try Core.bool("limit_within_parent", child, parent, at) }
-    static func limitFence(_ grantHash: String, _ agent: String, _ limit: Any? = nil, _ every: String? = nil, _ salt: String? = nil, _ each: Any? = nil) throws -> JSON { try Core.json("limit_fence", grantHash, agent, limit, every, salt, each) }
-    static func limitCommitment(_ limit: Any? = nil, _ every: String? = nil, _ salt: String, _ suite: String? = nil, _ each: Any? = nil) throws -> String { try Core.string("limit_commitment", limit, every, salt, suite, each) }
-    static func limitOpens(_ grant: JSON, _ fence: JSON, _ suite: String? = nil) throws -> Bool { try Core.bool("limit_opens", grant, fence, suite) }
     static func recipientsOf(_ forWhom: Any?, _ hash: String) throws -> [String] { try Core.strings("recipients_of", forWhom, hash) }
     static func childrenOf(_ id: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("children_of", id, blocks) }
     static func whyNotLiveUndo(_ block: JSON, _ blocks: [JSON]) throws -> [String] { try Core.strings("why_not_live_undo", block, blocks) }
-    static func actName(_ block: JSON) throws -> String { try Core.string("act_name", block) }
     static func readingIsPersonsClaim(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> Bool { try Core.bool("reading_is_persons_claim", block, person, blocks) }
     static func residencyRefusals(_ block: JSON, _ holdsIn: [String]) throws -> [JSON] { try Core.list("residency_refusals", block, holdsIn) }
     static func scopeWithin(_ child: Any?, _ parent: Any?) throws -> [String] { try Core.strings("scope_within", child, parent) }
     static func scopeRefusals(_ child: Any?, _ parent: Any?) throws -> [JSON] { try Core.list("scope_refusals", child, parent) }
     static func scopeReading(_ scope: Any? = nil) throws -> JSON { try Core.json("scope_reading", scope) }
-    static func operatorsOf(_ agent: String, _ blocks: [JSON], _ now: String? = nil) throws -> [String] { try Core.strings("operators_of", agent, blocks, now) }
+    static func fenceReading(_ fence: Any? = nil, _ at: String, _ readings: Any? = nil, _ heard: String? = nil) throws -> JSON { try Core.json("fence_reading", fence, at, readings, heard) }
     static func whyNotUnder(_ block: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> [String] { try Core.strings("why_not_under", block, blocks, now) }
     static func underOk(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("under_ok", block, blocks) }
     static func whyNotLive(_ grant: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> [String] { try Core.strings("why_not_live", grant, blocks, now) }
-    static func convert(_ old: [JSON], _ options: JSON) throws -> JSON { try Core.json("convert", old, options) }
-    static func oldHash(_ block: JSON) throws -> String { try Core.string("old_hash", block) }
-    static func earnestShapeOk(_ block: JSON) throws -> Bool { try Core.bool("earnest_shape_ok", block) }
-    static func earnestPaid(_ ask: JSON, _ earnest: JSON, _ blocks: [JSON]) throws -> Bool { try Core.bool("earnest_paid", ask, earnest, blocks) }
-    static func seal(_ value: Any?, _ keys: [String], _ suite: String? = nil, _ fixed: JSON? = nil) throws -> JSON { try Core.json("seal", value, keys, suite, fixed) }
+    static func seal(_ value: Any?, _ keys: [String], _ suite: String? = nil, _ fixed: JSON? = nil, _ pad: Bool? = nil) throws -> JSON { try Core.json("seal", value, keys, suite, fixed, pad) }
     static func open(_ envelope: JSON, _ x25519Private: String) throws -> Any? { try Core.maybe("open", envelope, x25519Private) }
-    static func sealCopy(_ block: JSON, _ keys: [String], _ reveals: Any?, _ privateKey: String, _ fixed: JSON? = nil, _ suite: String? = nil, _ signSuite: String? = nil) throws -> JSON { try Core.json("seal_copy", block, keys, reveals, privateKey, fixed, suite, signSuite) }
+    static func sealCopy(_ block: JSON, _ keys: [String], _ reveals: Any?, _ fixed: JSON? = nil, _ suite: String? = nil) throws -> JSON { try Core.json("seal_copy", block, keys, reveals, fixed, suite) }
     static func openCopy(_ message: JSON, _ x25519Private: String) throws -> JSON { try Core.json("open_copy", message, x25519Private) }
+    static func paddedSize(_ bytes: Int) throws -> Int { guard let v = intOf(try Core.maybe("padded_size", bytes)) else { throw FoodBlockError.invalid("foodblock: padded_size gave no whole number") }; return v }
+    static func wrapCopy(_ copy: JSON, _ mailbox: String, _ suite: String? = nil, _ fixed: JSON? = nil) throws -> JSON { try Core.json("wrap_copy", copy, mailbox, suite, fixed) }
     static func encryptionKeypair(_ suite: String? = nil) throws -> JSON { try Core.json("encryption_keypair", suite) }
     static func encryptionKeyOf(_ privateKey: String, _ suite: String? = nil) throws -> String { try Core.string("encryption_key_of", privateKey, suite) }
     static func readingConditionHolds(_ reading: JSON, _ blocks: [JSON], _ now: String) throws -> Bool { try Core.bool("reading_condition_holds", reading, blocks, now) }
@@ -130,21 +124,35 @@ enum Door {
     static func promiseViews(_ firsts: [String], _ blocks: [JSON], _ options: JSON) throws -> JSON { try Core.json("promise_views", firsts, blocks, options) }
     static func promiseView(_ first: JSON, _ blocks: [JSON], _ options: JSON) throws -> JSON { try Core.json("promise_view", first, blocks, options) }
     static func circleState(_ circle: String, _ blocks: [JSON], _ within: JSON? = nil) throws -> JSON? { try Core.maybe("circle_state", circle, blocks, within) as? JSON }
-    static func mayActAs(_ block: JSON, _ circle: String, _ blocks: [JSON], _ role: String? = nil) throws -> Bool { try Core.bool("may_act_as", block, circle, blocks, role) }
+    static func machineLock(_ machine: JSON, _ held: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("machine_lock", machine, held, now) }
+    static func circleVersions(_ circle: String, _ blocks: [JSON]) throws -> JSON? { try Core.maybe("circle_versions", circle, blocks) as? JSON }
+    static func rowHolds(_ block: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("row_holds", block, blocks) }
+    static func waysIn(_ circle: String, _ blocks: [JSON]) throws -> JSON { try Core.json("ways_in", circle, blocks) }
+    static func keepsTo(_ c: JSON, _ a: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("keeps_to", c, a, blocks) }
+    static func meter(_ grant: JSON, _ blocks: [JSON], _ block: JSON? = nil) throws -> JSON { try Core.json("meter", grant, blocks, block) }
+    static func worstCase(_ grant: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("worst_case", grant, blocks) }
+    static func lowestOffer(_ grant: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("lowest_offer", grant, blocks) }
+    static func toComeBack(_ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("to_come_back", person, blocks) }
+    static func readback(_ block: Any?, _ held: [JSON], _ to: String? = nil, _ renderer: String? = nil, _ digits: Any? = nil) throws -> JSON { try Core.json("readback", block, held, to, renderer, digits) }
+    static func render(_ answer: JSON, _ renderer: String) throws -> String { try Core.string("render", answer, renderer) }
+    static func readbackRedo(_ rb: JSON, _ held: [JSON]) throws -> JSON { try Core.json("readback_redo", rb, held) }
     static func speaksFor(_ block: JSON, _ blocks: [JSON]) throws -> String? { try Core.maybe("speaks_for", block, blocks) as? String }
     static func backed(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("backed", block, person, blocks) }
     static func backedAll(_ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("backed_all", person, blocks) }
     static func gives(_ block: JSON, _ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("gives", block, person, blocks) }
-    static func actCheck(_ deal: JSON, _ template: JSON) throws -> JSON { try Core.json("act_check", deal, template) }
+    static func binds(_ draft: JSON, _ held: [JSON]) throws -> Bool { try Core.bool("binds", draft, held) }
     static func listingCheck(_ lookup: JSON, _ listing: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("listing_check", lookup, listing, blocks) }
     static func checkReads(_ check: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("check_reads", check, blocks) }
     static func clearingApplied(_ clearing: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("clearing_applied", clearing, blocks) }
     static func rulingReleases(_ stake: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ruling_releases", stake, blocks, now) }
     static func rulingAudience(_ ruling: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ruling_audience", ruling, blocks, now) }
+    static func countOf(_ needed: Any?, _ members: Int) throws -> Int? { try Core.maybe("count_of", needed, members) as? Int }
+    static func feeBack(_ offer: JSON, _ deal: JSON, _ blocks: [JSON]) throws -> JSON { try Core.json("fee_back", offer, deal, blocks) }
     static func membersThen(_ block: JSON, _ recipient: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("members_then", block, recipient, blocks) }
     static func whereNow(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("where_now", thing, blocks) }
     static func ownership(_ instance: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ownership", instance, blocks, now) }
-    static func ownershipView(_ instance: JSON, _ blocks: [JSON], _ arrivals: [String: String]? = nil, _ unknownArrival: String? = nil, _ now: String? = nil) throws -> JSON { try Core.json("ownership_view", instance, blocks, arrivals, unknownArrival, now) }
+    static func ownershipView(_ instance: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> JSON { try Core.json("ownership_view", instance, blocks, now) }
+    static func madeFrom(_ instance: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("made_from", instance, blocks) }
     static func receiverOf(_ promise: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("receiver_of", promise, blocks) }
     static func ownerOf(_ instance: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("owner_of", instance, blocks) }
     static func sharesOn(_ thing: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("shares_on", thing, blocks) }
@@ -153,11 +161,7 @@ enum Door {
     static func invasionShown(_ claim: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("invasion_shown", claim, blocks) }
     static func pot(_ head: JSON, _ blocks: [JSON], _ now: String? = nil) throws -> Any? { try Core.maybe("pot", head, blocks, now) }
     static func accountOf(_ who: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("account_of", who, blocks) }
-    static func owedBack(_ person: String, _ blocks: [JSON]) throws -> JSON { try Core.json("owed_back", person, blocks) }
     static func releaseShown(_ subject: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("release_shown", subject, blocks) }
-    static func bidsShown(_ quarrel: JSON, _ blocks: [JSON]) throws -> Any? { try Core.maybe("bids_shown", quarrel, blocks) }
-    static func successorState(_ grant: JSON, _ blocks: [JSON], _ now: String? = nil, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("successor_state", grant, blocks, now, arrivals) }
-    static func successorView(_ grant: JSON, _ blocks: [JSON], _ now: String? = nil, _ arrivals: [String: String]? = nil) throws -> Any? { try Core.maybe("successor_view", grant, blocks, now, arrivals) }
     static func countedIn(_ result: Any? = nil, _ commitment: String, _ counter: String) throws -> Bool { try Core.bool("counted_in", result, commitment, counter) }
     static func circleKey(_ circle: String, _ blocks: [JSON]) throws -> Any? { try Core.maybe("circle_key", circle, blocks) }
     static func pullRequest(_ request: Any?) throws -> JSON { try Core.json("pull_request", request) }
@@ -170,12 +174,13 @@ enum Door {
     static func pushRefusals(_ message: JSON, _ fresh: JSON) throws -> [JSON] { try Core.list("push_refusals", message, fresh) }
     static func answerPull(_ log: Any?, _ request: JSON, _ node: String, _ privateKey: String? = nil, _ choices: JSON, _ asker: String? = nil, _ held: [JSON]? = nil, _ suite: String? = nil, _ through: Int? = nil) throws -> JSON { try Core.json("answer_pull", log, request, node, privateKey, choices, asker, held, suite, through) }
     static func pushAnswer(_ parts: JSON, _ node: String, _ privateKey: String, _ suite: String? = nil) throws -> JSON { try Core.json("push_answer", parts, node, privateKey, suite) }
-    static func wellKnown(_ node: String, _ holds: [String], _ speaksFor: [String], _ admission: String? = nil, _ endpoints: JSON) throws -> JSON { try Core.json("well_known", node, holds, speaksFor, admission, endpoints) }
+    static func wellKnown(_ node: String, _ reads: [String], _ admission: String? = nil, _ endpoints: JSON, _ log: String? = nil) throws -> JSON { try Core.json("well_known", node, reads, admission, endpoints, log) }
+    static func logShown(_ receipts: [JSON], _ request: JSON, _ answer: JSON, _ held: [JSON]) throws -> JSON { try Core.json("log_shown", receipts, request, answer, held) }
+    static func exportWhole(_ document: JSON, _ log: String, _ last: String) throws -> JSON { try Core.json("export_whole", document, log, last) }
     static func waitedTooLong(_ since: String, _ now: String, _ ttl: Int) throws -> Bool { try Core.bool("waited_too_long", since, now, ttl) }
     static func matches(_ block: JSON, _ filter: Any? = nil, _ held: [JSON]) throws -> Bool { try Core.bool("matches", block, filter, held) }
     static func headsOf(_ blocks: [JSON]) throws -> [JSON] { try Core.list("heads_of", blocks) }
-    static func accept(_ incoming: [JSON], _ held: [JSON], _ choices: JSON, _ schemas: [JSON]? = nil) throws -> JSON { try Core.json("accept", incoming, held, choices, schemas) }
-    static func acceptSealed(_ messages: [JSON], _ held: [JSON], _ choices: JSON) throws -> JSON { try Core.json("accept_sealed", messages, held, choices) }
+    static func accept(_ incoming: [JSON], _ held: [JSON], _ choices: JSON, _ schemas: [JSON]? = nil, _ push: JSON? = nil) throws -> JSON { try Core.json("accept", incoming, held, choices, schemas, push) }
     static func answerSignedBy(_ answer: JSON, _ nodeKeys: [String]) throws -> Bool { try Core.bool("answer_signed_by", answer, nodeKeys) }
     static func wellKnownErrors(_ doc: Any? = nil) throws -> [String] { try Core.strings("well_known_errors", doc) }
     static func announcement(_ doc: Any?) throws -> JSON { try Core.json("announcement", doc) }

@@ -1,6 +1,6 @@
 //! The one source: every closed list and grammar is read from protocol.json, exactly as written there. The caller may
 //! hand in its own bytes ([`Spec::from_json`]); the repository's spec/protocol.json is built in as the default
-//! ([`spec`]), so the crate works on its own. There is no alias table: year zero (spec/legacy/converter.md).
+//! ([`spec`]), so the crate works on its own. There is no alias table: year zero.
 use crate::error::{Error, Result};
 use crate::prelude::*;
 use crate::regex::Regex;
@@ -8,6 +8,10 @@ use crate::regex::Regex;
 /// protocol.json, built in (a synced copy of spec/protocol.json).
 pub const PROTOCOL_JSON: &[u8] =
     include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/spec/protocol.json"));
+/// conventions.json, built in (a synced copy of spec/conventions.json): a node's conventions and the lists of readings and
+/// tools (`envelope`, `messages`, `cbor`, `peers`, `profiles`, `views`, the other ops' door entries). No word reads it.
+pub const CONVENTIONS_JSON: &[u8] =
+    include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/spec/conventions.json"));
 
 /// One suite of protocol.json `suites`: a hash, a signature algorithm and an envelope, named together.
 #[derive(Debug, Clone)]
@@ -34,6 +38,8 @@ pub struct SuiteInfo {
 #[derive(Debug, Clone)]
 pub struct Spec {
     pub protocol: Value,
+    /// conventions.json: what a node, a reading or a tool reads that is not protocol.
+    pub conventions: Value,
     pub version: String,
     pub types: Vec<String>,
     pub closed_types: Vec<String>,
@@ -41,7 +47,6 @@ pub struct Spec {
     pub ref_keys: Vec<String>,
     pub statuses: Vec<String>,
     pub stops: Vec<String>,
-    pub powers: Vec<String>,
     pub genesis_required: Vec<String>,
     pub genesis_optional: Vec<String>,
     pub common: Vec<String>,
@@ -55,16 +60,14 @@ pub struct Spec {
     pub int_max: f64,
     pub block_bytes: usize,
     pub after_heads: usize,
-    /// The most decimal places an issuer's own currency unit may name (limits.decimals_max).
-    pub decimals_max: usize,
     /// The most digits a decimal string names (limits.decimal_digits): exact arithmetic on it stays cheap.
     pub decimal_digits: usize,
     /// How deep a block nests (limits.depth): the block is 1, each object or array inside one more.
     pub depth: usize,
+    /// How deep a reader reads what carries a block, and the chain of places a thing is in (`limits.read_depth`; encoding.md, Limits).
+    pub read_depth: usize,
     /// The most positions a bound's ring names (limits.bound_points): the overlap of two bounds costs the product of their edges, so it is capped.
     pub bound_points: usize,
-    /// How deep a reader reads what carries blocks (limits.depth_read), so a block deeper than `depth` is refused, never unreadable.
-    pub depth_read: usize,
     pub suites: Vec<SuiteInfo>,
     pub suite_default: String,
     grammar: Vec<(String, Regex)>,
@@ -94,13 +97,12 @@ impl Spec {
     pub fn fields_of(&self, shape: &str) -> Vec<String> {
         fields_of(&self.protocol, shape)
     }
-    /// Read protocol.json from bytes.
-    pub fn from_json(protocol: &[u8]) -> Result<Spec> {
-        let protocol: Value = serde_json::from_slice(protocol)?;
-        Spec::from_values(protocol)
+    /// Read protocol.json and conventions.json from bytes.
+    pub fn from_json(protocol: &[u8], conventions: &[u8]) -> Result<Spec> {
+        Spec::from_values(serde_json::from_slice(protocol)?, serde_json::from_slice(conventions)?)
     }
 
-    pub fn from_values(protocol: Value) -> Result<Spec> {
+    pub fn from_values(protocol: Value, conventions: Value) -> Result<Spec> {
         let p = &protocol;
         let mut grammar = Vec::new();
         if let Some(Value::Object(map)) = p.get("grammar") {
@@ -169,14 +171,13 @@ impl Spec {
             ref_keys,
             statuses: list("statuses"),
             stops: list("stop"),
-            powers: list("powers"),
             genesis_required: list("genesis.required"),
-            // A genesis may carry any key field but `roles` (a circle's), and the recovery fields, beyond what it requires.
+            // A genesis may carry any key field but `roles` (a circle's) and `shown_key` (a key grant's), beyond what it requires; 1.9 3d-17:
+            // `voices`, her whole list (protocol.json `genesis.optional_about`).
             genesis_optional: list("key_fields.fields")
                 .into_iter()
-                .chain(list("genesis.recovery"))
                 .chain(list("genesis.private"))
-                .filter(|f| f != "roles" && !list("genesis.required").contains(f))
+                .filter(|f| !["roles", "shown_key"].contains(&f.as_str()) && !list("genesis.required").contains(f))
                 .collect(),
             common: list("common"),
             terms: list("terms"),
@@ -189,15 +190,15 @@ impl Spec {
             int_max: number("integers.max").unwrap_or(9007199254740991.0),
             block_bytes: number("limits.block_bytes").unwrap_or(65536.0) as usize,
             after_heads: number("limits.after_heads").unwrap_or(16.0) as usize,
-            decimals_max: number("limits.decimals_max").unwrap_or(15.0) as usize,
             decimal_digits: number("limits.decimal_digits").unwrap_or(40.0) as usize,
             depth: number("limits.depth").unwrap_or(32.0) as usize,
+            read_depth: number("limits.read_depth").unwrap_or(64.0) as usize,
             bound_points: number("limits.bound_points").unwrap_or(256.0) as usize,
-            depth_read: number("limits.depth_read").unwrap_or(128.0) as usize,
             suites,
             suite_default,
             grammar,
             protocol,
+            conventions,
         })
     }
 
@@ -213,9 +214,13 @@ impl Spec {
         }
         self.re(name).is_some_and(|r| r.test(text))
     }
-    /// A list of protocol.json at a path (`shapes.amount`, `messages.pull`...).
+    /// A list of protocol.json at a path (`shapes.amount`, `terms`...).
     pub fn list(&self, path: &str) -> Vec<String> {
         strings(crate::js::get(&self.protocol, path))
+    }
+    /// A list of conventions.json at a path (`messages.pull`, `cbor.keys`...).
+    pub fn convention(&self, path: &str) -> Vec<String> {
+        strings(crate::js::get(&self.conventions, path))
     }
     /// The base fields of a type (protocol.json `fields` and, for an actor and a grant, `key_fields`).
     pub fn fields(&self, type_name: &str) -> Vec<String> {
@@ -260,7 +265,7 @@ static DEFAULT: once_cell::race::OnceBox<Spec> = once_cell::race::OnceBox::new()
 /// The built-in protocol.json, read once.
 pub fn spec() -> &'static Spec {
     DEFAULT.get_or_init(|| {
-        Box::new(Spec::from_json(PROTOCOL_JSON).expect("the built-in protocol.json reads"))
+        Box::new(Spec::from_json(PROTOCOL_JSON, CONVENTIONS_JSON).expect("the built-in protocol.json and conventions.json read"))
     })
 }
 

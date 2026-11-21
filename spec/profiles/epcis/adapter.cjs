@@ -1,4 +1,4 @@
-// The EPCIS 2.0 <-> FoodBlock reference adapter (spec/profiles/foodblock-profile-epcis.md, section 4). Pure mapping:
+// The EPCIS 2.0 <-> FoodBlock reference adapter (spec/patterns/foodblock-profile-epcis.md, section 4). Pure mapping:
 // it reads and writes the JSON of an EPCIS event and the { type, state, refs } of a block. It signs nothing and hashes
 // nothing but the raw event (escape hatch). A party directory (`parties`: PGLN URN -> actor id) is the adapter's own
 // configuration; sites, lots, containers and product kinds are found in the blocks held, by their marks.

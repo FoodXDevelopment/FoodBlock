@@ -1,7 +1,7 @@
 //! A deal, read from its first promise (folds.md, A promise's stage, stages 1 and 2): who is on which side, the blocks that belong to
 //! the deal, the live offers, and the accept (or the allocations of an open offer) that binds. Settling it is promise.rs.
 use super::bench::{bench, receipts_of};
-use super::promise::{binds, fits, promise_stage_at, value_in, amount_dec};
+use super::promise::{fits, value_in, amount_dec};
 use super::{acting_grant, principal_of, speaker_of, speaks_for, sub_index, StageOptions};
 use crate::decimal::Dec;
 use crate::js::{get, hash_of, list, rf, rs, same_str, sorted_set, ss, st, str_of, type_of, Index};
@@ -29,23 +29,12 @@ pub(super) struct Deal<'a> {
     pub open: bool,
     /// The blocks a side signed (an open side is anyone, until an accept binds), in causal order.
     pub in_deal: Vec<Value>,
-    /// The parts passed on and accepted (promises.md, Passing a part), in causal order.
-    pub passes: Vec<Pass>,
+    /// Every block of the deal (the first promise too), whoever signed it, in causal order: `forks` and `waiting` read them all.
+    pub all: Vec<Value>,
     taker_id: Option<String>,
     /// Who signed, or was named owner by, a transfer that names the deal in `what`: the owners of what is owed answer deliveries and payments in it.
     owed_owners: BTreeSet<String>,
     owners: RefCell<BTreeMap<(String, String), Option<String>>>,
-}
-
-/// A part of a side passed on: the `pass` its holder signed and the receiver's accept of it stand.
-#[derive(Clone)]
-pub(super) struct Pass {
-    pub hash: String,
-    pub side: &'static str,
-    pub by: String,
-    pub to: String,
-    /// The one the part is owed to, who freed the passer by their own accept of the pass (a third signature); none while she still answers.
-    pub freed_by: Option<String>,
 }
 
 /// What binds in a deal (stage 2): the accept (or, on an open offer, the first allocation), the takers of an open offer and which
@@ -55,19 +44,14 @@ pub(super) struct Binding<'d> {
     pub takers: Vec<Value>,
     pub freed: Vec<String>,
     pub forks: Vec<String>,
+    /// 1.8 P12 (Who may bind): binding accepts that do not see one another cross; each binds, and the deal is read once under each.
+    pub crossed: Vec<String>,
     pub live: Vec<&'d Value>,
     /// To yourself: a promise whose `from` and `to` both name its author, accepted when made.
     pub to_self: bool,
-}
-
-/// An `observe` of kind `pass` (promises.md, Passing a part).
-fn is_pass(b: &Value) -> bool {
-    type_of(b) == "observe" && ss(b, "kind") == Some("pass")
-}
-
-/// A pass, or an observe that answers one `accepted`.
-fn is_pass_word(b: &Value, index: &Index) -> bool {
-    is_pass(b) || (type_of(b) == "observe" && rs(b, "answers").and_then(|h| index.get(h)).is_some_and(is_pass))
+    /// 1.9 R-H2, R-B1 (1.8 P12 and F3, Who may bind): each answer that binds nothing yet, with what of *which*, *whose* and *when* it
+    /// leaves open: `[{ block, open }]`, sorted by block.
+    pub requests: Vec<Value>,
 }
 
 pub(super) fn status(b: &Value, word: &str) -> bool {
@@ -84,7 +68,7 @@ impl<'a> Deal<'a> {
         let root = alloc.as_ref().map_or_else(|| first.clone(), |(o, _, _)| o.clone());
         // A fork voids what the forker claims, never what they owe (folds.md, A fork is a burden): a block of a fork still counts in a deal
         // where it binds its signer; its stops and declines, which would free its signer by their word alone, count for nothing. A block
-        // a rotation voided is no word of theirs at all. The head too: a first promise whose key does not speak for its author has no stage.
+        // whose key does not speak for its author (identity.md, invariant 8) is no word of theirs at all. The head too: a first promise whose key does not speak for its author has no stage.
         let owes = |b: &Value| crate::identity::binds_signer(b, index);
         if !owes(&first) {
             return None;
@@ -115,13 +99,13 @@ impl<'a> Deal<'a> {
             first,
             from_ref: rs(&root, "from").map(String::from),
             to_ref: rs(&root, "to").map(String::from),
-            passes: Vec::new(),
             taker_id: alloc.as_ref().and_then(|(_, _, taker)| taker.get("who").and_then(Value::as_str).map(String::from)),
             root,
             alloc,
             offerer_is_from: false,
             open: false,
             in_deal: Vec::new(),
+            all: Vec::new(),
             owners: Default::default(),
             owed_owners: BTreeSet::new(),
         };
@@ -150,57 +134,19 @@ impl<'a> Deal<'a> {
                     || rs(b, "updates").and_then(|h| index.get(h)).is_some_and(|u| speaker_of(b, index, None).is_some_and(|w| speaker_of(u, index, None).as_deref() == Some(w.as_str())))
             })
             .collect();
-        // A pass, and the receiver's accept of it, are words of no side: they are read here (promises.md, Passing a part). What a receiver
-        // then does for the part is in the deal too.
-        let admit = |deal: &Deal, b: &Value, receivers: &BTreeSet<String>| {
+        let admit = |deal: &Deal, b: &Value| {
             hash_of(b) != first_hash
                 && (deal.side_of(b).is_some()
                     || (deal.open && !deal.by_offerer(b))
                     || (type_of(b) == "transfer" && status(b, "accepted") && speaker_of(b, index, None).is_some_and(|w| deal.owed_owners.contains(&w)))
-                    || is_pass_word(b, index)
-                    || speaker_of(b, index, None).is_some_and(|w| receivers.contains(&w)))
+                    // 1.9 3e-8: a `received` by a signer an account word names, naming that word: read by the stage, which counts it only
+                    // where the word is the paid side's head and lists that place by that signer
+                    || (type_of(b) == "observe" && ss(b, "kind") == Some("received") && !list(rf(b, "derives_from")).is_empty()))
         };
-        let seen: Vec<Value> = ordered.iter().filter(|b| admit(&deal, b, &BTreeSet::new())).cloned().collect();
-        deal.passes = deal.passes_in(&seen);
-        let receivers: BTreeSet<String> = deal.passes.iter().map(|p| p.to.clone()).collect();
-        let in_deal: Vec<Value> = ordered.iter().filter(|b| admit(&deal, b, &receivers)).cloned().collect();
+        let in_deal: Vec<Value> = ordered.iter().filter(|b| admit(&deal, b)).cloned().collect();
         deal.in_deal = in_deal;
+        deal.all = ordered;
         Some(deal)
-    }
-
-    /// The parts passed on: each `pass` a side's current answerer signed, in causal order, whose named receiver answered it `accepted`.
-    /// The receiver then answers for the part, and may pass it on in turn; a pass by anyone else counts for nothing.
-    fn passes_in(&self, seen: &[Value]) -> Vec<Pass> {
-        let index = self.index;
-        let mut holder: BTreeMap<&'static str, String> = BTreeMap::new();
-        let mut out: Vec<Pass> = Vec::new();
-        for p in seen.iter().filter(|b| is_pass(b)) {
-            let (Some(by), Some(to)) = (speaker_of(p, index, None), rs(p, "to").map(String::from)) else { continue };
-            if !list(rf(p, "for")).contains(&self.first_hash.as_str()) || to == by {
-                continue;
-            }
-            let side = ["from", "to"].into_iter().find(|key| match holder.get(key) {
-                Some(h) => *h == by,
-                None => self.side_of(p) == Some(key),
-            });
-            let Some(side) = side else { continue };
-            let accepted = seen.iter().any(|a| {
-                type_of(a) == "observe" && status(a, "accepted") && rs(a, "answers") == Some(hash_of(p)) && speaker_of(a, index, None).as_deref() == Some(to.as_str())
-            });
-            if accepted {
-                let other = if side == "from" { "to" } else { "from" };
-                let freed_by = seen.iter().find(|a| {
-                    type_of(a) == "observe" && status(a, "accepted") && rs(a, "answers") == Some(hash_of(p)) && match (holder.get(other), speaker_of(a, index, None)) {
-                        (Some(h), Some(w)) => *h == w,
-                        (None, _) => self.side_of(a) == Some(other),
-                        _ => false,
-                    }
-                }).and_then(|a| speaker_of(a, index, None));
-                holder.insert(side, to.clone());
-                out.push(Pass { hash: hash_of(p).to_string(), side, by, to, freed_by });
-            }
-        }
-        out
     }
 
     pub(super) fn speaks(&self, b: &Value, side: Option<&str>) -> bool {
@@ -243,12 +189,21 @@ impl<'a> Deal<'a> {
         self.speaks(b, self.side_at(self.offerer_key(), b).as_deref())
     }
     /// The blocks of the deal that answer `h` with `word` (or with none): an answer has the type of the block it answers (promises.md,
-    /// Answers), so an observe or a transfer that says `accepted` to a promise is no answer to it.
+    /// Answers), so an observe or a transfer that says `accepted` to a promise is no answer to it. A decline is the one answer that may be an
+/// `observe` (a reading, core.md Types); a decline written with the answered block's type before the three moods is read as before.
     pub(super) fn answers_of(&self, h: &str, word: Option<&str>) -> Vec<&Value> {
         let answered = self.index.get(h).map(type_of).unwrap_or("");
         self.in_deal
             .iter()
-            .filter(|b| list(rf(b, "answers")).contains(&h) && type_of(b) == answered && word.map_or(st(b, "status").is_none(), |w| status(b, w)))
+            .filter(|b| {
+                list(rf(b, "answers")).contains(&h)
+                    && (type_of(b) == answered
+                        || (word == Some("declined") && crate::grant::is_decline_reading(b))
+                        // her AI's reading "accepted under rule R" is her accept when R is her live grant that covers it (promises.md, Answers):
+                        // `acting_grant` is the door's whole test, so a bare machine word, a dead grant or one that does not cover it counts for nothing
+                        || (word == Some("accepted") && crate::grant::is_machine_accept(b, self.index) && acting_grant(b, self.index, None).is_some()))
+                    && word.map_or(st(b, "status").is_none(), |w| status(b, w))
+            })
             .collect()
     }
     /// A counter keeps the deal's two sides: its own refs.from and refs.to, where it names them, are the first promise's (promises.md,
@@ -282,14 +237,14 @@ impl<'a> Deal<'a> {
             live = next;
         }
     }
-    /// Whether a promise names its act (promises.md, invariant 22): under the grant it acts under (live, and made for its author), it
+    /// Whether a promise's type is covered (promises.md, invariant 22): under the grant it acts under (live, and made for its author), it
     /// passes the door's whole authority test. A grant that is not live, or is for someone else, is no grant. One that does not give it the
     /// whole authority makes it a quote request: it binds no one. Under no grant it is its author's own word.
     pub(super) fn names_act(&self, b: &Value) -> bool {
         acting_grant(b, self.index, None).is_none() || super::names_act(b, self.index, None)
     }
-    /// An autonomous system's ask is a quote request unless its grant names the act: no accept of it binds. The principal's own `accepted`
-    /// answer to it (itself no quote request), or a grant that lists `promise` in scope.acts, makes it bind.
+    /// An autonomous system's ask is a quote request unless its grant covers its type: no accept of it binds. The principal's own `accepted`
+    /// answer to it (itself no quote request), or a grant that lists `promise` in scope.types, makes it bind.
     fn quote_only(&self, offer: &Value) -> bool {
         if self.names_act(offer) {
             return false;
@@ -299,22 +254,16 @@ impl<'a> Deal<'a> {
             status(b, "accepted") && list(rf(b, "answers")).contains(&hash_of(offer)) && self.names_act(b) && principal.as_deref().is_some_and(|p| self.speaks(b, Some(p)))
         })
     }
-    /// A deal conditioned on another deal binding (`terms.condition: { accepted: <first promise> }`, decision H17) binds only once that
-    /// deal binds, read from its own stage in the same blocks (no clock: a fold). One that names nothing held, or leads back to a deal being
-    /// read (`visiting`), holds for nothing.
-    fn condition_binds(&self, offer: &Value, options: &StageOptions, visiting: &[String]) -> bool {
-        let Some(c) = get(offer, "state.terms.condition").filter(|c| c.get("accepted").is_some()) else { return true };
-        let Some(h) = c.get("accepted").and_then(Value::as_str) else { return false };
-        if h == self.first_hash || visiting.iter().any(|v| v == h) {
-            return false;
-        }
-        let mut seen: Vec<String> = visiting.to_vec();
-        seen.push(self.first_hash.clone());
-        binds(&promise_stage_at(h, self.index, options, &seen))
-    }
+    // 1.9 R-C2: a promise conditioned `{ accepted: <first promise> }` binds on its own accept; what it names is due only once that deal
+    // binds (Due reads the condition in the performing block's past), so no condition gates binding here.
     /// A referee named after the quarrel (promises.md, Disputes): a grant of kind referee one side signs naming her (`refs.to`) for the deal
     /// (`refs.subject`), which the other side answers accepted. Both signed, so she counts as a confirmer the grounds name.
     pub(super) fn judges_for(&self, sides: &[String], subject: &str) -> Vec<String> {
+        self.judges_held(sides, subject, &[], None)
+    }
+    /// 1.9 R-J2 (seat 17 B2): a judge named after the deal binds (the naming not in the binding accept's causal past) counts on its bench
+    /// only where each side, and every holder of what either side has to come (`holders`), named her or answered her `accepted`.
+    pub(super) fn judges_held(&self, sides: &[String], subject: &str, holders: &[String], accept: Option<&Value>) -> Vec<String> {
         let index = self.index;
         let speaks = |b: &Value| sides.iter().find(|s| self.speaks(b, Some(s.as_str()))).cloned();
         sorted_set(index
@@ -323,9 +272,12 @@ impl<'a> Deal<'a> {
             .filter(|g| crate::identity::counts_in(g, index))
             .filter(|g| {
                 let Some(signer) = speaks(g) else { return false };
-                index.values().any(|a| {
+                let accepted_by = |who: &str| index.values().any(|a| type_of(a) == "grant" && ss(a, "status") == Some("accepted") && rs(a, "answers") == Some(hash_of(g)) && crate::identity::counts_in(a, index) && self.speaks(a, Some(who)));
+                let both = index.values().any(|a| {
                     type_of(a) == "grant" && ss(a, "status") == Some("accepted") && rs(a, "answers") == Some(hash_of(g)) && crate::identity::counts_in(a, index) && speaks(a).is_some_and(|other| other != signer)
-                })
+                });
+                let late = accept.is_some_and(|ac| !sees_in(ac, hash_of(g), index));
+                both && (!late || holders.iter().all(|h| self.speaks(g, Some(h.as_str())) || accepted_by(h)))
             })
             .filter_map(|g| rs(g, "to")))
     }
@@ -361,9 +313,10 @@ impl<'a> Deal<'a> {
     }
 
     /// What binds (stage 2): to yourself, an allocation, an accept of the live offers, or the allocations of an open offer.
-    pub(super) fn bind(&self, options: &StageOptions, visiting: &[String]) -> Binding<'_> {
+    /// `only`: read the deal under that one of its crossed accepts (1.8 P12).
+    pub(super) fn bind(&self, _options: &StageOptions, _visiting: &[String], only: Option<&str>) -> Binding<'_> {
         let live = self.live_in(&|_| true);
-        let mut b = Binding { accept: None, takers: Vec::new(), freed: Vec::new(), forks: Vec::new(), live, to_self: false };
+        let mut b = Binding { accept: None, takers: Vec::new(), freed: Vec::new(), forks: Vec::new(), crossed: Vec::new(), live, to_self: false, requests: Vec::new() };
         let from = self.from_ref.as_deref();
         // To yourself (both refs name its author: a note held by its own issuer is still a promise to its holder, not to yourself).
         b.to_self = self.alloc.is_none() && from.is_some_and(|f| !f.is_empty() && !self.is_thing(f)) && from == self.to_ref.as_deref() && speaker_of(&self.first, self.index, None).as_deref() == from;
@@ -374,16 +327,16 @@ impl<'a> Deal<'a> {
         } else if b.to_self {
             b.accept = Some(&self.first);
         } else if !self.open {
-            self.bind_accept(&mut b, options, visiting);
+            self.bind_accept(&mut b, only);
         } else {
-            self.bind_allocations(&mut b, options, visiting);
+            self.bind_allocations(&mut b);
         }
         b
     }
 
-    // Binding accepts, across every live offer. The earliest in causal order binds; two that do not see each other prove the accepter's
-    // lie: neither binds, and both are listed in `forks`.
-    fn bind_accept<'s>(&'s self, b: &mut Binding<'s>, options: &StageOptions, visiting: &[String]) {
+    // Binding accepts, across every live offer (1.8 P12, Who may bind). Of binding accepts that see one another, the earliest binds; two
+    // that do not see each other cross (`crossed`): each binds, and the deal is read once under each (`only`).
+    fn bind_accept<'s>(&'s self, b: &mut Binding<'s>, only: Option<&str>) {
         let index = self.index;
         // An author's stop before acceptance: an accept binds unless that stop is in its causal past (promises.md).
         let before_stops: Vec<&Value> = self
@@ -401,11 +354,11 @@ impl<'a> Deal<'a> {
         };
         // A timely accept beats a late decline by her receipt (decision D12): the offerer's node's signed push answer listing the accept as
         // taken, dated no later than the offer's `expires`, so its later decline voids nothing.
-        // An offer may name a clock instead (`terms.keepers`, blocks.md, A named clock): the accept is timely when `needed` keepers received it
+        // An offer may name a clock instead (`terms.clocks`, blocks.md, A named clock): the accept is timely when `needed` clocks received it
         // by `expires`, though the offerer's own node never answered.
         let receipted = |a: &Value, offer: &Value| {
             let Some(expires) = get(offer, "state.terms.expires").and_then(Value::as_str) else { return false };
-            let by_clock = get(offer, "state.terms.keepers").and_then(crate::tasks::keepers_of).is_some_and(|k| super::clock::received_by(hash_of(a), &k, index, expires));
+            let by_clock = get(offer, "state.terms.clocks").and_then(crate::tasks::clocks_of).is_some_and(|k| super::clock::received_by(hash_of(a), &k, index, expires));
             let Some(holder) = rs(offer, "author") else { return by_clock };
             let Some(until) = crate::time::parse(expires) else { return by_clock };
             by_clock
@@ -413,79 +366,116 @@ impl<'a> Deal<'a> {
                     .iter()
                     .any(|(_, at)| crate::time::parse(at).is_some_and(|t| t <= until))
         };
+        let own_date_in_time = |a: &Value, offer: &Value| {
+            let has_clock = get(offer, "state.terms.clocks").is_some();
+            !has_clock
+                && get(offer, "state.terms.expires").and_then(Value::as_str).and_then(crate::time::parse).zip(ss(a, "at").and_then(crate::time::parse)).is_some_and(|(end, at)| at < end)
+        };
         // A referee's ruling reaches the accept too (promises.md, Disputes): an accept the deal's referee defeats binds nothing.
         let ruled_out = |a: &Value, offer: &Value| {
             let sides: Vec<String> = [self.side_at("from", a), self.side_at("to", a)].into_iter().flatten().collect();
             self.defeated_on(rs(offer, "schema").and_then(|h| index.get(h)), sides, a, None, &[a])
         };
+        // Whether a word does not stand yet and waits on something (blocks.md, Finality): an answer, or the offer it answers, that is
+        // waiting leaves *whose* open.
+        let waits = |x: &Value| {
+            let s = crate::identity::stands(x, index);
+            !s.stands && !s.waiting.is_empty()
+        };
         let mut candidates: Vec<&Value> = Vec::new();
+        let mut requests: Vec<(String, Vec<&str>)> = Vec::new();
         let offers = core::iter::once(&self.root).chain(self.in_deal.iter().filter(|o| type_of(o) == "promise" && st(o, "status").is_none()));
         for offer in offers.filter(|offer| !self.quote_only(offer)) {
             let (so, oh) = (self.side_of(offer), hash_of(offer));
             let expires = get(offer, "state.terms.expires").is_some();
-            // the offer's condition does not depend on the accept: read it once per offer, when an accept first needs it (release 2: it was read per accept)
-            let cond = core::cell::OnceCell::new();
+            // 1.9 R-B3: a decline ends a standing word for its signer: no later yes of hers to it counts
+            let declined_before = |a: &Value| self.answers_of(oh, Some("declined")).iter().any(|d| self.side_of(d).is_some() && self.side_of(d) == self.side_of(a) && sees_in(a, hash_of(d), index));
             for a in self.answers_of(oh, Some("accepted")) {
+                if !(self.side_of(a).is_some() && self.side_of(a) != so && self.names_act(a) && fits(a, offer)) || declined_before(a) {
+                    continue;
+                }
+                // a withdrawal of the offer in its causal past: it binds nothing, and asks nothing (it is ended)
+                if before_stops.iter().any(|s| crate::grant::ending(s, oh).is_some() && sees_in(a, hash_of(s), index)) {
+                    continue;
+                }
                 // An accept binds the offer it answers when that offer was live where the accept stands (in its causal past): a counter
                 // the accepter signs elsewhere, unseen by the accept, takes back nothing it consented to (promises.md, Who may bind).
                 let past = index.past_of(a);
                 if !self.live_in(&|h| past.contains(h)).iter().any(|o| hash_of(o) == oh) {
                     continue;
                 }
-                // It binds unless it saw the author's withdrawal of that offer, or, on an offer that carried `expires`, the offerer declined
-                // it (an accept that reached them late): an offer with no `expires` is firm (promises.md, Who may bind).
-                if self.side_of(a).is_some()
-                    && self.side_of(a) != so
-                    && self.names_act(a)
-                    && fits(a, offer)
-                    && *cond.get_or_init(|| self.condition_binds(offer, options, visiting))
-                    && !(expires && self.answers_of(hash_of(a), Some("declined")).iter().any(|d| self.side_of(d) == so) && !acted_on(a, so) && !receipted(a, offer))
-                    && !before_stops.iter().any(|s| crate::grant::ending(s, oh).is_some() && sees_in(a, hash_of(s), index))
-                    && !candidates.iter().any(|c| hash_of(c) == hash_of(a))
-                    && !ruled_out(a, offer)
-                {
+                if ruled_out(a, offer) {
+                    continue;
+                }
+                // on an offer that carried `expires`, the offerer's decline ends an accept that is not in time (1.9 3d-2: with no clock, in time
+                // only by its own `at` before the end, or by his own later block or a relier's): it is no longer a request. An accept in time
+                // binds, and his decline of it takes back nothing (end pass 2026-11-20, as the oracle and 00-shared, Request, read it)
+                let in_time = own_date_in_time(a, offer) || receipted(a, offer) || acted_on(a, so) || relied_on(a, index);
+                if expires && !in_time && self.answers_of(hash_of(a), Some("declined")).iter().any(|d| self.side_of(d) == so) {
+                    continue;
+                }
+                // what it leaves open: *when* (1.9 3d-2: with no clock, an accept is in time only by its own `at`, before the offer's end;
+                // one at or after it, or with none, binds the offerer only by his own later block), *whose* (it or the offer is waiting)
+                let mut open: Vec<&str> = Vec::new();
+                if expires && !(own_date_in_time(a, offer) || receipted(a, offer) || acted_on(a, so) || relied_on(a, index)) {
+                    open.push("when");
+                }
+                if waits(a) || waits(offer) {
+                    open.push("whose");
+                }
+                if !open.is_empty() {
+                    if !requests.iter().any(|(h, _)| h == hash_of(a)) {
+                        open.sort();
+                        requests.push((hash_of(a).to_string(), open));
+                    }
+                    continue;
+                }
+                if !candidates.iter().any(|c| hash_of(c) == hash_of(a)) {
                     candidates.push(a);
                 }
             }
         }
-        let firsts = earliest(&candidates, index);
-        // Two binding accepts that do not see each other prove the accepter's lie, and a lie never frees its signer of what they owe: when
-        // they consent to the same thing (one offer, one quantity), it binds, the lowest hash naming the accept only to name one; when they
-        // consent to different terms, neither binds (folds.md, A promise's stage).
-        let quantity_of = |a: &Value| get(a, "state.terms.quantity").map(|q| (q.get("unit").cloned(), Dec::of(q.get("value"))));
-        let same_terms = firsts.windows(2).all(|w| {
-            rs(w[0], "answers") == rs(w[1], "answers")
-                && match (quantity_of(w[0]), quantity_of(w[1])) {
-                    (None, None) => true,
-                    (Some((u, Some(p))), Some((v, Some(q)))) => u == v && p.cmp(&q) == Ordering::Equal,
-                    _ => false,
-                }
-        });
-        if firsts.len() > 1 {
-            b.forks = sorted_set(firsts.iter().map(|a| hash_of(a).to_string()));
+        requests.sort_by(|x, y| crate::js::cmp16(&x.0, &y.0));
+        b.requests = requests.into_iter().map(|(a, open)| json!({ "block": a, "open": open })).collect();
+        // Each binding accept binds; those that do not see one another cross, and the deal is read once under each (1.8 P12).
+        let mut firsts = earliest(&candidates, index);
+        if let Some(h) = only {
+            firsts.retain(|a| hash_of(a) == h);
         }
-        // Of crossing accepts on different terms, the one the other side's act names binds (decisions D11, E2: a lie never frees the liar,
-        // and the other side's own signed act says which word it took up): a counted block of the other side's in the deal, but a decline
-        // of it, that names it among its refs (a delivery's `after`, any ref). Named by none, or several named, neither binds.
-        let named_by_other = |a: &Value| {
-            let other = match self.side_of(a) {
-                Some("from") => Some("to"),
-                Some("to") => Some("from"),
-                _ => None,
-            };
-            self.in_deal.iter().any(|x| {
-                hash_of(x) != hash_of(a)
-                    && self.side_of(x) == other
-                    && !(status(x, "declined") && list(rf(x, "answers")).contains(&hash_of(a)))
-                    && x.get("refs").and_then(Value::as_object).is_some_and(|r| r.iter().any(|(k, v)| k != "author" && list(Some(v)).contains(&hash_of(a))))
+        b.crossed = if firsts.len() > 1 { sorted_set(firsts.iter().map(|a| hash_of(a).to_string())) } else { Vec::new() };
+        b.forks = self.pairs_in_deal();
+        b.accept = named(&firsts);
+        if b.accept.is_some() || only.is_some() {
+            return;
+        }
+        // 1.9 R-P5 (things.md, A spot exchange): the seller's transfer `for` the buyer's order, `to_owner` her, naming what it moves, is his yes
+        // and his delivery in one block: it binds the order where it is signed (one that has her stop of the order in its past binds nothing)
+        let so = self.side_of(&self.root);
+        let spots: Vec<&Value> = self
+            .in_deal
+            .iter()
+            .filter(|x| {
+                type_of(x) == "transfer"
+                    && st(x, "status").is_none()
+                    && list(rf(x, "for")).contains(&self.first_hash.as_str())
+                    && rf(x, "what").is_some()
+                    && self.side_of(x).is_some()
+                    && self.side_of(x) != so
+                    && rs(&self.root, "author").is_some_and(|buyer| self.side_at(if so == Some("to") { "to" } else { "from" }, x).as_deref().is_some_and(|w| list(rf(x, "to_owner")).contains(&w)) || list(rf(x, "to_owner")).contains(&buyer))
+                    && !self.quote_only(&self.root)
+                    && !before_stops.iter().any(|s| crate::grant::ending(s, &self.first_hash).is_some() && sees_in(x, hash_of(s), index))
             })
-        };
-        let acted: Vec<&Value> = firsts.iter().copied().filter(|a| named_by_other(a)).collect();
-        if firsts.len() == 1 || same_terms {
-            b.accept = named(&firsts);
-        } else if acted.len() == 1 {
-            b.accept = Some(acted[0]);
+            .collect();
+        if self.answers_of(&self.first_hash, Some("accepted")).is_empty() {
+            b.accept = named(&earliest(&spots, index));
         }
+    }
+
+    // `forks`: the blocks of the deal that are of a pair (one key, one `prev` or one `seq`): a pair never frees its signer. Sorted.
+    fn pairs_in_deal(&self) -> Vec<String> {
+        let pairs = self.index.stage_memo("fork_pairs", || json!(crate::identity::fork_pairs_in(self.index)));
+        let ds: BTreeSet<&str> = self.all.iter().map(hash_of).collect();
+        sorted_set(pairs.as_array().into_iter().flatten().flat_map(|p| p.as_array().into_iter().flatten()).filter_map(Value::as_str).filter(|h| ds.contains(h)))
     }
 
     // An open offer is bound by each allocation, a deal of its own (promises.md, Who may bind). A request is an accept of it by anyone but
@@ -494,12 +484,11 @@ impl<'a> Deal<'a> {
     // allocation the offerer signed binds the offerer (decision C2): they should form one chain, each seeing the one before, and two that
     // do not prove her lie (`forks`), yet a lie never frees the liar of what she owes: each binds its taker. Allocations that together bind
     // more than she offered are her broken promise, owed to each taker, and every taker is listed.
-    fn bind_allocations<'s>(&'s self, b: &mut Binding<'s>, options: &StageOptions, visiting: &[String]) {
+    fn bind_allocations<'s>(&'s self, b: &mut Binding<'s>) {
         let (index, first) = (self.index, &self.first);
         let is_counter = |r: &Value| st(r, "status").is_none();
         let (offerer_key, open_key) = (self.offerer_key(), if self.offerer_is_from { "to" } else { "from" });
-        let condition = self.condition_binds(first, options, visiting);
-        let binds_open = !self.quote_only(first) && condition;
+        let binds_open = !self.quote_only(first);
         // A counter keeps the two sides: its own ref on the offerer's side, where it names one, is the offer's, and on the open side, the taker's.
         let keeps_sides = |c: &Value, taker: &Option<String>| {
             rf(c, offerer_key).is_none_or(|_| rs(c, offerer_key) == rs(first, offerer_key))
@@ -519,7 +508,7 @@ impl<'a> Deal<'a> {
         for c in self.answers_of(&self.first_hash, None) {
             if type_of(c) == "promise" && !self.by_offerer(c) {
                 let taker = speaker_of(c, index, None);
-                if !self.quote_only(c) && condition && keeps_sides(c, &taker) {
+                if !self.quote_only(c) && keeps_sides(c, &taker) {
                     chain.push((c, taker, None));
                 }
             }
@@ -528,7 +517,7 @@ impl<'a> Deal<'a> {
         while i < chain.len() {
             let (c, taker) = (chain[i].0, chain[i].1.clone());
             for n in self.answers_of(hash_of(c), None) {
-                if type_of(n) != "promise" || chain.iter().any(|x| hash_of(x.0) == hash_of(n)) || self.quote_only(n) || !condition || !keeps_sides(n, &taker) || !answers_for(c, &taker, n) {
+                if type_of(n) != "promise" || chain.iter().any(|x| hash_of(x.0) == hash_of(n)) || self.quote_only(n) || !keeps_sides(n, &taker) || !answers_for(c, &taker, n) {
                     continue;
                 }
                 let (mut at, mut ended) = (Some(i), false);
@@ -576,14 +565,11 @@ impl<'a> Deal<'a> {
                 type_of(w) == "promise" && status(w, "stopped") && ss(w, "stop") == Some("before") && rs(w, "updates") == Some(hash_of(request)) && sees_in(allocation, hash_of(w), index)
             })
         };
-        // Two allocations of one side that do not see each other prove that side's lie.
-        let signed_by_offerer = |h: &str| index.get(h).is_some_and(|x| self.by_offerer(x));
-        for allocation in causal_order_among(&sub_index(&allocations), index) {
-            let mine = self.by_offerer(&allocation);
-            for t in b.takers.iter().filter(|t| signed_by_offerer(str_of(t.get("allocation"))) == mine && !sees_in(&allocation, str_of(t.get("allocation")), index)) {
-                b.forks.push(str_of(t.get("allocation")).to_string());
-                b.forks.push(hash_of(&allocation).to_string());
-            }
+        // read causes first (a schedule only: each test below reads the allocation's own causal past)
+        let rank = super::draws::causal_rank(index);
+        let mut allocations = allocations;
+        allocations.sort_by_key(|a| rank.get(hash_of(a)).copied().unwrap_or(usize::MAX));
+        for allocation in allocations.into_iter().cloned() {
             let answered = list(rf(&allocation, "answers"));
             let Some((request, taker)) = requests.iter().find(|(r, _)| answered.contains(&hash_of(r))) else { continue };
             let request = *request;
@@ -599,9 +585,9 @@ impl<'a> Deal<'a> {
             if self.defeated_on(schema, sides, &allocation, Some(hash_of(&allocation)), &[&allocation, request]) {
                 continue;
             }
-            // One request, or one chain of counters, is allocated once: a later allocation of it, when an allocation already binds it (not
-            // stopped in this one's causal past), binds nothing more (promises.md, Who may bind).
-            if b.takers.iter().any(|t| t.get("request").and_then(Value::as_str).and_then(|h| index.get(h)).is_some_and(|r| head(r) == head(request)) && !self.stopped_onward(t, Some(&allocation))) {
+            // One request, or one chain of counters, is allocated once: a later allocation of it, when an allocation in its causal past
+            // already binds it (not stopped in this one's causal past), binds nothing more (promises.md, Who may bind).
+            if b.takers.iter().any(|t| t.get("request").and_then(Value::as_str).and_then(|h| index.get(h)).is_some_and(|r| head(r) == head(request)) && sees_in(&allocation, str_of(t.get("allocation")), index) && !self.stopped_onward(t, Some(&allocation))) {
                 continue;
             }
             let asked = get(request, "state.terms.quantity");
@@ -632,36 +618,102 @@ impl<'a> Deal<'a> {
                 "quantity": quantity.unwrap_or(Value::Null),
             }));
         }
-        b.forks = sorted_set(b.forks.iter().map(String::as_str));
+        // *which*: a request on an open offer binds only by the offerer's yes, the allocation: until one allocates it (or its chain), it is a
+        // request (1.8 P12)
+        let mut open_requests: Vec<String> = Vec::new();
+        for (r, _) in &requests {
+            if !b.takers.iter().any(|t| t.get("request").and_then(Value::as_str).and_then(|h| index.get(h)).is_some_and(|q| head(q) == head(r))) && !open_requests.iter().any(|h| h == hash_of(r)) {
+                open_requests.push(hash_of(r).to_string());
+            }
+        }
+        open_requests.sort_by(|x, y| crate::js::cmp16(x, y));
+        b.requests = open_requests.into_iter().map(|h| json!({ "block": h, "open": ["which"] })).collect();
+        // Allocations are listed in the order of their `seq` on the offerer's line; a hash only breaks a tie in the listing (a pair) and picks nothing.
+        let seq_of = |t: &Value| index.get(str_of(t.get("allocation"))).and_then(|a| st(a, "seq")).and_then(Value::as_i64).unwrap_or(0);
+        b.takers.sort_by(|x, y| seq_of(x).cmp(&seq_of(y)).then_with(|| crate::js::cmp16(str_of(x.get("allocation")), str_of(y.get("allocation")))));
         // The allocations stopped onward (by either side of their deal): their quantity is freed, so the offer no longer binds it.
         b.freed = b.takers.iter().filter(|t| self.stopped_onward(t, None)).map(|t| str_of(t.get("allocation")).to_string()).collect();
-        // Allocations that pass what the offer offered (taken in causal order, the stopped ones left out) are over-allocated: the offerer's
-        // broken promise to those takers. An offer with lines offers each line once, whole: every allocation after the first is over.
+        // Each allocation is a draw on the open offer's quantity (folds.md, What is left): one that does not take (past, or a pair) still
+        // binds the offerer and is shown over-allocated. An offer with lines is one whole: its first allocation that takes takes all of it.
+        // With no quantity stated, nothing is over-allocated.
         let lines = get(first, "state.terms.lines").is_some();
-        let mut running = Dec::zero();
-        let mut seen_one = false;
-        let freed = b.freed.clone();
-        for t in b.takers.iter_mut() {
-            let over = if freed.iter().any(|f| f.as_str() == str_of(t.get("allocation"))) {
-                false
-            } else if lines {
-                let o = seen_one;
-                seen_one = true;
-                o
-            } else if let Some(c) = cap {
-                let q = t.get("quantity").and_then(|q| amount_dec(Some(q), c.get("unit")));
-                match (q, Dec::of(c.get("value"))) {
-                    (Some(q), Some(limit)) => {
-                        let next = running.add(&q);
-                        if next.cmp(&limit) == Ordering::Greater { true } else { running = next; false }
+        let measure = cap.and_then(|c| crate::decimal::Amount::of(Some(c)));
+        if lines || measure.is_some() {
+            let offerer = speaker_of(first, index, None);
+            let draws: Vec<super::draws::Draw> = b
+                .takers
+                .iter()
+                .filter_map(|t| {
+                    let a = index.get(str_of(t.get("allocation")))?;
+                    // a stop onward frees its quantity for an allocation that has the stop in its causal past
+                    let no: Vec<&Value> = self.in_deal.iter().filter(|w| type_of(w) == "promise" && status(w, "stopped") && ss(w, "stop") == Some("onward") && (rs(w, "updates") == Some(hash_of(a)) || rs(w, "answers") == Some(hash_of(a)))).collect();
+                    let amount = if lines { None } else { t.get("quantity").and_then(|q| crate::decimal::Amount::of(Some(q))) };
+                    let to = t.get("who").and_then(Value::as_str).map_or(super::draws::To::Nobody, |w| super::draws::To::Owner(w.to_string()));
+                    Some(super::draws::Draw { block: a, by: speaker_of(a, index, None), to, amount, yes: vec![a], no, ends: Vec::new(), condition: None, dead: None, fixed: None, stays: false, offer: None })
+                })
+                .collect();
+            let offerer_known = offerer.is_some();
+            let start = offerer.map(|o| super::draws::Start { owner: o, amount: measure.as_ref().map(|m| m.value.clone()).filter(|_| !lines), at: Some(hash_of(first).to_string()), seen: hash_of(first).to_string() });
+            let kind = if lines { super::draws::In::Whole } else { measure.as_ref().map_or(super::draws::In::Whole, |m| super::draws::In::Kind(&m.kind)) };
+            // 1.9 3b-4: allocations the record does not order are counted together: in rounds, each round the allocations with no other
+            // left in their causal past; an allocation is counted against another only where the other is in its past (and not freed for
+            // it). Where a round comes to more than is left for any of it, none of that round takes; each is over-allocated and binds.
+            if !lines {
+                if let Some(total) = measure.as_ref().map(|m| m.value.clone()) {
+                    let mut taken: Vec<(usize, Dec)> = Vec::new();
+                    let mut left_over: Vec<usize> = (0..draws.len()).collect();
+                    let mut takes: Vec<bool> = vec![false; draws.len()];
+                    while !left_over.is_empty() {
+                        let mins: Vec<usize> = left_over.iter().copied().filter(|i| !left_over.iter().any(|j| j != i && index.past_of(draws[*i].block).contains(hash_of(draws[*j].block)))).collect();
+                        let avail = |i: usize| -> Dec {
+                            let past = index.past_of(draws[i].block);
+                            taken.iter().filter(|(t, _)| past.contains(hash_of(draws[*t].block)) && !draws[*t].no.iter().any(|n| past.contains(hash_of(n)))).fold(total.clone(), |v, (_, a)| v.sub(a))
+                        };
+                        let want = |i: usize| draws[i].amount.as_ref().map(|a| a.value.clone()).unwrap_or_else(|| avail(i));
+                        let sum = mins.iter().fold(Dec::zero(), |t, i| t.add(&want(*i)));
+                        let ok = offerer_known && mins.iter().all(|i| sum.cmp(&avail(*i)).is_le());
+                        let wants: Vec<(usize, Dec)> = mins.iter().map(|i| (*i, want(*i))).collect();
+                        for (i, w) in wants {
+                            if ok && w.is_pos() {
+                                takes[i] = true;
+                                taken.push((i, w));
+                            }
+                        }
+                        left_over.retain(|i| !mins.contains(i));
                     }
-                    _ => false,
+                    for t in b.takers.iter_mut() {
+                        let i = draws.iter().position(|d| hash_of(d.block) == str_of(t.get("allocation")));
+                        t["over_allocated"] = json!(i.is_some_and(|i| !takes[i]));
+                    }
+                    // two allocations of one signer that do not see each other prove her lie (`forks`, decision C2); each still binds
+                    for x in &draws {
+                        for y in &draws {
+                            if hash_of(x.block) != hash_of(y.block) && x.by.is_some() && x.by == y.by && !index.past_of(x.block).contains(hash_of(y.block)) && !index.past_of(y.block).contains(hash_of(x.block)) {
+                                b.forks.push(hash_of(x.block).to_string());
+                            }
+                        }
+                    }
+                    b.forks = sorted_set(b.forks.iter().map(String::as_str));
+                    if let Some(t) = b.takers.first() {
+                        b.accept = index.get(str_of(t.get("allocation")));
+                    }
+                    return;
                 }
-            } else {
-                false
-            };
-            t["over_allocated"] = json!(over);
+            }
+            let drawn = super::draws::draws_on(kind, start.into_iter().collect(), draws, &|_, _| Dec::zero(), index);
+            for t in b.takers.iter_mut() {
+                let row = drawn.rows.iter().find(|r| r.block == str_of(t.get("allocation")));
+                t["over_allocated"] = json!(row.is_some_and(|r| !r.takes && matches!(r.why, Some("past" | "pair"))));
+                if row.is_some_and(|r| r.why == Some("pair")) {
+                    b.forks.push(str_of(t.get("allocation")).to_string());
+                }
+            }
+        } else {
+            for t in b.takers.iter_mut() {
+                t["over_allocated"] = json!(false);
+            }
         }
+        b.forks = sorted_set(b.forks.iter().map(String::as_str));
         if let Some(t) = b.takers.first() {
             b.accept = index.get(str_of(t.get("allocation")));
         }
@@ -696,3 +748,18 @@ fn allocation_of(first: &Value, first_hash: &str, index: &Index, options: &Stage
 
 #[allow(unused_imports)]
 use same_str as _;
+
+/// 1.9 R-B1, 3d-2 (stage 5 compare): an accept that is not in time binds by a relier's block (00-shared, Relier): a counted block of anyone
+/// but its signer that names it (in any ref but `author`, `prev`, `key` and `after`), other than a decline or a stop of it.
+pub(super) fn relied_on(a: &Value, index: &Index) -> bool {
+    let signer = speaker_of(a, index, None);
+    let h = hash_of(a);
+    index.values().any(|x| {
+        hash_of(x) != h
+            && x.get("type").is_some()
+            && !(matches!(ss(x, "status"), Some("declined" | "stopped")) && list(rf(x, "answers")).contains(&h))
+            && x.get("refs").and_then(Value::as_object).is_some_and(|r| r.iter().any(|(k, v)| !matches!(k.as_str(), "author" | "prev" | "key" | "after") && list(Some(v)).contains(&h)))
+            && crate::identity::counts_in(x, index)
+            && speaker_of(x, index, None) != signer
+    })
+}

@@ -18,13 +18,13 @@ Any other client (Claude Desktop, Cursor, Gemini CLI, Windsurf) takes the same c
 ChatGPT and other remote clients use Streamable HTTP: `node server.js --http 7420`, then point the client at
 `http://127.0.0.1:7420/mcp`.
 
-On start the server prints the **approval page** address to stderr, and where your **approval code** is (`<FOODBLOCK_IDENTITY>.approval`;
-the code itself is never printed, because many clients show this output to the assistant). Keep the code to yourself.
-**In this local mode the boundary is your computer account:** the key file, the recovery file and the code file can be read
-by anything running as you, so an assistant that can run shell commands or read files could read the code or sign as you.
-Use it with assistants that cannot touch your files, or use the hosted door with OAuth, where the assistant never sees a key
-or a code. Then say to your assistant: *"Find flour near Hartley Mill and ask for 5 kg."*
-It returns a draft and a link. You open the link, check the words, type your code and tap **Send as me**.
+On start the server prints the **approval page** address to stderr. Each draft's approval link opens a page that shows the exact block, in plain fields, and asks
+**your own device to sign it**: a passkey in your browser, or any key you keep (paste its signature). **This door holds no key of yours**: it makes none, stores
+none, reads none (a file that holds a private key is refused), and has no way to sign as you; an assistant that can read every file on this computer finds no key
+of yours here. Disconnecting an assistant drafts the stop for your device to sign, like anything else of yours. (An assistant's own session key, which the door
+makes for that tool alone, is the tool's, never yours.)
+Then say to your assistant: *"Find flour near Hartley Mill and ask for 5 kg."*
+It returns a draft and a link. You open the link, check the words, and sign with your own device, then tap **Send as me**.
 
 ## Six tools
 
@@ -37,7 +37,7 @@ This server is neutral: it names no product and holds no one's agent. A host tha
 | `foodblock_ask` | Draft an ask or quote request. Always a draft: returns a receipt code and an approval link |
 | `foodblock_promise` | A firm promise for the person. Binds only under a live grant that names `promise`; otherwise a draft |
 | `foodblock_accept` | Accept an offer or counter-offer. Same rule |
-| `foodblock_connect` | Pair the assistant with a scoped grant (acts, parties, days, money limit). A draft until the person taps. `parties` lists the ids it may deal with; none listed means no one but the person |
+| `foodblock_connect` | Pair the assistant with a scoped grant (types, parties, days, money limit). A draft until the person taps. `parties` lists the ids it may deal with; none listed means no one but the person |
 
 ## The six rules
 
@@ -54,21 +54,20 @@ Every protocol rule is the JavaScript SDK's (the Rust core, through WebAssembly)
 ## Connect an assistant that may bind
 
 ```
-foodblock_connect { "acts": ["promise"], "days": 7, "limit": { "minor": 2000, "currency": "GBP" } }
+foodblock_connect { "types": ["promise"], "days": 7, "limit": { "minor": 2000, "currency": "GBP" } }
 ```
 
-The person sees the exact words (*"may bind you on: promise, until ..., up to 20.00 GBP"*) and taps. With no `acts`, the
+The person sees the exact words (*"may bind you on: promise, until ..., up to 20.00 GBP"*) and taps. With no `types`, the
 assistant may only find, read and draft. A grant never reaches a stranger: the other side must have said `yes` first.
 
 ## Settings
 
 | Variable | What it does |
 |---|---|
-| `FOODBLOCK_IDENTITY` | A file for the person's keys, genesis and chain (the CLI's format). Made on first run; the recovery key goes to `<file>.recovery.json`, the approval code to `<file>.approval` |
+| `FOODBLOCK_IDENTITY` | Required. A file holding the person's PUBLIC side, `{ genesis, chain }` (the blocks only; made on her own device, adopted with `fb adopt`). The door writes the blocks her device signed back into it. It never holds a key |
 | `FOODBLOCK_SEED=demo` | Start with a small made-up demo story to find (a mill and an offer; every seeded block says it is a demo). Off by default |
 | `FOODBLOCK_APPROVE_PORT` | The approval page port on stdio (default: any free port) |
 | `FOODBLOCK_HOST` | The HTTP bind address (default `127.0.0.1`). An address beyond this machine needs `FOODBLOCK_AUTH=oauth`: the door will not start open on a network |
-| `FOODBLOCK_REACH` | The recovery window of a new identity, a duration the person states (for example `P30D`); required when no identity file exists yet |
 
 The node is in memory unless you point the door at a node host (next section). Blocks come in through the SDK's `accept` either way.
 
@@ -89,7 +88,7 @@ block to the host, whose SDK judges it. The host never holds the person's key. T
 agent's own genesis or under a grant the person signed.
 
 OAuth follows the MCP authorization spec: protected-resource metadata, authorization-server metadata, dynamic client registration, authorization
-code with PKCE (S256), refresh with rotation. The person's yes on the consent page is their approval code, which the assistant never sees.
+code with PKCE (S256), refresh with rotation. The person's yes on the consent page is a code made for that one request and shown on the terminal she started the door from (60 bits, five tries, a pause after twenty wrong ones in ten minutes), which the assistant never sees.
 A token only says "this assistant may reach the door" (`foodblock:read`: find and read; `foodblock:draft`: ask, connect, promise, accept).
 **Authority to bind is never an OAuth scope**: it is a grant the person signs after the assistant calls `foodblock_connect`.
 

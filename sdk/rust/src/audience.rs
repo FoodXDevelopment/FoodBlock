@@ -60,7 +60,7 @@ impl Audience {
     }
 }
 
-/// An audience for these recipients (people, circles, `circle#role`). Each gets a fresh salt unless one is given in
+/// An audience for these recipients (people and circles). Each gets a fresh salt unless one is given in
 /// `salts` (only to reproduce a vector, or on a build without randomness).
 pub fn commit(recipients: &[&str], salts: &Value) -> Result<Audience> {
     commit_in(crate::spec::default_suite(), recipients, salts)

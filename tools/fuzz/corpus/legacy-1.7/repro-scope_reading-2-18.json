@@ -1,0 +1,13 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "limit": {
+    "minor": 5000,
+    "currency": "GBP"
+   },
+   "each": 7
+  }
+ ],
+ "world": 2
+}

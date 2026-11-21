@@ -1,28 +1,39 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
-const { genesis, keyGrant, keysOf, keyTimeline, signedByAuthor, chainsOf, nextLinkFor, recoveryKeyHash } = fb.identity
+const { genesis, keyGrant, keyTimeline, liveKeys, signedByAuthor, stands, identityState, chainsOf, nextLinkFor } = fb.identity
 
-// FoodBlock 1.7 (identity.md): you are your key; devices have their own keys; a key changes by naming its last good
-// block, and only by itself, the recovery key or an operator. There is no history to close: year zero.
+// FoodBlock 1.9 (identity.md): you are your key; her list of voices; a device key sits under a voice and keeps its own line; her clock
+// is `clocks` ({ names, needed }, the field once called `keepers`) and comes with `reach`.
 const at = (n) => new Date(Date.UTC(2026, 9, 15, 9, 0, n)).toISOString()
-function person() {
-  const keys = fb.generateKeypair(), recovery = fb.generateKeypair()
-  const me = genesis(keys, { kind: 'person', audience: 'public', encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt, recoveryKey: recovery.public_key_sign, reach: 'P30D', at: at(0) })
-  return { keys, recovery, me }
-}
+const hand = (block, key) => ({ ...block, signature: fb.signMessage(fb.header(block), key.private_key).signature })
 const say = (id, keys, held, state, n) => fb.write('observe', { kind: 'note', ...state }, {}, { audience: 'public', author: id, key: keys, held, at: at(n) })
+function person() {
+  const keys = fb.generateKeypair(), me = genesis(keys, { kind: 'person', audience: 'public', encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt, at: at(0) })
+  return { keys, me }
+}
 
-test('you are your key: a genesis proves itself; the recovery key is optional, and comes as a pair', () => {
-  const { me, recovery } = person()
-  assert.deepEqual(fb.check(me.type, me.state, me.refs), [])
-  assert.equal(me.state.recovery_key_hash, recoveryKeyHash(recovery.public_key_sign))
+test('you are your key: a genesis proves itself and is a list of one voice', () => {
+  const { keys, me } = person()
+  assert.deepEqual([fb.valid(me, []), fb.read(me, [])], [[], []])
+  assert.equal(fb.identity.isGenesis(me), true)
+  assert.equal(fb.identity.genesisOpens(me), true)
   assert.equal(signedByAuthor(me, [me]), true)
   assert.equal(signedByAuthor({ ...me, state: { ...me.state, kind: 'agent' } }, [me]), false)
-  const bare = genesis(fb.generateKeypair(), { kind: 'person', audience: 'public', at: at(0) })
-  assert.deepEqual([bare.state.recovery_key_hash, bare.state.recovery_reach], [undefined, undefined])
-  assert.deepEqual(fb.valid(bare, []), [])
-  assert.throws(() => genesis(fb.generateKeypair(), { kind: 'person', audience: 'public', recoveryKey: recovery.public_key_sign, at: at(0) }), /how far back/, 'the recovery key comes with its reach')
+  assert.deepEqual(identityState(me.hash, [me]).keys, [keys.public_key_sign])
+  assert.deepEqual(identityState(me.hash, [me]).clocks, null)
+})
+
+test('a genesis with a reach states its clocks; the field is clocks, not keepers', () => {
+  const friend = person().me, keys = fb.generateKeypair()
+  const state = { kind: 'person', audience: 'public', at: at(0) }
+  assert.throws(() => genesis(keys, { ...state, reach: 'P30D' }), /clocks/, 'a reach with no clock is bad_genesis')
+  const me = genesis(keys, { ...state, reach: 'P30D', clocks: { names: [friend.hash] } })
+  assert.deepEqual([me.state.reach, me.state.clocks, me.state.keepers], ['P30D', { names: [friend.hash] }, undefined])
+  assert.deepEqual([fb.valid(me, []), fb.read(me, [])], [[], []])
+  const folded = identityState(me.hash, [me, friend])
+  assert.deepEqual(folded.clocks, { names: [friend.hash] })
+  assert.equal('keepers' in folded, false)
 })
 
 test('each block sits in its key chain: seq 1 follows the genesis, each next names the one before', () => {
@@ -32,68 +43,37 @@ test('each block sits in its key chain: seq 1 follows the genesis, each next nam
   assert.deepEqual([first.state.seq, first.refs.prev, second.state.seq, second.refs.prev], [1, me.hash, 2, first.hash])
   const [chain] = chainsOf(me.hash, [me, first, second])
   assert.deepEqual([chain.head, chain.length, chain.ok], [second.hash, 2, true])
-  const forged = { ...fb.compose('observe', { kind: 'note' }, {}, { audience: 'public', author: me.hash, at: at(3), link: { seq: 3, prev: second.hash } }) }
-  forged.signature = fb.sign(forged, fb.generateKeypair().private_key)
+  assert.deepEqual(nextLinkFor(me.hash, keys.public_key_sign, [me, first, second]), { seq: 3, prev: second.hash })
+  // a block signed by another key says nothing for her, and `valid` names whose it is: the id is right, the key is not the one its pieces name
+  const forged = hand(fb.create('observe', { kind: 'note', seq: 3, at: at(3), audience: 'public' }, { author: me.hash, prev: second.hash }), fb.generateKeypair())
   assert.equal(signedByAuthor(forged, [me, first, second]), false, 'another key cannot speak as you')
   assert.deepEqual(fb.valid(second, [me, first]), [])
   assert.deepEqual(fb.valid(forged, [me, first, second]).map((r) => r.code), ['bad_signature'])
 })
 
-test('a device key is granted by the id and keeps its own chain', () => {
+test('a device key is granted by the id, sits under her voice and keeps its own chain', () => {
   const { keys, me } = person(), phone = fb.generateKeypair()
-  const grant = keyGrant(me.hash, phone.public_key_sign, { private_key: keys.private_key, last: null, broughtIn: me.hash }, { at: at(1) })
-  assert.deepEqual(fb.check(grant.type, grant.state, grant.refs), [])
-  assert.deepEqual(keysOf(me.hash, [me, grant]), [keys.public_key_sign, phone.public_key_sign])
-  const fromPhone = say(me.hash, phone, [me, grant], { text: 'from my phone' }, 2)
-  assert.deepEqual([fromPhone.state.seq, fromPhone.refs.prev], [1, grant.hash])
-  assert.equal(nextLinkFor(me.hash, keys.public_key_sign, [me, grant]).seq, 2)
+  const grant = keyGrant(me.hash, { author: me.hash, keys, held: [me], at: at(1) }, { key: phone.public_key_sign })
+  assert.deepEqual([fb.valid(grant, [me]), fb.read(grant, [me])], [[], []])
+  assert.deepEqual(liveKeys(me.hash, [me, grant]).sort(), [keys.public_key_sign, phone.public_key_sign].sort())
+  const timeline = keyTimeline(me.hash, [me, grant])
+  assert.deepEqual(timeline.map((entry) => [entry.key, entry.under]), [[keys.public_key_sign, null], [phone.public_key_sign, keys.public_key_sign]])
+  const fromPhone = fb.write('observe', { kind: 'note', text: 'from my phone' }, {}, { audience: 'public', author: me.hash, key: phone, held: [me, grant], at: at(2) })
+  assert.deepEqual([fromPhone.state.seq, fromPhone.refs.prev, fromPhone.refs.key], [1, grant.hash, grant.hash])
   assert.equal(signedByAuthor(fromPhone, [me, grant]), true)
+  assert.deepEqual(stands(fromPhone, [me, grant]), { stands: true, waiting: [] })
 })
 
-test('a key\'s own rotation only closes its future (decision C1): what the old key signed before it still speaks; the rotation stands', () => {
-  const { keys, me } = person()
-  const one = say(me.hash, keys, [me], { text: 'mine' }, 1)
-  const stolen = say(me.hash, keys, [me, one], { text: 'pay the thief' }, 2)
-  const next = fb.generateKeypair()
-  const rotate = keyGrant(me.hash, next.public_key_sign, { private_key: keys.private_key, last: stolen }, { replaces: keys.public_key_sign, countedTo: one.hash, at: at(3) })
-  const held = [me, one, stolen, rotate]
-  // counted_to reaches back only on a recovery rotation: her own rotation voids nothing she signed
-  assert.deepEqual([signedByAuthor(one, held), signedByAuthor(stolen, held), signedByAuthor(rotate, held)], [true, true, true])
-  assert.equal(signedByAuthor(say(me.hash, keys, held, { text: 'old key after its rotation' }, 4), [...held]), false)
-  assert.equal(signedByAuthor(say(me.hash, next, held, { text: 'new key' }, 4), held), true)
-})
-
-test('a key is rotated only by itself or the recovery key; recovery reach is read from arrival, never from at', () => {
-  const { keys, me, recovery } = person(), laptop = fb.generateKeypair()
-  const device = keyGrant(me.hash, laptop.public_key_sign, { private_key: keys.private_key, last: null }, { at: at(1) })
-  const rogue = keyGrant(me.hash, fb.generateKeypair().public_key_sign, { private_key: laptop.private_key, last: null, broughtIn: device.hash }, { replaces: keys.public_key_sign, countedTo: device.hash, at: at(2) })
-  assert.equal(keyTimeline(me.hash, [me, device, rogue]).length, 2, 'the laptop cannot rotate the genesis key')
-  assert.deepEqual(fb.valid(rogue, [me, device]).map((r) => r.code), ['not_own_rotation'])
-  const after = fb.write('observe', { kind: 'note', text: 'thief, backdated' }, {}, { audience: 'public', author: me.hash, key: keys, held: [me, device], at: '2020-01-01T00:00:00.000Z' })
-  const fresh = fb.generateKeypair()
-  const settle = keyGrant(me.hash, fresh.public_key_sign, { private_key: recovery.private_key, recoveryKey: recovery.public_key_sign, last: null }, { replaces: keys.public_key_sign, countedTo: device.hash, at: at(4) })
-  const arrived = { [after.hash]: '2026-08-01T00:00:00.000Z', [settle.hash]: '2026-10-15T00:00:00.000Z' }
-  assert.equal(signedByAuthor(after, [me, device, after, settle], { arrivedAt: (hash) => arrived[hash], unknownArrival: 'inside' }), false, 'a block nobody built on is void whenever it arrived (identity.md, Recovery reach)')
-  const other = person()
-  const built = fb.write('observe', { kind: 'note', text: 'built on it' }, { derives_from: after.hash }, { audience: 'public', author: other.me.hash, key: other.keys, held: [other.me, after], at: at(3) })
-  const held = [me, device, after, settle, other.me, built]
-  assert.equal(signedByAuthor(after, held), false, 'within reach (no arrival known), whatever at it claims')
-  assert.equal(signedByAuthor(after, held, { arrivedAt: (hash) => arrived[hash], unknownArrival: 'inside' }), true, 'another identity built on it and it arrived before the reach began (P30D, by the calendar)')
-  arrived[after.hash] = '2026-10-01T00:00:00.000Z'
-  assert.equal(signedByAuthor(after, held, { arrivedAt: (hash) => arrived[hash], unknownArrival: 'inside' }), false)
-  assert.equal(fb.grant.addDuration('2026-03-31T00:00:00.000Z', 'P1M', -1), '2026-02-28T00:00:00.000Z', 'P1M is a calendar month: a day past the month\'s end is its last day')
-})
-
-test('two rotations of one key naming one prev freeze only the keys they bring in', () => {
-  const { keys, me } = person(), laptop = fb.generateKeypair()
-  const device = keyGrant(me.hash, laptop.public_key_sign, { private_key: keys.private_key, last: null }, { at: at(1) })
-  const a = fb.generateKeypair(), b = fb.generateKeypair()
-  const one = keyGrant(me.hash, a.public_key_sign, { private_key: keys.private_key, last: device }, { replaces: keys.public_key_sign, countedTo: device.hash, at: at(2) })
-  const two = keyGrant(me.hash, b.public_key_sign, { private_key: keys.private_key, last: device }, { replaces: keys.public_key_sign, countedTo: device.hash, at: at(2) })
-  const held = [me, device, one, two]
-  assert.deepEqual(keyTimeline(me.hash, held).filter((entry) => entry.frozen).map((entry) => entry.key).sort(), [a.public_key_sign, b.public_key_sign].sort())
-  assert.equal(signedByAuthor(say(me.hash, laptop, held, { text: 'still here' }, 3), held), true, 'the laptop keeps speaking')
-  assert.deepEqual(fb.identity.forkPairs(held), [[one.hash, two.hash].sort()])
+test('her whole list again replaces the old one and names it in updates; a list with clocks carries them', () => {
+  const { keys, me } = person(), friend = person().me, phone = fb.generateKeypair()
+  const voices = [{ key: keys.public_key_sign }, { key_hash: fb.identity.keyHash(phone.public_key_sign), passes: true }]
+  const signer = { author: me.hash, keys, held: [me, friend], at: at(1) }
+  assert.throws(() => keyGrant(me.hash, signer, { voices }), /updates/, 'a list names the list it replaces')
+  const list = keyGrant(me.hash, signer, { voices, updates: me.hash, clocks: { names: [friend.hash] } })
+  assert.equal(list.state.clocks.names[0], friend.hash)
+  assert.equal(list.state.keepers, undefined)
+  assert.deepEqual([fb.valid(list, [me]), fb.read(list, [me, friend])], [[], []])
+  assert.equal(identityState(me.hash, [me, friend, list]).voices.length, 2)
 })
 
 test('a key may be in another suite: p256 or sm; the block is hashed with the suite of the key that signed it', () => {

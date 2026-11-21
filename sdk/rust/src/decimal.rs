@@ -1,16 +1,17 @@
-//! Exact decimals (core.md §3): the decimal strings and whole numbers the protocol writes, compared, added and divided
-//! exactly at any size, with no float and no fixed-width integer that could overflow. A value outside the grammar
-//! (`grammar.decimal`: no leading zero, no `+`, no exponent) is not a decimal, and every operation on it is None.
+//! Exact decimals (core.md §3) and the one amount shape (encoding.md, Shapes): the decimal strings and whole numbers the protocol writes,
+//! compared, added and divided exactly at any size, with no float, no cap and no fixed-width integer that could overflow. A value outside
+//! the grammar (`grammar.decimal`: no leading zero, no `+`, no exponent) is not a decimal, and every operation on it is None.
 use crate::prelude::*;
 use core::cmp::Ordering;
 
-/// A decimal: its digits as one whole number (most significant first, no leading zeros, empty for zero), the number of
-/// those digits after the point, and its sign.
-#[derive(Clone, Debug)]
+/// An exact figure (1.9 3e-5): a signed fraction of two whole numbers in lowest terms, `num / den` (digits most significant first, no leading
+/// zeros, `num` empty for zero, `den` never empty). Every figure a block signs is a decimal; a fold's sum, product or quotient of them is
+/// exact, and prints as the shortest decimal where it has one, else as `n/d` (encoding.md, A sum).
+#[derive(Clone, Debug, Default)]
 pub struct Dec {
     neg: bool,
-    digits: Vec<u8>,
-    scale: usize,
+    num: Vec<u8>,
+    den: Vec<u8>,
 }
 
 fn trim(mut d: Vec<u8>) -> Vec<u8> {
@@ -103,40 +104,67 @@ fn digits_of(s: &str) -> Vec<u8> {
     trim(s.bytes().map(|b| b - b'0').collect())
 }
 
+
+// a mod b (b not zero)
+fn mag_rem(a: &[u8], b: &[u8]) -> Vec<u8> {
+    let q = mag_div(a, b);
+    mag_sub(a, &mag_mul(&q, b))
+}
+
+fn mag_gcd(a: &[u8], b: &[u8]) -> Vec<u8> {
+    let (mut x, mut y) = (trim(a.to_vec()), trim(b.to_vec()));
+    while !y.is_empty() {
+        let r = mag_rem(&x, &y);
+        x = y;
+        y = r;
+    }
+    x
+}
+
+fn one() -> Vec<u8> {
+    vec![1]
+}
+
 impl Dec {
+    fn make(neg: bool, num: Vec<u8>, den: Vec<u8>) -> Dec {
+        let (num, den) = (trim(num), trim(den));
+        if num.is_empty() {
+            return Dec { neg: false, num, den: one() };
+        }
+        let g = mag_gcd(&num, &den);
+        let (num, den) = if g == one() { (num, den) } else { (mag_div(&num, &g), mag_div(&den, &g)) };
+        Dec { neg, num, den }
+    }
+    fn den(&self) -> Vec<u8> {
+        if self.den.is_empty() { one() } else { self.den.clone() }
+    }
     /// A decimal from JSON: a whole number within ±(2^53 - 1), or a string in `grammar.decimal`.
     pub fn of(value: Option<&Value>) -> Option<Dec> {
         match value? {
             Value::Number(n) => {
                 let i = n.as_i64().filter(|i| i.unsigned_abs() <= 9_007_199_254_740_991)?;
-                Some(Dec { neg: i < 0, digits: digits_of(&i.unsigned_abs().to_string()), scale: 0 })
+                Some(Dec::make(i < 0, digits_of(&i.unsigned_abs().to_string()), one()))
             }
             Value::String(t) => Dec::parse(t),
             _ => None,
         }
     }
-    /// A decimal from text in `grammar.decimal`.
+    /// A decimal from text in `grammar.decimal` (a fraction `n/d` is printed by a fold, never signed, so never read).
     pub fn parse(t: &str) -> Option<Dec> {
         if !crate::spec().is("decimal", t) {
             return None;
         }
         let (neg, body) = t.strip_prefix('-').map_or((false, t), |r| (true, r));
         let (whole, frac) = body.split_once('.').unwrap_or((body, ""));
-        let digits = digits_of(&format!("{whole}{frac}"));
-        Some(Dec { neg: neg && !digits.is_empty(), digits, scale: frac.len() })
+        Some(Dec::make(neg, digits_of(&format!("{whole}{frac}")), shift(&one(), frac.len())))
     }
     pub fn zero() -> Dec {
-        Dec { neg: false, digits: Vec::new(), scale: 0 }
+        Dec { neg: false, num: Vec::new(), den: one() }
     }
-    // The digits scaled up to `scale` places.
-    fn at(&self, scale: usize) -> Vec<u8> {
-        shift(&self.digits, scale - self.scale)
-    }
-    /// The exact order of two decimals.
+    /// The exact order of two figures.
     pub fn cmp(&self, other: &Dec) -> Ordering {
-        let s = self.scale.max(other.scale);
-        let (a, b) = (self.at(s), other.at(s));
-        match (self.neg, other.neg) {
+        let (a, b) = (mag_mul(&self.num, &other.den()), mag_mul(&other.num, &self.den()));
+        match (self.neg && !self.num.is_empty(), other.neg && !other.num.is_empty()) {
             (false, true) => Ordering::Greater,
             (true, false) => Ordering::Less,
             (false, false) => mag_cmp(&a, &b),
@@ -145,30 +173,59 @@ impl Dec {
     }
     /// The exact sum.
     pub fn add(&self, other: &Dec) -> Dec {
-        let s = self.scale.max(other.scale);
-        let (a, b) = (self.at(s), other.at(s));
-        let (neg, digits) = if self.neg == other.neg {
+        let den = mag_mul(&self.den(), &other.den());
+        let (a, b) = (mag_mul(&self.num, &other.den()), mag_mul(&other.num, &self.den()));
+        let (neg, num) = if self.neg == other.neg {
             (self.neg, mag_add(&a, &b))
         } else if mag_cmp(&a, &b) != Ordering::Less {
             (self.neg, mag_sub(&a, &b))
         } else {
             (other.neg, mag_sub(&b, &a))
         };
-        Dec { neg: neg && !digits.is_empty(), digits, scale: s }
+        Dec::make(neg, num, den)
     }
     /// The exact product.
     pub fn mul(&self, other: &Dec) -> Dec {
-        let digits = mag_mul(&self.digits, &other.digits);
-        Dec { neg: (self.neg ^ other.neg) && !digits.is_empty(), digits, scale: self.scale + other.scale }
+        Dec::make(self.neg ^ other.neg, mag_mul(&self.num, &other.num), mag_mul(&self.den(), &other.den()))
     }
     /// The exact difference.
     pub fn sub(&self, other: &Dec) -> Dec {
-        self.add(&Dec { neg: !other.neg && !other.digits.is_empty(), ..other.clone() })
+        self.add(&Dec { neg: !other.neg && !other.num.is_empty(), ..other.clone() })
     }
-    /// The decimal written with no trailing zeros after the point ("4", "4.25", "-0.5").
+    /// Whether it has a decimal form (its lowest-terms denominator has no prime factor but 2 and 5), and that form's digits and places.
+    fn decimal(&self) -> Option<(Vec<u8>, usize)> {
+        let mut d = self.den();
+        let (mut twos, mut fives) = (0usize, 0usize);
+        let two = vec![2u8];
+        let five = vec![5u8];
+        while d != one() && mag_rem(&d, &two).is_empty() {
+            d = mag_div(&d, &two);
+            twos += 1;
+        }
+        while d != one() && mag_rem(&d, &five).is_empty() {
+            d = mag_div(&d, &five);
+            fives += 1;
+        }
+        if d != one() {
+            return None;
+        }
+        let places = twos.max(fives);
+        // num / den = num * (10^places / den) / 10^places
+        let factor = mag_div(&shift(&one(), places), &self.den());
+        Some((mag_mul(&self.num, &factor), places))
+    }
+    /// The one printed form of a figure (encoding.md, A sum; 1.9 3e-5): the shortest decimal text, of any length, where it has one (no
+    /// exponent, no leading zero but a single `0` before the point, no trailing zero after it, `0` for nothing, never `-0`); else `n/d`, two
+    /// whole numbers in lowest terms, which no block may sign.
     pub fn text(&self) -> String {
-        let mut digits: Vec<u8> = self.digits.clone();
-        let mut scale = self.scale;
+        if self.num.is_empty() {
+            return "0".into();
+        }
+        let sign = if self.neg { "-" } else { "" };
+        let Some((mut digits, mut scale)) = self.decimal() else {
+            let t = |v: &[u8]| v.iter().map(|d| (b'0' + d) as char).collect::<String>();
+            return format!("{sign}{}/{}", t(&self.num), t(&self.den()));
+        };
         while scale > 0 && digits.last() == Some(&0) {
             digits.pop();
             scale -= 1;
@@ -178,22 +235,96 @@ impl Dec {
             s = format!("{}{s}", "0".repeat(scale + 1 - s.len()));
         }
         let (whole, frac) = s.split_at(s.len() - scale);
-        let sign = if self.neg && !self.digits.is_empty() { "-" } else { "" };
         if frac.is_empty() { format!("{sign}{whole}") } else { format!("{sign}{whole}.{frac}") }
     }
-    /// A sum of minor units as a fold reports it: a number within ±(2^53 - 1), else its exact decimal text (a JavaScript number would
-    /// round it).
-    pub fn minor_json(&self) -> Value {
-        let max = Dec { neg: false, digits: digits_of("9007199254740991"), scale: 0 };
-        if (Dec { neg: false, ..self.clone() }).cmp(&max) == Ordering::Greater {
-            Value::String(self.text())
-        } else {
-            self.text().parse::<i64>().map_or_else(|_| crate::js::num(self.to_f64()), Value::from)
-        }
+    /// Whether it is zero.
+    pub fn is_zero(&self) -> bool {
+        self.num.is_empty()
     }
-    /// The nearest float, for a number a fold reports (not for comparing).
-    pub fn to_f64(&self) -> f64 {
-        self.text().parse::<f64>().unwrap_or(f64::NAN)
+    /// Whether it is above zero.
+    pub fn is_pos(&self) -> bool {
+        !self.neg && !self.num.is_empty()
+    }
+    /// Whether it is a decimal a block may sign (no `n/d`).
+    pub fn is_decimal(&self) -> bool {
+        self.decimal().is_some()
+    }
+    /// The exact quotient; None only when `other` is zero (1.9 3e-5: no cap; a quotient that never ends is a fraction). Nothing is rounded.
+    pub fn div(&self, other: &Dec) -> Option<Dec> {
+        if other.num.is_empty() {
+            return None;
+        }
+        Some(Dec::make(self.neg ^ other.neg, mag_mul(&self.num, &other.den()), mag_mul(&self.den(), &other.num)))
+    }
+    /// The least whole number of steps at or above this figure, times the step (1.9 3e-7, `step`): None for a step not above zero.
+    pub fn up_to_step(&self, step: &Dec) -> Option<Dec> {
+        if !step.is_pos() {
+            return None;
+        }
+        let q = self.div(step)?;
+        // the whole part of q, then one more where q is not whole and not negative
+        let whole = Dec::make(q.neg, mag_div(&q.num, &q.den()), one());
+        let n = if whole.cmp(&q) == Ordering::Less { whole.add(&Dec::make(false, one(), one())) } else { whole };
+        Some(n.mul(step))
+    }
+}
+
+/// An amount (encoding.md, Shapes): this much of a good, `{ value, unit }` or `{ value, unit, of }`. `value` a decimal, `unit` its author's own
+/// text, `of` the id of the kind it is an amount of. Money is an amount: there is no other shape for it.
+#[derive(Clone, Debug)]
+pub struct Amount {
+    pub value: Dec,
+    pub kind: Kind,
+}
+
+/// The kind an amount is of: its `unit` text and its `of`. Two amounts are of one kind when the unit is the same text, byte for byte, and
+/// `of` the same id, or neither has one. The one kind test: nothing is converted, and amounts of two kinds are never added or compared.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Kind {
+    pub unit: String,
+    pub of: Option<String>,
+}
+
+impl Kind {
+    /// `{ unit, of }`, as a fold reports a kind (`of` null when it has none).
+    pub fn json(&self) -> Value {
+        json!({ "unit": self.unit, "of": self.of })
+    }
+    /// An amount of this kind, as a fold prints a sum: the one printed form (encoding.md, Shapes), `of` only when it has one.
+    pub fn amount(&self, d: &Dec) -> Value {
+        let mut m = Map::new();
+        m.insert("value".into(), Value::String(d.text()));
+        m.insert("unit".into(), Value::String(self.unit.clone()));
+        if let Some(of) = &self.of {
+            m.insert("of".into(), Value::String(of.clone()));
+        }
+        Value::Object(m)
+    }
+}
+
+impl Amount {
+    /// An amount read from a value: an object whose `value` is a decimal string and whose `unit` is text, with an optional `of` (text).
+    /// None for anything else (a fold reads only what the shape check let through; it never guesses).
+    pub fn of(v: Option<&Value>) -> Option<Amount> {
+        let o = v?.as_object()?;
+        if o.keys().any(|k| k != "value" && k != "unit" && k != "of") {
+            return None;
+        }
+        let value = match o.get("value")? {
+            Value::String(t) => Dec::parse(t)?,
+            _ => return None,
+        };
+        let unit = o.get("unit")?.as_str()?.to_string();
+        let of = match o.get("of") {
+            None => None,
+            Some(Value::String(t)) => Some(t.clone()),
+            Some(_) => return None,
+        };
+        Some(Amount { value, kind: Kind { unit, of } })
+    }
+    /// The amount as a fold prints it.
+    pub fn json(&self) -> Value {
+        self.kind.amount(&self.value)
     }
 }
 
@@ -209,32 +340,4 @@ pub fn sum(values: &[&str]) -> Option<String> {
         total = total.add(&Dec::parse(v)?);
     }
     Some(total.text())
-}
-
-/// `minor` times `quantity` over `per`, rounded to the nearest whole number, halves up (toward +infinity): floor((2n + d) / 2d)
-/// for the exact fraction n / d. None when a part is not a decimal or `per` is zero.
-pub fn per_unit(minor: &Dec, quantity: &Dec, per: &Dec) -> Option<Dec> {
-    if per.digits.is_empty() {
-        return None;
-    }
-    // n / d = minor * (q / 10^qs) / (p / 10^ps) = minor * q * 10^ps / (p * 10^qs)
-    let n = shift(&mag_mul(&minor.digits, &quantity.digits), per.scale);
-    let d = shift(&per.digits, quantity.scale);
-    let neg = (minor.neg ^ quantity.neg ^ per.neg) && !n.is_empty();
-    let two_d = mag_add(&d, &d);
-    let two_n = mag_add(&n, &n);
-    let digits = if !neg {
-        mag_div(&mag_add(&two_n, &d), &two_d)
-    } else {
-        // floor((d - 2n) / 2d) for a negative n: minus the ceiling of (2n - d) / 2d
-        if mag_cmp(&two_n, &d) != Ordering::Greater {
-            Vec::new()
-        } else {
-            let top = mag_sub(&two_n, &d);
-            let q = mag_div(&top, &two_d);
-            if mag_cmp(&mag_mul(&q, &two_d), &top) == Ordering::Equal { q } else { mag_add(&q, &[1]) }
-        }
-    };
-    let negative = neg && !digits.is_empty();
-    Some(Dec { neg: negative, digits, scale: 0 })
 }

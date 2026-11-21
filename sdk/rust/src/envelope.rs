@@ -143,7 +143,7 @@ fn sealing_key(suite: &str, secret: &[u8], ephemeral: &[u8], recipient: &[u8]) -
     salt.extend_from_slice(ephemeral);
     salt.extend_from_slice(recipient);
     let info = crate::spec()
-        .protocol
+        .conventions
         .get("envelope")
         .and_then(|e| e.get("hkdf_info"))
         .and_then(Value::as_str)

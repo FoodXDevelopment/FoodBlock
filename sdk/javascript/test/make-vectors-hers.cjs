@@ -13,7 +13,7 @@ const agentGrant = (s, who, to, scope, refs = {}, depth) => s.say(who, 'grant', 
 {
   // three links: her, her AI, a helper, a helper's helper. The reader of "hers" is one: gives, backed and speaks_for agree down the whole chain.
   const s = story(), her = s.person('hr-her'), ai = s.person('hr-ai', { kind: 'agent' }), h1 = s.person('hr-h1', { kind: 'agent' }), h2 = s.person('hr-h2', { kind: 'agent' }), shop = s.person('hr-shop')
-  const scope = { acts: ['transfer', 'observe.note'], parties: [shop.id], limit: M(1000), until: LATER }
+  const scope = { types: ['transfer', 'observe.note'], parties: [shop.id], limit: M(1000), until: LATER }
   const g = agentGrant(s, her, ai, scope, {}, 2), h = agentGrant(s, ai, h1, scope, { parent: g.hash }, 1), k = agentGrant(s, h1, h2, scope, { parent: h.hash })
   const t = s.say(h2, 'transfer', { money: M(300) }, { under: k.hash, to_owner: shop.id })
   const line = { of: 'money', minor: 300, currency: 'GBP', to: shop.id, back: null }
@@ -35,7 +35,7 @@ const agentGrant = (s, who, to, scope, refs = {}, depth) => s.say(who, 'grant', 
   // a grant passed on by one who never received the parent: gives refuses what backed refuses
   const mal = s.person('hr-mal')
   const s2 = story(), her2 = s2.person('hr2-her'), bot2 = s2.person('hr2-bot', { kind: 'agent' }), mal2 = s2.person('hr2-mal'), shop2 = s2.person('hr2-shop')
-  const scope2 = { acts: ['transfer'], parties: [shop2.id], limit: M(1000), until: LATER }
+  const scope2 = { types: ['transfer'], parties: [shop2.id], limit: M(1000), until: LATER }
   const top = agentGrant(s2, her2, bot2, scope2, {}, 1)
   const fake = s2.raw(mal2, 'grant', { kind: 'agent', scope: scope2 }, { to: bot2.id, parent: top.hash })
   const forged = s2.raw(bot2, 'transfer', { money: M(500) }, { under: fake.hash, to_owner: shop2.id })
@@ -80,7 +80,7 @@ const agentGrant = (s, who, to, scope, refs = {}, depth) => s.say(who, 'grant', 
 {
   // check_reads and not_free_shown ask `backed`, not a comparison of authors
   const s = story(), her = s.person('hk-her'), bot = s.person('hk-bot', { kind: 'agent' })
-  const g = agentGrant(s, her, bot, { acts: ['observe.note', 'observe.not_free', 'observe.check'], parties: [], until: LATER })
+  const g = agentGrant(s, her, bot, { types: ['observe.note', 'observe.not_free', 'observe.check'], parties: [], until: LATER })
   const mine = s.say(her, 'observe', { kind: 'note', text: 'hers' })
   const throughBot = s.say(bot, 'observe', { kind: 'note', text: 'hers, through her agent' }, { under: g.hash })
   const check = s.say(her, 'observe', { kind: 'check', of: 'observe' }, { subject: her.id, derives_from: [mine.hash, throughBot.hash] })

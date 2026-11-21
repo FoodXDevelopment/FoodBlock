@@ -13,15 +13,13 @@ spec/                    the rules: core.md and modules/ (protocol.md is the ind
   ├── sdk/python, go,    thin layers over the same core, each running every vector section
   │   swift, kotlin
   │
-  ├── server/            a node: stores and numbers blocks, answers signed pull and push, .well-known
+  ├── host/              a host with two stores (plain files, Postgres): stores and numbers blocks, answers signed pull and push, .well-known
   ├── mcp/               an autonomous system's way in: writes and reads signed blocks over MCP
   └── cli/               a person's or a machine's way in: the same, from a terminal
 ```
 
 **Every list is data.** Types, verbs, ref keys, fields, terms, grammar, limits, suites and profiles are in
-`spec/protocol.json`. Every SDK loads it and copies nothing into code. There is no earlier version in the protocol:
-the one-time converter (`sdk/rust` feature `legacy`, `fb convert`) reads `spec/legacy/aliases-0.x.json` and is not
-part of it.
+`spec/protocol.json`. Every SDK loads it and copies nothing into code. There is no earlier version in the protocol.
 
 **The SDK decides; everything else asks it.** The server, the MCP server and the CLI never check a block
 themselves. They write with the SDK's one write path (`write`: compose, check, sign, place in the key's chain), and
@@ -57,13 +55,12 @@ The node, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev
    `valid`: a key that still speaks for its author signed it, it passes the checks of core.md, it fits its key's
    chain, and the owner's admission rule lets it in. A block whose previous block is missing waits, then expires.
    Two blocks of one key naming one `prev` are kept and served together, as proof of a fork.
-4. **Kept.** Exactly as it arrived, numbered on arrival (`sql/schema.sql`). This node is append-only by its own choice: it never updates or deletes a block, so it cannot promise erasure (profiles/erasure.md). Another node may.
-5. **Read.** As it was signed. Old data from before 1.6 is converted once into fresh blocks that name the old hash in
-   `derives_from`; nothing reads an older shape.
+4. **Kept.** Exactly as it arrived, numbered on arrival (`host/src/postgres/schema.sql`). This node is append-only by its own choice: it never updates or deletes a block, so it cannot promise erasure (profiles/erasure.md). Another node may.
+5. **Read.** As it was signed. Nothing reads an older shape.
 
-## The node (server/)
+## The host (host/)
 
-`server/node.js` is the whole node: a small store over Postgres and two messages. It belongs to its holder, a person
+`host/src/postgres/node.js` is the whole node over Postgres (`host/src/files/` is the same node over plain files): a small store and two messages. It belongs to its holder, a person
 or a machine, and signs every answer with a device key of theirs, brought in by a key grant (`fb key` makes one).
 
 | Route | Request | Answer |

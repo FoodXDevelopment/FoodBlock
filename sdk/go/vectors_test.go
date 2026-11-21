@@ -162,8 +162,22 @@ func codesOf(found []Finding) []string {
 	return out
 }
 
-func codes(b Block, held []Block) []string {
-	return codesOf(Refusals(b.Type, b.State, b.Refs, CheckOptions{Held: byHashMap(held)}))
+// bytesRefusals is what a block's own bytes say (checks 1 to 4): the 1.7 op `refusals` is gone; its halves are Valid and Read.
+// The block's own parts are passed as they are written: a state that is not an object cannot be a Block.
+func bytesRefusals(typ, state, refs any) []Finding {
+	text, err := ask[string]("canonical", typ, state, refs)
+	if err != nil {
+		var refused *Refused
+		if errors.As(err, &refused) {
+			return refused.Refusals
+		}
+		var coded *CodedError
+		if errors.As(err, &coded) && coded.Code != "" {
+			return []Finding{{Code: coded.Code, Detail: coded.Message}}
+		}
+		return []Finding{{Code: "not_canonical", Detail: err.Error()}}
+	}
+	return StrictText(text)
 }
 
 func byHashMap(blocks []Block) map[string]Block {
@@ -216,7 +230,8 @@ func TestVectors(t *testing.T) {
 			ok = ok && canon(b) == str(c["canonical"])
 		}
 		if c["refused"] != nil {
-			got := codesOf(Refusals(str(b["type"]), obj(b["state"]), obj(b["refs"])))
+			// what a writer refuses of the value (write_refusals: a float is `float`, not the wire's `not_canonical`)
+			got := codesOf(doorWriteRefusals(map[string]any{"type": b["type"], "state": b["state"], "refs": b["refs"]}, nil))
 			for _, code := range list(c["refused"]) {
 				ok = ok && contains(got, code)
 			}
@@ -248,7 +263,7 @@ func TestVectors(t *testing.T) {
 		}
 		h, _ := Hash(b.Type, b.State, b.Refs)
 		r.report(h == b.Hash && Verify(b, b.Signature, pub(t, c["signer"])), "ledger: "+str(c["name"])+": hash and signature")
-		wrong := Valid(b, before, nil, nil)
+		wrong := Valid(b, before)
 		r.report(len(wrong) == 0, "valid: "+str(c["name"]), codesOf(wrong)...)
 		before = append(before, b)
 	}
@@ -273,34 +288,12 @@ func TestVectors(t *testing.T) {
 	}
 
 	// Every signed block in every story: its hash and its signature, and every block of a story passes the strict check.
-	folds, refusals, sealed := obj(v["folds"]), obj(v["refusals"]), obj(v["sealed"])
+	sealed := obj(v["sealed"])
 	type story struct {
 		group, name string
 		blocks      any
 	}
 	stories := []story{}
-	add := func(group string, list any) {
-		for _, c := range items(list) {
-			stories = append(stories, story{group, str(c["name"]), c["blocks"]})
-		}
-	}
-	add("identity", v["identities"])
-	add("deal", v["deals"])
-	add("circle", v["circles"])
-	foldNames := []string{}
-	for k := range folds {
-		foldNames = append(foldNames, k)
-	}
-	sort.Strings(foldNames)
-	for _, k := range foldNames {
-		add(k+" fold", folds[k])
-	}
-	stories = append(stories, story{"refusal", "stories", refusals["blocks"]})
-	for _, c := range items(refusals["cases"]) {
-		if c["blocks"] != nil {
-			stories = append(stories, story{"refusal", str(c["name"]), c["blocks"]})
-		}
-	}
 	stories = append(stories, story{"sealed", "stories", sealed["blocks"]})
 	for _, s := range stories {
 		wrong := []string{}
@@ -318,13 +311,13 @@ func TestVectors(t *testing.T) {
 			if !Verify(b, b.Signature, pub(t, c["signer"])) {
 				wrong = append(wrong, str(c["name"])+": signature")
 			}
-			if found := Refusals(b.Type, b.State, b.Refs); len(found) > 0 {
+			if found := bytesRefusals(b.Type, b.State, b.Refs); len(found) > 0 {
 				wrong = append(wrong, str(c["name"])+": "+strings.Join(codesOf(found), ", "))
 			}
 		}
 		r.report(len(wrong) == 0, fmt.Sprintf("%s: %s: blocks hash, verify and pass the check", s.group, s.name), wrong...)
 	}
-	ran["identities"], ran["deals"], ran["circles"], ran["folds"], ran["refusals"], ran["sealed"] = true, true, true, true, true, true
+	ran["sealed"], ran["invariant_numbers"] = true, true
 
 	opensVector := func(c map[string]any) bool {
 		b, ok := byHash[str(c["hash"])]
@@ -359,243 +352,9 @@ func TestVectors(t *testing.T) {
 		})
 	}
 	for _, c := range items(v["headers"]) {
-		head := cloneMap(obj(c["header"]))
-		head["signature"] = c["header_signature"]
-		r.report(eq(Header(byHash[str(c["hash"])]), c["header"]) && VerifyMessage(head, pub(t, c["signer"])), "header: "+str(c["name"]))
-	}
-
-	// Identities: which blocks are their author's, which keys speak, who operates an agent.
-	for _, c := range items(v["identities"]) {
-		held := blocksOf(c["blocks"])
-		arrived := arrivalsOf(obj(c["arrivals"]))
-		unknown := UnknownArrival(str(c["unknown_arrival"]))
-		id := str(c["id"])
-		for _, b := range held {
-			if want, ok := obj(c["signed_by_author"])[b.Hash]; ok {
-				r.report(SignedByAuthor(b, held, arrived, unknown) == want, fmt.Sprintf("identity: %s: %s", c["name"], b.Hash[:8]))
-			}
-		}
-		if c["keys"] != nil {
-			r.report(eq(sorted(KeysOf(id, held, arrived, unknown)), c["keys"]), fmt.Sprintf("identity: %s: the keys that speak", c["name"]))
-		}
-		if c["frozen"] != nil {
-			frozen := []string{}
-			for _, e := range KeyTimeline(id, held, nil, "") {
-				if e.Frozen {
-					frozen = append(frozen, e.Key)
-				}
-			}
-			r.report(eq(sorted(frozen), c["frozen"]), fmt.Sprintf("identity: %s: the frozen keys", c["name"]))
-		}
-		if c["operators"] != nil {
-			r.report(eq(OperatorsOf(id, held), c["operators"]), fmt.Sprintf("identity: %s: its operators", c["name"]))
-		}
-		{
-			state := IdentityStateOf(id, held, arrived, unknown)
-			ok := eq(state.Keys, c["keys"]) && (c["frozen"] == nil || eq(state.Frozen, c["frozen"]))
-			for h, want := range obj(c["signed_by_author"]) {
-				if got, there := state.SignedByAuthor[h]; there {
-					ok = ok && got == want
-				}
-			}
-			r.report(ok, fmt.Sprintf("identity: %s: the identity fold (signed_by_author, keys, frozen)", c["name"]))
-		}
-		// The limit is the principal's fence: sealed to the agent alone, never read by the grant check, read by the principal's node.
-		if f := obj(c["fence"]); f != nil {
-			limit, grant := find(held, str(f["block"])), find(held, str(f["grant"]))
-			audience, _ := arr(limit.State["audience"])
-			r.report(same(limit.Refs["for"], f["grant"]) && limit.State["kind"] == "limit" && eq(limit.State["limit"], f["limit"]) &&
-				FindsSelf(limit, str(f["agent"]), str(f["salt"])) && !FindsSelf(limit, str(f["principal"]), str(f["salt"])) && len(audience) == 1,
-				fmt.Sprintf("identity: %s: sealed to the agent alone", c["name"]))
-			rest := []Block{}
-			for _, b := range held {
-				if b.Hash != limit.Hash {
-					rest = append(rest, b)
-				}
-			}
-			never := obj(grant.State["scope"])["limit"] == nil
-			for h := range obj(c["under"]) {
-				never = never && eq(WhyNotUnder(find(held, h), held), WhyNotUnder(find(held, h), rest))
-			}
-			r.report(never, fmt.Sprintf("identity: %s: the grant check never reads the limit", c["name"]))
-			within := true
-			for _, k := range items(f["within"]) {
-				spent, _ := intOf(k["spent"])
-				within = within && WithinLimit(limit, k["money"], int(spent)) == k["within"]
-			}
-			r.report(within, fmt.Sprintf("identity: %s: the principal's node checks the limit (WithinLimit)", c["name"]))
-		}
-		for h, ok := range obj(c["under"]) {
-			r.report((len(WhyNotUnder(find(held, h), held)) == 0) == ok, fmt.Sprintf("identity: %s: a block under the grant speaks for its grantor", c["name"]))
-		}
-	}
-
-	// Folds.
-	stageOf := func(c map[string]any) Stage {
-		held := blocksOf(c["blocks"])
-		return PromiseStage(find(held, str(c["first"])), held)
-	}
-	for _, c := range append(items(v["deals"]), items(folds["promises"])...) {
-		want := obj(c["expected"])
-		r.attempt(fmt.Sprintf("promise fold: %s: %s", c["name"], want["stage"]), func() bool { return subset(stageOf(c), want) })
-	}
-	for _, c := range append(items(v["circles"]), items(folds["circles"])...) {
-		r.attempt("circle fold: "+str(c["name"]), func() bool {
-			held := blocksOf(c["blocks"])
-			state := CircleStateOf(str(c["circle"]), held, nil)
-			want := obj(c["expected"])
-			var members any
-			if _, isList := arr(want["members"]); isList {
-				members = state.MemberIDs()
-			} else {
-				m := map[string]any{}
-				for who, member := range state.Members {
-					m[who] = sorted(member.Roles)
-				}
-				members = m
-			}
-			removed := []string{}
-			for who := range state.Removed {
-				removed = append(removed, who)
-			}
-			ok := eq(members, want["members"]) && eq(sorted(removed), want["removed"])
-			if want["counted_to"] != nil {
-				ok = ok && eq(state.Removed, want["counted_to"])
-			}
-			for h, may := range obj(c["may_act"]) {
-				ok = ok && MayActAs(find(held, h), str(c["circle"]), held, "") == may
-			}
-			return ok
-		})
-	}
-	for _, c := range items(folds["audience"]) {
-		held := blocksOf(c["blocks"])
-		for _, k := range items(c["cases"]) {
-			r.attempt("audience fold: "+str(k["name"]), func() bool {
-				return eq(MembersThen(find(held, str(k["block"])), str(k["recipient"]), held), k["members"])
-			})
-		}
-	}
-	for _, c := range items(folds["things"]) {
-		held := blocksOf(c["blocks"])
-		for _, k := range items(c["where"]) {
-			r.attempt("where now: "+str(k["name"]), func() bool { return eq(WhereNow(find(held, str(k["thing"])), held), k["places"]) })
-		}
-		for _, k := range items(c["owners"]) {
-			r.attempt("owner: "+str(k["name"]), func() bool {
-				got := OwnershipOf(find(held, str(k["thing"])), held)
-				return eq(nilIfEmpty(got.Owner), k["owner"]) && eq(got.Conflict, k["conflict"])
-			})
-		}
-	}
-	for _, c := range items(folds["successors"]) {
-		r.attempt("successor: "+str(c["name"]), func() bool {
-			held := blocksOf(c["blocks"])
-			return subset(SuccessorView(find(held, str(c["grant"])), held, str(c["now"]), arrivalsOf(obj(c["arrivals"]))), c["expected"])
-		})
-	}
-	for _, c := range items(folds["ballots"]) {
-		held := blocksOf(c["blocks"])
-		for _, k := range items(c["cases"]) {
-			r.attempt("ballot: "+str(k["name"]), func() bool {
-				return CountedIn(find(held, str(k["result"])), str(k["commitment"]), str(k["counter"])) == k["counted"]
-			})
-		}
-	}
-	for _, c := range items(folds["rekeys"]) {
-		r.attempt("circle key: "+str(c["name"]), func() bool { return subset(CircleKeyOf(str(c["circle"]), blocksOf(c["blocks"])), c["expected"]) })
-	}
-	known := []string{"promises", "circles", "audience", "things", "successors", "rekeys", "ballots"}
-	for _, k := range foldNames {
-		r.report(contains(known, k), "fold section run: "+k)
-	}
-
-	// Refusals: what every node must refuse.
-	refusalBlocks := map[string]Block{}
-	for _, s := range stories {
-		for _, b := range blocksOf(s.blocks) {
-			refusalBlocks[b.Hash] = b
-		}
-	}
-	pickBlocks := func(hashes any) []Block {
-		out := []Block{}
-		for _, h := range list(hashes) {
-			out = append(out, refusalBlocks[h])
-		}
-		return out
-	}
-	for _, c := range items(refusals["cases"]) {
-		r.attempt(fmt.Sprintf("refused (%s): %s", c["by"], c["name"]), func() bool {
-			held := pickBlocks(c["held"])
-			switch c["by"] {
-			case "check":
-				// The block's own parts are passed as they are written: a state that is not an object cannot be a Block.
-				inner := obj(c["block"])
-				found, _ := ask[[]Finding]("refusals", inner["type"], inner["state"], inner["refs"], held, nil)
-				return eq(codesOf(found), c["codes"])
-			case "valid":
-				return eq(codesOf(Valid(flat(obj(c["block"])), held, nil, nil)), c["codes"])
-			case "accept":
-				var incoming []Block
-				if c["inline"] != nil {
-					for _, one := range items(c["inline"]) {
-						incoming = append(incoming, flat(one))
-					}
-				} else {
-					incoming = pickBlocks(c["incoming"])
-				}
-				got := Accept(incoming, held, AcceptOptions{TakesPairs: false})
-				// The second of a pair is neither taken nor refused: it is listed in its pair.
-				if c["equivocations"] != nil {
-					return eq(hashesOfBlocks(got.Taken), c["taken"]) && len(got.Refused) == 0 && eq(got.Equivocations, c["equivocations"])
-				}
-				if c["waiting"] != nil {
-					waiting := []string{}
-					for _, w := range got.Waiting {
-						waiting = append(waiting, w.Hash)
-					}
-					return eq(waiting, c["waiting"]) && len(got.Refused) == 0
-				}
-				if c["taken"] != nil {
-					return eq(hashesOfBlocks(got.Taken), c["taken"])
-				}
-				seen := []string{}
-				for _, one := range got.Refused {
-					if !contains(seen, one.Code) {
-						seen = append(seen, one.Code)
-					}
-				}
-				if !eq(seen, c["codes"]) {
-					return false
-				}
-				for _, h := range list(c["incoming"]) {
-					refused := false
-					for _, r := range got.Refused {
-						refused = refused || r.Hash == h
-					}
-					if !refused {
-						return false
-					}
-				}
-				return true
-			case "fold":
-				return subset(stageOf(c), c["expected"])
-			case "may_act_as":
-				blocks := blocksOf(c["blocks"])
-				return MayActAs(find(blocks, str(c["block"])), str(c["circle"]), blocks, "") == c["ok"]
-			case "under":
-				all := []Block{}
-				for _, b := range refusalBlocks {
-					all = append(all, b)
-				}
-				return (len(WhyNotUnder(refusalBlocks[str(c["block"])], all)) == 0) == c["live"]
-			case "open":
-				_, err := OpenCopy(obj(c["message"]), str(key(t, c["recipient"])["x25519_private"]))
-				var coded *CodedError
-				return errors.As(err, &coded) && eq([]string{coded.Code}, c["codes"])
-			}
-			return false
-		})
+		// a header is no message (core.md, section 2): its signature is the block's, over the header
+		message := map[string]any{"header": c["header"], "header_signature": c["header_signature"]}
+		r.report(eq(Header(byHash[str(c["hash"])]), c["header"]) && HeaderSignedBy(message, pub(t, c["signer"])), "header: "+str(c["name"]))
 	}
 
 	// Messages between nodes: every answer signed by the node; a signed request carries a counter or a challenge, no time.
@@ -620,7 +379,7 @@ func TestVectors(t *testing.T) {
 		spHighest, _ := intOf(sp["highest"])
 		r.report(len(PushRefusals(obj(sp["message"]), PullCheck{Node: node, Keys: []string{pub(t, sp["signer"])}, Highest: &spHighest})) == 0, "message: a signed push")
 	}
-	r.report(contains(KeysOf(node, blocksOf(sealed["blocks"]), nil, ""), nodeKey), "message: the node key is a key of its holder, brought in by a key grant")
+	r.report(contains(KeysOf(node, blocksOf(sealed["blocks"])), nodeKey), "message: the node key is a key of its holder, brought in by a key grant")
 	pa := obj(M["pull_answer"])
 	paBlocks, _ := arr(obj(pa["message"])["blocks"])
 	matchesN, _ := intOf(pa["matches"])
@@ -733,7 +492,8 @@ func TestVectors(t *testing.T) {
 
 	// The door: one case per rule. `expect` is a subset match (exact: true, deep equality); `codes` compares the
 	// refusal codes of the returned list; `error` means the call must fail.
-	for _, d := range items(v["door"]) {
+	// the protocol's cases, then every other op's (spec/conventions-vectors.json)
+	for _, d := range append(items(v["door"]), items(obj(load(t, "spec", "conventions-vectors.json"))["door"])...) {
 		args, _ := arr(d["args"])
 		r.attempt("door: "+str(d["name"]), func() bool {
 			got, err := ask[any](str(d["op"]), args...)
@@ -789,12 +549,12 @@ func TestKeysRebuildFromSeeds(t *testing.T) {
 	}
 }
 
-// canonical.md Rule 1: object keys sort by UTF-16 code units, as JavaScript sorts. A set is written sorted, never sorted for you.
-func TestUTF16Order(t *testing.T) {
+// canonical.md Rule 1: object keys sort by the bytes of their UTF-8 form (code-point order): U+FF61 before U+1F35E. A set is written sorted, never sorted for you.
+func TestUTF8ByteOrder(t *testing.T) {
 	state := map[string]any{"\U0001F35E": 1, "｡": 2, "a": 3}
-	refs := map[string]any{"\U0001F35E": "x", "｡": "y", "sees": []any{"a", "\U0001F35E bread", "｡ dot"}}
+	refs := map[string]any{"\U0001F35E": "x", "｡": "y", "sees": []any{"a", "｡ dot", "\U0001F35E bread"}}
 	c, _ := Canonical("t.a", state, refs)
-	want := `{"refs":{"sees":["a","` + "\U0001F35E" + ` bread","` + "｡" + ` dot"],"` + "\U0001F35E" + `":"x","` + "｡" + `":"y"},"state":{"a":3,"` + "\U0001F35E" + `":1,"` + "｡" + `":2},"type":"t.a"}`
+	want := `{"refs":{"sees":["a","` + "｡" + ` dot","` + "\U0001F35E" + ` bread"],"` + "｡" + `":"y","` + "\U0001F35E" + `":"x"},"state":{"a":3,"` + "｡" + `":2,"` + "\U0001F35E" + `":1},"type":"t.a"}`
 	if c != want {
 		t.Errorf("got %s", c)
 	}

@@ -1,0 +1,339 @@
+{
+ "row": "extra",
+ "label": "ownership (e14-read-first-direct-yes)",
+ "source": "random world, reduced by the fuzzer (1.9 end pass, 2026-11-20, second long run)",
+ "cause": "ownership: read lists the first of her yeses to a draw, not a later one that has it in its past (oracle fixed: 3b-9)",
+ "op": "ownership",
+ "args": [
+  {
+   "hash": "1ba8883cc4209f4be10648c1ab03020a9aafe862eaacbbd54c5712dfd4f810ee",
+   "type": "thing",
+   "state": {
+    "kind": "tomatoes",
+    "pack": {
+     "value": "1",
+     "unit": "sack"
+    },
+    "at": "2026-11-12T00:09:00.000Z",
+    "audience": "public",
+    "seq": 1
+   },
+   "refs": {
+    "of": "29488443315f414fecfa58d9e3444ee107a2f8b48848bfd1ed3b4c65aa36633d",
+    "author": "f25110ba8400cab43e79e3a8725184e9f7e467528564f463925bd25cbd48f5d5",
+    "prev": "f25110ba8400cab43e79e3a8725184e9f7e467528564f463925bd25cbd48f5d5"
+   },
+   "signature": "5b35e3eeacaefd8bd02be15e20a2e37007cf0943b3556989879635b0b88f7a8472ae6e5b892f5314f7f52f572ab79bc3ea9532af4a30b7b0726b5f9451237e08"
+  },
+  [
+   {
+    "hash": "480c8d6327b66b69e6abff437cdb1454827ec133e46b68af051c217abc082b66",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-11-12T00:01:00.000Z",
+     "public_key_sign": "302a300506032b6570032100e5f103400ce55b3e788b73cff4def04023b138900e5a3446ff32634d2245a20a",
+     "audience": "public"
+    },
+    "refs": {},
+    "signature": "c47c5949d663c8223c00dc1a8636287af8aa8823fdfef25cefe34feacae031a7aaabf3ca0f8c4f0d0b2c1c0dbe2a5c92857c117feb91810a1b3fed4073206803"
+   },
+   {
+    "hash": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-11-12T00:02:00.000Z",
+     "public_key_sign": "302a300506032b65700321008b78763f2ee8d772eebf7b25b61b8aec664fbf444d1d19ef3fe8f0da181fc778",
+     "audience": "public"
+    },
+    "refs": {},
+    "signature": "6810cf0857210f30bb989988e109467d19209c5ce5495c33497a8900d169c705c517c5d0c0da14dfe39e02c578131c6b62a5b40b2dd7eebf34e2c5b572124b0b"
+   },
+   {
+    "hash": "2890d88dacd8b5b9631f374a4c4f0969754f7fd05fdb529a2917570129de3cc8",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-11-12T00:03:00.000Z",
+     "public_key_sign": "302a300506032b6570032100a00dd7b11a415e35d8143060025adb0647eec3e0692ad33944505d131e0d6090",
+     "audience": "public"
+    },
+    "refs": {},
+    "signature": "7363224ee045cbf8c83d592815f41c9eac643dee59e383688ad56e3fc32cebbac311c5d7a4c5ab83bbc99dfa79e9ed6e10d07fc5d1d7c6a3f3ea9a83403b2e01"
+   },
+   {
+    "hash": "f25110ba8400cab43e79e3a8725184e9f7e467528564f463925bd25cbd48f5d5",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-11-12T00:04:00.000Z",
+     "public_key_sign": "302a300506032b657003210061f864f0737dd9ecc5cafe6ddfd968d4248ad23dcd0e9ba094ab0c668c0681d9",
+     "audience": "public"
+    },
+    "refs": {},
+    "signature": "872f9bfea13206d2cf36c14969f109560ba8a021bdf1a949b4329c48e1cab70f35565eddb5fc277b514a7e0ce63246235ba988b690c3ba2e6bb09fa3308e680b"
+   },
+   {
+    "hash": "80092c86eb309ad88c86fcdbeb9e6dab0d53c9cc25333f54d1642d8a45838f14",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-11-12T00:05:00.000Z",
+     "public_key_sign": "302a300506032b65700321002b5a39df63f9d54715cab492f93fdd7d6ca13c744f78b0374fc4f9cfaf13cc03",
+     "audience": "public"
+    },
+    "refs": {},
+    "signature": "c983173cf8b221bb4e498576dc9de394a3460d3099dd8bfdb7ccc389dbe2f02e68fe3265ff59e6d625f47588e941f8cc0543472942c1b2330062a46db022e807"
+   },
+   {
+    "hash": "ccce9b90cb1b4677cb863cef778d9626c550bf7d67232c841864bbebb750a8e1",
+    "type": "grant",
+    "state": {
+     "kind": "key",
+     "voices": [
+      {
+       "key_hash": "35815da4d1d60b8b7894e7277c4270ebc52c415c014cd39c8b5996e5a881fdcd"
+      },
+      {
+       "key": "302a300506032b6570032100e5f103400ce55b3e788b73cff4def04023b138900e5a3446ff32634d2245a20a"
+      }
+     ],
+     "clocks": {
+      "names": [
+       "80092c86eb309ad88c86fcdbeb9e6dab0d53c9cc25333f54d1642d8a45838f14"
+      ],
+      "needed": 1
+     },
+     "at": "2026-11-12T00:06:00.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "subject": "480c8d6327b66b69e6abff437cdb1454827ec133e46b68af051c217abc082b66",
+     "updates": "480c8d6327b66b69e6abff437cdb1454827ec133e46b68af051c217abc082b66",
+     "author": "480c8d6327b66b69e6abff437cdb1454827ec133e46b68af051c217abc082b66",
+     "prev": "480c8d6327b66b69e6abff437cdb1454827ec133e46b68af051c217abc082b66"
+    },
+    "signature": "8125f21e382c68dfd58369467fd07866b6a76ec8e2b2347409985f09f544db6f1660d8e2c9ea0543f4a4d002ee1997f1dd2f2445a381b47c59ea00802005760e"
+   },
+   {
+    "hash": "1ba8883cc4209f4be10648c1ab03020a9aafe862eaacbbd54c5712dfd4f810ee",
+    "type": "thing",
+    "state": {
+     "kind": "tomatoes",
+     "pack": {
+      "value": "1",
+      "unit": "sack"
+     },
+     "at": "2026-11-12T00:09:00.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "of": "29488443315f414fecfa58d9e3444ee107a2f8b48848bfd1ed3b4c65aa36633d",
+     "author": "f25110ba8400cab43e79e3a8725184e9f7e467528564f463925bd25cbd48f5d5",
+     "prev": "f25110ba8400cab43e79e3a8725184e9f7e467528564f463925bd25cbd48f5d5"
+    },
+    "signature": "5b35e3eeacaefd8bd02be15e20a2e37007cf0943b3556989879635b0b88f7a8472ae6e5b892f5314f7f52f572ab79bc3ea9532af4a30b7b0726b5f9451237e08"
+   },
+   {
+    "hash": "21aede6ce94d709b0639df721cd51f2d22a1f5080563aa90fd976b8e4e3cf2ff",
+    "type": "promise",
+    "state": {
+     "status": "accepted",
+     "at": "2026-11-12T00:11:00.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "answers": "4c9bb445ade5830c25c9b89fbad12d9b600c0efeb673be0e4b90ec86fb8a98c1",
+     "for": "4c9bb445ade5830c25c9b89fbad12d9b600c0efeb673be0e4b90ec86fb8a98c1",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677"
+    },
+    "signature": "487e5cd2d1918f19648731b5da14346ec875911bf827ff907441760fec48e28f9e6ce87ad1d0058af38b66deb8cdb242e091ce6a017fbcecb29587634ec81803"
+   },
+   {
+    "hash": "bceed9d0850411914a10f0665036df12163ed12058ebd67010767630f32f5a7e",
+    "type": "transfer",
+    "state": {
+     "amount": {
+      "value": "24",
+      "unit": "KES"
+     },
+     "at": "2026-11-12T00:12:00.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "to_owner": "2890d88dacd8b5b9631f374a4c4f0969754f7fd05fdb529a2917570129de3cc8",
+     "for": "4c9bb445ade5830c25c9b89fbad12d9b600c0efeb673be0e4b90ec86fb8a98c1",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "21aede6ce94d709b0639df721cd51f2d22a1f5080563aa90fd976b8e4e3cf2ff"
+    },
+    "signature": "ee38cf3e9259fe4277f61cfb8e45b2db676094f1d5a6f1e7639cbfe5acd21ddbfa12718ad836a69897beb7d04437b53491e9b955db6f9a4fbe94009416806d01"
+   },
+   {
+    "hash": "33cfe3cf50a7b0edfe4fabecc9c485d1178f6ebf30fa34c0c56c2669e8fdd20f",
+    "type": "thing",
+    "state": {
+     "kind": "tomatoes",
+     "at": "2026-11-12T00:24:00.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "of": "29488443315f414fecfa58d9e3444ee107a2f8b48848bfd1ed3b4c65aa36633d",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "bceed9d0850411914a10f0665036df12163ed12058ebd67010767630f32f5a7e"
+    },
+    "signature": "8067f25664b164257675db018afd726ba8c1d96465e4c2e509d0936ec87edf660dbc3af6aa625a59f6f0eef12cbf7db7ae9efa855cb106c16f408c382c5aa403"
+   },
+   {
+    "hash": "9594b644d3d1c193a2df925112c4030ed62df573907d44efac97236f2f36a53c",
+    "type": "transform",
+    "state": {
+     "at": "2026-11-12T00:25:00.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "derives_from": [
+      "33cfe3cf50a7b0edfe4fabecc9c485d1178f6ebf30fa34c0c56c2669e8fdd20f"
+     ],
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "33cfe3cf50a7b0edfe4fabecc9c485d1178f6ebf30fa34c0c56c2669e8fdd20f"
+    },
+    "signature": "8fd38d560404a08863e42ff15eee22ae7b8c3112dc940e1e2d926a8d36f3b7559b4b0ff9ee842cdec6b3758212539541d34cb68dee2e8b822ac68337ff43d904"
+   },
+   {
+    "hash": "0b01b53d99db5eea855f070232df0887074cfbd816581fd17fbd1971651e8ed3",
+    "type": "thing",
+    "state": {
+     "kind": "bread",
+     "pack": {
+      "value": "1000",
+      "unit": "loaf"
+     },
+     "at": "2026-11-12T00:26:00.000Z",
+     "audience": "public",
+     "seq": 5
+    },
+    "refs": {
+     "derives_from": [
+      "9594b644d3d1c193a2df925112c4030ed62df573907d44efac97236f2f36a53c"
+     ],
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "9594b644d3d1c193a2df925112c4030ed62df573907d44efac97236f2f36a53c"
+    },
+    "signature": "92e7515dab9c5f57577c42f90db90234077503fdf6f8b91beeb834dce62abadd8d16b7373dd37d5ff95b73474236594e846a6d3fccc7393dacf0b77ab763f104"
+   },
+   {
+    "hash": "a1edd0c0b784d84f0d39cf2f8522ea743e54ba8f9eb256964a974241f13aebd7",
+    "type": "transfer",
+    "state": {
+     "amount": {
+      "value": "10",
+      "unit": "loaf"
+     },
+     "at": "2026-11-12T00:35:00.000Z",
+     "audience": "public",
+     "seq": 6
+    },
+    "refs": {
+     "what": "0b01b53d99db5eea855f070232df0887074cfbd816581fd17fbd1971651e8ed3",
+     "to_owner": "480c8d6327b66b69e6abff437cdb1454827ec133e46b68af051c217abc082b66",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "0b01b53d99db5eea855f070232df0887074cfbd816581fd17fbd1971651e8ed3"
+    },
+    "signature": "0f14f5788500f335b98860bd7e2bfcf248b12109c1e13a3b7fb3b449873f6e6a2c0d00af90dc022be941cb2ece8f7ece6a494e7fae29a6ade20b7c7de649b70a"
+   },
+   {
+    "hash": "2f097500eb404eca2030b2e466adcbae8f844b344c8af4dd23cdbfabed1e1eb4",
+    "type": "transfer",
+    "state": {
+     "at": "2026-11-12T00:36:00.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "author": "f25110ba8400cab43e79e3a8725184e9f7e467528564f463925bd25cbd48f5d5",
+     "prev": "1ba8883cc4209f4be10648c1ab03020a9aafe862eaacbbd54c5712dfd4f810ee",
+     "what": "1ba8883cc4209f4be10648c1ab03020a9aafe862eaacbbd54c5712dfd4f810ee",
+     "to_owner": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677"
+    },
+    "signature": "ed66d3536ca4d1d56bb38a046acfc0398812ff7133e4ac45733a1812669cb2447652678a4cd615c2877e7d6a74c89b3177929ab0028313e2257f0883d0fa5b07"
+   },
+   {
+    "hash": "7fce8127458144e2172552beb3733b1de08ce16527cdba13391fbdd9777da649",
+    "type": "thing",
+    "state": {
+     "kind": "maize",
+     "pack": {
+      "value": "20",
+      "unit": "kg"
+     },
+     "at": "2026-11-12T00:40:00.000Z",
+     "audience": "public",
+     "seq": 7
+    },
+    "refs": {
+     "of": "abbed91b9ecfc06e991ae94b5d6b9481ab21f377ded8db9784e143ca8a439a1f",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "a1edd0c0b784d84f0d39cf2f8522ea743e54ba8f9eb256964a974241f13aebd7"
+    },
+    "signature": "2fad9dc6dc34597f94229b84f2c54f12b2185ffdc434354d987cc31d4428b0aec88224bd1a5055a4240d500364527f01e2fa5e097aec9b3b53ebf7f7914bd602"
+   },
+   {
+    "hash": "7b34264a9b0f1bab6f8fd289bee7bb96abe58d41dd4a5fb58bd9da5731060e46",
+    "type": "promise",
+    "state": {
+     "status": "accepted",
+     "at": "2026-11-12T00:47:00.000Z",
+     "audience": "public",
+     "seq": 8
+    },
+    "refs": {
+     "answers": "e17bb84622455f12ef004db4a690736b302ee6db84f8f11d5f94762f1537888d",
+     "for": "e17bb84622455f12ef004db4a690736b302ee6db84f8f11d5f94762f1537888d",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "7fce8127458144e2172552beb3733b1de08ce16527cdba13391fbdd9777da649"
+    },
+    "signature": "5d7428e9c2c50474c83c31c7f8d1ed7335f09e0b9d4326cdf352b252b24843ea61850bca847cc3075ba21b01519ce4203b4efa84f6e4cd8c97a2a9727af2d201"
+   },
+   {
+    "hash": "d9a73d065e3d28ef75a0b251ee98735ab28977f8aec75ac81ab46b3b2e09baf5",
+    "type": "transfer",
+    "state": {
+     "status": "accepted",
+     "at": "2026-11-12T00:50:00.000Z",
+     "audience": "public",
+     "seq": 9
+    },
+    "refs": {
+     "answers": "2f097500eb404eca2030b2e466adcbae8f844b344c8af4dd23cdbfabed1e1eb4",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "7b34264a9b0f1bab6f8fd289bee7bb96abe58d41dd4a5fb58bd9da5731060e46"
+    },
+    "signature": "896a5ef0ec6cc4c3a2c0e76b477ddc1ff795d36594ebcc89db1a156d443419b54bebdcc39b79f27255bb6bfd2a3905dd5b4e3e7b0ee78b8382e05dc76a68b90c"
+   },
+   {
+    "hash": "93abc17d322adf6ade25cd20177c35dbfa30fe27de3c882e7c5b8f2a4e6de07e",
+    "type": "transfer",
+    "state": {
+     "status": "accepted",
+     "at": "2026-11-12T01:11:00.000Z",
+     "audience": "public",
+     "seq": 10
+    },
+    "refs": {
+     "answers": "2f097500eb404eca2030b2e466adcbae8f844b344c8af4dd23cdbfabed1e1eb4",
+     "author": "88ff7a2814892261bc3080a1e02570eb410e06c20606b38ebbc5c44492236677",
+     "prev": "d9a73d065e3d28ef75a0b251ee98735ab28977f8aec75ac81ab46b3b2e09baf5"
+    },
+    "signature": "ecb3a7042fd9e89fbc902ba9c01dbb1e1e62253dce55cfac3d248348bbb9bd64d9e60bf17d48d3e2561222d413b73bc60b479fee5b0c8cbd7162ebc55b970e05"
+   }
+  ]
+ ]
+}

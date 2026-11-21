@@ -4,7 +4,7 @@ console.log('\n=============== c1e vote')
 const P = w.people, alice = P.alice, bob = P.bob, carol = P.carol
 const cafe = w.blocks.find(b => b.type === 'actor' && b.state.kind === 'circle')
 const shareKind = w.blocks.find(b => b.type === 'thing' && b.state.kind === 'share' && !b.refs.of)
-const shares = w.blocks.filter(b => b.state.lot)
+const shares = w.blocks.filter(b => b.state.marks && b.state.marks.some(m => m.scheme === 'lot'))
 const counter = w.person('counter', 'agent')
 const rule = w.w(bob, 'thing', { kind: 'schema', target: 'observe.ballot', name: 'one share one vote', fields: { choice: 'hash' }, grounds: { event: 'ballot cast by a holder of a cafe share', confirmers: [counter.id] } }, { as: cafe.hash }, 'vote rule schema (counter named in grounds.confirmers)')
 const rec = w.w(bob, 'thing', { kind: 'vote', name: 'Open a second shop?' }, { under: rule.hash, as: cafe.hash }, 'vote record')

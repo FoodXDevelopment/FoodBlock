@@ -4,7 +4,7 @@ const { camel } = require('./table.cjs')
 
 const ARG = { text: 'String', int: 'Int', bool: 'Bool', block: 'JSON', object: 'JSON', blocks: '[JSON]', strings: '[String]', json: 'Any?', time: 'String', suite: 'String?', arrivals: '[String: String]?' }
 const RESULT = { text: 'String', bool: 'Bool', int: 'Int', block: 'JSON', object: 'JSON', blocks: '[JSON]', strings: '[String]', refusals: '[JSON]', json: 'Any?' }
-const AS = { text: 'String', block: 'JSON', object: 'JSON', blocks: '[JSON]', refusals: '[JSON]', strings: '[String]', bool: 'Bool' }
+const AS = { int: 'Int', text: 'String', block: 'JSON', object: 'JSON', blocks: '[JSON]', refusals: '[JSON]', strings: '[String]', bool: 'Bool' }
 
 function param(a) {
   const t = ARG[a.type]

@@ -1,0 +1,201 @@
+{
+ "row": "extra",
+ "label": "pot (e16-pot-hidden-by-not-read)",
+ "source": "the vector world of \"a payment for several promises\" before its split parts were migrated (money, not amount: the payment is not read)",
+ "cause": "pot: a block held and not read that names the pot hides it (not_shown, the block in lacks) (oracle fixed: 3b-7, Answers: ownership, pot)",
+ "op": "pot",
+ "args": [
+  {
+   "hash": "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133",
+   "type": "promise",
+   "state": {
+    "terms": {
+     "price": {
+      "value": "4.5",
+      "unit": "GBP"
+     },
+     "expires": "2026-10-20T00:00:00.000Z"
+    },
+    "at": "2026-10-15T12:03:34.000Z",
+    "audience": "public",
+    "seq": 2
+   },
+   "refs": {
+    "from": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+    "to": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11",
+    "what": "a69af77022f9ea2fd4fb83799cba9a49ee9797d1712a4d04603ef0bbaf15ef0b",
+    "author": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+    "prev": "a69af77022f9ea2fd4fb83799cba9a49ee9797d1712a4d04603ef0bbaf15ef0b"
+   },
+   "signature": "f0ad20e2372846d9038165632c87007ad5ea8d7f8f7b1a21bfc1a1e86b0c62798306dd591afe5c978f2070b2f20afcd14491683e11e4f1da295e1ac384f63c06"
+  },
+  [
+   {
+    "hash": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-15T12:03:31.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b65700321006b8b19189a5b2f99888a4dffa3ae0393d23d49b8e166c513487e041fbaff8ec5",
+     "public_key_encrypt": "0d357efd52c9f55929a0e1b62733359f3dcb8a95745816c308e7e494123cdb50"
+    },
+    "refs": {},
+    "signature": "5dd8b7c879780a8e1b066ebbeabfe00a61603b033f526d9451923cb63d9cc0635c854e93a7756a44de79c60d667c31fdb5f3111405013e6554a8f955dfe34e0b"
+   },
+   {
+    "hash": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-15T12:03:32.000Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b65700321006f8fa50a17097ea77ea1f6bd9474a055dec828e8377bd3518637c3a009756cb3",
+     "public_key_encrypt": "e0fd77e0c57529beb1bdec3f359a2153d458ef3680879570f15ba9e9502a7b46"
+    },
+    "refs": {},
+    "signature": "25d4f4f7cc9241f84a995737926859692c8e3e50cd17aa1039326c2618619e5daa9c53628a77135fcf9d3db6cc33b0dc7a6b6268b3783fa9b821c6cc44431a01"
+   },
+   {
+    "hash": "a69af77022f9ea2fd4fb83799cba9a49ee9797d1712a4d04603ef0bbaf15ef0b",
+    "type": "thing",
+    "state": {
+     "kind": "eggs",
+     "at": "2026-10-15T12:03:33.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "author": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "prev": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c"
+    },
+    "signature": "a5d9eab4982c6a1534e987b93589ab36f37db5c101864618f6fb3f06312e76bbbb4f1616400e73be3b35514e3ad9e54e4d7ff33623194592273044a610f3a804"
+   },
+   {
+    "hash": "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133",
+    "type": "promise",
+    "state": {
+     "terms": {
+      "price": {
+       "value": "4.5",
+       "unit": "GBP"
+      },
+      "expires": "2026-10-20T00:00:00.000Z"
+     },
+     "at": "2026-10-15T12:03:34.000Z",
+     "audience": "public",
+     "seq": 2
+    },
+    "refs": {
+     "from": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "to": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11",
+     "what": "a69af77022f9ea2fd4fb83799cba9a49ee9797d1712a4d04603ef0bbaf15ef0b",
+     "author": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "prev": "a69af77022f9ea2fd4fb83799cba9a49ee9797d1712a4d04603ef0bbaf15ef0b"
+    },
+    "signature": "f0ad20e2372846d9038165632c87007ad5ea8d7f8f7b1a21bfc1a1e86b0c62798306dd591afe5c978f2070b2f20afcd14491683e11e4f1da295e1ac384f63c06"
+   },
+   {
+    "hash": "027eb9e1753787f18ad6e56978a68a705d99bb192da5c1626d59371b9a6dbf70",
+    "type": "promise",
+    "state": {
+     "terms": {
+      "price": {
+       "value": "3",
+       "unit": "GBP"
+      },
+      "expires": "2026-10-20T00:00:00.000Z"
+     },
+     "at": "2026-10-15T12:03:35.000Z",
+     "audience": "public",
+     "seq": 3
+    },
+    "refs": {
+     "from": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "to": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11",
+     "what": "a69af77022f9ea2fd4fb83799cba9a49ee9797d1712a4d04603ef0bbaf15ef0b",
+     "author": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "prev": "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133"
+    },
+    "signature": "daf565498aa6b331f1003300ce69607023784675ab1bfd57aa4aca3848c7e3ffe89a424cd6c7c171907d00efbcb9fbceaec3bb6bb15ac75ef486bff2346b6b09"
+   },
+   {
+    "hash": "976c1d18fad18fe4194e7b6e7f6098f64282c9f9de688c825280eab05c100530",
+    "type": "promise",
+    "state": {
+     "status": "accepted",
+     "at": "2026-10-15T12:03:36.000Z",
+     "audience": "public",
+     "seq": 1
+    },
+    "refs": {
+     "answers": "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133",
+     "for": "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133",
+     "author": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11",
+     "prev": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11"
+    },
+    "signature": "5ad79cd3f3846c483c363b83a0ba8f3a6677fd2b61510db4b8a7426c20510e4d487fc76cfdf017e23106a8ee837145d47a78e845f93d76b31235bcd334e06303"
+   },
+   {
+    "hash": "6ce3ef81e3b7f3e2fa052c674aff03236e5bd8721a5d8121bfc875851d683289",
+    "type": "transfer",
+    "state": {
+     "split": [
+      {
+       "for": "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133",
+       "money": {
+        "value": "4.5",
+        "unit": "GBP"
+       }
+      },
+      {
+       "for": "027eb9e1753787f18ad6e56978a68a705d99bb192da5c1626d59371b9a6dbf70",
+       "money": {
+        "value": "3",
+        "unit": "GBP"
+       }
+      }
+     ],
+     "at": "2026-10-15T12:03:37.000Z",
+     "audience": "public",
+     "seq": 2,
+     "amount": {
+      "value": "7.5",
+      "unit": "GBP"
+     }
+    },
+    "refs": {
+     "to_owner": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "for": [
+      "027eb9e1753787f18ad6e56978a68a705d99bb192da5c1626d59371b9a6dbf70",
+      "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133"
+     ],
+     "author": "f6dba20e5a4616b469fa4868de6839098a94d1fd4aed5b4065811b5917e93a11",
+     "prev": "976c1d18fad18fe4194e7b6e7f6098f64282c9f9de688c825280eab05c100530"
+    },
+    "signature": "f0cf0e17f0b46f695b514c4a9cfba0353522df8a10b9a04a3c7b5b56243afa3a7cdd15d5418ad1aa66eb046893fb8c5ba29f6dd0a63e03b73661c08bf669b605"
+   },
+   {
+    "hash": "5d2f7ed1b85300de6528bc1c186230d11c2d022d91fc6d0ddf4e76cd0dc52720",
+    "type": "transfer",
+    "state": {
+     "status": "accepted",
+     "at": "2026-10-15T12:03:38.000Z",
+     "audience": "public",
+     "seq": 4
+    },
+    "refs": {
+     "answers": "6ce3ef81e3b7f3e2fa052c674aff03236e5bd8721a5d8121bfc875851d683289",
+     "for": [
+      "027eb9e1753787f18ad6e56978a68a705d99bb192da5c1626d59371b9a6dbf70",
+      "4fc5cc77258c31427b46c4067357f33fb12b69d5fbd046ce2a12b872e5ab7133"
+     ],
+     "author": "c2e18a16178421b2d5a31941e05f04b257e1cffeaf80f1eef05b0a2eac554d6c",
+     "prev": "027eb9e1753787f18ad6e56978a68a705d99bb192da5c1626d59371b9a6dbf70"
+    },
+    "signature": "cc26a4f271a7cc15b7cb832e40b71032ab752bb3ca991c6e8f26be8458e33f59c21913b268418dd6d221d798bbd1b3909b8c338ffa15918696d88193a05b0c0f"
+   }
+  ],
+  null
+ ]
+}

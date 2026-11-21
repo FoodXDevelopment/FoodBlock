@@ -244,9 +244,9 @@ trace('forward from the Green Acres lot', 'GA-285-B', 'forward')
 trace('backward from the fillets', 'HF-285-1', 'backward', 'The catch, the landing and the sale.')
 trace('forward from the tomatoes', 'CM-RX-0001', 'forward', 'A lot received from an exempt source: one row, the receiver\'s own.')
 // A recall: the regulator may ask for blocks whose marks match, and the holder answers inside a day. A recall is an ordinary grant
-// (profile section 7): scope.acts pull and scope.until; the answer time and the marks it covers are fields of a schema the holder names.
+// (profile section 7): scope.types pull and scope.until; the answer time and the marks it covers are fields of a schema the holder names.
 const recallFields = say('schema: recall answers (metrofresh)', 'metrofresh', 'thing', { kind: 'schema', name: 'recall answer time and marks', target: 'grant', fields: { answer_within: 'text', marks: 'list' } })
-const recall = say('recall grant: Metro Fresh to the regulator', 'metrofresh', 'grant', { kind: 'recall', scope: { acts: ['pull'], until: '2027-10-14T00:00:00.000Z' }, answer_within: 'PT24H', marks: [{ scheme: 'tlc', value: 'F-285-A' }, { scheme: 'tlc', value: 'DC-SK-1001' }] }, { to: ids.regulator, schema: recallFields.hash })
+const recall = say('recall grant: Metro Fresh to the regulator', 'metrofresh', 'grant', { kind: 'recall', scope: { types: ['pull'], until: '2027-10-14T00:00:00.000Z' }, answer_within: 'PT24H', marks: [{ scheme: 'tlc', value: 'F-285-A' }, { scheme: 'tlc', value: 'DC-SK-1001' }] }, { to: ids.regulator, schema: recallFields.hash })
 const filter = { marks: { scheme: 'tlc', value: 'F-285-A' } }
 const pulls = [
   { name: 'a pull by lot code selects the lot', filter, block: L1, expect: true },
@@ -271,7 +271,7 @@ assert.deepEqual(negatives[0].codes, ['undeclared_field'])
 for (let i = 0; i < held.length; i++) assert.deepEqual(fb.refusals(held[i].type, held[i].state, held[i].refs, held.slice(0, i)).map((x) => x.code), [], `${blocks[i].name}: the write check`)
 
 fs.writeFileSync(FILE, JSON.stringify({
-  $comment: 'FoodBlock profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event\'s own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event\'s block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator\'s grant and the pulls it allows. Test keys: never use them for anything real.',
+  $comment: 'FoodBlock profile vectors for EPCIS 2.0 and FSMA 204 (spec/patterns/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event\'s own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event\'s block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator\'s grant and the pulls it allows. Test keys: never use them for anything real.',
   context: 'https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld', keys, parties: Object.fromEntries(Object.entries(PEOPLE).map(([who, p]) => [p.pgln, { signer: who, id: ids[who] }])),
   schemas: Object.fromEntries(Object.entries(schemas).map(([who, b]) => [who, b.hash])), blocks, events, folds, negatives, traces, recall: { grant: recall.hash, filter, pulls: pulls.map((p) => ({ name: p.name, block: p.block.hash, expect: p.expect })), answer_within: 'PT24H' }
 }, null, 1) + '\n')

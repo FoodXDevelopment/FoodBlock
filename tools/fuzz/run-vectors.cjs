@@ -5,9 +5,10 @@ const fs = require('fs'), path = require('path');
 const { spawnSync } = require('child_process');
 const fb = require('../../spec/oracle/fb.cjs');
 const V = JSON.parse(fs.readFileSync(path.join(__dirname, '../../spec/fuzz-vectors.json'), 'utf8')).vectors;
-const bin = path.join(__dirname, 'target/release/fbfuzz');
-const input = V.map(v => JSON.stringify({ op: v.op, args: v.args })).join('\n') + '\n';
-const rust = spawnSync(bin, ['serve'], { input, encoding: 'utf8', maxBuffer: 1 << 28 }).stdout.trim().split('\n').map(JSON.parse);
+// the Rust core through its door (the WebAssembly build the JavaScript SDK carries: the same core); the oracle through its own door
+const { call } = require('../../sdk/javascript/src/core.cjs');
+const rust = V.map(v => { try { return { ok: call(v.op, ...JSON.parse(JSON.stringify(v.args))) }; } catch (e) { return { error: e.kind, message: e.message }; } });
+void spawnSync;
 const codes = l => [...new Set(l.map(x => (typeof x === 'string' ? x : x.code)))];
 const subset = (got, want) => want && typeof want === 'object' && !Array.isArray(want) ? Object.entries(want).every(([k, w]) => subset(got && got[k], w)) : JSON.stringify(got) === JSON.stringify(want);
 const read = (v, got) => {
@@ -24,7 +25,7 @@ V.forEach((v, i) => {
   let oracleOk = true, oracleSaid = 'skipped';
   if (v.oracle !== false) {
     try {
-      const o = require('./diff.cjs').OPS[v.op].oracle(...JSON.parse(JSON.stringify(v.args)));
+      const o = fb.door(v.op, ...JSON.parse(JSON.stringify(v.args)));
       oracleSaid = JSON.stringify(o).slice(0, 120);
       oracleOk = holds(v, v.op === 'promise_stage' ? o : o);
     } catch (e) { oracleOk = false; oracleSaid = 'throws ' + e.message; }

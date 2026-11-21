@@ -1,0 +1,6331 @@
+{
+ "about": "readings/readback: each case the block, the blocks held and the person it is read to (`to`), and the answer, from the oracle's stage 7 read-back stories (node spec/oracle/stage7/export-readback.cjs). Blocks are named by their place in `blocks`.",
+ "blocks": [
+  {
+   "hash": "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31"
+   },
+   "signature": "cb098eef73a7755a7123fb7ae6b29b3987d47ad4b43dbe57bc51fff37fbb3b3a91920bc99cb3bca9e492371aece220e6babdaf80900d6dfd898ac5756611440a"
+  },
+  {
+   "hash": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100daf3c468963d0f2d6faebd9c6f3e29e88956dd4e9fed5eef4450f6e14d81da29"
+   },
+   "refs": {},
+   "signature": "1b8ab50b81698311e3e99b8d0787e69529e64a003acb4b70599eaa54687acd0eabded969577781acf974ed9208853c37aa10303ea3d0a87baf31165e4ea79c0e"
+  },
+  {
+   "hash": "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-01T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Harry"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "updates": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+   },
+   "signature": "7750a5687223471292b23262570b44e02e2062659d9f9c1250c3f36e2e722365a9dc7fa09e18843a82549195d40d99316d3ea912ace1e97d4dc6c7f5c6f21407"
+  },
+  {
+   "hash": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100d7c69301067ea5ac070caa4af94d7810523792b0851e1d567887e4a68dacf45c"
+   },
+   "refs": {},
+   "signature": "db4ffbf5b6559bf13525685366d360d076696f4313356838731a5d045d15118ba266ecf75d93f8468d948ffa2b265d3dbb3a38af489a72f058f9b7eb33116607"
+  },
+  {
+   "hash": "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-02T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Amara"
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "updates": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a"
+   },
+   "signature": "fc9bb60b3c0a1053b2d944d3c7f74c3ee3fce48ec71ff3dce7dddb2716964af1b9fd80cbc87081b8f4be24858de87133bbd75f36735583fcacdb62acc265c005"
+  },
+  {
+   "hash": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100b8478e9e10c538ee931098d5a858ae4b43189a386f305e05dd0454b72dfa6846"
+   },
+   "refs": {},
+   "signature": "a98ad8ffb44f9c37880f207e0ddf6d11f226b80a172b712935f1973b367fcc81a3864f5b361a1597492b818e7ea0f69af10e60b54829e6ab4d69f66074c76700"
+  },
+  {
+   "hash": "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-03T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "FoodX"
+   },
+   "refs": {
+    "author": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "prev": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "updates": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901"
+   },
+   "signature": "a63d2a5f628ad42cfc6e5c9660d9edba5aa598de0dae6b663589e5240e25bf4a20a8c760030995d6d7e1b6339154f2e5f7ab8a702b896924b19a64314ead8f03"
+  },
+  {
+   "hash": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100da3c8c477b1060522b5a90de2d244f0f89ac6026afdadbfe4a452fa186b07f8c"
+   },
+   "refs": {},
+   "signature": "42748f2620133e6c532147ea2b8e72e23887cf0ca2481d57b1921de58876b2250044d0d953b7bfba3b134c9bbcaa2140823bf40f66620633e9e82c9f34e54a08"
+  },
+  {
+   "hash": "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-04T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Wanjiru"
+   },
+   "refs": {
+    "author": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+    "prev": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+    "updates": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+   },
+   "signature": "d946fd82994c2205ed9aa1ce1bbae80fd1424bb318f810d791115f8d4defb8f94f9ea8462a2034b30b5d72390552c8d3a33c2f89c0b39c720c76b97de5aef30e"
+  },
+  {
+   "hash": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b657003210068301dfda1eff125ad9502e8c01e158c0fb0b572ba0a3694e6a8f131922f3250"
+   },
+   "refs": {},
+   "signature": "4bc4834c9889e6de8797a6847bd08d22b40d48925511133b125bd19a6e923019eed34fd86f302a44f3d7cece8defd0c1a5ba106821b46342c7760168bfd60103"
+  },
+  {
+   "hash": "812a132a0b285aa60344e270e19e728f833bf4def0e693743f95278dcb2483c5",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-05T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Leila"
+   },
+   "refs": {
+    "author": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+    "prev": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+    "updates": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9"
+   },
+   "signature": "ea7b3f6039558113231ac61d01d18665381f3cf1ddb7d20238831282825e83a0850ff3c3cd8ecf28e8dfd9a940dd5464c491c8c76af77981fadd3c9c165fd40b"
+  },
+  {
+   "hash": "5d3dbb632b339c400b56538b0d6fa0dbbbf198a43e6af1effdb13e5b3aeb4aeb",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-06T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "flour"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7"
+   },
+   "signature": "1d7a4de530f4703043343afb740b42aa2dcfa3d01ba539024b325acd6b14b5ed5a03cff9b6191d978dd6a30ab84fdcbb803003c6a5ac28c4b6ceda540e114202"
+  },
+  {
+   "hash": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-07T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "name": "L7",
+    "pack": {
+     "value": "10",
+     "unit": "sacks"
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "5d3dbb632b339c400b56538b0d6fa0dbbbf198a43e6af1effdb13e5b3aeb4aeb",
+    "of": "5d3dbb632b339c400b56538b0d6fa0dbbbf198a43e6af1effdb13e5b3aeb4aeb"
+   },
+   "signature": "bdce1cf0d736ab7cfe8287b2db33b921d7d2da0795a372444d3e7eb2a82ded416a25d16504d9ef01b303b38b3ffca1258bce7a06cdf958d9a38d4bab434e3c01"
+  },
+  {
+   "hash": "aa0c665efc83273b3c12b21cc707722350a48e67071edcb2750a524ea0f71b93",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-05T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af"
+   },
+   "signature": "c4d2916d528df95bcbe41adcf659f41d76a3079943b160b39fa76a76b3d61cee08c89d1918983649ebfa82280d3f7b887dc5e04fb0c156e2c0b27680d9f05702"
+  },
+  {
+   "hash": "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-01T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Amara"
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "updates": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a"
+   },
+   "signature": "f69f609f87ca4abb3afaafe68f4b3cce3cfb64b432eea847d26aa80d23e97da1351bd39dc2fafc566a71c692ee793b84cad000a1f3f87628477a5a438155d80e"
+  },
+  {
+   "hash": "cf01ae03a6db9c7c6cdf9cc2e6208e7a4cf913b07425049cc94a6c5b22d0e8d7",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-02T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "FoodX"
+   },
+   "refs": {
+    "author": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "prev": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "updates": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901"
+   },
+   "signature": "7f405b3402d59c3a43b883169a14f3869caa9731e248867ac42ddda316a83abb907e0bda7e0b5c8b6bae5b011ba2d12c6a4a380b437e20c7d5c2aa4eae790b04"
+  },
+  {
+   "hash": "1bcdcbf7df33a4c35cec3f6c798d7a41bcd81aea8d2ffe2522bc161b235f2aaa",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-03T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "name": "flour"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+   },
+   "signature": "5041f20305db00e05c6c2302adc79ea217943476110470726e696a314a77bee5633119c5d2c35fbba1cd5af0b9973efb4882cdb9f4a850e757b4380447b9be0f"
+  },
+  {
+   "hash": "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-04T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "L7",
+    "pack": {
+     "value": "10",
+     "unit": "sacks"
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "1bcdcbf7df33a4c35cec3f6c798d7a41bcd81aea8d2ffe2522bc161b235f2aaa",
+    "of": "1bcdcbf7df33a4c35cec3f6c798d7a41bcd81aea8d2ffe2522bc161b235f2aaa"
+   },
+   "signature": "3cb63821260688f029f57fbcc655c9d8f2d05f34eda8d87147d09e517b67cbd4f629c9a7c47befb11aaeb9755275a324f3da676385d7337b10591dfd568cdc08"
+  },
+  {
+   "hash": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-06T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005"
+   },
+   "signature": "12f74953fddb6911bf2df17fee6503726aaa04683f271bfb17c0443ac88d913ed62874f88dc83f32d4dcd799e8e401fb16d70736ad9e123c6cd07535d9a5f802"
+  },
+  {
+   "hash": "f5be33043b0d1ace60f0cc3cc6e48ce5963cc403bad016d84bd1a09c05a84b82",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-03T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Leila"
+   },
+   "refs": {
+    "author": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+    "prev": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+    "updates": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9"
+   },
+   "signature": "9388a0bc6024c0460c5818100285f722db5603be7cc99f5e2d9aed31798b57c06401eacc5f3677981d98a591cbe6ade384b30700ff040bc8eea0516b9704be00"
+  },
+  {
+   "hash": "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-04T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "flour"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7"
+   },
+   "signature": "d2a79c6f2c6df480d8a1e8ac989f6f503276bc5e96066622f9e3e6075191cf7403310a4f4457a06dc44ff239b88329ae5c12eccfe84cf8e17188dbbbe7726605"
+  },
+  {
+   "hash": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-05T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "name": "L7",
+    "pack": {
+     "value": "10",
+     "unit": "sacks"
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5",
+    "of": "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5"
+   },
+   "signature": "dfdfb135a719b305866e5ef72e3de9037d81dae95379217be72702b5d19d17e6b658cf677f39b91a03d58664fd7a451a5650534e29232d4e37624315e32d180e"
+  },
+  {
+   "hash": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-07T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+    "what": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005"
+   },
+   "signature": "4df5fc42bf0b586f303af59c3a865317a8b3777f57bd369676da8777efe6111441cb6c8d79e9872c2f43c08e85c93f2821ecaa8efd1a2ca4127280d1e67e2a0f"
+  },
+  {
+   "hash": "f6b985df1bb254f5e21a84a1f804334235ef3cfb343f682c6c1d382374b9b01e",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "status": "accepted"
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+    "answers": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+    "for": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551"
+   },
+   "signature": "da852c210dc679d0abe58bf85a6f086cadee6df6d565341789ddccd3d8eb25d015ab4679cf8d5a525711492c543420b4e648ec6d806364489d32ea60247b4603"
+  },
+  {
+   "hash": "a70479a0c5053289a292be3a56bad64e1ab7085e057211ad7b13234f2cb5c350",
+   "type": "grant",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "kind": "tool",
+    "scope": {
+     "types": [
+      "promise",
+      "observe",
+      "transfer"
+     ],
+     "on": [
+      "043cc172479f09a64fb7e99a6133206686ce5096391dbbc14a293c7f0c4a3db3"
+     ],
+     "parties": [
+      "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+     ],
+     "limit": {
+      "value": "210",
+      "unit": "GBP"
+     },
+     "clocks": {
+      "names": [
+       "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+       "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+      ],
+      "needed": 2
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "043cc172479f09a64fb7e99a6133206686ce5096391dbbc14a293c7f0c4a3db3",
+    "to": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+    "meter": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+   },
+   "signature": "ace7229d4297f87ffda8de734537eaf33251d01c72623797aa8be4c632a863931c714e2fa10b9d8b3255c71720a51fa5f025fdda5165799c1e599d3c48280f01"
+  },
+  {
+   "hash": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100fd3d107c39369da5c251afed4c433696a310479bd4140016866c5557f815f69d"
+   },
+   "refs": {},
+   "signature": "754ad08b7e09dd2f6541e4946bef7e133a056ed72307e501a2ac5a448fd89c8efafc02f2a682cc0f43dffb6a0ba50986f2f077d801aaa068f0e0e49a22f7cc01"
+  },
+  {
+   "hash": "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-02T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Amara's AI"
+   },
+   "refs": {
+    "author": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+    "prev": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+    "updates": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640"
+   },
+   "signature": "432f02b19a00582791f83e6265355070f71dc989308e91f06dbc787d6ca17ea919c969495c8f0baebd2bfd7b585b6f6601de427ace78c9142d7345ba441f1700"
+  },
+  {
+   "hash": "6587bfd7f8ea6157ba02579034abb2288805bab73a6b0f5cdae11ab1468f9974",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-05T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Harry"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "updates": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+   },
+   "signature": "957a88c3c22f88e5395f0d22421087ac7c4e71976b53e60a0a67d2cc10bdb51caacc70786bb9241283dc67dbf3cfc12a411c8ec359bdd9cf629d7e6f3669360b"
+  },
+  {
+   "hash": "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-06T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "flour"
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3"
+   },
+   "signature": "0a7ef1a995850112ee76749017c75decd90c38df3daacfdc7ed0b26c12ef4af9c929df62e12001d685eda425172b8f99e9fb98f11271174582c4a4c28b6a6b01"
+  },
+  {
+   "hash": "043cc172479f09a64fb7e99a6133206686ce5096391dbbc14a293c7f0c4a3db3",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-07T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "terms": {
+     "quantity": {
+      "value": "10",
+      "unit": "sack"
+     },
+     "price": {
+      "max": {
+       "amount": {
+        "value": "21",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "sack"
+       }
+      }
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f"
+   },
+   "signature": "832b35cb53cda4026a8c2209119f632338f23441099ddc5ac7a7e658eb29c321946e1e580976195398efadcfa55cdb89c3ca154319ece8b17ddb5d2d6e4dbf09"
+  },
+  {
+   "hash": "24fe3141adc82d7a01c01b192ec93ff4a96b6e6d9846746d74bb3eb4bfce0fdf",
+   "type": "transfer",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "to_owner": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a"
+   },
+   "signature": "f30ffb695273d58f3634ffe3127b5e2d7b47d3943a2904a5e99b5bc31f55c288de4c5ae853b0aecd5528fda3cec65a825d325ee062b439023abae4395a22090d"
+  },
+  {
+   "hash": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b65700321005b616cc2f5d3929703d6ff11b41a3b5fbee1fb32d4a6a4877922bb2291897b9e"
+   },
+   "refs": {},
+   "signature": "6b3d1e600d17556259c252fc192ed540a980089501c01d893bab183ddb670e03e0aee4eba4d27c41833782a1931c0c4bda3406cc4544846301965eb35189eb07"
+  },
+  {
+   "hash": "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-03T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Gita"
+   },
+   "refs": {
+    "author": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+    "prev": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+    "updates": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33"
+   },
+   "signature": "608dbbc60a55f0c52bee4532f1c132770daa13ff584ceef455ba5c7c8e8c498ca828cf4ff70834c92d21d1bba729ceb80c4f0fe6ffb74047e35bc4efa4bad001"
+  },
+  {
+   "hash": "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100f7f7028b679fbea666233b422f374b0e46e9c07008ff25e42cb1a2905771dbe6"
+   },
+   "refs": {},
+   "signature": "0330b222dbb945eb2452df8457dbf6745305146df39f624a401c68a2eba8dc92e1449ff522e5537017493ddf48e7dce6b829890ff2f4a09fb40228c9d0fe2809"
+  },
+  {
+   "hash": "2f08e67981120fa4bdec210edd93c7c438842ea6ad10f745f5d0b09264ce4d00",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-04T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Sam"
+   },
+   "refs": {
+    "author": "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+    "prev": "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+    "updates": "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e"
+   },
+   "signature": "c9a68388a24c83878849e86252e475205fbf6d01ca47fca405ff11652f04d79c0a87b3136e9c57608c95cd25901dfb731619f7cde11a5c77373cf5c17e79ba05"
+  },
+  {
+   "hash": "713707a9599136586e71170506442067d8b55650520b3a60395d88c498c1fb05",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-06T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "FoodX"
+   },
+   "refs": {
+    "author": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "prev": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "updates": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901"
+   },
+   "signature": "5edb42e307a7bf8dbf0d92b01fd6d1c857c129b32ce7f1ad88314a4463610b94d8291dbb939df716ca15cd33292b88d2de658c0ec487f69257245591718eb807"
+  },
+  {
+   "hash": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-07T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "flour"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7"
+   },
+   "signature": "c5e154ee9a970d1d5544e7e7df896e2132310ac1631793901babab949a626ebaa639d69a42ea7312456c817fa7e809eefa3939981f8fefb26397e64505c1a608"
+  },
+  {
+   "hash": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "name": "L7",
+    "pack": {
+     "value": "10",
+     "unit": "sacks"
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+    "of": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+   },
+   "signature": "31996ccb3ff6ac2f1e8c9a4e3bc844a24d8a1f0996353bf369677cdf009301a7f24e9c6560088175911670e02afcc0b824b28dd834e65049ce554c3595d0dd0b"
+  },
+  {
+   "hash": "ac4a6c8151b7aee0156a2235004ccac28613dc998964c25c0beb6afb90930eb2",
+   "type": "transfer",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "status": "accepted"
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+    "answers": "24fe3141adc82d7a01c01b192ec93ff4a96b6e6d9846746d74bb3eb4bfce0fdf"
+   },
+   "signature": "7cdd042460abeb322e0124473db8668d48c010b33c0305dafe6ebeee0212261f963efd673f88a4d2e121b742a9bf2b52f7449e437d3f73d24dd6b644dd67170a"
+  },
+  {
+   "hash": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "29d36d5a77be337633bf7797de33d2b7729f99c67461acda02ba060afabc0e5f90e22b354b47ece32545ee0d2dac178b617e76f7d9c270ab446ec6cf19ea8b0b"
+  },
+  {
+   "hash": "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+   "type": "transfer",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "to_owner": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "to_holder": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33"
+   },
+   "signature": "ab73fb79fa0c2d07d5287bd53fa64ced1561b1ef200702b38b5de1d3cd118e4d1963da1423f060a19b9bb0a57c203fdf1a72117adda796630a4d952439c0d70a"
+  },
+  {
+   "hash": "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "terms": {
+     "quantity": {
+      "value": "10",
+      "unit": "sacks"
+     },
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+   },
+   "signature": "0eb0648b9fa4f91a15618ede6c2867969fe646c7b5c11ae8ef1f9fadb7e6408acc79a81fbe2e418349ee51fcb520b4542ac8339b48aaf1e5e9de53704c08d80d"
+  },
+  {
+   "hash": "c24d6496fa90e090de4a955c86349e057f1fac4fd009f75befad793b3466cadf",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "quantity": {
+      "value": "10",
+      "unit": "sacks"
+     },
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+   },
+   "signature": "80450a7ecc2f5fc9adfdaba8f8ec62fac5f7d1e6ea6a5f1f70507eeb43c64f1e3ea5d6d931c44f65ce873f3f2b1e0a5e63e5fa224a066dea6984786ae4c61605"
+  },
+  {
+   "hash": "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-11T00:00:00.000Z",
+    "audience": "public",
+    "seq": 5,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "855f3ae7e84da160453ea7209c9586b18f94c3e777138f963ae1c2ceb565deee6d2a3dc3cf66627d9bdebe6ba143395713f2c32a80e73ec5c56c9b0d5455f80f"
+  },
+  {
+   "hash": "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612",
+   "type": "transfer",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "to_owner": "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e"
+   },
+   "signature": "ecd91410cdb8f72e399f0ec072c5567c488cf721b5da6496bad7a8a1bb46bd9647500f93460b6f949617ce9dce05aec6a7c5a3b2262a81288ebeb52cd2882303"
+  },
+  {
+   "hash": "44cfc0578ee377cb815b5a0c43418a005557d112e1321a7d37526749117dfe2a",
+   "type": "transfer",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "status": "accepted"
+   },
+   "refs": {
+    "author": "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+    "prev": "2f08e67981120fa4bdec210edd93c7c438842ea6ad10f745f5d0b09264ce4d00",
+    "answers": "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612"
+   },
+   "signature": "504d516d90aee57e011edbe876ff31a0d086ba7ce9466026eab572ffd1193be4b2f12f81390fadd707479385a065abc71d88b5e6898a7ff37d12db62727a0700"
+  },
+  {
+   "hash": "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "4a88e42ede9c3c1430146d6ae86edaf764f5b56b329fed95fb79f668ac0af423b3baf67912ffa14d14c01c87fba6214a017c64c6338a6a3ca3752497f1217209"
+  },
+  {
+   "hash": "301073a5ee0cf2f0473cd18381a9774064abaf90b164a23f252776c57c0e146d",
+   "type": "observe",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "status": "declined"
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+    "answers": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54"
+   },
+   "signature": "0a1b00bf22c90dbdd2b48f7839dc529f78dbb353b96fbbc8ca9cb44ccab33120f6cb0682bf7150cf2fe3ef00c574ecb93682ea921b49f6c20bd20c179a902507"
+  },
+  {
+   "hash": "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-04T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "terms": {
+     "quantity": {
+      "min": {
+       "value": "80",
+       "unit": "kg"
+      },
+      "max": {
+       "value": "100",
+       "unit": "kg"
+      }
+     },
+     "price": {
+      "min": {
+       "amount": {
+        "value": "1.10",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "kg"
+       }
+      },
+      "max": {
+       "amount": {
+        "value": "2.10",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "kg"
+       }
+      }
+     }
+    }
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+    "from": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32"
+   },
+   "signature": "b70d238b233a6282e0e1e8a2e49f1a1189bbb96d2004ffb419fa76043be395e7e890dff00dcc142946b3392cbb3dcff6d5b18701c9f13c088642f287e56e1908"
+  },
+  {
+   "hash": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b657003210084414dbbcd1d160d83462577a1082ba5262ed744440c1a933e0b61d3e00780b6"
+   },
+   "refs": {},
+   "signature": "e572e7fe623b0f32463b7333bf669826ef100a62d5a0966c111e0074d3abc2fc01ee776a95fcd96727f11afcc56df67ed9d6dec91d6e2ea31fad20353ba95206"
+  },
+  {
+   "hash": "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-01T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Maria"
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "updates": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a"
+   },
+   "signature": "b92bb9531879e1e02de857ce55fd19d8dd6459acac1e1762b019e1d7cfac78a5191351eda085bb9d6e629711e8009ed7532500d5a526688430adfc40af14f60a"
+  },
+  {
+   "hash": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-03T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "rye"
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+   },
+   "signature": "95afa1d2c5f36b1a5ca74fc3602898aaf5a0b95b95dbcc4ebf05e51b9c003afeca182131f73403d9def2a207dfc5031f31fb3193332990f51611aa70ca0f2f02"
+  },
+  {
+   "hash": "5f4d2ad953a585c8b086c6d1e874091c70b32906c4b7be05af0c1f64390be174",
+   "type": "grant",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "kind": "tool",
+    "scope": {
+     "types": [
+      "promise",
+      "observe",
+      "transfer"
+     ],
+     "on": [
+      "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450"
+     ],
+     "parties": [
+      "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+     ],
+     "limit": {
+      "value": "210",
+      "unit": "GBP"
+     },
+     "clocks": {
+      "names": [
+       "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+       "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+      ],
+      "needed": 2
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+    "to": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+    "meter": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+   },
+   "signature": "e4fd0cac4ab6187f1045dfd9e024745f7e519d27e6db7324ad04e470f4c07cd36007d37251d740c088e11d25ed48aa1cb8e02938a6e8fd9aaa4a99ef6a46d205"
+  },
+  {
+   "hash": "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-07T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "terms": {
+     "quantity": {
+      "value": "10",
+      "unit": "sack"
+     },
+     "price": {
+      "max": {
+       "amount": {
+        "value": "21",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "sack"
+       }
+      }
+     },
+     "pay_by": {
+      "min": "P3D"
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f"
+   },
+   "signature": "a203969f5d1e2d72f4a75f047f6b1edb49fe46cab16e1b6553d0130efad7530cd86eb938dfc24be8bb8ed06a5d5231a045746a41f2552c8a0db6d4ca89c7650a"
+  },
+  {
+   "hash": "342300ce2e17454a93161492f347cc23f4369328b01af0714abc7bdd0ad2e5f2",
+   "type": "grant",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "kind": "tool",
+    "scope": {
+     "types": [
+      "promise",
+      "observe",
+      "transfer"
+     ],
+     "on": [
+      "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450"
+     ],
+     "parties": [
+      "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+     ],
+     "limit": {
+      "value": "210",
+      "unit": "GBP"
+     },
+     "clocks": {
+      "names": [
+       "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+       "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+      ],
+      "needed": 2
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+    "to": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+    "meter": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640"
+   },
+   "signature": "f3feaf1c7cd0026a660526e36d3b87df9028f46a06a7c77cd7b1746875fa5c9ab83a05beb57b7e16c51a1e8bdf6a0cd8799b51f64d6efcdcaa185373ac72aa00"
+  },
+  {
+   "hash": "4c48234462064d983e755f433a4b4b526141dd07534c20ebae59ea4de90e75fd",
+   "type": "grant",
+   "state": {
+    "at": "2026-11-07T00:00:00.000Z",
+    "audience": "public",
+    "seq": 5,
+    "kind": "tool",
+    "scope": {
+     "types": [
+      "promise",
+      "transfer"
+     ],
+     "on": [
+      "8dd83368cd9d05093ca2caf3b5e23d1535b60f001c874e25b853e896723ee9b5"
+     ],
+     "parties": [
+      "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9"
+     ]
+    }
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "8dd83368cd9d05093ca2caf3b5e23d1535b60f001c874e25b853e896723ee9b5",
+    "to": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+    "meter": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+    "what": "1e935c5729fd0e6d67700006582c4256ad0e90feaf916977c04d3c438622d54f"
+   },
+   "signature": "8e3123dd32094b1748e1e2027b42e2f73dea269cc0eb94c8348e4b025011f1ad22236e7d92d6ba0d301734112c32046a0a2bfd33973683324efaef677b63110b"
+  },
+  {
+   "hash": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b657003210011759efb18c7d4c96f8ca39728201f37d64eecfa4425ca89d00b64c278a3a4f4"
+   },
+   "refs": {},
+   "signature": "0d34ede8503bfd58f95d8b325a1b0effbc64aeccb861c06f9d1657daf294cfcc835268fe6a01ee71f782991d94b2f4d8c21513206b38a9cd5e1731f78d366f0b"
+  },
+  {
+   "hash": "77f55b4b0e64925a4463425e10ae2452dcb8fc0eb2aad3fa6bb927b530fd9cd9",
+   "type": "actor",
+   "state": {
+    "at": "2026-11-02T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "kind": "person",
+    "name": "Till"
+   },
+   "refs": {
+    "author": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+    "prev": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+    "updates": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51"
+   },
+   "signature": "c616681d6e844718e400b39a8abf34571e93df48c32570d479fd3081bbce2ca7fd9381a98e5f936597e595a674d1d0d51d8d50b01e162c48c826651a5097b703"
+  },
+  {
+   "hash": "aa133f4720101240d44b570c517f5eb660cd8f1581e1ffab6370a4442835a61c",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-04T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "name": "loaf"
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+   },
+   "signature": "779c242f387439f5bec738a6f1a7d12c674979fdd7b8095fc2b814ba4b08f99e65984fef52ecaf24181110771526193b70c3fb375e5c9ca6fa988fd563c6bc07"
+  },
+  {
+   "hash": "1e935c5729fd0e6d67700006582c4256ad0e90feaf916977c04d3c438622d54f",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-05T00:00:00.000Z",
+    "audience": "public",
+    "seq": 3,
+    "name": "loaves",
+    "pack": {
+     "value": "40",
+     "unit": "loaves"
+    }
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "aa133f4720101240d44b570c517f5eb660cd8f1581e1ffab6370a4442835a61c",
+    "of": "aa133f4720101240d44b570c517f5eb660cd8f1581e1ffab6370a4442835a61c"
+   },
+   "signature": "c2b2ee5fa057f33ef81836edd2b3c5d5e18c02161e0f24414ae1771ea96c823ba46cf9d1f84eae2fadf877ab26edb80b136796ea100aa3c21e620cf3fd9ce10e"
+  },
+  {
+   "hash": "8dd83368cd9d05093ca2caf3b5e23d1535b60f001c874e25b853e896723ee9b5",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-06T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "quantity": {
+      "value": "40",
+      "unit": "loaves"
+     },
+     "price": {
+      "min": {
+       "amount": {
+        "value": "3",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "loaves"
+       }
+      }
+     }
+    }
+   },
+   "refs": {
+    "author": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "prev": "1e935c5729fd0e6d67700006582c4256ad0e90feaf916977c04d3c438622d54f",
+    "from": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+    "what": "1e935c5729fd0e6d67700006582c4256ad0e90feaf916977c04d3c438622d54f"
+   },
+   "signature": "75c1dbb746771a09425220e05d329f0cbb49c7752777695e0baae97a79031e8f25ae3e2da42a30ee5cc1399d21d2d49bcb82c181ab1fe0471b5d130a7d86630b"
+  },
+  {
+   "hash": "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+   "type": "grant",
+   "state": {
+    "at": "2026-11-08T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "kind": "tool",
+    "scope": {
+     "types": [
+      "promise",
+      "observe",
+      "transfer"
+     ],
+     "on": [
+      "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450"
+     ],
+     "parties": [
+      "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+     ],
+     "limit": {
+      "value": "210",
+      "unit": "GBP"
+     },
+     "clocks": {
+      "names": [
+       "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901"
+      ],
+      "needed": 1
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+    "to": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+    "meter": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+   },
+   "signature": "f2263272180fcb67c019d14bbf2e02c13c34358855e2a17b89fee4f5a1b8a8333afaa1927ce4ecc60dec45211ed87dde313338daa7ab8ce69409ca1087e4fb00"
+  },
+  {
+   "hash": "9fe905fcfa7330f67bd126df28d891198164257d5f23d8771da244d32274ac51",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "terms": {
+     "backing": {
+      "value": "210",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "prev": "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+    "from": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "for": "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a"
+   },
+   "signature": "e4ef3cbd6dd4d204ae1a5986ad9ae8dc5d98baf5fa4d006fbfd15fee6bac3b58c01d05bb48d98bc8b4fde2160957953cb2afb6bca962a4dfde53338504d45e06"
+  },
+  {
+   "hash": "124b86d19f3bcaa09c2c1f6dcfae7d25f10d50695ebe09c26f1d524763f76dda",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     },
+     "waits_on": "price"
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "1504ca22b548f26869697a6275726407c1c0e7b99d66e986ced470c213b3d7af1284d102f46f07795e6f714d975dc91dc3f0e9fa809a91ec39f73325d9f9e40f"
+  },
+  {
+   "hash": "7708e0fe6aa1ec18936edac522f540b110794bc20b603311ebc8f7179e17a677",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-03T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "terms": {
+     "quantity": {
+      "value": "10",
+      "unit": "crates"
+     },
+     "price": {
+      "value": "550",
+      "unit": "KES"
+     }
+    }
+   },
+   "refs": {
+    "author": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+    "prev": "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692",
+    "from": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692"
+   },
+   "signature": "dd3b06ebb6f0c911c222c534da5e6eb03849f52094c93cc70c6da66ab239eab70b96285962bb983e1cb539ae008243dbde7d418bd2957514d112ea4b121e520c"
+  },
+  {
+   "hash": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+   "type": "actor",
+   "state": {
+    "kind": "person",
+    "at": "2026-10-31T00:00:00.000Z",
+    "audience": "public",
+    "public_key_sign": "302a300506032b6570032100593100e37f95f7c4bf6747b35a388a315df8090c559ee0e6e71336b1d84e1c9f"
+   },
+   "refs": {},
+   "signature": "725c14a9fa332dc7d802567c1f26a88fcdb7b814ee004fe64d0b9a0ef3c46475de59dbfd0a5796f4db051750aa8839f7c49368e38cd19124515f1f0b3399720e"
+  },
+  {
+   "hash": "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692",
+   "type": "thing",
+   "state": {
+    "at": "2026-11-02T00:00:00.000Z",
+    "audience": "public",
+    "seq": 1,
+    "name": "crates"
+   },
+   "refs": {
+    "author": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+    "prev": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b"
+   },
+   "signature": "e4c5ae4434c6fc80e4be103d0a60c7ec4276d38b905e4831bbe283aafe3e3f9b15937ce5c0c40d8c18f5b34624392946057e5ecb68e261f2b03999b9b2e81707"
+  },
+  {
+   "hash": "c3c55feefdc24e2d5c11df27be94c1c586a14270a9152134f825aacdcc117cb9",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "f43b774ac8a28013e6f914a9ed3d970572a1bcf7fcea91a22e702169b8e09e19694919139d7ccd3c699e891a104a123a071fbdac28ed29ed8ede1210f5d3a507"
+  },
+  {
+   "hash": "983de3a3768cf587e564252b3059bbca3cfac841e53223b63ff29c5ca48904d8",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 2,
+    "terms": {
+     "quantity": {
+      "value": "1",
+      "unit": "sacks"
+     },
+     "price": {
+      "value": "30",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "prev": "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+   },
+   "signature": "bebf88c76803ebdb2b90ea255fe2607493a7bac47a4d5917285e27cc75a71c157ecaf0bc64a60d563c33346fb6e2b16f3b12c0fe6bf93e3471a04c39e67c5c00"
+  },
+  {
+   "hash": "5a56fed67f4e05b08ba5050b7745229cc3e9934883a531379848bfc1521eae32",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": [
+     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+     "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+     "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    ],
+    "seq": 4,
+    "nonce": "dddddddddddddddddddddddddddddddd",
+    "terms": {
+     "quantity": {
+      "value": "10",
+      "unit": "sacks"
+     },
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+   },
+   "signature": "170899134c1bb3addaeeb6b2112cecdc652f0dfba07066de9067859950101ee5f897b1d1033418a0f1e7892f6aabd5962f60b5f458541ef45697c1b844539600"
+  },
+  {
+   "hash": "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     },
+     "wibble": "x"
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "c35eb3ac35048cfa62081e3ad5fed6edeeccc777a63de6d2b561b92276250700f839d78f72ae5cd6caa36b68388d5cbbb9241d630c0d00495af5dcca2e751409"
+  },
+  {
+   "hash": "05ef3aa6f92481a46ebdc4f77a1082384351b3d95d7de9604193c7b692006144",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 5,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    },
+    "rule_set": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "ec6dd1aa20a9b9c9dfcc6e7668b5575ce15b173fca40739ee65f383c2c8e2c6cfa40cc2f925f6c22096065a36c37c35ac3cbf247ec04e9733e3fc5a523f29e06"
+  },
+  {
+   "hash": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "09d36d5a77be337633bf7797de33d2b7729f99c67461acda02ba060afabc0e5f90e22b354b47ece32545ee0d2dac178b617e76f7d9c270ab446ec6cf19ea8b0b"
+  },
+  {
+   "hash": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-09T00:00:00.000Z",
+    "audience": "public",
+    "seq": 4,
+    "what": "20 kg tomatoes",
+    "terms": {
+     "price": {
+      "value": "40",
+      "unit": "GBP"
+     }
+    }
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a"
+   },
+   "signature": "e63bfb2e3028eccf9d8c9cff62e536211926016d25295d75f1562323a320f58b41fb79d8482c33c805b58e3b2a07db757de2c3724280ff29dd04e37c82e6c30b"
+  },
+  {
+   "hash": "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+   "type": "promise",
+   "state": {
+    "at": "2026-11-10T00:00:00.000Z",
+    "audience": "public",
+    "seq": 5,
+    "terms": {
+     "price": {
+      "value": "300",
+      "unit": "GBP"
+     }
+    },
+    "what": "ten sacks of stoneground wholemeal, spring harvest, from the yard gate on Saturday"
+   },
+   "refs": {
+    "author": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "prev": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+    "from": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+    "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+    "what": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93"
+   },
+   "signature": "30bb3667a09978f6192a8bd3ac735ae40e0cfaa3d14f86773402fc303dc39c600deb9d52e1f50938fce62e11dba359219a133be9a15a2d34b837aa8656ffea02"
+  }
+ ],
+ "cases": [
+  {
+   "block": 0,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    0
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271",
+     "code": "Z2BH-BTG9",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+       "code": "BD4Z-2K70",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+     "5d3dbb632b339c400b56538b0d6fa0dbbbf198a43e6af1effdb13e5b3aeb4aeb",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 13,
+   "held": [
+    1,
+    3,
+    14,
+    5,
+    15,
+    16,
+    17,
+    13
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "aa0c665efc83273b3c12b21cc707722350a48e67071edcb2750a524ea0f71b93",
+     "code": "N866-CQQW",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af",
+       "code": "XT8Y-YDQ1",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "1bcdcbf7df33a4c35cec3f6c798d7a41bcd81aea8d2ffe2522bc161b235f2aaa",
+     "aa0c665efc83273b3c12b21cc707722350a48e67071edcb2750a524ea0f71b93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 0,
+   "held": [
+    1,
+    2,
+    11,
+    0
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271",
+     "code": "Z2BH-BTG9",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+       "code": "BD4Z-2K70",
+       "name": null
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "not_shown": true,
+       "lacks": [
+        "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31"
+       ]
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271"
+    ],
+    "lacks": [
+     "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31"
+    ]
+   }
+  },
+  {
+   "block": 18,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    9,
+    19,
+    20,
+    21,
+    18,
+    22,
+    23
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+     "code": "66XB-YCQF",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+       "code": "VDBS-YKJP",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "pair": [
+       {
+        "draw": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+        "to": {
+         "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+         "code": "5JDV-GWAT",
+         "name": "Leila"
+        },
+        "yes": false
+       },
+       {
+        "draw": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+        "to": {
+         "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+         "code": "WH6T-QA1W",
+         "name": null
+        },
+        "yes": true
+       }
+      ]
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+     "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "f5be33043b0d1ace60f0cc3cc6e48ce5963cc403bad016d84bd1a09c05a84b82",
+     "f6b985df1bb254f5e21a84a1f804334235ef3cfb343f682c6c1d382374b9b01e"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 22,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    9,
+    19,
+    20,
+    21,
+    18,
+    22,
+    23
+   ],
+   "to": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+   "answer": {
+    "viewer": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "for": {
+     "id": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+     "code": "1J1S-51AG",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+       "code": "VDBS-YKJP",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "draw": {
+       "why": "pair"
+      },
+      "holder": null,
+      "freer": null,
+      "pair": [
+       {
+        "draw": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+        "to": {
+         "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+         "code": "5JDV-GWAT",
+         "name": null
+        },
+        "yes": false
+       },
+       {
+        "draw": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+        "to": {
+         "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+         "code": "WH6T-QA1W",
+         "name": "Amara"
+        },
+        "yes": true
+       }
+      ]
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     },
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+     "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "f6b985df1bb254f5e21a84a1f804334235ef3cfb343f682c6c1d382374b9b01e"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 24,
+   "held": [
+    3,
+    14,
+    25,
+    26,
+    5,
+    6,
+    7,
+    8,
+    1,
+    27,
+    28,
+    29,
+    24
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "a70479a0c5053289a292be3a56bad64e1ab7085e057211ad7b13234f2cb5c350",
+     "code": "MW27-K865",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       },
+       {
+        "block": null,
+        "of": {
+         "id": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+         "code": "XMQC-VYZB",
+         "name": "Wanjiru"
+        }
+       }
+      ],
+      "all": true,
+      "one": false
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "043cc172479f09a64fb7e99a6133206686ce5096391dbbc14a293c7f0c4a3db3",
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "a70479a0c5053289a292be3a56bad64e1ab7085e057211ad7b13234f2cb5c350",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 30,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    30,
+    38
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "24fe3141adc82d7a01c01b192ec93ff4a96b6e6d9846746d74bb3eb4bfce0fdf",
+     "code": "4KZ3-2GDD",
+     "type": "transfer",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "landed"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "24fe3141adc82d7a01c01b192ec93ff4a96b6e6d9846746d74bb3eb4bfce0fdf",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "ac4a6c8151b7aee0156a2235004ccac28613dc998964c25c0beb6afb90930eb2",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 39,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    39
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 39,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    39
+   ],
+   "to": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 40,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    40
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "code": "RM92-SPNN",
+     "type": "transfer",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": {
+       "id": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+       "code": "J3ET-VY5P",
+       "name": "Gita"
+      },
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 40,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    40
+   ],
+   "to": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "code": "RM92-SPNN",
+     "type": "transfer",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": {
+       "id": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+       "code": "J3ET-VY5P",
+       "name": "Gita"
+      },
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      }
+     }
+    ],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 41,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    41
+   ],
+   "to": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "code": "A2BB-TFTE",
+     "type": "promise",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": "Amara"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 41,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    41
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "code": "A2BB-TFTE",
+     "type": "promise",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 42,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    41,
+    42
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "c24d6496fa90e090de4a955c86349e057f1fac4fd009f75befad793b3466cadf",
+     "code": "R96P-95QT",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c24d6496fa90e090de4a955c86349e057f1fac4fd009f75befad793b3466cadf",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 43,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    43
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "code": "HYYC-101J",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "not_shown": true,
+       "lacks": [
+        "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612"
+       ]
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+     "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "2f08e67981120fa4bdec210edd93c7c438842ea6ad10f745f5d0b09264ce4d00",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "713707a9599136586e71170506442067d8b55650520b3a60395d88c498c1fb05",
+     "812a132a0b285aa60344e270e19e728f833bf4def0e693743f95278dcb2483c5",
+     "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": [
+     "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612"
+    ]
+   }
+  },
+  {
+   "block": 43,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    44,
+    45,
+    43
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "code": "HYYC-101J",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "why": "past"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+     "2f08e67981120fa4bdec210edd93c7c438842ea6ad10f745f5d0b09264ce4d00",
+     "44cfc0578ee377cb815b5a0c43418a005557d112e1321a7d37526749117dfe2a",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 46,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    39,
+    46
+   ],
+   "to": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+   "answer": {
+    "viewer": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "for": {
+     "id": "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+     "code": "SR4C-XSV0",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "draw": {
+       "why": "pair"
+      },
+      "holder": null,
+      "freer": null,
+      "pair": [
+       {
+        "draw": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+        "to": {
+         "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+         "code": "WH6T-QA1W",
+         "name": "Amara"
+        },
+        "yes": false
+       },
+       {
+        "draw": "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+        "to": {
+         "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+         "code": "5JDV-GWAT",
+         "name": null
+        },
+        "yes": false
+       }
+      ]
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     },
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 39,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    39,
+    47
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "freed"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "301073a5ee0cf2f0473cd18381a9774064abaf90b164a23f252776c57c0e146d",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 39,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    39,
+    47
+   ],
+   "to": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": {
+       "state": "freed"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "301073a5ee0cf2f0473cd18381a9774064abaf90b164a23f252776c57c0e146d",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 48,
+   "held": [
+    49,
+    50,
+    3,
+    4,
+    51,
+    48
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "code": "XDAC-FD5A",
+     "type": "promise",
+     "signer": {
+      "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+      "code": "D98A-BRHV",
+      "name": "Maria"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "code": "D98A-BRHV",
+     "name": "Maria"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+       "code": "KM3T-JGWV",
+       "name": "rye"
+      },
+      "by": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": "Maria"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": "Maria"
+      },
+      "out": [
+       {
+        "value": "100",
+        "unit": "kg"
+       }
+      ],
+      "in": [
+       {
+        "value": "88",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "210",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "80",
+        "unit": "kg"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "210",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": "Maria"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+     "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 48,
+   "held": [
+    49,
+    50,
+    3,
+    4,
+    51,
+    48
+   ],
+   "to": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+   "answer": {
+    "viewer": {
+     "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "code": "D98A-BRHV",
+     "name": null
+    },
+    "for": {
+     "id": "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "code": "XDAC-FD5A",
+     "type": "promise",
+     "signer": {
+      "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+      "code": "D98A-BRHV",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+       "code": "KM3T-JGWV",
+       "name": "rye"
+      },
+      "by": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "100",
+        "unit": "kg"
+       }
+      ],
+      "in": [
+       {
+        "value": "88",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "210",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "80",
+        "unit": "kg"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "210",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 52,
+   "held": [
+    3,
+    14,
+    25,
+    26,
+    5,
+    6,
+    7,
+    8,
+    1,
+    27,
+    28,
+    53,
+    52
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "5f4d2ad953a585c8b086c6d1e874091c70b32906c4b7be05af0c1f64390be174",
+     "code": "BX6J-NPAK",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       },
+       {
+        "block": null,
+        "of": {
+         "id": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+         "code": "XMQC-VYZB",
+         "name": "Wanjiru"
+        }
+       }
+      ],
+      "all": true,
+      "one": false
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+     "5f4d2ad953a585c8b086c6d1e874091c70b32906c4b7be05af0c1f64390be174",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 54,
+   "held": [
+    3,
+    14,
+    25,
+    26,
+    5,
+    6,
+    7,
+    8,
+    1,
+    27,
+    28,
+    53,
+    54
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "342300ce2e17454a93161492f347cc23f4369328b01af0714abc7bdd0ad2e5f2",
+     "code": "6GHG-1KHE",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": true,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       },
+       {
+        "block": null,
+        "of": {
+         "id": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+         "code": "XMQC-VYZB",
+         "name": "Wanjiru"
+        }
+       }
+      ],
+      "all": true,
+      "one": false
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "342300ce2e17454a93161492f347cc23f4369328b01af0714abc7bdd0ad2e5f2",
+     "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 55,
+   "held": [
+    49,
+    50,
+    56,
+    57,
+    9,
+    19,
+    58,
+    59,
+    60,
+    55
+   ],
+   "to": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+   "answer": {
+    "viewer": {
+     "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "code": "D98A-BRHV",
+     "name": null
+    },
+    "for": {
+     "id": "4c48234462064d983e755f433a4b4b526141dd07534c20ebae59ea4de90e75fd",
+     "code": "9H42-6H32",
+     "type": "grant",
+     "signer": {
+      "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+      "code": "D98A-BRHV",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+     "code": "TFBG-P3JM",
+     "name": "Till"
+    },
+    "audience": "public",
+    "other": {
+     "id": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+     "code": "TFBG-P3JM",
+     "name": "Till"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+      "code": "TFBG-P3JM",
+      "name": "Till"
+     },
+     "can_lose": [
+      {
+       "value": "40",
+       "unit": "loaves"
+      }
+     ],
+     "meter_own": true,
+     "pays": true,
+     "pay_at_most": [],
+     "hand_over_at_most": [
+      {
+       "value": "40",
+       "unit": "loaves"
+      }
+     ],
+     "clocks": null,
+     "backed_by": [],
+     "floor": [
+      {
+       "amount": {
+        "value": "3",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "loaves"
+       }
+      }
+     ]
+    },
+    "read": [
+     "1e935c5729fd0e6d67700006582c4256ad0e90feaf916977c04d3c438622d54f",
+     "4c48234462064d983e755f433a4b4b526141dd07534c20ebae59ea4de90e75fd",
+     "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "77f55b4b0e64925a4463425e10ae2452dcb8fc0eb2aad3fa6bb927b530fd9cd9",
+     "8dd83368cd9d05093ca2caf3b5e23d1535b60f001c874e25b853e896723ee9b5",
+     "aa133f4720101240d44b570c517f5eb660cd8f1581e1ffab6370a4442835a61c",
+     "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+     "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 61,
+   "held": [
+    3,
+    14,
+    25,
+    26,
+    5,
+    6,
+    7,
+    8,
+    1,
+    27,
+    28,
+    53,
+    61
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "code": "TTX8-ZETS",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       }
+      ],
+      "all": true,
+      "one": true
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 61,
+   "held": [
+    3,
+    14,
+    25,
+    26,
+    5,
+    6,
+    7,
+    8,
+    1,
+    27,
+    28,
+    53,
+    61,
+    62
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "code": "TTX8-ZETS",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       }
+      ],
+      "all": true,
+      "one": true
+     },
+     "backed_by": [
+      {
+       "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+       "code": "2ANT-EZC5",
+       "name": "FoodX"
+      }
+     ],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "9fe905fcfa7330f67bd126df28d891198164257d5f23d8771da244d32274ac51",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 63,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    63
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "124b86d19f3bcaa09c2c1f6dcfae7d25f10d50695ebe09c26f1d524763f76dda",
+     "code": "295R-DMCZ",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": "price"
+    },
+    "read": [
+     "124b86d19f3bcaa09c2c1f6dcfae7d25f10d50695ebe09c26f1d524763f76dda",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 64,
+   "held": [
+    65,
+    3,
+    14,
+    66,
+    64
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "7708e0fe6aa1ec18936edac522f540b110794bc20b603311ebc8f7179e17a677",
+     "code": "EW4E-1ZKA",
+     "type": "promise",
+     "signer": {
+      "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+      "code": "VCWN-7YWM",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+     "code": "VCWN-7YWM",
+     "name": null
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692",
+       "code": "DKKE-D64P",
+       "name": "crates"
+      },
+      "by": {
+       "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+       "code": "VCWN-7YWM",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "crates"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+       "code": "VCWN-7YWM",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "crates"
+       }
+      ],
+      "in": [
+       {
+        "value": "550",
+        "unit": "KES"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "550",
+        "unit": "KES"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "crates"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "550",
+       "unit": "KES"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+       "code": "VCWN-7YWM",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692",
+     "7708e0fe6aa1ec18936edac522f540b110794bc20b603311ebc8f7179e17a677",
+     "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 67,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    68,
+    67
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "c3c55feefdc24e2d5c11df27be94c1c586a14270a9152134f825aacdcc117cb9",
+     "code": "RF2N-ZVQX",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "983de3a3768cf587e564252b3059bbca3cfac841e53223b63ff29c5ca48904d8",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c3c55feefdc24e2d5c11df27be94c1c586a14270a9152134f825aacdcc117cb9",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 69,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    69
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "5a56fed67f4e05b08ba5050b7745229cc3e9934883a531379848bfc1521eae32",
+     "code": "B9BF-XNKZ",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": {
+     "readers": 3
+    },
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "5a56fed67f4e05b08ba5050b7745229cc3e9934883a531379848bfc1521eae32",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 70,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    70
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+     "code": "V88B-H9JT",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "not_read": {
+     "fields": 1,
+     "rule_set": false,
+     "codes": [
+      "undeclared_field"
+     ]
+    },
+    "read": [
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 71,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    70,
+    71
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "05ef3aa6f92481a46ebdc4f77a1082384351b3d95d7de9604193c7b692006144",
+     "code": "0QQK-N9QS",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "not_read": {
+     "fields": 0,
+     "rule_set": true,
+     "codes": [
+      "unknown_rules"
+     ]
+    },
+    "read": [
+     "05ef3aa6f92481a46ebdc4f77a1082384351b3d95d7de9604193c7b692006144",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 72,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    39
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "not_valid": [
+     "bad_signature"
+    ],
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 39,
+   "held": [
+    39
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "not_shown": true,
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54"
+    ],
+    "lacks": [
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+    ]
+   }
+  },
+  {
+   "block": 73,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    73
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "code": "C872-P74H",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "what": {
+     "text": "20 kg tomatoes",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "things": [],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "40",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 73,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    73
+   ],
+   "to": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "code": "C872-P74H",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "what": {
+     "text": "20 kg tomatoes",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "things": [],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "40",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 74,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    73,
+    74
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+     "code": "V7ZC-39WC",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "what": {
+     "text": "ten sacks of stoneground wholemeal, spring harvest, from the yard gate on Saturday",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  },
+  {
+   "block": 73,
+   "held": [
+    1,
+    2,
+    3,
+    4,
+    31,
+    32,
+    33,
+    34,
+    9,
+    10,
+    5,
+    35,
+    36,
+    37,
+    73,
+    74
+   ],
+   "to": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "code": "C872-P74H",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "what": {
+     "text": "20 kg tomatoes",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "things": [],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "40",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   }
+  }
+ ]
+}

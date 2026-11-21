@@ -2,7 +2,10 @@ import { describe, it, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdtempSync, existsSync, rmSync, statSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { testPerson, publicSide } from './fixtures.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
@@ -28,7 +31,7 @@ const flow = async (client) => {
   assert.equal(bound.bound, false, 'an unconnected assistant never binds')
   assert.equal((await use(client, 'foodblock_ask', { audience: 'public', offer: offers[0].offer, quantity: { value: 5, unit: 'kg' } })).error, true, 'a float is refused')
   // the audience is the person's choice, asked for every time: a call without one is refused, and nothing is drafted
-  for (const [name, args] of [['foodblock_ask', { offer: offers[0].offer }], ['foodblock_accept', { promise: offers[0].offer }], ['foodblock_connect', { acts: [] }], ['foodblock_promise', { to: offers[0].from.id || 'x', what: offers[0].offer }]]) {
+  for (const [name, args] of [['foodblock_ask', { offer: offers[0].offer }], ['foodblock_accept', { promise: offers[0].offer }], ['foodblock_connect', { types: [] }], ['foodblock_promise', { to: offers[0].from.id || 'x', what: offers[0].offer }]]) {
     const refused = await use(client, name, args)
     assert.equal(refused.error, true, `${name} without an audience is refused`)
     assert.match(JSON.stringify(refused.value), /audience/)
@@ -38,30 +41,43 @@ const flow = async (client) => {
 
 describe('FoodBlock MCP transports', () => {
   it('stdio', async () => {
+    // her identity file holds her public side only; her key is the test's "device"
+    const dir = mkdtempSync(join(tmpdir(), 'mcp-')), me = testPerson(), file = join(dir, 'me.json')
+    writeFileSync(file, JSON.stringify({ genesis: me.genesis, chain: me.chain }))
+    after(() => rmSync(dir, { recursive: true, force: true }))
     const client = new Client({ name: 'test', version: '1' })
-    await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(ROOT, 'server.js')], env: { ...process.env, FOODBLOCK_SEED: 'demo', FOODBLOCK_REACH: 'P30D' }, stderr: 'pipe' }))
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(ROOT, 'server.js')], env: { ...process.env, FOODBLOCK_SEED: 'demo', FOODBLOCK_IDENTITY: file }, stderr: 'pipe' }))
     const draft = await flow(client)
     assert.match(draft.approve_at, /^http:\/\/127\.0\.0\.1:\d+\/approve\/[0-9a-f]{64}$/)
     assert.equal((await fetch(draft.approve_at)).status, 200, 'the approval page is served')
     await client.close()
   })
   it('streamable http, one assistant per session', async () => {
-    const door = createDoor({ reach: 'P30D' })
+    const door = createDoor({ person: publicSide(testPerson()) })
     seed(door)
     const server = await serveHttp(door, 0)
     after(() => server.close())
     const open = async () => { const c = new Client({ name: 'test', version: '1' }); await c.connect(new StreamableHTTPClientTransport(new URL(`${door.base}/mcp`))); return c }
     const a = await open(), b = await open()
     const draft = await flow(a)
-    assert.equal((await use(b, 'foodblock_connect', { audience: 'public', acts: ['promise'] })).value.status, 'pending')
+    assert.equal((await use(b, 'foodblock_connect', { audience: 'public', types: ['promise'] })).value.status, 'pending')
     assert.equal((await fetch(draft.approve_at)).status, 200)
     assert.equal(door.pending().length, 3)
     await a.close(); await b.close()
   })
-  it('the package names the protocol version it speaks', () => {
+  it('a door started with no identity file, or with a file that holds a private key, refuses to start and says why', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'mcp-')), me = testPerson(), file = join(dir, 'me.json')
+    after(() => rmSync(dir, { recursive: true, force: true }))
+    const run = async (env) => { const client = new Client({ name: 'test', version: '1' }); try { await client.connect(new StdioClientTransport({ command: process.execPath, args: [resolve(ROOT, 'server.js')], env: { ...process.env, ...env }, stderr: 'pipe' })); await client.close(); return 'started' } catch { return 'refused' } }
+    assert.equal(await run({ FOODBLOCK_IDENTITY: join(dir, 'none.json') }), 'refused')
+    writeFileSync(file, JSON.stringify({ keys: me.keys, genesis: me.genesis, chain: me.chain }))
+    assert.equal(await run({ FOODBLOCK_IDENTITY: file }), 'refused', 'a file holding a private key is not read')
+    assert.ok(!existsSync(`${file}.recovery.json`) && !existsSync(`${file}.approval`), 'no recovery key and no approval code are ever written')
+  })
+  it('the package carries the packages\' one number (a label; the protocol names none)', () => {
     const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'))
     const registry = JSON.parse(readFileSync(resolve(ROOT, 'server.json'), 'utf8'))
-    assert.ok([pkg.version, registry.version, registry.packages[0].version].every((v) => v.startsWith(`${fb.VERSION}.`)))
+    assert.ok([pkg.version, registry.version, registry.packages[0].version].every((v) => v === fb.VERSION))
     assert.ok(createServer)
   })
 })

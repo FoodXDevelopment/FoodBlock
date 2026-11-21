@@ -1,115 +1,91 @@
 # FoodBlock protocol
 
-Version 1.7, 2026-10-27. Year zero is 1.6; 1.7 adds to it, except the deletions CHANGELOG.md lists.
-
-This is the index: one core, which opens with the one shape, a promise (*if this happens, this of mine becomes yours*; a judge is named only for quarrels); eleven modules, optional profiles and a few data files. Where another document disagrees, core.md governs, then the module that owns the rule. Each rule is stated once. Every protocol word is a machine token; people see their own language.
+This is the index. A block is `{ type, state, refs }`, signed by its author; its id is the hash of its bytes. The one shape is a promise: *if this happens, this of mine becomes yours*. Each rule is stated once, in its home file; where files disagree, core.md governs, then the file that owns the rule. A rule set is named by the hash of `rule-set.json` (core.md, section 11); "1.9" is a label.
 
 ## Files
 
-- `core.md`: a block, types and verbs, the `std` suite, numbers and time, the genesis, the chain, messages, required fields, `valid`, the compatibility law. Buildable alone with canonical.md.
-- `canonical.md`: the one exact byte form of a block.
-- `modules/blocks.md`: other fields, causal order, no clock, records, refusals.
-- `modules/identity.md`: keys, rotation, recovery, custody, contacts.
-- `modules/things.md`: things, transforms, transfers, schemas, truth.
-- `modules/promises.md`: sides, terms, answers, settling, claims, disputes.
-- `modules/authority.md`: grants, who a block speaks for, scope, the limit, ending, the cut.
-- `modules/circles.md`: membership, roles as data, shared records.
-- `modules/privacy.md`: commitments, audience, sealing, envelopes.
-- `modules/nodes.md`: messages, pull, push, admission, discovery, finding, a node's promise.
-- `modules/folds.md`: folds and views, the orderer, ownership, the promise stage, counts.
-- `modules/consent.md`: first messages to a stranger, consent as a block.
-- `modules/encoding.md`: bytes, shapes, limits, large content, other suites, passkeys, CBOR.
-- `transport.md`: email and other envelopes (a convention).
-- `profiles/`: optional profiles. `legacy/`: the one-time converter, not protocol. `schemas/`: the base schemas as data.
-- `protocol.json`: every closed list and grammar. `vectors.json`, `canonical-vectors.json`: the conformance vectors.
+The protocol (named in `rule-set.json`):
+- `core.md`: a block, types and verbs, suites, numbers and text, the genesis, the line, messages, `valid` and `read`, the test (section 10), rule sets and old readers (11), what a builder implements (12).
+- `canonical.md`: the one byte form.
+- `modules/blocks.md`: other fields, causal order, time, a named clock, the cut, finality.
+- `modules/identity.md`: voices, keys, tools, `refs.key`, a close, a will.
+- `modules/things.md`: things, makes, transfers, schemas.
+- `modules/promises.md`: what a promise is, terms, answers, who may bind, settling, disputes.
+- `modules/authority.md`: grants, who a block speaks for, blocks that bind, a limit along a line.
+- `modules/circles.md`: owners in parts, rows, members.
+- `modules/folds.md`: a line, what is left, ownership, a fork, a promise's stage, counts.
+- `modules/privacy.md`: what stays public, not given, commitments, audience, the header, handing on, keeping apart.
+- `modules/encoding.md`: bytes, shapes, limits.
+- `modules/consent.md`: a STOP is a block, and changes what binds no one.
+- `protocol.json`: every closed list, read by code. `vectors.json`: the cases of the sound part and the word ops.
 
-## Optional profiles
+Beside it, not the protocol:
+- `modules/nodes.md`, `transport.md`, `conventions.json`, `profiles/`: a node's conventions and words.
+- `readings/`, `renderers/`: readings any node may compute, and renderers of their answers, each named by its hash, with its cases.
+- `patterns/`: schemas and worked examples; they add no rule.
+- `schemas/`: the base schemas as signed things.
 
-A profile is an extra rule set any peer may adopt. A block in a profile is sound under core.md whether or not a reader knows the profile; whether a node takes it in is that node's own promise (nodes.md).
+## Peers
 
-| Profile | What it adds |
-|---|---|
-| `successor` | a person names who acts for them after an event |
-| `ballots` | secret votes in a circle |
-| `rekeys` | a circle's key changes when members leave |
-| `earnest` | a node may hold an ask until earnest money is paid (its own policy) |
-| `short-form` | SMS, USSD and voice, with a receipt code |
-| `custody` | SIM-swap quiet period, step-up, assisted channels |
-| `erasure` | a node's promise to forget; deleting the salt forgets |
-| `attestations` | a key tied to a real-name person or a registered business; who pays a confirmer; the issuers she relies on; a market-price reading (three base schemas) |
-| `residency` | where a node promises to store blocks |
-| `payment-proof` | payment on an existing rail, the provider as confirmer |
-| `addressing` | finding a person by phone number or payment address |
-| `tax-recall` | a sealed report and a recall grant, as an ordinary grant-and-schema example |
-| `pledges` | a threshold pledge: my money moves only if the pledges for a plan reach my own threshold by my date (two base schemas) |
-| `vouches` | I stand behind her for up to N until D; the pay-back; a refrain of no side payments (three base schemas, and the pot; the cap may be money or a count of one named kind) |
-| `pools` | a mutual pool: members pay in, a named confirmer's signal pays out, never past the pot (one base schema) |
-| `refusals` | refusing together: none of us deals with him until he settles, once enough members have signed (one base schema) |
-| `bids` | sealed bids for a quarrel over a price, opened together on a named clock |
-| `keeping` | a keeper of goods says in advance what a loss costs him: a `loss`, a loss band (two base schemas) |
-| `rulebooks` | a circle's rulebook and glossary, a cover price, a cheap judge, a grader and a fix window (three base schemas) |
-| `adapters` | Beckn / ONDC and local traceability schemas |
-| `tasks` | any task, software or physical: conditions, skills, progress, horizon |
-| `foodblock-profile-epcis` | EPCIS 2.0 and FSMA 204 events |
+Conformance is per op (core.md, section 12). The sizes below are a builder's choice, not a rule.
 
-## Which peer needs which module
+| Peer | Does | Conforms for |
+|---|---|---|
+| Micro | measures, signs, buffers, sends | `hash`, `id_of`, `header`, `verify` |
+| Micro that acts | adds: checks the grants it acts under, obeys a stop on arrival | adds `valid`, `under_ok` |
+| Dealer | takes one deal and answers it (below) | `hash`, `id_of`, `header`, `strict_text`, `verify`, `valid`, `read`, and `promise_stage` for a one-to-one deal |
+| Edge | adds local pull and push, its own deals, offline | adds the identity and line ops, `promise_stage`, `ownership` |
+| Node | holds a person's or a machine's blocks; serves pull and push | the sound part and every word op: it speaks FoodBlock |
 
-One protocol, three sizes of peer (`protocol.json` `peers`). Core is always needed.
+Only people and machines hold nodes. A business is a circle of them, never a node.
 
-- **Micro**, the device: measures, signs, buffers and sends. It needs core.md, canonical.md, blocks.md and encoding.md, and it may use the compact form. A **micro that acts** adds authority.md, checks the grants it acts under and obeys a stop on arrival; with no clock (blocks.md) it leaves the `until` test to its edge.
-- **Edge**, the local operator: adds local discovery, Pull and Push with nearby peers, the promise fold for its own deals, and works offline. It signs what devices that cannot sign measured as its own `observe`, the device named in `refs.from`, so a stranger weighs the edge's word. It times a clock-less micro's block with a `receipt` observe.
-- **Node**, held by a person or a machine: adds envelopes and commitments, serving Pull and Push to anyone, signed answers, internet discovery, and the folds for every record it holds. A node may also be an **index**, serving others' public records and every fold.
+**A dealer** takes one deal and answers it. It conforms when it does these eight things, and nothing else.
+1. **Bytes.** It writes a block as canonical JSON and refuses a message whose bytes are not the bytes its own writer gives for the same value.
+2. **Id.** A block's id is the SHA-256 of its bytes as they came.
+3. **Who said it.** It checks the signature over the block's header with the key its pieces bring in: the author's genesis, the key grant its `refs.key` names, and that one's pieces. A message that carries a deal to a dealer carries its pieces. A block it cannot open it does not answer.
+4. **Its own line.** It signs a genesis once. Each later block names its last block in `prev` and counts `seq` up by one. It keeps its own blocks and may keep nothing else.
+5. **Reading a deal.** It reads a first promise with two named sides: `from`, `to`, what moves, `price`, `quantity`, `expires`, and `pay_by` and `deliver_by` as dates for people. A promise that carries a term, a schema, a condition or a `state.rule_set` it does not read, it holds not read and does not accept.
+6. **Answering.** Its accept is a `promise` with `status: accepted` that `answers` the offer and names it in `for`; its decline an `observe` with `status: declined`. It adds no term.
+7. **Settling.** It signs a `transfer` `for` the deal for what it hands over, and an `accepted` answer, with `covers`, to a payment made to it for that deal. It counts nothing as received on the giver's word. It signs only what its own `read` reads (blocks.md, Micro safety).
+8. **Under a grant.** It answers an order signed under a grant only when it can check that grant (authority.md, Blocks that bind); otherwise it asks for the same order in the person's own key, and says so.
+It serves no pull and no push, keeps no other person's line, names no clock and reads no profile. What it cannot read it says it cannot read. Any envelope that carries the bytes whole will do; email is the first (transport.md).
 
-Only people and machines hold nodes. A business, household, regulator or community is a circle of them (circles.md), never a node of its own.
+**Its cases:** `dealer` in `vectors.json`, twelve stories, each one fixed world:
 
-| Module | Micro | Micro that acts | Edge | Node and index |
-|---|---|---|---|---|
-| blocks | yes | yes | yes | yes |
-| encoding | yes | yes | yes | yes |
-| identity | own keys | own keys | yes | yes |
-| things | the types it writes | the types it writes | yes | yes |
-| authority | | yes | yes | yes |
-| consent | | | admission and own asks | yes |
-| nodes | | | local pull and push | yes |
-| promises | | | own deals | yes |
-| folds | | | promise fold | every fold (an index serves all) |
-| privacy | | | | yes |
-| circles | | | | yes |
+1. **Accept:** Amara orders 10 sacks from Harry at £300, public: accepted; `promise_stage` binding.
+2. **Accept:** the same, sealed to both: accepted.
+3. **Accept:** Mama sells 3 mandazi for KSh 10, `step` 1 KES; Leila takes 2: accepted, total 7.
+4. **Accept:** Amara's order with `expires` Friday and `pay_by` three days on: accepted.
+5. **Refuse:** a message whose bytes are not canonical: `not_canonical`.
+6. **Refuse:** a block whose id is not the hash of its bytes: `bad_hash`.
+7. **Refuse:** a block whose signature does not open, one of them a passkey signature with flags `0x01`: `bad_signature`.
+8. **Refuse:** an order with a `state.rule_set` the dealer does not run: held not read (`unknown_rules`), not accepted.
+9. **Settled:** cash in hand: Harry's transfer and Amara's `accepted` with `covers`: `done`.
+10. **Settled:** a credit order paid later: Amara's payment, Harry's `accepted` with `covers` after the goods: `done`.
+11. **Under a grant:** an order signed by Amara's AI under her grant, which the dealer cannot check: it declines to answer and asks for her own key.
+12. **Tampered payment:** a payment whose body changed after signing: refused (`bad_hash`).
 
 ## Invariants
 
-Each invariant is stated in its module, under its number. Numbers 16 and 21 are not used: both would bind a stranger's computer, so they are a node's own word (nodes.md, A node's promise).
-
-| Number | Module |
-|---|---|
-| 1, 2, 3, 25 | core.md |
-| 4, 5, 26, 31 | folds.md |
-| 6, 7, 9, 10, 23 | authority.md |
-| 27 | circles.md |
-| 8, 19 | identity.md |
-| 28 | encoding.md |
-| 11, 12, 13, 14, 15, 22, 32 | promises.md |
-| 20, 29, 30 | consent.md |
-| 24 | things.md |
-| 17 | privacy.md |
-| 18 | nodes.md |
+The ones that are protocol are numbered 1 to 28 in the order of the Files list above, each in its file: core.md 1 to 5, identity.md 6 and 7, promises.md 8 to 14, authority.md 15 to 19, circles.md 20, folds.md 21 to 26, consent.md 27, privacy.md 28 (last). The others sit beside their text, unnumbered, prefixed "Holds:".
 
 ## Glossary
 
-Each other word is defined where its rule lives: allocation, bearer, side, deal and stage in promises.md; frozen, custodian, recovery key and operator in identity.md; stranger in consent.md; grounds and schema in things.md; commitment and reveals in privacy.md; orderer, fold and view in folds.md; circle in circles.md.
-- **Act:** a kind of block a grant covers, named `type.kind` (authority.md). An **act template** is a published thing of kind `act`: a template of the one shape, which a deal names in `refs.act` (promises.md).
-- **Genesis:** the first block of an identity: an actor with no author, signed by its own key.
-- **Speaks for:** the one party a fold counts a block for (authority.md, Who a block speaks for).
-- **`for`, `for_whom`:** `for` names the deal or task a block serves; `for_whom` is the hidden person it is for.
-- **`kind`, `of`:** `state.kind` is a label for a sort of step or thing; `refs.of` names the kind an instance belongs to.
-- **`limit`, `every`, `each`:** a limit (money or an amount) renewing over a period (`every`, a duration), and a cap on one act; either of `limit` and `each` may be left out. In a price, `per` is an amount.
-
-## Conformance
-
-A node conforms, by its own promise (nodes.md), when it reproduces, exactly, the vectors in `spec/vectors.json` for what it does: canonical strings, ids, signatures, commitments, envelopes, folds, refusals, views, CBOR and how identities, deals and circles read. The **door** section tests the core's ops one by one; every op, its arguments and its result are in `protocol.json` (`door`). Signatures are compared byte for byte (core.md section 2); the order of every list in an answer is fixed by the text. Every block in a vector's stories, outside the refusal cases, passes `valid`. A node finds a block's signing key from the identity fold, never from a vector's signer name. This spec, `protocol.json` and the vectors are enough to build a node.
+One word, one meaning. Each is defined in its home file; the line here is a pointer.
+- **valid**, **read**, **not read**, **unjudged**, **pieces**, **header** (core.md, section 8).
+- **line**, **in its place**, **start**, **read whole**, **`not_shown`**, **`lacks`**, **pair** (folds.md, A line; A fork is a burden).
+- **stands**, **waiting**, **the cut**, **an end**, **relier**, **seen** (blocks.md). **clock**, **receipt**, **cutoff** (blocks.md, A named clock).
+- **voice**, **a key under a voice**, **tool**, **`refs.key`**, **a close**, **a will** (identity.md).
+- **measure**, **draw**, **holds**, **lands**, **freed**, **let go**, **amount** (folds.md, What is left; encoding.md).
+- **grant**, **keeps to**, **`refs.meter`** (authority.md).
+- **request**, **bench**, **due**, **final**, **`crossed`**, **to come** (promises.md; folds.md).
+- **circle**, **part**, **row**, **move**, **hand**, **unissued** (circles.md).
+- **type**: what kind of block it is. **deed**: something done in the world.
+- **commitment**, **reveals**, **audience**, **handing on**, **a wrapped copy** (privacy.md). **schema** (things.md).
+- **word**, **reading**, **the sound part**, **speaks FoodBlock** (core.md, sections 10 and 12). **rule set**, **`unknown_rules`**, **an old reader** (core.md, section 11). **a named reading** (promises.md). **a mount** (core.md, section 12).
+- **renderer**, **read-back** (renderers/README.md; profiles/short-form.md). **a node's conventions** (`conventions.json`). **software release** (patterns/releases.md). **pattern** (patterns/). **a node's word** (nodes.md).
 
 ## Open questions
 
-- **Ranking.** How a person's node should weigh closeness (a friend's bakery against a stranger's equal one). The protocol says nothing about ranking; a node may rank or not, by its own rule.
-- **Arrival for a newcomer.** A node that takes in a whole history at once sees everything arrive now, which moves recovery reach. How it inherits arrival from the node it syncs from.
-- **Part of an instance in a transform.** A transfer can move part of an instance; how a transform names the amount of an input it uses (200 g from a 1 kg bag) is not yet said.
+- **Ranking.** How a person's node weighs closeness. The protocol says nothing.
+- The rest is in THREAT-MODEL.md, What the protocol does not keep.

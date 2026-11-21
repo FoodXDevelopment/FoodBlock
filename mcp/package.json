@@ -1,7 +1,7 @@
 {
   "name": "foodblock-mcp",
-  "version": "1.7.0",
-  "description": "MCP server for the FoodBlock 1.7 protocol: any AI agent reads and writes signed FoodBlocks",
+  "version": "1.9.0",
+  "description": "MCP server for the FoodBlock 1.9 protocol: any AI agent reads and writes signed FoodBlocks",
   "type": "module",
   "main": "server.js",
   "bin": {
@@ -46,9 +46,9 @@
   "author": "FoodX <developers@foodx.com>",
   "dependencies": {
     "@foodxdev/foodblock": "file:../sdk/javascript",
-    "@modelcontextprotocol/sdk": "^1.32.1",
-    "express": "^5.3.0",
-    "zod": "^4.6.7"
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "express": "5.3.0",
+    "zod": "4.6.7"
   },
   "engines": {
     "node": ">=18.0.0"

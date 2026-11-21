@@ -1,0 +1,13 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "limit": {
+    "minor": 0,
+    "currency": "EUR"
+   },
+   "notice": "PT48H"
+  }
+ ],
+ "world": 1
+}

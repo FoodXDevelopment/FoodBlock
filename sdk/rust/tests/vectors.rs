@@ -104,13 +104,14 @@ fn every_vector_section() {
             good &= canon(b).as_str().unwrap() == s;
         }
         if let Some(r) = c.get("refused") {
-            let found = codes_of(&ok("refusals", json!([b["type"], b["state"], b["refs"]])));
+            // what a writer refuses of the value (write_refusals: a float is `float`, not the wire's `not_canonical`)
+            let found = codes_of(&ok("write_refusals", json!([{ "type": b["type"], "state": b["state"], "refs": b["refs"] }, []])));
             good &= strs(r).iter().all(|code| found.contains(code));
         }
         t.check(good, format!("canonical: {}", c["name"]));
     }
-    let older: Value = serde_json::from_str(&std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../test/vectors.json")).unwrap()).unwrap();
-    for c in older.as_array().unwrap() {
+    let edge: Value = serde_json::from_str(&std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../test/vectors.json")).unwrap()).unwrap();
+    for c in edge.as_array().unwrap() {
         let args = json!([c["type"], c["state"], c["refs"]]);
         t.check(ok("canonical", args.clone()) == c["expected_canonical"] && ok("hash", args) == c["expected_hash"], format!("canonical (test/vectors.json): {}", c["name"]));
     }
@@ -140,23 +141,7 @@ fn every_vector_section() {
 
     // Stories: every block hashes, verifies and passes the strict check.
     let mut stories: Vec<(String, Value)> = vec![];
-    for k in ["identities", "deals", "circles"] {
-        for s in v[k].as_array().unwrap() {
-            stories.push((format!("{k}: {}", s["name"]), s["blocks"].clone()));
-        }
-    }
-    for k in ["promises", "circles", "audience", "things", "successors", "rekeys", "ballots"] {
-        for s in v["folds"][k].as_array().unwrap() {
-            stories.push((format!("{k} fold: {}", s["name"]), s["blocks"].clone()));
-        }
-    }
-    stories.push(("refusal stories".into(), v["refusals"]["blocks"].clone()));
     stories.push(("sealed stories".into(), v["sealed"]["blocks"].clone()));
-    for c in v["refusals"]["cases"].as_array().unwrap() {
-        if c.get("blocks").is_some() {
-            stories.push((format!("refusal: {}", c["name"]), c["blocks"].clone()));
-        }
-    }
     let mut refusal_blocks: BTreeMap<String, Value> = BTreeMap::new();
     for (name, list) in &stories {
         let mut wrong: Vec<String> = vec![];
@@ -172,7 +157,7 @@ fn every_vector_section() {
             if ok("verify", json!([b, e["signature"], key(e["signer"].as_str().unwrap(), "public_key_sign")])) != json!(true) {
                 wrong.push(format!("{}: signature", e["name"]));
             }
-            let found = ok("refusals", json!([e["block"]["type"], e["block"]["state"], e["block"]["refs"]]));
+            let found = ok("strict_text", json!([ok("canonical", json!([e["block"]["type"], e["block"]["state"], e["block"]["refs"]]))]));
             if !found.as_array().unwrap().is_empty() {
                 wrong.push(format!("{}: {:?}", e["name"], codes_of(&found)));
             }
@@ -201,156 +186,9 @@ fn every_vector_section() {
     }
     for c in v["headers"].as_array().unwrap() {
         let b = full(&by_hash[c["hash"].as_str().unwrap()]);
-        let mut part = c["header"].clone();
-        part["signature"] = c["header_signature"].clone();
-        t.check(ok("header", json!([b])) == c["header"] && ok("verify_message", json!([part, key(c["signer"].as_str().unwrap(), "public_key_sign")])) == json!(true), format!("header: {}", c["name"]));
-    }
-
-    // Identities.
-    for c in v["identities"].as_array().unwrap() {
-        let held = blocks_of(&c["blocks"]);
-        let arrivals = c.get("arrivals").cloned().unwrap_or(Value::Null);
-        let unknown = c.get("unknown_arrival").cloned().unwrap_or(Value::Null);
-        for e in c["blocks"].as_array().unwrap() {
-            if let Some(want) = c["signed_by_author"].get(e["hash"].as_str().unwrap()) {
-                let got = ok("signed_by_author", json!([full(e), held, arrivals, unknown]));
-                t.check(&got == want, format!("identity: {}: {} stands={want}", c["name"], e["name"]));
-            }
-        }
-        let keys = sorted(strs(&ok("keys_of", json!([c["id"], held, arrivals, unknown]))));
-        t.check(json!(keys) == c["keys"], format!("identity: {}: keys", c["name"]));
-        if let Some(f) = c.get("frozen") {
-            let timeline = ok("key_timeline", json!([c["id"], held, Value::Null]));
-            let frozen: Vec<String> = sorted(timeline.as_array().unwrap().iter().filter(|k| k["frozen"] == json!(true)).map(|k| k["key"].as_str().unwrap().to_string()).collect());
-            t.check(&json!(frozen) == f, format!("identity: {}: frozen", c["name"]));
-        }
-        if let Some(o) = c.get("operators") {
-            t.check(&ok("operators_of", json!([c["id"], held, Value::Null])) == o, format!("identity: {}: operators", c["name"]));
-        }
-        let state = ok("identity_state", json!([c["id"], held, arrivals, unknown]));
-        let all_stand = c["signed_by_author"].as_object().unwrap().iter().all(|(h, want)| state["signed_by_author"].get(h).is_none_or(|g| g == want));
-        t.check(state["keys"] == c["keys"] && all_stand && c.get("frozen").is_none_or(|f| &state["frozen"] == f), format!("identity: {}: the fold", c["name"]));
-        if let Some(f) = c.get("fence") {
-            let find = |h: &Value| held.as_array().unwrap().iter().find(|b| &b["hash"] == h).unwrap().clone();
-            let limit = find(&f["block"]);
-            let salt = f["salt"].clone();
-            let finds = |who: &Value| ok("finds_self", json!([limit, who, salt])) == json!(true);
-            t.check(limit["refs"]["for"] == f["grant"] && limit["state"]["limit"] == f["limit"] && finds(&f["agent"]) && !finds(&f["principal"]), format!("identity: {}: sealed to the agent alone", c["name"]));
-            let without: Vec<Value> = held.as_array().unwrap().iter().filter(|b| b["hash"] != limit["hash"]).cloned().collect();
-            let same_check = c["under"].as_object().unwrap().keys().all(|h| ok("why_not_under", json!([find(&json!(h)), held, Value::Null])) == ok("why_not_under", json!([find(&json!(h)), without, Value::Null])));
-            t.check(same_check, format!("identity: {}: the grant check never reads the limit", c["name"]));
-            let within = f["within"].as_array().unwrap().iter().all(|w| ok("within_limit", json!([limit, w["money"], w["spent"]])) == w["within"]);
-            t.check(within, format!("identity: {}: within_limit", c["name"]));
-        }
-        for (h, live) in c.get("under").and_then(Value::as_object).cloned().unwrap_or_default() {
-            let b = held.as_array().unwrap().iter().find(|b| b["hash"] == json!(h)).unwrap().clone();
-            let why = ok("why_not_under", json!([b, held, Value::Null]));
-            t.check(why.as_array().unwrap().is_empty() == live.as_bool().unwrap(), format!("identity: {}: under", c["name"]));
-        }
-    }
-
-    // Folds.
-    let stage = |c: &Value| {
-        let held = blocks_of(&c["blocks"]);
-        let first = held.as_array().unwrap().iter().find(|b| b["hash"] == c["first"]).unwrap().clone();
-        ok("promise_stage", json!([first, held, {}]))
-    };
-    for c in v["deals"].as_array().unwrap().iter().chain(v["folds"]["promises"].as_array().unwrap()) {
-        t.check(subset(&stage(c), &c["expected"]), format!("promise fold: {}", c["name"]));
-    }
-    for c in v["circles"].as_array().unwrap().iter().chain(v["folds"]["circles"].as_array().unwrap()) {
-        let held = blocks_of(&c["blocks"]);
-        let state = ok("circle_state", json!([c["circle"], held, Value::Null]));
-        let members = if c["expected"]["members"].is_array() {
-            json!(sorted(state["members"].as_object().unwrap().keys().cloned().collect()))
-        } else {
-            Value::Object(state["members"].as_object().unwrap().iter().map(|(k, m)| (k.clone(), json!(sorted(strs(&m["roles"]))))).collect())
-        };
-        let mut good = members == c["expected"]["members"] && json!(sorted(state["removed"].as_object().unwrap().keys().cloned().collect())) == c["expected"]["removed"];
-        if let Some(ct) = c["expected"].get("counted_to") {
-            good &= &state["removed"] == ct;
-        }
-        for (h, want) in c.get("may_act").and_then(Value::as_object).cloned().unwrap_or_default() {
-            let b = held.as_array().unwrap().iter().find(|b| b["hash"] == json!(h)).unwrap().clone();
-            good &= ok("may_act_as", json!([b, c["circle"], held, Value::Null])) == want;
-        }
-        t.check(good, format!("circle fold: {}", c["name"]));
-    }
-    for c in v["folds"]["audience"].as_array().unwrap() {
-        let held = blocks_of(&c["blocks"]);
-        for k in c["cases"].as_array().unwrap() {
-            let b = held.as_array().unwrap().iter().find(|b| b["hash"] == k["block"]).unwrap().clone();
-            t.check(ok("members_then", json!([b, k["recipient"], held])) == k["members"], format!("audience fold: {}", k["name"]));
-        }
-    }
-    for c in v["folds"]["things"].as_array().unwrap() {
-        let held = blocks_of(&c["blocks"]);
-        let find = |h: &Value| held.as_array().unwrap().iter().find(|b| &b["hash"] == h).unwrap().clone();
-        for k in c["where"].as_array().unwrap() {
-            t.check(ok("where_now", json!([find(&k["thing"]), held])) == k["places"], format!("where now: {}", k["name"]));
-        }
-        for k in c["owners"].as_array().unwrap() {
-            let o = ok("ownership", json!([find(&k["thing"]), held]));
-            t.check(o["owner"] == k["owner"] && o["conflict"] == k["conflict"], format!("owner: {}", k["name"]));
-        }
-    }
-    for c in v["folds"]["successors"].as_array().unwrap() {
-        let held = blocks_of(&c["blocks"]);
-        let grant = held.as_array().unwrap().iter().find(|b| b["hash"] == c["grant"]).unwrap().clone();
-        t.check(subset(&ok("successor_view", json!([grant, held, c["now"], c["arrivals"]])), &c["expected"]), format!("successor: {}", c["name"]));
-    }
-    for c in v["folds"]["ballots"].as_array().unwrap() {
-        let held = blocks_of(&c["blocks"]);
-        for k in c["cases"].as_array().unwrap() {
-            let r = held.as_array().unwrap().iter().find(|b| b["hash"] == k["result"]).unwrap().clone();
-            t.check(ok("counted_in", json!([r, k["commitment"], k["counter"]])) == k["counted"], format!("ballot: {}", k["name"]));
-        }
-    }
-    for c in v["folds"]["rekeys"].as_array().unwrap() {
-        t.check(subset(&ok("circle_key", json!([c["circle"], blocks_of(&c["blocks"])])), &c["expected"]), format!("circle key: {}", c["name"]));
-    }
-
-    // Refusals.
-    for c in v["refusals"]["cases"].as_array().unwrap() {
-        let by = c["by"].as_str().unwrap();
-        let held: Vec<Value> = c["held"].as_array().map(|h| h.iter().map(|x| refusal_blocks[x.as_str().unwrap()].clone()).collect()).unwrap_or_default();
-        let good = match by {
-            "check" => codes_of(&ok("refusals", json!([c["block"]["type"], c["block"]["state"], c["block"]["refs"], held]))) == strs(&c["codes"]),
-            "valid" => codes_of(&ok("valid", json!([c["block"], held]))) == strs(&c["codes"]),
-            "accept" => {
-                let incoming: Vec<Value> = match c.get("inline") {
-                    Some(i) => i.as_array().unwrap().clone(),
-                    None => c["incoming"].as_array().unwrap().iter().map(|h| refusal_blocks[h.as_str().unwrap()].clone()).collect(),
-                };
-                let got = ok("accept", json!([incoming, held, { "takes_pairs": false }, Value::Null]));
-                if let Some(e) = c.get("equivocations") {
-                    got["taken"] == c["taken"] && got["refused"].as_array().unwrap().is_empty() && &got["equivocations"] == e
-                } else if let Some(w) = c.get("waiting") {
-                    json!(got["waiting"].as_array().unwrap().iter().map(|x| x["hash"].clone()).collect::<Vec<_>>()) == *w && got["refused"].as_array().unwrap().is_empty()
-                } else if c.get("taken").is_some() {
-                    got["taken"] == c["taken"]
-                } else {
-                    c["incoming"].as_array().unwrap().iter().all(|h| got["refused"].as_array().unwrap().iter().any(|r| &r["hash"] == h)) && codes_of(&got["refused"]) == strs(&c["codes"])
-                }
-            }
-            "fold" => subset(&stage(c), &c["expected"]),
-            "may_act_as" => {
-                let held = blocks_of(&c["blocks"]);
-                let b = held.as_array().unwrap().iter().find(|b| b["hash"] == c["block"]).unwrap().clone();
-                ok("may_act_as", json!([b, c["circle"], held, Value::Null])) == c["ok"]
-            }
-            "under" => {
-                let all: Vec<Value> = refusal_blocks.values().cloned().collect();
-                let b = refusal_blocks[c["block"].as_str().unwrap()].clone();
-                ok("why_not_under", json!([b, all, Value::Null])).as_array().unwrap().is_empty() == c["live"].as_bool().unwrap()
-            }
-            "open" => match call("open_copy", json!([c["message"], key(c["recipient"].as_str().unwrap(), "x25519_private")])) {
-                Ok(_) => false,
-                Err(e) => json!([e["code"]]) == c["codes"],
-            },
-            _ => false,
-        };
-        t.check(good, format!("refused ({by}): {}", c["name"]));
+        // a header is no message (core.md, section 2): its signature is the block's, over the header
+        let msg = json!({ "header": c["header"], "header_signature": c["header_signature"] });
+        t.check(ok("header", json!([b])) == c["header"] && ok("header_signed_by", json!([msg, key(c["signer"].as_str().unwrap(), "public_key_sign")])) == json!(true), format!("header: {}", c["name"]));
     }
 
     // Messages.
@@ -389,8 +227,9 @@ fn every_vector_section() {
         t.check(call("cbor_decode", json!([r["cbor"]])).is_err(), format!("cbor refused: {}", r["name"]));
     }
 
-    // The door.
-    for d in v["door"].as_array().unwrap() {
+    // The door: the protocol's cases, then every other op's (spec/conventions-vectors.json).
+    let conventions: Value = serde_json::from_str(&std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../spec/conventions-vectors.json")).unwrap()).unwrap();
+    for d in v["door"].as_array().unwrap().iter().chain(conventions["door"].as_array().unwrap()) {
         let res = call(d["op"].as_str().unwrap(), d["args"].clone());
         let good = if let Some(e) = d.get("error") {
             match &res {

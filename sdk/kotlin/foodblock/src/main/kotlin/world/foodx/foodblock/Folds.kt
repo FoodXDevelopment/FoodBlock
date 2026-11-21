@@ -8,25 +8,26 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import kotlinx.serialization.json.put
 
 // Who someone is, what they may do, and where things stand: each one a fold, worked out from blocks alone.
 // `arrivals` is this node's own log of when each block arrived ({ hash: at }), where a fold needs it; null if none.
 // Given arrivals, `unknownArrival` ("inside" or "outside": how a block with no arrival is read) is required; the core refuses without it.
 
-/** One key an id has held. `by` is the block that brought it in; `signer` the key that signed that block; `suite` its suite. */
-data class KeyEntry(val key: String, val by: String, val signer: String?, val frozen: Boolean, val suite: String = "std")
+/** One key an id has held: `by` the block that brought it in, `voice` its place in her list of voices (null for a key under a voice), `under` the voice a key sits under, `suite`, and `ended` the block that ended it (null while it speaks). */
+data class KeyEntry(val key: String, val by: String, val voice: Long?, val under: Long?, val suite: String = "std", val ended: String? = null)
 
 object Identity {
     /**
-     * A new person, autonomous system, machine or circle: their genesis, signed (in the suite of `keys`). It needs only `kind`,
-     * `at`, `audience` (all required: [PUBLIC] or recipients; nothing is filled in) and the key; `recoveryKey` (the offline key's public signing key, only its hash is written) and `reach`
-     * come as a pair or not at all. `encryptionKey` is the public encryption key, or null for a device that only signs.
+     * A new person, autonomous system, machine or circle: their genesis, signed (in the suite of `keys`), a list of one voice. It needs
+     * only `kind`, `at`, `audience` (all required: [PUBLIC] or recipients; nothing is filled in) and the key. `reach` (a duration) comes
+     * with `clocks` (her clock, `{ names, needed }`). `encryptionKey` is the public encryption key, or null for a device that only signs.
      */
     fun genesis(
         keys: Keypair, kind: String, at: String, audience: List<String>,
-        recoveryKey: String? = null, encryptionKey: String? = null,
-        reach: String? = null, recoverySuite: String? = null, custodian: String? = null,
+        encryptionKey: String? = null, reach: String? = null, clocks: JsonObject? = null,
         salts: JsonObject? = null, nonce: String? = null,
     ): JsonObject = Door.genesis(keys.toJson(), buildJsonObject {
         put("kind", kind)
@@ -34,41 +35,58 @@ object Identity {
         audienceJson(audience)?.let { put("audience", it) }
         salts?.let { put("salts", it) }
         nonce?.let { put("nonce", it) }
-        recoveryKey?.let { put("recovery_key", it) }
         encryptionKey?.let { put("encryption_key", it) }
         reach?.let { put("reach", it) }
-        recoverySuite?.let { put("recovery_suite", it) }
-        custodian?.let { put("custodian", it) }
+        clocks?.let { put("clocks", it) }
     }).obj()
 
-    /** The recovery key's hash, as a genesis names it, in the identity's suite. */
-    fun recoveryKeyHash(publicKey: String, suite: String = "std"): String =
-        Door.recoveryKeyHash(JsonPrimitive(publicKey), JsonPrimitive(suite)).string()
+    /** A key named by its hash (identity.md, Her voices): its suite's hash of its SPKI hex as UTF-8 text. */
+    fun keyHash(publicKey: String, suite: String? = null): String = Door.keyHash(JsonPrimitive(publicKey), text(suite)).string()
 
-    /** The identity fold: `{ signed_by_author, keys, frozen, operators }`. */
-    fun identityState(id: String, blocks: List<JsonObject>, arrivals: Map<String, String>? = null, unknownArrival: String? = null): JsonObject =
-        Door.identityState(JsonPrimitive(id), JsonArray(blocks), arrivals(arrivals), text(unknownArrival)).obj()
+    /** Whether a block is a genesis (no block: the question of the thing itself, as the door reads it). */
+    fun isGenesis(block: JsonObject? = null): Boolean = Door.isGenesis(block ?: JsonNull).bool()
 
-    /** The voided blocks a recovery rotation's reach protects, read at the reader's arrivals. */
-    fun recoveryReach(rotation: JsonObject, blocks: List<JsonObject>, arrivals: Map<String, String>? = null, unknownArrival: String? = null): JsonElement =
-        Door.recoveryReach(rotation, JsonArray(blocks), arrivals(arrivals), text(unknownArrival))
+    /** A genesis is valid when its own key opens it, in its suite. */
+    fun genesisOpens(block: JsonObject? = null): Boolean = Door.genesisOpens(block ?: JsonNull).bool()
 
-    /** The keys that speak for an id now. */
-    fun keysOf(id: String, blocks: List<JsonObject>, arrivals: Map<String, String>? = null, unknownArrival: String? = null): List<String> =
-        Door.keysOf(JsonPrimitive(id), JsonArray(blocks), arrivals(arrivals), text(unknownArrival)).strings()
+    /** The identity fold: `{ signed_by_author, voices, clocks, keys, waiting }`. */
+    fun identityState(id: String, blocks: List<JsonObject>): JsonObject =
+        Door.identityState(JsonPrimitive(id), JsonArray(blocks)).obj()
 
-    fun keyTimeline(id: String, blocks: List<JsonObject>, arrivals: Map<String, String>? = null, unknownArrival: String? = null): List<KeyEntry> =
-        Door.keyTimeline(JsonPrimitive(id), JsonArray(blocks), arrivals(arrivals), text(unknownArrival)).jsonArray.map {
+    /** The keys that speak for an id now: of her standing voices and under them, not ended. Sorted. */
+    fun liveKeys(id: String, blocks: List<JsonObject>): List<String> =
+        Door.liveKeys(JsonPrimitive(id), JsonArray(blocks)).strings()
+
+    /** Every key a list or a key grant of hers brought in, in order. */
+    fun keyTimeline(id: String, blocks: List<JsonObject>): List<KeyEntry> =
+        Door.keyTimeline(JsonPrimitive(id), JsonArray(blocks)).jsonArray.map {
             val k = it.jsonObject
-            KeyEntry(
-                k["key"]!!.string(), k["by"]!!.string(), (k["signer"] as? JsonPrimitive)?.takeIf { p -> p.isString }?.content,
-                k["frozen"]!!.bool(), (k["suite"] as? JsonPrimitive)?.content ?: "std",
-            )
+            fun str(n: String) = (k[n] as? JsonPrimitive)?.takeIf { p -> p.isString }?.content
+            fun num(n: String) = (k[n] as? JsonPrimitive)?.takeIf { p -> !p.isString && p !is JsonNull }?.long
+            KeyEntry(k["key"]!!.string(), k["by"]!!.string(), num("voice"), num("under"), str("suite") ?: "std", str("ended"))
         }
 
-    /** Whether a block is signed by a key that spoke for its author when it was signed. */
-    fun signedByAuthor(block: JsonObject, blocks: List<JsonObject>, arrivals: Map<String, String>? = null, unknownArrival: String? = null): Boolean =
-        Door.signedByAuthor(block, JsonArray(blocks), arrivals(arrivals), text(unknownArrival)).bool()
+    /** Whether a key of the block's author spoke for her there (identity.md, invariant 8). A waiting block is true here; [stands] says it waits. */
+    fun signedByAuthor(block: JsonObject, blocks: List<JsonObject>): Boolean =
+        Door.signedByAuthor(block, JsonArray(blocks)).bool()
+
+    /** Whether a word stands (blocks.md, Finality): `{ stands, waiting: [{ block, on }] }`, read with no clock and no arrival. */
+    fun stands(block: JsonObject, blocks: List<JsonObject>): JsonObject = Door.stands(block, JsonArray(blocks)).obj()
+
+    /** Each key's chain for an id: `[{ key, by, head, length, gaps, skips, equivocations, broken, ok }]`. */
+    fun chainsOf(id: String, blocks: List<JsonObject>): JsonElement = Door.chainsOf(JsonPrimitive(id), JsonArray(blocks))
+
+    /** Where an id's next block goes for one of its keys. */
+    fun nextLinkFor(id: String, publicKey: String, blocks: List<JsonObject>): Link {
+        val l = Door.nextLinkFor(JsonPrimitive(id), JsonPrimitive(publicKey), JsonArray(blocks)).jsonObject
+        return Link(l["seq"]!!.jsonPrimitive.long, l["prev"]!!.string())
+    }
+
+    /** Whether a block counts for its key's chain. */
+    fun counts(block: JsonObject, blocks: List<JsonObject>): Boolean = Door.counts(block, JsonArray(blocks)).bool()
+
+    /** Whether a block is one of a pair of one key naming one prev, or a later block of that key. */
+    fun forked(block: JsonObject, blocks: List<JsonObject>): Boolean = Door.forked(block, JsonArray(blocks)).bool()
 }
 
 object Grant {
@@ -76,36 +94,16 @@ object Grant {
     fun whyNotLiveUndo(block: JsonObject, blocks: List<JsonObject>): List<String> =
         Door.whyNotLiveUndo(block, JsonArray(blocks)).strings()
 
-    /** The one reading of a grant's `state.scope` (authority.md): acts, parties, limit, each, every, until, notice, sealed, condition and junk, with every default the spec states and nothing else filled in. A null scope reads as an empty one. A non-empty `junk` (sorted names of fields that are there but cannot be read) means the grant is held to no word. */
+    /** The one reading of a grant's `state.scope` (authority.md), with every default the spec states and nothing else filled in. A null scope reads as an empty one. A non-empty `junk` means the grant is held to no word. */
     fun scopeReading(scope: JsonElement? = null): JsonObject = Door.scopeReading(scope ?: JsonNull).obj()
 
-    /** The act a block is, named `type.kind`. */
-    fun actName(block: JsonObject): String = Door.actName(block).string()
+    /** Whether a child scope is within its parent's, and the refusals when it is not. */
+    fun scopeWithin(child: JsonElement, parent: JsonElement): Boolean = Door.scopeWithin(child, parent).bool()
+    fun scopeRefusals(child: JsonElement, parent: JsonElement): JsonElement = Door.scopeRefusals(child, parent)
 
-    /** The observe of kind limit for a grant, to hand to `write`: its audience is the autonomous system alone. */
-    fun limitFence(grantHash: String, agent: String, limit: JsonObject?, every: String? = null, salt: String? = null, each: JsonObject? = null): JsonObject =
-        Door.limitFence(JsonPrimitive(grantHash), JsonPrimitive(agent), limit ?: JsonNull, text(every), text(salt), each ?: JsonNull).obj()
-
-    /** The commitment to a limit, for the grant's `scope.limit_commitment` (authority.md). */
-    fun limitCommitment(limit: JsonObject?, every: String?, salt: String, suite: String? = null, each: JsonObject? = null): String =
-        Door.limitCommitment(limit ?: JsonNull, text(every), JsonPrimitive(salt), text(suite), each ?: JsonNull).string()
-
-    /** Whether the limit observe opens the grant's `scope.limit_commitment`. */
-    fun limitOpens(grant: JsonObject, fence: JsonObject, suite: String? = null): Boolean =
-        Door.limitOpens(grant, fence, text(suite)).bool()
-
-    /** Whether one act of `value` (money or an amount) stays inside a limit; `spent` is what the principal's node has counted in the period:
-     *  minor units of money, or an amount's value, compared exactly. */
-    fun withinLimit(limit: JsonObject, value: JsonObject, spent: Long): Boolean =
-        Door.withinLimit(limit, value, JsonPrimitive(spent)).bool()
-
-    /** The same, with `spent` as a decimal string (an amount: kilos, hours). */
-    fun withinLimit(limit: JsonObject, value: JsonObject, spent: String): Boolean =
-        Door.withinLimit(limit, value, JsonPrimitive(spent)).bool()
-
-    /** The people an autonomous system acts for, by the live grants among `blocks`. */
-    fun operatorsOf(agent: String, blocks: List<JsonObject>, now: String? = null): List<String> =
-        Door.operatorsOf(JsonPrimitive(agent), JsonArray(blocks), text(now)).strings()
+    /** Is the machine inside the fence of its grant (authority.md): `{ within, why, alone, alone_until }`. No clock is read: `at` is the time asked about. */
+    fun fenceReading(fence: JsonElement?, at: String, readings: JsonObject? = null, heard: String? = null): JsonObject =
+        Door.fenceReading(fence ?: JsonNull, JsonPrimitive(at), readings ?: JsonNull, text(heard)).obj()
 
     /** Why a block does not stand under the grant it names: empty when it does. */
     fun whyNotUnder(block: JsonObject, blocks: List<JsonObject>, now: String? = null): List<String> =
@@ -114,6 +112,34 @@ object Grant {
     /** Why a grant is not live (stopped, expired, its parent gone): empty when it is. Check before an act that cannot be undone. */
     fun whyNotLive(grant: JsonObject, blocks: List<JsonObject>, now: String? = null): List<String> =
         Door.whyNotLive(grant, JsonArray(blocks), text(now)).strings()
+
+    fun isLive(grant: JsonObject, blocks: List<JsonObject>, now: String? = null): Boolean =
+        Door.isLive(grant, JsonArray(blocks), text(now)).bool()
+
+    fun ancestors(grant: JsonObject, blocks: List<JsonObject>): JsonElement = Door.ancestors(grant, JsonArray(blocks))
+
+    /** Whether a promise C keeps to a promise A (authority.md, Keeps to): `{ keeps, why }`. */
+    fun keepsTo(c: JsonObject, a: JsonObject, blocks: List<JsonObject> = emptyList()): JsonObject =
+        Door.keepsTo(c, a, JsonArray(blocks)).obj()
+
+    /** The line a grant's blocks are counted on (authority.md, A limit is counted along one line), for one block under it or for the grant's own draws. */
+    fun meter(grant: JsonObject, blocks: List<JsonObject>, block: JsonObject? = null): JsonObject =
+        Door.meter(grant, JsonArray(blocks), block ?: JsonNull).obj()
+
+    /** The worst case of a grant, from her grant and the promises it names alone: `at_most` and `can_lose` per kind. */
+    fun worstCase(grant: JsonObject, blocks: List<JsonObject>): JsonObject = Door.worstCase(grant, JsonArray(blocks)).obj()
+
+    /** Her deadline's lowest offer, read on the meter's line: `{ offer, received, cutoff, why }`. */
+    fun lowestOffer(grant: JsonObject, blocks: List<JsonObject>): JsonObject = Door.lowestOffer(grant, JsonArray(blocks)).obj()
+
+    /** What a promise's terms come to at a chosen quantity (else the terms'), or null when it cannot be computed. */
+    fun termsTotal(terms: JsonElement? = null, quantity: JsonElement? = null): JsonElement = Door.termsTotal(terms ?: JsonNull, quantity ?: JsonNull)
+
+    /** A duration read (ISO 8601), or null; a time moved by a duration (sign -1 goes back); two durations compared by adding both to one instant (-1, 0, 1). */
+    fun parseDuration(text: String? = null): JsonElement = Door.parseDuration(text(text))
+    fun addDuration(time: String, duration: String, sign: Long = 1): JsonElement =
+        Door.addDuration(JsonPrimitive(time), JsonPrimitive(duration), JsonPrimitive(sign))
+    fun compareDurations(a: String, b: String, from: String): Long = Door.compareDurations(JsonPrimitive(a), JsonPrimitive(b), JsonPrimitive(from)).jsonPrimitive.long
 }
 
 /** Who owns an instance, the transfers that moved it, and a conflict (two transfers that do not see each other). */
@@ -146,23 +172,76 @@ object Fold {
         now?.let { put("now", it) }
     }).obj()
 
+    /** The views of many deals of one store at once, read against one reading of it: `{ hash: view }`. Each first promise is among `blocks`. */
+    fun promiseViews(firsts: List<String>, blocks: List<JsonObject>, now: String? = null): JsonObject =
+        Door.promiseViews(texts(firsts), JsonArray(blocks), buildJsonObject { now?.let { put("now", it) } }).obj()
+
+    /** The occurrences of a standing promise's calendar repeat from `from` up to, not including, `to`: UTC start times. */
+    fun repeatOccurrences(promise: JsonObject, from: String, to: String): List<String> =
+        Door.repeatOccurrences(promise, JsonPrimitive(from), JsonPrimitive(to)).strings()
+
     /** The consent fold: a person's live word about a sender (or none): `{ word, block }`. `block` is the sender's block (it names the grant it acts under), or null. */
     fun consent(person: String, sender: String?, blocks: List<JsonObject>, block: JsonObject? = null): JsonObject =
         Door.consent(JsonPrimitive(person), text(sender), JsonArray(blocks), block ?: JsonNull).obj()
 
     fun due(promise: JsonObject, arrivals: Map<String, String>? = null): JsonElement = Door.due(promise, arrivals(arrivals))
 
-
-    /** A circle's founder, members and roles, and who was removed: null when the circle is not among the blocks. */
+    /** A circle's owners and rows: null when the circle is not among the blocks. `within` folds only its causal past. */
     fun circleState(circle: String, blocks: List<JsonObject>, within: JsonObject? = null): JsonObject? =
         Door.circleState(JsonPrimitive(circle), JsonArray(blocks), within ?: JsonNull) as? JsonObject
 
-    fun mayActAs(block: JsonObject, circle: String, blocks: List<JsonObject>, role: String? = null): Boolean =
-        Door.mayActAs(block, JsonPrimitive(circle), JsonArray(blocks), text(role)).bool()
+    /** A circle's versions and who is on each (circles.md): null for a block that is not a circle's founding block. */
+    fun circleVersions(circle: String, blocks: List<JsonObject>): JsonObject? =
+        Door.circleVersions(JsonPrimitive(circle), JsonArray(blocks)) as? JsonObject
+
+    /** Whether a row of the circle a block is `as` holds for it (circles.md). */
+    fun rowHolds(block: JsonObject, blocks: List<JsonObject>): JsonObject = Door.rowHolds(block, JsonArray(blocks)).obj()
+    fun waysIn(circle: String, blocks: List<JsonObject>): JsonObject = Door.waysIn(JsonPrimitive(circle), JsonArray(blocks)).obj()
+
+    /** A circle's current key, from its rekeys. */
+    fun circleKey(circle: String, blocks: List<JsonObject>): JsonObject =
+        Door.circleKey(JsonPrimitive(circle), JsonArray(blocks)).obj()
+
+    /** Is a machine locked now (authority.md): `{ locked, locks, lifted }`. With no `now`, only a lock that needs no clock stands. */
+    fun machineLock(machine: JsonObject, held: List<JsonObject>, now: String? = null): JsonObject =
+        Door.machineLock(machine, JsonArray(held), text(now)).obj()
 
     /** The one party a fold counts a block for (authority.md, Who a block speaks for): its id, or null when it speaks for no one. The block need not be among `blocks` yet; no clock is read. */
     fun speaksFor(block: JsonObject, blocks: List<JsonObject>): String? =
         Door.speaksFor(block, JsonArray(blocks)).let { if (it is JsonNull) null else it.string() }
+
+    /** Is `block` backed by `person` (authority.md, Backed by a person)? `{ backed, why, chain }`. */
+    fun backed(block: JsonObject, person: String, blocks: List<JsonObject>): JsonObject =
+        Door.backed(block, JsonPrimitive(person), JsonArray(blocks)).obj()
+
+    /** `backed` for a whole set at once: `{ hash: { backed, why } }`. */
+    fun backedAll(person: String, blocks: List<JsonObject>): JsonObject = Door.backedAll(JsonPrimitive(person), JsonArray(blocks)).obj()
+
+    /** An amount moved in `person`'s name that they do not back (promises.md, What is to come back): `{ to_come: [{ block, amount, to, why }] }`. */
+    fun toComeBack(person: String, blocks: List<JsonObject>): JsonObject = Door.toComeBack(JsonPrimitive(person), JsonArray(blocks)).obj()
+
+    /** What of `person`'s would become whose if `block` stands (promises.md, What becomes whose): `{ gives: [...], bench }`. */
+    fun gives(block: JsonObject, person: String, blocks: List<JsonObject>): JsonObject =
+        Door.gives(block, JsonPrimitive(person), JsonArray(blocks)).obj()
+
+    /** A list-keeper's answer against the lookup it answers (promises.md, Finding): `{ ok, why, bad, left_out }`. */
+    fun listingCheck(lookup: JsonObject, listing: JsonObject, blocks: List<JsonObject>): JsonObject =
+        Door.listingCheck(lookup, listing, JsonArray(blocks)).obj()
+
+    /** A signed check of someone's record against the blocks it names (promises.md, A signed check). */
+    fun checkReads(check: JsonObject, blocks: List<JsonObject>): JsonObject = Door.checkReads(check, JsonArray(blocks)).obj()
+
+    /** A circle of IOUs cancelled (promises.md, Clearing). */
+    fun clearingApplied(clearing: JsonObject, blocks: List<JsonObject>): JsonObject = Door.clearingApplied(clearing, JsonArray(blocks)).obj()
+
+    /** Whether a judge's ruling releases a stake that names it (promises.md, Rulings): `{ releases, to, amount, ruling, why }`. No reader's clock (1.9 R-C1). */
+    fun rulingReleases(stake: JsonObject, blocks: List<JsonObject>): JsonObject = Door.rulingReleases(stake, JsonArray(blocks)).obj()
+
+    /** What a judge's offer gives back of her fee: `{ settled, releases, to_come, why }`. */
+    fun feeBack(offer: JsonObject, deal: JsonObject, blocks: List<JsonObject>): JsonObject = Door.feeBack(offer, deal, JsonArray(blocks)).obj()
+
+    /** A threshold read against a set of `members` voices (folds.md, Counts): the number of voices it asks for, or null when it names no count. */
+    fun countOf(needed: JsonElement?, members: List<String>): JsonElement = Door.countOf(needed ?: JsonNull, texts(members))
 
     /** Who a recipient (a circle or `circle#role`) meant when the block was written. */
     fun membersThen(block: JsonObject, recipient: String, blocks: List<JsonObject>): List<String> =
@@ -171,6 +250,7 @@ object Fold {
     fun whereNow(thing: JsonObject, blocks: List<JsonObject>): List<String> =
         Door.whereNow(thing, JsonArray(blocks)).strings()
 
+    /** Who owns an instance, read from the blocks alone (no clock; 1.9 3c-6). */
     fun ownership(instance: JsonObject, blocks: List<JsonObject>): Ownership {
         val o = Door.ownership(instance, JsonArray(blocks)).jsonObject
         return Ownership(
@@ -180,20 +260,42 @@ object Fold {
         )
     }
 
+    /** The same fold read at the reader's clock `now`. */
+    fun ownershipView(instance: JsonObject, blocks: List<JsonObject>, now: String? = null): JsonObject =
+        Door.ownershipView(instance, JsonArray(blocks), text(now)).obj()
+
     fun ownerOf(instance: JsonObject, blocks: List<JsonObject>): String? =
         (Door.ownerOf(instance, JsonArray(blocks)) as? JsonPrimitive)?.takeIf { it.isString }?.content
 
-    /** A successor grant's view (optional profile): `{ events, cancelled, since, fires, fired }`. */
-    fun successorView(
-        grant: JsonObject, blocks: List<JsonObject>, now: String? = null, arrivals: Map<String, String>? = null,
-    ): JsonObject = Door.successorView(grant, JsonArray(blocks), text(now), arrivals(arrivals)).obj()
+    /** What was made from an instance (folds.md): `[{ thing, from, make, took }]`. */
+    fun madeFrom(instance: JsonObject, blocks: List<JsonObject>): JsonElement = Door.madeFrom(instance, JsonArray(blocks))
+    fun receiverOf(promise: JsonObject, blocks: List<JsonObject>): JsonElement = Door.receiverOf(promise, JsonArray(blocks))
+    fun sharesOn(thing: JsonObject, blocks: List<JsonObject>): JsonElement = Door.sharesOn(thing, JsonArray(blocks))
+    fun notFreeShown(block: JsonObject, blocks: List<JsonObject>): JsonElement = Door.notFreeShown(block, JsonArray(blocks))
+    fun invasionShown(claim: JsonObject, blocks: List<JsonObject>): JsonElement = Door.invasionShown(claim, JsonArray(blocks))
+    fun useShown(place: JsonObject, blocks: List<JsonObject>, keepers: JsonElement? = null): JsonElement = Door.useShown(place, JsonArray(blocks), keepers ?: JsonNull)
+    fun releaseShown(subject: JsonObject, blocks: List<JsonObject>): JsonElement = Door.releaseShown(subject, JsonArray(blocks))
+
+    /** A pot read from its head block and the blocks held; no clock (1.9 3c-6). */
+    fun pot(head: JsonObject, blocks: List<JsonObject>, now: String? = null): JsonElement = Door.pot(head, JsonArray(blocks), text(now))
+
+    /** Where `who` says money to them goes (promises.md, Where to pay me), or null. */
+    fun accountOf(who: String, blocks: List<JsonObject>): JsonElement = Door.accountOf(JsonPrimitive(who), JsonArray(blocks))
 
     fun countedIn(result: JsonObject, commitment: String, counter: String): Boolean =
         Door.countedIn(result, JsonPrimitive(commitment), JsonPrimitive(counter)).bool()
 
-    /** A circle's current key, from its rekeys. */
-    fun circleKey(circle: String, blocks: List<JsonObject>): JsonObject =
-        Door.circleKey(JsonPrimitive(circle), JsonArray(blocks)).obj()
+    // ---- The read-back (readings): no protocol op; the door's class `reading` ----
+
+    /** The read-back of a block to the person `to`: `{ answer, text, state }`. */
+    fun readback(block: JsonObject, held: List<JsonObject>, to: String? = null, renderer: String? = null, digits: Long? = null): JsonObject =
+        Door.readback(block, JsonArray(held), text(to), text(renderer), digits?.let { JsonPrimitive(it) } ?: JsonNull).obj()
+
+    /** A renderer's words for an answer. */
+    fun render(answer: JsonElement, renderer: String): JsonElement = Door.render(answer, JsonPrimitive(renderer))
+
+    /** A second reader's redo of a read-back: `{ same, readback, lacks, not_run }`. */
+    fun readbackRedo(rb: JsonObject, held: List<JsonObject>): JsonObject = Door.readbackRedo(rb, JsonArray(held)).obj()
 }
 
 /**
@@ -216,17 +318,20 @@ data class Freshness(
 
 /** Between nodes (edge and node profiles): pull, push, signed answers and discovery. */
 object Sync {
-    /** What a node takes of a push (`takesPairs` is the node's own choice: whether both blocks of a pair arriving together are taken): `{ taken, waiting, refused, equivocations }`. `taken` are the ids the core computed, in the suite of the key that signed each (core.md, section 2). Validity reads no arrival (core.md, section 8). */
+    /**
+     * What a node takes of a push (nodes.md, Push): `{ taken, unjudged, refused, unread, equivocations, false_headers, ... }`. `incoming` are
+     * blocks and sealed header messages. `takesPairs` is the node's own stated choice (true takes both blocks of a forked pair as well as
+     * listing them, false takes neither); `copies` its admission rule for copies (`{ signed?, handed_on?, unsigned?, mailboxes? }`); `push`
+     * the push's `{ signer?, for? }`. `taken` are the ids the core computed, in the suite of the key that signed each (core.md, section 2).
+     * Sealed headers are judged here too: there is no separate op. Validity reads no arrival (core.md, section 8).
+     */
     fun accept(
         incoming: List<JsonObject>, held: List<JsonObject>, takesPairs: Boolean,
-        schemas: List<JsonObject>? = null,
-    ): JsonObject = Door.accept(JsonArray(incoming), JsonArray(held), buildJsonObject { put("takes_pairs", takesPairs) },
-        schemas?.let(::JsonArray) ?: JsonNull,
-    ).obj()
-
-    /** What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. `taken` are hashes. */
-    fun acceptSealed(incoming: List<JsonObject>, held: List<JsonObject>, takesPairs: Boolean): JsonObject =
-        Door.acceptSealed(JsonArray(incoming), JsonArray(held), buildJsonObject { put("takes_pairs", takesPairs) }).obj()
+        schemas: List<JsonObject>? = null, copies: JsonObject? = null, push: JsonObject? = null,
+    ): JsonObject = Door.accept(JsonArray(incoming), JsonArray(held), buildJsonObject {
+        put("takes_pairs", takesPairs)
+        copies?.let { put("copies", it) }
+    }, schemas?.let(::JsonArray) ?: JsonNull, push ?: JsonNull).obj()
 
     /**
      * A node's answer to a pull, from its arrival log. The node states its own choices: `cap` (1 or more; there is no
@@ -234,9 +339,10 @@ object Sync {
      */
     fun answerPull(
         log: List<JsonObject>, request: JsonObject, node: String, privateKey: String, cap: Long, servesPairs: Boolean,
-        asker: String? = null, held: List<JsonObject>? = null, suite: String? = null,
+        asker: String? = null, held: List<JsonObject>? = null, suite: String? = null, through: Long? = null,
     ): JsonObject = Door.answerPull(JsonArray(log), request, JsonPrimitive(node), JsonPrimitive(privateKey),
         buildJsonObject { put("cap", cap); put("serves_pairs", servesPairs) }, text(asker), held?.let(::JsonArray) ?: JsonNull, text(suite),
+        through?.let { JsonPrimitive(it) } ?: JsonNull,
     ).obj()
 
     /** A signed pull: the request plus signer, node and exactly one proof against replay (`counter` or `challenge`); no time. */
@@ -288,6 +394,32 @@ object Sync {
     fun answerSignedBy(answer: JsonObject, nodeKeys: List<String>): Boolean =
         Door.answerSignedBy(answer, texts(nodeKeys)).bool()
 
+    /**
+     * A node's discovery document (nodes.md, Discovery): `{ protocol, reads, node, admission, endpoints, log? }`. `reads` lists the rule sets
+     * the node runs (core.md, section 11), only where it runs a build made from that set's files. `admission` is the hash of the owner's
+     * admission block, or null for no rule: stated either way, never filled in.
+     */
+    fun wellKnown(node: String, reads: List<String>, admission: String?, endpoints: JsonObject, log: String? = null): JsonObject =
+        Door.wellKnown(JsonPrimitive(node), texts(reads), text(admission), endpoints, text(log)).obj()
+
+    /** A push read from its text (nodes.md, Push): `{ refused, messages }`. */
+    fun strictPush(text: String): JsonObject = Door.strictPush(JsonPrimitive(text)).obj()
+
+    /** The signed pull's request, as the door shapes it. */
+    fun pullRequest(request: JsonObject = JsonObject(emptyMap())): JsonObject = Door.pullRequest(request).obj()
+
+    /** What a door log's signed words show (nodes.md, The arrival log): `{ left_out, stopped_short }`. */
+    fun logShown(receipts: List<JsonObject>, request: JsonObject, answer: JsonObject, held: List<JsonObject> = emptyList()): JsonObject =
+        Door.logShown(JsonArray(receipts), request, answer, JsonArray(held)).obj()
+
+    /** Whether her export is whole (nodes.md, A host): `{ whole, lacks }`. `log` names the door log; `last` is the receipt she holds. */
+    fun exportWhole(document: JsonObject, log: String, last: String): JsonObject =
+        Door.exportWhole(document, JsonPrimitive(log), JsonPrimitive(last)).obj()
+
+    /** Whether a waiting block has waited past the node's own time to live (`ttl` ms since it arrived). */
+    fun waitedTooLong(since: String, now: String, ttl: Long): Boolean =
+        Door.waitedTooLong(JsonPrimitive(since), JsonPrimitive(now), JsonPrimitive(ttl)).bool()
+
     /** What is wrong with a `.well-known/foodblock` document: empty when it is right. */
     fun wellKnownErrors(doc: JsonObject): List<String> = Door.wellKnownErrors(doc).strings()
 
@@ -314,32 +446,10 @@ object Strangers {
     fun conditionHolds(condition: JsonObject, blocks: List<JsonObject>, now: String): Boolean? =
         Door.conditionHolds(condition, JsonArray(blocks), JsonPrimitive(now)).let { if (it is JsonNull) null else it.bool() }
 
-    /** Earnest profile: the shape of an admission's earnest, and whether an ask's earnest is paid. */
-    fun earnestShapeOk(earnest: JsonElement): Boolean = Door.earnestShapeOk(earnest).bool()
-    fun earnestPaid(ask: JsonObject, earnest: JsonObject, blocks: List<JsonObject>): Boolean =
-        Door.earnestPaid(ask, earnest, JsonArray(blocks)).bool()
-}
+    /** The short reply (profiles/short-form.md, way 1): `FB1 ` and what the receiver cannot rebuild of her signed answer. */
+    fun shortReply(answer: JsonObject): JsonElement = Door.shortReply(answer)
 
-/** The one-time converter for blocks from before 1.6 (spec/legacy/converter.md). Not part of the protocol: no node reads an older shape. */
-object Legacy {
-    /**
-     * Convert old blocks into fresh blocks, each deriving from the old hash, signed by the key given for each old
-     * identity. `keys` maps each old identity to `{ public_key_sign, private_key, suite? }`; `at` is the conversion time. `schemas` are published
-     * schemas a block may name instead of a new one; `custodianKey` signs for the old ids in `custodianFor` (it needs a `channel`).
-     * Returns `{ blocks, map, skipped, deliveries }`.
-     */
-    fun convert(
-        oldBlocks: List<JsonObject>, keys: JsonObject, at: String? = null, map: JsonObject = JsonObject(emptyMap()),
-        existing: List<JsonObject> = emptyList(), channel: String? = null, requestHash: String? = null,
-        schemas: List<JsonObject> = emptyList(), custodianKey: JsonObject? = null, custodianFor: List<String>? = null,
-    ): JsonObject = Door.convert(JsonArray(oldBlocks), buildJsonObject {
-        put("keys", keys); at?.let { put("at", it) }; put("map", map); put("existing", JsonArray(existing)); put("schemas", JsonArray(schemas))
-        custodianKey?.let { put("custodian_key", it) }
-        custodianFor?.let { put("custodian_for", texts(it)) }
-        channel?.let { put("channel", it) }
-        requestHash?.let { put("request_hash", it) }
-    }).obj()
-
-    /** The id an old block had under the old canonical form. */
-    fun oldHash(block: JsonObject): String = Door.oldHash(block).string()
+    /** The answer rebuilt from a short reply among the blocks held (null: nothing was said). */
+    fun shortReplyOpen(text: String, signer: String, blocks: List<JsonObject>): JsonElement =
+        Door.shortReplyOpen(JsonPrimitive(text), JsonPrimitive(signer), JsonArray(blocks))
 }

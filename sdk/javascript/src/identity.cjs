@@ -1,49 +1,58 @@
-// Who someone is (modules/identity.md): a genesis, key grants, and the keys an id has at any moment, read from its
-// chain alone. The rules run in the Rust core; this module gives them JavaScript's option names.
+// Who someone is (modules/identity.md): her genesis (a list of one voice), her list of voices, the keys under a voice, and whether a
+// word stands (blocks.md, Finality). The rules run in the Rust core; this module gives them JavaScript's option names.
 const door = require('./door.cjs')
-const { arrivals } = require('./core.cjs')
+const write = require('./write.cjs')
 
-/** The recovery key's hash, as a genesis names it: the hash, in the identity's suite, of its SPKI hex as UTF-8 text. */
-const recoveryKeyHash = door.recoveryKeyHash
+/** A key named by its hash (identity.md, Her voices): its suite's hash of its SPKI hex as UTF-8 text. */
+const keyHash = (publicKey, suite) => door.keyHash(publicKey, suite ?? null)
 
 /**
- * A new person, autonomous system, machine or circle that signs: their genesis, signed. `keys` is { public_key_sign, private_key }
- * and `suite` when it is not std. A genesis needs only kind, at, audience and the key, each stated (nothing fills them in: a missing one is
- * refused); the recovery key and its reach come as a pair or not at all. `audience` is 'public' or recipients (then `salts` and `nonce` may be given).
+ * A new person, autonomous system, machine or circle that signs: their genesis, signed, a list of one voice. `keys` is
+ * { public_key_sign, private_key } and `suite` when it is not std. A genesis needs only kind, at, audience and the key, each stated (nothing
+ * fills them in: a missing one is refused). `reach` (a duration) comes with `clocks` (her clock, { names, needed }). `audience` is 'public'
+ * or recipients (then `salts` and `nonce` may be given).
  */
-function genesis(keys, { kind, at, audience, encryptionKey, recoveryKey, reach, recoverySuite, custodian, salts, nonce } = {}) {
-  return door.genesis(keys, { kind, at, audience, encryption_key: encryptionKey, recovery_key: recoveryKey, reach, recovery_suite: recoverySuite, custodian, salts, nonce })
+function genesis(keys, { kind, at, audience, encryptionKey, reach, clocks, salts, nonce } = {}) {
+  return door.genesis(keys, { kind, at, audience, encryption_key: encryptionKey, reach, clocks, salts, nonce })
 }
 const isGenesis = (block) => door.isGenesis(block ?? null)
 /** A genesis is valid when its own key opens it, in its suite. */
 const genesisOpens = (block) => door.genesisOpens(block ?? null)
 
 /**
- * A key grant, signed: brings `newPublicKey` into the id. `signer` is { private_key, suite?, last, broughtIn } (a key
- * the id holds and its place in that key's chain), or { private_key, recoveryKey } for the recovery key. Options:
- * `suite` (the new key's), `skip`, `replaces`, `countedTo`, `at`, `after`, `encrypt`, `custodian`. The recovery pair is named only in a genesis.
+ * A key grant about `id` (identity.md), written by `signer` ({ author, keys, held, at, after? }: one of her voices, her operator, or one of
+ * a voice of named people, signing in their own name). Give `voices` (her whole list again, with `updates` the list it replaces and `clocks`
+ * her clock), or `key` (one key under the signer's voice, in `suite`), or `encrypt` alone; `shownKey` when a key named by hash shows itself
+ * (`keyRef` the list that holds its hash); `countedTo` the last block of a key a voice above ends; `under` an operator grant.
  */
-function keyGrant(id, newPublicKey, signer, { replaces, countedTo, at, after = [], encrypt, custodian, suite, skip } = {}) {
-  return door.keyGrant(id, newPublicKey || null, { private_key: signer.private_key, suite: signer.suite, last: signer.last || null, brought_in: signer.broughtIn, recovery_key: signer.recoveryKey }, { replaces, counted_to: countedTo, at, after, encrypt, custodian, suite, skip })
+function keyGrant(id, signer, { voices, updates, clocks, key, suite, encrypt, shownKey, keyRef, countedTo, under } = {}) {
+  const state = { kind: 'key' }
+  if (voices) state.voices = voices
+  if (clocks) state.clocks = clocks
+  if (key) state.public_key_sign = key
+  if (suite) state.suite = suite
+  if (encrypt) state.public_key_encrypt = encrypt
+  if (shownKey) state.shown_key = shownKey
+  if (countedTo) state.counted_to = countedTo
+  const refs = { subject: id }
+  if (updates) refs.updates = updates
+  if (keyRef) refs.key = keyRef
+  if (under) refs.under = under
+  return write.write('grant', state, refs, { audience: 'public', ...signer, author: signer.author || id, key: signer.keys || signer.key })
 }
-/** Take your keys (identity.md, Held keys): a key grant to a key on the person's own device that rotates the custodian's key out. */
-const takeKeys = (id, ownPublicKey, signer, { heldKey, countedTo, ...options } = {}) => keyGrant(id, ownPublicKey, signer, { ...options, replaces: heldKey, countedTo })
+/** The second signature (blocks.md, Finality, Signed twice): a block of the same key, or of a voice above, naming the word in refs.confirms. */
+const confirm = (word, signer) => write.write('observe', {}, { confirms: [word.hash || word] }, { audience: 'public', ...signer, author: signer.author, key: signer.keys || signer.key })
 
-/** What an id's keys are: { keys: [{ key, by, signer, void, frozen, suite }], rotations (old key to { by, countedTo, recovery, floor }), recovery, ended }. */
-function identityOf(id, blocks, { arrivedAt, unknownArrival } = {}) {
-  const answer = door.identityOf(id, blocks, arrivals(arrivedAt, blocks), unknownArrival)
-  return { ...answer, rotations: new Map(answer.rotations) }
-}
-const keyTimeline = (id, blocks, { arrivedAt, unknownArrival } = {}) => door.keyTimeline(id, blocks, arrivals(arrivedAt, blocks), unknownArrival)
-const keysOf = (id, blocks, { arrivedAt, unknownArrival } = {}) => door.keysOf(id, blocks, arrivals(arrivedAt, blocks), unknownArrival)
-/** The keys that may sign a request now (nodes.md, Messages): not void, not frozen, not rotated out. */
+/** Every key a list or a key grant of hers brought in: [{ key, by, voice, under, suite, ended }]. */
+const keyTimeline = (id, blocks) => door.keyTimeline(id, blocks)
+/** The keys that speak for her now: of her standing voices and under them, not ended. Sorted. */
 const liveKeys = door.liveKeys
-/** Whether a signed block is its author's. */
-const signedByAuthor = (block, blocks, { arrivedAt, unknownArrival } = {}) => door.signedByAuthor(block, blocks, arrivals(arrivedAt, blocks, [block]), unknownArrival)
-/** The identity fold: { signed_by_author, keys, frozen, operators }. */
-const identityState = (id, blocks, { arrivedAt, unknownArrival } = {}) => door.identityState(id, blocks, arrivals(arrivedAt, blocks), unknownArrival)
-/** Which of an id's keys signed a block (its public key), or null. */
-const signerOf = door.signerOf
+/** Whether a key of the block's author spoke for her there (identity.md, invariant 8). A waiting block is true here; `stands` says it waits. */
+const signedByAuthor = (block, blocks) => door.signedByAuthor(block, blocks)
+/** Whether a word stands (blocks.md, Finality): { stands, waiting: [{ block, on }] }, read with no clock and no arrival. */
+const stands = (block, blocks) => door.stands(block, blocks)
+/** The identity fold: { signed_by_author, voices, clocks, keys, waiting } (1.9 stage 4 deleted the operator reading). */
+const identityState = (id, blocks) => door.identityState(id, blocks)
 /** Each key's chain for an id: [{ key, by, head, length, gaps, skips, equivocations, broken, ok }]. */
 const chainsOf = door.chainsOf
 /** Where an id's next block goes for one of its keys: { seq, prev }. */
@@ -54,4 +63,4 @@ const forked = door.forked
 /** The pairs of blocks one key signed naming one prev. */
 const forkPairs = door.forkPairs
 
-module.exports = { genesis, takeKeys, isGenesis, genesisOpens, recoveryKeyHash, keyGrant, identityOf, identityState, keyTimeline, keysOf, liveKeys, signedByAuthor, signerOf, chainsOf, nextLinkFor, counts, forked, forkPairs }
+module.exports = { genesis, isGenesis, genesisOpens, keyHash, keyGrant, confirm, identityState, keyTimeline, liveKeys, signedByAuthor, stands, chainsOf, nextLinkFor, counts, forked, forkPairs }

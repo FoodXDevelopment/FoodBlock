@@ -19,15 +19,13 @@ def load(*parts):
 
 V = load("spec", "vectors.json")
 ADVERSARIAL = load("spec", "canonical-vectors.json")["vectors"]
-FOLDS = V["folds"]
-REFUSALS = V["refusals"]
+CONVENTIONS = load("spec", "conventions-vectors.json")
 SEALED = V["sealed"]
 MS = V["messages"]
 
 # The sections this suite runs (every top-level key of vectors.json but `$comment`).
-RUN = {"keys", "canonical", "hashes", "ledger", "audience", "signatures", "bad_signatures", "envelopes", "sealed", "headers",
-       "identities", "deals", "circles", "folds", "refusals", "messages", "cbor", "door"}
-RUN_FOLDS = {"promises", "circles", "audience", "things", "successors", "rekeys", "ballots"}
+RUN = {"invariant_numbers", "keys", "canonical", "hashes", "ledger", "audience", "signatures", "bad_signatures", "envelopes", "sealed", "headers",
+       "messages", "cbor", "door"}
 
 
 def pub(signer):
@@ -44,6 +42,14 @@ def blocks_of(items):
 
 def find(held, h):
     return next(b for b in held if b["hash"] == h)
+
+
+def bytes_refusals(type_, state, refs):
+    """What a block's own bytes say (checks 1 to 4, core.md section 8): the 1.7 op `refusals` is gone; its halves are `valid` and `read`."""
+    try:
+        return fb.strict_text(fb.canonical(type_, state, refs))
+    except FoodBlockError as error:
+        return [{"code": error.code or "not_canonical", "detail": str(error)}]
 
 
 def codes_of(found):
@@ -65,16 +71,7 @@ BY_HASH = {v["hash"]: v for v in LEDGER}
 
 
 def stories():
-    out = [("identity", v["name"], v["blocks"]) for v in V["identities"]]
-    out += [("deal", v["name"], v["blocks"]) for v in V["deals"]]
-    out += [("circle", v["name"], v["blocks"]) for v in V["circles"]]
-    for group, label in (("promises", "promise fold"), ("circles", "circle fold"), ("audience", "audience fold"), ("things", "thing fold"),
-                         ("successors", "successor fold"), ("rekeys", "rekey fold"), ("ballots", "ballot fold")):
-        out += [(label, v["name"], v["blocks"]) for v in FOLDS[group]]
-    out.append(("refusal", "stories", REFUSALS["blocks"]))
-    out += [("refusal", c["name"], c["blocks"]) for c in REFUSALS["cases"] if c.get("blocks")]
-    out.append(("sealed", "stories", SEALED["blocks"]))
-    return out
+    return [("sealed", "stories", SEALED["blocks"])]
 
 
 STORIES = stories()
@@ -87,7 +84,6 @@ class Sections(unittest.TestCase):
     def test_every_section_is_run(self):
         held = set(V) - {"$comment", "comment"}
         self.assertEqual(held - RUN, set(), "vectors.json has a section this suite does not run")
-        self.assertEqual(set(FOLDS) - RUN_FOLDS, set(), "vectors.json has a fold this suite does not run")
         self.assertEqual(RUN - held, set(), "sections expected but missing")
 
 
@@ -107,7 +103,8 @@ class Canonical(unittest.TestCase):
                 if "canonical" in v:
                     self.assertEqual(c(b), v["canonical"])
                 if "refused" in v:
-                    got = codes_of(fb.refusals(b["type"], b["state"], b["refs"]))
+                    # what a writer refuses of the value (write_refusals: a float is `float`, not the wire's `not_canonical`)
+                    got = codes_of(call("write_refusals", {"type": b["type"], "state": b["state"], "refs": b["refs"]}, []))
                     self.assertTrue(all(code in got for code in v["refused"]), got)
 
     def test_canonical(self):
@@ -117,13 +114,13 @@ class Canonical(unittest.TestCase):
                 self.assertEqual(fb.canonical(b["type"], b["state"], b["refs"]), v["canonical"])
                 self.assertEqual(fb.hash(b["type"], b["state"], b["refs"]), v["hash"])
 
-    def test_utf16_order(self):
-        """canonical.md Rule 1: object keys sort by UTF-16 code units, as JavaScript sorts. A set is written sorted, never sorted for you."""
+    def test_utf8_byte_order(self):
+        """canonical.md Rule 1: object keys sort by the bytes of their UTF-8 form (code-point order): U+FF61 before U+1F35E. A set is written sorted, never sorted for you."""
         state = {"\U0001F35E": 1, "｡": 2, "a": 3}
-        refs = {"\U0001F35E": "x", "｡": "y", "sees": ["a", "\U0001F35E bread", "｡ dot"]}
+        refs = {"\U0001F35E": "x", "｡": "y", "sees": ["a", "｡ dot", "\U0001F35E bread"]}
         self.assertEqual(fb.canonical("t.a", state, refs),
-                         '{"refs":{"sees":["a","\U0001F35E bread","｡ dot"],"\U0001F35E":"x","｡":"y"},'
-                         '"state":{"a":3,"\U0001F35E":1,"｡":2},"type":"t.a"}')
+                         '{"refs":{"sees":["a","｡ dot","\U0001F35E bread"],"｡":"y","\U0001F35E":"x"},'
+                         '"state":{"a":3,"｡":2,"\U0001F35E":1},"type":"t.a"}')
 
 
 class Hashes(unittest.TestCase):
@@ -161,7 +158,7 @@ class Stories(unittest.TestCase):
                     self.assertEqual(fb.hash(blk["type"], blk["state"], blk["refs"], b.get("suite", "std")), b["hash"], b["name"])
                     self.assertTrue(fb.verify(full(b), b["signature"], pub(b["signer"])), b["name"])
                     self.assertEqual(V["keys"][b["signer"]].get("suite", "std"), b.get("suite", "std"), b["name"])
-                    self.assertEqual(fb.refusals(blk["type"], blk["state"], blk["refs"]), [], b["name"])
+                    self.assertEqual(bytes_refusals(blk["type"], blk["state"], blk["refs"]), [], b["name"])
 
 
 class Signatures(unittest.TestCase):
@@ -206,162 +203,8 @@ class Envelopes(unittest.TestCase):
         for v in V["headers"]:
             with self.subTest(v["name"]):
                 self.assertEqual(fb.header({"hash": v["hash"], **BY_HASH[v["hash"]]["block"]}), v["header"])
-                self.assertTrue(fb.verify_message({**v["header"], "signature": v["header_signature"]}, pub(v["signer"])))
-
-
-class Identities(unittest.TestCase):
-    def test_identities(self):
-        for v in V["identities"]:
-            held = blocks_of(v["blocks"])
-            arrivals, unknown = v.get("arrivals"), v.get("unknown_arrival")
-            names = {b["hash"]: b["name"] for b in v["blocks"]}
-            for b in held:
-                if b["hash"] in v["signed_by_author"]:
-                    with self.subTest(f"{v['name']}: {names[b['hash']]}"):
-                        self.assertEqual(fb.identity.signed_by_author(b, held, arrivals, unknown), v["signed_by_author"][b["hash"]])
-            if "keys" in v:
-                with self.subTest(f"{v['name']}: the keys that speak"):
-                    self.assertEqual(sorted(fb.identity.keys_of(v["id"], held, arrivals, unknown)), v["keys"])
-            if "frozen" in v:
-                with self.subTest(f"{v['name']}: the frozen keys"):
-                    self.assertEqual(sorted(k["key"] for k in fb.identity.key_timeline(v["id"], held) if k["frozen"]), v["frozen"])
-            if "operators" in v:
-                with self.subTest(f"{v['name']}: its operators"):
-                    self.assertEqual(fb.grant.operators_of(v["id"], held), v["operators"])
-            with self.subTest(f"{v['name']}: the identity fold"):
-                state = fb.identity_state(v["id"], held, arrivals, unknown)
-                self.assertEqual(state["keys"], v["keys"])
-                if v.get("frozen"):
-                    self.assertEqual(state["frozen"], v["frozen"])
-                for h, ok in v["signed_by_author"].items():
-                    if h in state["signed_by_author"]:
-                        self.assertIs(state["signed_by_author"][h], ok, h)
-            if v.get("fence"):
-                f = v["fence"]
-                limit, grant = find(held, f["block"]), find(held, f["grant"])
-                with self.subTest(f"{v['name']}: sealed to the agent alone"):
-                    self.assertTrue(limit["refs"]["for"] == f["grant"] and limit["state"]["kind"] == "limit" and limit["state"]["limit"] == f["limit"]
-                                    and fb.finds_self(limit, f["agent"], f["salt"]) and not fb.finds_self(limit, f["principal"], f["salt"])
-                                    and len(limit["state"]["audience"]) == 1)
-                with self.subTest(f"{v['name']}: the grant check never reads the limit"):
-                    rest = [b for b in held if b is not limit]
-                    self.assertIsNone(grant["state"]["scope"].get("limit"))
-                    for h in v["under"]:
-                        self.assertEqual(fb.grant.why_not_under(find(held, h), held), fb.grant.why_not_under(find(held, h), rest))
-                with self.subTest(f"{v['name']}: the principal's node checks the limit"):
-                    for c in f["within"]:
-                        self.assertEqual(fb.grant.within_limit(limit, c["money"], c["spent"]), c["within"])
-            for h, ok in (v.get("under") or {}).items():
-                with self.subTest(f"{v['name']}: a block under the grant speaks for its grantor"):
-                    self.assertEqual(not fb.grant.why_not_under(find(held, h), held), ok)
-
-
-def stage_of(v):
-    held = blocks_of(v["blocks"])
-    return fb.promise_stage(find(held, v["first"]), held)
-
-
-class Folds(unittest.TestCase):
-    def test_promises(self):
-        for v in [*V["deals"], *FOLDS["promises"]]:
-            with self.subTest(f"{v['name']}: {v['expected']['stage']}"):
-                got = stage_of(v)
-                self.assertTrue(subset(got, v["expected"]), f"got {got}")
-
-    def test_circles(self):
-        for v in [*V["circles"], *FOLDS["circles"]]:
-            with self.subTest(v["name"]):
-                held = blocks_of(v["blocks"])
-                state = fb.circle_state(v["circle"], held)
-                want = v["expected"]["members"]
-                members = sorted(state["members"]) if isinstance(want, list) else {who: sorted(m["roles"]) for who, m in state["members"].items()}
-                self.assertEqual(members, want)
-                self.assertEqual(sorted(state["removed"]), v["expected"]["removed"])
-                if v["expected"].get("counted_to"):
-                    self.assertEqual(state["removed"], v["expected"]["counted_to"])
-                for h, ok in (v.get("may_act") or {}).items():
-                    self.assertEqual(fb.fold.may_act_as(find(held, h), v["circle"], held), ok)
-
-    def test_audience(self):
-        for v in FOLDS["audience"]:
-            held = blocks_of(v["blocks"])
-            for c in v["cases"]:
-                with self.subTest(c["name"]):
-                    self.assertEqual(fb.members_then(find(held, c["block"]), c["recipient"], held), c["members"])
-
-    def test_things(self):
-        for v in FOLDS["things"]:
-            held = blocks_of(v["blocks"])
-            for c in v["where"]:
-                with self.subTest(f"where now: {c['name']}"):
-                    self.assertEqual(fb.where_now(find(held, c["thing"]), held), c["places"])
-            for c in v["owners"]:
-                with self.subTest(f"owner: {c['name']}"):
-                    got = fb.fold.ownership(find(held, c["thing"]), held)
-                    self.assertEqual([got["owner"], got["conflict"]], [c["owner"], c["conflict"]])
-
-    def test_successors(self):
-        for v in FOLDS["successors"]:
-            with self.subTest(v["name"]):
-                held = blocks_of(v["blocks"])
-                got = fb.fold.successor_view(find(held, v["grant"]), held, now=v.get("now"), arrived_at=v["arrivals"])
-                self.assertTrue(subset(got, v["expected"]), f"got {got}")
-
-    def test_ballots(self):
-        for v in FOLDS["ballots"]:
-            held = blocks_of(v["blocks"])
-            for c in v["cases"]:
-                with self.subTest(c["name"]):
-                    self.assertEqual(fb.fold.counted_in(find(held, c["result"]), c["commitment"], c["counter"]), c["counted"])
-
-    def test_rekeys(self):
-        for v in FOLDS["rekeys"]:
-            with self.subTest(v["name"]):
-                got = fb.fold.circle_key(v["circle"], blocks_of(v["blocks"]))
-                self.assertTrue(subset(got, v["expected"]), f"got {got}")
-
-
-class Refusals(unittest.TestCase):
-    def test_refusals(self):
-        pool = {b["hash"]: full(b) for _, _, items in STORIES for b in items}
-        for c in REFUSALS["cases"]:
-            with self.subTest(f"refused ({c['by']}): {c['name']}"):
-                held = [pool[h] for h in c["held"]] if isinstance(c.get("held"), list) else []
-                if c["by"] == "check":
-                    b = c["block"]
-                    self.assertEqual(codes_of(fb.refusals(b["type"], b["state"], b["refs"], held=held)), c["codes"])
-                elif c["by"] == "valid":
-                    self.assertEqual(codes_of(fb.valid(c["block"], held)), c["codes"])
-                elif c["by"] == "accept":
-                    incoming = c.get("inline") or [pool[h] for h in c["incoming"]]
-                    got = fb.sync.accept(incoming, held, False)
-                    if c.get("equivocations"):
-                        # The second of a pair is neither taken nor refused: it is listed in its pair.
-                        self.assertEqual([b["hash"] for b in got["taken"]], c["taken"])
-                        self.assertEqual(got["refused"], [])
-                        self.assertEqual(got["equivocations"], c["equivocations"])
-                    elif c.get("waiting"):
-                        self.assertEqual([w["hash"] for w in got["waiting"]], c["waiting"])
-                        self.assertEqual(got["refused"], [])
-                    elif c.get("taken"):
-                        self.assertEqual([b["hash"] for b in got["taken"]], c["taken"])
-                    else:
-                        refused = [r["hash"] for r in got["refused"]]
-                        self.assertTrue(all(h in refused for h in c["incoming"]), got["refused"])
-                        self.assertEqual(codes_of(got["refused"]), c["codes"])
-                elif c["by"] == "fold":
-                    self.assertTrue(subset(stage_of(c), c["expected"]))
-                elif c["by"] == "may_act_as":
-                    blocks = blocks_of(c["blocks"])
-                    self.assertEqual(fb.fold.may_act_as(find(blocks, c["block"]), c["circle"], blocks), c["ok"])
-                elif c["by"] == "under":
-                    self.assertEqual(not fb.grant.why_not_under(pool[c["block"]], list(pool.values())), c["live"])
-                elif c["by"] == "open":
-                    with self.assertRaises(FoodBlockError) as raised:
-                        fb.open_copy(c["message"], V["keys"][c["recipient"]]["x25519_private"])
-                    self.assertEqual([raised.exception.code], c["codes"])
-                else:
-                    self.fail(f"a refusal by {c['by']} this suite does not know")
+                # a header is no message (core.md, section 2): its signature is the block's, over the header
+                self.assertTrue(fb.header_signed_by({"header": v["header"], "header_signature": v["header_signature"]}, pub(v["signer"])))
 
 
 class Messages(unittest.TestCase):
@@ -383,15 +226,15 @@ class Messages(unittest.TestCase):
 
     def test_answers(self):
         node_key = pub(MS["node_signer"])
-        self.assertIn(node_key, fb.identity.keys_of(MS["node"], blocks_of(SEALED["blocks"])))
+        self.assertIn(node_key, fb.identity.live_keys(MS["node"], blocks_of(SEALED["blocks"])))
         self.assertTrue(fb.sync.answer_signed_by(MS["pull_answer"]["message"], node_key))
         self.assertEqual(len(MS["pull_answer"]["message"]["blocks"]), MS["pull_answer"]["matches"])
         self.assertTrue(fb.sync.answer_signed_by(MS["push_answer"]["message"], node_key))
         # Every key is always there; each refusal is { hash, code, detail } with a code from protocol.json; each pair sorted.
         P = MS["push_answer"]["message"]
         known = {code for group in fb.CODES.values() for code in group}
-        self.assertEqual(list(P), [k for k in fb.PROTOCOL["messages"]["push_answer"] if k in P or k not in fb.PROTOCOL["messages"]["push_answer_optional"]])
-        self.assertTrue(all(list(r) == fb.PROTOCOL["messages"]["refusal"] and r["code"] in known for r in P["refused"]))
+        self.assertEqual(list(P), [k for k in fb.CONVENTIONS["messages"]["push_answer"] if k in P or k not in fb.CONVENTIONS["messages"]["push_answer_optional"]])
+        self.assertTrue(all(list(r) == fb.CONVENTIONS["messages"]["refusal"] and r["code"] in known for r in P["refused"]))
         self.assertTrue(all(pair == sorted(pair) for pair in P["equivocations"]))
         self.assertEqual(fb.sync.push_answer(P, node=P["node"], private_key=V["keys"][MS["node_signer"]]["private_key"]), P)
         Q = MS["push"]
@@ -439,7 +282,7 @@ class Door(unittest.TestCase):
     compares the refusal codes of the returned list; `error` means the call must fail."""
 
     def test_door(self):
-        for d in V["door"]:
+        for d in [*V["door"], *CONVENTIONS["door"]]:
             with self.subTest(d["name"]):
                 try:
                     got = call(d["op"], *d["args"])

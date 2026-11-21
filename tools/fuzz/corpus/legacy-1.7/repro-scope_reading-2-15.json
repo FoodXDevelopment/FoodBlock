@@ -1,0 +1,21 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "types": [
+    "promise"
+   ],
+   "parties": [
+    "80c8a9c1abfbed6e3d2392504783430e42c0934ff0ed7daa353421df8739dfd4"
+   ],
+   "limit": {
+    "minor": 0,
+    "currency": "EUR"
+   },
+   "each": null,
+   "notice": "two days",
+   "colour": null
+  }
+ ],
+ "world": 2
+}

@@ -18,7 +18,7 @@
 // How to run it before a revised core is deployed (nothing here touches a live server):
 //   1. On the machine that holds the node's database, export the stored messages to a file you keep private:
 //        psql "$DATABASE_URL" -At -c "select message::text from blocks order by n" > blocks.jsonl
-//      (the `blocks` table of sql/schema.sql; one JSON message per line). For another store, export one JSON block per line.
+//      (the `blocks` table of host/src/postgres/schema.sql; one JSON message per line). For another store, export one JSON block per line.
 //   2. Copy blocks.jsonl to a checkout of the revised core and run:  node tools/replay-check.cjs blocks.jsonl
 //   3. Read the counts. A block that fails here would be refused by the revised core. Fix the cause (or convert the data
 //      once, through `fb convert`) before the revised core is deployed. Delete blocks.jsonl afterwards.

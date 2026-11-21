@@ -1,7 +1,6 @@
-//! The views (modules/folds.md): a fold plus one more thing, the reader's clock or when blocks arrived on the reader's
-//! node. A view is right for the reader that computes it and says whose clock it used; it may show but never decide what
+//! The views (modules/folds.md): a fold plus one more thing, the reader's clock (or, for `due`, when a block arrived on the
+//! reader's node). A view is right for the reader that computes it and says whose clock it used; it may show but never decide what
 //! another reader must accept. Each takes the clock or the arrivals as an argument: none reads the system clock.
-use crate::identity::{signed_by_author_in, ArrivedAt};
 #[allow(unused_imports)]
 use crate::js::{get, hash_of, index_of, rs, ss, st, type_of, Index};
 #[allow(unused_imports)]
@@ -9,49 +8,20 @@ use crate::order::sees_in;
 use crate::prelude::*;
 
 /// `due`: a promise with a relative `when` `{ after, wait }` falls due `wait` after the `after` block arrived on the
-/// performer's node, counted on the performer's clock. The instant, or None while the anchor has not arrived.
-pub fn due(promise: &Value, arrived: ArrivedAt) -> Option<String> {
+/// performer's node, counted on the performer's clock. `arrived` says when a block arrived (an ISO time), as the reader's node kept it.
+/// The instant, or None while the anchor has not arrived.
+pub fn due(promise: &Value, arrived: &dyn Fn(&str) -> Option<String>) -> Option<String> {
     let when = get(promise, "state.when")?;
     let (after, wait) = (when.get("after")?.as_str()?, when.get("wait")?.as_str()?);
-    let at = arrived.and_then(|f| f.at(after))?;
+    let at = arrived(after).filter(|a| !a.is_empty())?;
     crate::time::add_duration(&at, wait, 1)
 }
 
-/// `recovery_reach`: the blocks a recovery rotation voids in the pure fold but the reach protects on this reader's node
-/// (they, or a block of another identity that built on them, arrived before the reach began). Sorted.
-pub fn recovery_reach(rotation: &Value, blocks: &[Value], arrived: ArrivedAt) -> Vec<String> {
-    let index: Index = crate::js::held_index(blocks.iter().chain([rotation]));
-    let Some(id) = rs(rotation, "author") else { return vec![] };
-    // asked about anything but a rotation the recovery key signed, nothing: the reach limits recovery rotations alone (identity.md)
-    let recovery = crate::js::type_of(rotation) == "grant"
-        && crate::js::ss(rotation, "kind") == Some("key")
-        && crate::js::ss(rotation, "replaces").is_some()
-        && index.contains_key(hash_of(rotation))
-        && crate::identity::recovery_signer_of(rotation, id, &index).is_some();
-    if !recovery {
-        return vec![];
-    }
-    let mut out: Vec<String> = index
-        .values()
-        .filter(|b| rs(b, "author") == Some(id) && hash_of(b) != hash_of(rotation))
-        .filter(|b| !signed_by_author_in(b, &index, None) && signed_by_author_in(b, &index, arrived))
-        .map(|b| hash_of(b).to_string())
-        .collect();
-    out.sort();
-    out
-}
-
-/// A promise's stage, with offered or asked read as expired, and an accepted or underway refrain read as elapsed, by the reader's
-/// clock (folds.md).
+/// A promise's stage, with offered or asked read as expired, and an accepted or underway promise that moves nothing read as elapsed
+/// past its `until`, by the reader's clock (folds.md, Views).
 #[cfg(feature = "folds")]
 pub fn promise_view(first: &Value, blocks: &[Value], now: Option<&str>) -> Value {
-    promise_view_at(first, blocks, now, None)
-}
-
-/// The same, with the reader's arrivals too: a block the recovery reach protects counts for that reader (decision c9).
-#[cfg(feature = "folds")]
-pub fn promise_view_at(first: &Value, blocks: &[Value], now: Option<&str>, arrived_at: crate::identity::ArrivedAt) -> Value {
-    let index = crate::fold::read_all_at(core::iter::once(first).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()), arrived_at);
+    let index = crate::fold::read_all(core::iter::once(first).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()));
     promise_view_in(hash_of(first), &index, now)
 }
 
@@ -76,14 +46,14 @@ pub(crate) fn promise_view_in(first_hash: &str, index: &Index, now: Option<&str>
     let offer = view.get("offer").and_then(Value::as_str).and_then(|h| index.get(h)).or_else(|| index.get(first_hash));
     if let (Some(cond), true) = (offer.and_then(|o| get(o, "state.terms.condition")), view.is_object()) {
         let blocks: Vec<Value> = index.values().cloned().collect();
-        let word = match crate::tasks::condition_holds(cond, &blocks, now.unwrap_or("")) {
+        let word = match crate::tasks::condition_holds(cond, &blocks, None) {
             Some(true) => "holds",
             Some(false) => "not",
             None => "unread",
         };
         view["condition"] = json!(word);
         // Failure spreads visibly (promises.md, The condition fact): a condition that does not hold because the deal it names ended without it
-        // (stopped, declined, expired, breached) or itself rests on such a deal names that deal, never just "open".
+        // (stopped, declined, expired) or itself rests on such a deal names that deal, never just "open".
         view["condition_failed"] = if word == "not" { condition_failed(cond, index, now, &mut vec![first_hash.to_string()]).map_or(Value::Null, Value::String) } else { Value::Null };
     } else if view.is_object() {
         view["condition"] = Value::Null;
@@ -108,7 +78,7 @@ pub(crate) fn promise_view_in(first_hash: &str, index: &Index, now: Option<&str>
 }
 
 /// The deal a condition rests on that can no longer give it: the first promise it names (`settled`, `paid` or `accepted`) when that deal ended
-/// without the condition's matter (stopped, declined, expired, or breached; a stop before binds nothing, so an `accepted` fails on it), or when
+/// without the condition's matter (stopped, declined or expired; a stop before binds nothing, so an `accepted` fails on it), or when
 /// that deal's own condition failed. None for any other shape, or a cycle.
 #[cfg(feature = "folds")]
 fn condition_failed(cond: &Value, index: &Index, now: Option<&str>, seen: &mut Vec<String>) -> Option<String> {
@@ -123,21 +93,20 @@ fn condition_failed(cond: &Value, index: &Index, now: Option<&str>, seen: &mut V
     let ended = match stage.as_str() {
         "declined" | "expired" => true,
         "stopped" => stop == "before" || key != "accepted",
-        "breached" => key != "accepted",
         _ => false,
     };
     let mut own = || {
         let offer = v.get("offer").and_then(Value::as_str).and_then(|h| index.get(h)).or_else(|| index.get(&target))?;
         let c = get(offer, "state.terms.condition")?;
         let blocks: Vec<Value> = index.values().cloned().collect();
-        (crate::tasks::condition_holds(c, &blocks, now.unwrap_or("")) == Some(false)).then_some(())?;
+        (crate::tasks::condition_holds(c, &blocks, None) == Some(false)).then_some(())?;
         condition_failed(c, index, now, seen)
     };
     (ended || own().is_some()).then_some(target)
 }
 
 /// The same, with whether the price is paid in full beside it (compared exactly, as the stage compared it; false where the stage says
-/// nothing of it): the `settled` condition reads both.
+/// nothing of it): the `paid` condition reads it.
 #[cfg(feature = "folds")]
 pub(crate) fn promise_view_read(first_hash: &str, index: &Index, now: Option<&str>) -> (Value, bool) {
     let mut stage = crate::fold::promise_stage_in(first_hash, index, &crate::fold::StageOptions::default());
@@ -157,14 +126,14 @@ pub(crate) fn promise_view_read(first_hash: &str, index: &Index, now: Option<&st
             stage["stage"] = json!("expired");
         }
     }
-    // A refrain that is accepted or underway is elapsed once the reader's clock passes its until (folds.md, Views; decision H15): a
-    // fact, its term ran with no referee's defeat counted, never a verdict that it was kept (never done). What was paid is beside it
-    // (`paid`). One that a stop ended stays stopped: when the stop came, against the until, is a fact for each reader to judge.
+    // 1.9 R-H10: once the reader's clock is past a promise's `terms.until` and the promise moves nothing (it names no `what`, no `lines` and no
+    // `quantity`: nothing goes from its signer), the view says elapsed. A fact of its term, never that it was kept; it binds no one. One that
+    // a stop ended stays stopped.
     if matches!(st_name.as_str(), "accepted" | "underway") {
         let offer = stage.get("offer").and_then(Value::as_str).and_then(|h| index.get(h)).unwrap_or(first);
-        let refrain = get(offer, "state.terms.refrain") == Some(&Value::Bool(true));
-        let until = get(offer, "state.terms.until").and_then(Value::as_str);
-        if refrain && matches!((now, until), (Some(n), Some(u)) if !n.is_empty() && n > u) {
+        let moves_nothing = crate::js::rf(offer, "what").is_none() && get(offer, "state.terms.lines").is_none() && get(offer, "state.terms.quantity").is_none();
+        let until = get(offer, "state.terms.until").and_then(Value::as_str).and_then(crate::time::parse);
+        if moves_nothing && matches!((now.and_then(crate::time::parse), until), (Some(n), Some(u)) if n > u) {
             stage["stage"] = json!("elapsed");
         }
     }

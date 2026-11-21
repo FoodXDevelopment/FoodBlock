@@ -1,12 +1,12 @@
 // Durable state for the hosted door: one JSON file, written whole and renamed into place after every change (so a crash leaves the old
 // file or the new one, never half of one). It holds what must survive a restart: registered clients, tokens (as hashes), sessions and
-// accounts. Put it on a durable disk (EFS). The people's own data lives on the host, not here; this is only who may reach the door.
-// `seal` / `open` keep a person's signing keys encrypted at rest under a key derived from the operator's master secret.
+// no person's key. Put it on a durable disk (EFS). The people's own data lives on the host, not here; this is only who may reach the door.
+// `seal` / `open` keep what the door itself holds (an assistant's session key, a draft) encrypted at rest under a key derived from the operator's master secret.
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-export function durableState(file, { collections = ["clients", "access", "refresh", "sessions", "accounts", "identities", "operator"] } = {}) {
+export function durableState(file, { collections = ["clients", "access", "refresh", "sessions"] } = {}) {
   const data = Object.fromEntries(collections.map((name) => [name, {}]));
   if (file && existsSync(file)) {
     const saved = JSON.parse(readFileSync(file, "utf8"));
@@ -61,7 +61,7 @@ const readSealed = (file, seal) => { try { return existsSync(file) ? seal.open(r
 /**
  * Drafts that survive a restart: draftsFor(personId) is a Map of that person's drafts, kept sealed in <dir>/<personId>.json. The door calls
  * map.touch() after every change; the file is written at once (drafts are rare and small). A draft holds the signed-for spec and, for a
- * grant, the assistant's keys, so the file is sealed like the identities.
+ * grant, the assistant's keys, so the file is sealed under the operator's master secret.
  */
 export function durableDrafts(dir, seal) {
   const maps = new Map();

@@ -1,0 +1,81 @@
+{
+ "op": "pot",
+ "args": [
+  {
+   "hash": "41f3e1ba8b6f97b0cb8aee5f1b317b2f9fb94eabb9097973685a52ee222bec78",
+   "type": "promise",
+   "state": {
+    "at": "2026-10-15T09:01:15.594Z",
+    "audience": "public",
+    "seq": 9,
+    "terms": {
+     "price": {
+      "value": "9",
+      "unit": "GBP"
+     },
+     "quantity": {
+      "value": "25",
+      "unit": "{egg}"
+     },
+     "expires": "2026-10-18T09:00:00.000Z"
+    }
+   },
+   "refs": {
+    "author": "1d55d1b23d6de89ff1cfab7d255dd5acb597752c6588eaa122491fbba95333cc",
+    "prev": "928b910a518acb09f04820deb03ebcd0dbfbc284591c43084e61e6bea71e94b5",
+    "from": "1d55d1b23d6de89ff1cfab7d255dd5acb597752c6588eaa122491fbba95333cc",
+    "to": "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+    "what": "f86caba4c40ec048c6aab60165b38543365d0b744f41d94940014f575584f22e"
+   },
+   "signature": "c8e036c6e077f2099bef81e9c0d3876ff51c8474ed9fbadfca7d3a857dc375491f30854a201db6ca008c13043333235b93a6c209cb94ea0fcfdce2c8dbd5710e"
+  },
+  [
+   {
+    "hash": "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-15T09:00:05.343Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100af094b5d893b335ecb07c93ffe1a1b96cf68a06e297b5fe145ff71a77efb5d15"
+    },
+    "refs": {},
+    "signature": "970eaaaa0499511d72f4372c393642499bb0556c6a488fe49deabffb352e3a13175ecfad0b15957565cf216d496873c3a157145b3beeeb157c60722d4bb8c502"
+   },
+   {
+    "hash": "1d55d1b23d6de89ff1cfab7d255dd5acb597752c6588eaa122491fbba95333cc",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-15T09:00:10.888Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b657003210022982719b219be69fbfce03d99a8c10fa0bd7d8bacd2134102fd69f911cfd02d"
+    },
+    "refs": {},
+    "signature": "9cdb45e373a8f32e929caf69b48177c2b0c5fd504fac97760581df4e9bd285a33a9d8617935bac5f8b01feb0283825bcce5d99721115da27ee7b8a04883ec401"
+   },
+   {
+    "hash": "0dacc682b649ee6fdb77c39f8a259bd81b1a5a35b1ad5f6ef6af9f5a7434d8b4",
+    "type": "transfer",
+    "state": {
+     "at": "2026-10-15T09:01:19.715Z",
+     "audience": "public",
+     "seq": 10,
+     "amount": {
+      "value": "18",
+      "unit": "GBP"
+     }
+    },
+    "refs": {
+     "author": "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+     "prev": "9d4f48818f6f9e1027704a88e1af5ef14c42856323ff7e5f9c4e9dbcae243880",
+     "to_owner": "f458c560c0520294727380f6d31a53bcda60983d417f9f475bc7fb39e3d900cc",
+     "for": "41f3e1ba8b6f97b0cb8aee5f1b317b2f9fb94eabb9097973685a52ee222bec78"
+    },
+    "signature": "9833707206c1ca25cc771ed0550589e0e4ed945be77a94229b7172f8f20fb96afdbaedc4669a544413ddebcfef38c0d16c4a8a5f9c343465ddc695415b289e04"
+   }
+  ],
+  null
+ ],
+ "world": 1
+}

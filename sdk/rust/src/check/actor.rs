@@ -1,6 +1,5 @@
-//! An actor's own rules (core.md section 7): its kind, and a circle's roles, removal and needed hands.
-use super::{f, is_label, s, Checker, W};
-use crate::js::{count_stated, is_obj, keys_within};
+//! An actor's own rules (core.md section 7): its kind, and a circle's parts, rows and clock (circles.md).
+use super::{f, is_label, Checker, W};
 use crate::prelude::*;
 
 impl Checker<'_> {
@@ -10,12 +9,13 @@ impl Checker<'_> {
         if !answering && !is_label(g("kind")) {
             w.push(f("required", "state.kind says what it is: a person, an agent, a circle, a contact"));
         }
-        // a key, its suite and its custodian are named by a genesis or a key grant, never by any other actor (core.md, sections 2 and 4)
-        for key in ["public_key_sign", "recovery_key_hash", "recovery_reach", "recovery_suite", "suite", "custodian"] {
-            if g(key).is_some() {
+        // a key, its suite and her voices are named by a genesis or a key grant, never by any other actor (core.md, section 7)
+        for key in ["public_key_sign", "suite", "reach", "clocks", "voices", "shown_key"] {
+            // a circle names its clock (C20)
+            if g(key).is_some() && !(key == "clocks" && kind_is_circle(state)) {
                 w.push(f(
                     "undeclared_field",
-                    format!("only a genesis names state.{key}; a key comes in by a key grant"),
+                    format!("only a genesis or a key grant names state.{key}; a key comes in by a key grant"),
                 ));
             }
         }
@@ -23,77 +23,91 @@ impl Checker<'_> {
         if kind == Some("contact") && g("public_key_encrypt").is_some() {
             w.push(f("undeclared_field", "a contact has no keys"));
         }
-        w.extend(self.roles_shape(g("roles"), kind == Some("circle")));
-        if !g("removal").is_none_or(|x| {
-            is_obj(Some(x))
-                && keys_within(x, &self.list("circle.removal"))
-                && count_stated(x.get("needed"), None).is_some()
-        }) {
-            w.push(f("shape", "state.removal is { needed: N }, how many other holders of remove must agree to remove one who holds admit or remove"));
+        // 1.9 stage 6 (circles.md, C1, C3, C10, C20): a circle states `pack` (whole parts), `rules` (rows) and `clocks`, each optional
+        if kind == Some("circle") {
+            w.extend(self.circle_shape(state));
+        } else {
+            for key in ["pack", "rules"] {
+                if g(key).is_some() {
+                    w.push(f("undeclared_field", format!("only a circle states state.{key}")));
+                }
+            }
         }
-        let powers = self.list("circle.needed");
-        if !g("needed").is_none_or(|x| {
-            x.as_object().is_some_and(|m| m.iter().all(|(k, n)| powers.contains(k) && (count_stated(Some(n), None).is_some() || n.as_str() == Some("all") || n.as_object().is_some_and(|o| o.len() == 1 && o.get("of_members").and_then(Value::as_str).and_then(crate::bound::share_of_members).is_some()))))
-        }) {
-            w.push(f("shape", format!("state.needed is {{ power: N }}, how many holders of {} must sign an act", powers.join(" or "))));
-        }
-        w.extend(self.hash_shape(g("custodian"), "state.custodian"));
         if g("public_key_encrypt").is_some() {
             w.extend(self.key_checks(&json!({ "public_key_encrypt": g("public_key_encrypt") })));
         }
         w
     }
 
-    // The powers a circle role may hold: the protocol's, and every optional profile's (a node that has never heard of
-    // a profile still accepts a block that uses its power).
-    pub(super) fn all_powers(&self) -> Vec<String> {
-        let mut out = self.spec.powers.clone();
-        if let Some(Value::Object(profiles)) = self.spec.protocol.get("optional_profiles") {
-            for p in profiles.values() {
-                out.extend(crate::spec::strings_pub(p.get("powers")));
+    // A circle's founding block or version (circles.md): `pack` an amount of whole parts (`unit` `part`, at least 1, no `of`); `rules` a
+    // non-empty list of rows, each `{ parts, scope }` or `{ to, needed, scope }`, numbers whole and at least 1, `scope` a grant's scope; a
+    // parts row only where the circle states a pack.
+    fn circle_shape(&self, state: &Value) -> W {
+        let mut w = vec![];
+        let pack = state.get("pack");
+        if let Some(p) = pack {
+            let ok = crate::decimal::Amount::of(Some(p)).is_some_and(|a| {
+                a.kind.unit == "part" && a.kind.of.is_none() && super::is_whole_parts(&a.value) && a.value.is_pos()
+            });
+            if !ok {
+                w.push(f("shape", "state.pack is a circle's parts: { value: a whole number of at least 1, unit: \"part\" }, with no of"));
             }
         }
-        out
+        if let Some(rules) = state.get("rules") {
+            let is_id = |x: &str| self.spec.is("id", x);
+            match rules.as_array() {
+                Some(rows) if !rows.is_empty() => {
+                    for (i, r) in rows.iter().enumerate() {
+                        if !row_shape_ok(r, pack.is_some(), &is_id) {
+                            w.push(f("shape", format!("state.rules[{i}] is {{ parts, scope }} (on a circle with a pack) or {{ to, needed, scope }}: numbers whole and at least 1, never all and never a share")));
+                        } else if let Some(scope) = r.get("scope") {
+                            // a row's scope may name the circle's things in `what` (C4): a row has no refs of its own
+                            let mut plain = scope.clone();
+                            let what = plain.as_object_mut().and_then(|m| m.remove("what"));
+                            let what_ok = what.as_ref().is_none_or(|x| match x {
+                                Value::String(t) => is_id(t),
+                                Value::Array(a) => !a.is_empty() && a.iter().all(|t| t.as_str().is_some_and(is_id)),
+                                _ => false,
+                            });
+                            if !what_ok {
+                                w.push(f("shape", format!("state.rules[{i}].scope.what is one id or a list of ids")));
+                            }
+                            // C12: a row's `every` needs no `until` (a grant's states it with `limit` and `until`, stage 4 A2)
+                            w.extend(self.scope_shape(&plain).into_iter().filter(|x| !x.detail.starts_with("scope.every goes with")));
+                        }
+                    }
+                }
+                _ => w.push(f("shape", "state.rules is a non-empty list of rows")),
+            }
+        }
+        w
     }
+}
 
-    // A circle's roles: [{ name, powers }], the powers from the closed list (and the profiles'); the founder holds
-    // the first role, so the list is not empty.
-    pub(super) fn roles_shape(&self, roles: Option<&Value>, circle: bool) -> W {
-        let allowed = self.all_powers();
-        match roles {
-            None => {
-                if circle {
-                    s("bad_roles", "a circle lists its roles: state.roles [{ name, powers }]; the founder holds the first")
-                } else {
-                    vec![]
-                }
-            }
-            Some(Value::Array(list)) if !list.is_empty() => {
-                let mut w = vec![];
-                for (i, role) in list.iter().enumerate() {
-                    let ok = is_obj(Some(role))
-                        && keys_within(role, &["name".to_string(), "powers".to_string()])
-                        // a name with `#` could never be named as circle#role; each power is listed once
-                        && role.get("name").and_then(Value::as_str).is_some_and(|n| !n.is_empty() && !n.contains('#'))
-                        && role.get("powers").and_then(Value::as_array).is_some_and(|p| {
-                            p.iter().all(|x| x.as_str().is_some_and(|x| allowed.iter().any(|a| a == x)))
-                                && p.iter().enumerate().all(|(i, x)| !p[..i].contains(x))
-                        });
-                    if !ok {
-                        w.push(f(
-                            "bad_roles",
-                            format!("state.roles[{i}] is {{ name (text, no #), powers (each once, from {}) }}", allowed.join(", ")),
-                        ));
-                    }
-                    // A role is named once: two roles of one name would leave which powers its holders have to a reader.
-                    let name = role.get("name");
-                    if name.is_some() && list[..i].iter().any(|r| r.get("name") == name) {
-                        w.push(f("bad_roles", format!("state.roles[{i}] repeats the name of an earlier role")));
-                    }
-                }
-                w
-            }
-            Some(_) => s("bad_roles", "state.roles is a list of roles with at least the founder's first role"),
+fn kind_is_circle(state: &Value) -> bool {
+    state.get("kind").and_then(Value::as_str) == Some("circle")
+}
+
+/// The shape of a row (C10, `shapes.row`): exactly `{ parts, scope }` or `{ to, needed, scope }`, every number whole and at least 1, never
+/// `all` and never a share; `to` one id or a non-empty list of ids. A parts row on a circle with no `pack` is out of shape (C3).
+fn row_shape_ok(r: &Value, has_pack: bool, is_id: &dyn Fn(&str) -> bool) -> bool {
+    let Some(o) = r.as_object() else { return false };
+    let mut keys: Vec<&str> = o.keys().map(String::as_str).collect();
+    keys.sort_unstable();
+    let count = |k: &str| o.get(k).and_then(Value::as_u64).is_some_and(|n| n >= 1);
+    if !o.get("scope").is_some_and(Value::is_object) {
+        return false;
+    }
+    match keys.as_slice() {
+        ["parts", "scope"] => has_pack && count("parts"),
+        ["needed", "scope", "to"] => {
+            let to_ok = match o.get("to") {
+                Some(Value::String(s)) => is_id(s),
+                Some(Value::Array(a)) => !a.is_empty() && a.iter().all(|x| x.as_str().is_some_and(is_id)) && a.iter().enumerate().all(|(i, x)| !a[..i].contains(x)),
+                _ => false,
+            };
+            to_ok && count("needed")
         }
+        _ => false,
     }
 }

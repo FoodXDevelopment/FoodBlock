@@ -106,28 +106,33 @@ extension FoodBlock {
     public static func revealFor(_ salts: [String: String], _ recipient: String) throws -> JSON { (try Door.revealFor(salts, recipient) as? JSON) ?? [:] }
 
     // ---- The write check and the words it asks for ----
-    public static func refusals(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], schemas: [String: JSON]? = nil, held: [String: JSON]? = nil) throws -> [Finding] {
-        findings(try Door.refusals(type, state, refs, blocksOf(held) ?? [], blocksOf(schemas)))
+    /// What a writer refuses to sign, asked of an unsigned draft `{ type, state, refs }` before anyone signs it, against the blocks held;
+    /// [] when it may be signed.
+    public static func writeRefusals(_ draft: JSON, held: [JSON] = []) throws -> [Finding] { findings(try Door.writeRefusals(draft, held)) }
+    public static func writeRefusals(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], held: [JSON] = []) throws -> [Finding] {
+        try writeRefusals(["type": type, "state": state, "refs": refs], held: held)
     }
-    public static func check(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], schemas: [String: JSON]? = nil, held: [String: JSON]? = nil) throws -> [String] {
-        try Door.check(type, state, refs, blocksOf(held) ?? [], blocksOf(schemas))
+    /// valid(block, held): who said these bytes (core.md, section 8): one of size_limit, not_canonical, chain, unmet, bad_piece, bad_hash,
+    /// bad_signature, unknown_suite; [] when valid. Takes a block or a held header.
+    public static func valid(_ block: JSON, held: [JSON] = []) throws -> [Finding] { findings(try Door.valid(block, held)) }
+    /// read(block, held, schemas): whether this reader can read a valid block: every code found ([] when read). `runs` are the ids of the rule sets this reader runs.
+    public static func read(_ block: JSON, held: [JSON] = [], schemas: [JSON]? = nil, runs: [String]? = nil) throws -> [Finding] {
+        findings(try Door.read(block, held, schemas, runs))
     }
-    /// valid(block, context): every refusal of a signed block against the blocks held (empty when valid).
-    public static func valid(_ block: JSON, held: [JSON] = [], schemas: [JSON]? = nil, arrivedAt: Identity.Arrival? = nil) throws -> [Finding] {
-        findings(try Door.valid(block, held, schemas))
-    }
+    /// The schema store of the blocks held: every thing of kind schema among them. Pass it as `schemas` to `read` or `accept`.
+    public static func schemasFrom(_ held: [JSON]) throws -> [JSON] { try Door.schemasFrom(held) }
+    /// Whether an unsigned draft, once signed, binds anyone: true where it is an accept, or where something of the one whose word it is would move.
+    public static func binds(_ draft: JSON, held: [JSON] = []) throws -> Bool { try Door.binds(draft, held) }
     /// Strict writing from JSON text: a repeated key, then every refusal of the block it holds.
     public static func strictText(_ text: String) throws -> [Finding] { findings(try Door.strictText(text)) }
-    /// The short receipt code of a block id: `XXXX-XXXX` (Crockford Base32 of its first 5 bytes).
-    public static func receiptCode(_ id: String) throws -> String { try Door.receiptCode(id) }
-    /// The ten-character form (first 50 bits, `XXXXX-XXXXX`), for a custodian whose index holds two blocks with one short code.
-    public static func receiptCodeLong(_ id: String) throws -> String { try Door.receiptCode(id, true) }
+    /// The short code of a block id (Crockford Base32).
+    public static func shortCode(_ id: String) throws -> String { try Door.shortCode(id) }
     /// Whether a typed code names this block: case, spaces and hyphens ignored, O read as 0, I and L as 1; 8 characters match the short code, 10 the long one.
     public static func codeMatches(_ text: String, _ id: String) throws -> Bool { try Door.codeMatches(text, id) }
     public static func isTime(_ value: Any?) throws -> Bool { try Door.isTime(value) }
     public static func isDate(_ value: Any?) throws -> Bool { try Door.isDate(value) }
-    public static func amount(_ value: String, _ unit: String) throws -> JSON { try Door.amount(value, unit) }
-    public static func money(_ minor: Int, _ currency: String) throws -> JSON { try Door.money(minor, currency) }
+    /// An amount: `amount("2.5", "kg")`, or `amount("1", "credit", of: kind)` for an amount of a kind. Money is an amount: `amount("4.20", "GBP")`.
+    public static func amount(_ value: String, _ unit: String, of kind: String? = nil) throws -> JSON { try Door.amount(value, unit, kind) }
     public static func terms(_ given: JSON) throws -> JSON { try Door.terms(given) }
 
     // ---- Chains and causal order ----
@@ -191,9 +196,10 @@ extension FoodBlock {
         try Door.unwrap(message, held)
     }
     public static func header(_ block: JSON) throws -> JSON { try Door.header(block) }
-    /// A signed block sealed to recipients' encryption keys in `suite`, its header signed by the block's key. `fixed` only reproduces a vector.
-    public static func sealCopy(_ signed: JSON, keys: [String], reveals: [JSON] = [], privateKey: String, suite: String = "std", fixed: JSON? = nil) throws -> JSON {
-        try Door.sealCopy(signed, keys, reveals, privateKey, fixed, suite)
+    /// A signed block sealed to recipients' encryption keys in `suite`. A private block is signed once, over its header, so its own
+    /// signature is the header's and no key is needed. `fixed` only reproduces a vector.
+    public static func sealCopy(_ signed: JSON, keys: [String], reveals: [JSON] = [], suite: String = "std", fixed: JSON? = nil) throws -> JSON {
+        try Door.sealCopy(signed, keys, reveals, fixed, suite)
     }
     public static func headerSignedBy(_ message: JSON, _ publicKey: String) throws -> Bool { try Door.headerSignedBy(message, publicKey) }
     public static func openCopy(_ message: JSON, _ x25519Private: String) throws -> JSON { try Door.openCopy(message, x25519Private) }

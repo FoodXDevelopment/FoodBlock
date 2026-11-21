@@ -90,18 +90,17 @@ pub fn suite_of_id(id: &str) -> String {
     }
 }
 
-/// The suite a block is hashed in, read from the block alone (core.md, section 2: the suite of the key that signed it; no
-/// label names it): a genesis names its own (`state.suite`), and a key's later block is hashed as its `prev` is. A key's first
-/// block after a move to a suite of another hash (and the recovery key's first block, in a `recovery_suite` of another hash) is
-/// the one place this differs from the signing key's: a reader that holds the author's keys reads it there
-/// (`identity::signed_suite_in`).
+/// The suite a block is hashed in, read from the block alone (the door's `id_of` with no held block): a genesis names its own
+/// (`state.suite`); any other block, the hash name of the id its `refs.key` names, else of its `refs.author`. It is a reader's guess:
+/// `valid` never uses it, and reads the suite of the key its pieces name (`identity::signed_suite_in`).
 pub fn suite_from_block(block: &Value) -> String {
     let refs = block.get("refs");
     if crate::js::type_of(block) == "actor" && refs.and_then(|r| r.get("author")).is_none() {
         return crate::identity::suite_named(block);
     }
-    match refs.and_then(|r| r.get("prev")).and_then(Value::as_str) {
-        Some(prev) => suite_of_id(prev),
+    let named = |k: &str| refs.and_then(|r| r.get(k)).and_then(Value::as_str);
+    match named("key").or_else(|| named("author")) {
+        Some(id) => suite_of_id(id),
         None => crate::spec().suite_default.clone(),
     }
 }

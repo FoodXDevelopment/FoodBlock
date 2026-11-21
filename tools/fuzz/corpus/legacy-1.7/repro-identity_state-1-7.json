@@ -1,0 +1,22 @@
+{
+ "op": "identity_state",
+ "args": [
+  "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+  [
+   {
+    "hash": "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-15T09:00:05.343Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100af094b5d893b335ecb07c93ffe1a1b96cf68a06e297b5fe145ff71a77efb5d15"
+    },
+    "refs": {},
+    "signature": "970eaaaa0499511d72f4372c393642499bb0556c6a488fe49deabffb352e3a13175ecfad0b15957565cf216d496873c3a157145b3beeeb157c60722d4bb8c502"
+   }
+  ],
+  null
+ ],
+ "world": 1
+}

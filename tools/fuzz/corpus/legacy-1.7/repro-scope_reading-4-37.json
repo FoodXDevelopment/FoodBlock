@@ -1,0 +1,21 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "parties": [
+    "16f6990c8703bece98aab92e08a77a8da9e9a538f5ea059319af042e62f28aac",
+    "x"
+   ],
+   "limit": {
+    "minor": 0,
+    "currency": "EUR"
+   },
+   "every": "monthly",
+   "condition": {
+    "settled": "x"
+   },
+   "colour": null
+  }
+ ],
+ "world": 4
+}

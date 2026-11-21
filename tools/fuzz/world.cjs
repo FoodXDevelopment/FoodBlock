@@ -77,11 +77,10 @@ class World {
     return a;
   }
   // The recovery pair for a genesis.
+  // 1.8 has no recovery key (stage 1: a second key is a voice in her list); this stays a plain actor so the worlds still build, and the
+  // recovery rotation below (act 18) is never taken. Rewriting it as a voice is stage 1's tool work, left for its sweep.
   withRecovery(kind = 'person') {
-    const rk = fb.keypair(this.r.hex(64), 'std');
-    const a = this.newActor(kind, 'std', { recovery_key_hash: fb.recoveryKeyHash(rk.public_key_sign, 'std'), recovery_reach: 'P30D' });
-    a.recovery = rk;
-    return a;
+    return this.newActor(kind, 'std');
   }
   // Post a block as `a` (extends its chain). o: { signer, skipTo, noAt, extraState, keepHead, prev, seq }
   post(a, type, state, refs = {}, o = {}) {
@@ -105,7 +104,7 @@ function makeWorld(seed, size = 30) {
   const agent = w.newActor('agent');
   const contact = w.post(people[1], 'actor', { kind: 'contact', name: 'Joseph', marks: [{ scheme: 'tel', value: '+254700000000' }] }, {});
   const founder = people[0];
-  const circle = w.post(founder, 'actor', { kind: 'circle', name: 'Co-op', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'orders', powers: ['sign'] }, { name: 'speak', powers: [] }], removal: { needed: 1 } }, {}); // a circle whose roles carry admit or remove states its removal rule (decision F2)
+  const circle = w.post(founder, 'actor', { kind: 'circle', name: 'Co-op', pack: { value: '100', unit: 'part' }, rules: [{ parts: 1, scope: { types: ['promise', 'transfer', 'observe', 'grant'], each: { value: '300', unit: 'GBP' } } }] }, {}); // 1.9 stage 6: parts and one row (circles.md, C1, C10)
   const things = [], promises = [], transfers = [], grants = [];
   const ids = () => w.blocks.map(b => b.hash);
   const person = () => r.pick(people);
@@ -134,7 +133,7 @@ function makeWorld(seed, size = 30) {
       else if (act === 1) w.post(a, 'observe', { kind: 'note', text: 'n' + i }, r.coin(0.3) ? { under: r.pick(ids()) } : {});
       else if (act === 2) {
         const to = person();
-        const to2 = people.filter(p => p !== a); const offer = w.post(a, 'promise', { terms: { price: { minor: 100 + r.int(900), currency: 'GBP' }, quantity: { value: String(1 + r.int(50)), unit: '{egg}' }, expires: new Date(BASE + 86400000 * (1 + r.int(3))).toISOString() } },
+        const to2 = people.filter(p => p !== a); const offer = w.post(a, 'promise', { terms: { price: { value: String(1 + r.int(9)), unit: 'GBP' }, quantity: { value: String(1 + r.int(50)), unit: '{egg}' }, expires: new Date(BASE + 86400000 * (1 + r.int(3))).toISOString() } },
           { from: a.id, ...(r.coin(0.8) ? { to: r.pick(to2).id } : {}), what: asset.hash });
         promises.push(maybe(offer, a));
       } else if (act === 3 && promises.length) {
@@ -148,26 +147,27 @@ function makeWorld(seed, size = 30) {
       } else if (act === 5 && promises.length) { // a counter-offer
         const p = r.pick(promises);
         const other = r.coin(0.85) ? w.actors.find(x => x.id === (p.refs.author === p.refs.from ? p.refs.to : p.refs.from)) : null;
-        w.post(other || a, 'promise', { terms: { price: { minor: 50 + r.int(900), currency: 'GBP' }, expires: new Date(BASE + 86400000 * 2).toISOString() } }, { answers: p.hash, for: p.hash, after: [p.hash], ...(p.refs.from && p.refs.to ? { from: p.refs.from, to: p.refs.to } : {}) });
+        w.post(other || a, 'promise', { terms: { price: { value: String(1 + r.int(9)) + '.5', unit: 'GBP' }, expires: new Date(BASE + 86400000 * 2).toISOString() } }, { answers: p.hash, for: p.hash, after: [p.hash], ...(p.refs.from && p.refs.to ? { from: p.refs.from, to: p.refs.to } : {}) });
       } else if (act === 6) { // a transfer of a thing
         const to = person(); const t = w.post(a, 'transfer', {}, { to_owner: to.id, what: asset.hash, ...(promises.length && r.coin(0.5) ? { for: r.pick(promises).hash } : {}) }); transfers.push(maybe(t, a));
       } else if (act === 7 && transfers.length) {
         const t = r.pick(transfers); w.post(a, 'transfer', { status: r.pick(['accepted', 'accepted', 'declined']) }, { answers: t.hash, after: [t.hash] });
-      } else if (act === 8) { const t = w.post(a, 'transfer', { money: { minor: 100 + r.int(2000), currency: 'GBP' }, ...(r.coin(0.3) ? { marks: [{ scheme: 'card', value: 'ch_' + i }] } : {}) }, { to_owner: person().id, ...(promises.length ? { for: r.pick(promises).hash } : {}) }); transfers.push(t); }
+      } else if (act === 8) { const t = w.post(a, 'transfer', { amount: { value: String(1 + r.int(20)), unit: 'GBP' }, ...(r.coin(0.3) ? { marks: [{ scheme: 'card', value: 'ch_' + i }] } : {}) }, { to_owner: person().id, ...(promises.length ? { for: r.pick(promises).hash } : {}) }); transfers.push(t); }
       else if (act === 9) { const pl = r.pick(things.filter(t => t !== asset)); if (pl) w.post(a, 'transfer', {}, { to_place: pl.hash, what: asset.hash }); }
-      else if (act === 10 && a !== founder) { // circle: founder invites, member answers
-        const inv = w.post(founder, 'grant', { kind: 'member', roles: [r.pick(['orders', 'speak', 'admin'])] }, { subject: circle.hash, as: circle.hash, to: a.id });
-        grants.push(maybe(inv, founder));
-        if (r.coin(0.8)) w.post(a, 'grant', { kind: 'member', status: 'accepted' }, { answers: inv.hash, subject: circle.hash, after: [inv.hash] });
-      } else if (act === 11 && grants.length) { // end a membership
-        const g = r.pick(grants); w.post(r.coin(0.7) ? founder : a, 'grant', { kind: 'member', status: 'stopped', stop: r.pick(['before', 'onward']) }, { updates: g.hash, subject: circle.hash, as: circle.hash, after: [g.hash] });
+      else if (act === 10 && a !== founder) { // circle: an owner hands parts to another, who may accept (circles.md, C1)
+        const from = r.coin(0.7) ? founder : person();
+        const t = w.post(from, 'transfer', { amount: { value: String(1 + r.int(30)), unit: 'part' } }, { what: circle.hash, to_owner: a.id });
+        if (r.coin(0.8)) w.post(a, 'transfer', { status: 'accepted' }, { answers: t.hash, after: [t.hash] });
+      } else if (act === 11) { // a block as the circle, and maybe another's confirm of it (circles.md, C10, C15)
+        const m = r.coin(0.5) ? w.post(a, 'observe', { kind: 'note', text: 'for the co-op' }, { as: circle.hash }) : w.post(a, 'transfer', { amount: { value: String(1 + r.int(500)), unit: 'GBP' } }, { as: circle.hash, to_owner: person().id });
+        if (r.coin(0.5)) { const c = person(); w.post(c, 'observe', { kind: 'confirm' }, { confirms: [m.hash], after: [m.hash] }); }
       } else if (act === 12) { // an agent for a person: operator grant, then a scoped grant, then the agent acts under it
         const op = w.post(a, 'grant', { kind: 'operator' }, { to: agent.id });
-        const sc = w.post(a, 'grant', { kind: 'shop', scope: { acts: ['observe.note', 'promise'], parties: people.map(p => p.id), limit: { minor: 5000, currency: 'GBP' }, every: 'P7D', until: '2026-12-31T00:00:00.000Z' } }, { to: agent.id });
+        const sc = w.post(a, 'grant', { kind: 'shop', scope: { types: ['observe.note', 'promise'], parties: people.map(p => p.id), limit: { minor: 5000, currency: 'GBP' }, every: 'P7D', until: '2026-12-31T00:00:00.000Z' } }, { to: agent.id });
         grants.push(sc);
         w.post(agent, r.pick(['observe', 'promise', 'transfer', 'thing']), r.coin(0.5) ? { kind: 'note', text: 'agent' } : { terms: { expires: new Date(BASE + 86400000).toISOString() }, what: 'x' }, { under: sc.hash });
         if (r.coin(0.4)) { // a grant wider than its parent
-          w.post(agent, 'grant', { kind: 'shop', scope: { acts: ['observe.note', 'promise', 'transfer'], parties: people.slice(0, 1 + r.int(people.length)).map(p => p.id), limit: { minor: r.pick([5000, 9000]), currency: 'GBP' }, every: 'P7D', until: r.pick(['2026-12-31T00:00:00.000Z', '2027-06-01T00:00:00.000Z']) } }, { to: person().id, under: sc.hash });
+          w.post(agent, 'grant', { kind: 'shop', scope: { types: ['observe.note', 'promise', 'transfer'], parties: people.slice(0, 1 + r.int(people.length)).map(p => p.id), limit: { minor: r.pick([5000, 9000]), currency: 'GBP' }, every: 'P7D', until: r.pick(['2026-12-31T00:00:00.000Z', '2027-06-01T00:00:00.000Z']) } }, { to: person().id, under: sc.hash });
         }
         if (r.coin(0.4)) w.post(a, 'grant', { kind: 'key', public_key_sign: fb.keypair(r.hex(64), 'std').public_key_sign }, { subject: agent.id, under: op.hash }); // the operator brings in a key of the agent: it names its operator grant
       } else if (act === 13) { // equivocation: two blocks naming one prev

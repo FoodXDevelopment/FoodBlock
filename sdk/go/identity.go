@@ -36,31 +36,33 @@ func unknownFor(arrivedAt ArrivedAt, unknown UnknownArrival) string {
 	return string(unknown)
 }
 
-// RecoveryKeyHash is the hash a genesis writes for its recovery key, in a suite (std when none is given).
-func RecoveryKeyHash(publicKeyHex string, suite ...string) string {
-	return doorRecoveryKeyHash(publicKeyHex, suiteArg(suite))
+// KeyHash is a key named by its hash (identity.md, Her voices): its suite's hash of its SPKI hex as UTF-8 text (std when no suite is given).
+func KeyHash(publicKeyHex string, suite ...string) string {
+	return doorKeyHash(publicKeyHex, suiteArg(suite))
 }
 
 // GenesisOptions: Kind, At and Audience (all required: "public" or a non-empty list of recipients; nothing is filled in),
-// EncryptionKey (the public encryption key, if it will
-// receive sealed blocks), RecoveryKey and Reach (they come as a pair or not at all; RecoverySuite when the recovery
-// key is not std) and Custodian (the id of whoever holds the key for the person, if anyone). The keys' own Suite is
-// the genesis's suite.
+// EncryptionKey (the public encryption key, if it will receive sealed blocks), and Reach (a duration) with Keepers (her
+// clock: { names, needed }), which come together. The keys' own Suite is the genesis's suite.
 type GenesisOptions struct {
-	Kind, At, EncryptionKey, RecoveryKey, Reach, RecoverySuite, Custodian string
-	Audience                                                              []string // recipients; or Public
-	Salts                                                                 map[string]string
-	Nonce                                                                 string
+	Kind, At, EncryptionKey, Reach string
+	Keepers                        any
+	Audience                       []string // recipients; or Public
+	Salts                          map[string]string
+	Nonce                          string
 }
 
 // Genesis is a new person, autonomous system, machine or signing circle: their genesis, signed. It needs only kind, at, audience
 // and the key.
 func Genesis(keys Keypair, o GenesisOptions) (Block, error) {
 	given := map[string]any{}
-	for k, v := range map[string]string{"kind": o.Kind, "at": o.At, "encryption_key": o.EncryptionKey, "recovery_key": o.RecoveryKey, "reach": o.Reach, "recovery_suite": o.RecoverySuite, "custodian": o.Custodian} {
+	for k, v := range map[string]string{"kind": o.Kind, "at": o.At, "encryption_key": o.EncryptionKey, "reach": o.Reach} {
 		if v != "" {
 			given[k] = v
 		}
+	}
+	if o.Keepers != nil {
+		given["keepers"] = o.Keepers
 	}
 	if a := audienceJSON(o.Audience); a != nil {
 		given["audience"] = a
@@ -80,85 +82,109 @@ func IsGenesis(b Block) bool { return doorIsGenesis(b) }
 // GenesisOpens is whether a genesis is opened by its own key.
 func GenesisOpens(b Block) bool { return doorGenesisOpens(b) }
 
-// KeySigner signs a key grant: a key the id holds (PrivateKey and its Suite, its Last block, the block that brought it
-// in), or the recovery key (PrivateKey and RecoveryKey, its public key), whose chain starts at the genesis.
+// KeySigner signs a key grant: one of her voices, her operator, or a voice of named people, signing in their own name.
+// Author defaults to the id the grant is about; Keys is the signer's keypair; Held the author's genesis, grants and blocks.
 type KeySigner struct {
-	PrivateKey, Suite, BroughtIn, RecoveryKey string
-	Last                                      *Block
+	Author string
+	Keys   Keypair
+	Held   []Block
+	At     string
+	After  []string
+	Link   *Link
 }
 
-// KeyGrantOptions: At is required; a rotation names the key it Replaces and that key's CountedTo block; Suite is the new key's; Skip
-// is a deliberate skip in the chain; Encrypt brings in an encryption key; Custodian names who holds the key for the
-// person. The recovery pair is named only in a genesis.
+// KeyGrantOptions (identity.md): Voices (her whole list again, with Updates the list it replaces and Keepers her clock), or Key (one key
+// under the signer's voice, in Suite), or Encrypt alone; ShownKey when a key named by hash shows itself (KeyRef the list that holds
+// its hash); CountedTo the last block of a key a voice above ends; Under an operator grant.
 type KeyGrantOptions struct {
-	Replaces, CountedTo, At, Encrypt, Custodian, Suite string
-	Skip                                               bool
-	After                                              []string
+	Voices                                   any
+	Updates, KeyRef, Under                   string
+	Keepers                                  any
+	Key, Suite, Encrypt, ShownKey, CountedTo string
 }
 
-// KeyGrant is a key grant, signed: brings newPublicKey into the id.
-func KeyGrant(id, newPublicKey string, signer KeySigner, o KeyGrantOptions) (Block, error) {
-	s := map[string]any{"private_key": signer.PrivateKey}
-	if signer.Suite != "" {
-		s["suite"] = signer.Suite
+// KeyGrant is a key grant about id, signed by the signer.
+func KeyGrant(id string, signer KeySigner, o KeyGrantOptions) (Block, error) {
+	state := map[string]any{"kind": "key"}
+	if o.Voices != nil {
+		state["voices"] = o.Voices
 	}
-	if signer.Last != nil {
-		s["last"] = *signer.Last
+	if o.Keepers != nil {
+		state["keepers"] = o.Keepers
 	}
-	if signer.BroughtIn != "" {
-		s["brought_in"] = signer.BroughtIn
-	}
-	if signer.RecoveryKey != "" {
-		s["recovery_key"] = signer.RecoveryKey
-	}
-	opts := map[string]any{"after": plural(o.After)}
-	if o.Skip {
-		opts["skip"] = true
-	}
-	for k, v := range map[string]string{"replaces": o.Replaces, "counted_to": o.CountedTo, "at": o.At, "encrypt": o.Encrypt, "custodian": o.Custodian, "suite": o.Suite} {
+	for k, v := range map[string]string{"public_key_sign": o.Key, "suite": o.Suite, "public_key_encrypt": o.Encrypt, "shown_key": o.ShownKey, "counted_to": o.CountedTo} {
 		if v != "" {
-			opts[k] = v
+			state[k] = v
 		}
 	}
-	return doorKeyGrant[Block](id, newPublicKey, s, opts)
+	refs := map[string]any{"subject": id}
+	for k, v := range map[string]string{"updates": o.Updates, "key": o.KeyRef, "under": o.Under} {
+		if v != "" {
+			refs[k] = v
+		}
+	}
+	author := signer.Author
+	if author == "" {
+		author = id
+	}
+	return Write("grant", state, refs, WriteOptions{ComposeOptions: ComposeOptions{Author: author, Audience: []string{Public}, At: signer.At, After: signer.After, Link: signer.Link}, Key: signer.Keys, Held: signer.Held})
 }
 
-// KeyEntry is one key an id has held: who brought it in (By), which key signed that (Signer: a key, "recovery", or ""
-// for the genesis), whether it is frozen, and its Suite. A void key is never listed.
+// Confirm is the second signature (blocks.md, Finality, Signed twice): a block of the same key, or of a voice above, naming the word in refs.confirms.
+func Confirm(word Block, signer KeySigner) (Block, error) {
+	return Write("observe", map[string]any{}, map[string]any{"confirms": []any{word.Hash}}, WriteOptions{ComposeOptions: ComposeOptions{Author: signer.Author, Audience: []string{Public}, At: signer.At, After: signer.After, Link: signer.Link}, Key: signer.Keys, Held: signer.Held})
+}
+
+// KeyEntry is one key an id has held: Key, by whom it came in (By), its Voice, what it is Under, its Suite, and whether it Ended.
 type KeyEntry struct {
-	Suite  string `json:"suite"`
-	Key    string `json:"key"`
-	By     string `json:"by"`
-	Signer string `json:"signer"`
-	Frozen bool   `json:"frozen"`
+	Key   string `json:"key"`
+	By    string `json:"by"`
+	Voice any    `json:"voice"`
+	Under any    `json:"under"`
+	Suite string `json:"suite"`
+	Ended any    `json:"ended"`
 }
 
-// KeyTimeline is every key an id has held, in the order they came in.
-func KeyTimeline(id string, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) []*KeyEntry {
-	return doorKeyTimeline[[]*KeyEntry](id, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown))
+// KeyTimeline is every key a list or a key grant of the id's brought in, in the order they came in.
+func KeyTimeline(id string, blocks []Block) []*KeyEntry {
+	return plural(doorKeyTimeline[[]*KeyEntry](id, blocks))
 }
 
-// KeysOf are the id's keys that are not void.
-func KeysOf(id string, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) []string {
-	return plural(doorKeysOf[[]string](id, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown)))
+// LiveKeys are the keys that speak for the id now: of her standing voices and under them, not ended. Sorted.
+func LiveKeys(id string, blocks []Block) []string { return plural(doorLiveKeys(id, blocks)) }
+
+// KeysOf is LiveKeys.
+func KeysOf(id string, blocks []Block) []string { return LiveKeys(id, blocks) }
+
+// SignedByAuthor is whether a key of the block's author spoke for her there (a waiting block is true here; Stands says it waits).
+func SignedByAuthor(b Block, blocks []Block) bool {
+	return doorSignedByAuthor(b, blocks)
 }
 
-// SignedByAuthor is whether a block is signed by a key that speaks for its author at the time.
-func SignedByAuthor(b Block, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) bool {
-	return doorSignedByAuthor(b, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown))
+// Stands is whether a word stands (blocks.md, Finality): { stands, waiting: [{ block, on }] }, read with no clock and no arrival.
+func Stands(b Block, blocks []Block) map[string]any { return doorStands[map[string]any](b, blocks) }
+
+// ChainsOf is each key's chain for an id: [{ key, by, head, length, gaps, skips, equivocations, broken, ok }].
+func ChainsOf(id string, blocks []Block) []map[string]any {
+	return plural(doorChainsOf[[]map[string]any](id, blocks))
 }
 
-// IdentityState is the identity fold: signed_by_author (hash -> bool), keys, frozen, and operators (sorted).
+// Counts is whether a block counts among the blocks.
+func Counts(b Block, blocks []Block) bool { return doorCounts(b, blocks) }
+
+// IdentityState is the identity fold: signed_by_author (hash -> bool), voices, keepers, keys, waiting and operators.
 type IdentityState struct {
 	SignedByAuthor map[string]bool `json:"signed_by_author"`
+	Voices         any             `json:"voices"`
+	Keepers        any             `json:"keepers"`
 	Keys           []string        `json:"keys"`
-	Frozen         []string        `json:"frozen"`
+	Waiting        any             `json:"waiting"`
 	Operators      []string        `json:"operators"`
 }
 
 // IdentityStateOf is who an id is among these blocks.
-func IdentityStateOf(id string, blocks []Block, arrivedAt ArrivedAt, unknown UnknownArrival) IdentityState {
-	return doorIdentityState[IdentityState](id, blocks, arrivals(arrivedAt, blocks), unknownFor(arrivedAt, unknown))
+func IdentityStateOf(id string, blocks []Block) IdentityState {
+	return doorIdentityState[IdentityState](id, blocks)
 }
 
 // Forked is whether a block's key signed two blocks at one seq.

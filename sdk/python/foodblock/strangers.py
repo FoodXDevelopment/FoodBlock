@@ -2,8 +2,11 @@
 
 from . import _door as door
 
-condition_holds = door.condition_holds  # whether a condition holds on the blocks held at the reader's clock: True, False, or None for a shape the protocol does not read
-earnest_shape_ok = door.earnest_shape_ok
+condition_holds = door.condition_holds  # whether a condition holds on the blocks held, read for the block `at` (only its causal past counts): True, False, or None for a shape the protocol does not read
+reading_is_persons_claim = door.reading_is_persons_claim  # a model's reading is the person's claim only once the person's own block confirms it
+reading_condition_holds = door.reading_condition_holds  # tasks profile: whether a reading_condition holds on the readings in the past of `at`
+short_reply = door.short_reply  # the short reply (profiles/short-form.md): `FB1 ` and what the receiver cannot rebuild of her signed answer
+short_reply_open = door.short_reply_open  # the answer rebuilt from a short reply among the blocks held (None: nothing was said)
 
 
 def is_stranger(receiver, sender, blocks, block=None) -> bool:
@@ -13,28 +16,11 @@ def is_stranger(receiver, sender, blocks, block=None) -> bool:
     return door.is_stranger(receiver, sender, blocks, block)
 
 
-def receipt_code(id_) -> str:
-    """The short receipt code of a block: the first 5 bytes of its id in Crockford Base32, XXXX-XXXX."""
-    return door.receipt_code(str(id_))
-
-
-def receipt_code_long(id_) -> str:
-    """The ten-character form (first 50 bits, XXXXX-XXXXX), for a custodian whose index holds two blocks with one short code."""
-    return door.receipt_code(str(id_), True)
+def short_code(id_) -> str:
+    """The short code of a block (profiles/short-form.md): the first 5 bytes of its id in Crockford Base32, XXXX-XXXX."""
+    return door.short_code(str(id_))
 
 
 def code_matches(text, id_) -> bool:
     """Whether a typed code names this block: case, spaces and hyphens ignored, O read as 0, I and L as 1; 8 characters match the short code, 10 the long one."""
     return door.code_matches(str(text), str(id_))
-
-
-def reading_is_persons_claim(reading, person, blocks) -> bool:
-    return door.reading_is_persons_claim(reading, person, blocks)
-
-
-def reading_condition_holds(condition, blocks, now) -> bool:
-    return door.reading_condition_holds(condition, blocks, now)
-
-
-def earnest_paid(ask, earnest, blocks) -> bool:
-    return door.earnest_paid(ask, earnest, blocks)

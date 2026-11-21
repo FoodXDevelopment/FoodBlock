@@ -414,7 +414,7 @@ impl World {
         let o = self.pick(Role::Person);
         let mid = self.id(m);
         let op = self.make(o, "grant", json!({ "kind": "operator" }), json!({ "to": mid }));
-        let scope = json!({ "acts": ["observe.note", "promise"], "parties": [self.id(o)], "limit": money(5000), "every": "P7D", "until": "2027-06-30T00:00:00.000Z" });
+        let scope = json!({ "types": ["observe.note", "promise"], "parties": [self.id(o)], "limit": money(5000), "every": "P7D", "until": "2027-06-30T00:00:00.000Z" });
         let g = self.make(o, "grant", json!({ "kind": "shop", "scope": scope.clone() }), json!({ "to": mid }));
         self.send(o, &op);
         self.send(o, &g);
@@ -427,18 +427,18 @@ impl World {
         let in_time = inside["state"]["at"].as_str().unwrap_or("") < "2027-06-30T00:00:00.000Z";
         self.truth.under.push((inside, in_time));
         self.truth.under.push((outside, false));
-        // passed on wider than received: more acts, a later end. The receiver of a grant is the one who passes it on, so the
+        // passed on wider than received: more types, a later end. The receiver of a grant is the one who passes it on, so the
         // attacker is given one too and signs the wide child on its own chain (a refused block would stall a chain it sat in).
         let x = self.fresh_actor(Role::Attacker);
         let (p2, _) = self.two_persons();
         let g2 = self.make(o, "grant", json!({ "kind": "shop", "scope": scope.clone() }), json!({ "to": self.id(x) }));
         self.send(o, &g2);
-        let wide = json!({ "acts": ["observe.note", "promise", "transfer"], "parties": [self.id(o)], "limit": money(9000), "every": "P7D", "until": "2028-01-01T00:00:00.000Z" });
+        let wide = json!({ "types": ["observe.note", "promise", "transfer"], "parties": [self.id(o)], "limit": money(9000), "every": "P7D", "until": "2028-01-01T00:00:00.000Z" });
         let child = self.make(x, "grant", json!({ "kind": "shop", "scope": wide }), json!({ "to": self.id(p2), "parent": Self::hash(&g2) }));
         self.send(x, &child);
         self.truth.wider.push(child);
         // and one inside: a narrower scope passes on fine
-        let narrow = json!({ "acts": ["observe.note"], "limit": money(1000), "every": "P7D", "until": "2027-01-01T00:00:00.000Z" });
+        let narrow = json!({ "types": ["observe.note"], "limit": money(1000), "every": "P7D", "until": "2027-01-01T00:00:00.000Z" });
         let ok_child = self.make(m, "grant", json!({ "kind": "shop", "scope": narrow }), json!({ "to": self.id(p2), "parent": gh }));
         self.send(m, &ok_child);
     }

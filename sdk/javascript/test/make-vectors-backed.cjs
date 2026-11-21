@@ -16,7 +16,7 @@ const yes = (chain) => ({ backed: true, chain: chain.map((b) => b.hash) })
 const no = (chain = []) => ({ backed: false, chain: chain.map((b) => b.hash) })
 const note = (s, who, refs = {}, extra = {}) => s.say(who, 'observe', { kind: 'note', text: 'x', ...extra }, refs)
 const stop = (s, who, grant, extra = {}) => s.say(who, 'grant', { kind: 'agent', status: 'stopped', stop: 'onward' }, { updates: grant.hash, ...extra })
-const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who, 'grant', { kind: 'agent', scope: { acts: ['observe.note'], parties: [], until: LATER, ...scope }, ...state }, { to: to.id, ...refs })
+const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who, 'grant', { kind: 'agent', scope: { types: ['observe.note'], parties: [], until: LATER, ...scope }, ...state }, { to: to.id, ...refs })
 
 {
   // her own signature
@@ -87,21 +87,21 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   const b = note(s, bot, { under: g.hash })
   backed('a grant someone else signed backs nothing of hers, whatever it names', b, her, s.held, no([b, g]))
   backed('it backs the blocks of the one who signed it', b, mal, s.held, yes([b, g]), [9])
-  const ghost = { type: 'grant', state: { kind: 'agent', scope: { acts: ['observe.note'], until: LATER }, at: '2026-10-27T12:00:00.000Z', audience: 'public' }, refs: { author: her.id, to: bot.id } }
+  const ghost = { type: 'grant', state: { kind: 'agent', scope: { types: ['observe.note'], until: LATER }, at: '2026-10-27T12:00:00.000Z', audience: 'public' }, refs: { author: her.id, to: bot.id } }
   ghost.hash = kit.fb.hash(ghost.type, ghost.state, ghost.refs)
   const orphan = s.say(bot, 'observe', { kind: 'note', text: 'x' }, { under: g.hash })
   const missing = { ...orphan, refs: { ...orphan.refs, under: ghost.hash } }
   backed('a block under a grant that is not held is no word', missing, her, s.held, no())
   // a child grant passed on by someone who did not receive the parent is refused: its blocks are no word
   const top = agentGrant(s, her, bot, {}, {}, { depth: 1 })
-  const fake = s.raw(mal, 'grant', { kind: 'agent', scope: { acts: ['observe.note'], parties: [], until: LATER } }, { to: bot.id, parent: top.hash })
+  const fake = s.raw(mal, 'grant', { kind: 'agent', scope: { types: ['observe.note'], parties: [], until: LATER } }, { to: bot.id, parent: top.hash })
   const rider = s.raw(bot, 'observe', { kind: 'note', text: 'x' }, { under: fake.hash })
   backed('a grant passed on by one who never received the parent breaks the chain', rider, her, s.held, no())
 }
 {
   // outside what the grant covers: the act, the parties, the money
   const s = story(), her = s.person('bk6-her'), bot = s.person('bk6-bot', { kind: 'agent' }), shop = s.person('bk6-shop'), stranger = s.person('bk6-stranger')
-  const g = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['transfer', 'observe.note'], parties: [shop.id], limit: M(10000), each: M(1000), until: LATER } }, { to: bot.id })
+  const g = s.say(her, 'grant', { kind: 'agent', scope: { types: ['transfer', 'observe.note'], parties: [shop.id], limit: M(10000), each: M(1000), until: LATER } }, { to: bot.id })
   const inside = s.say(bot, 'transfer', { money: M(900) }, { under: g.hash, to_owner: shop.id })
   backed('inside what the grant names: its act, its parties and its money', inside, her, s.held, yes([inside, g]), [23])
   const dear = s.say(bot, 'transfer', { money: M(5000) }, { under: g.hash, to_owner: shop.id })
@@ -110,7 +110,7 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   backed('to a party the grant does not name', toStranger, her, s.held, no([toStranger]))
   const offScope = s.say(bot, 'observe', { kind: 'order', text: 'x' }, { under: g.hash })
   backed('an act the grant does not list', offScope, her, s.held, no([offScope]))
-  const silent = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['transfer'], parties: [shop.id], until: LATER } }, { to: bot.id })
+  const silent = s.say(her, 'grant', { kind: 'agent', scope: { types: ['transfer'], parties: [shop.id], until: LATER } }, { to: bot.id })
   const unfenced = s.say(bot, 'transfer', { money: M(100) }, { under: silent.hash, to_owner: shop.id })
   backed('a grant with no limit lets no money move', unfenced, her, s.held, no([unfenced]), [23])
 }
@@ -129,7 +129,7 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   {
     const s3 = story(), her3 = s3.person('bk7c-her'), ai3 = s3.person('bk7c-ai', { kind: 'agent' }), helper3 = s3.person('bk7c-helper', { kind: 'agent' })
     const g3 = agentGrant(s3, her3, ai3, {}, {}, { depth: 1 })
-    const wide = s3.raw(ai3, 'grant', { kind: 'agent', scope: { acts: ['observe.note', 'transfer'], parties: [], until: LATER } }, { to: helper3.id, parent: g3.hash })
+    const wide = s3.raw(ai3, 'grant', { kind: 'agent', scope: { types: ['observe.note', 'transfer'], parties: [], until: LATER } }, { to: helper3.id, parent: g3.hash })
     const over = s3.raw(helper3, 'observe', { kind: 'note', text: 'x' }, { under: wide.hash })
     backed('a grant wider than the one above it breaks the chain', over, her3, s3.held, no(), [10])
   }
@@ -146,7 +146,7 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   const stall = s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Stall', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }], needed: { sign: 2 } })
   const into = (who) => { const g = s.say(ann, 'grant', { kind: 'member', roles: ['owner'] }, { subject: stall.hash, to: who.id, as: stall.hash }); return s.say(who, 'grant', { status: 'accepted', kind: 'member' }, { answers: g.hash, subject: stall.hash }) }
   const beaIn = into(bea)
-  const lone = s.say(ann, 'grant', { kind: 'agent', scope: { acts: ['observe.note'], parties: [], until: LATER } }, { to: bot.id, as: stall.hash })
+  const lone = s.say(ann, 'grant', { kind: 'agent', scope: { types: ['observe.note'], parties: [], until: LATER } }, { to: bot.id, as: stall.hash })
   const early = note(s, bot, { under: lone.hash })
   backed('the circle needs two owners: a grant one owner signs as the circle backs nothing', early, ann, s.held, no([early]), [9])
   const confirm = s.say(bea, 'observe', { kind: 'agree', text: 'yes' }, { confirms: lone.hash })
@@ -163,7 +163,7 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   const café = s.say(ann, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Cafe', roles: [{ name: 'owner', powers: ['sign', 'admit', 'remove'] }] })
   const g2 = s.say(ann, 'grant', { kind: 'member', roles: ['owner'] }, { subject: café.hash, to: bea.id, as: café.hash })
   const beaCafe = s.say(bea, 'grant', { status: 'accepted', kind: 'member' }, { answers: g2.hash, subject: café.hash })
-  const gc = s.say(ann, 'grant', { kind: 'agent', scope: { acts: ['observe.note'], parties: [], until: LATER } }, { to: bot.id, as: café.hash })
+  const gc = s.say(ann, 'grant', { kind: 'agent', scope: { types: ['observe.note'], parties: [], until: LATER } }, { to: bot.id, as: café.hash })
   const bc = s.say(bot, 'observe', { kind: 'note', text: 'x' }, { under: gc.hash }, { after: [beaCafe.hash] })
   backed('one owner\'s signature is enough when the founding block states no number', bc, ann, s.held, yes([bc, gc]), [9])
   backed('and the other owner holds sign there too, once the block has seen her join', bc, bea, s.held, yes([bc, gc]), [9])
@@ -177,19 +177,19 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   const word = (who, under, handle = 'sms:+447700900123', extra = {}) => s.say(who, 'observe', { kind: 'witness', handle, said: 'yes', readback, ...extra }, { for: deal.hash, ...(under ? { under: under.hash } : {}) })
   const none = word(host, null)
   backed('a witness with no grant is the host\'s own word, never hers', none, her, s.held, no([none]), [9])
-  const g = s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host.id })
+  const g = s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { types: ['observe.witness'], parties: [], until: LATER } }, { to: host.id })
   const w = word(host, g)
   backed('an SMS witness under her grant, which names the handle and the host as witness, is backed by her', w, her, s.held, yes([w, g]), [9])
   const wrongHandle = word(host, g, 'sms:+447700900999')
   backed('a witness for another handle is not covered by that grant', wrongHandle, her, s.held, no([wrongHandle]), [9])
-  const wide = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
+  const wide = s.say(her, 'grant', { kind: 'agent', scope: { types: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
   const open = word(other, wide)
   backed('a grant that names no handle backs no witness of any handle', open, her, s.held, no([open]), [9])
   const stranger = word(other, g)
   backed('a witness signed by someone the grant is not made for is not backed', stranger, her, s.held, no([stranger]))
   // a grant that names a handle is passed on only to that handle
-  const hostGrant = s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', depth: 1, scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
-  const widerChild = s.raw(other, 'grant', { kind: 'witness', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host.id, parent: hostGrant.hash })
+  const hostGrant = s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', depth: 1, scope: { types: ['observe.witness'], parties: [], until: LATER } }, { to: other.id })
+  const widerChild = s.raw(other, 'grant', { kind: 'witness', scope: { types: ['observe.witness'], parties: [], until: LATER } }, { to: host.id, parent: hostGrant.hash })
   door('backed: a grant passed on from one that names a handle must name the same handle', 'valid', [widerChild, s.held.filter((b) => b.hash !== widerChild.hash), null], { expect: [{ code: 'wider_than_parent' }] })
   // `channel` is another word: the open label of the link a block came by. It names no one, so no grant reads it, and a block that carries it is covered as before
   const labelled = s.say(host, 'observe', { kind: 'witness', handle: 'sms:+447700900123', channel: 'sms', said: 'yes', readback }, { for: deal.hash, under: g.hash })
@@ -225,8 +225,8 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   const sack = s.say(payee, 'thing', { kind: 'good', name: 'flour' }, {})
   const sale = s.say(payee, 'promise', { what: 'flour', terms: { price: M(300), quantity: { value: '5', unit: 'sack' } } }, { from: payee.id, to: her.id, what: sack.hash })
   const pay = (who, refs = {}, money = M(300)) => s.say(who, 'transfer', { money }, { to_owner: payee.id, for: sale.hash, ...refs })
-  const g = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['transfer'], parties: [payee.id], limit: M(1000), until: LATER } }, { to: bot.id })
-  const narrow = s.say(her, 'grant', { kind: 'agent', scope: { acts: ['observe.note'], parties: [], until: LATER } }, { to: host.id })
+  const g = s.say(her, 'grant', { kind: 'agent', scope: { types: ['transfer'], parties: [payee.id], limit: M(1000), until: LATER } }, { to: bot.id })
+  const narrow = s.say(her, 'grant', { kind: 'agent', scope: { types: ['observe.note'], parties: [], until: LATER } }, { to: host.id })
   const own = pay(her), underRule = pay(bot, { under: g.hash }), overFence = pay(bot, { under: g.hash }, M(5000)), outsideActs = pay(host, { under: narrow.hash }), hostOwn = pay(host)
   const goods = s.say(bot, 'transfer', {}, { what: sale.hash, to_owner: payee.id, under: g.hash })
   const stoppedAt = stop(s, her, g)
@@ -246,7 +246,7 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
 {
   // consent: her own word is a block backed by her: a witness a host signs under her grant binds every asker, as her own STOP does
   const s = story(), her = s.person('bk12-her'), host = s.person('bk12-host', { kind: 'agent' }), asker = s.person('bk12-asker'), op = s.person('bk12-op')
-  const GRANT = (acts) => s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts, parties: [], until: LATER } }, { to: host.id })
+  const GRANT = (types) => s.say(her, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { types, parties: [], until: LATER } }, { to: host.id })
   const g = GRANT(['observe.witness', 'observe.consent'])
   const word = (who, w, refs = {}, after) => s.say(who, 'observe', { kind: 'consent', word: w, channel: 'sms' }, refs, after ? { after } : {})
   const stopHer = word(host, 'stop', { under: g.hash })
@@ -258,7 +258,7 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   door('consent: the same STOP signed under no grant is the recorder\'s word: it binds the recorder\'s own side alone', 'consent', [her2.id, asker2.id, s2.held, null], { expect: { word: null, block: null }, exact: true, invariants: [20] })
   door('consent: the recorder\'s own side is bound by it', 'consent', [her2.id, host2.id, s2.held, null], { expect: { word: 'stop', block: stopOwn.hash }, exact: true, invariants: [20] })
   const s3 = story(), her3 = s3.person('bk12c-her'), host3 = s3.person('bk12c-host', { kind: 'agent' }), asker3 = s3.person('bk12c-asker')
-  const narrow = s3.say(her3, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.witness'], parties: [], until: LATER } }, { to: host3.id })
+  const narrow = s3.say(her3, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { types: ['observe.witness'], parties: [], until: LATER } }, { to: host3.id })
   s3.say(host3, 'observe', { kind: 'consent', word: 'stop', channel: 'sms' }, { under: narrow.hash })
   door('consent: a grant that does not cover a consent block makes it the host\'s word, not hers: nothing binds the asker', 'consent', [her3.id, asker3.id, s3.held, null], { expect: { word: null, block: null }, exact: true, invariants: [20] })
   // her YES, witnessed under her grant after the stop it has seen, lifts it for every asker; one that has not seen the stop does not
@@ -266,9 +266,9 @@ const agentGrant = (s, who, to, scope = {}, refs = {}, state = {}) => s.say(who,
   live('her YES, witnessed by the host under her grant with her STOP in its past, lifts it', s.held, asker, { word: 'yes', block: yesSeen.hash })
   door('consent: a yes naming the asker is hers, so the asker is no stranger to her any more (is_stranger)', 'is_stranger', [her.id, asker.id, s.held, null], { expect: false, invariants: [20] })
   const s4 = story(), her4 = s4.person('bk12d-her'), host4 = s4.person('bk12d-host', { kind: 'agent' }), other4 = s4.person('bk12d-other', { kind: 'agent' }), asker4 = s4.person('bk12d-asker')
-  const g4 = s4.say(her4, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.consent'], parties: [], until: LATER } }, { to: host4.id })
+  const g4 = s4.say(her4, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { types: ['observe.consent'], parties: [], until: LATER } }, { to: host4.id })
   const stop4 = s4.say(host4, 'observe', { kind: 'consent', word: 'stop', channel: 'sms' }, { under: g4.hash, subject: asker4.id })
-  const g4b = s4.say(her4, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { acts: ['observe.consent'], parties: [], until: LATER } }, { to: other4.id })
+  const g4b = s4.say(her4, 'grant', { kind: 'witness', handle: 'sms:+447700900123', scope: { types: ['observe.consent'], parties: [], until: LATER } }, { to: other4.id })
   const blind = s4.say(other4, 'observe', { kind: 'consent', word: 'yes', channel: 'sms' }, { under: g4b.hash, subject: asker4.id })
   door('consent: her yes witnessed under her grant by a signer whose chain has not seen her stop does not lift it: a stop wins a tie', 'consent', [her4.id, asker4.id, s4.held, null], { expect: { word: 'stop' }, invariants: [20] })
   void blind, void stop4

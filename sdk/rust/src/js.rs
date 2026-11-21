@@ -37,20 +37,31 @@ pub fn index_of<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
         if block.get("type").is_some() && rs(block, "author").is_none() && !hash_of(block).is_empty() && hash_of(block) != crate::block::rehash(block) {
             continue;
         }
+        // a held header message `{ header, header_signature }` is held as its header entry (1.9 3b-7: a block held only as its header
+        // hides what its key's line held at its place, in every fold)
+        if block.get("header").is_some() && block.get("type").is_none() {
+            if let Some(e) = crate::valid::header_entry(block) {
+                // a body held under the same id is the block itself: a header never takes its place
+                let id = str_of(e.get("hash")).to_string();
+                if !index.get(&id).is_some_and(|b| b.get("type").is_some()) {
+                    index.insert(id, e);
+                }
+            }
+            continue;
+        }
         index.insert(str_of(block.get("hash")).to_string(), block.clone());
     }
     index
 }
 
-/// Calls `f` with each block a block rests on (protocol.json `needs`): its `prev`, and by type the grant it passes on, the offer
-/// it answers or stops, the grant it acts under, the block a rotation or removal counts to. Without allocating.
+/// Calls `f` with each block a block names for its meaning (protocol.json `needs`: `read` reads them, core.md section 8). Never its author
+/// or its `prev`: those are no block's meaning. Without allocating.
 pub fn each_need(block: &Value, f: &mut dyn FnMut(&str)) {
     let table = crate::spec().protocol.get("needs");
     for group in ["every", type_of(block)] {
         let Some(Value::Array(paths)) = table.and_then(|t| t.get(group)) else { continue };
         for path in paths.iter().filter_map(Value::as_str) {
-            let Some((side, key)) = path.split_once('.') else { continue };
-            let Some(value) = block.get(side).and_then(|o| o.get(key)) else { continue };
+            let Some(value) = get(block, path) else { continue };
             match value {
                 Value::String(h) if !h.is_empty() => f(h),
                 Value::Array(items) => {
@@ -64,9 +75,7 @@ pub fn each_need(block: &Value, f: &mut dyn FnMut(&str)) {
     }
 }
 
-/// The blocks a block rests on (protocol.json `needs`): its `prev`, and by type the grant it passes on, the offer it answers or
-/// stops, the grant it acts under, the block a rotation or removal counts to. They are causal dependencies: a block waits until
-/// all are held, and a fold reads only blocks whose needs are in its input.
+/// The blocks a block names for its meaning (protocol.json `needs`), ascending.
 pub fn needs_of(block: &Value) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     each_need(block, &mut |h| {
@@ -78,115 +87,23 @@ pub fn needs_of(block: &Value) -> Vec<String> {
     out
 }
 
-/// The needs of a block that are not in the index.
-pub fn unmet_in(block: &Value, index: &Index) -> Vec<String> {
-    let mut out: Vec<String> = Vec::new();
-    each_need(block, &mut |h| {
-        if !index.contains_key(h) && !out.iter().any(|o| o == h) {
-            out.push(h.to_string());
-        }
-    });
-    out.sort();
+/// The blocks a block names for its meaning that are not held (`read`'s `names_missing`), ascending.
+pub fn needs_missing(block: &Value, index: &Index) -> Vec<String> {
+    let mut out = needs_of(block);
+    out.retain(|h| !index.contains_key(h));
     out
 }
 
-// Whether a block is valid against the blocks a fold reads (core.md section 8: the write check, checks 1 to 4 and 8, with their
-// schemas as the schema store, and checks 6 and 7 on what it rests on): what a node would take into a store that holds them. A block that fails it counts for nothing
-// (folds.md). A sealed block held by its public header alone has no body to check (no `type`): it meets needs and no fold reads it.
-/// Whether a block a fold is asked about, but that its input does not hold, could be read with that input: valid on what it rests on
-/// (its needs held, the write check and checks 6 and 7). A block the input left out, or one no node would take, is read as no word.
-pub(crate) fn readable(block: &Value, index: &Index) -> bool {
-    let schemas: Index = index
-        .iter()
-        .filter(|(_, b)| type_of(b) == "thing" && get(b, "state.kind").and_then(Value::as_str) == Some("schema"))
-        .map(|(h, b)| (h.clone(), b.clone()))
-        .collect();
-    unmet_in(block, index).is_empty() && well_formed(block, index, &schemas)
-}
-
-fn well_formed(block: &Value, index: &Index, schemas: &Index) -> bool {
-    let (Some(state), Some(refs)) = (block.get("state").filter(|s| s.is_object()), block.get("refs").filter(|r| r.is_object())) else { return false };
-    if block.get("type").is_none() {
-        return true;
-    }
-    let options = crate::check::CheckOptions { schemas: Some(schemas), held: Some(index) };
-    if !crate::check::findings_with(crate::spec(), type_of(block), state, refs, options).is_empty() {
-        return false;
-    }
-    // checks 6 and 7, read from what the block rests on alone (valid.rs): a block no node would take counts for nothing in a fold
-    if crate::identity::is_genesis(block) || (type_of(block) == "actor" && state.get("public_key_sign").is_some()) {
-        return crate::identity::genesis_opens(Some(block)) && (hash_of(block).is_empty() || hash_of(block) == crate::block::hash_suite(&crate::identity::suite_named(block), type_of(block), state, refs));
-    }
-    crate::valid::signature_refusals(block, index).is_empty()
-}
-
-// The blocks of an index that cannot be read in it: those the write check refuses against it, and every block that needs one of them
-// or a block it does not hold.
-fn unread(index: &Index) -> alloc::collections::BTreeSet<&str> {
-    let mut gone: alloc::collections::BTreeSet<&str> = Default::default();
-    let schemas: Index = index
-        .iter()
-        .filter(|(_, b)| type_of(b) == "thing" && get(b, "state.kind").and_then(Value::as_str) == Some("schema"))
-        .map(|(h, b)| (h.clone(), b.clone()))
-        .collect();
-    for (h, b) in index {
-        if !well_formed(b, index, &schemas) {
-            gone.insert(h);
-        }
-    }
-    // A block that needs one gone, or one not held, goes too: a worklist over who needs whom, each block visited once (release 45; it had
-    // been a pass over every block, again and again until nothing more went).
-    let mut needed_by: alloc::collections::BTreeMap<&str, Vec<&str>> = Default::default();
-    let mut work: Vec<&str> = gone.iter().copied().collect();
-    for (h, b) in index {
-        each_need(b, &mut |n| {
-            if index.contains_key(n) {
-                needed_by.entry(index.get_key_value(n).map_or("", |(k, _)| k.as_str())).or_default().push(h.as_str());
-            } else if gone.insert(h) {
-                work.push(h);
-            }
-        });
-    }
-    while let Some(g) = work.pop() {
-        for d in needed_by.get(g).into_iter().flatten() {
-            if gone.insert(d) {
-                work.push(d);
-            }
-        }
-    }
-    gone
-}
-
-/// The largest part of an index in which every block passes the write check against that part and has every need in it: the
-/// blocks a fold may read (folds.md). Leaving a block out can leave another without the block its check read (a parent grant,
-/// a schema), so the part is read again until nothing more goes. Borrowed, when nothing has to go (the common case: a node's own
-/// store is whole and well-formed).
-pub fn closed_ref(index: &Index) -> alloc::borrow::Cow<'_, Index> {
-    let gone = unread(index);
-    if gone.is_empty() {
-        return alloc::borrow::Cow::Borrowed(index);
-    }
-    let mut kept: Index = index.iter().filter(|(h, _)| !gone.contains(h.as_str())).map(|(h, b)| (h.clone(), b.clone())).collect();
-    // what is left is read once more: a block's write check read other blocks that may have gone (a parent grant, a schema), and the part is
-    // read again until nothing more goes (the common case: once)
-    loop {
-        let gone: alloc::collections::BTreeSet<String> = unread(&kept).into_iter().map(String::from).collect();
-        if gone.is_empty() {
-            return alloc::borrow::Cow::Owned(kept);
-        }
-        kept.retain(|h, _| !gone.contains(h));
-    }
-}
-
-/// `closed_ref`, owned (the index itself when nothing has to go).
+/// What a fold may read of an index (`valid::pool`): each block valid and read whole, each valid and not read as its header, and nothing
+/// of one that is not valid. Owned (the index itself when nothing changes).
 pub fn closed(index: Index) -> Index {
-    match closed_ref(&index) {
+    match crate::valid::pool(&index) {
         alloc::borrow::Cow::Borrowed(_) => index,
         alloc::borrow::Cow::Owned(whole) => whole,
     }
 }
 
-/// An index of blocks by hash, closed: what a fold may read of these blocks.
+/// An index of blocks by hash, as a fold reads it (`closed`).
 pub fn held_index<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     closed(index_of(blocks))
 }
@@ -303,7 +220,7 @@ pub fn str_of(value: Option<&Value>) -> &str {
 pub fn cmp16(a: &str, b: &str) -> Ordering {
     a.encode_utf16().cmp(b.encode_utf16())
 }
-/// Sort and dedupe text the JavaScript way (`[...new Set(x)].sort()`).
+/// Sort and dedupe text as a set is written (1.9 3a-7): ascending UTF-8 bytes, no repeat.
 pub fn sorted_set<S: AsRef<str>>(items: impl IntoIterator<Item = S>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for item in items {
@@ -312,7 +229,7 @@ pub fn sorted_set<S: AsRef<str>>(items: impl IntoIterator<Item = S>) -> Vec<Stri
             out.push(s.to_string());
         }
     }
-    out.sort_by(|a, b| cmp16(a, b));
+    out.sort();
     out
 }
 /// Dedupe text keeping first-seen order (`[...new Set(x)]`).

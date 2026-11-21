@@ -58,7 +58,10 @@ public enum Sync {
     public static func answerSignedBy(_ answer: JSON, _ nodeKeys: [String]) throws -> Bool { try Door.answerSignedBy(answer, nodeKeys) }
     public static func pushRequest(_ messages: [JSON], for forWhom: JSON? = nil) throws -> JSON { try Door.pushRequest(messages, forWhom) }
 
-    public struct Waiting { public let hash: String, needs: [String] }
+    /// A block kept unjudged: it lacks pieces (`needs`) a verdict waits on.
+    public struct Unjudged { public let hash: String, needs: [String] }
+    /// A taken block this reader cannot read: held as its header, with the codes it was not read for.
+    public struct Unread { public let hash: String, codes: [String] }
     /// One refusal: { hash, code, detail }, its code from protocol.json's refusals.codes.
     public struct Refusal: Equatable {
         public let hash: String, code: String?, detail: String?
@@ -67,11 +70,13 @@ public enum Sync {
     /// What a node takes of a push.
     public struct Accepted {
         public internal(set) var taken: [JSON] = []
-        public internal(set) var waiting: [Waiting] = []
+        public internal(set) var unjudged: [Unjudged] = []
+        public internal(set) var unread: [Unread] = []
+        public internal(set) var falseHeaders: [String] = []
         public internal(set) var refused: [Refusal] = []
         public internal(set) var equivocations: [[String]] = []
     }
-    /// What a node takes of a push: { taken, waiting, refused: [{ hash, code, detail }], equivocations }.
+    /// What a node takes of a push: { taken, unjudged, refused, unread, equivocations, falseHeaders }.
     /// Validity reads no arrival (core.md, section 8). `taken` are found by the id the core computed, in the suite of the key that signed each (core.md, section 2).
     /// `takesPairs` is the node's choice: false keeps both blocks of a pair arriving together out of `taken` (both are listed in `equivocations` and kept); true takes them too.
     public static func accept(_ incoming: [JSON], _ held: [JSON] = [], takesPairs: Bool, schemas: [String: JSON]? = nil) throws -> Accepted {
@@ -83,14 +88,12 @@ public enum Sync {
             // a key's first block after a move to a suite of another hash has an id its bytes alone do not show
             for b in incoming { if try Door.idOf(b, held + incoming) == id { var named = b; named["hash"] = id; out.taken.append(named); break } }
         }
-        out.waiting = (r["waiting"] as? [JSON] ?? []).map { Waiting(hash: $0["hash"] as? String ?? "", needs: $0["needs"] as? [String] ?? []) }
+        out.unjudged = (r["unjudged"] as? [JSON] ?? []).map { Unjudged(hash: $0["hash"] as? String ?? "", needs: $0["needs"] as? [String] ?? []) }
+        out.unread = (r["unread"] as? [JSON] ?? []).map { Unread(hash: $0["hash"] as? String ?? "", codes: $0["codes"] as? [String] ?? []) }
+        out.falseHeaders = r["false_headers"] as? [String] ?? []
         out.refused = (r["refused"] as? [JSON] ?? []).map { Refusal(hash: $0["hash"] as? String ?? "", code: $0["code"] as? String, detail: $0["detail"] as? String) }
         out.equivocations = r["equivocations"] as? [[String]] ?? []
         return out
-    }
-    /// What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it opens its signature; the same key's next seq; no rival) once the block it names in prev is held. `taken` are hashes.
-    public static func acceptSealed(_ incoming: [JSON], _ held: [JSON] = [], takesPairs: Bool) throws -> JSON {
-        try Door.acceptSealed(incoming, held, ["takes_pairs": takesPairs])
     }
     public static func waitedTooLong(_ since: String, _ now: String, _ ttl: Double) throws -> Bool {
         // a time to wait that is not a whole number of milliseconds a 64-bit integer holds is an error, never a trap
@@ -99,19 +102,27 @@ public enum Sync {
     }
 
     public static func pushAnswer(_ result: Accepted, node: String, privateKey: String, suite: String? = nil) throws -> JSON {
-        try pushAnswer(taken: result.taken.compactMap { $0["hash"] as? String }, waiting: result.waiting.map { $0.hash }, refused: result.refused,
+        try pushAnswer(taken: result.taken.compactMap { $0["hash"] as? String }, unjudged: result.unjudged.map { $0.hash }, refused: result.refused,
                        equivocations: result.equivocations, node: node, privateKey: privateKey, suite: suite)
     }
     /// A push answer from its parts (hashes).
-    public static func pushAnswer(taken: [String] = [], waiting: [String] = [], refused: [Refusal] = [], equivocations: [[String]] = [], node: String, privateKey: String, suite: String? = nil) throws -> JSON {
-        let parts: JSON = ["taken": taken, "waiting": waiting, "equivocations": equivocations,
+    public static func pushAnswer(taken: [String] = [], unjudged: [String] = [], refused: [Refusal] = [], equivocations: [[String]] = [], node: String, privateKey: String, suite: String? = nil) throws -> JSON {
+        let parts: JSON = ["taken": taken, "unjudged": unjudged, "equivocations": equivocations,
                            "refused": refused.map { ["hash": $0.hash, "code": $0.code ?? NSNull(), "detail": $0.detail ?? NSNull()] as JSON }]
         return try Door.pushAnswer(parts, node, privateKey, suite)
     }
 
-    public static func wellKnown(node: String, holds: [String] = [], speaksFor: [String] = [], admission: String?, endpoints: [String: String] = [:]) throws -> JSON {
-        try Door.wellKnown(node, holds, speaksFor, admission, endpoints)
+    /// `admission` is the hash of the owner's admission block, or an explicit nil for no rule: stated either way, never filled in.
+    /// `reads` are the rule sets the node runs (core.md, section 11).
+    public static func wellKnown(node: String, reads: [String] = [], admission: String?, endpoints: [String: String] = [:], log: String? = nil) throws -> JSON {
+        try Door.wellKnown(node, reads, admission, endpoints, log)
     }
+    /// What a door log's signed words show (nodes.md, The arrival log): { left_out, stopped_short }.
+    public static func logShown(_ receipts: [JSON], _ request: JSON, _ answer: JSON, _ held: [JSON] = []) throws -> JSON { try Door.logShown(receipts, request, answer, held) }
+    /// Whether her export is whole (nodes.md, A host): { whole, lacks }. `log` names the door log; `last` is the receipt she holds.
+    public static func exportWhole(_ document: JSON, log: String, last: String) throws -> JSON { try Door.exportWhole(document, log, last) }
+    /// A push read from its text: { refused, messages }.
+    public static func strictPush(_ text: String) throws -> Any? { try Door.strictPush(text) }
     public static func announcement(_ doc: JSON) throws -> JSON { try Door.announcement(doc) }
     public static func wellKnownErrors(_ doc: JSON?) throws -> [String] { try Door.wellKnownErrors(doc ?? [:]) }
 }

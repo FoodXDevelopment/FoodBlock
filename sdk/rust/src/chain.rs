@@ -1,6 +1,7 @@
 //! A key's own chain (core.md, The chain). Every block but a genesis sits in its signing key's chain: `state.seq` its
 //! number, `refs.prev` the key's previous block. A key's first block has seq 1 and its prev is the block that brought
-//! the key in; a skip may jump forward. Two blocks naming one prev prove a lie (invariant 3).
+//! the key in; a skip may jump forward. Two blocks naming one prev or stating one seq prove a lie (invariant 3). A block whose prev or seq
+//! does not fit is still valid (core.md, section 8): the chain fold shows it.
 use crate::error::{Error, Result};
 use crate::js::{hash_of, int, rs, st};
 use crate::prelude::*;
@@ -56,7 +57,7 @@ pub struct Chain {
     pub gaps: Vec<i64>,
     /// The hashes of the skip blocks.
     pub skips: Vec<String>,
-    /// The pairs of blocks naming one `prev`, each pair sorted, the list sorted.
+    /// The pairs of blocks naming one `prev` or stating one `seq`, each pair sorted, the list sorted.
     pub equivocations: Vec<[String; 2]>,
     /// The blocks whose prev is not the block before them.
     pub broken: Vec<String>,
@@ -95,32 +96,35 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
             by_prev.entry(p.to_string()).or_default().push(hash_of(b).to_string());
         }
     }
-    // Each group of blocks taking one place proves the lie by a star: every block of it paired with the group's lowest hash (folds.md,
-    // chain), so a key that signs a thousand blocks on one prev lists 999 pairs, never half a million.
-    let mut equivocations: Vec<[String; 2]> = Vec::new();
+    // Each group of blocks taking one place, or stating one seq, proves the lie by a star: every block of it paired with the group's lowest
+    // hash (folds.md, chain), so a key that signs a thousand blocks on one prev lists 999 pairs, never half a million.
+    let mut pairs: alloc::collections::BTreeSet<[String; 2]> = Default::default();
     let mut in_pair: alloc::collections::BTreeSet<String> = Default::default();
-    for (_, mut group) in by_prev {
+    let at_seq = by_seq.values().map(|g| g.iter().map(|b| hash_of(b).to_string()).collect::<Vec<_>>());
+    for mut group in by_prev.into_values().chain(at_seq) {
         group.sort();
         group.dedup();
         if group.len() > 1 {
             in_pair.extend(group.iter().cloned());
         }
         for other in group.iter().skip(1) {
-            equivocations.push([group[0].clone(), other.clone()]);
+            pairs.insert([group[0].clone(), other.clone()]);
         }
     }
-    equivocations.sort();
+    let equivocations: Vec<[String; 2]> = pairs.into_iter().collect();
     let mut skips: Vec<String> = mine.values().filter(|b| is_skip(b)).map(|b| hash_of(b).to_string()).collect();
     skips.sort();
     // A block is broken when its prev does not name the block before it: the block that brought the key in, at seq 1 (or a skip), or
     // a block of the key one seq lower (any lower, for a skip). Read from each block and its prev alone, never from the order given.
     let mut broken: Vec<String> = mine
         .values()
+        // 1.9 3b-1, In its place: `seq` above its prev's, or seq 1 on the block that brought the key in; a prev not held is not shown,
+        // never out of place (a seq that jumps with no skip is a gap, never a block out of its place)
         .filter(|b| match rs(b, "prev") {
-            Some(p) if p == brought_in => !(seq_of(b) == 1 || is_skip(b)),
+            Some(p) if p == brought_in => seq_of(b) != 1,
             Some(p) => match mine.get(p) {
-                Some(q) => !(if is_skip(b) { seq_of(b) > seq_of(q) } else { seq_of(b) == seq_of(q) + 1 }),
-                None => true,
+                Some(q) => seq_of(b) <= seq_of(q),
+                None => false,
             },
             None => true,
         })

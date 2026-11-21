@@ -98,7 +98,7 @@ inline std::string hash(const std::string& block) { return detail::door("hash", 
 inline std::string keypair(const std::string& seed_hex = "") {
   return detail::door("keypair", "[" + (seed_hex.empty() ? std::string("null") : detail::text(seed_hex)) + "]");
 }
-// A genesis, signed (keys: { public_key_sign, private_key }; options: { kind, at, audience, encryption_key, recovery_key, reach }: kind, at and audience are stated).
+// A genesis, signed (keys: { public_key_sign, private_key }; options: { kind, at, audience, encryption_key, reach, keepers }: kind, at and audience are stated; keepers come with a reach).
 inline std::string genesis(const std::string& keys, const std::string& options) {
   return detail::door("genesis", "[" + keys + "," + options + "]");
 }

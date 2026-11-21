@@ -1,8 +1,9 @@
-// The CLI writes valid blocks in an identity's key chain and refuses invalid ones, by the SDK's own checks.
+// The CLI holds no key. It composes blocks for her own device to sign (the test is the device, with a throwaway key), takes back the signature,
+// and refuses invalid blocks by the SDK's own checks.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import fb from '@foodxdev/foodblock'
@@ -14,86 +15,99 @@ const ok = (...args) => JSON.parse(execFileSync(process.execPath, [FB, ...args],
 const me = join(dir, 'me.json')
 test.after(() => rmSync(dir, { recursive: true, force: true }))
 
-test('init: a genesis that passes the write check; the recovery key kept apart', () => {
-  const genesis = ok('init', me, '--kind', 'person', '--audience', 'public', '--reach', 'P30D')
-  assert.deepEqual(fb.check(genesis.type, genesis.state, genesis.refs), [])
-  assert.equal(fb.identity.signedByAuthor(genesis, [genesis]), true)
-  const { recovery } = JSON.parse(readFileSync(`${me}.recovery.json`, 'utf8'))
-  assert.equal(genesis.state.recovery_key_hash, fb.identity.recoveryKeyHash(recovery.public_key_sign))
-  assert.equal(JSON.parse(readFileSync(me, 'utf8')).recovery, undefined, 'the identity file holds no recovery key')
-  assert.notEqual(run('init', me, '--kind', 'person', '--audience', 'public', '--reach', 'P30D').status, 0, 'never overwrites an identity')
+// her device: the key never leaves this object; the CLI is given the genesis only
+const device = fb.generateKeypair()
+const genesis = fb.identity.genesis(device, { kind: 'person', at: '2026-11-01T00:00:00.000Z', audience: 'public' })
+const sign = (drafted) => fb.sign(drafted.block, device.private_key)
+const create = (...args) => { const drafted = ok('draft', ...args, '--identity', me); return ok('attach', '--draft', JSON.stringify(drafted), '--signature', sign(drafted), '--identity', me) }
+
+test('adopt: her public identity is kept (blocks only, private to her); a genesis her key does not open is refused', () => {
+  const result = ok('adopt', me, '--genesis', JSON.stringify(genesis))
+  assert.equal(result.id, genesis.hash)
+  const held = JSON.parse(readFileSync(me, 'utf8'))
+  assert.deepEqual(Object.keys(held).sort(), ['chain', 'genesis'], 'the file holds blocks and nothing else')
+  assert.ok(!readFileSync(me, 'utf8').includes(device.private_key))
+  assert.equal(statSync(me).mode & 0o077, 0, 'private to its owner')
+  assert.notEqual(run('adopt', me, '--genesis', JSON.stringify(genesis)).status, 0, 'never overwrites an identity')
+  const forged = { ...genesis, signature: 'f'.repeat(128) }
+  assert.notEqual(run('adopt', join(dir, 'forged.json'), '--genesis', JSON.stringify(forged)).status, 0)
+  assert.notEqual(run('adopt', join(dir, 'leak.json'), '--genesis', JSON.stringify({ ...genesis, private_key: device.private_key })).status, 0, 'a genesis that carries a private key is refused')
 })
 
-test('create: valid blocks, each the next in the key chain, signed by a key that speaks', () => {
-  const eggs = ok('create', 'thing', 'eggs', '--state', '{"name":"Eggs"}', '--audience', 'public', '--identity', me)
-  const offer = ok('create', 'promise', '--state', JSON.stringify({ terms: { price: fb.money(450, 'GBP'), quantity: fb.amount('2', '{tray}'), expires: '2026-10-20T00:00:00.000Z' } }),
-    '--refs', JSON.stringify({ from: eggs.refs.author, what: eggs.hash }), '--audience', 'public', '--identity', me)
+test('init, key and create are gone: each says so, exits non-zero, and makes no key or file', () => {
+  for (const [args, words] of [[['init', join(dir, 'x.json'), '--kind', 'person', '--audience', 'public'], /holds no key of hers/], [['key', join(dir, 'nk.json'), '--identity', me], /holds no key of hers/], [['create', 'thing', '--audience', 'public', '--identity', me], /signed with a key/]]) {
+    const result = run(...args)
+    assert.notEqual(result.status, 0); assert.match(result.stderr, words)
+  }
+  assert.deepEqual(readdirSync(dir).filter((f) => /recovery|node-key|x\.json|nk\.json/.test(f)), [])
+})
+
+test('draft then attach: valid blocks, each the next in her chain, signed by her device', () => {
+  const eggs = create('thing', 'eggs', '--state', '{"name":"Eggs"}', '--audience', 'public')
+  const offer = create('promise', '--state', JSON.stringify({ terms: { price: fb.amount('4.50', 'GBP'), quantity: fb.amount('2', '{tray}'), expires: '2026-10-20T00:00:00.000Z' } }),
+    '--refs', JSON.stringify({ from: eggs.refs.author, what: eggs.hash }), '--audience', 'public')
   const { chain } = JSON.parse(readFileSync(me, 'utf8'))
-  for (const block of [eggs, offer]) assert.deepEqual(fb.check(block.type, block.state, block.refs), [])
   assert.deepEqual([eggs.state.seq, offer.state.seq, offer.refs.prev], [1, 2, eggs.hash])
   assert.equal(ok('verify', JSON.stringify(offer), '--identity', me).signedByItsAuthor, true)
   assert.equal(fb.promiseStage(offer, chain).stage, 'offered')
 })
 
-test('create refuses what the write check refuses, and writes nothing', () => {
-  const before = JSON.parse(readFileSync(me, 'utf8')).chain.length
-  for (const args of [['thing', 'flour', '--state', '{"amount":{"value":1.5,"unit":"kg"}}'], ['place.venue', 'kitchen'], ['promise', '--refs', '{}']]) {
-    const result = run('create', ...args, '--audience', 'public', '--identity', me)
+test('draft prints a block with no signature, saves nothing, and gives the passkey challenge', () => {
+  const before = readFileSync(me, 'utf8')
+  const drafted = ok('draft', 'observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public', '--identity', me)
+  assert.equal(drafted.block.signature, undefined)
+  assert.equal(drafted.challenge, fb.passkeyChallenge(drafted.block))
+  assert.equal(readFileSync(me, 'utf8'), before)
+})
+
+test('attach refuses a signature that is not her key\'s over exactly that block, and writes nothing', () => {
+  const before = readFileSync(me, 'utf8')
+  const drafted = ok('draft', 'observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public', '--identity', me)
+  const stranger = fb.generateKeypair()
+  for (const signature of [fb.sign(drafted.block, stranger.private_key), 'ab'.repeat(64)]) {
+    const result = run('attach', '--draft', JSON.stringify(drafted), '--signature', signature, '--identity', me)
+    assert.notEqual(result.status, 0); assert.match(result.stderr, /not her key/)
+  }
+  const edited = { ...drafted, block: { ...drafted.block, state: { ...drafted.block.state, text: 'edited after' } } }
+  assert.notEqual(run('attach', '--draft', JSON.stringify(edited), '--signature', sign(drafted), '--identity', me).status, 0, 'a signature over other words is refused')
+  assert.equal(readFileSync(me, 'utf8'), before)
+})
+
+test('draft refuses what the write check refuses, and writes nothing', () => {
+  const before = readFileSync(me, 'utf8')
+  for (const args of [['thing', 'flour', '--state', '{"amount":{"value":1.5,"unit":"kg"}}'], ['observe', 'note', '--state', '{"price":{"value":"abc","unit":"GBP"}}']]) {
+    const result = run('draft', ...args, '--audience', 'public', '--identity', me)
     assert.notEqual(result.status, 0, args.join(' '))
     assert.match(result.stderr, /refused/)
   }
-  assert.equal(JSON.parse(readFileSync(me, 'utf8')).chain.length, before)
+  assert.equal(readFileSync(me, 'utf8'), before)
 })
 
-test('a missing --kind or --audience is refused with the plain reason, and nothing is written', () => {
-  const other = join(dir, 'other.json')
-  for (const [args, reason] of [[['--audience', 'public', '--reach', 'P30D'], /--kind is required/], [['--kind', 'person', '--reach', 'P30D'], /--audience is required/], [['--kind', 'person', '--audience', 'public'], /--reach is required/], [[], /--kind is required/]]) {
-    const result = run('init', other, ...args)
-    assert.notEqual(result.status, 0); assert.match(result.stderr, reason)
-  }
-  assert.equal(run('init', other, '--kind', 'person', '--reach', 'P30D', '--audience').status === 0, false, 'a flag with no value is a missing one')
-  const before = JSON.parse(readFileSync(me, 'utf8')).chain.length
-  const result = run('create', 'observe', 'note', '--state', '{"text":"hi"}', '--identity', me)
+test('a missing --audience is refused with the plain reason', () => {
+  const result = run('draft', 'observe', 'note', '--state', '{"text":"hi"}', '--identity', me)
   assert.notEqual(result.status, 0); assert.match(result.stderr, /--audience is required/)
-  assert.equal(JSON.parse(readFileSync(me, 'utf8')).chain.length, before, 'nothing was signed')
+})
+
+test('an identity file that holds a private key is not read', () => {
+  const bad = join(dir, 'bad.json')
+  writeFileSync(bad, JSON.stringify({ keys: device, genesis, chain: [genesis] }))
+  const result = run('draft', 'observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public', '--identity', bad)
+  assert.notEqual(result.status, 0); assert.match(result.stderr, /holds a private key/)
+  assert.ok(!existsSync(`${bad}.recovery.json`))
 })
 
 test('a list audience: the block is for those ids alone', () => {
-  const secret = ok('create', 'observe', 'note', '--state', '{"text":"for Bo"}', '--audience', 'bo-id-not-real', '--identity', me)
+  const secret = create('observe', 'note', '--state', '{"text":"for Bo"}', '--audience', 'bo-id-not-real')
   assert.ok(Array.isArray(secret.state.audience) && secret.state.audience.length === 1)
-})
-
-test('key: a device key brought in by a key grant, ready to sign a node\'s answers', () => {
-  const file = join(dir, 'node-key.json')
-  const grant = ok('key', file, '--identity', me)
-  const { holder, key, blocks } = JSON.parse(readFileSync(file, 'utf8'))
-  assert.deepEqual(fb.check(grant.type, grant.state, grant.refs), [])
-  assert.ok(fb.identity.keysOf(holder, blocks).includes(key.public_key_sign))
 })
 
 test('check and valid', () => {
   assert.ok(ok('check', 'thing', '--state', '{"kind":"eggs"}').errors.some((error) => /refs.author/.test(error)))
-  const note = ok('create', 'observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public', '--identity', me)
+  const note = create('observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public')
   assert.deepEqual(ok('valid', JSON.stringify(note), '--identity', me).refusals, [])
   assert.deepEqual(ok('valid', JSON.stringify({ ...note, signature: 'f'.repeat(128) }), '--identity', me).refusals.map((r) => r.code), ['bad_signature'])
 })
 
-test('convert: the one-time converter turns old blocks into fresh blocks, and running again adds nothing', () => {
-  const owner = fb.generateKeypair()
-  const genesis = { type: 'actor.foodie', state: { name: 'Ann', public_key_sign: owner.public_key_sign, at: '2024-01-01T00:00:00.000Z', audience: 'public' }, refs: {} }
-  const id = fb.legacy.oldHash(genesis)
-  const note = { type: 'observe.received', state: { text: 'two trays' }, refs: { author: id } }
-  const files = { old: join(dir, 'old.json'), keys: join(dir, 'keys.json'), map: join(dir, 'map.json') }
-  writeFileSync(files.old, JSON.stringify([genesis, note])); writeFileSync(files.keys, JSON.stringify({ [id]: owner }))
-  const done = ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-15T12:00:00.000Z', '--map', files.map)
-  assert.equal(done.blocks.length, 3)
-  assert.deepEqual(done.blocks[1].refs.derives_from, [id])
-  assert.ok(Array.isArray(done.blocks[2].state.audience), 'a block that named no audience is its author\'s alone, not public')
-  assert.deepEqual(fb.valid(done.blocks[2], [done.blocks[0], done.blocks[1]]), [])
-  assert.deepEqual(done.blocks[2].refs.derives_from, [fb.legacy.oldHash(note)])
-  assert.equal(ok('convert', files.old, '--keys', files.keys, '--at', '2026-10-16T12:00:00.000Z', '--map', files.map).blocks.length, 0)
-})
-
-test('the package names the protocol version it speaks', () => {
-  assert.ok(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version.startsWith(`${fb.VERSION}.`))
+test('the package carries its own number: the protocol names no version', () => {
+  assert.match(JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version, /^\d+\.\d+\.\d+$/)
 })

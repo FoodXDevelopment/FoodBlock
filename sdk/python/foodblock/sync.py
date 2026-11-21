@@ -66,37 +66,44 @@ def recipients_of(for_whom, hash_) -> list:
 
 
 def accept(incoming, held, takes_pairs, schemas=None) -> dict:
-    """What a node takes of a push. Validity reads no arrival (core.md, section 8). `taken` are the blocks, each found by the id the
-    core computed: `takes_pairs` is the node's own choice (True: both blocks of a pair arriving together are taken; False: neither, both listed in `equivocations`): in the suite of the key that signed it, found among `held` (core.md, section 2)."""
+    """What a node takes of a push (nodes.md, Push): { taken, unjudged, refused, unread, equivocations, false_headers }. `incoming` are blocks
+    and sealed header messages { header, header_signature, envelope? }. `takes_pairs` is the node's own stated choice, required (True:
+    the blocks of a forked pair are taken as well as listed; False: neither). Validity reads no arrival (core.md, section 8).
+    `taken` are the blocks, each found by the id the core computed in the suite of the key that signed it (a sealed message by its header's hash)."""
     held, incoming = list(held or []), list(incoming)
     out = door.accept(incoming, held, {"takes_pairs": takes_pairs}, None if schemas is None else list(schemas.values() if isinstance(schemas, dict) else schemas))
-    by_hash = {b.get("hash"): b for b in incoming}
+    by_hash = {b.get("hash", (b.get("header") or {}).get("hash")): b for b in incoming}
     everything = held + incoming
 
     def named(h):
         if h in by_hash:
             return by_hash[h]
         for b in incoming:
-            if door.id_of(b, everything) == h:
+            if b.get("type") and door.id_of(b, everything) == h:
                 return {**b, "hash": h}
         return h
     return {**out, "taken": [named(h) for h in out["taken"]]}
 
 
-def accept_sealed(incoming, held, takes_pairs) -> dict:
-    """What a node takes of the sealed blocks of a push: the core checks each public header (a key of its author that speaks for it
-    opens its signature; the same key's next seq; no rival) once the block it names in prev is held. `incoming` are sealed
-    messages { header, header_signature, ... }; `held` whole blocks, sealed messages or their headers."""
-    incoming, held = list(incoming), list(held or [])
-    out = door.accept_sealed(incoming, held, {"takes_pairs": takes_pairs})
-    by_hash = {m.get("header", {}).get("hash"): m for m in incoming}
-    return {**out, "taken": [by_hash.get(h, h) for h in out["taken"]]}
+def admission_refusals(block, receiver, blocks, admission, asks_today) -> list:
+    """What a node's admission and consent rules refuse of a block for a person: not_admitted, not_human. `admission` is the rule's
+    state or an explicit None (no rule); `asks_today` a whole number (the asks it took today from this sender). Both are required."""
+    return door.admission_refusals(block, receiver, blocks, admission, asks_today)
 
 
-def admission_refusals(block, receiver, blocks, admission, strangers_today) -> list:
-    """What a node's admission and consent rules refuse of a block for a person: not_admitted, not_human.
-    `admission` is the rule's state or an explicit None (no rule); `strangers_today` a whole number. Both are required."""
-    return door.admission_refusals(block, receiver, blocks, admission, strangers_today)
+def strict_push(text) -> dict:
+    """A push read from its text (nodes.md, Push): { refused, messages }."""
+    return door.strict_push(str(text))
+
+
+def log_shown(receipts, request, answer, held=()) -> dict:
+    """What a door log's signed words show (nodes.md, The arrival log): { left_out, stopped_short }."""
+    return door.log_shown(list(receipts), request, answer, list(held or []))
+
+
+def export_whole(document, log, last) -> dict:
+    """Whether her export is whole (nodes.md, A host): { whole, lacks }."""
+    return door.export_whole(document, str(log), str(last))
 
 
 def residency_refusals(block, holds_in=()) -> list:
@@ -107,6 +114,7 @@ def push_answer(result, node, private_key, suite=None) -> dict:
     return door.push_answer(result, node, private_key, suite)
 
 
-def well_known(node, holds, speaks_for, admission, endpoints=None) -> dict:
-    # `admission` is the hash of the owner's admission block, or None for no rule: stated either way, never filled in
-    return door.well_known(node, list(holds), list(speaks_for), admission, endpoints or {})
+def well_known(node, reads, admission, endpoints=None, log=None) -> dict:
+    """The discovery document. `admission` is the hash of the owner's admission block, or None for no rule: stated either way, never filled in.
+    `reads`: the rule sets the node runs (core.md, section 11), listed only where it runs a build made from that set's files."""
+    return door.well_known(node, list(reads or []), admission, endpoints or {}, log)

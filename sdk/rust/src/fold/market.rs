@@ -76,7 +76,7 @@ fn item_fits(lookup: &Value, item: &str, index: &Index, blocks: &[Value]) -> Res
 }
 
 /// `{ ok, why, bad: [{ hash, why }], left_out: [hash] }`. A list-keeper's answer is an observe of kind `listing` that `answers` the lookup and names
-/// its items in `derives_from`. It is `ok` when every item is a real signed offer (or want) among `blocks` that the lookup asks for: a keeper can
+/// its items in `derives_from`. It is `ok` when every item is a real signed offer (or want) among `blocks` that the lookup asks for: a clock can
 /// leave one out but never make one up. `left_out` is what the reader holds that fits the lookup and the answer does not name.
 pub fn listing_check(lookup: &Value, listing: &Value, blocks: &[Value]) -> Value {
     let index = read_all(blocks.iter());
@@ -159,18 +159,18 @@ struct Sides {
     debtor: Option<String>,
     creditors: Vec<String>,
 }
-// Who owes the price (the one who answers for the `to` side) and who is owed it (the owner of the claim where it was handed over, else the `from` side).
+// Who pays the price (the `to` side) and who receives it (1.9 3c-7: the holder of the receiving place where it was handed on, else the `from` side).
 fn sides_of(stage: &Value) -> Sides {
     let name = |side: &str| stage.get("sides").and_then(|s| s.get(side)).and_then(Value::as_str).map(String::from);
-    let debtor = stage.get("answerable").and_then(|a| a.get("to")).and_then(Value::as_str).map(String::from).or_else(|| name("to"));
-    let owners: Vec<String> = stage.get("owed").and_then(|o| o.get("from")).and_then(Value::as_array).map_or(vec![], |a| a.iter().filter_map(|l| l.get("owner").and_then(Value::as_str).map(String::from)).collect());
+    let debtor = name("to");
+    let owners: Vec<String> = stage.get("to_come").and_then(|o| o.get("from")).and_then(Value::as_array).map_or(vec![], |a| a.iter().filter_map(|l| l.get("owner").and_then(Value::as_str).map(String::from)).collect());
     Sides { debtor, creditors: if owners.is_empty() { name("from").into_iter().collect() } else { sorted_set(owners) } }
 }
 
-/// `{ binds, why, who, missing, lines: [{ deal, ok, why, owed, reduce, left }] }`. A clearing is an observe of kind `clearing` whose `state.lines`
-/// are `{ deal, reduce, applies?, rate? }`: the amount each IOU is reduced by. It binds only when every person in it (each debtor and each owner
-/// of what is owed) has signed it or a block that `confirms` it, backed by them. Each line reduces a deal that binds, by no more than is still
-/// owed, in the deal's own kind; a line in another kind names the rate (an observe of kind `rate`, `give` and `get`) that both sides of
+/// `{ binds, why, who, missing, lines: [{ deal, ok, why, to_come, reduce, left }] }`. A clearing is an observe of kind `clearing` whose `state.lines`
+/// are `{ deal, reduce, applies?, rate? }`: the amount each IOU is reduced by. It binds only when every person in it (each payer and each holder
+/// of the receiving place) has signed it or a block that `confirms` it, backed by them. Each line reduces a deal that binds, by no more than is
+/// still to come, in the deal's own kind; a line in another kind names the rate (an observe of kind `rate`, `give` and `get`) that both sides of
 /// that deal signed, and `applies` the amount in the deal's kind, which must be exactly the rate's worth of `reduce`.
 pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
     let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(clearing)).chain([clearing]));
@@ -184,7 +184,7 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
     let mut out: Vec<Value> = Vec::new();
     for line in lines {
         let deal = line.get("deal").and_then(Value::as_str).unwrap_or("");
-        let mut shown = json!({ "deal": deal, "ok": false, "why": null, "owed": null, "reduce": null, "left": null });
+        let mut shown = json!({ "deal": deal, "ok": false, "why": null, "to_come": null, "reduce": null, "left": null });
         let refuse = |why: String, mut shown: Value| {
             shown["why"] = json!(why);
             shown
@@ -210,9 +210,9 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
         };
         let paid = stage.get("paid").filter(|p| !p.is_null()).and_then(measure).filter(|(_, k)| *k == kind).map_or_else(Dec::zero, |(d, _)| d);
         let owed = total.sub(&paid);
-        shown["owed"] = kind_json(&owed, &kind);
+        shown["to_come"] = kind_json(&owed, &kind);
         let Some((reduce, reduce_kind)) = line.get("reduce").and_then(measure).filter(|(d, _)| d.cmp(&zero) == Ordering::Greater) else {
-            out.push(refuse("`reduce` is an amount of money or goods above nothing".into(), shown));
+            out.push(refuse("`reduce` is an amount above nothing".into(), shown));
             continue;
         };
         shown["reduce"] = kind_json(&reduce, &reduce_kind);
@@ -241,7 +241,7 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
             applies
         };
         if applied.cmp(&owed) == Ordering::Greater {
-            out.push(refuse("it reduces the deal by more than is still owed".into(), shown));
+            out.push(refuse("it reduces the deal by more than is still to come".into(), shown));
             continue;
         }
         shown["left"] = kind_json(&owed.sub(&applied), &kind);
@@ -259,10 +259,11 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
 // ---- A ruling by a named judge ----
 
 /// Whether the condition `{ ruled: <deal>, by: <judge>, awards: <person> }` holds: the judge's counted ruling on the deal (an observe of kind `ruling`,
-/// `refs.subject` the deal, backed by the judge, dated by `now` when a clock is given) awards something to the person. Of the judge's rulings on a deal the
+/// `refs.subject` the deal, backed by the judge), among the blocks given (1.9 R-H9: the past of the block it is read for; no reader's clock),
+/// awards something to the person. Of the judge's rulings on a deal the
 /// head is the one no other of hers has in its causal past (she changes her ruling by signing another that has seen it); two heads that do not
 /// see each other rule nothing. Ok is the ruling's hash and the award line; Err is why it does not hold, or None for a condition of another shape.
-pub(crate) fn ruled(condition: &Value, index: &Index, now: Option<&str>) -> Option<Result<(String, Value), String>> {
+pub(crate) fn ruled(condition: &Value, index: &Index) -> Option<Result<(String, Value), String>> {
     let c = condition.as_object()?;
     c.get("ruled")?;
     let id = |k: &str| c.get(k).and_then(Value::as_str).filter(|t| is_id(t));
@@ -272,7 +273,6 @@ pub(crate) fn ruled(condition: &Value, index: &Index, now: Option<&str>) -> Opti
     let mine: Vec<&Value> = index
         .values()
         .filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("ruling") && rs(o, "subject") == Some(deal))
-        .filter(|o| now.is_none_or(|n| ss(o, "at").is_some_and(|at| at <= n)))
         .filter(|o| backed_in(o, judge, index))
         .collect();
     if mine.is_empty() {
@@ -287,12 +287,12 @@ pub(crate) fn ruled(condition: &Value, index: &Index, now: Option<&str>) -> Opti
     })
 }
 
-/// `{ releases, to, money, ruling, why }`: whether a ruling releases a stake. A stake is a promise whose `terms.condition` (or a transfer whose
+/// `{ releases, to, amount, ruling, why }`: whether a ruling releases a stake. A stake is a promise whose `terms.condition` (or a transfer whose
 /// `state.condition`) is `{ ruled: <deal>, by: <judge>, awards: <person> }`. It is released when the judge's ruling awards that person something,
 /// by the amount the award states in the stake's own kind, capped at the stake (the whole stake when the award states none); nothing is converted.
-pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Value {
+pub fn ruling_releases(stake: &Value, blocks: &[Value]) -> Value {
     let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(stake)).chain([stake]));
-    let no = |why: String| json!({ "releases": false, "to": null, "money": null, "ruling": null, "why": why });
+    let no = |why: String| json!({ "releases": false, "to": null, "amount": null, "ruling": null, "why": why });
     let condition = match type_of(stake) {
         "promise" => get(stake, "state.terms.condition"),
         "transfer" => st(stake, "condition"),
@@ -304,11 +304,14 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Va
     let binding = match type_of(stake) {
         "promise" => binds(&promise_stage_in(hash_of(stake), &index, &super::StageOptions::default())),
         _ => {
+            // a transfer rests on every deal it is `for`, and on the deal its condition `ruled` names when that is a promise held (a ruling may be
+            // about a claim or a thing, which is no deal to bind); each must bind (promises.md, Rulings)
+            let ruled_deal = condition.and_then(|c| c.get("ruled")).and_then(Value::as_str).filter(|h| index.get(*h).is_some_and(|d| type_of(d) == "promise" && list(rf(d, "answers")).is_empty()));
             crate::identity::counts_in(stake, &index)
-                && list(rf(stake, "for")).into_iter().all(|d| index.get(d).is_some_and(|_| binds(&promise_stage_in(d, &index, &super::StageOptions::default()))))
+                && list(rf(stake, "for")).into_iter().chain(ruled_deal).all(|d| index.get(d).is_some_and(|_| binds(&promise_stage_in(d, &index, &super::StageOptions::default()))))
         }
     };
-    let Some(Some(verdict)) = condition.map(|c| ruled(c, &index, now)) else { return no("the stake's condition names no ruling (`ruled`)".into()) };
+    let Some(Some(verdict)) = condition.map(|c| ruled(c, &index)) else { return no("the stake's condition names no ruling (`ruled`)".into()) };
     let (ruling, award) = match verdict {
         Ok(v) => v,
         Err(why) => return no(why),
@@ -316,14 +319,14 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Va
     let to = award.get("to").cloned().unwrap_or(Value::Null);
     // read last, so the answer still says which ruling it was: a ruling that reaches a stake no one accepted releases nothing
     if !binding {
-        return json!({ "releases": false, "to": to, "money": null, "ruling": ruling, "why": "the stake does not bind: it is not signed by both sides who name this judge, or the deal it serves is not accepted" });
+        return json!({ "releases": false, "to": to, "amount": null, "ruling": ruling, "why": "the stake does not bind: it is not signed by both sides who name this judge, or the deal it serves is not accepted" });
     }
     let staked = match type_of(stake) {
         "promise" => get(stake, "state.terms").map(|t| super::terms_total(t, None)).and_then(|t| measure(&t)),
-        _ => st(stake, "money").and_then(measure),
+        _ => st(stake, "amount").and_then(measure),
     };
-    let awarded = award.get("money").or_else(|| award.get("amount")).and_then(measure);
-    let money = match (staked, awarded) {
+    let awarded = award.get("amount").and_then(measure);
+    let amount = match (staked, awarded) {
         (Some((s, sk)), Some((a, ak))) => {
             if sk != ak {
                 return no("the award is in another kind than the stake: nothing is converted".into());
@@ -333,7 +336,7 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value], now: Option<&str>) -> Va
         (Some((s, sk)), None) => Some(kind_json(&s, &sk)),
         (None, _) => None,
     };
-    json!({ "releases": true, "to": to, "money": money, "ruling": ruling, "why": null })
+    json!({ "releases": true, "to": to, "amount": amount, "ruling": ruling, "why": null })
 }
 
 // ---- Whether a judge's ruling is public ----
@@ -373,10 +376,10 @@ pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> V
             // honoured by counted transfers `for` the ruling to her that add up to the award's sum in its own kind (whoever paid: the sum matters, not the
             // payer), or by her own release of the ruling (promises.md, A release): her word that it is settled. An award with no sum (goods, an act) is
             // honoured only by her release: nothing else says what was delivered.
-            let owed = l.get("money").or_else(|| l.get("amount")).and_then(measure);
+            let owed = l.get("amount").and_then(measure);
             let paid = owed.is_some_and(|(sum, kind)| {
                 let got = index.values().filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index))
-                    .filter_map(|t| st(t, "money").or_else(|| st(t, "amount")).and_then(measure)).filter(|(_, k)| *k == kind)
+                    .filter_map(|t| st(t, "amount").and_then(measure)).filter(|(_, k)| *k == kind)
                     .fold(Dec::zero(), |a, (d, _)| a.add(&d));
                 got.cmp(&sum) != Ordering::Less
             });
@@ -394,4 +397,85 @@ pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> V
         return out("public", "the judge's offer says her rulings are public");
     }
     out("private", "the judge's offer does not say her rulings are public")
+}
+
+// ---- A judge's fee back when the sides settle ----
+
+/// `{ settled, releases, to_come, why }`: what a judge's fee back comes to (promises.md, Rulings: a fee back). The offer is hers: a first promise under
+/// the base schema `judging`, `refs.from` the judge and backed by her, with `terms.conciliation: true` and `terms.fee_back`, a decimal from 0 to 1,
+/// the part of the fee she gives back. The sides **settle** when each of the deal's two sides has signed a release (an observe of kind `release`,
+/// `refs.subject` the deal), and neither release has a ruling of hers on the deal in its causal past: once she has ruled, no settling is a
+/// settling through her. `to_come` is `[{ to, amount, returned, left }]`, one line per payer and kind, sorted: the fee paid is the amount of the counted
+/// transfers to her `for` the offer with `refs.subject` the deal, each payer's own; `amount` is that times `fee_back`, exact; `returned` the
+/// amount she has since sent that payer the same way (from her to the payer, `for` the offer,
+/// `refs.subject` the deal); `left` the rest, never below zero. Nothing is to come unless the sides settled. A fact the offer and the releases state, never a verdict.
+pub fn fee_back(offer: &Value, deal: &Value, blocks: &[Value]) -> Value {
+    let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(offer) && hash_of(b) != hash_of(deal)).chain([offer, deal]));
+    let out = |settled: bool, releases: Vec<String>, owed: Vec<Value>, why: Option<&str>| json!({ "settled": settled, "releases": releases, "to_come": owed, "why": why });
+    let (offer_h, deal_h) = (hash_of(offer), hash_of(deal));
+    let Some(judge) = rs(offer, "from").filter(|j| first_promise(offer) && rs(offer, "to").is_none() && backed_in(offer, j, &index)) else {
+        return out(false, vec![], vec![], Some("the offer is no judge's offer: a first promise of hers, backed by her, with the other side open"));
+    };
+    if !rs(offer, "schema").and_then(|s| index.get(s)).is_some_and(|s| ss(s, "kind") == Some("schema") && ss(s, "name") == Some("judging")) {
+        return out(false, vec![], vec![], Some("the offer is not under the base schema judging"));
+    }
+    let Some(fraction) = get(offer, "state.terms.fee_back").and_then(Value::as_str).and_then(Dec::parse).filter(|_| get(offer, "state.terms.conciliation") == Some(&Value::Bool(true))) else {
+        return out(false, vec![], vec![], Some("the offer states no conciliation with a fee back"));
+    };
+    let (Some(from), Some(to)) = (rs(deal, "from"), rs(deal, "to")) else {
+        return out(false, vec![], vec![], Some("the deal names no two sides"));
+    };
+    let rulings: Vec<&str> = index
+        .values()
+        .filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("ruling") && rs(o, "subject") == Some(deal_h) && backed_in(o, judge, &index))
+        .map(hash_of)
+        .collect();
+    // a side's release of the deal that the judge's ruling had not yet been seen by
+    let release_of = |side: &str| -> Option<String> {
+        let mut found: Vec<&str> = index
+            .values()
+            .filter(|r| type_of(r) == "observe" && ss(r, "kind") == Some("release") && st(r, "status").is_none() && rs(r, "subject") == Some(deal_h))
+            .filter(|r| crate::identity::counts_in(r, &index) && super::speaker_of(r, &index, None).as_deref() == Some(side))
+            .filter(|r| !rulings.iter().any(|g| sees_in(r, g, &index)))
+            .map(hash_of)
+            .collect();
+        found.sort_unstable();
+        found.first().map(|h| h.to_string())
+    };
+    let (Some(a), Some(b)) = (release_of(from), release_of(to)) else {
+        return out(false, vec![], vec![], Some("the sides have not both released the deal before a ruling of hers"));
+    };
+    // what moved `for` the offer, about this deal, between her and one payer: { payer, kind } -> sum
+    let moved = |giver_is_judge: bool| -> Vec<(String, Value, Dec)> {
+        let mut sums: Vec<(String, Value, Dec)> = Vec::new();
+        for t in index.values() {
+            if type_of(t) != "transfer" || st(t, "status").is_some() || !list(rf(t, "for")).contains(&offer_h) || rs(t, "subject") != Some(deal_h) || !crate::identity::counts_in(t, &index) {
+                continue;
+            }
+            let Some((d, kind)) = st(t, "amount").and_then(measure) else { continue };
+            let speaker = super::speaker_of(t, &index, None);
+            let (payer, other) = if giver_is_judge { (rs(t, "to").map(str::to_string), speaker) } else { (speaker, rs(t, "to").map(str::to_string)) };
+            let (Some(payer), Some(other)) = (payer, other) else { continue };
+            if other != judge || (giver_is_judge && !backed_in(t, judge, &index)) {
+                continue;
+            }
+            match sums.iter_mut().find(|(p, k, _)| *p == payer && *k == kind) {
+                Some(s) => s.2 = s.2.add(&d),
+                None => sums.push((payer, kind, d)),
+            }
+        }
+        sums
+    };
+    let (paid, back) = (moved(false), moved(true));
+    let mut lines: Vec<(String, String, Value)> = Vec::new();
+    for (payer, kind, sum) in &paid {
+        let owed = sum.mul(&fraction);
+        let returned = back.iter().find(|(p, k, _)| p == payer && k == kind).map_or_else(Dec::zero, |s| s.2.clone());
+        let left = if owed.cmp(&returned) == Ordering::Greater { owed.sub(&returned) } else { Dec::zero() };
+        lines.push((payer.clone(), kind.to_string(), json!({ "to": payer, "amount": kind_json(&owed, kind), "returned": kind_json(&returned, kind), "left": kind_json(&left, kind) })));
+    }
+    lines.sort_by(|x, y| crate::js::cmp16(&x.0, &y.0).then(crate::js::cmp16(&x.1, &y.1)));
+    let mut releases = vec![a, b];
+    releases.sort_unstable();
+    out(true, releases, lines.into_iter().map(|l| l.2).collect(), None)
 }

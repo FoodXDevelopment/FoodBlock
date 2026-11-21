@@ -44,10 +44,12 @@ pub(crate) fn ring_of(bound: &Value) -> Option<Vec<P>> {
     (ring.len() >= 4 && ring.first() == ring.last()).then_some(ring)
 }
 
-/// A share of the members, written `p/q` with whole numbers, 0 < p <= q (folds.md, Counts).
-pub(crate) fn share_of_members(text: &str) -> Option<(u64, u64)> {
-    let (p, q) = text.split_once('/')?;
-    let whole = |x: &str| (!x.is_empty() && x.len() <= 9 && x.bytes().all(|b| b.is_ascii_digit()) && !(x.len() > 1 && x.starts_with('0'))).then(|| x.parse::<u64>().ok()).flatten();
-    let (p, q) = (whole(p)?, whole(q)?);
-    (p >= 1 && p <= q).then_some((p, q))
+/// A threshold read against a set of `members` voices (folds.md, Counts; 1.9 stage 6): a whole number from 1 to the size of the set is that
+/// many. Anything else (`all`, a share), or a set with no voice, gives None: a set a signer can leave out of her causal past is one she can
+/// shrink, so no count is ever `all` or a share, and none is filled in.
+pub fn count_of(needed: &serde_json::Value, members: u64) -> Option<u64> {
+    if members == 0 {
+        return None;
+    }
+    crate::js::count_stated(Some(needed), Some(members as usize)).map(|n| n as u64)
 }

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "foodblock"
-version = "1.7.0"
+version = "1.9.0"
 description = "FoodBlock for Python: a thin layer over the one Rust core: canonical form, signatures, the write check, key chains, identities, envelopes, folds and the messages between nodes"
 readme = "README.md"
 license = {text = "CC0-1.0"}

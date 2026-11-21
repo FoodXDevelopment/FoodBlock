@@ -4,18 +4,18 @@ import Foundation
 public enum Identity {
     public typealias Arrival = (String) -> String?
 
-    /// One key an id has held: who brought it in (`by`), which key signed that (`signer`: a key, "recovery", or nil
-    /// for the genesis), whether it is frozen, and its `suite` (std, p256, sm). A void key is never listed.
+    /// One key a list or a key grant of an id brought in: `by` the block that brought it, `voice` the voice it speaks under,
+    /// `under` the key above it (if any), its `suite` (std, p256, sm), and whether it has `ended`.
     public final class KeyEntry {
-        public let key: String, by: String, signer: String?, suite: String
-        public internal(set) var frozen = false
+        public let key: String, by: String, voice: String?, under: String?, suite: String
+        public internal(set) var ended: Bool
         init(_ j: JSON) {
-            key = j["key"] as? String ?? ""; by = j["by"] as? String ?? ""; signer = j["signer"] as? String; suite = j["suite"] as? String ?? "std"
-            frozen = j["frozen"] as? Bool ?? false
+            key = j["key"] as? String ?? ""; by = j["by"] as? String ?? ""; voice = j["voice"] as? String; under = j["under"] as? String
+            suite = j["suite"] as? String ?? "std"; ended = truthy(j["ended"])
         }
     }
 
-    /// The arrival log as data { hash: at }; a reader that keeps none passes nil.
+    /// The arrival log as data { hash: at }; a reader that keeps none passes nil (only `Fold.due` reads one).
     static func log(_ arrivedAt: Arrival?, _ blocks: [JSON]) -> [String: String]? {
         guard let f = arrivedAt else { return nil }
         var out = [String: String]()
@@ -23,73 +23,81 @@ public enum Identity {
         return out
     }
 
-    /// The recovery key's hash, as a genesis names it, in the identity's suite.
-    public static func recoveryKeyHash(_ publicKeyHex: String, suite: String = "std") throws -> String { try Door.recoveryKeyHash(publicKeyHex, suite) }
+    /// The key named by its hash (identity.md, Her voices): its suite's hash of its SPKI hex as UTF-8 text.
+    public static func keyHash(_ publicKeyHex: String, suite: String? = nil) throws -> String { try Door.keyHash(publicKeyHex, suite) }
 
-    /// A new person, autonomous system, machine or signing circle: their genesis, signed (in the suite of `keys`). It needs only kind,
-    /// at, audience and the key, each stated: nothing fills them in. The recovery key and its reach come as a pair or not at all
-    /// (`recoverySuite` optional). A list audience brings `salts` and `nonce` as options.
-    public static func genesis(_ keys: Keypair, kind: String, at: String, audience: FoodBlock.Audience, encryptionKey: String? = nil, recoveryKey: String? = nil,
-                               reach: String? = nil, recoverySuite: String? = nil, custodian: String? = nil, salts: [String: String]? = nil, nonce: String? = nil) throws -> JSON {
+    /// A new person, autonomous system, machine or signing circle: their genesis, signed (in the suite of `keys`), a list of one voice.
+    /// It needs only kind, at, audience and the key, each stated: nothing fills them in. `reach` (a duration) comes with `clocks`
+    /// (her clock, { names, needed }). A list audience brings `salts` and `nonce` as options.
+    public static func genesis(_ keys: Keypair, kind: String, at: String, audience: FoodBlock.Audience, encryptionKey: String? = nil,
+                               reach: String? = nil, clocks: JSON? = nil, salts: [String: String]? = nil, nonce: String? = nil) throws -> JSON {
         var o: JSON = ["kind": kind, "at": at, "audience": audience.json]
         if let s = salts { o["salts"] = s }
         if let n = nonce { o["nonce"] = n }
         if let e = encryptionKey { o["encryption_key"] = e }
-        if let r = recoveryKey { o["recovery_key"] = r }
         if let r = reach { o["reach"] = r }
-        if let r = recoverySuite { o["recovery_suite"] = r }
-        if let c = custodian { o["custodian"] = c }
+        if let c = clocks { o["clocks"] = c }
         return try Door.genesis(keys.json, o)
     }
     public static func isGenesis(_ block: JSON?) throws -> Bool { try Door.isGenesis(block) }
     public static func genesisOpens(_ block: JSON?) throws -> Bool { try Door.genesisOpens(block) }
 
-    /// Who signs a key grant: a key the id holds and its place in that key's chain, or the recovery key.
+    /// Who writes a key grant or a second signature: one of her voices, her operator, or a voice of named people, signing in their own name.
+    /// `author` is the id signing (the grant's own subject when nil), `held` the blocks the signer holds, `at` the time stated.
     public struct Signer {
-        public var privateKey: String, suite: String?, last: JSON?, broughtIn: String?, recoveryKey: String?
-        public init(privateKey: String, suite: String? = nil, last: JSON? = nil, broughtIn: String? = nil, recoveryKey: String? = nil) {
-            self.privateKey = privateKey; self.suite = suite; self.last = last; self.broughtIn = broughtIn; self.recoveryKey = recoveryKey
+        public var author: String?, key: Keypair, held: [JSON], at: String, after: [String]
+        public init(author: String? = nil, key: Keypair, held: [JSON] = [], at: String, after: [String] = []) {
+            self.author = author; self.key = key; self.held = held; self.at = at; self.after = after
         }
     }
 
-    /// A key grant, signed: brings `newPublicKey` into the id. A rotation also names the key it `replaces` and that key's `countedTo` block (`suite` is the new key's).
-    public static func keyGrant(_ id: String, _ newPublicKey: String?, _ signer: Signer, replaces: String? = nil, countedTo: String? = nil, at: String,
-                                after: [String] = [], encrypt: String? = nil, custodian: String? = nil,
-                                suite: String? = nil, skip: Bool = false) throws -> JSON {
-        var s: JSON = ["private_key": signer.privateKey]
-        if let u = signer.suite { s["suite"] = u }
-        if let l = signer.last { s["last"] = l }
-        if let b = signer.broughtIn { s["brought_in"] = b }
-        if let r = signer.recoveryKey { s["recovery_key"] = r }
-        var o: JSON = ["after": after]
-        if let r = replaces { o["replaces"] = r }
-        if let g = countedTo { o["counted_to"] = g }
-        if let u = suite { o["suite"] = u }
-        if skip { o["skip"] = true }
-        o["at"] = at
-        if let e = encrypt { o["encrypt"] = e }
-        if let c = custodian { o["custodian"] = c }
-        return try Door.keyGrant(id, newPublicKey, s, o)
+    /// A key grant about `id` (identity.md), signed by `signer`. Give `voices` (her whole list again, with `updates` the list it replaces
+    /// and `clocks` her clock), or `key` (one key under the signer's voice, in `suite`), or `encrypt` alone; `shownKey` when a key named by
+    /// hash shows itself (`keyRef` the list that holds its hash); `countedTo` the last block of a key a voice above ends; `under` an operator grant.
+    public static func keyGrant(_ id: String, _ signer: Signer, voices: Any? = nil, updates: String? = nil, clocks: JSON? = nil, key: String? = nil,
+                                suite: String? = nil, encrypt: String? = nil, shownKey: String? = nil, keyRef: String? = nil,
+                                countedTo: String? = nil, under: String? = nil) throws -> JSON {
+        var state: JSON = ["kind": "key"]
+        if let v = voices { state["voices"] = v }
+        if let c = clocks { state["clocks"] = c }
+        if let k = key { state["public_key_sign"] = k }
+        if let u = suite { state["suite"] = u }
+        if let e = encrypt { state["public_key_encrypt"] = e }
+        if let k = shownKey { state["shown_key"] = k }
+        if let c = countedTo { state["counted_to"] = c }
+        var refs: JSON = ["subject": id]
+        if let u = updates { refs["updates"] = u }
+        if let k = keyRef { refs["key"] = k }
+        if let u = under { refs["under"] = u }
+        return try FoodBlock.write("grant", state, refs, author: signer.author ?? id, key: signer.key, held: signer.held,
+                                   audience: .public, after: signer.after, when: .at(signer.at))
+    }
+    /// The second signature (blocks.md, Finality, Signed twice): a block of the same key, or of a voice above, naming the word in refs.confirms.
+    public static func confirm(_ word: Any, _ signer: Signer) throws -> JSON {
+        let hash = (word as? JSON)?["hash"] as? String ?? (word as? String) ?? ""
+        return try FoodBlock.write("observe", [:], ["confirms": [hash]], author: signer.author ?? "", key: signer.key, held: signer.held,
+                                   audience: .public, after: signer.after, when: .at(signer.at))
     }
 
     /// Whether a block is one of a pair of one key naming one prev, or a later block of that key.
     public static func forked(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Door.forked(block, blocks) }
     /// The pairs of blocks one key signed naming one prev.
     public static func forkPairs(_ blocks: [JSON]) throws -> [[String]] { try Door.forkPairs(blocks) as? [[String]] ?? [] }
-    /// The view: the voided blocks a recovery rotation's reach protects, read at the reader's arrivals.
-    public static func recoveryReach(_ rotation: JSON, _ blocks: [JSON], arrivedAt: Arrival? = nil, unknownArrival: String? = nil) throws -> Any? {
-        try Door.recoveryReach(rotation, blocks, log(arrivedAt, blocks + [rotation]), unknownArrival)
-    }
     /// Whether a block counts: signed by a key that speaks, in the chain it was written under.
     public static func counts(_ block: JSON, _ held: Index) throws -> Bool { try Door.counts(block, held.values) }
-    public static func keyTimeline(_ id: String, _ blocks: [JSON], arrivedAt: Arrival? = nil, unknownArrival: String? = nil) throws -> [KeyEntry] {
-        (try Door.keyTimeline(id, blocks, log(arrivedAt, blocks), unknownArrival) as? [JSON] ?? []).map(KeyEntry.init)
+    /// Every key a list or a key grant of hers brought in.
+    public static func keyTimeline(_ id: String, _ blocks: [JSON]) throws -> [KeyEntry] {
+        (try Door.keyTimeline(id, blocks) as? [JSON] ?? []).map(KeyEntry.init)
     }
-    public static func keysOf(_ id: String, _ blocks: [JSON], arrivedAt: Arrival? = nil, unknownArrival: String? = nil) throws -> [String] { (try Door.keysOf(id, blocks, log(arrivedAt, blocks), unknownArrival) as? [String]) ?? [] }
-    public static func signedByAuthor(_ block: JSON, _ blocks: [JSON], arrivedAt: Arrival? = nil, unknownArrival: String? = nil) throws -> Bool { try Door.signedByAuthor(block, blocks, log(arrivedAt, blocks), unknownArrival) }
-    /// signed_by_author (hash → bool), keys, frozen, operators (sorted).
-    public static func identityState(_ id: String, _ blocks: [JSON], arrivedAt: Arrival? = nil, unknownArrival: String? = nil) throws -> JSON {
-        try Door.identityState(id, blocks, log(arrivedAt, blocks), unknownArrival)
-    }
+    /// The keys that speak for her now: of her standing voices and under them, not ended. Sorted.
+    public static func liveKeys(_ id: String, _ blocks: [JSON]) throws -> [String] { try Door.liveKeys(id, blocks) }
+    /// Whether a key of the block's author spoke for her there (identity.md, invariant 8). A waiting block is true here; `stands` says it waits.
+    public static func signedByAuthor(_ block: JSON, _ blocks: [JSON]) throws -> Bool { try Door.signedByAuthor(block, blocks) }
+    /// Whether a word stands (blocks.md, Finality): { stands, waiting: [{ block, on }] }, read with no clock and no arrival.
+    public static func stands(_ block: JSON, _ blocks: [JSON]) throws -> JSON { try Door.stands(block, blocks) }
+    /// The identity fold: { signed_by_author, voices, clocks, keys, waiting }.
+    public static func identityState(_ id: String, _ blocks: [JSON]) throws -> JSON { try Door.identityState(id, blocks) }
+    /// Each key's chain for an id: [{ key, by, head, length, gaps, skips, equivocations, broken, ok }].
+    public static func chainsOf(_ id: String, _ blocks: [JSON]) throws -> [JSON] { (try Door.chainsOf(id, blocks) as? [JSON]) ?? [] }
     public static func nextLinkFor(_ id: String, _ publicKey: String, _ blocks: [JSON]) throws -> Link { Link(try Door.nextLinkFor(id, publicKey, blocks)) }
 }

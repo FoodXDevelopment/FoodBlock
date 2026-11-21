@@ -11,6 +11,9 @@ var (
 
 	// Protocol is spec/protocol.json as a plain JSON value. There is no alias table: year zero.
 	Protocol = obj(both["protocol"])
+	// Conventions is spec/conventions.json: a node's conventions and the lists of readings and tools (peers, messages,
+	// cbor, profiles); no word reads it.
+	Conventions = obj(both["conventions"])
 
 	// Version is the protocol version these rules are ("1.7").
 	Version = str(Protocol["version"])
@@ -31,7 +34,7 @@ var (
 	// Peers are the three sizes of peer (micro, edge, node) and what each does.
 	Peers = func() map[string][]string {
 		out := map[string][]string{}
-		for name, v := range obj(Protocol["peers"]) {
+		for name, v := range obj(Conventions["peers"]) {
 			out[name] = list(v)
 		}
 		return out
@@ -71,5 +74,5 @@ func now() string                   { return formatTime(time.Now()) }
 // matchesGrammar is a grammar test by name (protocol.json `grammar`).
 func matchesGrammar(name string, v any) bool { return doorGrammar(name, v) }
 
-// messageKeys are the key names of one message in protocol.json `messages` (pull, push, refusal, ...).
-func messageKeys(name string) []string { return list(obj(Protocol["messages"])[name]) }
+// messageKeys are the key names of one message in conventions.json `messages` (pull, push, refusal, ...).
+func messageKeys(name string) []string { return list(obj(Conventions["messages"])[name]) }

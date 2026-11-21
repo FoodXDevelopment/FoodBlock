@@ -32,7 +32,7 @@ stop a custodian who holds your key, see inside a sealed block it was not sent) 
   disagrees, it governs. Beside it: [`protocol.json`](spec/protocol.json) (every list, for code to load), the
   [canonical form](spec/canonical.md), [transport](spec/transport.md) (email is the envelope, FoodBlock the
   letter) and the [conformance vectors](spec/vectors.json). There is no earlier version in the protocol: 1.6 is
-  year zero. Old data enters once, through [a converter](spec/legacy/converter.md) that is not part of the protocol.
+  year zero.
   [`NECESSITY.md`](spec/NECESSITY.md) shows, for every field, term, verb, closed type, reference key and invariant,
   which vectors fail without it; [`EXPERIMENTS.md`](spec/EXPERIMENTS.md) records the compressions tried.
 - **The paper:** [the FoodBlock whitepaper v1.6 (PDF)](https://foodx.network/foodblock-whitepaper-v1.6.pdf) (DOI [10.5281/zenodo.23457910](https://doi.org/10.5281/zenodo.23457910)): why the
@@ -44,13 +44,13 @@ stop a custodian who holds your key, see inside a sealed block it was not sent) 
 
 | | Type | Meaning |
 |---|---|---|
-| What exists | `actor` | A person, an autonomous system or machine, a circle, or a contact |
+| Is (a reading) | `actor` | A person, an autonomous system or machine, a circle, or a contact |
 | | `thing` | Anything held, found or written: food, tools, places, recipes, shares, schemas |
-| Is | `observe` | A claim that something is so |
+| | `observe` | A claim that something is so (a decline is one too) |
 | | `transform` | A thing changes: inputs become outputs, or a thing is kept and stays itself |
-| | `transfer` | A thing changes owner, holder or place |
-| Must | `promise` | A commitment, offered or asked |
-| May | `grant` | Authority given to someone |
+| Must (a promise) | `promise` | A commitment, offered or asked |
+| | `transfer` | A promise whose condition is already met: a thing changes owner, holder or place |
+| May (a grant) | `grant` | Authority given to someone, within limits |
 
 **Seven verbs**, the refs that link blocks: `updates`, `answers` (the only way to consent), `confirms`, `defeats`,
 `for`, `derives_from`, `same_as`. `prev` and `after` say what came before.
@@ -73,10 +73,10 @@ Every peer speaks the protocol itself: a phone, a robot kitchen, a van, a sensor
 | [`sdk/javascript`](sdk/javascript/) | The reference SDK |
 | [`sdk/rust`](sdk/rust/) | The one core: every rule, as a Rust crate, a C library and WebAssembly |
 | [`sdk/python`](sdk/python/), [`sdk/go`](sdk/go/), [`sdk/swift`](sdk/swift/), [`sdk/kotlin`](sdk/kotlin/) | The same protocol in other languages, thin layers over the core; each runs every vector section |
-| [`server/`](server/) | A node: Postgres for the blocks, HTTP for signed pull, push and `.well-known/foodblock` |
+| [`host/`](host/) | A host with two stores, plain files or Postgres: HTTP for signed pull, push and `.well-known/foodblock` |
 | [`mcp/`](mcp/) | An MCP server, so any autonomous system can write and read signed blocks |
-| [`cli/`](cli/) | `fb`: make an identity and device keys, write blocks in its key chain, check, validate, verify, and convert old data once |
-| [`sql/schema.sql`](sql/schema.sql) | The node's store: append-only, each block kept exactly as it arrived |
+| [`cli/`](cli/) | `fb`: make an identity and device keys, write blocks in its key chain, check, validate, verify |
+| [`acts/`](acts/) | The act library: an open list of names for what people do, which anyone may copy and add to. The protocol reads none of it |
 | [`test/`](test/) | Cross-language canonical vectors, and the script that copies the spec into each SDK |
 
 Each SDK's README says which profile it covers.
@@ -113,7 +113,7 @@ node bin/fb.js create thing eggs --state '{"name":"Free-range eggs"}' --identity
 
 Anyone can leave a node with everything they signed. Peers swap blocks with two messages, **pull** and **push**, and every answer is signed by a key of the node's holder (`spec/modules/nodes.md`). `.well-known/foodblock` says who the node is, what it holds and its admission rule.
 
-Run one with `docker compose -f server/docker-compose.yml up`, or `cd server && npm install && npm start` with a
+Run one with `docker compose -f host/docker-compose.yml up`, or `cd host && npm install && npm start` with a
 Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 
 ## Tests

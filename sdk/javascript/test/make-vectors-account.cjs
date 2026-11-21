@@ -42,7 +42,7 @@ const word = (s, who, destination, extra = {}) => s.say(who, 'observe', { kind: 
 {
   // a word signed under a grant or as a circle speaks for someone else: it names no account for its author, nor for the grantor
   const s = story(), pat = s.person('af-pat'), bot = s.person('af-bot', { kind: 'agent' })
-  const g = s.say(pat, 'grant', { kind: 'errands', scope: { acts: ['observe.account'], parties: [], until: LATER } }, { to: bot.id })
+  const g = s.say(pat, 'grant', { kind: 'errands', scope: { types: ['observe.account'], parties: [], until: LATER } }, { to: bot.id })
   s.say(bot, 'observe', { kind: 'account', destination: 'the agent\'s guess' }, { under: g.hash })
   account('an agent\'s word under her grant is not her account (her own signature says where she is paid)', pat, s.held, null)
   account('nor does it name one for the agent', bot, s.held, null)

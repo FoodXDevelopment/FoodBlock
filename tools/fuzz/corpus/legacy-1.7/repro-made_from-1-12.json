@@ -1,0 +1,85 @@
+{
+ "op": "made_from",
+ "args": [
+  {
+   "hash": "eb57f9876e91262254dfdc116c7d78accb343e853eab9b5a60c67a08db3c9ee0",
+   "type": "thing",
+   "state": {
+    "at": "2026-10-15T09:00:52.385Z",
+    "audience": "public",
+    "seq": 1,
+    "terms": {
+     "expires": "2026-10-16T09:00:00.000Z"
+    },
+    "what": "x"
+   },
+   "refs": {
+    "author": "8ecd13948b5dc311618904c3e6a42312cd5abb52cff51fa1324a44aac534aaa6",
+    "prev": "8ecd13948b5dc311618904c3e6a42312cd5abb52cff51fa1324a44aac534aaa6",
+    "under": "32cfb979ccc0ded57a00f81eb6e95a14ba901602296536e50e3117e7da6a3024"
+   },
+   "signature": "e7f4033dd52bc3721fa93de64f4689bb4e466f80a1e6d20e22f203dacc1381e39544a3c3b48a94c8f97d559cf93e98b50bda5fa93261f8a41e93d4e93f80350b"
+  },
+  [
+   {
+    "hash": "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+    "type": "actor",
+    "state": {
+     "kind": "person",
+     "at": "2026-10-15T09:00:05.343Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100af094b5d893b335ecb07c93ffe1a1b96cf68a06e297b5fe145ff71a77efb5d15"
+    },
+    "refs": {},
+    "signature": "970eaaaa0499511d72f4372c393642499bb0556c6a488fe49deabffb352e3a13175ecfad0b15957565cf216d496873c3a157145b3beeeb157c60722d4bb8c502"
+   },
+   {
+    "hash": "8ecd13948b5dc311618904c3e6a42312cd5abb52cff51fa1324a44aac534aaa6",
+    "type": "actor",
+    "state": {
+     "kind": "agent",
+     "at": "2026-10-15T09:00:21.335Z",
+     "audience": "public",
+     "public_key_sign": "302a300506032b6570032100d77be0b4282c91fec21f366942f9146cc274aeece24ce1f90c7645d2a487c760"
+    },
+    "refs": {},
+    "signature": "c529ed7a3ff1d0d30a0555bca5f8bee3de412c53748da6b22c959eb6fbd7c31c85b578ad2f47424867974c999fa84b1f77e1869f87dee9f1f4b34701e993780d"
+   },
+   {
+    "hash": "32cfb979ccc0ded57a00f81eb6e95a14ba901602296536e50e3117e7da6a3024",
+    "type": "grant",
+    "state": {
+     "at": "2026-10-15T09:00:49.265Z",
+     "audience": "public",
+     "seq": 4,
+     "kind": "shop",
+     "scope": {
+      "types": [
+       "observe.note",
+       "promise"
+      ],
+      "parties": [
+       "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+       "1d55d1b23d6de89ff1cfab7d255dd5acb597752c6588eaa122491fbba95333cc",
+       "3d7c033f499a27e8c630618485b76dd2e73635c52990611cd60791fa18c50c70",
+       "f458c560c0520294727380f6d31a53bcda60983d417f9f475bc7fb39e3d900cc"
+      ],
+      "limit": {
+       "minor": 5000,
+       "currency": "GBP"
+      },
+      "every": "P7D",
+      "until": "2026-12-31T00:00:00.000Z"
+     }
+    },
+    "refs": {
+     "author": "5385dddd2c68bb4121baacb8549371a72b9cb5f72c4dd25b4342ad1ad0073b83",
+     "prev": "7de835e430c9b1304b776b4cec083e7f24ee50ef36a3199d0f4cc884ff92bd4c",
+     "to": "8ecd13948b5dc311618904c3e6a42312cd5abb52cff51fa1324a44aac534aaa6"
+    },
+    "signature": "b90bba497b1d4e47547d237e533750daf6d425525d2165e21d2378550bd21e9d788b696c0237d0bdb69d314af70c99e9bbf3b7480696e58e81eb23457ba7930f"
+   }
+  ]
+ ],
+ "world": 1
+}

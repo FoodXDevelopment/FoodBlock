@@ -1,0 +1,18 @@
+{
+ "op": "scope_reading",
+ "args": [
+  {
+   "types": "promise",
+   "limit": {
+    "minor": -1,
+    "currency": "GBP"
+   },
+   "each": {
+    "minor": 900,
+    "currency": "GBP"
+   },
+   "until": "2027-12-31T00:00:00.000Z"
+  }
+ ],
+ "world": 10
+}

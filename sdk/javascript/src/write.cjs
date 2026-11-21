@@ -34,9 +34,10 @@ const wrap = door.wrap
 const unwrap = (message, held) => (held === undefined ? door.unwrap(message) : door.unwrap(message, list(held)))
 /** A block's public header: { author, seq, prev, hash }. */
 const header = door.header
-/** A sealed copy: { header, header_signature, envelope }. */
-function sealCopy(signed, { keys, reveals = [], privateKey, suite, fixed } = {}) {
-  return door.sealCopy(signed, keys || [], reveals, privateKey, fixed, suite)
+/** A sealed copy: { header, header_signature, envelope }. A private block is signed once, over its header (`write` does so), so that
+ * signature is the header's and no key is needed here; `suite` names the envelope. */
+function sealCopy(signed, { keys, reveals = [], suite, fixed } = {}) {
+  return door.sealCopy(signed, keys || [], reveals, fixed, suite)
 }
 /** Whether a sealed copy's header is signed by this key (the key that signed the block). */
 const headerSignedBy = (message, publicKey) => door.headerSignedBy(message, String(publicKey))

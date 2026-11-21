@@ -7,7 +7,7 @@ import PackageDescription
 //   * built here:    sdk/swift/scripts/build-xcframework.sh   (used when sdk/swift/CFoodBlock.xcframework exists)
 //   * from a release: the zip below, which a release uploads and whose checksum is the one the script prints.
 // No unsafe build flags, so the package can be a dependency of other packages.
-let version = "1.7.0"                                                                         // tools/version-sync.cjs
+let version = "1.9.0"                                                                         // tools/version-sync.cjs
 let checksum = "0000000000000000000000000000000000000000000000000000000000000000"             // set at release
 let local = Context.packageDirectory + "/sdk/swift/CFoodBlock.xcframework"
 

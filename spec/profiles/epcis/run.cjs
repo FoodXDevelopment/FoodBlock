@@ -82,7 +82,7 @@ attempt('recall: the grant is valid and answers inside a day', () => {
   const i = held.findIndex((b) => b.hash === V.recall.grant)
   assert.deepEqual(fb.valid(held[i], held.slice(0, i)), [])
   assert.equal(held[i].state.kind, 'recall')
-  assert.deepEqual(held[i].state.scope.acts, ['pull'])
+  assert.deepEqual(held[i].state.scope.types, ['pull'])
   assert.equal(held[i].state.answer_within, V.recall.answer_within)
   assert.equal(call('compare_durations', V.recall.answer_within, 'P1D', '2026-10-14T00:00:00.000Z'), 0)
 })

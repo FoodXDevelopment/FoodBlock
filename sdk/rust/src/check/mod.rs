@@ -1,8 +1,7 @@
-//! The write check (core.md section 8, the checks that read a block's bytes): `refusals(type, state, refs)` says what is wrong with a block as every
-//! node checks it before writing: `[{ code, detail }]`, one entry per rule found, in the order of protocol.json's
-//! `refusals.codes.block` (empty when it is a well-formed block). The code carries the meaning; the detail is free
-//! text for people. `check` gives the details alone. Every list and grammar it reads comes from protocol.json; none is
-//! written here. There is no earlier version to read: year zero.
+//! The checks of a block's bytes and body (core.md, section 8): checks 1 to 4, which `valid` runs, and check 8, a closed type's own, which
+//! `read` runs (valid.rs). `write_refusals` is what a writer refuses to sign. Each finding is `{ code, detail }`, in the order of
+//! protocol.json's `refusals.codes.block`; the code carries the meaning, the detail is free text for people. Every list and grammar it
+//! reads comes from protocol.json; none is written here. There is no earlier version to read: year zero.
 use crate::canonical::canonical;
 pub use crate::error::Refusal;
 use crate::js::{cmp16, get, int, is_obj, keys_within, str_of, type_of, Index};
@@ -10,7 +9,7 @@ use crate::prelude::*;
 use crate::spec::Spec;
 use crate::time::is_time;
 use time::time_places;
-pub(crate) use grant::scope_junk;
+pub(crate) use grant::{amount_ok, fence_ok, scope_junk};
 
 mod actor;
 mod grant;
@@ -154,16 +153,6 @@ impl<'a> Checker<'a> {
         w
     }
 
-    // Every field, over all optional profiles, that a profile adds to `where_` (`every`, `grant`...).
-    fn profile_fields(&self, where_: &str) -> Vec<String> {
-        let mut out = Vec::new();
-        if let Some(Value::Object(profiles)) = self.spec.protocol.get("optional_profiles") {
-            for p in profiles.values() {
-                out.extend(crate::spec::strings_pub(p.get("fields").and_then(|x| x.get(where_))));
-            }
-        }
-        out
-    }
 
     fn rules(&self, type_name: &str, state: &Value, refs: &Value, held: Option<&Index>) -> W {
         let g = |k: &str| state.get(k);
@@ -178,7 +167,7 @@ impl<'a> Checker<'a> {
         }
         match type_name {
             "actor" => w.extend(self.actor(state, answering)),
-            "transfer" => w.extend(self.transfer(state, refs, answering)),
+            "transfer" => w.extend(self.transfer(state, refs, held, answering)),
             "promise" => w.extend(self.promise(state, refs, held, answering)),
             "grant" => w.extend(self.grant(state, refs, answering)),
             _ => {}
@@ -194,23 +183,24 @@ impl<'a> Checker<'a> {
         refs: &Value,
         schemas: Option<&Index>,
     ) -> Option<(Vec<String>, Vec<String>, Vec<String>)> {
+        // a schema named and not in the store is `read`'s `names_missing` (it is named for its meaning), and the fields it might declare are
+        // not judged until it is held (core.md, section 8, The schema store); with no store (a writer's own check) they are not judged either
         let named = refs.get("schema");
-        let schema = match (named, schemas) {
-            (Some(h), Some(store)) => h.as_str().and_then(|h| store.get(h)),
-            _ => None,
+        let schemas = match (named, schemas) {
+            (Some(_), None) => return None,
+            (Some(n), Some(store)) if !n.as_str().is_some_and(|h| store.contains_key(h)) => return None,
+            (_, s) => s,
         };
-        if named.is_some() && schema.is_none() {
-            return None;
-        }
+        let schema = named.and_then(Value::as_str).and_then(|h| schemas.and_then(|store| store.get(h)));
         // Only a schema declares: a thing of kind schema (core.md, section 8). Any other block named there widens nothing.
         let schema = schema.filter(|s| type_of(s) == "thing" && get(s, "state.kind").and_then(Value::as_str) == Some("schema"));
         let mut fields = self.spec.every.clone();
+        // 1.9 stage 6 (00-shared, A line goes on; C21): `state.counted_to` is causal state (protocol.json `causal_state`), which any block may
+        // carry: a take-up `as` a circle names in it the last block of the line it goes on from
+        fields.extend(crate::spec().list("causal_state"));
         fields.extend(self.spec.fields(type_name));
-        fields.extend(self.profile_fields("every"));
-        fields.extend(self.profile_fields(type_name));
-        if let Some(Value::Object(f)) = schema.and_then(|s| get(s, "state.fields")) {
-            fields.extend(f.keys().cloned());
-        }
+        // A profile adds no field: its fields are declared by its schema, named by the block, as anyone's are (1.8 B1).
+        fields.extend(schema.map(schema_field_specs).unwrap_or_default().into_iter().map(|(name, _)| name));
         let mut roles = self.spec.ref_keys.clone();
         if let Some(Value::Array(r)) = schema.and_then(|s| get(s, "state.roles")) {
             roles.extend(r.iter().filter_map(Value::as_str).map(String::from));
@@ -231,10 +221,20 @@ impl<'a> Checker<'a> {
         w.extend(self.numbers_only_shapes(state, refs, genesis));
         // Marks are read the same way on every type, open or closed (things.md): exact { scheme, value } pairs.
         w.extend(self.marks_shape(g("marks"), "state.marks"));
-        // Fields that hold an id, wherever they are written (core.md section 3, grammar): the block counted to, a custodian, a recovery
-        // hash, who assisted, and the parties of an admission.
-        for key in ["counted_to", "custodian", "recovery_key_hash", "assisted_by"] {
-            w.extend(self.hash_shape(g(key), &format!("state.{key}")));
+        // Fields that hold an id, wherever they are written (core.md section 3, grammar): the block counted to, and the parties of an admission.
+        w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
+        // 1.9 3a-13: `state.rule_set`, a field of every type, read by every reader. This core runs no rule set but the core itself, so a
+        // block that states one is not read (`unknown_rules`) and hides what it could name.
+        // 1.9 3a (decided, CORE-SET "What building changed"): the core runs no set at all, so every stated id is `unknown_rules`; a value that is not an id is `grammar`.
+        if let Some(r) = g("rule_set") {
+            // 1.9 stage 7 (B5): unless the reader runs that set (`read`'s `runs`); a set it runs is read by these rules.
+            if self.is("id", Some(r)) {
+                if !r.as_str().is_some_and(crate::rules::runs) {
+                    w.push(f("unknown_rules", "state.rule_set names rules this reader does not run"));
+                }
+            } else {
+                w.push(f("grammar", "state.rule_set is an id: the hash of the rules it is read under"));
+            }
         }
         if let Some(p) = g("parties") {
             let items: Vec<&Value> = match p {
@@ -247,13 +247,10 @@ impl<'a> Checker<'a> {
         }
         // Keys and suites, wherever they are written (core.md, Suites): a key outside its suite's grammar, or a suite not known.
         w.extend(self.key_checks(state));
-        for key in ["replaces", "recovery_key"] {
-            self.any_sign_key(g(key), key, &mut w);
-        }
         if !g("nonce").is_none_or(|n| self.is("nonce", Some(n))) {
             w.push(f("grammar", "state.nonce is 16 random bytes, hex"));
         }
-        for flag in ["skip", "withheld"] {
+        for flag in ["skip"] {
             if !g(flag).is_none_or(|v| v == &Value::Bool(true)) {
                 w.push(f("shape", format!("state.{flag} is true, or left out")));
             }
@@ -268,15 +265,9 @@ impl<'a> Checker<'a> {
                 w.push(f("shape", "state.opening is { salt, value }: the salt 16 bytes as 32 hex characters (privacy.md, A commitment)"));
             }
         }
-        // A conditioned transfer (things.md, Transfers) carries its condition whole; a wrapper without its deadline or keepers is refused.
+        // A conditioned transfer (things.md, Transfers) carries its condition whole; a wrapper without its deadline or clocks is refused.
         if let Some(m) = g("condition").and_then(crate::tasks::condition_malformed) {
             w.push(f("shape", format!("state.condition: {m}")));
-        }
-        // a ruling's up_to is the harm it finds: money, or an amount of a thing (promises.md, A claim of invasion)
-        if let Some(u) = g("up_to") {
-            if !matches!(self.shape_of(u), Some("money" | "amount")) {
-                w.push(f("shape", "state.up_to is money or an amount: the harm a ruling finds"));
-            }
         }
         if !g("channel").is_none_or(Value::is_string) {
             w.push(f("shape", "state.channel is an open label (sms, ussd, voice, letter, meeting)"));
@@ -286,11 +277,96 @@ impl<'a> Checker<'a> {
         }
         w
     }
+    // A schema's typed fields (things.md, Schemas; 1.8 B1): each `name:shape`, the shape a word of `field_shape` and `grammar` (`text`, `hash`,
+    // `id`, `time`, `date`, `duration`, `decimal`, `amount`, `count`) or `in:` and a comma list, a trailing `!` asking for the field. A field
+    // there in another shape is `shape`; one asked for and left out `required`. Any other value is a hint for people and checks nothing.
+    fn schema_fields(&self, state: &Value, schema: &Value) -> W {
+        let mut w: W = vec![];
+        for (name, spec) in schema_field_specs(schema) {
+            let (shape, asked) = spec.strip_suffix('!').map_or((spec.as_str(), false), |s| (s, true));
+            if !matches!(shape, "text" | "hash" | "id" | "time" | "date" | "duration" | "decimal" | "amount" | "count") && !shape.starts_with("in:") {
+                continue;
+            }
+            let Some(v) = get(state, &name) else {
+                if asked {
+                    w.push(f("required", format!("state.{name} is asked for by the schema it names")));
+                }
+                continue;
+            };
+            let ok = match shape {
+                "text" => v.is_string(),
+                "hash" => self.is("hash", Some(v)),
+                "id" => self.is("id", Some(v)),
+                "time" => crate::time::is_time(Some(v)),
+                "date" => crate::time::is_date(Some(v)),
+                "duration" => v.is_string() && self.is("duration", Some(v)),
+                "decimal" => v.is_string() && self.is("decimal", Some(v)),
+                "amount" => self.amount_shape(Some(v), &name).is_empty(),
+                "count" => v.as_u64().is_some_and(|n| n >= 1) || v.as_f64().is_some_and(|n| n >= 1.0 && n.fract() == 0.0),
+                other => v.as_str().is_some_and(|t| other[3..].split(',').any(|x| x == t)),
+            };
+            if !ok {
+                w.push(f("shape", format!("state.{name} is not {shape}, as the schema it names says")));
+            }
+        }
+        w
+    }
+    // The typed fields of a kind (protocol.json `kind_fields`, one rule for every kind): each line is `field:shape`, the field a path in
+    // the block's state (`terms.reveal_by`), the shape `text`, `hash`, `id`, `time`, `count` (a whole number of at least 1) or `in:<list>` (a closed list of protocol.json).
+    // A shape ending in `!` is asked for. A field left out is not asked for otherwise; a field that is there must have its shape.
+    fn kind_fields(&self, type_name: &str, state: &Value) -> W {
+        let Some(kind) = state.get("kind").and_then(Value::as_str) else {
+            return vec![];
+        };
+        let mut w: W = vec![];
+        for line in self.list(&format!("kind_fields.{type_name}.{kind}")) {
+            let Some((field, shape)) = line.split_once(':') else { continue };
+            // a shape ending in `!` is asked for: a kind that states it is no kind without it
+            let (shape, asked) = shape.strip_suffix('!').map_or((shape, false), |s| (s, true));
+            let Some(v) = crate::js::get(state, field) else {
+                if asked {
+                    w.push(f("shape", format!("state.{field} is stated: a {kind} states it")));
+                }
+                continue;
+            };
+            let name = format!("state.{field}");
+            match shape {
+                "count" if crate::js::count_stated(Some(v), None).is_none() => {
+                    w.push(f("shape", format!("{name} is a whole number of at least 1")))
+                }
+                "text" if !v.is_string() => w.push(f("shape", format!("{name} is text"))),
+                "hash" if !self.is("hash", Some(v)) => w.push(f("grammar", format!("{name} is a SHA-256 digest in hex"))),
+                "id" if !self.is("id", Some(v)) => w.push(f("grammar", format!("{name} is an id"))),
+                "time" => w.extend(self.time_shape(Some(v), &name)),
+                // 1.9 3d-4: a cutoff's `when` is the word's own text for that time: an instant, or for a span the span itself
+                "time_or_duration" if v.as_str().is_some_and(|d| crate::time::parse_duration(d).is_some()) => {}
+                "time_or_duration" => w.extend(self.time_shape(Some(v), &name)),
+                other => {
+                    if let Some(list) = other.strip_prefix("in:") {
+                        if !v.as_str().is_some_and(|t| self.list(list).iter().any(|x| x == t)) {
+                            w.push(f("shape", format!("{name} is one of {}", self.list(list).join(", "))));
+                        }
+                    }
+                }
+            }
+        }
+        w
+    }
     fn numbers_only_shapes(&self, state: &Value, _refs: &Value, genesis: bool) -> W {
         // Times, dates and durations are read where the protocol checks them (`time_fields_checked_in`): the state, its terms and
         // scope, and each line of its terms.
         let mut w: W = vec![];
         for (path, place) in time_places(state) {
+            // 1.9 3d-4: a clock's cutoff of a span states the span itself as its `when` (the word's own text for that time), running from the
+            // receipt it names in `refs.derives_from`
+            // 1.9-GUESS [3d-4c]: read by the cutoff's `kind` alone; a duration is the only other text a cutoff's `when` may be.
+            if path == "state" && place.get("kind").and_then(Value::as_str) == Some("cutoff") && place.get("when").and_then(Value::as_str).is_some_and(|d| crate::time::parse_duration(d).is_some()) {
+                let mut rest = place.clone();
+                rest.as_object_mut().map(|m| m.remove("when"));
+                w.extend(self.times_in(Some(&rest), &path));
+                w.extend(self.durations_in(Some(place), &path));
+                continue;
+            }
             w.extend(self.times_in(Some(place), &path));
             w.extend(self.durations_in(Some(place), &path));
         }
@@ -343,34 +419,60 @@ impl<'a> Checker<'a> {
         // A genesis names its own signing key. (Only a genesis does; core.md section 4.)
         // core.md section 4: a genesis is the one actor with no author. An actor with no author and no key is a malformed genesis.
         if type_name == "actor" && (g("public_key_sign").is_some() || refs.get("author").is_none()) {
+            // 1.9 3a-1 (3), the header: it has the common five, or is a genesis (its own key, no author, no seq). Neither is `chain`;
+            // every other fault of a genesis is a value, `read`'s `bad_genesis`.
+            // one rule with `is_genesis`: a key that is not text names no key, so the actor is no genesis
+            let genesis = g("public_key_sign").is_some_and(Value::is_string) && refs.get("author").is_none() && g("seq").is_none();
+            if !genesis && (refs.get("author").is_none() || refs.get("prev").is_none() || !int(g("seq")).is_some_and(|n| n >= 1.0) || g("audience").is_none()) {
+                w.push(f("chain", "a block has the common five (author, seq, prev, audience), or is a genesis"));
+            }
             w.extend(self.genesis_errors(state, refs));
             w.extend(self.values(state, refs, true));
             return (w, vec![]);
         }
         // Any other block: the common five (core.md, section 5).
-        let clockless_ok = matches!(type_name, "observe" | "transform" | "transfer");
-        if refs.get("author").is_none() {
+        // 1.9 3a-1 (3): the header's links are one id each, in the id grammar: an author, prev or key that is not names no place (`chain`)
+        if !self.is("id", refs.get("author")) {
             w.push(f("chain", "refs.author names who said it"));
         }
         if !int(g("seq")).is_some_and(|n| n >= 1.0) {
             w.push(f("chain", "state.seq is its place in its signing key's chain (1, 2, 3...)"));
         }
-        if refs.get("prev").is_none() {
+        if !self.is("id", refs.get("prev")) {
             w.push(f("chain", "refs.prev names the key's previous block (or the block that brought the key in)"));
+        }
+        if refs.get("key").is_some() && !self.is("id", refs.get("key")) {
+            w.push(f("chain", "refs.key names the key grant that brought its key in"));
         }
         if g("audience").is_none() {
             w.push(f("chain", "state.audience is public, or a sorted list of commitments"));
         }
-        if g("at").is_none() && !clockless_ok {
-            w.push(f("at_missing", "state.at is when it was said (only an observe, transform or transfer may leave it out, with no clock)"));
-        }
+        // 1.9 3d-2: any block may leave its `at` out (a block that states none is not in time against any end; Time)
         // A consent `yes` widens what reaches her, so it names whom it is about; a word without a subject may only narrow (consent.md)
         if type_name == "observe" && g("kind").and_then(Value::as_str) == Some("consent") && g("word").and_then(Value::as_str) == Some("yes") && refs.get("subject").is_none() {
             w.push(f("required", "a consent yes names whom it is about in refs.subject: only stop, keep and move may leave it out"));
         }
+        // her stop of one thing (authority.md, A stop of one thing) is an observe with status stopped, stop onward and one refs.what, naming
+        // no refs.updates and no refs.answers; any other stopped observe that answers and updates nothing is a status that answers nothing
+        if type_name == "observe"
+            && g("status").and_then(Value::as_str) == Some("stopped")
+            && refs.get("updates").is_none()
+            && refs.get("answers").is_none()
+            && (g("stop").and_then(Value::as_str) != Some("onward") || crate::js::list(refs.get("what")).len() != 1)
+        {
+            w.push(f("status_not_answer", "a status on a block that neither answers nor updates its author's own, bar her stop of one thing"));
+        }
         w.extend(self.values(state, refs, false));
-        if matches!(type_name, "promise" | "transfer") {
+        if type_name == "grant" {
+            w.extend(self.key_list_shape(state));
+        }
+        w.extend(self.kind_fields(type_name, state));
+        if matches!(type_name, "promise" | "transfer" | "transform") {
             w.extend(self.amounts_below_zero(state, "state"));
+        }
+        // a thing's pack is its measure: its kind is the thing's own (refs.of), so it carries no of (encoding.md, Shapes)
+        if type_name == "thing" && g("pack").is_some_and(|p| p.get("of").is_some()) {
+            w.push(f("shape", "state.pack carries no of: a thing's measure is of its own kind"));
         }
         let mut c: W = vec![];
         // A stop or an answer restating refs.parent is not a grant: the child-and-parent rule reads grants only (authority.md).
@@ -381,19 +483,19 @@ impl<'a> Checker<'a> {
                 c.extend(crate::grant::scope_refusals(&json!({ "state": state, "refs": refs }), parent));
             }
         }
+        // 1.8 B1, kept by 1.9 stage 7 (things.md, Schemas: typed fields): a block of any type that names a schema the reader holds is read
+        // against the shapes that schema gives its fields. Only a reader with a schema store reads them (`read`), never `valid` or a writer.
+        if let (Some(store), Some(h)) = (options.schemas, refs.get("schema").and_then(Value::as_str)) {
+            if let Some(schema) = store.get(h).filter(|s| type_of(s) == "thing" && get(s, "state.kind").and_then(Value::as_str) == Some("schema")) {
+                c.extend(self.schema_fields(state, schema));
+            }
+        }
         // A closed type: its fields are fixed (core.md, Open types, closed authority). An open type stops here.
         if !self.spec.is_closed(type_name) {
             return (w, c);
         }
         match self.declared(type_name, refs, options.schemas) {
-            None => {
-                if options.schemas.is_some() {
-                    c.push(f(
-                        "undeclared_ref",
-                        "refs.schema names a schema this node does not hold: ask for it",
-                    ));
-                }
-            }
+            None => {}
             Some((fields, roles, terms)) => {
                 if type_name == "promise" {
                     if let Some(Value::Object(t)) = state.get("terms") {
@@ -425,8 +527,8 @@ impl<'a> Checker<'a> {
 /// Findings as a refusal list: one entry per code, in the order of `group` (a group of protocol.json's
 /// `refusals.codes`: block, fold or message), the details of one code joined with "; " (each once).
 pub fn ordered_with(spec: &Spec, found: Vec<Refusal>, group: &str) -> Vec<Refusal> {
-    // protocol.json lists a block's codes in the order of the checks in core.md section 8.
-    let order = spec.list(&format!("refusals.codes.{group}"));
+    // protocol.json lists a block's codes in the order of the checks in core.md section 8; `read` gives its codes in the order of `refusals.read`.
+    let order = if group == "read" { spec.list("refusals.read") } else { spec.list(&format!("refusals.codes.{group}")) };
     let mut by: Vec<(String, Vec<String>)> = Vec::new();
     for one in found {
         match by.iter_mut().find(|(c, _)| *c == one.code) {
@@ -467,8 +569,7 @@ pub fn is_code(code: &str) -> bool {
         .is_some_and(|groups| groups.values().any(|g| g.get(code).is_some()))
 }
 
-/// What a strict writer never writes (canonical.md): a null, an unsorted set, text outside NFC, a float, a number out
-/// of range. `create` refuses a block with any.
+/// What a strict writer never writes (canonical.md): a null, an unsorted set, a float, a number out of range. `create` refuses a block with any.
 pub fn strict_findings(type_name: &str, state: &Value, refs: &Value) -> Vec<Refusal> {
     let _ = type_name;
     if !state.is_object() || !refs.is_object() {
@@ -489,10 +590,10 @@ pub fn findings_staged(spec: &Spec, type_name: &str, state: &Value, refs: &Value
     Checker { spec }.findings(type_name, state, refs, options)
 }
 
-/// What is wrong with a FoodBlock block under the given protocol.json: `[{ code, detail }]`, the codes of the first check that
-/// finds anything (core.md, section 8: the checks stop at the first), one per code, in the order of protocol.json's
-/// `refusals.codes.block` (empty when it is well-formed). Checks 1 to 4 read the bytes; what is left is the closed type's own.
-pub fn refusals_with(
+/// What a writer refuses to sign, under the given protocol.json (write.rs: compose, check, sign): the codes of the first of checks 1 to 4
+/// that finds anything, else a closed type's own (check 8), one per code, in the order of protocol.json's `refusals.codes.block`. A writer
+/// never repairs: it refuses, and the author writes again.
+pub fn write_refusals_with(
     spec: &Spec,
     type_name: &str,
     state: &Value,
@@ -501,59 +602,39 @@ pub fn refusals_with(
 ) -> Vec<Refusal> {
     let (w, closed) = Checker { spec }.findings(type_name, state, refs, options);
     let check_of = |code: &str| -> usize {
+        // a float or an out-of-range whole number in a value handed to a writer is its bytes' finding (protocol.json refusals.codes.block:
+        // the writer's form of `not_canonical`), so it is read with the bytes, before the header (end pass 2026-11-20, as the oracle reads it)
+        if code == "float" || code == "integer_range" {
+            return 2;
+        }
         let checks = get(&spec.protocol, "refusals.checks").and_then(Value::as_array).cloned().unwrap_or_default();
-        checks.iter().take(4).position(|c| c.as_array().is_some_and(|c| c.iter().any(|x| x.as_str() == Some(code)))).map_or(5, |i| i + 1)
+        checks.iter().take(3).position(|c| c.as_array().is_some_and(|c| c.iter().any(|x| x.as_str() == Some(code)))).map_or(4, |i| i + 1)
     };
-    for check in 1..=4 {
+    // 1.9 3a-1: the size, the bytes and the header read the bytes alone; 3a-3: a writer signs only what its own `read` reads, so every
+    // value finding after them refuses too
+    for check in 1..=3 {
         let found: Vec<Refusal> = w.iter().filter(|r| check_of(&r.code) == check).cloned().collect();
         if !found.is_empty() {
             return ordered_with(spec, found, "block");
         }
     }
     let rest: Vec<Refusal> = w.into_iter().chain(closed).collect();
-    ordered_with(spec, rest, "block")
+    // what is left are read's findings, given in read's order (protocol.json refusals.read; end pass 2026-11-20, as the oracle gives them)
+    ordered_with(spec, rest, "read")
 }
 
-/// What is wrong with a FoodBlock block: `[{ code, detail }]`, one entry per rule found, in the order of
-/// protocol.json's `refusals.codes.block` (empty when it is well-formed). Options: `schemas` (hash → schema block) so a
-/// named schema's fields and roles count as declared (a schema not among them is refused); `held` (hash → block) so a
-/// child grant is checked against its parent, a deal block against the block it answers, and an ask against its grant.
-pub fn refusals(
-    type_name: &str,
-    state: &Value,
-    refs: &Value,
-    options: CheckOptions,
-) -> Vec<Refusal> {
-    refusals_with(crate::spec(), type_name, state, refs, options)
+/// What a writer refuses to sign, under the built-in protocol.json (see [`write_refusals_with`]).
+pub fn write_refusals(type_name: &str, state: &Value, refs: &Value, options: CheckOptions) -> Vec<Refusal> {
+    write_refusals_with(crate::spec(), type_name, state, refs, options)
 }
 
-/// What is wrong with a FoodBlock block, in plain words (each finding's detail), under the given protocol.json
-/// (empty when it is well-formed). Strict: only the protocol's words.
-pub fn check_with(
-    spec: &Spec,
-    type_name: &str,
-    state: &Value,
-    refs: &Value,
-    options: CheckOptions,
-) -> Vec<String> {
-    findings_with(spec, type_name, state, refs, options)
-        .into_iter()
-        .map(|one| one.detail)
-        .collect()
-}
-
-/// What is wrong with a FoodBlock block, in plain words (empty when it is well-formed). Strict: only the protocol's words.
-pub fn check(type_name: &str, state: &Value, refs: &Value, options: CheckOptions) -> Vec<String> {
-    check_with(crate::spec(), type_name, state, refs, options)
-}
-
-/// An amount: `amount("2.5", "kg")`. The value is a decimal string.
-pub fn amount(value: &str, unit: &str) -> Value {
-    json!({ "value": value, "unit": unit })
-}
-/// Money in whole minor units: `money(420, "GBP")` is £4.20.
-pub fn money(minor: i64, currency: &str) -> Value {
-    json!({ "minor": minor, "currency": currency })
+/// An amount: `amount("2.5", "kg", None)`, or `amount("1", "credit", Some(kind))` for an amount of a kind (encoding.md, Shapes). The value
+/// is a decimal string; money is an amount like any other.
+pub fn amount(value: &str, unit: &str, of: Option<&str>) -> Value {
+    match of {
+        Some(k) => json!({ "value": value, "unit": unit, "of": k }),
+        None => json!({ "value": value, "unit": unit }),
+    }
 }
 /// Terms on a promise; only the terms the protocol lists are kept.
 pub fn terms(given: &Value) -> Value {
@@ -571,18 +652,29 @@ pub fn terms(given: &Value) -> Value {
     )
 }
 
-/// The state fields and ref keys the protocol itself declares for a type, before any schema (the base of a closed
-/// type). The one-time converter reads it to know what a schema must declare (spec/legacy/converter.md).
-pub fn base_declared(type_name: &str) -> (Vec<String>, Vec<String>) {
-    let c = Checker { spec: crate::spec() };
-    c.declared(type_name, &json!({}), None).map(|(f, r, _)| (f, r)).unwrap_or_default()
-}
-
 /// How deep a value nests: a scalar 0, an object or array 1 more than its deepest item.
 pub(crate) fn depth_of(v: &Value) -> usize {
     match v {
         Value::Object(m) => 1 + m.values().map(depth_of).max().unwrap_or(0),
         Value::Array(a) => 1 + a.iter().map(depth_of).max().unwrap_or(0),
         _ => 0,
+    }
+}
+
+/// Whether a figure is a whole number of parts, zero or above (1.9 stage 6, C1: a fraction of a part is another kind).
+pub(crate) fn is_whole_parts(d: &crate::decimal::Dec) -> bool {
+    let t = d.text();
+    !t.contains('.') && !t.contains('/') && !t.starts_with('-')
+}
+
+/// The fields a schema declares, as (name, spec): `fields` is an object `{ name: spec }` or a list of `name:spec` lines (things.md, Schemas).
+fn schema_field_specs(schema: &Value) -> Vec<(String, String)> {
+    match get(schema, "state.fields") {
+        Some(Value::Object(m)) => m.iter().map(|(k, v)| (k.clone(), v.as_str().unwrap_or("").to_string())).collect(),
+        Some(Value::Array(a)) => a.iter().filter_map(Value::as_str).map(|l| match l.split_once(':') {
+            Some((n, sp)) => (n.to_string(), sp.to_string()),
+            None => (l.to_string(), String::new()),
+        }).collect(),
+        _ => vec![],
     }
 }

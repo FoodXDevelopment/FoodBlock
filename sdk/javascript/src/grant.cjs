@@ -8,36 +8,28 @@ const addDuration = (time, duration, sign = 1) => door.addDuration(String(time),
 /** Two durations compared by adding both to one instant (§7): -1, 0 or 1. */
 const compareDurations = door.compareDurations
 /** The one official reading of a grant's `state.scope` (authority.md), every default the spec states and nothing else filled in:
- * { acts, parties, limit, each, every, until, notice, sealed, condition, junk }. A missing scope reads as an empty one. A non-empty `junk` (the names of fields that are
+ * { types, parties, on, limit, each, every, until, clocks, deadline, fallback, junk }. A missing scope reads as an empty one. A non-empty `junk` (the names of fields that are
  * there but unreadable) means the grant cannot be held to its word: a malformed `until` read as no end would be a wider grant. */
 const scopeReading = (scope) => door.scopeReading(scope ?? null)
+/** Is the machine inside the fence of its grant (authority.md, A machine's fence): `{ within, why, alone, alone_until }`. `fence` is a grant's `state.fence`; `at` the time asked about (no clock is read); `readings` `{ name: amount }`; `heard` the time of the newest block heard from its node. */
+const fenceReading = (fence, at, readings, heard) => door.fenceReading(fence ?? null, at, readings ?? null, heard ?? null)
 const scopeRefusals = door.scopeRefusals
 const scopeWithin = door.scopeWithin
 const whyNotLive = (grant, blocks, { now } = {}) => door.whyNotLive(grant || null, blocks, now || null)
 const isLive = (grant, blocks, { now } = {}) => Boolean(grant) && door.isLive(grant, blocks, now || null)
 const ancestors = door.ancestors
 const whyNotUnder = (block, blocks, { now } = {}) => door.whyNotUnder(block || null, blocks, now || null)
-/** Who answers for an autonomous system or machine: the authors of its live grants of kind operator (§2). */
-const operatorsOf = (agent, blocks, { now } = {}) => door.operatorsOf(agent, blocks, now || null)
 /** Why an act that cannot be undone (its schema says `undo: never`) is not live: [] when it has a specific accepted ask or a grant that names it with a limit. */
 const whyNotLiveUndo = door.whyNotLiveUndo
 /** The act a block is, named `type.kind`. */
-const actName = door.actName
-/** The `observe` of kind limit for a grant: what to hand `write` (its type, state, refs and audience). */
-const limitFence = (grantHash, agent, { limit, every, salt, each } = {}) => door.limitFence(grantHash, agent, limit ?? null, every || null, salt || null, each ?? null)
-/** The commitment to a limit and a cap on each act (authority.md): put it in the grant's `scope.limit_commitment`; keep `salt` with the limit observe. */
-const limitCommitment = (limit, every, salt, suite, each) => door.limitCommitment(limit ?? null, every || null, salt, suite || null, each ?? null)
-/** Whether the limit observe opens the grant's `scope.limit_commitment` (the principal's node and the agent make this check). */
-const limitOpens = (grant, fence, suite) => door.limitOpens(grant, fence, suite || null)
-/** Whether one act of `value` (money or an amount) stays inside a limit (authority.md); `spent` is what was counted in the period: minor units, or the amount's value (a whole number or a decimal string). */
-const withinLimit = (limit, value, spent) => {
-  // what was already spent is the caller's to state: a missing amount is never read as nothing spent (silence only narrows)
-  if (spent === undefined || spent === null) throw new TypeError('withinLimit: spent is required: what the principal\'s node has counted in the period (0 when nothing)')
-  return door.withinLimit(limit ?? null, value ?? null, spent)
-}
+/** Whether a promise C keeps to a promise A (authority.md, Keeps to): `{ keeps, why }`, `why` the first sorted path that differs. */
+const keepsTo = (c, a, blocks = []) => door.keepsTo(c, a, blocks)
+/** The line a grant's blocks are counted on (authority.md, A limit is counted along one line): `{ grant, fits, why, line, start, period, draws, left, waiting, ended, comes_back }`, for one block under it or for the grant's own draws. */
+const meter = (grant, blocks, block = null) => door.meter(grant, blocks, block)
+/** The worst case of a grant, from her grant and the promises it names alone (authority.md, G18): `at_most` and `can_lose` per kind. */
+const worstCase = (grant, blocks) => door.worstCase(grant, blocks)
+/** Her deadline's lowest offer, read on the meter's line (authority.md, G15): `{ offer, received, cutoff, why }`. */
+const lowestOffer = (grant, blocks) => door.lowestOffer(grant, blocks)
 /** What a promise's terms come to at a chosen quantity (else the terms'): { minor, currency }, or null when it cannot be computed. */
 const termsTotal = (terms, quantity = null) => door.termsTotal(terms ?? null, quantity ?? null)
-/** Whether a child grant's limit keeps to its parent's (authority.md): both limit observes (or { limit, every, each }), periods added to `at`, the parent grant's at. */
-const limitWithinParent = (child, parent, at) => door.limitWithinParent(child ?? null, parent ?? null, at ?? null)
-
-module.exports = { limitFence, limitCommitment, limitOpens, withinLimit, termsTotal, limitWithinParent, whyNotLiveUndo, actName, parseDuration, addDuration, compareDurations, scopeReading, scopeRefusals, scopeWithin, whyNotLive, isLive, ancestors, whyNotUnder, operatorsOf }
+module.exports = { keepsTo, meter, worstCase, lowestOffer, termsTotal, whyNotLiveUndo, parseDuration, addDuration, compareDurations, scopeReading, fenceReading, scopeRefusals, scopeWithin, whyNotLive, isLive, ancestors, whyNotUnder }

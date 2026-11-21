@@ -1,56 +1,13 @@
-//! A pot (folds.md, A pot): money put behind a promise, and what has been paid from it. One reading for a vouch ("up to N of mine") and
-//! a mutual pool (members pay in, a confirmer's signal pays out): the holder's payouts are read in causal order against what the pot
-//! held where each one stands, and a payout past it counts for nothing against it.
+//! A pot (folds.md, A pot): what a promise's holder put behind it and what has been paid from it. One measure (What is left), whose owner
+//! is the holder, whom the head (a first promise) speaks for: `terms.backing`, her own word, plus the pay-ins she accepted. A payout is a
+//! draw on it, read along her line by the one rule: it holds from where it is signed, conditioned or not, lands on the receiver's yes and
+//! its condition, and one that does not fit takes nothing. One reading serves a vouch and a mutual pool.
+use super::draws::{answers, draws_on, Draw, In, Start, To};
 use super::speaker_of;
-use crate::decimal::Dec;
-use crate::js::{cmp16, hash_of, list, rf, rs, st, type_of};
+use crate::decimal::{Amount, Dec, Kind};
+use crate::js::{hash_of, list, rf, rs, st, type_of};
 use crate::order::sees_in;
 use crate::prelude::*;
-use core::cmp::Ordering;
-
-fn minor(v: Option<&Value>) -> Dec {
-    Dec::of(v).unwrap_or_else(Dec::zero)
-}
-
-/// What a pot counts: money in one currency, or an amount in one unit.
-#[derive(Clone, PartialEq)]
-enum Measure {
-    Money(Value),
-    Count(Value),
-}
-
-impl Measure {
-    /// The measure a money or amount value is in.
-    fn of(v: &Value) -> Option<Measure> {
-        if v.get("currency").is_some_and(Value::is_string) {
-            Some(Measure::Money(v["currency"].clone()))
-        } else if v.get("unit").is_some_and(Value::is_string) && v.get("value").is_some_and(Value::is_string) {
-            Some(Measure::Count(v["unit"].clone()))
-        } else {
-            None
-        }
-    }
-    /// What a transfer carries in this measure: its money in this currency, or its amount in this unit.
-    fn qty(&self, t: &Value) -> Option<Dec> {
-        match self {
-            Measure::Money(c) => st(t, "money").filter(|m| m.get("currency") == Some(c)).map(|m| minor(m.get("minor"))),
-            Measure::Count(u) => st(t, "amount").filter(|m| m.get("unit") == Some(u)).and_then(|m| Dec::of(m.get("value"))),
-        }
-    }
-    /// A sum as the fold reports it.
-    fn out(&self, d: &Dec) -> Value {
-        match self {
-            Measure::Money(_) => d.minor_json(),
-            Measure::Count(_) => Value::String(d.text()),
-        }
-    }
-    fn row(&self, d: &Dec) -> Value {
-        match self {
-            Measure::Money(c) => json!({ "money": { "minor": d.minor_json(), "currency": c } }),
-            Measure::Count(u) => json!({ "amount": { "value": d.text(), "unit": u } }),
-        }
-    }
-}
 
 /// The ids a condition's signal names, looking through a `within` or `without` wrapper; None when the condition is no signal.
 fn signal_by(cond: &Value) -> Option<Vec<String>> {
@@ -60,206 +17,114 @@ fn signal_by(cond: &Value) -> Option<Vec<String>> {
     cond.get("within").or_else(|| cond.get("without")).and_then(signal_by)
 }
 
-/// The lot and everything made from it, read along the makes (things.md, A make): a counted `transform` that names a thing in `derives_from`
-/// makes things that name that transform in theirs, and so on down. A make counts only when its maker owned what it made from, where it stands.
-fn made_from(lot: &str, index: &crate::js::Index) -> Vec<String> {
-    let mut found: Vec<String> = vec![lot.to_string()];
-    loop {
-        let before = found.len();
-        let makes: Vec<String> = index
-            .values()
-            .filter(|t| {
-                // a make counts only when its maker owned a thing it made from, where the make stands: a stranger's "cheese" from another's lot is no make of that lot
-                type_of(t) == "transform"
-                    && crate::identity::counts_in(t, index)
-                    && list(rf(t, "derives_from")).iter().any(|d| found.iter().any(|f| f == d) && super::things::owner_seen_by(d, t, index).is_some_and(|w| speaker_of(t, index, None).as_deref() == Some(w.as_str())))
-            })
-            .map(|t| hash_of(t).to_string())
-            .collect();
-        for o in index.values().filter(|o| type_of(o) == "thing" && list(rf(o, "derives_from")).iter().any(|d| makes.iter().any(|m| m == d))) {
-            if !found.iter().any(|f| f == hash_of(o)) {
-                found.push(hash_of(o).to_string());
-            }
-        }
-        if found.len() == before {
-            return found;
-        }
-    }
-}
-
-struct Payout {
-    hash: String,
-    to: String,
-    amount: Dec,
-    past: Vec<String>,
-}
-
-/// A pot read at the reader's clock `now` (a payout's condition may read the clock; "" reads none that does). The head is a first
-/// promise; its holder is whom it speaks for. The pot holds `terms.backing` (the holder's own word, money) and every pay-in: a money
-/// transfer `for` the head to the holder, accepted by the holder. A payout is a money transfer `for` the head signed by the holder to a
-/// named receiver who accepts it; one that carries `state.condition` counts only once the condition holds, and where the head's schema
-/// names confirmers, only on a signal by them. Payouts are read in causal order: one counts when the pot as its causal past shows it holds
-/// its money, less the payouts that count there, and less every payout it does not see (and that it is not seen by) that fits the pot
-/// alone. With no order named, two that together pass the pot both count for nothing against it: the protocol picks neither.
-/// The pot holds money, or a count of one named kind (`terms.backing` an amount `{ value, unit }`: "up to 2 heifers"), read the same way:
-/// pay-ins and payouts are transfers of that money, or of an amount in that unit; nothing is converted.
-/// Returns null when the block is no first promise that speaks for anyone, else
-/// `{ holder, currency, unit, backing, paid_in, paid_out, left, payouts: [{ block, to, money | amount, counts, why }] }`, payouts sorted by block;
-/// a money pot reports its sums as numbers, a count pot as decimal text.
+/// A pot read at the reader's clock `now` (a payout's condition may read the clock; "" reads none that does). Null when the block is no
+/// first promise that speaks for anyone, or is not read; `{ not_shown: true, lacks }` where the holder's line is not read whole; else
+/// `{ holder, kind, backing, paid_in, held, paid_out, left, cap, payouts }`: `kind` `{ unit, of }`, the backing's, with none the one kind
+/// every accepted pay-in shares, else null (and no payout takes: `unit`); `backing`, `paid_in`, `held`, `paid_out` and `left` sums;
+/// `payouts` the draw list, its `why` also `not_confirmed` or `not_holder`.
 pub fn pot(head: &Value, blocks: &[Value], now: &str) -> Value {
     if type_of(head) != "promise" || !list(rf(head, "answers")).is_empty() {
         return Value::Null;
     }
     let index = super::read_all(core::iter::once(head).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()));
+    // a fold reads only what is valid and read (folds.md): a head held as its header, or not held, is no pot
+    let Some(head) = index.get(hash_of(head)).filter(|b| b.get("type").is_some()) else { return Value::Null };
     let hh = hash_of(head).to_string();
     let Some(holder) = speaker_of(head, &index, None) else { return Value::Null };
-    let backing = st(head, "terms").and_then(|t| t.get("backing")).filter(|m| Measure::of(m).is_some());
-    // each pay-in is kept (a premium: leaving takes nothing back) or held (it comes back in full and is never paid out while held); the head's
-    // `pay_in` says which. Only `kept` is spent: with neither said a pay-in counts toward no payout, and the card shows it as not said (profiles/pools.md)
-    let pay_in: Option<&str> = st(head, "terms").and_then(|t| t.get("pay_in")).and_then(Value::as_str).filter(|w| *w == "kept" || *w == "held");
-    let spent = pay_in == Some("kept");
-    let pay_held = pay_in == Some("held");
-    // a cap written out as `all` (the schema's term `cap`): all the holder owns on the day a claim is read, the referee fixing the sum. It reaches
-    // property only; the fold shows "no limit" (`cap: "all"`, `backing` and `left` null) and a payout is never past the pot (profiles/vouches.md)
+    let backing = st(head, "terms").and_then(|t| t.get("backing")).and_then(|b| Amount::of(Some(b)));
+    // a cap written out as `all` (the schema's term `cap`): all the holder owns on the day a claim is read, the referee fixing the sum. The
+    // fold shows "no limit" (`cap: "all"`, `backing` and `left` null) and a payout is never past the pot (profiles/vouches.md)
     let no_limit = backing.is_none() && st(head, "terms").and_then(|t| t.get("cap")).and_then(Value::as_str) == Some("all");
-    let money_of = |t: &Value| st(t, "money").filter(|m| m.get("currency").is_some_and(Value::is_string)).cloned().or_else(|| st(t, "amount").filter(|m| m.get("unit").is_some_and(Value::is_string)).cloned());
-    let base = |t: &&Value| {
-        type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")) == [hh.as_str()] && crate::identity::counts_in(t, &index) && sees_in(t, &hh, &index)
-    };
-    let pay_ins_all: Vec<&Value> = index
-        .values()
-        .filter(base)
-        .filter(|t| money_of(t).is_some() && list(rf(t, "to_owner")) == [holder.as_str()] && super::things::accepted_by_receiver(t, &index, &|_| true))
+    let for_head = |t: &&Value| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")) == [hh.as_str()] && sees_in(t, &hh, &index);
+    let names = index.names_memo();
+    let transfers: Vec<&Value> = names.by_for.get(&hh).into_iter().flatten().filter_map(|h| index.get(h)).filter(for_head).collect();
+    // the pay-ins: transfers `for` the head `to_owner` the holder, counted once the holder accepted them (The other side)
+    let pay_ins: Vec<(&Value, Amount)> = transfers
+        .iter()
+        .filter(|t| crate::identity::counts_in(t, &index) && list(rf(t, "to_owner")) == [holder.as_str()] && rf(t, "what").is_none())
+        .filter(|t| super::things::accepted_by_receiver(t, &index, &|_| true))
+        .filter_map(|t| Amount::of(st(t, "amount")).map(|a| (*t, a)))
         .collect();
-    // the pot is in one measure: the backing's, else the lowest pay-in's (named only to name one); nothing is converted
-    let measure: Option<Measure> = backing.and_then(Measure::of).or_else(|| {
-        let mut ins: Vec<&&Value> = pay_ins_all.iter().collect();
-        ins.sort_by(|a, b| cmp16(hash_of(a), hash_of(b)));
-        ins.first().and_then(|t| money_of(t)).and_then(|m| Measure::of(&m))
-    }).or_else(|| {
-        if !no_limit {
-            return None;
-        }
-        let mut outs: Vec<&Value> = index.values().filter(base).filter(|t| money_of(t).is_some() && list(rf(t, "to_owner")) != [holder.as_str()]).collect();
-        outs.sort_by(|a, b| cmp16(hash_of(a), hash_of(b)));
-        outs.first().and_then(|t| money_of(t)).and_then(|m| Measure::of(&m))
-    });
-    let Some(measure) = measure else {
-        return json!({ "holder": holder, "currency": null, "unit": null, "backing": 0, "paid_in": 0, "paid_out": 0, "left": 0, "pay_in": pay_in, "held_back": 0, "cap": if no_limit { json!("all") } else { Value::Null }, "payouts": [] });
+    // the pot's kind: the backing's; with none, the one kind every accepted pay-in shares; with a cap of all and neither, the one kind its
+    // payouts share; else none, and it pays nothing out
+    let one_kind = |kinds: Vec<Kind>| -> Option<Kind> {
+        let first = kinds.first()?.clone();
+        kinds.iter().all(|k| *k == first).then_some(first)
     };
-    let in_measure = |t: &Value| measure.qty(t);
-    let back = backing.filter(|b| Measure::of(b).as_ref() == Some(&measure)).map_or_else(Dec::zero, |b| match &measure {
-        Measure::Money(_) => minor(b.get("minor")),
-        Measure::Count(_) => Dec::of(b.get("value")).unwrap_or_else(Dec::zero),
-    });
-    let ins: Vec<(&Value, Dec)> = pay_ins_all.iter().filter_map(|t| in_measure(t).map(|d| (*t, d))).collect();
-    let paid_in = ins.iter().fold(Dec::zero(), |s, (_, d)| s.add(d));
-    // what the pot held where a block stands: the backing, and the pay-ins (with their accepts) in its causal past
-    let held_at = |past: &[String]| {
-        let seen = |h: &str| past.iter().any(|p| p == h);
-        if !spent {
-            return back.clone();
-        }
-        ins.iter()
-            .filter(|(t, _)| seen(hash_of(t)) && super::things::accepted_by_receiver(t, &index, &|h| seen(h)))
-            .fold(back.clone(), |s, (_, d)| s.add(d))
+    let payout_kinds = || transfers.iter().filter(|t| list(rf(t, "to_owner")) != [holder.as_str()]).filter_map(|t| Amount::of(st(t, "amount")).map(|a| a.kind)).collect::<Vec<_>>();
+    let kind: Option<Kind> = match &backing {
+        Some(b) => Some(b.kind.clone()),
+        None if !pay_ins.is_empty() => one_kind(pay_ins.iter().map(|(_, a)| a.kind.clone()).collect()),
+        None if no_limit => one_kind(payout_kinds()),
+        None => None,
     };
     let confirmers: Vec<String> = rs(head, "schema")
         .and_then(|s| index.get(s))
         .and_then(|s| st(s, "grounds"))
         .map(|g| list(g.get("confirmers")).iter().map(|x| x.to_string()).collect())
         .unwrap_or_default();
-    // the payouts: the holder's own conditioned transfers, accepted by the one they go to
-    let mut payouts: Vec<Payout> = Vec::new();
-    let mut cond_fails: Vec<String> = Vec::new();
-    // A vouch to whoever holds a lot (promises.md, Bearer): when the head's receiver is a thing, a payout counts as the claim of the
-    // thing's owner where the payout stands (the ownership fold of its causal past); a payout to anyone else is shown and counts for nothing.
+    // a vouch to whoever holds a lot (promises.md, Bearer): a payout counts only to the owner, where it stands, of that thing or of a thing
+    // made from it that the payout has in its causal past (`made_from`)
     let lot = rs(head, "to").filter(|h| index.get(*h).is_some_and(|t| type_of(t) == "thing"));
-    let mut holder_fails: Vec<String> = Vec::new();
-    for t in index.values().filter(base) {
-        let Some(amount) = in_measure(t) else { continue };
+    let made: Vec<String> = lot.map(|l| core::iter::once(l.to_string()).chain(super::things::made_from_in(l, &index).iter().filter_map(|r| r["thing"].as_str().map(String::from))).collect()).unwrap_or_default();
+    // the payouts: the holder's transfers `for` the head to a named receiver
+    let mut draws: Vec<Draw> = Vec::new();
+    for t in transfers.iter().copied() {
         let to = list(rf(t, "to_owner"));
-        if amount.cmp(&Dec::zero()) != Ordering::Greater || to.len() != 1 || to[0] == holder || speaker_of(t, &index, None).as_deref() != Some(holder.as_str()) {
+        let binds = crate::identity::counts_in(t, &index) || crate::identity::fork_burden(t, &index);
+        // a payout is the holder's word (folds.md, A pot): a transfer `for` the head that does not speak for her is no payout of the pot
+        if !binds || to.len() != 1 || to[0] == holder || rf(t, "what").is_some() || speaker_of(t, &index, None).as_deref() != Some(holder.as_str()) {
             continue;
         }
-        if !super::things::accepted_by_receiver(t, &index, &|_| true) {
-            continue;
-        }
-        let ok = st(t, "condition").is_none_or(|c| super::things::condition_holds_in(t, c, &index, &|_| true, now) && !super::things::let_go(t, c, &index, &|_| true));
-        if !ok {
-            continue;
-        }
-        let named = confirmers.is_empty() || st(t, "condition").and_then(signal_by).is_some_and(|by| !by.is_empty() && by.iter().all(|b| confirmers.contains(b)));
-        if !named {
-            cond_fails.push(hash_of(t).to_string());
-        }
-        // the claimant owns the lot, or a thing made from it that the payout sees, where the payout stands
-        let claims = |l: &str| {
-            let past = index.past_of(t);
-            made_from(l, &index).iter().any(|x| (x == l || past.contains(x.as_str())) && super::things::owner_seen_by(x, t, &index).as_deref() == Some(to[0]))
+        let Some(amount) = Amount::of(st(t, "amount")).filter(|a| !a.value.is_zero()) else { continue };
+        let fixed = if !confirmers.is_empty() && !st(t, "condition").and_then(signal_by).is_some_and(|by| !by.is_empty() && by.iter().all(|b| confirmers.contains(b))) {
+            Some("not_confirmed")
+        } else if lot.is_some() && !made.iter().any(|x| (Some(x.as_str()) == lot || index.past_of(t).contains(x)) && super::things::owner_seen_by(x, t, &index).as_deref() == Some(to[0])) {
+            Some("not_holder")
+        } else {
+            None
         };
-        if lot.is_some_and(|l| !claims(l)) {
-            holder_fails.push(hash_of(t).to_string());
-        }
-        payouts.push(Payout { hash: hash_of(t).to_string(), to: to[0].to_string(), amount, past: index.past_of(t).hashes() });
+        let (yes, no, ends) = answers(t, to[0], &index);
+        let condition = st(t, "condition").map(|c| super::things::condition_holds_in(t, c, &index, &|_| true, now) && !super::things::let_go(t, c, &index, &|_| true));
+        draws.push(Draw { block: t, by: speaker_of(t, &index, None), to: To::Owner(to[0].to_string()), amount: Some(amount), yes, no, ends, dead: st(t, "condition").and_then(|c| super::things::condition_dead_in(t, c, &index, &|_| true)), condition, fixed, stays: false, offer: None });
     }
-    payouts.sort_by(|a, b| a.past.len().cmp(&b.past.len()).then_with(|| cmp16(&a.hash, &b.hash)));
-    // a payout fits alone when the pot as it sees it holds its money; it counts when it also fits beside every payout it does not see
-    let fits_alone: Vec<bool> = payouts.iter().map(|p| p.amount.cmp(&held_at(&p.past)) != Ordering::Greater).collect();
-    let mut counts: Vec<bool> = vec![false; payouts.len()];
-    let mut why: Vec<Option<&str>> = vec![None; payouts.len()];
-    for i in 0..payouts.len() {
-        let p = &payouts[i];
-        if cond_fails.contains(&p.hash) {
-            why[i] = Some("not_confirmed");
-            continue;
-        }
-        if holder_fails.contains(&p.hash) {
-            why[i] = Some("not_holder");
-            continue;
-        }
-        if no_limit {
-            counts[i] = true;
-            continue;
-        }
-        let used = payouts.iter().enumerate().filter(|(j, q)| *j != i && counts[*j] && p.past.iter().any(|h| *h == q.hash)).fold(Dec::zero(), |s, (_, q)| s.add(&q.amount));
-        let room = held_at(&p.past).sub(&used);
-        if p.amount.cmp(&room) == Ordering::Greater {
-            why[i] = Some("past_the_pot");
-            continue;
-        }
-        let unseen = payouts
+    // what the holder has besides her backing where a payout stands: the pay-ins of the pot's kind she accepted in its causal past
+    let paid_in_seen = |payout: &Value, _: &str| -> Dec {
+        let past = index.past_of(payout);
+        pay_ins
             .iter()
-            .enumerate()
-            .filter(|(j, q)| *j != i && fits_alone[*j] && !cond_fails.contains(&q.hash) && !holder_fails.contains(&q.hash) && !p.past.iter().any(|h| *h == q.hash) && !q.past.iter().any(|h| *h == p.hash))
-            .fold(Dec::zero(), |s, (_, q)| s.add(&q.amount));
-        if p.amount.add(&unseen).cmp(&room) == Ordering::Greater {
-            why[i] = Some("unseen_together");
-            continue;
-        }
-        counts[i] = true;
-    }
-    let paid_out = payouts.iter().zip(&counts).filter(|(_, c)| **c).fold(Dec::zero(), |s, (p, _)| s.add(&p.amount));
-    let mut left = back.add(&if spent { paid_in.clone() } else { Dec::zero() }).sub(&paid_out);
-    if left.cmp(&Dec::zero()) != Ordering::Greater {
-        left = Dec::zero();
-    }
-    let mut rows: Vec<Value> = payouts
-        .iter()
-        .zip(counts.iter().zip(&why))
-        .map(|(p, (c, w))| {
-            let mut row = json!({ "block": p.hash, "to": p.to, "counts": c, "why": w });
-            row.as_object_mut().map(|o| o.extend(measure.row(&p.amount).as_object().cloned().unwrap_or_default()));
-            row
-        })
-        .collect();
-    rows.sort_by(|a, b| cmp16(a["block"].as_str().unwrap_or(""), b["block"].as_str().unwrap_or("")));
-    let (currency, unit) = match &measure {
-        Measure::Money(c) => (c.clone(), Value::Null),
-        Measure::Count(u) => (Value::Null, u.clone()),
+            .filter(|(t, a)| kind.as_ref() == Some(&a.kind) && past.contains(hash_of(t)) && super::things::accepted_by_receiver(t, &index, &|h| past.contains(h)))
+            .fold(Dec::zero(), |s, (_, a)| s.add(&a.value))
     };
+    // a cap of all: the holder's word reaches all she owns, and a payout is never past the pot
+    let unlimited = Dec::parse(&format!("1{}", "0".repeat(crate::spec().decimal_digits.saturating_sub(1)))).unwrap_or_else(Dec::zero);
+    let start = Start {
+        owner: holder.clone(),
+        amount: Some(if no_limit { unlimited } else { backing.as_ref().map_or_else(Dec::zero, |b| b.value.clone()) }),
+        at: Some(hh.clone()),
+        seen: hh.clone(),
+    };
+    // with no kind the pot pays nothing out: every payout is of another kind (`unit`)
+    let drawn = draws_on(kind.as_ref().map_or(In::NoKind, In::Kind), vec![start], draws, &paid_in_seen, &index);
+    if let Some(not) = drawn.not_shown() {
+        return not;
+    }
+    // 1.9 3b-7: a block held and not read that could name the pot hides it: the answer is not shown
+    let hides = super::draws::hidden(&hh, &drawn.starts, &index, &|_| true);
+    if !hides.is_empty() {
+        return json!({ "not_shown": true, "lacks": hides });
+    }
+    // every sum is an amount of the pot's kind; a pot with no kind has no sum (null)
+    let text = |d: Dec| kind.as_ref().map_or(Value::Null, |k| k.amount(&d));
+    let paid_in = pay_ins.iter().filter(|(_, a)| kind.as_ref() == Some(&a.kind)).fold(Dec::zero(), |s, (_, a)| s.add(&a.value));
+    let (held, _) = drawn.sum("held", None);
+    let (paid_out, _) = drawn.sum("landed", None);
+    let back = backing.as_ref().map_or_else(Dec::zero, |b| b.value.clone());
+    let left = back.add(&paid_in).sub(&held).sub(&paid_out);
     json!({
-        "holder": holder, "currency": currency, "unit": unit, "backing": if no_limit { Value::Null } else { measure.out(&back) }, "paid_in": measure.out(&paid_in),
-        "paid_out": measure.out(&paid_out), "left": if no_limit { Value::Null } else { measure.out(&left) }, "cap": if no_limit { json!("all") } else { Value::Null }, "pay_in": pay_in, "held_back": measure.out(&if pay_held { paid_in.clone() } else { Dec::zero() }), "payouts": rows
+        "holder": holder, "kind": kind.as_ref().map(Kind::json),
+        "backing": if no_limit { Value::Null } else { text(back) }, "paid_in": text(paid_in), "held": text(held), "paid_out": text(paid_out),
+        "left": if no_limit { Value::Null } else { text(left) }, "cap": if no_limit { json!("all") } else { Value::Null },
+        "payouts": drawn.rows_json(kind.as_ref()),
     })
 }

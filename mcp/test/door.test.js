@@ -1,22 +1,22 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import fb from '@foodxdev/foodblock'
-import { createDoor, newPerson, memoryNode, approvalHandler } from '../door.js'
+import { createDoor, memoryNode, approvalHandler, newPerson } from '../door.js'
+import { testPerson, publicSide, tap } from './fixtures.js'
 import http from 'node:http'
 
 // The door against a local in-memory node: an assistant finds an offer, drafts an ask, the person approves, the seller
 // accepts, the promise reads right; without a grant it never binds; a STOP'd recipient is never messaged.
 const say = (who, node, type, state, refs) => { const s = fb.write(type, state, refs, { author: who.id, key: who.keys, held: who.chain, at: new Date().toISOString(), audience: 'public' }); who.chain.push(s); const r = node.push(s); assert.equal(r.refused.length, 0, JSON.stringify(r.refused)); return s }
 const world = () => {
-  const node = memoryNode(), person = newPerson('person', { reach: 'P30D' }), seller = newPerson('person', { reach: 'P30D' })
-  const door = createDoor({ node, person, code: 'ABCDE-12345', base: '' })
+  const node = memoryNode(), person = testPerson(), seller = testPerson()
+  const door = createDoor({ node, person: publicSide(person) })   // the door is given her public side only; `person` here is her device
   node.push(seller.genesis)
   const place = say(seller, node, 'thing', { kind: 'place', name: 'Hartley Mill' }, {})
   const flour = say(seller, node, 'thing', { kind: 'flour', name: 'Strong white flour' }, { place: place.hash })
-  const offer = say(seller, node, 'promise', { terms: { price: { money: fb.money(150, 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('100', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, what: flour.hash, place: place.hash })
+  const offer = say(seller, node, 'promise', { terms: { price: { amount: fb.amount('1.50', 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('100', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, what: flour.hash, place: place.hash })
   return { node, person, seller, door, place, flour, offer }
 }
-const CODE = 'ABCDE-12345'
 
 describe('the door', () => {
   it('finds an offer by what and near, and a peer', () => {
@@ -37,14 +37,14 @@ describe('the door', () => {
     assert.equal(draft.status, 'pending'); assert.equal(draft.bound, false); assert.match(draft.receipt, /^[0-9A-Z]{4}-[0-9A-Z]{4}$/)
     assert.ok(!node.all().some((b) => b.refs.to === person.id && b.type === 'promise'), 'nothing written yet')
     assert.equal(door.read(draft.draft).status, 'pending')
-    assert.equal(door.approve(draft.draft, 'WRONG').ok, false)
-    const sent = door.approve(draft.draft, CODE)
+    assert.equal(door.approve(draft.draft, { signature: 'ff' }).ok, false)
+    const sent = tap(door, draft.draft, person)
     assert.equal(sent.ok, true)
     const ask = node.get(sent.block)
     assert.equal(ask.refs.author, person.id, 'the person signed it, not the assistant')
     assert.equal(fb.identity.signedByAuthor(ask, node.all()), true)
     assert.equal(door.read(ask.hash).promise.stage, 'asked', 'an unanswered ask is only asked')
-    assert.equal(door.approve(draft.draft, CODE).ok, false, 'a draft is sent once')
+    assert.equal(tap(door, draft.draft, person).ok, false, 'a draft is sent once')
     say(seller, node, 'promise', { status: 'accepted' }, { answers: ask.hash, for: ask.hash })
     const read = door.read(ask.hash).promise
     assert.equal(read.stage, 'accepted'); assert.deepEqual(read.quantity, fb.amount('5', 'kg'))
@@ -61,66 +61,66 @@ describe('the door', () => {
     assert.equal(promise.bound, false)
     assert.equal(node.all().length, before, 'no block written by the assistant')
     // a grant draft that is never tapped grants nothing
-    const pairing = door.connect(assistant, { audience: 'public', parties: [seller.id], acts: ['promise'] })
+    const pairing = door.connect(assistant, { audience: 'public', parties: [seller.id], types: ['promise'] })
     assert.equal(pairing.status, 'pending')
     assert.equal(door.accept(assistant, { audience: 'public', promise: offer.hash }).bound, false)
     assert.ok(!node.all().some((b) => b.refs.author === assistant.id && b.type !== 'actor'))
     assert.ok(person)
   })
 
-  it('a grant that names promise binds only where the other side has said yes, never to a stranger', () => {
-    const { door, node, person, seller, offer, flour } = world()
+  // 1.9 (stage 4 G1, stage 5): a grant binds her only through a promise of hers it names in `scope.on`, counted on its line (`refs.meter`):
+  // the person asks (a human sends the first message), connects the assistant on that ask, and the seller's counter that keeps to it is
+  // what the assistant may accept for her.
+  const onHerAsk = (w, { limit = fb.amount('20.00', 'GBP'), quantity = fb.amount('5', 'kg') } = {}) => {
+    const { door, node, person, seller, offer } = w
+    const ask = node.get(tap(door, door.ask({ audience: 'public', offer: offer.hash, quantity, price: { max: { amount: fb.amount('1.50', 'GBP'), per: fb.amount('1', 'kg') } } }).draft, person).block)
     const assistant = door.agent('claude')
-    const pairing = door.connect(assistant, { audience: 'public', parties: [seller.id], acts: ['promise'], days: 7, limit: fb.money(2000, 'GBP') })
-    assert.match(pairing.summary, /may bind you on: promise/)
-    assert.equal(door.approve(pairing.draft, CODE).ok, true)
-    // seller is still a stranger: the first message needs a person
-    const first = door.accept(assistant, { audience: 'public', promise: offer.hash, quantity: fb.amount('5', 'kg') })
-    assert.equal(first.bound, false); assert.match(first.why_a_draft, /stranger/)
-    // the person asks and the seller answers: now they have dealt
-    const ask = door.approve(door.ask({ audience: 'public', offer: offer.hash, quantity: fb.amount('5', 'kg') }).draft, CODE)
-    say(seller, node, 'promise', { status: 'accepted' }, { answers: ask.block, for: ask.block })
-    assert.equal(door.accept(assistant, { audience: 'public', promise: offer.hash }).bound, false, 'answering the person is not a yes for their assistant')
-    say(seller, node, 'observe', { kind: 'consent', word: 'yes' }, { subject: person.id })
-    const counter = say(seller, node, 'promise', { terms: { price: { money: fb.money(140, 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: flour.hash, answers: ask.block, for: ask.block })
-    const bound = door.accept(assistant, { audience: 'public', promise: counter.hash })
+    const pairing = door.connect(assistant, { audience: 'public', parties: [seller.id], types: ['promise'], days: 7, limit, on: [ask.hash] })
+    assert.equal(tap(door, pairing.draft, person).ok, true)
+    const counter = (terms) => say(seller, node, 'promise', { terms: { ...terms, expires: ask.state.terms.expires } }, { from: seller.id, to: person.id, what: ask.refs.what, derives_from: ask.refs.derives_from, answers: ask.hash, for: ask.hash })
+    return { assistant, ask, counter, pairing }
+  }
+
+  it('a grant binds only through a promise of hers it names (scope.on), never a stranger\'s offer it does not keep to', () => {
+    const w = world()
+    const { door, node, person, seller, offer } = w
+    // a grant that names no promise of hers binds nothing
+    const bare = door.agent('claude')
+    const pairing = door.connect(bare, { audience: 'public', parties: [seller.id], types: ['promise'], days: 7, limit: fb.amount('20.00', 'GBP') })
+    assert.match(pairing.summary, /scope\.types: promise/, 'the summary is the page\'s own lines')
+    assert.equal(tap(door, pairing.draft, person).ok, true)
+    const first = door.accept(bare, { audience: 'public', promise: offer.hash, quantity: fb.amount('5', 'kg') })
+    assert.equal(first.bound, false); assert.match(first.why_a_draft, /scope\.on/)
+    // on her own ask: the seller's open offer is no promise of hers, so the assistant cannot take it up
+    const { assistant, counter } = onHerAsk(w)
+    assert.equal(door.accept(assistant, { audience: 'public', promise: offer.hash, quantity: fb.amount('5', 'kg') }).bound, false)
+    // the seller's counter to her ask keeps to it: the assistant's accept binds her
+    const c = counter({ price: { amount: fb.amount('1.40', 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5', 'kg') })
+    const bound = door.accept(assistant, { audience: 'public', promise: c.hash })
     assert.equal(bound.bound, true, JSON.stringify(bound))
     const block = node.get(bound.block)
     assert.equal(block.refs.author, assistant.id); assert.ok(block.refs.under)
     assert.deepEqual(fb.grant.whyNotUnder(block, node.all(), { now: new Date().toISOString() }), [])
   })
 
-  it('consent follows the principal: the seller\'s yes to the person covers her assistant, and her STOP binds it too', () => {
-    const { door, node, person, seller, offer, flour } = world()
-    const assistant = door.agent('claude')
-    assert.equal(door.approve(door.connect(assistant, { audience: 'public', parties: [seller.id], acts: ['promise'], days: 7, limit: fb.money(2000, 'GBP') }).draft, CODE).ok, true)
-    const ask = door.approve(door.ask({ audience: 'public', offer: offer.hash, quantity: fb.amount('5', 'kg') }).draft, CODE)
-    // the seller words no consent for the assistant itself: one yes, to the person
-    say(seller, node, 'observe', { kind: 'consent', word: 'yes' }, { subject: person.id })
-    const counter = say(seller, node, 'promise', { terms: { price: { money: fb.money(140, 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: flour.hash, answers: ask.block, for: ask.block })
-    assert.equal(door.accept(assistant, { audience: 'public', promise: counter.hash }).bound, true)
+  it('consent follows the principal: her STOP binds her assistant too', () => {
+    const w = world()
+    const { door, node, person, seller } = w
+    const { assistant, counter } = onHerAsk(w)
+    const c = counter({ price: { amount: fb.amount('1.40', 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5', 'kg') })
+    assert.equal(door.accept(assistant, { audience: 'public', promise: c.hash }).bound, true)
     // a STOP naming the person is a STOP for every agent acting under her grant
     say(seller, node, 'observe', { kind: 'consent', word: 'stop' }, { subject: person.id })
-    assert.throws(() => door.accept(assistant, { audience: 'public', promise: counter.hash }), /stopped/)
+    assert.throws(() => door.accept(assistant, { audience: 'public', promise: c.hash }), /stopped/)
   })
 
-  it('the limit holds the act\'s total (price times quantity, lines added up) plus what was already bound under the grant', () => {
-    const { door, node, person, seller, offer, flour } = world()
-    const assistant = door.agent('claude')
-    assert.equal(door.approve(door.connect(assistant, { audience: 'public', parties: [seller.id], acts: ['promise'], days: 7, limit: fb.money(2000, 'GBP') }).draft, CODE).ok, true)
-    const ask = door.approve(door.ask({ audience: 'public', offer: offer.hash, quantity: fb.amount('5', 'kg') }).draft, CODE)
-    say(seller, node, 'observe', { kind: 'consent', word: 'yes' }, { subject: person.id })
-    const counter = (terms) => say(seller, node, 'promise', { terms: { ...terms, expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: flour.hash, answers: ask.block, for: ask.block })
-    // GBP 1.40 a kg for 5000 kg is GBP 7000.00: over a GBP 20.00 limit, though the unit price is under it
-    const big = door.accept(assistant, { audience: 'public', promise: counter({ price: { money: fb.money(140, 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('5000', 'kg') }).hash })
-    assert.equal(big.bound, false); assert.match(big.why_a_draft, /limit/)
-    // a line priced GBP 9000.00 is held against the limit too
-    assert.equal(door.accept(assistant, { audience: 'public', promise: counter({ lines: [{ id: 'a', what: flour.hash, quantity: fb.amount('1', 'kg'), price: fb.money(900000, 'GBP') }] }).hash }).bound, false)
-    // GBP 15.00 fits once; a second adds up past GBP 20.00
-    assert.equal(door.accept(assistant, { audience: 'public', promise: counter({ price: fb.money(1500, 'GBP') }).hash }).bound, true)
-    assert.equal(door.accept(assistant, { audience: 'public', promise: counter({ price: fb.money(1500, 'GBP') }).hash }).bound, false)
-    // a per-unit price with no quantity to price has no total: never bound under a limit
-    assert.equal(door.accept(assistant, { audience: 'public', promise: counter({ price: { money: fb.money(1, 'GBP'), per: fb.amount('1', 'kg') } }).hash }).bound, false)
+  it('the limit is counted on the grant\'s line by the SDK: a deal that comes to more than the limit does not bind', () => {
+    const w = world()
+    const { door } = w
+    // GBP 1.40 a kg for 50 kg is GBP 70.00: over a GBP 20.00 limit, though the unit price is under it
+    const { assistant, counter } = onHerAsk(w, { quantity: fb.amount('50', 'kg') })
+    const big = door.accept(assistant, { audience: 'public', promise: counter({ price: { amount: fb.amount('1.40', 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('50', 'kg') }).hash })
+    assert.equal(big.bound, false); assert.match(big.why_a_draft, /line/)
   })
 
   it('a STOP\'d recipient is never messaged: not drafted, not sent', () => {
@@ -132,7 +132,7 @@ describe('the door', () => {
     const w = world()
     const draft = w.door.ask({ audience: 'public', offer: w.offer.hash })
     say(w.seller, w.node, 'observe', { kind: 'consent', word: 'stop' }, { subject: w.person.id })
-    const tapped = w.door.approve(draft.draft, CODE)
+    const tapped = tap(w.door, draft.draft, w.person)
     assert.equal(tapped.ok, false); assert.match(tapped.reason, /stopped/)
     assert.ok(!w.node.all().some((b) => b.refs.author === w.person.id && b.type === 'promise'))
     assert.equal(w.door.find({ kind: 'offers' })[0].from.no_contact, true)
@@ -149,27 +149,53 @@ describe('the door', () => {
     const assistant = door.agent('claude'), before = node.all().length
     assert.throws(() => door.ask({ offer: offer.hash }), /audience/)
     assert.throws(() => door.ask({ audience: [], offer: offer.hash }), /audience/)
-    assert.throws(() => door.connect(assistant, { acts: ['promise'] }), /audience/)
+    assert.throws(() => door.connect(assistant, { types: ['promise'] }), /audience/)
     assert.throws(() => door.accept(assistant, { promise: offer.hash }), /audience/)
     assert.throws(() => door.promise(assistant, { to: seller.id, what: offer.refs.what }), /audience/)
     assert.equal(node.all().length, before)
     assert.equal([...door.drafts.values()].length, 0)
   })
 
-  it('the approval page signs only with the person\'s code', async () => {
-    const { door, node } = world()
+  it('the approval page sends only what her own device signed over the block it showed', async () => {
+    const { door, node, person } = world()
     const server = http.createServer(async (req, res) => { if (!(await approvalHandler(door)(req, res))) res.writeHead(404).end() })
     await new Promise((done) => server.listen(0, '127.0.0.1', done))
     const base = `http://127.0.0.1:${server.address().port}`
     door.base = base
     const draft = door.ask({ audience: 'public', offer: door.find({})[0].offer })
     const page = await (await fetch(draft.approve_at)).text()
-    assert.match(page, new RegExp(draft.receipt)); assert.ok(!page.includes(CODE))
-    const bad = await fetch(draft.approve_at, { method: 'POST', body: 'code=nope&do=send', headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+    assert.match(page, new RegExp(draft.receipt)); assert.ok(!page.includes(person.keys.private_key), 'the page holds no key')
+    const post = (fields) => fetch(draft.approve_at, { method: 'POST', body: new URLSearchParams(fields), headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+    const bad = await post({ do: 'send', signature: 'ab'.repeat(64) })
     assert.equal(bad.status, 403); assert.equal(door.drafts.get(draft.draft).status, 'pending')
-    const good = await fetch(draft.approve_at, { method: 'POST', body: `code=${CODE}&do=send`, headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+    // another key's signature over the same block is not hers
+    const stranger = testPerson(), shown = door.signing(draft.draft)
+    assert.equal((await post({ do: 'send', signature: fb.sign(shown.block, stranger.keys.private_key) })).status, 403)
+    // hers: signed by her device over the block the page showed
+    const good = await post({ do: 'send', signature: fb.sign(door.signing(draft.draft).block, person.keys.private_key) })
     assert.equal(good.status, 200); assert.equal(door.drafts.get(draft.draft).status, 'sent')
+    const sent = node.get(door.drafts.get(draft.draft).block)
+    assert.equal(fb.identity.signedByAuthor(sent, node.all()), true)
     server.close()
-    assert.ok(node)
+  })
+
+  it('the door holds no key of hers: it refuses one, makes none, and cannot sign for her', () => {
+    const me = testPerson()
+    assert.throws(() => createDoor({ person: me }), /holds no key of hers/)
+    assert.throws(() => createDoor({}), /holds no key of hers/)
+    assert.throws(() => newPerson(), /holds no key of hers/)
+    const { door } = world()
+    assert.equal(Object.keys(door.person).some((k) => /key|recovery|encryption/.test(k)), false)
+    assert.equal(door.approve('0'.repeat(64), { signature: 'ff' }).ok, false)
+  })
+
+  it('five wrong signatures lock a draft; a unit with words in it is refused at the draft', () => {
+    const { door, offer, person } = world()
+    const draft = door.ask({ audience: 'public', offer: offer.hash })
+    door.signing(draft.draft)
+    for (let i = 0; i < 5; i++) assert.equal(door.approve(draft.draft, { signature: 'ab'.repeat(64) }).ok, false)
+    assert.equal(door.drafts.get(draft.draft).status, 'locked')
+    assert.match(tap(door, draft.draft, person).reason || 'nothing to sign', /nothing to sign|locked/)
+    assert.throws(() => door.ask({ audience: 'public', offer: offer.hash, quantity: { value: '1', unit: 'kg (price agreed: 1.00 GBP total)' } }), /one token/)
   })
 })

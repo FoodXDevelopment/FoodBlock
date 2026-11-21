@@ -9,13 +9,13 @@ use alloc::collections::BTreeMap;
 /// The shares that stand on an instance or a place (things.md, Shares). A share is a thing of kind `share` that names the one instance
 /// or place it is a part of in `refs.subject`. It stands when its maker owned that thing where the share stands, so it limits whoever
 /// owns the thing later: a later owner passes on only what is left. It counts for nothing when its subject is not a thing, is a kind
-/// (some thing names it in `refs.of`), or was not its maker's to share. A share never reaches copies, offspring or things made by the
+/// (by its own block: things.md, Things), or was not its maker's to share. A share never reaches copies, offspring or things made by the
 /// same method: it names one thing, and nothing made from it is that thing.
 /// Returns `{ standing: [{ share, owner }], nothing: [{ share, reason }] }`, each sorted by share.
 pub fn shares_on(thing: &Value, blocks: &[Value]) -> Value {
     let index = super::read_all(core::iter::once(thing).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()));
     let subject = hash_of(thing).to_string();
-    let is_kind = index.values().any(|b| rs(b, "of") == Some(subject.as_str()));
+    let is_kind = !super::things::is_instance(index.get(&subject).unwrap_or(thing));
     let mut shares: Vec<&Value> = index
         .values()
         .filter(|b| type_of(b) == "thing" && ss(b, "kind") == Some("share") && rs(b, "subject") == Some(subject.as_str()) && crate::identity::counts_in(b, &index))
@@ -109,17 +109,17 @@ fn overlap(a: &[P], b: &[P]) -> bool {
 
 /// What use of a place the record shows (things.md, Uses of a place). A use is a counted `transform` that makes nothing from anything
 /// (no `derives_from`), names the place in `refs.subject`, and says in `state.use` what was done (cleared, planted, drew water, fenced,
-/// built, kept): an act. A block that only claims or grants is not a use. The dated record is evidence a referee reads, never title.
-/// With the clock `keepers` (blocks.md, A named clock) a use is dated by the time `needed` keepers received it, and a use they have not
+/// built, kept): a deed. A block that only claims or grants is not a use. The dated record is evidence a referee reads, never title.
+/// With the clock `clocks` (blocks.md, A named clock) a use is dated by the time `needed` clocks received it, and a use they have not
 /// received is not dated; with none it is dated by its author's own `at`, which only that author says.
-/// Returns `{ clock, users: [{ user, acts, count, first, last, seasons, bounds, resting, overlaps }] }`, sorted by user; no users is
+/// Returns `{ clock, users: [{ user, uses, count, first, last, seasons, bounds, resting, overlaps }] }`, sorted by user; no users is
 /// "none shown" (in what this reader holds, never "empty land").
-pub fn use_shown(place: &Value, blocks: &[Value], keepers: Option<&Value>) -> Value {
+pub fn use_shown(place: &Value, blocks: &[Value], clocks: Option<&Value>) -> Value {
     let index = super::read_all(core::iter::once(place).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()));
-    let ks = keepers.and_then(crate::tasks::keepers_of);
+    let ks = clocks.and_then(crate::tasks::clocks_of);
     let target = hash_of(place);
     struct U {
-        acts: Vec<String>,
+        uses: Vec<String>,
         dates: Vec<String>,
         bounds: Vec<(String, Vec<P>)>,
         resting: Option<String>,
@@ -133,15 +133,15 @@ pub fn use_shown(place: &Value, blocks: &[Value], keepers: Option<&Value>) -> Va
         if type_of(b) != "transform" || rf(b, "derives_from").is_some() || rs(b, "subject") != Some(target) || !crate::identity::counts_in(b, &index) {
             continue;
         }
-        let Some(act) = ss(b, "use") else { continue };
+        let Some(used) = ss(b, "use") else { continue };
         let Some(user) = speaker_of(b, &index, None) else { continue };
         let date = match &ks {
-            Some(k) => clock::received_at(hash_of(b), k, &index),
+            Some(k) => clock::receipt_at(hash_of(b), k, &index),
             None => ss(b, "at").map(String::from),
         };
         records.push((hash_of(b).to_string(), user.clone(), date.clone()));
-        let u = users.entry(user).or_insert(U { acts: vec![], dates: vec![], bounds: vec![], resting: None, unreceived: 0, layers: vec![] });
-        u.acts.push(act.to_string());
+        let u = users.entry(user).or_insert(U { uses: vec![], dates: vec![], bounds: vec![], resting: None, unreceived: 0, layers: vec![] });
+        u.uses.push(used.to_string());
         if let Some(l) = ss(b, "layer") {
             u.layers.push(l.to_string());
         }
@@ -180,7 +180,7 @@ pub fn use_shown(place: &Value, blocks: &[Value], keepers: Option<&Value>) -> Va
                 .collect();
             json!({
                 "user": name,
-                "acts": sorted_set(u.acts.iter()),
+                "uses": sorted_set(u.uses.iter()),
                 "count": dates.len(),
                 "unreceived": u.unreceived,
                 "first": dates.first(),
@@ -190,10 +190,10 @@ pub fn use_shown(place: &Value, blocks: &[Value], keepers: Option<&Value>) -> Va
                 "resting": u.resting,
                 "overlaps": with,
                 "layers": sorted_set(u.layers.iter()),
-                // the overlap lists both uses and says whether they are the same act, deciding nothing (things.md, Uses of a place)
-                "overlap_acts": with.iter().map(|o| {
-                    let same = users[*o].acts.iter().any(|a| u.acts.contains(a));
-                    json!({ "with": o, "act": if same { "same" } else { "different" } })
+                // the overlap lists both uses and says whether they are the same use, deciding nothing (things.md, Uses of a place)
+                "overlap_uses": with.iter().map(|o| {
+                    let same = users[*o].uses.iter().any(|a| u.uses.contains(a));
+                    json!({ "with": o, "use": if same { "same" } else { "different" } })
                 }).collect::<Vec<_>>(),
                 "leave": leave_of(name, target, &index),
             })
@@ -222,7 +222,7 @@ pub fn use_shown(place: &Value, blocks: &[Value], keepers: Option<&Value>) -> Va
         }
     }
     disputes.sort_by(|a, b| crate::js::cmp16(a["defeats"].as_str().unwrap_or(""), b["defeats"].as_str().unwrap_or("")).then_with(|| crate::js::cmp16(a["of"].as_str().unwrap_or(""), b["of"].as_str().unwrap_or(""))));
-    json!({ "clock": if ks.is_some() { "keepers" } else { "author" }, "users": out, "disputes": disputes })
+    json!({ "clock": if ks.is_some() { "clocks" } else { "author" }, "users": out, "disputes": disputes })
 }
 
 /// A use by leave (things.md, Uses of a place): the owner's `grant` of kind `leave`, `refs.to` the user, `refs.subject` the place, signed by

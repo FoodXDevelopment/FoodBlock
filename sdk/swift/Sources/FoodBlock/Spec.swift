@@ -7,9 +7,11 @@ public enum FoodBlock {
     static let both = try! Door.spec()
     /// spec/protocol.json, as data.
     public static let spec = both["protocol"] as! JSON
+    /// spec/conventions.json, as data: a node's conventions and the lists of readings and tools; no word reads it.
+    public static let conventions = both["conventions"] as! JSON
 
-    /// The rules a block is written under: protocol.json `version`.
-    public static let version = spec["version"] as! String
+    /// The rules a block is written under: the core's version.
+    public static let version = try! Door.version()
     /// The seven types, in protocol.json's order.
     public static let types: [String] = try! Door.types()
     public static let verbs = spec["verbs"] as! [String]
@@ -18,14 +20,14 @@ public enum FoodBlock {
     /// The suites this build knows (core.md, Suites): std, p256, sm.
     public static let suites: [String] = ((spec["suites"] as! JSON).filter { ($0.value as? JSON)?["hash"] != nil }.map { $0.key }).sorted()
     public static let fields: [String: [String]] = Dictionary(uniqueKeysWithValues: types.map { ($0, ((try? Door.baseFields($0)) as? [String]) ?? []) })
-    /// protocol.json `peers`: the sizes of peer (micro, edge, node).
-    public static let peers = spec["peers"] as! JSON
+    /// conventions.json `peers`: the sizes of peer (micro, edge, node).
+    public static let peers = conventions["peers"] as! JSON
     /// protocol.json `refusals.codes`: the groups of codes, in order.
     public static let refusalCodes: [String: [String]] = Dictionary(uniqueKeysWithValues: ((spec["refusals"] as! JSON)["codes"] as! JSON).keys.map {
         ($0, (try! Door.specList("refusals.codes." + $0)) as! [String])
     })
-    /// The key names of one message in protocol.json `messages` (pull, push, refusal, ...).
-    public static func message(_ name: String) -> [String] { (spec["messages"] as! JSON)[name] as! [String] }
+    /// The key names of one message in conventions.json `messages` (pull, push, refusal, ...).
+    public static func message(_ name: String) -> [String] { (conventions["messages"] as! JSON)[name] as! [String] }
     /// Whether a value is a string matching one of protocol.json's grammars (hash, sign_key, time, duration, ...).
     public static func test(_ name: String, _ value: Any?) throws -> Bool { try Door.grammar(name, value) }
 }

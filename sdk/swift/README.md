@@ -51,14 +51,13 @@ A signed pull or push carries exactly one of `counter` or `challenge` and no tim
 | `generateKeypair`, `keypairFromSeed`, `sign`, `verify`, `signMessage`, `verifyMessage`, `suiteOfKey` | Signing by suite (std Ed25519, p256, sm). A key names its `suite`; `sign` signs |
 | `generateEncryptionKeypair`, `encryptionKeyOf`, `seal`, `open` | Envelopes by suite (std: X25519, HKDF-SHA256, AES-256-GCM). `seal` encrypts |
 | `newSalt`, `saltedHash`, `commit`, `findsSelf`, `revealFor` | The commitment: audiences, personal fields, ballots |
-| `compose`, `write`, `check`, `valid`, `strictText`, `receiptCode`, `amount`, `money`, `terms` | Writing. `write` is compose, check, sign, chain; it throws `.refused` with every reason |
+| `compose`, `write`, `writeRefusals`, `valid`, `read`, `binds`, `strictText`, `shortCode`, `amount` (money is `amount("4.20", "GBP")`), `terms` | Writing. `write` is compose, refuse-or-sign, chain; it throws `.refused` with every reason |
 | `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy` | The wire |
-| `Legacy.convert`, `oldHash` | The one-time converter for pre-1.6 data (not part of the protocol) |
 | `nextLink`, `checkChain`, `causalOrder`, `sees` | Chains and causal order |
-| `Identity.genesis`, `keyGrant`, `keyTimeline`, `keysOf`, `signedByAuthor`, `identityState`, `counts`, `nextLinkFor`, `recoveryKeyHash`, `forked`, `forkPairs`, `recoveryReach` | Who someone is |
-| `Grant.scopeWithin`, `scopeReading`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `operatorsOf`, `scopeRefusals`, `whyNotLiveUndo`, `actName` | Authority |
-| `Fold.promiseStage`, `promiseView`, `consent`, `due`, `circleState`, `mayActAs`, `speaksFor`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `successorView`, `circleKey`, `countedIn` | The folds |
-| `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.isStranger`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `earnestShapeOk`, `earnestPaid`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
+| `Identity.genesis`, `keyGrant`, `confirm`, `keyTimeline`, `liveKeys`, `signedByAuthor`, `stands`, `identityState`, `counts`, `nextLinkFor`, `chainsOf`, `keyHash`, `forked`, `forkPairs` | Who someone is |
+| `Grant.scopeWithin`, `scopeReading`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `scopeRefusals`, `whyNotLiveUndo`, `keepsTo`, `meter`, `worstCase`, `lowestOffer`, `fenceReading`, `machineLock` | Authority |
+| `Fold.promiseStage`, `promiseView`, `consent`, `due`, `promiseViews`, `circleState`, `rowHolds`, `waysIn`, `speaksFor`, `backed`, `toComeBack`, `gives`, `readback`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `circleKey`, `countedIn` | The folds |
+| `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.isStranger`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
 
 ```swift
 import FoodBlock

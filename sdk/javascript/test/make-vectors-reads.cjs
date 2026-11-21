@@ -74,7 +74,7 @@ const stranger = (name, receiver, sender, held, expect, block) =>
   // consent follows the principal: an agent acting under a grant is named by whom its block speaks for
   const s = story(), pat = s.person('rdpat'), ag = s.person('rdag', { kind: 'agent' }), rex = s.person('rdrex'), mia = s.person('rdmia')
   const eggs = s.say(pat, 'thing', { kind: 'eggs' })
-  const grant = s.say(pat, 'grant', { kind: 'errands', scope: { acts: ['promise'], parties: [rex.id], each: M(5000), until: LATER } }, { to: ag.id })
+  const grant = s.say(pat, 'grant', { kind: 'errands', scope: { types: ['promise'], parties: [rex.id], each: M(5000), until: LATER } }, { to: ag.id })
   const post = s.say(ag, 'promise', { terms: { price: M(300), expires: DAY } }, { from: pat.id, to: rex.id, what: eggs.hash, under: grant.hash })
   const note = s.say(ag, 'observe', { kind: 'note', text: 'hello' }, { to: rex.id, under: grant.hash })
   const mia2 = s.say(ag, 'promise', { terms: { price: M(300), expires: DAY } }, { from: pat.id, to: mia.id, what: eggs.hash, under: grant.hash })
@@ -160,14 +160,14 @@ const speaks = (name, block, held, expect) => door(name, 'speaks_for', [block, h
 {
   // under a grant: the grantor if the grant is live, made for the author and covers the act; else the author
   const s = story(), pat = s.person('rdpat2'), ag = s.person('rdag2', { kind: 'agent' }), vic = s.person('rdvic')
-  const grant = s.say(pat, 'grant', { kind: 'errands', scope: { acts: ['observe.note'], until: BEFORE } }, { to: ag.id })
+  const grant = s.say(pat, 'grant', { kind: 'errands', scope: { types: ['observe.note'], until: BEFORE } }, { to: ag.id })
   const note = (text, extra = {}, opts) => s.say(ag, 'observe', { kind: 'note', text, ...extra }, { under: grant.hash }, opts)
   speaks('reads: speaks_for: a block under a live grant made for its author, the act named in the scope: it speaks for the grantor', note('covered'), s.held, pat.id)
   speaks('reads: speaks_for: a block under the grant whose act the scope does not name speaks for its author alone', s.say(ag, 'observe', { kind: 'sighting', text: 'not named' }, { under: grant.hash }), s.held, ag.id)
   speaks('reads: speaks_for: a block dated at or after the grant\'s until acts under no grant: it speaks for its author (the act\'s own date tests until)', note('too late', {}, { time: AFTER }), s.held, ag.id)
-  const open = s.say(pat, 'grant', { kind: 'errands', scope: { acts: ['observe.note'] } })
+  const open = s.say(pat, 'grant', { kind: 'errands', scope: { types: ['observe.note'] } })
   speaks('reads: speaks_for: under an open grant (no refs.to) any author\'s block speaks for the grantor', s.say(vic, 'observe', { kind: 'note', text: 'for the open grant' }, { under: open.hash }), s.held, pat.id)
-  const wrong = s.say(pat, 'grant', { kind: 'errands', scope: { acts: ['observe.note'] } }, { to: vic.id })
+  const wrong = s.say(pat, 'grant', { kind: 'errands', scope: { types: ['observe.note'] } }, { to: vic.id })
   speaks('reads: speaks_for: a grant made for someone else is not one this author acts under: it speaks for its author', s.say(ag, 'observe', { kind: 'note', text: 'not mine' }, { under: wrong.hash }), s.held, ag.id)
   // a stop ends the grant for the blocks that see it, and no other
   const pre = note('before the stop')
@@ -178,7 +178,7 @@ const speaks = (name, block, held, expect) => door(name, 'speaks_for', [block, h
   speaks('reads: speaks_for: and the earlier block, read again with the stop held, still speaks for the grantor', pre, s.held, pat.id)
 
   // the quote-request exception: a promise with no status under a live grant made for its author speaks for its principal, though the act is not covered
-  const quotes = s.say(pat, 'grant', { kind: 'errands', scope: { acts: ['observe.note'] } }, { to: ag.id })
+  const quotes = s.say(pat, 'grant', { kind: 'errands', scope: { types: ['observe.note'] } }, { to: ag.id })
   const eggs = s.say(vic, 'thing', { kind: 'eggs' })
   const ask = s.say(ag, 'promise', { terms: { expires: DAY } }, { from: vic.id, to: pat.id, what: eggs.hash, under: quotes.hash })
   speaks('reads: speaks_for: a promise with no status under a live grant made for its author, act not covered, speaks for its principal (a quote request: it binds no one)', ask, s.held, pat.id)
@@ -192,8 +192,8 @@ const speaks = (name, block, held, expect) => door(name, 'speaks_for', [block, h
   const circle = s.say(fay, 'actor', { kind: 'circle', removal: { needed: 1 }, name: 'Shop', roles: [{ name: 'admin', powers: ['sign', 'admit', 'remove'] }, { name: 'speak', powers: [] }] })
   const inv = s.say(fay, 'grant', { kind: 'member', roles: ['speak'] }, { subject: circle.hash, as: circle.hash, to: nell.id })
   s.say(nell, 'grant', { kind: 'member', status: 'accepted' }, { answers: inv.hash, subject: circle.hash, after: [inv.hash] })
-  const byFay = s.say(fay, 'grant', { kind: 'errands', scope: { acts: ['observe.note'] } }, { to: ag.id, as: circle.hash })
-  const byNell = s.say(nell, 'grant', { kind: 'errands', scope: { acts: ['observe.note'] } }, { to: ag.id, as: circle.hash })
+  const byFay = s.say(fay, 'grant', { kind: 'errands', scope: { types: ['observe.note'] } }, { to: ag.id, as: circle.hash })
+  const byNell = s.say(nell, 'grant', { kind: 'errands', scope: { types: ['observe.note'] } }, { to: ag.id, as: circle.hash })
   speaks('reads: speaks_for: under a grant the circle gave by a holder of sign, it speaks for the circle', s.say(ag, 'observe', { kind: 'note', text: 'for the shop' }, { under: byFay.hash }), s.held, circle.hash)
   speaks('reads: speaks_for: under a grant signed as the circle by a member without sign (no_role: not live), it speaks for its author', s.say(ag, 'observe', { kind: 'note', text: 'not for the shop' }, { under: byNell.hash }), s.held, ag.id)
 }
@@ -205,21 +205,21 @@ const speaks = (name, block, held, expect) => door(name, 'speaks_for', [block, h
 }
 
 // ---- 3. scope_reading: every default of authority.md, and what cannot be read ----
-const read = (over = {}) => ({ acts: [], parties: [], limit: null, each: null, every: null, until: null, notice: null, sealed: false, condition: null, junk: [], ...over })
+const read = (over = {}) => ({ types: [], parties: [], limit: null, each: null, every: null, until: null, notice: null, sealed: false, condition: null, junk: [], ...over })
 const scoped = (name, scope, expect) => door(name, 'scope_reading', [scope], { expect, exact: true })
 {
   const id1 = 'a1'.repeat(32), id2 = 'b2'.repeat(32), commitment = 'c3'.repeat(32), issuer = 'd4'.repeat(32)
   scoped('reads: scope_reading: no scope reads as an empty scope: no act, no one, no money, no end, no notice, no condition', null, read())
   door('reads: scope_reading: called with no argument at all, the same', 'scope_reading', [], { expect: read(), exact: true })
   scoped('reads: scope_reading: a scope that states nothing fills nothing in', {}, read())
-  scoped('reads: scope_reading: acts and parties are the lists as signed, in their order', { acts: ['promise', 'transfer.gift', 'observe.note'], parties: [id2, id1] }, read({ acts: ['promise', 'transfer.gift', 'observe.note'], parties: [id2, id1] }))
-  scoped('reads: scope_reading: a name that is no act is kept as signed (it covers nothing, and is never checked)', { acts: ['promise.purchase', 'dance'] }, read({ acts: ['promise.purchase', 'dance'] }))
-  scoped('reads: scope_reading: a limit with every P1M is the visible fence and its period', { acts: ['promise'], limit: M(5000), every: 'P1M' }, read({ acts: ['promise'], limit: M(5000), every: 'P1M' }))
+  scoped('reads: scope_reading: types and parties are the lists as signed, in their order', { types: ['promise', 'transfer.gift', 'observe.note'], parties: [id2, id1] }, read({ types: ['promise', 'transfer.gift', 'observe.note'], parties: [id2, id1] }))
+  scoped('reads: scope_reading: a name that is no act is kept as signed (it covers nothing, and is never checked)', { types: ['promise.purchase', 'dance'] }, read({ types: ['promise.purchase', 'dance'] }))
+  scoped('reads: scope_reading: a limit with every P1M is the visible fence and its period', { types: ['promise'], limit: M(5000), every: 'P1M' }, read({ types: ['promise'], limit: M(5000), every: 'P1M' }))
   scoped('reads: scope_reading: a cap on each act alone (an amount) reads as each, with no limit', { each: fb.amount('5', 'kg') }, read({ each: fb.amount('5', 'kg') }))
   scoped('reads: scope_reading: a limit and a cap on each act together', { limit: M(5000), each: M(900), every: 'P7D' }, read({ limit: M(5000), each: M(900), every: 'P7D' }))
   scoped('reads: scope_reading: a limit in an issuer\'s own unit is money too', { limit: { minor: 10, currency: { issuer, unit: 'LETS', decimals: 2 } } }, read({ limit: { minor: 10, currency: { issuer, unit: 'LETS', decimals: 2 } } }))
   scoped('reads: scope_reading: a limit of zero is a limit (nothing moves), not a missing one', { limit: M(0) }, read({ limit: M(0) }))
-  scoped('reads: scope_reading: a sealed limit shows no amount: sealed, and limit and each stay null', { acts: ['promise'], limit_commitment: commitment, every: 'P1M' }, read({ acts: ['promise'], sealed: true, every: 'P1M' }))
+  scoped('reads: scope_reading: a sealed limit shows no amount: sealed, and limit and each stay null', { types: ['promise'], limit_commitment: commitment, every: 'P1M' }, read({ types: ['promise'], sealed: true, every: 'P1M' }))
   scoped('reads: scope_reading: until and notice are read when they are a time and a duration; every alone is read too', { until: LATER, notice: 'PT48H' }, read({ until: LATER, notice: 'PT48H' }))
   scoped('reads: scope_reading: every with no limit is read as signed', { every: 'P1W' }, read({ every: 'P1W' }))
   const condition = { settled: id1, nested: [1, { b: 'x' }], none: null }
@@ -228,7 +228,7 @@ const scoped = (name, scope, expect) => door(name, 'scope_reading', [scope], { e
   scoped('reads: scope_reading: a condition that is null is null, and no junk', { condition: null }, read())
 
   // junk: present and not readable. The field reads as null or [] beside it, and the name is listed
-  scoped('reads: scope_reading: an until that is no time ("tomorrow") is junk, and reads as no end only beside the junk that says so', { acts: ['promise'], until: 'tomorrow' }, read({ acts: ['promise'], junk: ['until'] }))
+  scoped('reads: scope_reading: an until that is no time ("tomorrow") is junk, and reads as no end only beside the junk that says so', { types: ['promise'], until: 'tomorrow' }, read({ types: ['promise'], junk: ['until'] }))
   scoped('reads: scope_reading: an until in the right shape that is no real instant (30 February) is junk', { until: '2027-02-30T00:00:00.000Z' }, read({ junk: ['until'] }))
   scoped('reads: scope_reading: an until that is null is junk, not a missing one', { until: null }, read({ junk: ['until'] }))
   scoped('reads: scope_reading: a negative limit is junk', { limit: { minor: -5, currency: 'GBP' } }, read({ junk: ['limit'] }))
@@ -237,15 +237,15 @@ const scoped = (name, scope, expect) => door(name, 'scope_reading', [scope], { e
   scoped('reads: scope_reading: an amount whose value is no decimal is junk', { limit: { value: '1,5', unit: 'kg' } }, read({ junk: ['limit'] }))
   scoped('reads: scope_reading: an every that is no duration ("monthly") is junk', { limit: M(5000), every: 'monthly' }, read({ limit: M(5000), junk: ['every'] }))
   scoped('reads: scope_reading: a notice that is no duration (PT has no unit) is junk', { notice: 'PT' }, read({ junk: ['notice'] }))
-  scoped('reads: scope_reading: acts that is not a list is junk', { acts: 'promise' }, read({ junk: ['acts'] }))
-  scoped('reads: scope_reading: acts that holds anything but text is junk, whole', { acts: ['promise', 7] }, read({ junk: ['acts'] }))
-  scoped('reads: scope_reading: parties that names something that is no id is junk, whole', { acts: ['promise'], parties: [id1, 'the bakery'] }, read({ acts: ['promise'], junk: ['parties'] }))
+  scoped('reads: scope_reading: types that is not a list is junk', { types: 'promise' }, read({ junk: ['types'] }))
+  scoped('reads: scope_reading: types that holds anything but text is junk, whole', { types: ['promise', 7] }, read({ junk: ['types'] }))
+  scoped('reads: scope_reading: parties that names something that is no id is junk, whole', { types: ['promise'], parties: [id1, 'the bakery'] }, read({ types: ['promise'], junk: ['parties'] }))
   scoped('reads: scope_reading: a party in a hash this reader does not know is junk', { parties: ['zz9:' + id1] }, read({ junk: ['parties'] }))
   scoped('reads: scope_reading: a visible limit beside a commitment is junk (a scope says it has a limit one way, never both)', { limit: M(5000), limit_commitment: commitment }, read({ sealed: true, junk: ['limit'] }))
   scoped('reads: scope_reading: a cap on each act beside a commitment is junk (a sealed scope keeps each inside it)', { each: M(900), limit_commitment: commitment }, read({ sealed: true, junk: ['each'] }))
   scoped('reads: scope_reading: a commitment that is no hash is junk, and the scope is still sealed', { limit_commitment: 'not a hash' }, read({ sealed: true, junk: ['limit_commitment'] }))
-  scoped('reads: scope_reading: a name that is no scope field is junk', { acts: ['promise'], colour: 'red' }, read({ acts: ['promise'], junk: ['colour'] }))
-  scoped('reads: scope_reading: several junk fields are listed sorted, and what reads well beside them is kept', { until: 'soon', limit: -1, parties: [id1], acts: ['promise'], zebra: 1 }, read({ acts: ['promise'], parties: [id1], junk: ['limit', 'until', 'zebra'] }))
+  scoped('reads: scope_reading: a name that is no scope field is junk', { types: ['promise'], colour: 'red' }, read({ types: ['promise'], junk: ['colour'] }))
+  scoped('reads: scope_reading: several junk fields are listed sorted, and what reads well beside them is kept', { until: 'soon', limit: -1, parties: [id1], types: ['promise'], zebra: 1 }, read({ types: ['promise'], parties: [id1], junk: ['limit', 'until', 'zebra'] }))
   scoped('reads: scope_reading: a scope that is a text is no scope', 'oops', read({ junk: ['scope'] }))
   scoped('reads: scope_reading: a scope that is a list is no scope', ['promise'], read({ junk: ['scope'] }))
 }

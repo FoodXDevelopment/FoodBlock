@@ -135,7 +135,7 @@ jobs:
       - run: swift test
 
   node:
-    name: Node (server)
+    name: Node (host, Postgres store)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -157,13 +157,13 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-        working-directory: server
+        working-directory: host
       - name: Against in-memory Postgres
-        run: npm test
-        working-directory: server
+        run: npm run test:postgres
+        working-directory: host
       - name: Against real Postgres
-        run: npm test
-        working-directory: server
+        run: npm run test:postgres
+        working-directory: host
         env:
           TEST_DATABASE_URL: postgresql://foodblock:test@localhost:5432/foodblock_test
 

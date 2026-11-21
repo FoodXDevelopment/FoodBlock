@@ -1,6 +1,6 @@
 package foodblock
 
-// FoodBlock 1.7 (spec/core.md), as thin calls into the Rust core: signing, the write check, chains, commitments,
+// FoodBlock 1.9 (spec/core.md), as thin calls into the Rust core: signing, the write check, chains, commitments,
 // envelopes and the wire. No rule lives here.
 
 // Finding is one finding of a check: a code from protocol.json (refusals.codes) and free text for people.
@@ -9,51 +9,32 @@ type Finding struct {
 	Detail string `json:"detail"`
 }
 
-// CheckOptions: Schemas (a schema block named by a block's schema ref counts its fields and roles as declared) and
-// Held (hash -> block, so `at` is checked against what refs.after names and a child grant against its parent).
-type CheckOptions struct {
-	Schemas map[string]Block
-	Held    map[string]Block
+// Valid is who said these bytes: the codes of checks 1 to 6 of a block or a held header (empty when valid).
+func Valid(b Block, held []Block) []Finding {
+	return doorValid(b, plural(held))
 }
 
-// heldAndSchemas are the blocks held and the schemas a check reads (nil schemas: none given).
-func heldAndSchemas(options []CheckOptions) (held, schemas []Block) {
-	var o CheckOptions
-	if len(options) > 0 {
-		o = options[0]
-	}
-	return blockList(o.Held), blockList(o.Schemas)
+// Read is whether this reader can read a valid block: every code found (empty when read). Schemas are schema blocks (SchemasFrom);
+// runs are the ids of the rule sets this reader runs (nil: the one it is built from; core.md, section 11).
+func Read(b Block, held []Block, schemas []Block, runs ...string) []Finding {
+	return doorRead(b, plural(held), schemas, runs)
 }
 
-// Refusals is what is wrong with a block: one entry per rule found, in the order of protocol.json refusals.codes.block.
-func Refusals(typ string, state, refs map[string]any, options ...CheckOptions) []Finding {
-	held, schemas := heldAndSchemas(options)
-	return doorRefusals(typ, orEmpty(state), orEmpty(refs), held, schemas)
-}
-
-// Valid is every refusal of a signed block against the blocks held (empty when valid). ArrivedAt is the reader's
-// arrival log, when it keeps one (validity reads none: the core takes no arrivals here); Schemas are schema blocks, by hash.
-func Valid(b Block, held []Block, schemas map[string]Block, arrivedAt ArrivedAt) []Finding {
-	return doorValid(b, held, blockList(schemas))
-}
+// SchemasFrom is the schema store of the blocks held: every thing of kind schema among them, ids ascending.
+func SchemasFrom(held []Block) []Block { return plural(doorSchemasFrom(held)) }
 
 // StrictText is strict writing from JSON text: a repeated key, then every refusal of the block it holds.
 func StrictText(text string) []Finding {
 	return doorStrictText(text)
 }
 
-// Check is what is wrong with a block, in plain words (each finding's detail); empty when it passes.
-func Check(typ string, state, refs map[string]any, options ...CheckOptions) []string {
-	held, schemas := heldAndSchemas(options)
-	return doorCheck(typ, orEmpty(state), orEmpty(refs), held, schemas)
-}
-
-// Amount is an amount: Amount("2.5", "kg"). The value is a decimal string.
-func Amount(value, unit string) map[string]any { return doorAmount[map[string]any](value, unit) }
-
-// Money is an amount of money in minor units: Money(450, "GBP").
-func Money(minor int64, currency string) map[string]any {
-	return doorMoney[map[string]any](minor, currency)
+// Amount is an amount: Amount("2.5", "kg"), or with a kind (its `of`). The value is a decimal string. Money is an amount: Amount("4.50", "GBP").
+func Amount(value, unit string, of ...string) map[string]any {
+	k := ""
+	if len(of) > 0 {
+		k = of[0]
+	}
+	return doorAmount[map[string]any](value, unit, k)
 }
 
 // Terms keeps only the terms protocol.json names.
@@ -151,7 +132,7 @@ type Fixed struct {
 
 // Seal encrypts a value (JSON) to recipients' encryption keys in a suite ("" is std).
 func Seal(value any, recipientKeys []string, suite string, fixed *Fixed) (map[string]any, error) {
-	return doorSeal[map[string]any](value, recipientKeys, suite, fixed)
+	return doorSeal[map[string]any](value, recipientKeys, suite, fixed, false)
 }
 
 // Open opens an envelope with a recipient's X25519 private key: the value inside.
@@ -334,18 +315,18 @@ func Unwrap(message any, held ...Block) (Block, error) {
 // Header is a block's public header: { author, seq, prev, hash }.
 func Header(b Block) map[string]any { return doorHeader[map[string]any](b) }
 
-// SealOptions: the recipients' encryption Keys, the Reveals this copy carries, and the PrivateKey that signed the block.
+// SealOptions: the recipients' encryption Keys, the Reveals this copy carries, and the envelope's Suite.
 type SealOptions struct {
-	Keys       []string
-	Reveals    []any
-	PrivateKey string
-	Suite      string
-	Fixed      *Fixed
+	Keys    []string
+	Reveals []any
+	Suite   string
+	Fixed   *Fixed
 }
 
-// SealCopy is a sealed copy: { header, header_signature, envelope }.
+// SealCopy is a sealed copy: { header, header_signature, envelope }. A private block is signed once, over its header, so its
+// own signature is the header's and no key is needed.
 func SealCopy(signed Block, o SealOptions) (map[string]any, error) {
-	return doorSealCopy[map[string]any](signed, o.Keys, plural(o.Reveals), o.PrivateKey, o.Fixed, o.Suite, "")
+	return doorSealCopy[map[string]any](signed, o.Keys, plural(o.Reveals), o.Fixed, o.Suite)
 }
 
 // HeaderSignedBy is whether a sealed copy's header is signed by this key (the key that signed the block).

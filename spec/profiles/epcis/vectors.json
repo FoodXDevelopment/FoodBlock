@@ -1,5 +1,5 @@
 {
- "$comment": "FoodBlock profile vectors for EPCIS 2.0 and FSMA 204 (spec/profiles/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event's own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event's block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator's grant and the pulls it allows. Test keys: never use them for anything real.",
+ "$comment": "FoodBlock profile vectors for EPCIS 2.0 and FSMA 204 (spec/patterns/foodblock-profile-epcis.md, section 9). Made by make-vectors.cjs from fixed seeds. `blocks` is every signed block in the order it was written, each valid against those before it. `events` are EPCIS 2.0 events: `blocks` names the ones the adapter makes from it (the first is the event's own), `before` is how many blocks existed when it was captured. Both ways must hold: the event makes those blocks (state and refs, apart from the chain fields), and the event's block makes the event again unless `roundtrip` is false. `folds` are door ops on the whole world; `traces` the 24-hour traceback (profile section 7); `recall` the regulator's grant and the pulls it allows. Test keys: never use them for anything real.",
  "context": "https://ref.gs1.org/standards/epcis/2.0.0/epcis-context.jsonld",
  "keys": {
   "fieldhouse": {
@@ -2066,13 +2066,13 @@
   {
    "name": "recall grant: Metro Fresh to the regulator",
    "signer": "metrofresh",
-   "hash": "67482d8070ac767c29f98f18392abf2122ff2770978876d78355a71aa6e1d15e",
+   "hash": "a89712769fd5844d2b22917ba206176f889c13c92b283a90c5db21679018a5a1",
    "block": {
     "type": "grant",
     "state": {
      "kind": "recall",
      "scope": {
-      "acts": [
+      "types": [
        "pull"
       ],
       "until": "2027-10-14T00:00:00.000Z"
@@ -2099,7 +2099,7 @@
      "prev": "e1f336e82086a361ca86b9ea8e3892253a8faa9fb6221abf4efb097460f0fb80"
     }
    },
-   "signature": "d8b450b8ea32507c6912f9217018bab55dc09d42fc4022aca8f98826096ef67b8ba8228e81f85f01cc10947e81b1723abf302e9810d8c09861449c58f7ae3802"
+   "signature": "f56cbf81c60b23db217bfefcf6dbd8e2d800f9eba0f8b8c84bb20922b872d2f889da10eaeca405c0d8c84520e16ddd25bc960d7f0feec65eb49404f8791aa80c"
   }
  ],
  "events": [
@@ -3839,7 +3839,7 @@
   }
  ],
  "recall": {
-  "grant": "67482d8070ac767c29f98f18392abf2122ff2770978876d78355a71aa6e1d15e",
+  "grant": "a89712769fd5844d2b22917ba206176f889c13c92b283a90c5db21679018a5a1",
   "filter": {
    "marks": {
     "scheme": "tlc",

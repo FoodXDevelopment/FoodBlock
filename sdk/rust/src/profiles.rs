@@ -22,31 +22,3 @@ pub fn residency_refusals(block: &Value, holds_in: &[String]) -> Vec<Refusal> {
     }
 }
 
-/// Earnest (profiles/earnest.md): the admission field `earnest`, `{ money, holder }`. The shape only: money and the
-/// holder's id.
-#[cfg(feature = "earnest")]
-pub fn earnest_shape_ok(earnest: &Value) -> bool {
-    let spec = crate::spec();
-    earnest.as_object().is_some_and(|m| {
-        m.keys().all(|k| spec.list("optional_profiles.earnest.shapes.earnest").contains(k))
-            && m.get("money").is_some_and(|x| x.get("minor").is_some() && x.get("currency").is_some())
-            && m.get("holder").and_then(Value::as_str).is_some_and(|h| spec.is("id", h))
-    })
-}
-
-/// Whether an ask's earnest is paid: a transfer `for` the ask, of money to the holder, at least the earnest's `minor` in
-/// the earnest's currency.
-#[cfg(feature = "earnest")]
-pub fn earnest_paid(ask: &Value, earnest: &Value, blocks: &[Value]) -> bool {
-    let (Some(want), Some(holder)) = (get(earnest, "money.minor").and_then(Value::as_i64), earnest.get("holder").and_then(Value::as_str)) else {
-        return false;
-    };
-    let currency = get(earnest, "money.currency");
-    blocks.iter().any(|b| {
-        type_of(b) == "transfer"
-            && list(rf(b, "for")).contains(&hash_of(ask))
-            && list(rf(b, "to_owner")).contains(&holder)
-            && get(b, "state.money.currency") == currency
-            && get(b, "state.money.minor").and_then(Value::as_i64).is_some_and(|m| m >= want)
-    })
-}

@@ -16,9 +16,8 @@ import kotlin.test.assertTrue
 /** The API an Android app or device uses, end to end: an identity, signed readings in one chain, a refusal, a seal. */
 class ApiTest {
     private val keys = FoodBlock.keypairFromSeed("1".repeat(64))
-    private val recovery = FoodBlock.keypairFromSeed("2".repeat(64))
     private val me = Identity.genesis(
-        keys, kind = "sensor", recoveryKey = recovery.publicKeySign, reach = "P30D",
+        keys, kind = "sensor",
         encryptionKey = "0f101bc98e786e795207789cf2e203f0cad2c7cc97a96fb7c3a9b458e8fe4729",
         at = "2026-10-15T09:00:00.000Z", audience = listOf(PUBLIC),
     )
@@ -33,7 +32,8 @@ class ApiTest {
     private fun JsonObject.at(part: String, key: String) = this[part]!!.jsonObject[key]!!.jsonPrimitive.content
 
     @Test fun aSensorSignsItsReadingsInOneChain() {
-        assertTrue(FoodBlock.check(me).isEmpty(), "the genesis passes the write check")
+        assertTrue(FoodBlock.valid(me).isEmpty(), "the genesis is valid")
+        assertEquals(listOf(keys.publicKeySign), Identity.liveKeys(id, listOf(me)), "its key speaks for it")
         val first = reading(listOf(me), "2026-10-15T09:01:00.000Z", "3.9")
         assertEquals("1", first.at("state", "seq"))
         assertEquals(id, first.at("refs", "prev"))
@@ -57,6 +57,15 @@ class ApiTest {
         assertFailsWith<FoodBlockException> { FoodBlock.passkeySignature("zz", "00", "00") }
     }
 
+    @Test fun aDraftIsAskedBeforeItIsSigned() {
+        val ok = FoodBlock.writeRefusals("observe", buildJsonObject { put("kind", "note"); put("text", "hi") }, buildJsonObject {}, listOf(me))
+        println("draft refusals: $ok")
+        val money = FoodBlock.amount("4.20", "GBP")
+        assertEquals("4.20", money["value"]!!.jsonPrimitive.content)
+        assertEquals("GBP", money["unit"]!!.jsonPrimitive.content)
+        assertEquals(listOf(), Fold.toComeBack(id, listOf(me)).let { it["to_come"] as? JsonArray ?: JsonArray(emptyList()) })
+    }
+
     @Test fun aBrokenBlockIsRefusedWithEveryReason() {
         val e = assertFailsWith<RefusedException> {
             FoodBlock.write("observe", buildJsonObject { put("amount", 3.9) }, buildJsonObject {},
@@ -76,9 +85,9 @@ class ApiTest {
         // the node's own pair choice is stated; none is an argument error
         assertFailsWith<FoodBlockException> { FoodBlock.call("accept", JsonArray(emptyList()), JsonArray(emptyList()), JsonNull) }
         assertFailsWith<FoodBlockException> { FoodBlock.call("admission_refusals", me, JsonPrimitive("x"), JsonArray(emptyList())) }
-        // arrivals without unknown_arrival are refused
-        assertFailsWith<FoodBlockException> { Identity.keysOf(id, listOf(me), mapOf(me["hash"]!!.jsonPrimitive.content to at)) }
-        Identity.keysOf(id, listOf(me), mapOf(me["hash"]!!.jsonPrimitive.content to at), "inside")
+        // a discovery document states its admission: a rule's hash, or an explicit null
+        val doc = Sync.wellKnown(id, emptyList(), null, buildJsonObject {})
+        assertEquals(JsonNull, doc["admission"])
     }
 
     @Test fun aSealedValueOpensOnlyForItsRecipient() {
@@ -108,9 +117,10 @@ class ApiTest {
     }
 
     @Test fun thereIsNoOlderShape() {
-        assertFailsWith<FoodBlockException> { FoodBlock.call("read_as", buildJsonObject {}) }
-        assertEquals(9, FoodBlock.receiptCode("0".repeat(64)).length)
-        assertEquals(11, FoodBlock.receiptCodeLong("0".repeat(64)).length)
+        // the 1.7 and 1.8 ops are gone from the door: each is an error, never a quiet answer
+        for (op in listOf("read_as", "check", "refusals", "money", "receipt_code", "owed_back", "operators_of", "may_act_as", "with_in_limit", "successor_view", "accept_sealed", "keys_of"))
+            assertFailsWith<FoodBlockException>(op) { FoodBlock.call(op, buildJsonObject {}) }
+        assertEquals(9, FoodBlock.shortCode("0".repeat(64)).length)
         assertEquals(true, FoodBlock.codeMatches("oooo oooo", "0".repeat(64)))
         assertEquals(false, FoodBlock.codeMatches("0000-000", "0".repeat(64)))
     }
@@ -118,7 +128,7 @@ class ApiTest {
     @Test fun badInputIsAnErrorNotACrash() {
         val e = assertFailsWith<FoodBlockException> { FoodBlock.sign(buildJsonObject { put("type", "thing") }, "not hex") }
         assertTrue(e.kind == "crypto" || e.kind == "argument", e.kind)
-        assertEquals("1.7", FoodBlock.VERSION)
+        assertTrue(FoodBlock.VERSION.startsWith("1."), FoodBlock.VERSION) // protocol.json names no 1.9 yet
         assertEquals(64, FoodBlock.hash("thing", buildJsonObject { put("kind", JsonPrimitive("eggs")) }, buildJsonObject {}).length)
     }
 }

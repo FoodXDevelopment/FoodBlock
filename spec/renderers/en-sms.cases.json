@@ -1,0 +1,4159 @@
+{
+ "about": "renderers/en-sms: each case an answer of readings/readback and the text (node spec/oracle/stage7/export-readback.cjs)",
+ "cases": [
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271",
+     "code": "Z2BH-BTG9",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+       "code": "BD4Z-2K70",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+     "5d3dbb632b339c400b56538b0d6fa0dbbbf198a43e6af1effdb13e5b3aeb4aeb",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 BD4Z-2K70: 10 sacks, Harry's word. L7: kept for you in Harry's hands till you say no. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "aa0c665efc83273b3c12b21cc707722350a48e67071edcb2750a524ea0f71b93",
+     "code": "N866-CQQW",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af",
+       "code": "XT8Y-YDQ1",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "1bcdcbf7df33a4c35cec3f6c798d7a41bcd81aea8d2ffe2522bc161b235f2aaa",
+     "aa0c665efc83273b3c12b21cc707722350a48e67071edcb2750a524ea0f71b93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "ee91ef36e13b96d24da9f6f3bcc89cb388621a977536650d05c51daa3238e6af"
+    ],
+    "lacks": []
+   },
+   "text": "Unnamed id W6NF-25A8: First deal with this seller. L7 XT8Y-YDQ1: 10 sacks, that id's word. L7: kept for you in that id's hands till you say no. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271",
+     "code": "Z2BH-BTG9",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31",
+       "code": "BD4Z-2K70",
+       "name": null
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "not_shown": true,
+       "lacks": [
+        "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31"
+       ]
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "f89715ea092bed01111dff3f18ac3ba9610e7244eaff39d48a4f98070a006271"
+    ],
+    "lacks": [
+     "5b49f14ce024177288d502db2f4841965b615012d5fb6306a2133c01240c0b31"
+    ]
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. BD4Z-2K70: can't tell yet; 1 of Harry's blocks missing. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+     "code": "66XB-YCQF",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+       "code": "VDBS-YKJP",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "pair": [
+       {
+        "draw": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+        "to": {
+         "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+         "code": "5JDV-GWAT",
+         "name": "Leila"
+        },
+        "yes": false
+       },
+       {
+        "draw": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+        "to": {
+         "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+         "code": "WH6T-QA1W",
+         "name": null
+        },
+        "yes": true
+       }
+      ]
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+     "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "f5be33043b0d1ace60f0cc3cc6e48ce5963cc403bad016d84bd1a09c05a84b82",
+     "f6b985df1bb254f5e21a84a1f804334235ef3cfb343f682c6c1d382374b9b01e"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 VDBS-YKJP: 10 sacks, Harry's word. L7: Harry signed it twice. L7: kept for you in Harry's hands till you say no. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "for": {
+     "id": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+     "code": "1J1S-51AG",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+       "code": "VDBS-YKJP",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "draw": {
+       "why": "pair"
+      },
+      "holder": null,
+      "freer": null,
+      "pair": [
+       {
+        "draw": "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+        "to": {
+         "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+         "code": "5JDV-GWAT",
+         "name": null
+        },
+        "yes": false
+       },
+       {
+        "draw": "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+        "to": {
+         "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+         "code": "WH6T-QA1W",
+         "name": "Amara"
+        },
+        "yes": true
+       }
+      ]
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     },
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "0c83928550e3ad5f5b48063618136d2a592a3715cc879cb005148eba3dca3079",
+     "141c4bc8456ea4d21fca26ab10f1f7ec695158d7bd7e322b99e2ba6e6a8c61f5",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "31babf32ef20f2c4f101ce862726c2ce11c534e05cbe0ba5b7ed1722bff77551",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "db579f4e56f6864c658ba621965685011b9131b4defb9fda432a15345f2af005",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "f6b985df1bb254f5e21a84a1f804334235ef3cfb343f682c6c1d382374b9b01e"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 VDBS-YKJP: Harry signed it twice; neither shown as yours. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "a70479a0c5053289a292be3a56bad64e1ab7085e057211ad7b13234f2cb5c350",
+     "code": "MW27-K865",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       },
+       {
+        "block": null,
+        "of": {
+         "id": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+         "code": "XMQC-VYZB",
+         "name": "Wanjiru"
+        }
+       }
+      ],
+      "all": true,
+      "one": false
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "043cc172479f09a64fb7e99a6133206686ce5096391dbbc14a293c7f0c4a3db3",
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "a70479a0c5053289a292be3a56bad64e1ab7085e057211ad7b13234f2cb5c350",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara's AI D12S-6S5W: You pay max 210 GBP. It can give away nothing of yours. FoodX 2ANT-EZC5 and Wanjiru XMQC-VYZB must both hear each deal. Your bank's limit, not this, caps what it moves there."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "24fe3141adc82d7a01c01b192ec93ff4a96b6e6d9846746d74bb3eb4bfce0fdf",
+     "code": "4KZ3-2GDD",
+     "type": "transfer",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "landed"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "24fe3141adc82d7a01c01b192ec93ff4a96b6e6d9846746d74bb3eb4bfce0fdf",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "ac4a6c8151b7aee0156a2235004ccac28613dc998964c25c0beb6afb90930eb2",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: yours."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: 10 sacks, Harry's word. L7: kept for you in Harry's hands till you say no. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara WH6T-QA1W: L7 N6VX-Z97K: kept for Amara in your hands till Amara says no. You may get as little as 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "code": "RM92-SPNN",
+     "type": "transfer",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": {
+       "id": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+       "code": "J3ET-VY5P",
+       "name": "Gita"
+      },
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: 10 sacks, Harry's word. L7: held for you by Gita J3ET-VY5P till you say no."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "code": "RM92-SPNN",
+     "type": "transfer",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": {
+       "id": "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+       "code": "J3ET-VY5P",
+       "name": "Gita"
+      },
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      }
+     }
+    ],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c5122cdab5174fdd08484dbe3b3d8be2f525b588d10c5c444de09240894fb9d4",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara WH6T-QA1W: L7 N6VX-Z97K: held for Amara by Gita J3ET-VY5P till Amara says no."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "code": "A2BB-TFTE",
+     "type": "promise",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": "Amara"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Amara WH6T-QA1W: First deal with this buyer. 300 GBP to you: Amara's word; nothing set aside. You may get as little as 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "code": "A2BB-TFTE",
+     "type": "promise",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "To Harry W6NF-25A8: You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "c24d6496fa90e090de4a955c86349e057f1fac4fd009f75befad793b3466cadf",
+     "code": "R96P-95QT",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "5096bd3f4e639c519017f1b36a50db709109fa11c1599dc781a238b96a9482d9",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c24d6496fa90e090de4a955c86349e057f1fac4fd009f75befad793b3466cadf",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: flour ZDGR-G3Y5 10 sacks: Harry's word; nothing set aside. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "code": "HYYC-101J",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "not_shown": true,
+       "lacks": [
+        "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612"
+       ]
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+     "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "2f08e67981120fa4bdec210edd93c7c438842ea6ad10f745f5d0b09264ce4d00",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "713707a9599136586e71170506442067d8b55650520b3a60395d88c498c1fb05",
+     "812a132a0b285aa60344e270e19e728f833bf4def0e693743f95278dcb2483c5",
+     "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "90ddadf8b6fde9410927ad55b876c5d5135c803f21b034ca7f3efd53fce4ba33",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "e99c35465cb9f7dab448030bc409d502074ecf7792a72f6e09784ca52ddc9e1c",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": [
+     "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612"
+    ]
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: can't tell yet; 1 of Harry's blocks missing. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "code": "HYYC-101J",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "why": "past"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "2a5cdeab383625b30a073b35c48f174ca7eb42fc987675874075b258e036101e",
+     "2f08e67981120fa4bdec210edd93c7c438842ea6ad10f745f5d0b09264ce4d00",
+     "44cfc0578ee377cb815b5a0c43418a005557d112e1321a7d37526749117dfe2a",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "8fbcc08032ab2c1f3e118fb03c8f8039470988975561ddf6450fd903dbc78aa2",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "d65c2104c2f24b7e501ebe72ff16c487f8e4052f24b509e95026dbe74f55d612",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: not Harry's to give. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "for": {
+     "id": "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+     "code": "SR4C-XSV0",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+     "code": "5JDV-GWAT",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "draw": {
+       "why": "pair"
+      },
+      "holder": null,
+      "freer": null,
+      "pair": [
+       {
+        "draw": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+        "to": {
+         "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+         "code": "WH6T-QA1W",
+         "name": "Amara"
+        },
+        "yes": false
+       },
+       {
+        "draw": "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+        "to": {
+         "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+         "code": "5JDV-GWAT",
+         "name": null
+        },
+        "yes": false
+       }
+      ]
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     },
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "2c9bb8715a957763f377d38f25822e00425bf3ef0a26f8a7b1a52e292198acd9",
+       "code": "5JDV-GWAT",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "ce08cee760053e02e9f268f0ecd0c71ed1ea2d912c134744efb0fdcd1b79379a",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: Harry signed it twice; neither shown as yours. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "freed"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "301073a5ee0cf2f0473cd18381a9774064abaf90b164a23f252776c57c0e146d",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: freed; Harry may sell it again. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": null
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": {
+       "state": "freed"
+      },
+      "holder": null,
+      "freer": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "301073a5ee0cf2f0473cd18381a9774064abaf90b164a23f252776c57c0e146d",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara WH6T-QA1W: L7 N6VX-Z97K: freed; you may sell it again. You may get as little as 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "code": "XDAC-FD5A",
+     "type": "promise",
+     "signer": {
+      "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+      "code": "D98A-BRHV",
+      "name": "Maria"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "code": "D98A-BRHV",
+     "name": "Maria"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+       "code": "KM3T-JGWV",
+       "name": "rye"
+      },
+      "by": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": "Maria"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": "Maria"
+      },
+      "out": [
+       {
+        "value": "100",
+        "unit": "kg"
+       }
+      ],
+      "in": [
+       {
+        "value": "88",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "210",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "80",
+        "unit": "kg"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "210",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": "Maria"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+     "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+    ],
+    "lacks": []
+   },
+   "text": "Maria D98A-BRHV: First deal with this seller. You pay max 210 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "code": "D98A-BRHV",
+     "name": null
+    },
+    "for": {
+     "id": "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "code": "XDAC-FD5A",
+     "type": "promise",
+     "signer": {
+      "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+      "code": "D98A-BRHV",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [
+     {
+      "what": {
+       "id": "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+       "code": "KM3T-JGWV",
+       "name": "rye"
+      },
+      "by": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "draw": null
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "100",
+        "unit": "kg"
+       }
+      ],
+      "in": [
+       {
+        "value": "88",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "210",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "80",
+        "unit": "kg"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "210",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+       "code": "D98A-BRHV",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "9d07a9439b7de5ee52aef0e27e2b2c9866ee7380120c4eb8c5a8c5ca97e43b32",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "eb54c7b4aa0c1d443cbdec2fc5040a5fbca587334487ca894628dfc221851a8b",
+     "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara WH6T-QA1W: You may get as little as 88 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "5f4d2ad953a585c8b086c6d1e874091c70b32906c4b7be05af0c1f64390be174",
+     "code": "BX6J-NPAK",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       },
+       {
+        "block": null,
+        "of": {
+         "id": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+         "code": "XMQC-VYZB",
+         "name": "Wanjiru"
+        }
+       }
+      ],
+      "all": true,
+      "one": false
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+     "5f4d2ad953a585c8b086c6d1e874091c70b32906c4b7be05af0c1f64390be174",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara's AI D12S-6S5W: You pay max 210 GBP. It can give away nothing of yours. FoodX 2ANT-EZC5 and Wanjiru XMQC-VYZB must both hear each deal. Your bank's limit, not this, caps what it moves there."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "342300ce2e17454a93161492f347cc23f4369328b01af0714abc7bdd0ad2e5f2",
+     "code": "6GHG-1KHE",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": true,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       },
+       {
+        "block": null,
+        "of": {
+         "id": "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b",
+         "code": "XMQC-VYZB",
+         "name": "Wanjiru"
+        }
+       }
+      ],
+      "all": true,
+      "one": false
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "342300ce2e17454a93161492f347cc23f4369328b01af0714abc7bdd0ad2e5f2",
+     "39fe070357874a8634e26a41c998c47aa65ce2aa146c48e7e9831370673deabe",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara's AI D12S-6S5W: You pay max 210 GBP. It can give away nothing of yours. A copied key could show this to several sellers. FoodX 2ANT-EZC5 and Wanjiru XMQC-VYZB must both hear each deal. Your bank's limit, not this, caps what it moves there."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "code": "D98A-BRHV",
+     "name": null
+    },
+    "for": {
+     "id": "4c48234462064d983e755f433a4b4b526141dd07534c20ebae59ea4de90e75fd",
+     "code": "9H42-6H32",
+     "type": "grant",
+     "signer": {
+      "id": "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+      "code": "D98A-BRHV",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+     "code": "TFBG-P3JM",
+     "name": "Till"
+    },
+    "audience": "public",
+    "other": {
+     "id": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+     "code": "TFBG-P3JM",
+     "name": "Till"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+      "code": "TFBG-P3JM",
+      "name": "Till"
+     },
+     "can_lose": [
+      {
+       "value": "40",
+       "unit": "loaves"
+      }
+     ],
+     "meter_own": true,
+     "pays": true,
+     "pay_at_most": [],
+     "hand_over_at_most": [
+      {
+       "value": "40",
+       "unit": "loaves"
+      }
+     ],
+     "clocks": null,
+     "backed_by": [],
+     "floor": [
+      {
+       "amount": {
+        "value": "3",
+        "unit": "GBP"
+       },
+       "per": {
+        "value": "1",
+        "unit": "loaves"
+       }
+      }
+     ]
+    },
+    "read": [
+     "1e935c5729fd0e6d67700006582c4256ad0e90feaf916977c04d3c438622d54f",
+     "4c48234462064d983e755f433a4b4b526141dd07534c20ebae59ea4de90e75fd",
+     "6a50a5e23b4eb2a7ae7366051a86b10d4bb7aad3cc5bc6797fadbdc0750cb35a",
+     "77f55b4b0e64925a4463425e10ae2452dcb8fc0eb2aad3fa6bb927b530fd9cd9",
+     "8dd83368cd9d05093ca2caf3b5e23d1535b60f001c874e25b853e896723ee9b5",
+     "aa133f4720101240d44b570c517f5eb660cd8f1581e1ffab6370a4442835a61c",
+     "d3d70b0e54aa0528a115dc6add2b9d6e4b170f4d97a8b3cea42e3fc3e398ab51",
+     "f706def487cd07be4f643976b9523aad0123cbca97acd7ae6cb3314d7def9419"
+    ],
+    "lacks": []
+   },
+   "text": "To Till TFBG-P3JM: You hand over max 40 loaves. It can give away up to 40 loaves. A copied key could show this to several sellers. Till may sell at 3 GBP per 1 loaves or more; every buyer sees it. Your bank's limit, not this, caps what it moves there."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "code": "TTX8-ZETS",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       }
+      ],
+      "all": true,
+      "one": true
+     },
+     "backed_by": [],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara's AI D12S-6S5W: You pay max 210 GBP. It can give away nothing of yours. Only FoodX 2ANT-EZC5 hears your STOP. Your bank's limit, not this, caps what it moves there."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "code": "TTX8-ZETS",
+     "type": "grant",
+     "signer": {
+      "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+      "code": "WH6T-QA1W",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "audience": "public",
+    "other": {
+     "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "code": "D12S-6S5W",
+     "name": "Amara's AI"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "things": [],
+    "amounts": [],
+    "money": [],
+    "terms": {
+     "waits_on": null
+    },
+    "grant": {
+     "holder": {
+      "id": "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+      "code": "D12S-6S5W",
+      "name": "Amara's AI"
+     },
+     "can_lose": [],
+     "meter_own": false,
+     "pays": true,
+     "pay_at_most": [
+      {
+       "value": "210",
+       "unit": "GBP"
+      }
+     ],
+     "hand_over_at_most": [],
+     "clocks": {
+      "hear": [
+       {
+        "block": null,
+        "of": {
+         "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+         "code": "2ANT-EZC5",
+         "name": "FoodX"
+        }
+       }
+      ],
+      "all": true,
+      "one": true
+     },
+     "backed_by": [
+      {
+       "id": "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+       "code": "2ANT-EZC5",
+       "name": "FoodX"
+      }
+     ],
+     "floor": []
+    },
+    "read": [
+     "12aba77d85064ae5d4946a03659038e930a7a11732c4c65161c79ff7c488c901",
+     "68459364bc7b6a5ebbfdeed0e74a963ed8a41728155214feebdefe7007602640",
+     "6f91769f494ec81574df382b599a8a761a75445c4ad561e07a9c280973f2921e",
+     "7b0523c08684f8de776944a10b6d83a7e0d2a01500f5494b08459ef1e158cbeb",
+     "9fe905fcfa7330f67bd126df28d891198164257d5f23d8771da244d32274ac51",
+     "b5a199e6912aeea64eed1cb40f4bb8958f071683ec39721052216d7be10fb1d3",
+     "c7d565bcaeef098840e54697482ac0d11d40634a97c859b565c2f6e42d515d0f",
+     "d6ba8fbb592b3b5180863aac07697c235698d8ae109e83e9988a1a950b0dcb5a",
+     "dcf57917fa6df64eca0dc6931f5ebdc5b2c3e86a2252eb302b0156f44cd3c450",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "ed2ecdfbeb11ed1e26457096bfb4456f544b04579ae036bec90377b09e5c4c2b"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara's AI D12S-6S5W: You pay max 210 GBP. It can give away nothing of yours. Only FoodX 2ANT-EZC5 hears your STOP; if it misses it, FoodX pays you back. Your bank's limit, not this, caps what it moves there."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "124b86d19f3bcaa09c2c1f6dcfae7d25f10d50695ebe09c26f1d524763f76dda",
+     "code": "295R-DMCZ",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": "price"
+    },
+    "read": [
+     "124b86d19f3bcaa09c2c1f6dcfae7d25f10d50695ebe09c26f1d524763f76dda",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. L7 N6VX-Z97K: 10 sacks, Harry's word. L7: kept for you in Harry's hands till you say no. You pay max 300 GBP. Done when Harry says so."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "7708e0fe6aa1ec18936edac522f540b110794bc20b603311ebc8f7179e17a677",
+     "code": "EW4E-1ZKA",
+     "type": "promise",
+     "signer": {
+      "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+      "code": "VCWN-7YWM",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+     "code": "VCWN-7YWM",
+     "name": null
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692",
+       "code": "DKKE-D64P",
+       "name": "crates"
+      },
+      "by": {
+       "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+       "code": "VCWN-7YWM",
+       "name": null
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "crates"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+       "code": "VCWN-7YWM",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "crates"
+       }
+      ],
+      "in": [
+       {
+        "value": "550",
+        "unit": "KES"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "550",
+        "unit": "KES"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "crates"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "550",
+       "unit": "KES"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b",
+       "code": "VCWN-7YWM",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "6ce6e698965c91b54e26b2439e88a859fbd986a79416c737f32c3da9628a7692",
+     "7708e0fe6aa1ec18936edac522f540b110794bc20b603311ebc8f7179e17a677",
+     "db3953fb94a1b2e0cb68ffa906c2ca625fe954e2fc026671c2116cbfff4ad78b"
+    ],
+    "lacks": []
+   },
+   "text": "Unnamed id VCWN-7YWM: First deal with this seller. crates DKKE-D64P 10 crates: that id's word; nothing set aside. You pay max 550 KES."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "c3c55feefdc24e2d5c11df27be94c1c586a14270a9152134f825aacdcc117cb9",
+     "code": "RF2N-ZVQX",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "983de3a3768cf587e564252b3059bbca3cfac841e53223b63ff29c5ca48904d8",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "c3c55feefdc24e2d5c11df27be94c1c586a14270a9152134f825aacdcc117cb9",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: L7 N6VX-Z97K: 10 sacks, Harry's word. L7: kept for you in Harry's hands till you say no. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "5a56fed67f4e05b08ba5050b7745229cc3e9934883a531379848bfc1521eae32",
+     "code": "B9BF-XNKZ",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": {
+     "readers": 3
+    },
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "things": [
+     {
+      "what": {
+       "id": "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515",
+       "code": "ZDGR-G3Y5",
+       "name": "flour"
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": null,
+      "amount": {
+       "value": "10",
+       "unit": "sacks"
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": [
+       {
+        "value": "10",
+        "unit": "sacks"
+       }
+      ]
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "5a56fed67f4e05b08ba5050b7745229cc3e9934883a531379848bfc1521eae32",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. 3 readers; you see only yourself. flour ZDGR-G3Y5 10 sacks: Harry's word; nothing set aside. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+     "code": "V88B-H9JT",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "not_read": {
+     "fields": 1,
+     "rule_set": false,
+     "codes": [
+      "undeclared_field"
+     ]
+    },
+    "read": [
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: your reader can't read 1 field here; nothing guessed."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "05ef3aa6f92481a46ebdc4f77a1082384351b3d95d7de9604193c7b692006144",
+     "code": "0QQK-N9QS",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "not_read": {
+     "fields": 0,
+     "rule_set": true,
+     "codes": [
+      "unknown_rules"
+     ]
+    },
+    "read": [
+     "05ef3aa6f92481a46ebdc4f77a1082384351b3d95d7de9604193c7b692006144",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "da10b8a65a3c52dd92ee2d4875fa6128dc27509939bf236818f2e0228097e198",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: your reader can't read the rules this names; nothing guessed."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "not_valid": [
+     "bad_signature"
+    ],
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: no key signed this as it is."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54",
+     "code": "31Y7-Y0D7",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "not_shown": true,
+    "read": [
+     "187c7f01a7c772012336d416c0c55674436eee6501528edee7b7d387dad43b54"
+    ],
+    "lacks": [
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e"
+    ]
+   },
+   "text": "Unnamed id W6NF-25A8: can't tell yet; 1 of that id's blocks missing."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "code": "C872-P74H",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": true,
+    "other_side": "from",
+    "what": {
+     "text": "20 kg tomatoes",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "things": [],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "40",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: First deal with this seller. In Harry's words: \"20 kg tomatoes\". You pay max 40 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": null
+    },
+    "for": {
+     "id": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "code": "C872-P74H",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "audience": "public",
+    "other": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": "Amara"
+    },
+    "first_deal": true,
+    "other_side": "to",
+    "what": {
+     "text": "20 kg tomatoes",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": null
+     }
+    },
+    "things": [],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "out": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "40",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": "Amara"
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": null
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "287a816dd9d42522729ed7688649b243eaf6a59979883018ef0b01be4053186f",
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "To Amara WH6T-QA1W: In your words: \"20 kg tomatoes\". You may get as little as 40 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+     "code": "V7ZC-39WC",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "what": {
+     "text": "ten sacks of stoneground wholemeal, spring harvest, from the yard gate on Saturday",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "things": [
+     {
+      "what": {
+       "id": "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+       "code": "N6VX-Z97K",
+       "name": "L7",
+       "pack": {
+        "value": "10",
+        "unit": "sacks"
+       },
+       "stated_by": {
+        "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+        "code": "W6NF-25A8",
+        "name": "Harry"
+       }
+      },
+      "by": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "to": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "draw": {
+       "state": "held"
+      },
+      "holder": null,
+      "freer": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      }
+     }
+    ],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "300",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "300",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: In Harry's words: \"ten sacks of stoneground wholemeal, spring harvest, from the yard gate on Saturday\". L7 N6VX-Z97K: 10 sacks, Harry's word. L7: kept for you in Harry's hands till you say no. You pay max 300 GBP."
+  },
+  {
+   "answer": {
+    "viewer": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "for": {
+     "id": "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "code": "C872-P74H",
+     "type": "promise",
+     "signer": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "to": {
+     "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+     "code": "WH6T-QA1W",
+     "name": null
+    },
+    "audience": "public",
+    "other": {
+     "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "code": "W6NF-25A8",
+     "name": "Harry"
+    },
+    "first_deal": false,
+    "other_side": "from",
+    "what": {
+     "text": "20 kg tomatoes",
+     "by": {
+      "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+      "code": "W6NF-25A8",
+      "name": "Harry"
+     }
+    },
+    "things": [],
+    "amounts": [
+     {
+      "side": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "out": [],
+      "in": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ]
+     },
+     {
+      "side": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "out": [
+       {
+        "value": "40",
+        "unit": "GBP"
+       }
+      ],
+      "in": []
+     }
+    ],
+    "money": [
+     {
+      "amount": {
+       "value": "40",
+       "unit": "GBP"
+      },
+      "by": {
+       "id": "e44daba83c11b65b574f53c0cc3ad7c39b73096cd3beb387de260caa4f9c478a",
+       "code": "WH6T-QA1W",
+       "name": null
+      },
+      "to": {
+       "id": "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+       "code": "W6NF-25A8",
+       "name": "Harry"
+      },
+      "draw": null
+     }
+    ],
+    "terms": {
+     "waits_on": null
+    },
+    "read": [
+     "620e2b1c91ac64527b9ab7241257f13dc04eead31fb4e3473e37f6381370c36f",
+     "6ec956de1d56719e6a8704c3aca7936b176d6a4aaf27934294740e7556239da7",
+     "a9b7dfa4f3b222fe72fb524af7722ae22b39b27df666c5967c73385b48d0fc93",
+     "d9fec1a78c1f21dbe93113b993cd55f200a6084adfe3a9c1f8a0380c8bd8b4f9",
+     "e1aaf115485f82a592d021bcd5f4676cc4657ef28fdab22976311217bbcfec0e",
+     "fb61880fc5ab414c989e3421d38ea59e7074005a253ded3b6198f9ef24870515"
+    ],
+    "lacks": []
+   },
+   "text": "Harry W6NF-25A8: In Harry's words: \"20 kg tomatoes\". You pay max 40 GBP."
+  }
+ ]
+}

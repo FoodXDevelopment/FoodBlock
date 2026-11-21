@@ -1,4 +1,4 @@
-// The helpers the vector makers of FoodBlock 1.7 share (they were the head of make-vectors-1-7.cjs): a story of signed blocks, and
+// The helpers the vector makers share: a story of signed blocks, and
 // the cases a maker adds to spec/vectors.json (`door`, `check`, `stage`, `view`, `holds`, `answer`). A maker begins
 //   const vectorsFile = require('./vectors-file.cjs'); const { V, tags } = vectorsFile.load(); const kit = require('./vectors-kit.cjs')(V)
 // and ends with `vectorsFile.save(V, tags)`. A case it made is replaced by name, never repeated; retire a case by listing its name in

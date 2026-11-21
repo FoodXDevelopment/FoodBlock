@@ -1,10 +1,10 @@
-//! # FoodBlock 1.7 for Rust, C and C++
+//! # FoodBlock 1.9 for Rust, C and C++
 //!
 //! A block is `{ type, state, refs }`, signed by its author's key; its id is the hash of its canonical form (RFC 8785),
 //! in the hash of the suite of the signing key (core.md). This crate speaks the protocol of `spec/core.md` and
 //! `spec/modules/` (normative). Every closed list and grammar is read from `spec/protocol.json`: loaded at runtime from
 //! bytes the caller gives ([`Spec::from_json`]), with the repository's copy built in as the default ([`spec`]). There
-//! is no earlier version in the protocol: year zero. Old data enters once, through the converter (`legacy` feature).
+//! is no earlier version in the protocol: year zero.
 //!
 //! Blocks are plain JSON values (`serde_json::Value`): `{ hash, type, state, refs, signature }` (and `suite` when it
 //! is not `std`), the same shape on every SDK and on the wire.
@@ -15,8 +15,7 @@
 //! - **edge** (`edge` feature): adds the folds (`folds`) and Pull, Push and discovery (`sync`).
 //! - **node** (`node` feature, the default): adds envelopes (`envelope`).
 //! - **suites** (`suites` feature): `p256` and `sm` beside `std`.
-//! - **profiles**: `successor`, `ballots`, `rekeys`, `earnest` (spec/profiles).
-//! - **legacy**: the one-time converter for pre-1.6 data (spec/legacy/converter.md).
+//! - **profiles**: `ballots`, `rekeys`, `earnest` (spec/profiles).
 //!
 //! The names follow the JavaScript reference SDK: `sign` signs, `seal` encrypts, `open` opens.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -43,12 +42,17 @@ pub mod check;
 pub mod decimal;
 pub mod error;
 pub mod grant;
+pub mod grant_fence;
 pub mod identity;
 pub mod merkle;
 pub mod index;
 pub mod js;
+pub mod line;
 pub mod order;
 pub mod random;
+#[cfg(feature = "folds")]
+pub mod readback;
+pub mod rules;
 pub mod regex;
 pub mod sign;
 pub mod spec;
@@ -59,8 +63,6 @@ pub mod strangers;
 pub mod profiles;
 pub mod tasks;
 pub mod write;
-#[cfg(feature = "legacy")]
-pub mod legacy;
 
 #[cfg(feature = "envelope")]
 pub mod envelope;
@@ -83,8 +85,9 @@ pub use error::{Error, Refusal};
 pub use serde_json::Value;
 pub use spec::{spec, Spec};
 
-/// The protocol version this crate writes. A test checks it against `spec/protocol.json`.
-pub const VERSION: &str = "1.7";
+/// The packages' label ("1.9"): a person's name for the rule set this crate is built from, which is named by its hash
+/// (core.md, section 11). No reader reads it. tools/version-sync.cjs keeps it the major and minor of the packages' number.
+pub const VERSION: &str = "1.9";
 
 /// The peers this build supports, from smallest to largest (protocol.json `peers`).
 pub fn peers() -> &'static [&'static str] {
@@ -113,7 +116,7 @@ pub use sign::{keypair_from_seed, keypair_from_seed_in, sign, sign_in, sign_mess
 pub use audience::new_salt;
 pub use audience::{commit, commit_in, finds_self, reveal_for, salted_hash, salted_hash_in};
 // Writing and the wire.
-pub use check::{amount, check, money, refusals, terms, CheckOptions};
+pub use check::{amount, terms, write_refusals, CheckOptions};
 #[cfg(all(feature = "envelope", feature = "std"))]
 pub use envelope::generate_encryption_keypair;
 #[cfg(feature = "envelope")]
@@ -130,4 +133,4 @@ pub use order::{causal_order, past_of, sees};
 #[cfg(feature = "folds")]
 pub use fold::{circle_state, members_then, owner_of, promise_stage, where_now};
 pub use identity::identity_state;
-pub use valid::valid;
+pub use valid::{read, valid};

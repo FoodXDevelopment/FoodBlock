@@ -67,7 +67,7 @@ fn write(out: &mut Vec<u8>, item: &C) -> Result<()> {
             }
         }
         C::Map(pairs) => {
-            // Keys sorted by their encoded bytes, length first, then bytewise (RFC 8949 §4.2).
+            // Keys sorted by their encoded bytes, length first, then bytewise (RFC 8949 §4.2.3).
             let mut encoded: Vec<(Vec<u8>, &C)> = Vec::new();
             for (k, v) in pairs {
                 let mut kb = Vec::new();
@@ -126,7 +126,7 @@ impl Reader<'_> {
             .ok_or_else(|| fail("it ends too soon"))
     }
     fn item(&mut self, depth: usize) -> Result<C> {
-        if depth > crate::spec().depth_read {
+        if depth > crate::canonical::read_depth() {
             return Err(fail("nested too deep"));
         }
         let first = self.take(1)?[0];
@@ -254,7 +254,7 @@ struct Codec<'a> {
 
 impl<'a> Codec<'a> {
     fn new(spec: &'a Spec, short: bool) -> Codec<'a> {
-        let cbor = spec.protocol.get("cbor");
+        let cbor = spec.conventions.get("cbor");
         let mut bytes = Vec::new();
         for (name, kind) in [
             ("hash", Kind::Hash),
@@ -262,7 +262,7 @@ impl<'a> Codec<'a> {
             ("encrypt_key", Kind::EncryptKey),
             ("nonce", Kind::Nonce),
         ] {
-            for p in spec.list(&format!("cbor.bytes.{name}")) {
+            for p in spec.convention(&format!("cbor.bytes.{name}")) {
                 bytes.push((kind, vec![p]));
             }
         }
@@ -275,7 +275,7 @@ impl<'a> Codec<'a> {
         Codec {
             spec,
             short,
-            keys: spec.list("cbor.keys"),
+            keys: spec.convention("cbor.keys"),
             types: spec.types.clone(),
             bytes,
             time_fields: spec.time_fields.clone(),
@@ -402,7 +402,7 @@ impl<'a> Codec<'a> {
     }
 
     fn string_to_c(&self, s: &str, path: &[String]) -> Result<C> {
-        let text = crate::canonical::nfc(s).into_owned();
+        let text = s.to_string();
         if let Some(kind) = self.byte_kind(path) {
             match kind {
                 Kind::Hash if self.spec.is("hash", &text) => {
@@ -567,7 +567,7 @@ impl<'a> Codec<'a> {
 
 fn table_of(spec: &Spec, short: bool) -> i64 {
     if short {
-        spec.protocol
+        spec.conventions
             .get("cbor")
             .and_then(|c| c.get("table"))
             .and_then(Value::as_i64)
@@ -685,27 +685,34 @@ pub fn decode_push_with(spec: &Spec, bytes: &[u8]) -> Result<Vec<Value>> {
     };
     items.iter().map(|m| message_from_c(spec, m)).collect()
 }
-/// A chain header `{ author, seq, prev, hash }`: the ids as bytes.
+/// A header `{ author, seq, prev, hash }`, with `key` or `skip` when the block has them (encoding.md, The compact form): the
+/// ids as bytes, the flags as `true`. Nothing else is a header's.
 pub fn encode_header_with(spec: &Spec, header: &Value, short: bool) -> Result<Vec<u8>> {
     let codec = Codec::new(spec, short);
     let map = header
         .as_object()
         .ok_or_else(|| fail("a header is { author, seq, prev, hash }"))?;
+    let (needed, optional) = (spec.list("header"), spec.list("header_optional"));
+    if let Some(k) = map.keys().find(|k| !needed.contains(k) && !optional.contains(k)) {
+        return Err(fail(format!("a header has no {k}")));
+    }
     let mut pairs = Vec::new();
-    for k in ["author", "seq", "prev", "hash"] {
-        let v = map
-            .get(k)
-            .ok_or_else(|| fail(format!("a header has {k}")))?;
-        let c = match v {
-            Value::String(s) if k != "seq" && spec.is("hash", s) => {
-                C::Bytes(unhex(s).unwrap_or_default())
+    for k in needed.iter().chain(optional.iter()) {
+        let Some(v) = map.get(k) else {
+            if needed.contains(k) {
+                return Err(fail(format!("a header has {k}")));
             }
-            Value::String(s) if k != "seq" && spec.is("id", s) => C::Text(s.clone()),
-            Value::Number(n) if k == "seq" => match n.as_i64() {
+            continue;
+        };
+        let c = match (k.as_str(), v) {
+            ("seq", Value::Number(n)) => match n.as_i64() {
                 Some(i) if (-MAX..=MAX).contains(&i) => C::Int(i),
                 _ => return Err(fail("seq is a whole number")),
             },
-            _ => return Err(fail(format!("header {k} is an id"))),
+            ("skip", Value::Bool(true)) => C::Bool(true),
+            ("author" | "prev" | "hash" | "key", Value::String(s)) if spec.is("hash", s) => C::Bytes(unhex(s).unwrap_or_default()),
+            ("author" | "prev" | "hash" | "key", Value::String(s)) if spec.is("id", s) => C::Text(s.clone()),
+            _ => return Err(fail(format!("header {k} is wrong"))),
         };
         pairs.push((codec.key_to_c(k), c));
     }
@@ -726,14 +733,15 @@ pub fn decode_header_with(spec: &Spec, bytes: &[u8]) -> Result<Value> {
         }
         let value = match (name.as_str(), v) {
             ("seq", C::Int(i)) => json!(i),
-            ("author" | "prev" | "hash", C::Bytes(b)) if b.len() == 32 => Value::String(hex(b)),
-            ("author" | "prev" | "hash", C::Text(t)) if spec.is("id", t) => Value::String(t.clone()),
+            ("skip", C::Bool(true)) => Value::Bool(true),
+            ("author" | "prev" | "hash" | "key", C::Bytes(b)) if b.len() == 32 => Value::String(hex(b)),
+            ("author" | "prev" | "hash" | "key", C::Text(t)) if spec.is("id", t) => Value::String(t.clone()),
             _ => return Err(fail(format!("header {name} is wrong"))),
         };
         out.insert(name, value);
     }
-    for k in ["author", "seq", "prev", "hash"] {
-        if !out.contains_key(k) {
+    for k in spec.list("header") {
+        if !out.contains_key(&k) {
             return Err(fail(format!("a header has {k}")));
         }
     }

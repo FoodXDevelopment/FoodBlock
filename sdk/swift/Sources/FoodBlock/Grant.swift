@@ -3,15 +3,6 @@ import Foundation
 /// Authority (spec/protocol.md §6): thin calls into the Rust core.
 public enum Grant {
     public static func scopeRefusals(_ child: JSON, _ parent: JSON) throws -> [FoodBlock.Finding] { FoodBlock.findings(try Door.scopeRefusals(child, parent)) }
-    /// The observe of kind limit for a grant, to hand to `write`: its audience is the autonomous system alone.
-    public static func limitFence(_ grantHash: String, _ agent: String, limit: JSON?, every: String? = nil, salt: String? = nil, each: JSON? = nil) throws -> JSON { try Door.limitFence(grantHash, agent, limit, every, salt, each) }
-    /// The commitment to a limit, for the grant's `scope.limit_commitment` (authority.md).
-    public static func limitCommitment(limit: JSON?, every: String? = nil, salt: String, suite: String? = nil, each: JSON? = nil) throws -> String { try Door.limitCommitment(limit, every, salt, suite, each) }
-    /// Whether the limit observe opens the grant's `scope.limit_commitment`.
-    public static func limitOpens(_ grant: JSON, _ fence: JSON, suite: String? = nil) throws -> Bool { try Door.limitOpens(grant, fence, suite) }
-    /// Whether one act of `value` (money or an amount) stays inside a limit; `spent` is what the principal's node has counted in the period:
-    /// minor units of money, or an amount's value (a whole number, or a decimal string), compared exactly.
-    public static func withinLimit(_ limit: JSON, _ value: JSON, spent: Any) throws -> Bool { try Door.withinLimit(limit, value, spent) }
     /// The one reading of a grant's `state.scope` (authority.md): acts, parties, limit, each, every, until, notice, sealed, condition and junk, with every default the spec states and nothing else filled in.
     /// A nil scope reads as an empty one. A non-empty `junk` (sorted names of fields that are there but cannot be read) means the grant is held to no word.
     public static func scopeReading(_ scope: Any? = nil) throws -> JSON { try Door.scopeReading(scope) }
@@ -20,9 +11,25 @@ public enum Grant {
     public static func isLive(_ grant: JSON?, _ blocks: [JSON], now: String? = nil) throws -> Bool { try Door.isLive(grant ?? [:], blocks, now) }
     public static func ancestors(_ grant: JSON, _ blocks: [JSON]) throws -> [JSON] { (try Door.ancestors(grant, blocks) as? [JSON]) ?? [] }
     public static func whyNotUnder(_ block: JSON?, _ blocks: [JSON], now: String? = nil) throws -> [String] { try Door.whyNotUnder(block ?? [:], blocks, now) }
-    public static func operatorsOf(_ agent: String, _ blocks: [JSON], now: String? = nil) throws -> [String] { try Door.operatorsOf(agent, blocks, now) }
     /// Why an act that cannot be undone (its schema says `undo: never`) is not live: empty when it has a specific accepted ask or a grant that names it with a limit.
     public static func whyNotLiveUndo(_ block: JSON, _ blocks: [JSON]) throws -> [String] { try Door.whyNotLiveUndo(block, blocks) }
-    /// The act a block is, named `type.kind`.
-    public static func actName(_ block: JSON) throws -> String { try Door.actName(block) }
+    /// A time moved by a duration (sign -1 goes back); nil when either is not one.
+    public static func addDuration(_ time: String, _ duration: String, sign: Int = 1) throws -> String? { try Door.addDuration(time, duration, sign) }
+    /// Two durations compared by adding both to one instant (§7): -1, 0 or 1.
+    public static func compareDurations(_ a: String, _ b: String, from: String) throws -> Int { intOf(try Door.compareDurations(a, b, from)) ?? 0 }
+    public static func parseDuration(_ text: String?) throws -> Any? { try Door.parseDuration(text) }
+    /// Is the machine inside the fence of its grant: { within, why, alone, alone_until }. No clock is read.
+    public static func fenceReading(_ fence: Any?, at: String, readings: Any? = nil, heard: String? = nil) throws -> JSON { try Door.fenceReading(fence, at, readings, heard) }
+    /// Whether a promise C keeps to a promise A: { keeps, why }.
+    public static func keepsTo(_ c: JSON, _ a: JSON, _ blocks: [JSON] = []) throws -> JSON { try Door.keepsTo(c, a, blocks) }
+    /// The line a grant's blocks are counted on (authority.md): { grant, fits, why, line, start, period, draws, left, waiting, ended, comes_back }.
+    public static func meter(_ grant: JSON, _ blocks: [JSON], block: JSON? = nil) throws -> JSON { try Door.meter(grant, blocks, block) }
+    /// The worst case of a grant, from her grant and the promises it names alone: `at_most` and `can_lose` per kind.
+    public static func worstCase(_ grant: JSON, _ blocks: [JSON]) throws -> JSON { try Door.worstCase(grant, blocks) }
+    /// Her deadline's lowest offer, read on the meter's line: { offer, received, cutoff, why }.
+    public static func lowestOffer(_ grant: JSON, _ blocks: [JSON]) throws -> JSON { try Door.lowestOffer(grant, blocks) }
+    /// What a promise's terms come to at a chosen quantity: { minor, currency }, or nil when it cannot be computed.
+    public static func termsTotal(_ terms: Any?, quantity: Any? = nil) throws -> JSON? { try Door.termsTotal(terms, quantity) as? JSON }
+    /// Whether the machine is locked now: { locked, locks, lifted }.
+    public static func machineLock(_ machine: JSON, _ blocks: [JSON], now: String? = nil) throws -> JSON { try Door.machineLock(machine, blocks, now) }
 }
