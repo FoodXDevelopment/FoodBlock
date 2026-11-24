@@ -22,7 +22,7 @@ test('a passkey signs a genesis and a note, and the plain form of the same key s
   const genesis = { ...g0, signature: assertion(fb.passkeyChallenge(g0)) }
   assert.ok(fb.verify(g0, genesis.signature, key.public_key_sign))
   assert.deepEqual(fb.valid(genesis, []), [])
-  const n = fb.write('observe', { kind: 'note', text: 'hi' }, {}, { author: g0.hash, key, held: [g0], at: '2026-10-16T12:00:01.000Z', audience: 'public' })
+  const n = fb.write('observe', { kind: 'note', text: 'hi' }, {}, { author: g0.hash, key, blocks: [g0], at: '2026-10-16T12:00:01.000Z', audience: 'public' })
   const note = { ...n, signature: assertion(fb.passkeyChallenge(n)) }
   assert.deepEqual(fb.valid(note, [genesis]), [])
   assert.deepEqual(fb.valid(n, [genesis]), [])
@@ -35,7 +35,7 @@ test('a private block asks the passkey once: its one signature is over its heade
   const g0 = fb.identity.genesis(key, { audience: 'public', kind: 'person', at: '2026-10-16T12:00:00.000Z' })
   const genesis = { ...g0, signature: assertion(fb.passkeyChallenge(g0)) }
   const bob = fb.generateEncryptionKeypair()
-  const n = fb.write('observe', { kind: 'note', text: 'for bob' }, {}, { author: g0.hash, key, held: [genesis], at: '2026-10-16T12:00:01.000Z', audience: ['b'.repeat(64)] })
+  const n = fb.write('observe', { kind: 'note', text: 'for bob' }, {}, { author: g0.hash, key, blocks: [genesis], at: '2026-10-16T12:00:01.000Z', audience: ['b'.repeat(64)] })
   const { salts, ...draft } = n
   assert.equal(fb.passkeyChallenge(draft), fb.passkeyChallenge(fb.header(draft)), 'the challenge of a private block is its header\'s')
   let asked = 0

@@ -10,7 +10,7 @@ These standards rename themselves often. x402 went from version 1 to 2 in a year
 
 When her node takes in bytes from another standard, it signs one thing: "I held these bytes, from this address, at this time." The state holds the SHA-256 of the exact bytes, where they came from and their media type. The bytes are kept beside the block, not in it. It is sealed to her.
 
-That block says only that her node held the bytes. It does not say anyone agreed to anything. It does not bind the sender. It does not bind her. Call it a **held-bytes reading**. (1.9 has no named kind for it yet. It needs a schema, which is a pattern, not a rule. Unchecked.)
+That block says only that her node held the bytes. It does not say anyone agreed to anything. It does not bind the sender. It does not bind her. Call it a **held-bytes reading**. (There is no named kind for it yet. It needs a schema, which is a pattern, not a rule. Unchecked.)
 
 Words used here, once. A **facilitator** checks a payment and puts it on a chain for a seller. A **mandate** is a signed permission slip for an agent, in another standard's format. A **chargeback** is the card system taking money back from a seller. In x402, **verify** means "this would go through" and **settle** means "it was sent".
 

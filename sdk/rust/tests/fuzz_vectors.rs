@@ -1,5 +1,5 @@
-//! spec/fuzz-vectors.json through the JSON door: the minimal reproducers of what the differential fuzzer (tools/fuzz) and the
-//! world simulator (tools/sim) found. The blocks are made and signed by the spec-only oracle; tools/fuzz/run-vectors.cjs runs
+//! spec/fuzz-vectors.json through the JSON door: the minimal reproducers of what the differential fuzzer (tools/fuzz)
+//! found. The blocks are made and signed by the spec-only oracle; tools/fuzz/run-vectors.cjs runs
 //! the same file through the oracle too. Also: the inputs that made the core panic.
 use foodblock::door::answer;
 use serde_json::{json, Value};
@@ -93,7 +93,7 @@ fn a_fold_over_many_blocks_is_not_quadratic_in_signature_checks() {
     let started = std::time::Instant::now();
     let o = foodblock::fold::ownership(&blocks[1], &blocks);
     // the first transfer holds the whole thing from where it is signed (no answer lands it); each later one is past what is left
-    // (1.9: the draw itself says it holds, `state: held`; CORE-SET 3c)
+    // (the draw itself says it holds, `state: held`)
     assert_eq!(o["owner"], json!(null));
     let draws = o["draws"].as_array().unwrap();
     assert_eq!(draws.len(), 299);

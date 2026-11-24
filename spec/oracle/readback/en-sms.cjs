@@ -1,5 +1,5 @@
 'use strict';
-// spec/renderers/en-sms (changes-1.9/07-last.md, C2 and C4): the same answer (readings/readback) into short English for a basic phone. Not normative; named by the SHA-256 of this file's bytes.
+// spec/renderers/en-sms (renderers/en-sms.md): the same answer (readings/readback) into short English for a basic phone. Not normative; named by the SHA-256 of this file's bytes.
 // The same lines as `en`, shorter, joined by spaces; GSM-7 characters only. A decision text (this, a space, the digits) is at most 160 GSM-7 characters (07 §4).
 // It reads the answer only, never a block, reads no free text, classifies nothing; no rule set, no fraction, no `needed` or `names`.
 function enSms(a) {

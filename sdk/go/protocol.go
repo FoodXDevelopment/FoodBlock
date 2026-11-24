@@ -9,19 +9,18 @@ type Finding struct {
 	Detail string `json:"detail"`
 }
 
-// Valid is who said these bytes: the codes of checks 1 to 6 of a block or a held header (empty when valid).
-func Valid(b Block, held []Block) []Finding {
-	return doorValid(b, plural(held))
+// Valid is who said these bytes: the codes of checks 1 to 6 of a block or a given header (empty when valid).
+func Valid(b Block, blocks []Block) []Finding {
+	return doorValid(b, plural(blocks))
 }
 
-// Read is whether this reader can read a valid block: every code found (empty when read). Schemas are schema blocks (SchemasFrom);
-// runs are the ids of the rule sets this reader runs (nil: the one it is built from; core.md, section 11).
-func Read(b Block, held []Block, schemas []Block, runs ...string) []Finding {
-	return doorRead(b, plural(held), schemas, runs)
+// Read is whether this reader can read a valid block: every code found (empty when read). Schemas are schema blocks (SchemasFrom).
+func Read(b Block, blocks []Block, schemas []Block) []Finding {
+	return doorRead(b, plural(blocks), schemas)
 }
 
-// SchemasFrom is the schema store of the blocks held: every thing of kind schema among them, ids ascending.
-func SchemasFrom(held []Block) []Block { return plural(doorSchemasFrom(held)) }
+// SchemasFrom is the schema store of the blocks given: every thing of kind schema among them, ids ascending.
+func SchemasFrom(blocks []Block) []Block { return plural(doorSchemasFrom(blocks)) }
 
 // StrictText is strict writing from JSON text: a repeated key, then every refusal of the block it holds.
 func StrictText(text string) []Finding {
@@ -207,7 +206,7 @@ func CausalOrder(blocks []Block) []Block { return doorCausalOrder(blocks) }
 // CausesOf are the hashes a block names, through every ref.
 func CausesOf(b Block) []string { return doorCausesOf(b) }
 
-// PastOf is every held block in a block's causal past (hashes; the block itself is not in it).
+// PastOf is every given block in a block's causal past (hashes; the block itself is not in it).
 func PastOf(b Block, blocks []Block) []string {
 	return plural(doorPastOf[[]string](b, blocks))
 }
@@ -282,19 +281,19 @@ func Compose(typ string, state, refs map[string]any, o ComposeOptions) (Block, e
 	return doorCompose[Block](typ, orEmpty(state), orEmpty(refs), o.json())
 }
 
-// WriteOptions: the ComposeOptions, the author's Key, Held (the author's genesis, key grants and blocks) and Schemas.
+// WriteOptions: the ComposeOptions, the author's Key, Blocks (the author's genesis, key grants and blocks) and Schemas.
 type WriteOptions struct {
 	ComposeOptions
 	Key     Keypair
-	Held    []Block
+	Blocks  []Block
 	Schemas map[string]Block
 }
 
 // Write is the one way to write: compose, check (refusing, never repairing), sign with the author's key, at the next
-// place in that key's chain among Held. It returns the signed block, or a *Refused with every reason.
+// place in that key's chain among Blocks. It returns the signed block, or a *Refused with every reason.
 func Write(typ string, state, refs map[string]any, o WriteOptions) (Block, error) {
 	options := o.ComposeOptions.json()
-	options["key"], options["held"] = o.Key, plural(o.Held)
+	options["key"], options["blocks"] = o.Key, plural(o.Blocks)
 	if o.Schemas != nil {
 		options["schemas"] = blockList(o.Schemas)
 	}
@@ -306,10 +305,10 @@ func Write(typ string, state, refs map[string]any, o WriteOptions) (Block, error
 func Wrap(signed Block) map[string]any { return doorWrap[map[string]any](signed) }
 
 // Unwrap is a block off the wire: its hash recomputed from its content, its signature kept beside. The id is in
-// the suite of the key that signed it, found among held (the author's blocks; core.md, section 2); with none, in the suite
+// the suite of the key that signed it, found among blocks (the author's blocks; core.md, section 2); with none, in the suite
 // the block shows.
-func Unwrap(message any, held ...Block) (Block, error) {
-	return doorUnwrap[Block](message, held)
+func Unwrap(message any, blocks ...Block) (Block, error) {
+	return doorUnwrap[Block](message, blocks)
 }
 
 // Header is a block's public header: { author, seq, prev, hash }.

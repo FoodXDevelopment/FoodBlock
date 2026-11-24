@@ -3,11 +3,11 @@ const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 const { genesis } = fb.identity
 
-// FoodBlock 1.9 (nodes.md): Pull (signed or not, heads), Push (chain checks, waiting), signed node answers, discovery.
+// nodes.md: Pull (signed or not, heads), Push (chain checks, waiting), signed node answers, discovery.
 // A signed request carries a counter or a challenge, never a time.
 const at = (n) => new Date(Date.UTC(2026, 9, 15, 9, 0, n)).toISOString()
 const person = (kind = 'person') => { const keys = fb.generateKeypair(); return { keys, me: genesis(keys, { audience: 'public', kind, encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt, at: at(0) }) } }
-const say = (me, keys, held, text, n, link) => fb.write('observe', { kind: 'note', text }, {}, { audience: 'public', author: me.hash, key: keys, held, at: at(n), link })
+const say = (me, keys, blocks, text, n, link) => fb.write('observe', { kind: 'note', text }, {}, { audience: 'public', author: me.hash, key: keys, blocks, at: at(n), link })
 
 test('push: a node takes only what its authors signed; it refuses with a code', () => {
   const { keys, me } = person()
@@ -33,18 +33,18 @@ test('push: two blocks from one key naming one prev prove a lie; a node takes a 
 
 test('push: every type is taken (open types are stored and passed on); a closed type that breaks the spec is taken and listed unread', () => {
   const { keys, me } = person()
-  const weather = fb.write('weather', { wind: 'north' }, { place: 'a'.repeat(64) }, { audience: 'public', author: me.hash, key: keys, held: [me], at: at(1) })
+  const weather = fb.write('weather', { wind: 'north' }, { place: 'a'.repeat(64) }, { audience: 'public', author: me.hash, key: keys, blocks: [me], at: at(1) })
   assert.equal(fb.sync.accept([weather], [me], { takesPairs: false }).taken.length, 1)
-  const bad = fb.create('promise', { seq: 1, at: at(2), audience: 'public', colour: 'brown' }, { author: me.hash, prev: me.hash, from: me.hash, what: 'a'.repeat(64) })
-  bad.signature = fb.signMessage(fb.header(bad), keys.private_key).signature // signed by hand: a writer's own `sign` refuses what its own read refuses (1.9 3a-3)
+  const bad = fb.create('promise', { seq: 1, at: at(2), audience: 'public', colour: 'brown', what: 'eggs' }, { author: me.hash, prev: me.hash, from: me.hash })
+  bad.signature = fb.signMessage(fb.header(bad), keys.private_key).signature // signed by hand: a writer's own `sign` refuses what its own read refuses 
   const answer = fb.sync.accept([bad], [me], { takesPairs: false })
-  assert.deepEqual([answer.refused, answer.unread.map((r) => r.codes)], [[], [['undeclared_field']]], 'valid is who said these bytes; the value codes are `read`\'s (1.9 3a-1)')
+  assert.deepEqual([answer.refused, answer.unread.map((r) => r.codes)], [[], [['undeclared_field']]], 'valid is who said these bytes; the value codes are `read`\'s ')
 })
 
 test('pull: by arrival number, never a time; filters AND together; heads; a stranger is sent nothing of a sealed block', () => {
   const { keys, me } = person(), { me: node, keys: nodeKeys } = person('node'), friend = person()
   const a = say(me, keys, [me], 'a', 1), b = say(me, keys, [me, a], 'b', 2)
-  const secret = fb.write('observe', { kind: 'note', text: 'for my friend' }, {}, { author: me.hash, key: keys, held: [me, a, b], audience: [friend.me.hash], at: at(3) })
+  const secret = fb.write('observe', { kind: 'note', text: 'for my friend' }, {}, { author: me.hash, key: keys, blocks: [me, a, b], audience: [friend.me.hash], at: at(3) })
   const log = [me, a, b, secret].map((block, i) => ({ n: i + 1, block, header_signature: fb.signMessage(fb.header(block), keys.private_key).signature }))
   const page = fb.sync.answerPull(log, fb.sync.pullRequest({ since: 1, limit: 2, filter: { author: me.hash, type: 'observe' } }), { node: node.hash, privateKey: nodeKeys.private_key, cap: 500, servesPairs: true })
   assert.deepEqual([page.blocks.map((entry) => entry.n), page.next], [[2, 3], 3])
@@ -52,7 +52,7 @@ test('pull: by arrival number, never a time; filters AND together; heads; a stra
   const heads = fb.sync.answerPull(log, { since: 0, filter: { author: me.hash }, heads: true }, { node: node.hash, cap: 500, servesPairs: true })
   assert.deepEqual(heads.blocks.map((entry) => entry.n), [3], 'heads: what no other match names by prev or updates (the sealed block is not served to this asker)')
   const sealed = fb.sync.answerPull(log, { since: 3 }, { node: node.hash, cap: 500, servesPairs: true }).blocks
-  assert.deepEqual(sealed, [], 'an unsigned pull gets nothing of a sealed block, not its header (1.9 stage 7, nodes.md A2)')
+  assert.deepEqual(sealed, [], 'an unsigned pull gets nothing of a sealed block, not its header (nodes.md)')
   assert.equal(fb.sync.matches(a, { marks: { scheme: 'tel', value: '1' } }, []), false, 'a marks filter needs the mark')
 })
 
@@ -67,7 +67,7 @@ test('a signed pull names the node and carries a counter or a challenge: replays
   assert.deepEqual(codes(pull, { highest: 7 }), ['replay'], 'a counter must be above the highest seen')
   assert.deepEqual(codes(pull, { node: 'd'.repeat(64) }), ['wrong_node'])
   // a counter is an integer of signed content, at most 2^53 - 1: past it the signed text writes many counters one way, so one signature
-  // would answer for them all (clean round 2, canonical_counter)
+  // would answer for them all 
   const huge = fb.sync.signPull({ since: 0 }, { signer: me.hash, node, privateKey: keys.private_key, counter: 2 ** 53 + 64 })
   assert.deepEqual(codes(huge), ['replay'])
   assert.deepEqual(codes({ ...pull, since: 5 }), ['bad_signature'])
@@ -89,8 +89,8 @@ test('discovery: .well-known/foodblock names the node, what it holds, its admiss
 test('push: a block that names blocks it does not hold is unread until they come; a pair that arrives together is taken by neither', () => {
   const { keys, me } = person()
   const ag = person('agent')
-  const grant = fb.write('grant', { kind: 'shop', scope: { types: ['promise'], until: '2026-12-31T00:00:00.000Z' } }, { to: ag.me.hash }, { audience: 'public', author: me.hash, key: keys, held: [me, ag.me], at: at(1) })
-  const offer = fb.write('promise', { terms: { expires: '2026-10-20T00:00:00.000Z' } }, { from: me.hash, what: me.hash, under: grant.hash }, { audience: 'public', author: ag.me.hash, key: ag.keys, held: [me, ag.me, grant], at: at(2) })
+  const grant = fb.write('grant', { kind: 'shop', scope: { types: ['promise'], expires: '2026-12-31T00:00:00.000Z' } }, { to: ag.me.hash }, { audience: 'public', author: me.hash, key: keys, blocks: [me, ag.me], at: at(1) })
+  const offer = fb.write('promise', { terms: { lines: [{ id: 'eggs', what: me.hash, quantity: fb.amount('1', '{egg}') }], expires: '2026-10-20T00:00:00.000Z' } }, { from: me.hash, under: grant.hash }, { audience: 'public', author: ag.me.hash, key: ag.keys, blocks: [me, ag.me, grant], at: at(2) })
   assert.deepEqual(fb.sync.accept([offer], [me, ag.me], { takesPairs: false }).unread, [{ hash: offer.hash, codes: ['names_missing'] }], 'the grant it acts under is a block it names')
   const both = fb.sync.accept([offer, grant], [me, ag.me], { takesPairs: false })
   assert.deepEqual([both.taken.map((b) => b.hash).sort(), both.unread], [[grant.hash, offer.hash].sort(), []])
@@ -110,10 +110,10 @@ test('push: a sealed block is checked by its public header in the core; a header
   const message = sign(header, keys.private_key)
   assert.deepEqual(fb.sync.accept([message], [me, first], { takesPairs: false }).taken, [message])
   assert.deepEqual(fb.sync.accept([{ ...message, header_signature: sign(header, fb.generateKeypair().private_key).header_signature }], [me, first], { takesPairs: false }).taken, [], 'a header signed by another key is not taken')
-  // the body arrives for the header already held: the other half, not a duplicate
+  // the body arrives for the header already among the blocks: the other half, not a duplicate
   assert.deepEqual(fb.sync.accept([body], [me, first, message], { takesPairs: false }).taken.map((b) => b.hash), [body.hash])
-  // and the header for a body held
-  assert.deepEqual(fb.sync.accept([message], [me, first, body], { takesPairs: false }).taken, [], 'the header of a body held is nothing new')
+  // and the header for a body among the blocks
+  assert.deepEqual(fb.sync.accept([message], [me, first, body], { takesPairs: false }).taken, [], 'the header of a body among the blocks is nothing new')
 })
 
 test('a node\'s own choices are stated, never filled: its cap, whether it serves and takes pairs, its admission rule and count', () => {
@@ -140,7 +140,7 @@ test('a node\'s own choices are stated, never filled: its cap, whether it serves
   assert.equal(fb.sync.pullCap, undefined, 'the core names no cap of its own')
 })
 
-test('strict push answers { refused, messages }: a push that fails is refused whole, with the hash of its bytes (1.9 3a-8)', () => {
+test('strict push answers { refused, messages }: a push that fails is refused whole, with the hash of its bytes', () => {
   const crypto = require('crypto'), text = '{"messages":[],"for":null}'
   const bad = fb.sync.strictPush(text)
   assert.deepEqual([bad.messages, bad.refused.code, bad.refused.hash], [[], 'not_canonical', crypto.createHash('sha256').update(text).digest('hex')])

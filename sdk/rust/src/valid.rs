@@ -1,19 +1,19 @@
 //! A block's two questions before any fold (core.md, section 8).
 //!
-//! `valid(block, held)`: who said these bytes. Checks 1 to 4 read the bytes alone (canonical form and strict writing, values and
+//! `valid(block, blocks)`: who said these bytes. Checks 1 to 4 read the bytes alone (canonical form and strict writing, values and
 //! grammars, the limits, the genesis or the common five); check 5, the block's pieces (its author's genesis, the block its `refs.key`
-//! names, and that block's pieces: `unmet` naming each one not held as valid); check 6, the key its pieces name opens its signature over
+//! names, and that block's pieces: `unmet` naming each one not given as valid); check 6, the key its pieces name opens its signature over
 //! its header and the id is the hash of its bytes in that key's suite. It reads no `prev`, no other link, no schema and no clock. The
 //! checks stop at the first that finds anything. `unmet` and `unknown_suite` are waits, not refusals: the block is judged again when what
-//! it lacks is held.
+//! it lacks is given.
 //!
-//! `read(block, held, schemas)`: whether this reader can read a valid block. The body passes check 8 against the schema store, and every
-//! block it names for its meaning (protocol.json `needs`) is held, valid and read (`names_missing`, `names_unread`). It gives every code
+//! `read(block, blocks, schemas)`: whether this reader can read a valid block. The body passes check 8 against the schema store, and every
+//! block it names for its meaning (protocol.json `needs`) is given, valid and read (`names_missing`, `names_unread`). It gives every code
 //! it finds. A block that is valid and not read is kept as its header and counts in no fold (`pool`).
 use crate::check::{ordered, CheckOptions};
 use crate::error::Refusal;
 use crate::identity::{genesis_opens, is_genesis, key_grant_of, named_keys, opens_as, suite_named};
-use crate::js::{hash_of, rs, type_of, Index};
+use crate::js::{hash_of, rs, ss, st, type_of, Index};
 use crate::prelude::*;
 use alloc::collections::{BTreeMap, BTreeSet};
 use core::cell::RefCell;
@@ -22,7 +22,7 @@ fn f(code: &str, detail: impl Into<String>) -> Refusal {
     Refusal::new(code, detail)
 }
 
-/// The check of core.md section 8 a code of the bytes belongs to (protocol.json `refusals.checks`, rows 1 to 3: 1.9 3a-1's size, bytes and
+/// The check of core.md section 8 a code of the bytes belongs to (protocol.json `refusals.checks`, rows 1 to 3: the size, bytes and
 /// header): the first row that lists it. None for a code of no such row: it is a value, `read`'s.
 fn bytes_check(code: &str) -> Option<usize> {
     let checks = crate::js::get(&crate::spec().protocol, "refusals.checks").and_then(Value::as_array).cloned().unwrap_or_default();
@@ -36,11 +36,11 @@ fn staged(block: &Value, options: CheckOptions) -> (Vec<Refusal>, Vec<Refusal>) 
     if block.get("type").is_none() {
         found.push(f("not_canonical", "a block is exactly { type, state, refs }: this one has no type"));
     }
-    // a finding of no row of the size, the bytes or the header is a value: `read`'s (1.9 3a-1)
-    // 1.9 3a (decided, CORE-SET "What building changed"): an id or key in the body in a suite or hash this reader does not know is `read`'s `unknown_suite` (the block is
+    // a finding of no row of the size, the bytes or the header is a value: `read`'s
+    // an id or key in the body in a suite or hash this reader does not know is `read`'s `unknown_suite` (the block is
     // not read; "a place this reader cannot read brings in nothing and refuses nothing"); a genesis its own key does not open is
-    // `bad_signature` (SILENT 27); an author or prev that is not one id is `chain`.
-    // 1.9 3a-6: the one form has no fraction, so a float is bytes that are not canonical (check 2), never a value
+    // `bad_signature`; an author or prev that is not one id is `chain`.
+    // the one form has no fraction, so a float is bytes that are not canonical (check 2), never a value
     // and no whole number past 2^53 - 1: a reader that holds numbers as doubles could not hold the value to hash it
     let found: Vec<Refusal> = found.into_iter().map(|r| if r.code == "float" || r.code == "integer_range" { f("not_canonical", r.detail) } else { r }).collect();
     let (bytes, own): (Vec<Refusal>, Vec<Refusal>) = found.into_iter().partition(|r| bytes_check(&r.code).is_some());
@@ -55,20 +55,20 @@ fn staged(block: &Value, options: CheckOptions) -> (Vec<Refusal>, Vec<Refusal>) 
 }
 
 /// What checks 1 to 4 find, reading the bytes alone: the codes of the first that finds anything (empty when none does). It needs no
-/// held block, so it is the answer for text read from the wire before anything is held.
+/// given block, so it is the answer for text read from the wire before anything is given.
 pub fn bytes_findings(block: &Value) -> Vec<Refusal> {
     staged(block, CheckOptions::default()).0
 }
 
-/// The schema store (core.md, section 8, The schema store): every `thing` of kind `schema` among the blocks held, once per id.
-pub fn schemas_from(held: &Index) -> Index {
-    held.iter()
+/// The schema store (core.md, section 8, The schema store): every `thing` of kind `schema` among the blocks given, once per id.
+pub fn schemas_from(blocks: &Index) -> Index {
+    blocks.iter()
         .filter(|(h, b)| !h.is_empty() && type_of(b) == "thing" && crate::js::get(b, "state.kind").and_then(Value::as_str) == Some("schema"))
         .map(|(h, b)| (h.clone(), b.clone()))
         .collect()
 }
 
-/// A held header message `{ header, header_signature }` (privacy.md, The public header) as the entry a store holds: the header's fields in
+/// A header a reader has message `{ header, header_signature }` (privacy.md, The public header) as the entry a store holds: the header's fields in
 /// the places a block has them (`refs.author`, `refs.prev`, `refs.key`, `state.seq`, `state.skip`), its id, and its one
 /// signature as `header_signature`. A header with any other key is marked (`bad_header`), so `valid` refuses it (`shape`).
 pub fn header_entry(message: &Value) -> Option<Value> {
@@ -109,14 +109,14 @@ fn known_hash_name(id: &str) -> bool {
     id.split_once(':').is_none_or(|(p, _)| sp.suites.iter().any(|s| sp.hash_prefix(&s.hash) == format!("{p}:")))
 }
 
-// A held header's own shape (core.md, section 8, A held header): its keys (`shape`), ids, a whole `seq` of at least 1, flags only true,
+// A header a reader has's own shape (core.md, section 8, A header a reader has): its keys (`shape`), ids, a whole `seq` of at least 1, flags only true,
 // and its signature.
 fn header_shape(entry: &Value) -> Vec<Refusal> {
     let sp = crate::spec();
     let id = |v: Option<&Value>| v.and_then(Value::as_str).is_some_and(|h| sp.is("id", h));
     let refs = entry.get("refs").unwrap_or(&Value::Null);
     let state = entry.get("state").unwrap_or(&Value::Null);
-    // 1.9 3a-1 (3): a held header's fault is `chain`; an id in a hash name this reader does not know waits (`unknown_suite`)
+    // a given header's fault is `chain`; an id in a hash name this reader does not know waits (`unknown_suite`)
     for v in [refs.get("author"), refs.get("prev"), entry.get("hash"), refs.get("key")].into_iter().flatten() {
         if id(Some(v)) && !known_hash_name(v.as_str().unwrap_or("")) {
             return vec![f("unknown_suite", "a header names an id in a hash this reader does not know")];
@@ -137,53 +137,53 @@ fn header_shape(entry: &Value) -> Vec<Refusal> {
     }
 }
 
-/// One reader's judgement of the blocks it holds: `valid` and `read`, each found once per held block and remembered, so a store is read
+/// One reader's judgement of the blocks it holds: `valid` and `read`, each found once per given block and remembered, so a store is read
 /// once (a block's pieces are judged once, however many blocks name them).
 pub struct Judge<'a> {
-    held: &'a Index,
+    blocks: &'a Index,
     schemas: Option<&'a Index>,
-    // each held block's `valid`, and the pieces it lacks when that is `unmet`
+    // each given block's `valid`, and the pieces it lacks when that is `unmet`
     valid: RefCell<BTreeMap<String, (Vec<Refusal>, Vec<String>)>>,
     read: RefCell<BTreeMap<String, Vec<Refusal>>>,
     // the blocks being read, so a ring of names (no ring of ids can be written, but a store may claim one) is read as not read
     reading: RefCell<BTreeSet<String>>,
-    // the findings of a held block's bytes and body, found once
+    // the findings of a given block's bytes and body, found once
     found: RefCell<BTreeMap<String, (Vec<Refusal>, Vec<Refusal>)>>,
-    // seat 33 mend 1: the schema store built once per judge, never once per block judged
+    // the schema store built once per judge, never once per block judged
     own_schemas: core::cell::OnceCell<Index>,
 }
 
 impl<'a> Judge<'a> {
-    /// A judge of `held`; `schemas` is the schema store `read` reads (core.md, section 8), `schemas_from(held)` when None.
-    pub fn new(held: &'a Index, schemas: Option<&'a Index>) -> Self {
-        Judge { held, schemas, valid: Default::default(), read: Default::default(), reading: Default::default(), found: Default::default(), own_schemas: Default::default() }
+    /// A judge of `blocks`; `schemas` is the schema store `read` reads (core.md, section 8), `schemas_from(blocks)` when None.
+    pub fn new(blocks: &'a Index, schemas: Option<&'a Index>) -> Self {
+        Judge { blocks, schemas, valid: Default::default(), read: Default::default(), reading: Default::default(), found: Default::default(), own_schemas: Default::default() }
     }
 
     fn findings(&self, block: &Value) -> (Vec<Refusal>, Vec<Refusal>) {
         let h = hash_of(block);
-        let held = !h.is_empty() && self.held.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block);
-        if held {
+        let blocks = !h.is_empty() && self.blocks.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block);
+        if blocks {
             if let Some(v) = self.found.borrow().get(h) {
                 return v.clone();
             }
         }
         let schemas = match self.schemas {
             Some(s) => s,
-            None => self.own_schemas.get_or_init(|| schemas_from(self.held)),
+            None => self.own_schemas.get_or_init(|| schemas_from(self.blocks)),
         };
-        let v = staged(block, CheckOptions { schemas: Some(schemas), held: Some(self.held) });
-        if held {
+        let v = staged(block, CheckOptions { schemas: Some(schemas), blocks: Some(self.blocks) });
+        if blocks {
             self.found.borrow_mut().insert(h.to_string(), v.clone());
         }
         v
     }
 
-    /// `valid` of the block held under `h`: None when nothing is held under it.
-    pub fn valid_held(&self, h: &str) -> Option<Vec<Refusal>> {
+    /// `valid` of the block given under `h`: None when nothing is given under it.
+    pub fn valid_given(&self, h: &str) -> Option<Vec<Refusal>> {
         self.judged(h).map(|v| v.0)
     }
     fn judged(&self, h: &str) -> Option<(Vec<Refusal>, Vec<String>)> {
-        let block = self.held.get(h)?;
+        let block = self.blocks.get(h)?;
         if let Some(v) = self.valid.borrow().get(h) {
             return Some(v.clone());
         }
@@ -192,16 +192,16 @@ impl<'a> Judge<'a> {
         Some(v)
     }
 
-    /// The pieces the block held under `h` lacks, when its `valid` is a wait: what a node fetches to judge it.
-    pub fn lacks_held(&self, h: &str) -> Vec<String> {
+    /// The pieces the block given under `h` lacks, when its `valid` is a wait: what a node fetches to judge it.
+    pub fn lacks_given(&self, h: &str) -> Vec<String> {
         self.judged(h).map(|v| v.1).unwrap_or_default()
     }
 
-    /// What check 5 finds of one piece (core.md, section 8): the pieces not held, or held only as their header, through it (`unmet`, what a
-    /// node fetches); whether it waits on a suite this reader does not know (`unknown_suite`); and, when it is held and refused, its first
+    /// What check 5 finds of one piece (core.md, section 8): the pieces not given, or given only as their header, through it (`unmet`, what a
+    /// node fetches); whether it waits on a suite this reader does not know (`unknown_suite`); and, when it is given and refused, its first
     /// code (`bad_piece`: final, for its id is the hash of its bytes).
     fn piece(&self, piece: &str) -> (Vec<String>, bool, Option<String>) {
-        if self.held.get(piece).is_none_or(|b| b.get("type").is_none()) {
+        if self.blocks.get(piece).is_none_or(|b| b.get("type").is_none()) {
             return (vec![piece.to_string()], false, None);
         }
         match self.judged(piece) {
@@ -212,7 +212,7 @@ impl<'a> Judge<'a> {
         }
     }
 
-    /// `valid(block, held)` (core.md, section 8): the codes of the first of checks 1 to 6 that finds anything; empty when valid. A block held
+    /// `valid(block, blocks)` (core.md, section 8): the codes of the first of checks 1 to 6 that finds anything; empty when valid. A block given
     /// by its header alone (a header entry, or a header message `{ header, header_signature }`) is checked for its keys, its pieces and its
     /// signature.
     pub fn valid(&self, block: &Value) -> Vec<Refusal> {
@@ -222,7 +222,7 @@ impl<'a> Judge<'a> {
     // `valid`, with the pieces the block lacks when it is `unmet`.
     fn judge(&self, block: &Value) -> (Vec<Refusal>, Vec<String>) {
         let entry;
-        // a value with a `header` key is a header message: exactly { header, header_signature } (core.md, section 8, A held header)
+        // a value with a `header` key is a header message: exactly { header, header_signature } (core.md, section 8, A header a reader has)
         let block = if block.get("header").is_some() && block.get("type").is_none() {
             let exact = block.as_object().is_some_and(|m| m.len() == 2 && m.contains_key("header_signature"));
             entry = header_entry(block).filter(|_| exact).unwrap_or_else(|| json!({ "bad_header": true }));
@@ -244,12 +244,12 @@ impl<'a> Judge<'a> {
             if is_genesis(block) {
                 return (genesis_findings(block), vec![]);
             }
-            // 1.9 3a-1: a header id in a hash name this reader does not know brings in nothing and waits (`unknown_suite`)
+            // a header id in a hash name this reader does not know brings in nothing and waits (`unknown_suite`)
             if ["author", "prev", "key"].iter().filter_map(|k| rs(block, k)).any(|h| !known_hash_name(h)) {
                 return (vec![f("unknown_suite", "a header names an id in a hash this reader does not know")], vec![]);
             }
         }
-        // Check 5: the pieces, each held and valid.
+        // Check 5: the pieces, each given and valid.
         let author = rs(block, "author").unwrap_or("");
         let mut pieces = vec![author.to_string()];
         if let Some(k) = rs(block, "key").filter(|k| *k != author) {
@@ -283,10 +283,10 @@ impl<'a> Judge<'a> {
             return (ordered(w, "block"), missing);
         }
         // Check 6: the key its pieces name opens its signature over its header, and the id is its bytes' hash in that key's suite.
-        (signature_findings(block, self.held), vec![])
+        (signature_findings(block, self.blocks), vec![])
     }
 
-    /// `read(block, held, schemas)` of a valid block (core.md, section 8): every code found, in protocol.json order; empty when read.
+    /// `read(block, blocks, schemas)` of a valid block (core.md, section 8): every code found, in protocol.json order; empty when read.
     pub fn read(&self, block: &Value) -> Vec<Refusal> {
         if block.get("type").is_none() {
             return vec![f("names_unread", "a block held by its header alone is not read")];
@@ -294,9 +294,9 @@ impl<'a> Judge<'a> {
         let mut found: Vec<Refusal> = Vec::new();
         let (mut missing, mut unread): (Vec<String>, Vec<String>) = (vec![], vec![]);
         for n in crate::js::needs_of(block) {
-            match self.held.get(&n) {
+            match self.blocks.get(&n) {
                 None => missing.push(n),
-                Some(_) if !self.reads_held(&n) => unread.push(n),
+                Some(_) if !self.reads_given(&n) => unread.push(n),
                 Some(_) => {}
             }
         }
@@ -306,8 +306,8 @@ impl<'a> Judge<'a> {
         if !unread.is_empty() {
             found.push(f("names_unread", format!("it names for its meaning blocks held and not valid or not read: {}", unread.join(", "))));
         }
-        // check 7 reads only what is read: a check that compares the block with a block it names that is held and not read is not made (as
-        // the oracle reads it; end pass 2026-11-20). The findings are the block's own, found once against what is held; only the codes that
+        // check 7 reads only what is read: a check that compares the block with a block it names that is given and not read is not made (as
+        // the oracle reads it). The findings are the block's own, found once against what is given; only the codes that
         // turn on such a block are left out: a passed-on grant against its parent (`wider_than_parent`, `not_receiver`), and what a schema
         // could declare (`undeclared_field`, `undeclared_ref`). No other index is built, so a store of many blocks that name blocks not read
         // costs one judgement each (a narrowed index per read once made that cubic: a stranger's push could stall a reader).
@@ -320,10 +320,10 @@ impl<'a> Judge<'a> {
         ordered(found, "read")
     }
 
-    /// Whether the block held under `h` is held with its body, valid and read.
-    pub fn reads_held(&self, h: &str) -> bool {
-        let Some(block) = self.held.get(h) else { return false };
-        if block.get("type").is_none() || !self.valid_held(h).is_some_and(|v| v.is_empty()) {
+    /// Whether the block given under `h` is given with its body, valid and read.
+    pub fn reads_given(&self, h: &str) -> bool {
+        let Some(block) = self.blocks.get(h) else { return false };
+        if block.get("type").is_none() || !self.valid_given(h).is_some_and(|v| v.is_empty()) {
             return false;
         }
         if let Some(v) = self.read.borrow().get(h) {
@@ -339,9 +339,9 @@ impl<'a> Judge<'a> {
         ok
     }
 
-    /// `read` of the block held under `h`, once judged (`reads_held`).
-    pub fn read_held(&self, h: &str) -> Option<Vec<Refusal>> {
-        self.reads_held(h);
+    /// `read` of the block given under `h`, once judged (`reads_given`).
+    pub fn read_given(&self, h: &str) -> Option<Vec<Refusal>> {
+        self.reads_given(h);
         self.read.borrow().get(h).cloned()
     }
 }
@@ -353,45 +353,55 @@ fn genesis_findings(block: &Value) -> Vec<Refusal> {
     let suite = suite_named(block);
     let mut w = Vec::new();
     let h = hash_of(block);
-    // 1.9 3a-1: a suite this reader does not know waits; else the id is the hash of its bytes in its own suite, and then its own key
+    // a suite this reader does not know waits; else the id is the hash of its bytes in its own suite, and then its own key
     // opens it: the first that finds anything is given, never two
     if !crate::sign::knows_suite(&suite) {
         w.push(f("unknown_suite", format!("the suite {suite} is not one this reader can use")));
     } else if !h.is_empty() && h != crate::block::hash_suite(&suite, t, state, refs) {
         w.push(f("bad_hash", "the id sent with it is not the hash of its canonical bytes in its key's suite"));
     } else if !genesis_opens(Some(block)) {
-        // 1.9 3a-1: `valid` gives eight codes, and a genesis its own key does not open is `bad_signature` (SILENT 27: a p256 key not
+        // `valid` gives eight codes, and a genesis its own key does not open is `bad_signature` (a p256 key not
         // spelled `04` is no key, so nothing opens it)
         w.push(f("bad_signature", "a genesis is signed by its own key, over its own bytes"));
     }
     ordered(w, "block")
 }
 
-// Check 6 for a block that is not a genesis, its pieces held: the block its `refs.key` names is a key grant about its author (else
+// Check 6 for a block that is not a genesis, its pieces given: the block its `refs.key` names is a key grant about its author (else
 // `bad_signature`); a key that block brings in (or the genesis key, with no `refs.key`) opens its signature over its header
 // (`bad_signature`), in a suite this reader knows (`unknown_suite`); and its id is the hash of its bytes in that key's suite (`bad_hash`).
-fn signature_findings(block: &Value, held: &Index) -> Vec<Refusal> {
+fn signature_findings(block: &Value, blocks: &Index) -> Vec<Refusal> {
     let author = rs(block, "author").unwrap_or("");
     let header = block.get("type").is_none();
     let mut w = Vec::new();
+    // a key grant that shows a key named by hash in her genesis list names that genesis in refs.key (core.md, section 5)
+    let shows = !header && type_of(block) == "grant" && ss(block, "kind") == Some("key") && st(block, "shown_key").is_some();
+    // the list a key its body shows may be named in: a key grant, or her genesis that states her list
+    let holder = rs(block, "key").and_then(|k| blocks.get(k)).filter(|g| key_grant_of(g, author) || (hash_of(g) == author && st(g, "voices").is_some()));
+    let hides = holder.and_then(crate::identity::list_of).is_some_and(|l| l.voices.iter().any(|v| matches!(v.who, crate::identity::Who::Hash(_))));
     if let Some(k) = rs(block, "key") {
-        if k == author || !held.get(k).is_some_and(|g| key_grant_of(g, author)) {
+        if k == author && header && hides {
+            // a header naming her genesis may be a key grant whose key is shown only in its body: it cannot be checked from the header
+            w.push(f("unmet", format!("pieces not held: {}", hash_of(block))));
+            return w;
+        }
+        if (k == author && !shows) || (k != author && !blocks.get(k).is_some_and(|g| key_grant_of(g, author))) {
             w.push(f("bad_signature", "the block its refs.key names is not a key grant whose refs.subject is its author"));
             return w;
         }
     }
-    let keys = named_keys(block, held).unwrap_or_default();
+    let keys = named_keys(block, blocks).unwrap_or_default();
     let (t, state, refs) = crate::block::parts(block);
     let h = hash_of(block);
-    // a `type` that is not text still has bytes, and so an id: the hash of the bytes as written (identity::id_in reads it so; end pass 2026-11-20)
+    // a `type` that is not text still has bytes, and so an id: the hash of the bytes as written (identity::id_in reads it so)
     let bytes_id = |suite: &str| match block.get("type").filter(|x| !x.is_string()) {
         Some(ty) => crate::block::hash_in(suite, &crate::canonical::canonical_any_type(ty, state, refs)),
         None => crate::block::hash_suite(suite, t, state, refs),
     };
     let id_in = |suite: &str| header || h.is_empty() || h == bytes_id(suite);
-    // 1.9 3a-1 (5): the id is the hash of the bytes in the suite of a key its pieces bring in (`bad_hash`), and then that key opens the
+    // the id is the hash of the bytes in the suite of a key its pieces bring in (`bad_hash`), and then that key opens the
     // signature over the header that names the block by that id (`bad_signature`): the first that finds anything is given, never both
-    // (part 08 row 2: a forged block is `bad_hash` alone).
+    // (a forged block is `bad_hash` alone).
     let known: Vec<&(String, String)> = keys.iter().filter(|(_, s)| crate::sign::knows_suite(s)).collect();
     if !header && !h.is_empty() && !known.is_empty() && known.len() == keys.len() && !known.iter().any(|(_, s)| id_in(s)) {
         w.push(f("bad_hash", "the id sent with it is not the hash of its canonical bytes in the suite of a key its pieces name"));
@@ -405,9 +415,12 @@ fn signature_findings(block: &Value, held: &Index) -> Vec<Refusal> {
             }
         }
         None => {
-            // 1.9 3a-1: a place this reader cannot read brings in nothing and refuses nothing; `bad_signature` only when every place the
+            // a place this reader cannot read brings in nothing and refuses nothing; `bad_signature` only when every place the
             // pieces offer is one this reader can read
-            if keys.is_empty() || keys.iter().all(|(_, s)| crate::sign::knows_suite(s)) {
+            if header && hides {
+                // a header of a key grant whose key is shown only in its body cannot be checked from the header: it waits on its body
+                w.push(f("unmet", format!("pieces not held: {}", hash_of(block))));
+            } else if keys.is_empty() || keys.iter().all(|(_, s)| crate::sign::knows_suite(s)) {
                 w.push(f("bad_signature", "no key its pieces name opens its signature over its header"));
             } else {
                 w.push(f("unknown_suite", "a key its pieces name is in a suite this reader cannot use"));
@@ -417,23 +430,23 @@ fn signature_findings(block: &Value, held: &Index) -> Vec<Refusal> {
     ordered(w, "block")
 }
 
-/// `valid(block, held)` (core.md, section 8): who said these bytes. `block` is a full block or a held header `{ header, header_signature }`.
-pub fn valid(block: &Value, held: &Index) -> Vec<Refusal> {
-    Judge::new(held, None).valid(block)
+/// `valid(block, blocks)` (core.md, section 8): who said these bytes. `block` is a full block or a given header `{ header, header_signature }`.
+pub fn valid(block: &Value, blocks: &Index) -> Vec<Refusal> {
+    Judge::new(blocks, None).valid(block)
 }
 
-/// `read(block, held, schemas)` (core.md, section 8) of a valid block; `schemas` is the store, `schemas_from(held)` when None.
-pub fn read(block: &Value, held: &Index, schemas: Option<&Index>) -> Vec<Refusal> {
-    Judge::new(held, schemas).read(block)
+/// `read(block, blocks, schemas)` (core.md, section 8) of a valid block; `schemas` is the store, `schemas_from(blocks)` when None.
+pub fn read(block: &Value, blocks: &Index, schemas: Option<&Index>) -> Vec<Refusal> {
+    Judge::new(blocks, schemas).read(block)
 }
 
-/// What a fold may read of the blocks held (folds.md, A fold reads only what is valid and read): each block that is valid and read, whole;
+/// What a fold may read of the blocks given (folds.md, A fold reads only what is valid and read): each block that is valid and read, whole;
 /// each that is valid and not read, as its header; nothing of a block that is not valid, or not yet judged. Borrowed when nothing changes
 /// (the common case: a node's own store is whole and read).
 pub fn pool(index: &Index) -> alloc::borrow::Cow<'_, Index> {
     let judge = Judge::new(index, None);
     let mut out: Vec<(String, Option<Value>)> = Vec::new();
-    // 1.9 3b-7: "each id in its refs" leaves out the line's own links (author, prev, key, after): its header shows them, and naming the
+    // "each id in its refs" leaves out the line's own links (author, prev, key, after): its header shows them, and naming the
     // block before it names no measure
     let names_of = |b: &Value| {
         crate::js::sorted_set(b.get("refs").and_then(Value::as_object).into_iter().flat_map(|m| m.iter().filter(|(k, _)| !matches!(k.as_str(), "author" | "prev" | "key" | "after")).map(|(_, v)| v)).flat_map(|v| match v {
@@ -443,16 +456,16 @@ pub fn pool(index: &Index) -> alloc::borrow::Cow<'_, Index> {
         }))
     };
     for (h, b) in index.iter() {
-        match judge.valid_held(h) {
+        match judge.valid_given(h) {
             Some(v) if v.is_empty() => {
-                if b.get("type").is_some() && !judge.reads_held(h) {
-                    // 1.9 3b-7: a block held as a body and not read hides each id in its refs; the header it is kept as carries them
-                    // (`_names`), so a fold can tell it from a block held only as its header
+                if b.get("type").is_some() && !judge.reads_given(h) {
+                    // a block given as a body and not read hides each id in its refs; the header it is kept as carries them
+                    // (`_names`), so a fold can tell it from a block given only as its header
                     let mut e = as_header(b);
                     e["_names"] = json!(names_of(b));
                     // a key grant that is valid brings its key in whether or not this reader can read it (core.md, section 8, check 6): its
                     // header keeps the keys it brings in (`_brings`), so a block its key signed is still its author's word (07, What
-                    // building changed: valid says who said the bytes, whatever read says; end pass 2026-11-20)
+                    // building changed: valid says who said the bytes, whatever read says)
                     if let Some(author) = crate::js::rs(b, "subject") {
                         let keys = crate::identity::brings_in(b, author, index);
                         if !keys.is_empty() {
@@ -462,10 +475,10 @@ pub fn pool(index: &Index) -> alloc::borrow::Cow<'_, Index> {
                     out.push((h.clone(), Some(e)));
                 }
             }
-            // 1.9 3a-4: a block this reader cannot judge (its pieces not all held, or a suite it does not know), held with its body, is
+            // a block this reader cannot judge (its pieces not all given, or a suite it does not know), given with its body, is
             // on no line and counts in no fold, but hides each thing its refs name (`_unjudged`)
             Some(v) if b.get("type").is_some() && v.iter().all(|r| r.code == "unmet" || r.code == "unknown_suite") => {
-                // kept under a key no id can be, so nothing reads it as held at its id: only `hidden` reads it
+                // kept under a key no id can be, so nothing reads it as given at its id: only `hidden` reads it
                 out.push((h.clone(), None));
                 out.push((format!("~unjudged:{h}"), Some(json!({ "hash": h, "_unjudged": names_of(b) }))));
             }
@@ -489,12 +502,12 @@ pub fn pool(index: &Index) -> alloc::borrow::Cow<'_, Index> {
     alloc::borrow::Cow::Owned(kept)
 }
 
-/// Whether a block a fold is asked about, held or not, is valid and read with the blocks held: a block that is not is no word in any fold.
+/// Whether a block a fold is asked about, given or not, is valid and read with the blocks given: a block that is not is no word in any fold.
 pub fn is_read(block: &Value, index: &Index) -> bool {
     let judge = Judge::new(index, None);
     let h = hash_of(block);
     if index.get(h).is_some_and(|b| b == block) {
-        return judge.reads_held(h);
+        return judge.reads_given(h);
     }
     block.get("type").is_some() && judge.valid(block).is_empty() && judge.read(block).is_empty()
 }

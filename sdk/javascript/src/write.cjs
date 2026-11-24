@@ -20,18 +20,18 @@ const compose = (type, state = {}, refs = {}, options = {}) => door.compose(type
 
 /**
  * The one way to write: compose, check (refusing, never repairing), sign with the author's key, at the next place in
- * that key's chain among `held`. Returns the signed block; throws with every reason when the check refuses.
+ * that key's chain among `blocks`. Returns the signed block; throws with every reason when the check refuses.
  */
-function write(type, state, refs, { key, held = [], schemas, ...options } = {}) {
-  return door.write(type, state, refs, { ...composing(options), key, held: list(held), ...(schemas ? { schemas: list(schemas) } : {}) })
+function write(type, state, refs, { key, blocks = [], schemas, ...options } = {}) {
+  return door.write(type, state, refs, { ...composing(options), key, blocks: list(blocks), ...(schemas ? { schemas: list(schemas) } : {}) })
 }
 
 // ---- Messages ----
 /** A signed public block as it travels: { block, signature }. It never names a suite or a version (core.md, sections 2 and 6). */
 const wrap = door.wrap
-/** A block off the wire: its hash recomputed from its content, in the suite of the key that signed it (found among `held`, the author's
+/** A block off the wire: its hash recomputed from its content, in the suite of the key that signed it (found among `blocks`, the author's
  * blocks; without it, the suite the block shows), its signature kept beside. A message that names a suite or carries a version is refused. */
-const unwrap = (message, held) => (held === undefined ? door.unwrap(message) : door.unwrap(message, list(held)))
+const unwrap = (message, blocks) => (blocks === undefined ? door.unwrap(message) : door.unwrap(message, list(blocks)))
 /** A block's public header: { author, seq, prev, hash }. */
 const header = door.header
 /** A sealed copy: { header, header_signature, envelope }. A private block is signed once, over its header (`write` does so), so that

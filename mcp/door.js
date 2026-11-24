@@ -36,7 +36,7 @@ export function memoryNode() {
   return {
     all,
     get: (hash) => blocks.get(hash) || unique(all(), hash),
-    /** Take a signed block in: the SDK's accept (valid against what is held). Returns { taken, refused }. */
+    /** Take a signed block in: the SDK's accept (valid against the blocks it has). Returns { taken, refused }. */
     push(signed) {
       const { salts, ...block } = signed;
       const result = fb.sync.accept([block], all(), { takesPairs: TAKES_PAIRS });
@@ -51,15 +51,10 @@ export function memoryNode() {
  * has no recovery or encryption key and no authority until a grant her device signed. (Not for a person: a person's key is made on her own
  * device and never reaches a door. Test fixtures that need fictional people make them in mcp/test/ only.)
  */
-export function newAgent() {
+function newAgent() {
   const keys = fb.generateKeypair();
   const genesis = fb.identity.genesis(keys, { kind: "agent", at: clock(), audience: IDENTITY_AUDIENCE });
   return { keys, genesis, chain: [genesis], id: genesis.hash };
-}
-
-/** The old flow made a person here, with her keys inside the door. It no longer exists; this says where it went. */
-export function newPerson() {
-  throw new Error("this door makes no person and holds no key of hers: make her identity on her own device (a passkey), then give the door her genesis and chain (public blocks only)");
 }
 
 const scopeOf = (grant) => grant?.state?.scope || {};
@@ -86,15 +81,15 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
   const composeFor = (who, spec, extra = {}) => {
     const link = fb.identity.nextLinkFor(who.id, who === person ? signerKeyOf() : who.keys.public_key_sign, who.chain);
     const block = fb.compose(spec.type, spec.state, spec.refs, { author: who.id, at: now(), audience: spec.audience, link, ...extra });
-    // 1.9 3a-3: `valid` judges no value; what a writer would refuse to sign is the SDK's `writeRefusals`, asked of the draft before anyone signs
-    const held = [...node.all(), ...who.chain];
-    const wrong = [...fb.valid({ ...block, signature: "00" }, held).filter((r) => r.code !== "bad_signature"), ...fb.writeRefusals({ type: block.type, state: block.state, refs: block.refs }, held)];
+    // `valid` judges no value; what a writer would refuse to sign is the SDK's `writeRefusals`, asked of the draft before anyone signs
+    const blocks = [...node.all(), ...who.chain];
+    const wrong = [...fb.valid({ ...block, signature: "00" }, blocks).filter((r) => r.code !== "bad_signature"), ...fb.writeRefusals({ type: block.type, state: block.state, refs: block.refs }, blocks)];
     if (wrong.length) throw Object.assign(new Error(`the block would be refused: ${wrong.map((r) => r.detail || r.code).join("; ")}`), { wrong: wrong.map((r) => r.detail || r.code) });
     return block;
   };
   // An assistant signs only under a live grant, naming it, with its own session key.
-  const writeAs = (who, spec, extra = {}) => fb.write(spec.type, spec.state, spec.refs, { author: who.id, key: who.keys, held: who.chain, at: now(), audience: spec.audience, ...extra });
-  // A block is the signer's only once the node took it: one the node leaves unjudged or refuses is never reported as sent or bound (door/t8).
+  const writeAs = (who, spec, extra = {}) => fb.write(spec.type, spec.state, spec.refs, { author: who.id, key: who.keys, blocks: who.chain, at: now(), audience: spec.audience, ...extra });
+  // A block is the signer's only once the node took it: one the node leaves unjudged or refuses is never reported as sent or bound.
   const keep = (who, signed) => {
     const { salts, ...block } = signed;
     const result = node.push(block);
@@ -122,11 +117,11 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
     const trial = composeFor(person, spec);
     const stopped = to ? admission(trial, to).filter((code) => code === "stopped") : [];
     if (stopped.length) throw Object.assign(new Error(`stopped: ${to.slice(0, 8)} asked for no contact; nothing was drafted`), { wrong: ["stopped"] });
-    // the person's list of what waits for a tap is bounded: an assistant cannot bury the one that matters under thousands (agents/t18)
+    // the person's list of what waits for a tap is bounded: an assistant cannot bury the one that matters under thousands
     if ([...drafts.values()].filter((d) => d.status === "pending").length >= MAX_PENDING) throw Object.assign(new Error(`${MAX_PENDING} drafts already wait for the person's tap: ask them to send or discard some first`), { wrong: ["too_many_drafts"] });
     const id = randomBytes(32).toString("hex");
     const shown = words(trial, node);
-    // the tool is told what the page will show, the same lines: it cannot describe a block as something it is not (F3)
+    // the tool is told what the page will show, the same lines: it cannot describe a block as something it is not
     const summary = `${verb || kind}: ${shown.slice(1).join("; ")}`;
     const item = { id, kind, spec, audience: spec.audience, to: to || null, shown, summary, why: why || null, status: "pending", at: now(), receipt: fb.shortCode(id), failures: 0 };
     drafts.set(id, item); touch();
@@ -211,14 +206,14 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
 
   /** connect: pair this assistant to the person's node. The grant is a draft until her device signs it. */
   function connect(assistant, { types = [], days = 30, limit, audience, parties = [], on = [] } = {}) {
-    const until = plusDays(Math.min(Math.max(days, 1), 365), now());
+    const expires = plusDays(Math.min(Math.max(days, 1), 365), now());
     // `parties`: the ids the assistant may deal with. A grant that lists none names no one but the person (authority.md): nothing widens it.
-    // `on`: the promises of hers it may bind her to (1.9 G1: a block under the grant binds her only where it keeps to one of them); a grant
-    // that names one is counted on a line, its `refs.meter`: the assistant's own (stage 4, a meter that is the holder's own id).
+    // `on`: the promises of hers it may bind her to (authority.md, A tool's word: a block under the grant binds her only where it keeps to one of them); a grant
+    // that names one is counted on a line, its `refs.meter`: the assistant's own (a meter that is the holder's own id).
     const ons = [...new Set(on.map((h) => fullId(h, "promise")))];
-    const scope = { types: [...new Set(types)], parties: [...new Set(parties)], ...(ons.length ? { on: ons } : {}), until, ...(limit ? { limit } : {}) };
+    const scope = { types: [...new Set(types)], parties: [...new Set(parties)], ...(ons.length ? { on: ons } : {}), expires, ...(limit ? { limit } : {}) };
     const spec = { type: "grant", state: { kind: "assistant", scope }, refs: { to: assistant.id, ...(ons.length ? { meter: assistant.id } : {}) }, audience };
-    // the name is the one the app gave itself: shown as its words, beside the client and key that are facts (agents/t19)
+    // the name is the one the app gave itself: shown as its words, beside the client and key that are facts
     const nolimit = scope.types.length && !limit ? ", with NO limit on what it binds" : "";
     const item = draft("grant", spec, { verb: `Connect an assistant that calls itself "${plain(assistant.name)}" (${assistant.client ? `app ${plain(assistant.client)}, ` : ""}key ${String(assistant.id).slice(0, 12)})${nolimit}` });
     drafts.get(item.draft).assistant = assistant;
@@ -247,7 +242,9 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
   // ---- Reading the world ----
   const textOf = (block) => [block?.state?.name, block?.state?.kind, block?.state?.what].filter(Boolean).join(" ").toLowerCase();
   const thingOf = (hash) => node.get(hash);
-  // each block's newer versions by its own author, read once per call (a scan of the store for each record made find quadratic: agents/t4)
+  // a deal is its lines (promises.md, A deal is its lines): what a promise moves is the `what` of a line, never a ref
+  const whatOf = (block) => linesOf(block?.state?.terms).find((l) => l.what)?.what;
+  // each block's newer versions by its own author, read once per call (a scan of the store for each record made find quadratic)
   const versionsOf = (all) => {
     const by = new Map();
     for (const b of all) if (b.refs?.updates) { const list = by.get(b.refs.updates) || []; list.push(b); by.set(b.refs.updates, list); }
@@ -273,19 +270,19 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
     const all = node.all();
     const offersNow = () => {
       const candidates = all.filter((b) => b.type === "promise" && !b.refs.answers && b.refs.from && b.refs.author === b.refs.from && b.refs.from !== person.id)
-        .filter((b) => { const thing = b.refs.what && thingOf(b.refs.what); return matches(thing || b) && placeOk(b, thing); });
-      // every candidate's view against one reading of the store (security I: a view per offer read the whole store each time)
+        .filter((b) => { const thing = whatOf(b) && thingOf(whatOf(b)); return matches(thing || b) && placeOk(b, thing); });
+      // every candidate's view against one reading of the store
       const views = candidates.length ? fb.fold.promiseViews(candidates, all, { now: t }) : {};
       return candidates.map((b) => ({ b, view: views[b.hash] })).filter(({ view: v }) => v && v.stage === "offered");
     };
-    // each peer read once per find: their standing asks the core about the whole store (agents/t4)
+    // each peer read once per find: their standing asks the core about the whole store
     const peers = new Map();
     const ofPeer = (id) => { if (!peers.has(id)) peers.set(id, { id, kind: node.get(id)?.state?.kind || null, no_contact: standing(id).stopped }); return peers.get(id); };
     if (kind === "offers") return offersNow().slice(0, limit).map(({ b }) => {
-      const thing = thingOf(b.refs.what);
-      // what an author wrote is cut short here (read gives the whole block): a seller's 30 KB of text never fills a list (agents/t7)
+      const thing = whatOf(b) && thingOf(whatOf(b));
+      // what an author wrote is cut short here (read gives the whole block): a seller's 30 KB of text never fills a list
       return { offer: b.hash, from: ofPeer(b.refs.from), what: thing ? { hash: thing.hash, kind: plain(thing.state.kind), name: plain(thing.state.name) } : (b.state.what ? plain(b.state.what) : null),
-        price: b.state.terms?.price || null, quantity: b.state.terms?.quantity || null, deliver_by: b.state.terms?.deliver_by || null, expires: b.state.terms?.expires || null };
+        lines: linesOf(b.state.terms), deliver_by: b.state.terms?.deliver_by || null, expires: b.state.terms?.expires || null };
     });
     const newer = versionsOf(all);
     if (kind === "things") return all.filter((b) => b.type === "thing" && b.state.kind !== "place" && b.state.kind !== "schema" && matches(b) && placeOk(b, b))
@@ -308,7 +305,7 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
     const out = { block, refusals: fb.valid(block, others), signed_by_author: fb.identity.signedByAuthor(block, node.all()), receipt: fb.shortCode(block.hash) };
     if (block.type === "promise") {
       const first = block.refs.answers || block.refs.for ? node.get(block.refs.for || block.refs.answers) || block : block;
-      out.promise = { first: first.hash, ...pick(fb.promiseView(first, node.all(), { now: now() }), ["stage", "sides", "quantity", "accept", "lines", "total", "paid", "stop", "stopped"]) };
+      out.promise = { first: first.hash, ...pick(fb.promiseView(first, node.all(), { now: now() }), ["stage", "sides", "accept", "lines", "total", "paid", "stop", "stopped"]) };
     }
     if (block.type === "thing") {
       const current = latest(block);
@@ -319,23 +316,24 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
   const pick = (object, keys) => Object.fromEntries(keys.map((key) => [key, object[key]]));
 
   // ---- Asking and promising ----
-  const termsOf = ({ price, quantity, deliver_by, expires, days = 7 }, t = now()) =>
-    ({ ...(price ? { price } : {}), ...(quantity ? { quantity } : {}), ...(deliver_by ? { deliver_by } : {}), expires: expires || plusDays(days, t) });
+  // the one line this tool states: what moves, how much, at what price (a quote has neither quantity nor price)
+  const termsOf = ({ what, price, quantity, deliver_by, expires, days = 7 }, t = now(), id = "goods") =>
+    ({ lines: [{ id, ...(what ? { what } : {}), ...(quantity ? { quantity } : {}), ...(price ? { price } : {}) }], ...(deliver_by ? { deliver_by } : {}), expires: expires || plusDays(days, t) });
 
   /** ask: a want or quote request in the person's name. Always a draft; a human tap sends it. */
   function ask({ from, what, offer, audience, ...terms }) {
     const source = offer && node.get(fullId(offer, "offer"));
-    const target = what || source?.refs?.what;
+    const target = what || whatOf(source);
     if (!target) throw Object.assign(new Error("nothing to ask for: give an offer or a thing; nothing was drafted"), { wrong: ["no_thing"] });
     const seller = from || source?.refs?.from;
-    const refs = { to: person.id, ...(seller ? { from: seller } : {}), ...(target ? { what: target } : {}), ...(source ? { derives_from: source.hash } : {}) };
-    const spec = { type: "promise", state: { terms: termsOf(terms) }, refs, audience };
+    const refs = { to: person.id, ...(seller ? { from: seller } : {}), ...(source ? { derives_from: source.hash } : {}) };
+    const spec = { type: "promise", state: { terms: termsOf({ ...terms, what: target }, now(), mainLine(source?.state?.terms)?.id) }, refs, audience };
     return draft("ask", spec, { to: seller, verb: "Ask", why: "A first message to a stranger has a human author: she signs it on her own device." });
   }
 
   /** promise: the assistant's own binding block, only under a live grant that covers its type, never to a stranger. */
   function promise(assistant, { to, what, audience, ...terms }) {
-    const spec = { type: "promise", state: { terms: termsOf(terms) }, refs: { to: person.id, from: to, what }, audience };
+    const spec = { type: "promise", state: { terms: termsOf({ ...terms, what }) }, refs: { to: person.id, from: to }, audience };
     return bind(assistant, "promise", spec, to, "Promise");
   }
 
@@ -345,7 +343,10 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
     if (!offer || offer.type !== "promise") throw new Error("No such promise here.");
     const first = node.get(offer.refs.for) || offer;
     const seller = offer.refs.author;
-    const spec = { type: "promise", state: { status: "accepted", ...(quantity ? { terms: { quantity } } : {}) }, refs: { answers: offer.hash, for: first.hash }, audience };
+    // an accept names only the quantities it chooses, on the offer's own line
+    const line = mainLine(offer.state?.terms);
+    if (quantity && !line) throw new Error("this offer has no line to choose a quantity on");
+    const spec = { type: "promise", state: { status: "accepted", ...(quantity ? { terms: { lines: [{ id: line.id, quantity }] } } : {}) }, refs: { answers: offer.hash, for: first.hash }, audience };
     // the summary is of what is signed: the offer's terms as this accept binds them (its own quantity, where it names one)
     return bind(assistant, "accept", spec, seller, "Accept", offer);
   }
@@ -355,14 +356,14 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
     const why = [];
     if (!grant) why.push("no live grant: this assistant is not connected, or the person's grant ended");
     else if (!(scopeOf(grant).types || []).includes("promise")) why.push("the grant does not cover the type `promise`: an agent's ask is a quote request");
-    // The person's limit is counted by the SDK on the grant's own line (1.9 stage 4, G1: `why_not_under` reads the meter, `keeps_to` and the
+    // The person's limit is counted by the SDK on the grant's own line (authority.md, A limit is counted along one line: `why_not_under` reads the meter, `keeps_to` and the
     // limit), never by a copy here.
-    // 1.9 stage 4: a block that binds her under a grant with a limit states what it draws on the grant's line (`state.draws`): the total
+    // A block that binds her under a grant with a limit states what it draws on the grant's line (`state.draws`): the total
     // the deal comes to (the SDK's terms_total of the offer's terms at the quantity the block chooses); the SDK counts it on the line
     const sc = grant ? scopeOf(grant) : {};
     if (grant && (sc.limit || sc.each) && !spec.state.draws) {
-      const terms = { ...(offer?.state?.terms || {}), ...(spec.state.terms || {}) };
-      const total = terms.price ? fb.grant.termsTotal(terms, spec.state.terms?.quantity || terms.quantity) : null;
+      const terms = offer?.state?.terms || spec.state.terms || {};
+      const total = linesOf(terms).some((l) => l.price !== undefined) ? fb.grant.termsTotal(terms, (offer && spec.state.terms?.lines) || atMost(terms)) : null;
       if (total && total.unit !== undefined) spec = { ...spec, state: { ...spec.state, draws: { grant: grant.hash, amount: total } } };
     }
     if (!why.length) {
@@ -398,14 +399,6 @@ export function createDoor({ node = memoryNode(), person, now = clock, persist =
   return Object.assign(door, { agent, connect, find, read, ask, promise, accept, pending: () => [...drafts.values()].filter((d) => d.status === "pending") });
 }
 
-// Two decimal strings added exactly (amounts are decimals, never floats).
-function addDecimals(a, b) {
-  const parts = [String(a), String(b)].map((x) => { const neg = x.startsWith("-"), [i, f = ""] = x.replace(/^[-+]/, "").split("."); return { neg, i, f }; });
-  const scale = Math.max(...parts.map((p) => p.f.length));
-  const big = parts.map((p) => (p.neg ? -1n : 1n) * BigInt(p.i + p.f.padEnd(scale, "0")));
-  const total = big[0] + big[1], neg = total < 0n, digits = (neg ? -total : total).toString().padStart(scale + 1, "0");
-  return (neg ? "-" : "") + (scale ? digits.slice(0, -scale) + "." + digits.slice(-scale) : digits);
-}
 const MAX_PENDING = 100;
 const WRONG_CODE_MS = 1000;
 const TRIES = 5;
@@ -414,7 +407,7 @@ const BIDI = /[؜‎‏‪-‮⁦-⁩]/g;
 const plain = (text) => { const t = String(text ?? "").replace(BIDI, ""); return t.length > 120 ? `${t.slice(0, 120)}…` : t; };
 // An amount as people read it: its value and its unit, as the block says them. Exact: a decimal text, never a float.
 const mark = (a) => (a && typeof a === "object" && a.value !== undefined && a.unit !== undefined ? `${plain(a.value)} ${plain(a.unit)}` : null);
-// A unit is one token (kg, GBP, {tray}); words in a unit are a tool writing prose into a field a person reads as a fact. Refused at the draft, before anyone is shown it (F3).
+// A unit is one token (kg, GBP, {tray}); words in a unit are a tool writing prose into a field a person reads as a fact. Refused at the draft, before anyone is shown it.
 const UNIT = /^\S{1,32}$/u;
 function refuseProse(value, path = "state") {
   if (Array.isArray(value)) return value.forEach((x, i) => refuseProse(x, `${path}[${i}]`));
@@ -426,34 +419,36 @@ function refuseProse(value, path = "state") {
 }
 const SHORT = (id) => `${String(id).slice(0, 8)}…${String(id).slice(-4)}`;
 
-/**
- * Terms as one reading: the total the terms come to, from the SDK, so a person sees the sum and not only its parts.
- */
+const linesOf = (terms) => terms?.lines || [];
+const mainLine = (terms) => linesOf(terms).find((l) => l.quantity !== undefined) || linesOf(terms)[0];
+// where a line's quantity is a range, the most it can come to (a total shown or drawn is the worst case)
+const atMost = (terms) => { const lines = linesOf(terms).filter((l) => l.quantity?.max !== undefined).map((l) => ({ id: l.id, quantity: l.quantity.max })); return lines.length ? lines : null; };
+
 function totalOf(block, byHash) {
-  try { const offer = block.refs?.answers && byHash.get(block.refs.answers); const t = offer ? { ...offer.state?.terms, ...block.state?.terms } : block.state?.terms; if (!t) return null; const q = t.quantity?.max !== undefined ? t.quantity.max : t.quantity; return mark(fb.grant.termsTotal(t, q || null)); } catch { return null; }
+  try { const offer = block.refs?.answers && byHash.get(block.refs.answers); const t = offer ? offer.state?.terms : block.state?.terms; if (!linesOf(t).length) return null; return mark(fb.grant.termsTotal(t, (offer && block.state?.terms?.lines) || atMost(t))); } catch { return null; }
 }
 
 /**
  * What the person signs, in plain fields, from the block itself: who may read it first, then every field of its state and refs (the signer's own
  * bookkeeping aside). The approval page shows this and nothing else, so nothing signed can be absent from it, and the summary the tool receives is these
  * same lines. Every id is shown by what signed blocks the node holds say of it: a thing by its signed name, kind and maker; a person by who they are to
- * this deal; any id also in full. Words an author wrote are marked as theirs. A reader who is no party to the deal is flagged. Two held things with the
+ * this deal; any id also in full. Words an author wrote are marked as theirs. A reader who is no party to the deal is flagged. Two things among them with the
  * same name and kind are called out, so a look-alike cannot stand in for the one meant.
  */
 function words(block, node) {
-  const held = node ? node.all() : [];
-  const byHash = new Map(held.map((b) => [b.hash, b]));
+  const blocks = node ? node.all() : [];
+  const byHash = new Map(blocks.map((b) => [b.hash, b]));
   const parties = new Set([block.refs?.author, ...["from", "to", "to_owner", "to_holder"].map((r) => block.refs?.[r])].filter(Boolean));
   const idLine = (id) => {
     const b = byHash.get(id);
     if (b && b.type === "thing") {
-      const same = held.filter((o) => o.type === "thing" && o.hash !== b.hash && o.state?.name === b.state?.name && o.state?.kind === b.state?.kind);
-      const twin = same.length ? ` WARNING: ${same.length} other held thing${same.length > 1 ? "s share" : " shares"} this name and kind (${same.map((o) => SHORT(o.hash)).join(", ")}): check it is the one you mean` : "";
+      const same = blocks.filter((o) => o.type === "thing" && o.hash !== b.hash && o.state?.name === b.state?.name && o.state?.kind === b.state?.kind);
+      const twin = same.length ? ` WARNING: ${same.length} other thing${same.length > 1 ? "s here share" : " here shares"} this name and kind (${same.map((o) => SHORT(o.hash)).join(", ")}): check it is the one you mean` : "";
       return `${b.state?.name ? `"${plain(b.state.name)}"` : "a thing with no name"} (their words), kind ${plain(b.state?.kind ?? "none")}, made by ${SHORT(b.refs?.author ?? id)} (author id ${b.refs?.author ?? id}); id ${id}${twin}`;
     }
     if (b && b.type === "actor") return `${plain(b.state?.kind ?? "someone")} ${SHORT(id)}; id ${id}`;
     if (b) return `a ${plain(b.type)} block${b.state?.kind ? ` of kind ${plain(b.state.kind)}` : ""} by ${SHORT(b.refs?.author ?? "?")} (author id ${b.refs?.author ?? "?"}); id ${id}`;
-    return `${SHORT(id)} (not held here); id ${id}`;
+    return `${SHORT(id)} (not here); id ${id}`;
   };
   const ID = new RegExp(fb.PROTOCOL.grammar.id);
   const readers = block.state.audience === "public" ? "anyone" : Object.keys(block.salts || {}).sort().map((id) => `${idLine(id)}${parties.has(id) ? "" : " [also readable by an id that is not a party]"}`).join(" | ");

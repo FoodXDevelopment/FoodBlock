@@ -134,7 +134,7 @@ deal are in FIELDS.md.
   worked out once; index.mjs reads it for FoodOS. check.py fails when compiled.json is older than the library or the
   rules, or when the JavaScript reader answers any case differently. Labels in other languages sit beside an act, and
   code reads ids and facts, never labels. (An entry of this library may be published as any open `thing`; the protocol gives it no kind of its own and reads none.)
-- **Acts are computed from signed blocks, never labelled on them.** Under the act library sits FoodBlock 1.7
+- **Acts are computed from signed blocks, never labelled on them.** Under the act library sits FoodBlock
   (foodblock/spec/protocol.md): every block is a signed step in one of three moods: is binds his name to its truth; must binds his property to its
   condition; may is his consent to another acting for him. Information nobody signed is pencil, never a block. The verb, the stage and the act's name are read from the blocks; the structure always wins over a
   label.

@@ -146,11 +146,10 @@ if (PACK) {
   fs.rmSync(scratch, { recursive: true, force: true })
 }
 // Text that names an older protocol as the current one ("FoodBlock" and an old number): say FoodBlock, or the version above.
-// The year-zero and converter texts name 1.6 on purpose and never put the number after the name.
 {
   const stale = /FoodBlock\s+(\d+\.\d+)\b/g, here = VERSION.replace(/\.0$/, '')
   const files = cp.spawnSync('git', ['ls-files', 'sdk', 'host', 'mcp', 'cli', 'tools', 'spec/profiles', 'spec/schemas/schemas.json'], { cwd: ROOT, encoding: 'utf8' }).stdout.split('\n')
-    .filter((f) => f && /\.(md|js|cjs|mjs|rs|h|hpp|py|go|swift|kt|kts|json|toml|sql|yml|tla)$/.test(f) && !/(^|\/)(legacy|CHANGELOG|aliases-)/.test(f) && !f.endsWith('vectors.json'))
+    .filter((f) => f && /\.(md|js|cjs|mjs|rs|h|hpp|py|go|swift|kt|kts|json|toml|sql|yml)$/.test(f) && !/(^|\/)CHANGELOG/.test(f) && !f.endsWith('vectors.json'))
   for (const f of files) {
     let text
     try { text = read(f) } catch { continue }

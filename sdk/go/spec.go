@@ -9,14 +9,14 @@ import (
 var (
 	both = doorSpec[map[string]any]()
 
-	// Protocol is spec/protocol.json as a plain JSON value. There is no alias table: year zero.
+	// Protocol is spec/protocol.json as a plain JSON value.
 	Protocol = obj(both["protocol"])
 	// Conventions is spec/conventions.json: a node's conventions and the lists of readings and tools (peers, messages,
 	// cbor, profiles); no word reads it.
 	Conventions = obj(both["conventions"])
 
-	// Version is the protocol version these rules are ("1.7").
-	Version = str(Protocol["version"])
+	// Version is the core's number (a label: protocol.json names no version).
+	Version = doorVersion()
 	// Types are the seven type names, in protocol.json's order.
 	Types = doorTypes()
 	// Verbs are the seven verbs.

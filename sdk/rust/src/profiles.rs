@@ -1,8 +1,7 @@
 //! Small optional profiles whose code is only a check or two (spec/profiles): residency (where blocks may be stored)
 //! and earnest (a node holds an ask until a earnest is paid; node policy, not protocol).
 use crate::error::Refusal;
-#[allow(unused_imports)]
-use crate::js::{get, hash_of, list, rf, st, type_of};
+use crate::js::{list, st};
 use crate::prelude::*;
 
 /// Residency (profiles/residency.md): a node's admission rule may list the regions it promises to store in, `holds_in`; a block

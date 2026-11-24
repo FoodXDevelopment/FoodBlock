@@ -18,7 +18,7 @@ pub fn shares_on(thing: &Value, blocks: &[Value]) -> Value {
     let is_kind = !super::things::is_instance(index.get(&subject).unwrap_or(thing));
     let mut shares: Vec<&Value> = index
         .values()
-        .filter(|b| type_of(b) == "thing" && ss(b, "kind") == Some("share") && rs(b, "subject") == Some(subject.as_str()) && crate::identity::counts_in(b, &index))
+        .filter(|b| type_of(b) == "thing" && ss(b, "kind") == Some("share") && rs(b, "subject") == Some(subject.as_str()) && crate::forks::counts_in(b, &index))
         .collect();
     shares.sort_by_key(|b| hash_of(b).to_string());
     let (mut standing, mut nothing) = (vec![], vec![]);
@@ -109,7 +109,7 @@ fn overlap(a: &[P], b: &[P]) -> bool {
 
 /// What use of a place the record shows (things.md, Uses of a place). A use is a counted `transform` that makes nothing from anything
 /// (no `derives_from`), names the place in `refs.subject`, and says in `state.use` what was done (cleared, planted, drew water, fenced,
-/// built, kept): a deed. A block that only claims or grants is not a use. The dated record is evidence a referee reads, never title.
+/// built, kept): a deed. A block that only claims or grants is not a use. The dated record is evidence a judge reads, never title.
 /// With the clock `clocks` (blocks.md, A named clock) a use is dated by the time `needed` clocks received it, and a use they have not
 /// received is not dated; with none it is dated by its author's own `at`, which only that author says.
 /// Returns `{ clock, users: [{ user, uses, count, first, last, seasons, bounds, resting, overlaps }] }`, sorted by user; no users is
@@ -130,7 +130,7 @@ pub fn use_shown(place: &Value, blocks: &[Value], clocks: Option<&Value>) -> Val
     // every use record with its user and date, for the disputes below
     let mut records: Vec<(String, String, Option<String>)> = Vec::new();
     for b in index.values() {
-        if type_of(b) != "transform" || rf(b, "derives_from").is_some() || rs(b, "subject") != Some(target) || !crate::identity::counts_in(b, &index) {
+        if type_of(b) != "transform" || rf(b, "derives_from").is_some() || rs(b, "subject") != Some(target) || !crate::forks::counts_in(b, &index) {
             continue;
         }
         let Some(used) = ss(b, "use") else { continue };
@@ -202,7 +202,7 @@ pub fn use_shown(place: &Value, blocks: &[Value], clocks: Option<&Value>) -> Val
     // A dispute of a first-use record (things.md, Uses of a place): a counted `defeats` of a use record beside which the fold shows its
     // `standing`: it names an earlier use of the same place by its own author, names a title held by its author, or shows none.
     let mut disputes: Vec<Value> = Vec::new();
-    for d in index.values().filter(|d| crate::identity::counts_in(d, &index)) {
+    for d in index.values().filter(|d| crate::forks::counts_in(d, &index)) {
         let Some(defender) = speaker_of(d, &index, None) else { continue };
         for (rec, user, date) in &records {
             if !crate::js::list(rf(d, "defeats")).contains(&rec.as_str()) {
@@ -214,7 +214,7 @@ pub fn use_shown(place: &Value, blocks: &[Value], clocks: Option<&Value>) -> Val
             });
             let title = cited.iter().any(|h| {
                 index.get(*h).is_some_and(|t| {
-                    type_of(t) == "transfer" && crate::js::list(rf(t, "what")).contains(&target) && crate::js::list(rf(t, "to_owner")).contains(&defender.as_str()) && crate::identity::counts_in(t, &index)
+                    type_of(t) == "transfer" && crate::js::list(rf(t, "what")).contains(&target) && crate::js::list(rf(t, "to_owner")).contains(&defender.as_str()) && crate::forks::counts_in(t, &index)
                 })
             });
             let standing = if earlier { "earlier_use" } else if title { "title" } else { "none" };
@@ -227,7 +227,7 @@ pub fn use_shown(place: &Value, blocks: &[Value], clocks: Option<&Value>) -> Val
 
 /// A use by leave (things.md, Uses of a place): the owner's `grant` of kind `leave`, `refs.to` the user, `refs.subject` the place, signed by
 /// whoever owned the place where the grant stands and not stopped by its author. Use by leave never ripens: it is shown as "by leave of X
-/// since D", never as a use that stands against X. Returns `{ of, since, until }` for the earliest such grant, else null.
+/// since D", never as a use that stands against X. Returns `{ of, since, expires }` for the earliest such grant, else null.
 fn leave_of(user: &str, place: &str, index: &crate::js::Index) -> Value {
     let mut found: Vec<&Value> = index
         .values()
@@ -237,14 +237,14 @@ fn leave_of(user: &str, place: &str, index: &crate::js::Index) -> Value {
                 && st(g, "status").is_none()
                 && rs(g, "to") == Some(user)
                 && rs(g, "subject") == Some(place)
-                && crate::identity::counts_in(g, index)
+                && crate::forks::counts_in(g, index)
                 && speaker_of(g, index, None).is_some_and(|who| owner_seen_by(place, g, index).as_deref() == Some(who.as_str()))
                 && crate::grant::why_not_live_in(Some(g), index, None).is_empty()
         })
         .collect();
     found.sort_by(|a, b| (ss(a, "at"), hash_of(a)).cmp(&(ss(b, "at"), hash_of(b))));
     match found.first() {
-        Some(g) => json!({ "of": speaker_of(g, index, None), "since": ss(g, "at"), "until": crate::js::get(g, "state.scope.until") }),
+        Some(g) => json!({ "of": speaker_of(g, index, None), "since": ss(g, "at"), "expires": crate::js::get(g, "state.scope.expires") }),
         None => Value::Null,
     }
 }

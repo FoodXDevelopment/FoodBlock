@@ -16,11 +16,11 @@ const at = (i) => `2026-11-08T10:${String(i).padStart(2, '0')}:00.000Z`
 function hers() {
   const keys = fb.generateKeypair()
   const genesis = fb.identity.genesis(keys, { kind: 'person', audience: 'public', at: at(0) })
-  const held = [genesis]
-  const say = (state, refs = {}, i) => { const b = fb.write('observe', state, refs, { author: genesis.hash, key: keys, held, at: at(i), audience: 'public' }); held.push(b); return b }
+  const blocks = [genesis]
+  const say = (state, refs = {}, i) => { const b = fb.write('observe', state, refs, { author: genesis.hash, key: keys, blocks, at: at(i), audience: 'public' }); blocks.push(b); return b }
   const first = say({ kind: 'address', routes: [{ via: 'host', to: 'http://one.example' }] }, {}, 1)
   const moved = say({ kind: 'address', routes: [{ via: 'host', to: 'http://one.example' }, { via: 'host', to: 'http://two.example' }] }, { updates: first.hash }, 2)
-  return { keys, genesis, first, moved, blocks: held, messages: held.map((b) => fb.wrap(b)) }
+  return { keys, genesis, first, moved, blocks, messages: blocks.map((b) => fb.wrap(b)) }
 }
 const serveHost = async (host) => { const s = await serve(host, { port: 0 }); return { s, url: `http://127.0.0.1:${s.address().port}` } }
 const post = async (url, route, body) => { const r = await fetch(url + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: fb.canonicalJSON(body) }); return { status: r.status, body: await r.json() } }
@@ -62,7 +62,7 @@ test('a wake is a notice for an id the host keeps: no block, no power, then it i
   await post(url, '/wake', { for: her.genesis.hash })
   s.close()
   assert.equal(ok.status, 200); assert.deepEqual(ok.body, { woken: her.genesis.hash })
-  assert.deepEqual(woken, [her.genesis.hash], 'F6: the owner\'s callback is called once per wait, not once per request')
+  assert.deepEqual(woken, [her.genesis.hash], 'the owner\'s callback is called once per wait, not once per request')
   assert.equal(wired.store.count(), 3, 'a wake wrote no block')
   assert.deepEqual(wired.takeWakes(), [her.genesis.hash])
   assert.deepEqual(wired.takeWakes(), [])

@@ -2,11 +2,12 @@
 //! stands, and whether it can come back, read only from the block's typed terms and refs: the sides, `refs.what`, the price (by
 //! `terms_total`, in any kind), `terms.until`. No word of any template, schema or text is read, so no word can claim an amount or an effect.
 use super::promise::terms_total;
+use crate::js::{lines_of, quantity_of};
 use super::read_all;
 use crate::js::{get, hash_of, list, rf, rs, st, type_of, Index};
 use crate::prelude::*;
 
-/// `{ gives: [line] }`. A line is `{ what | amount, to, back, held }` (`held`, 1.9 R-H1: the block is a draw that holds that instance from its
+/// `{ gives: [line] }`. A line is `{ what | amount, to, back, held }` (`held`: the block is a draw that holds that instance from its
 /// signer's word): `what` a thing, with `amount` when the terms say how much, or `amount`
 /// alone (a price, or an amount moved with no instance); `to` is who it becomes the property or use of (null: open, anyone who takes it);
 /// `back` is the time it comes back (the deal's `terms.until`), else null: what the terms do not say comes back cannot be counted on to. A
@@ -20,7 +21,7 @@ pub fn gives(block: &Value, person: &str, blocks: &[Value]) -> Value {
             .chain([block]),
     );
     let mut out = gives_in(block, person, &index);
-    // 1.9 stage 5 (section 11): the bench of the deal the block belongs to (its own, when it is a first promise; else the first promise it
+    // The bench of the deal the block belongs to (its own, when it is a first promise; else the first promise it
     // names in `for`), the same answer `promise_stage` gives, or `none`
     let first = if type_of(block) == "promise" && rf(block, "answers").is_none() {
         index.get(hash_of(block))
@@ -88,7 +89,7 @@ fn hers(thing: &str, person: &str, block: &Value, index: &Index, unplaced: &mut 
             false
         }
         Some(t) if rf(t, "of").is_some() => {
-            // a block about to be signed sees everything held; a signed one sees its causal past
+            // a block about to be signed sees everything given; a signed one sees its causal past
             let owner = if block.get("signature").is_some() { super::owner_seen_by(thing, block, index) } else { super::owner_whole(thing, index) };
             owner.as_deref() == Some(person)
         }
@@ -104,7 +105,7 @@ fn of_promise(block: &Value, person: &str, index: &Index, unplaced: &mut Vec<Str
             .and_then(|h| index.get(h))
             .filter(|d| type_of(d) == "promise")
         {
-            Some(d) => (d, get(block, "state.terms.quantity")),
+            Some(d) => (d, get(block, "state.terms.lines")),
             None => return Vec::new(),
         },
         Some(_) => return Vec::new(),
@@ -114,40 +115,32 @@ fn of_promise(block: &Value, person: &str, index: &Index, unplaced: &mut Vec<Str
     let until = terms.get("until").and_then(Value::as_str);
     let mut out = Vec::new();
     if from == Some(person) {
-        // this of mine becomes yours: each thing it names, with how much the terms say
-        let things: Vec<(Option<&str>, Option<&Value>)> = match terms.get("lines") {
-            Some(Value::Array(l)) if !l.is_empty() => l
-                .iter()
-                .map(|l| (l.get("what").and_then(Value::as_str), l.get("quantity")))
-                .collect(),
-            _ => list(rf(deal, "what"))
-                .into_iter()
-                .map(|w| (Some(w), chosen.or(terms.get("quantity"))))
-                .collect(),
-        };
-        for (what, quantity) in things {
-            let Some(what) = what.filter(|w| hers(w, person, block, index, unplaced)) else {
+        // this of mine becomes yours: each thing its lines name, with the quantity chosen; a line that names no thing, the amount its
+        // quantity states (a loan of money)
+        for l in lines_of(&terms) {
+            let quantity = quantity_of(l, chosen);
+            let Some(what) = l.get("what").and_then(Value::as_str) else {
+                if let Some(q) = quantity.filter(|q| q.get("unit").is_some()) {
+                    let mut line = line(to, None, &[("amount", Some(q.clone()))]);
+                    line["held"] = json!(false);
+                    out.push(line);
+                }
                 continue;
             };
+            if !hers(what, person, block, index, unplaced) {
+                continue;
+            }
             let amount = quantity
                 .filter(|q| q.get("unit").is_some() && q.get("value").is_some())
                 .cloned();
             // an instance comes back at the deal's `until`; goods of a kind never come back as a use
             let instance = index.get(what).is_some_and(|t| rf(t, "of").is_some());
-            // 1.9 R-H1 (3c-1): an offer that names an instance of its signer's and a receiver other than himself holds it from his own word
+            // An offer that names an instance of its signer's and a receiver other than himself holds it from his own word
             // (a yes to an order holds nothing: the hold starts at the seller's own word naming the instance)
             let held = instance && st(block, "status").is_none() && rf(block, "answers").is_none() && to.is_some_and(|t| Some(t) != from);
             let mut l = line(to, until.filter(|_| instance), &[("what", Some(json!(what))), ("amount", amount)]);
             l["held"] = json!(held);
             out.push(l);
-        }
-        // a promise of an amount with no `what` (a loan of money): that amount
-        if rf(deal, "what").is_none() && terms.get("lines").is_none() {
-            if let Some(q) = chosen.or(terms.get("quantity")).filter(|q| q.get("unit").is_some() && q.get("value").is_some()) {
-                let mut l = line(to, None, &[("amount", Some(q.clone()))]);
-                l["held"] = json!(false);
-                out.push(l);
-            }
         }
     }
     if to == Some(person) {
@@ -182,7 +175,7 @@ fn of_transfer(block: &Value, person: &str, index: &Index, unplaced: &mut Vec<St
         }
     }
     for what in list(rf(block, "what")) {
-        // 1.9 R-H1: a transfer that names an instance of hers and a receiver holds it from her word until it lands or is freed
+        // a transfer that names an instance of hers and a receiver holds it from her word until it lands or is freed
         let instance = index.get(what).is_some_and(|t| rf(t, "of").is_some());
         if owner.is_some() && hers(what, person, block, index, unplaced) {
             let mut l = line(owner, None, &[("what", Some(json!(what))), ("amount", st(block, "amount").cloned())]);

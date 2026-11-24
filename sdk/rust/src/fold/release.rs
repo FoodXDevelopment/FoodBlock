@@ -1,7 +1,6 @@
 //! A release and sealed bids (promises.md, A release; profiles/bids.md): two readings that show facts and move nothing.
 //! `release_shown`: whose claims on a deal or a thing a signer has let go of, and which debts a general release names as still open.
 use super::speaker_of;
-use crate::decimal::Dec;
 use crate::js::{cmp16, hash_of, list, rf, rs, ss, st, type_of};
 use crate::order::sees_in;
 use crate::prelude::*;
@@ -14,7 +13,7 @@ fn held_with(block: &Value, blocks: &[Value]) -> crate::js::Index {
 /// With `refs.subject` it lets go of her claims on that deal or thing. Without, it lets go of her claims on every deal with `refs.to`
 /// (the other side) whose first promise it has in its causal past, except the deals `state.except` lists, which stay open. Only a side of
 /// a deal lets go of its claims. Returns `{ subject, released: [{ block, by, side, to }], kept_open: [{ block, by, side }] }`, each sorted by
-/// block: `side` is `from` or `to` for a deal (`from` is owed the price, `to` what moves), null for a thing.
+/// block: `side` is `from` or `to` for a deal (the price is to come to `from`, what moves to `to`), null for a thing.
 pub fn release_shown(subject: &Value, blocks: &[Value]) -> Value {
     let index = held_with(subject, blocks);
     let sh = hash_of(subject).to_string();
@@ -31,7 +30,7 @@ pub fn release_shown(subject: &Value, blocks: &[Value]) -> Value {
         }
     };
     let (mut released, mut kept): (Vec<(String, Value)>, Vec<(String, Value)>) = (vec![], vec![]);
-    for o in index.values().filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("release") && st(o, "status").is_none() && crate::identity::counts_in(o, &index)) {
+    for o in index.values().filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("release") && st(o, "status").is_none() && crate::forks::counts_in(o, &index)) {
         let Some(by) = speaker_of(o, &index, None) else { continue };
         let side = side_of(&by);
         if deal && side.is_none() {

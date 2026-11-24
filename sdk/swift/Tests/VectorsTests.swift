@@ -11,7 +11,7 @@ func loadJSON(_ parts: String...) -> Any { try! JSONSerialization.jsonObject(wit
 let V = loadJSON("spec", "vectors.json") as! JSON
 let vkeys = V["keys"] as! [String: JSON]
 func pub(_ signer: Any?) -> String { vkeys[signer as! String]!["public_key_sign"] as! String }
-func x25519(_ who: Any?) -> String { vkeys[who as! String]!["x25519_private"] as! String }
+func x25519(_ who: Any?) -> String { let k = vkeys[who as! String]!; return (k["xwing_private"] ?? k["x25519_private"]) as! String }
 func arr(_ v: Any?) -> [JSON] { (v as? [Any] ?? []).compactMap { $0 as? JSON } }
 func section(_ path: String) -> [JSON] {
     let found = dig(V, path)
@@ -25,7 +25,7 @@ func full(_ v: JSON) -> JSON {
     return b
 }
 func blocksOf(_ list: [JSON]) -> [JSON] { list.map(full) }
-func find(_ held: [JSON], _ hash: Any?) -> JSON { held.first { $0["hash"] as? String == hash as? String }! }
+func find(_ blocks: [JSON], _ hash: Any?) -> JSON { blocks.first { $0["hash"] as? String == hash as? String }! }
 /// The door's subset match: every key given must match, arrays of the same length elementwise, anything else equal.
 func subset(_ got: Any?, _ want: Any?) -> Bool {
     if let w = want as? [Any] { guard let g = got as? [Any], g.count == w.count else { return false }; return zip(g, w).allSatisfy { subset($0, $1) } }
@@ -35,9 +35,9 @@ func subset(_ got: Any?, _ want: Any?) -> Bool {
 func strict(_ b: JSON) -> [String] { (try! FoodBlock.writeRefusals(b["type"] as! String, b["state"] as? JSON ?? [:], b["refs"] as? JSON ?? [:])).map { $0.code } }
 /// The codes a refusal list carries, once each, in protocol.json's order.
 func codesOf(_ list: [String?]) -> [String] { unique(list.map { $0 ?? "null" }) }
-func codes(_ b: JSON, held: [String: JSON]? = nil) -> [String] {
+func codes(_ b: JSON, blocks: [String: JSON]? = nil) -> [String] {
     // The door takes state and refs as they are (a state that is a list must reach the check as a list).
-    codesOf(FoodBlock.findings(try! Core.maybe("write_refusals", ["type": b["type"] as Any, "state": b["state"] as Any, "refs": b["refs"] as Any] as JSON, held.map { Array($0.values) } ?? [])).map { $0.code })
+    codesOf(FoodBlock.findings(try! Core.maybe("write_refusals", ["type": b["type"] as Any, "state": b["state"] as Any, "refs": b["refs"] as Any] as JSON, blocks.map { Array($0.values) } ?? [])).map { $0.code })
 }
 func arrivals(_ v: JSON) -> Identity.Arrival? {
     guard let a = v["arrivals"] as? [String: Any] else { return nil }
@@ -102,7 +102,7 @@ final class VectorsTests: XCTestCase {
                 expect(try FoodBlock.canonical(b["type"] as! String, b["state"] as! JSON, b["refs"] as! JSON) == c && FoodBlock.hash(of: block) == v["hash"] as! String, "hash: \(name)")
             }
             expect(try FoodBlock.hash(of: block) == v["hash"] as! String && FoodBlock.verify(block, v["signature"], pub(v["signer"])), "ledger: \(name): hash and signature")
-            let wrong = try FoodBlock.valid(block, held: before)
+            let wrong = try FoodBlock.valid(block, blocks: before)
             expect(wrong.isEmpty, "valid: \(name) \(wrong)")
             before.append(block)
         }
@@ -122,6 +122,10 @@ final class VectorsTests: XCTestCase {
     // Keys rebuild from their seeds in their suites; the encryption key and the key hash follow.
     func testKeys() throws {
         for (name, k) in vkeys {
+            if let xw = k["xwing_private"] as? String, k["seed"] == nil {
+                expect(try FoodBlock.encryptionKeyOf(xw, suite: "xwing") == k["public_key_encrypt"] as? String, "key: \(name)'s X-Wing key")
+                continue
+            }
             let suite = k["suite"] as? String ?? "std"
             let kp = try FoodBlock.keypairFromSeed(k["seed"] as! String, suite: suite)
             expect(kp.publicKeySign == k["public_key_sign"] as? String && kp.privateKey == k["private_key"] as? String, "key: \(name) from its seed")
@@ -147,7 +151,7 @@ final class VectorsTests: XCTestCase {
 
     func testStories() throws {
         let all = Self.stories()
-        // 1.9: the stories are one list of blocks (sealed.blocks); the door cases carry their worlds
+        // the stories are one list of blocks (sealed.blocks); the door cases carry their worlds
         XCTAssertGreaterThan(all.reduce(0) { $0 + $1.blocks.count }, 10)
         for s in all {
             var wrong: [String] = []
@@ -290,10 +294,15 @@ final class VectorsTests: XCTestCase {
         }
     }
 
+    func testXWingDraft11() throws {
+        let d = V["xwing_draft11"] as! JSON
+        expect(try FoodBlock.encryptionKeyOf(d["sk"] as! String, suite: "xwing") == "xwing:" + (d["pk"] as! String), "xwing_draft11: the key of the draft's private seed")
+    }
+
     // Every section of spec/vectors.json is one this runner reads: a new section cannot pass unseen.
     func testEverySectionIsRun() {
-        let read: Set<String> = ["$comment", "comment", "invariant_numbers", "keys", "hashes", "ledger", "canonical", "audience", "signatures", "bad_signatures", "envelopes",
-                                 "sealed", "headers", "messages", "cbor", "door"]
+        let read: Set<String> = ["$comment", "comment", "keys", "hashes", "ledger", "canonical", "audience", "signatures", "bad_signatures", "envelopes",
+                                 "sealed", "headers", "messages", "cbor", "door", "xwing_draft11"]
         XCTAssertEqual(Set(V.keys).subtracting(read), [], "sections in spec/vectors.json this runner does not run")
     }
 

@@ -11,7 +11,7 @@ impl Checker<'_> {
         }
         // a key, its suite and her voices are named by a genesis or a key grant, never by any other actor (core.md, section 7)
         for key in ["public_key_sign", "suite", "reach", "clocks", "voices", "shown_key"] {
-            // a circle names its clock (C20)
+            // a circle names its clock
             if g(key).is_some() && !(key == "clocks" && kind_is_circle(state)) {
                 w.push(f(
                     "undeclared_field",
@@ -23,7 +23,7 @@ impl Checker<'_> {
         if kind == Some("contact") && g("public_key_encrypt").is_some() {
             w.push(f("undeclared_field", "a contact has no keys"));
         }
-        // 1.9 stage 6 (circles.md, C1, C3, C10, C20): a circle states `pack` (whole parts), `rules` (rows) and `clocks`, each optional
+        // (circles.md) a circle states `pack` (whole parts), `rules` (rows) and `clocks`, each optional
         if kind == Some("circle") {
             w.extend(self.circle_shape(state));
         } else {
@@ -61,8 +61,12 @@ impl Checker<'_> {
                         if !row_shape_ok(r, pack.is_some(), &is_id) {
                             w.push(f("shape", format!("state.rules[{i}] is {{ parts, scope }} (on a circle with a pack) or {{ to, needed, scope }}: numbers whole and at least 1, never all and never a share")));
                         } else if let Some(scope) = r.get("scope") {
-                            // a row's scope may name the circle's things in `what` (C4): a row has no refs of its own
+                            // a row's scope may name the circle's things in `what`: a row has no refs of its own
                             let mut plain = scope.clone();
+                            // `any` at `parties`, `on` or `what` is a row's word for every side, every deal, every thing
+                            if let Some(m) = plain.as_object_mut() {
+                                m.retain(|k, v| !(["parties", "on", "what"].contains(&k.as_str()) && v.as_str() == Some("any")));
+                            }
                             let what = plain.as_object_mut().and_then(|m| m.remove("what"));
                             let what_ok = what.as_ref().is_none_or(|x| match x {
                                 Value::String(t) => is_id(t),
@@ -72,7 +76,7 @@ impl Checker<'_> {
                             if !what_ok {
                                 w.push(f("shape", format!("state.rules[{i}].scope.what is one id or a list of ids")));
                             }
-                            // C12: a row's `every` needs no `until` (a grant's states it with `limit` and `until`, stage 4 A2)
+                            // a row's `every` needs no `expires` (a grant's states it with `limit` and `expires`)
                             w.extend(self.scope_shape(&plain).into_iter().filter(|x| !x.detail.starts_with("scope.every goes with")));
                         }
                     }
@@ -88,8 +92,8 @@ fn kind_is_circle(state: &Value) -> bool {
     state.get("kind").and_then(Value::as_str) == Some("circle")
 }
 
-/// The shape of a row (C10, `shapes.row`): exactly `{ parts, scope }` or `{ to, needed, scope }`, every number whole and at least 1, never
-/// `all` and never a share; `to` one id or a non-empty list of ids. A parts row on a circle with no `pack` is out of shape (C3).
+/// The shape of a row (`shapes.row`): exactly `{ parts, scope }` or `{ to, needed, scope }`, every number whole and at least 1, never
+/// `all` and never a share; `to` one id or a non-empty list of ids. A parts row on a circle with no `pack` is out of shape.
 fn row_shape_ok(r: &Value, has_pack: bool, is_id: &dyn Fn(&str) -> bool) -> bool {
     let Some(o) = r.as_object() else { return false };
     let mut keys: Vec<&str> = o.keys().map(String::as_str).collect();

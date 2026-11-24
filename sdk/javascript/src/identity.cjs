@@ -20,12 +20,12 @@ const isGenesis = (block) => door.isGenesis(block ?? null)
 const genesisOpens = (block) => door.genesisOpens(block ?? null)
 
 /**
- * A key grant about `id` (identity.md), written by `signer` ({ author, keys, held, at, after? }: one of her voices, her operator, or one of
- * a voice of named people, signing in their own name). Give `voices` (her whole list again, with `updates` the list it replaces and `clocks`
+ * A key grant about `id` (identity.md), written by `signer` ({ author, keys, blocks, at, after? }: one of her voices, or one of a voice of
+ * named people, signing in their own name). Give `voices` (her whole list again, with `updates` the list it replaces and `clocks`
  * her clock), or `key` (one key under the signer's voice, in `suite`), or `encrypt` alone; `shownKey` when a key named by hash shows itself
- * (`keyRef` the list that holds its hash); `countedTo` the last block of a key a voice above ends; `under` an operator grant.
+ * (`keyRef` the list that holds its hash); `countedTo` the last block of a key a voice above ends.
  */
-function keyGrant(id, signer, { voices, updates, clocks, key, suite, encrypt, shownKey, keyRef, countedTo, under } = {}) {
+function keyGrant(id, signer, { voices, updates, clocks, key, suite, encrypt, shownKey, keyRef, countedTo } = {}) {
   const state = { kind: 'key' }
   if (voices) state.voices = voices
   if (clocks) state.clocks = clocks
@@ -37,7 +37,6 @@ function keyGrant(id, signer, { voices, updates, clocks, key, suite, encrypt, sh
   const refs = { subject: id }
   if (updates) refs.updates = updates
   if (keyRef) refs.key = keyRef
-  if (under) refs.under = under
   return write.write('grant', state, refs, { audience: 'public', ...signer, author: signer.author || id, key: signer.keys || signer.key })
 }
 /** The second signature (blocks.md, Finality, Signed twice): a block of the same key, or of a voice above, naming the word in refs.confirms. */
@@ -51,7 +50,7 @@ const liveKeys = door.liveKeys
 const signedByAuthor = (block, blocks) => door.signedByAuthor(block, blocks)
 /** Whether a word stands (blocks.md, Finality): { stands, waiting: [{ block, on }] }, read with no clock and no arrival. */
 const stands = (block, blocks) => door.stands(block, blocks)
-/** The identity fold: { signed_by_author, voices, clocks, keys, waiting } (1.9 stage 4 deleted the operator reading). */
+/** The identity fold: { signed_by_author, voices, clocks, keys, waiting }. */
 const identityState = (id, blocks) => door.identityState(id, blocks)
 /** Each key's chain for an id: [{ key, by, head, length, gaps, skips, equivocations, broken, ok }]. */
 const chainsOf = door.chainsOf

@@ -1,7 +1,7 @@
 'use strict';
-// Stress seat 01, the line rule (foodx/research/2026-11-12-foodblock-stress/01-scratch/new.cjs): worlds N1 to N10, built as the seat built
-// them. Rows 6 (N6: one key, two key grants), 7 (N3: a crash twin declined) and 8 (N4, N10: a fork carried over to a new key).
-const SRC = 'stress 01 (01-scratch/new.cjs)';
+// The line rule: one key's line, forks and pairs of it, a key's list of voices and keepers, a crash twin, a restored backup carried to a new key,
+// a second key's first block, and a low seq after a landed sale. Each world is built by hand and asked of both engines.
+const SRC = 'a world built by hand';
 
 function mariaWorld(L, name) {
   const { World, fb, keyHash, sorted, plus } = L;
@@ -26,10 +26,10 @@ function mariaWorld(L, name) {
   };
   return { w, P, by, again, list, replace };
 }
-const own = (L, w, label, S, held = 'held') => L.ask(w, label, 'ownership', [S, held, null]);
+const own = (L, w, label, S, held = 'blocks') => L.ask(w, label, 'ownership', [S, held, null]);
 
 module.exports = [
-  { name: 'N1 counted_to picks the twin', row: 'extra', source: SRC, build(L) {
+  { name: 'counted_to picks the twin', row: 'extra', source: SRC, build(L) {
     const { w, P, by, again, replace } = mariaWorld(L, '01 N1');
     const S = by(P.maria, P.maria.keys, 'thing', { kind: 'maize', pack: L.amt(1, 'kg') }, { of: L.kindOf('maize') }, 'sack', [again]);
     const [f1, f2] = L.pairOf(w, P.maria, P.maria.keys, ['transfer', {}, { what: S.hash, to_owner: P.amara.id }, 'F1'], ['transfer', {}, { what: S.hash, to_owner: P.puppet.id }, 'F2']);
@@ -38,7 +38,7 @@ module.exports = [
     replace(f2, [f2]);
     own(L, w, '(b) counted_to the puppet twin', S);
   } },
-  { name: 'N2 two devices one key', row: 'extra', source: SRC, build(L) {
+  { name: 'two devices one key', row: 'extra', source: SRC, build(L) {
     const { World, hand, draw, kindOf, amt, yes } = L;
     const w = new World('01 N2');
     const maria = w.person('maria'), amara = w.person('amara'), leila = w.person('leila'), sam = w.person('sam');
@@ -51,7 +51,7 @@ module.exports = [
     const c = draw(w, maria, S3, sam, null, { prev: a.hash, seq: n.seq + 4 }, 'phone later'); yes(w, sam, c, 'sam yes');
     own(L, w, 'sack1', S1); own(L, w, 'sack2', S2); own(L, w, 'sack3 (sold after the fork)', S3);
   } },
-  { name: 'N3 crash twin, one declined', row: 7, source: SRC + ' N3; table row 7 (stress 01 B6)', build(L) {
+  { name: 'crash twin, one declined', row: 7, source: SRC, build(L) {
     const { World, sackOf, draw, yes, no } = L;
     const w = new World('01 N3');
     const maria = w.person('maria'), amara = w.person('amara');
@@ -62,7 +62,7 @@ module.exports = [
     no(w, amara, t2, 'amara declines T2');
     own(L, w, '(b) after Amara declines T2', S);
   } },
-  { name: 'N4 restored backup, carried to a new key', row: 8, source: SRC + ' N4; table row 8 (stress 01 B4)', build(L) {
+  { name: 'restored backup, carried to a new key', row: 8, source: SRC, build(L) {
     const { w, P, by, again, replace } = mariaWorld(L, '01 N4');
     const { hand, yes, kindOf, amt } = L;
     const S2 = by(P.maria, P.maria.keys, 'thing', { kind: 'maize', pack: amt(1, 'kg') }, { of: kindOf('maize') }, 'sack2', [again]);
@@ -79,7 +79,7 @@ module.exports = [
     own(L, w, '(b) sack3 sold by the new key', S3);
     own(L, w, '(c) sack2 sold again by the new key', S2);
   } },
-  { name: 'N5 a second key\'s first block', row: 'extra', source: SRC, build(L) {
+  { name: 'a second key\'s first block', row: 'extra', source: SRC, build(L) {
     const { World, put, kindOf, amt, yes } = L;
     const w = new World('01 N5');
     const maria = w.person('maria'), amara = w.person('amara');
@@ -89,7 +89,7 @@ module.exports = [
     const D = L.give(w, maria, S, amara, null, 'tablet: to amara', {}, { key: tab }); yes(w, amara, D, 'amara yes');
     own(L, w, 'the tablet sells the sack it signed', S);
   } },
-  { name: 'N6 one key, two key grants', row: 6, source: SRC + ' N6; table row 6 (stress 01 B5)', build(L) {
+  { name: 'one key, two key grants', row: 6, source: SRC, build(L) {
     const { World, put, kindOf, amt, yes, fb } = L;
     const w = new World('01 N6');
     const harry = w.person('harry'), amara = w.person('amara'), leila = w.person('leila');
@@ -101,10 +101,10 @@ module.exports = [
     const b = fb.create('transfer', { at: L.at(), audience: 'public', seq: 1 }, { author: harry.id, prev: G2.hash, key: G2.hash, after: [G2y.hash], what: S.hash, to_owner: leila.id });
     const B = w.add({ ...b, signature: fb.sign(b, tab.private_key) }, 'K2 under G2: to leila');
     yes(w, leila, B, 'leila yes');
-    L.ask(w, 'fork_pairs', 'fork_pairs', ['held']);
+    L.ask(w, 'fork_pairs', 'fork_pairs', ['blocks']);
     own(L, w, 'one key, a second line from its second grant', S);
   } },
-  { name: 'N7 rounds', row: 'extra', source: SRC, build(L) {
+  { name: 'rounds', row: 'extra', source: SRC, build(L) {
     const { World, sackOf, draw, yes } = L;
     const w = new World('01 N7');
     const harry = w.person('harry');
@@ -119,7 +119,7 @@ module.exports = [
       prev = draw(w, harry, S, puppet, null, { prev: prev.hash, seq }, 'twin ' + r);
     }
   } },
-  { name: 'N8 two branches, two buyers who never compare', row: 'extra', source: SRC, build(L) {
+  { name: 'two branches, two buyers who never compare', row: 'extra', source: SRC, build(L) {
     const { World, sackOf, draw, yes } = L;
     const w = new World('01 N8');
     const harry = w.person('harry'), amara = w.person('amara'), leila = w.person('leila');
@@ -129,7 +129,7 @@ module.exports = [
     own(L, w, 'Amara\'s view', S, w.blocks.filter((b) => b !== B && b !== yl));
     own(L, w, 'Leila\'s view', S, w.blocks.filter((b) => b !== A && b !== ya));
   } },
-  { name: 'N9 low seq after a landed sale', row: 'extra', source: SRC, build(L) {
+  { name: 'low seq after a landed sale', row: 'extra', source: SRC, build(L) {
     const { World, sackOf, draw, yes, hand } = L;
     const w = new World('01 N9');
     const harry = w.person('harry'), amara = w.person('amara'), leila = w.person('leila');
@@ -141,7 +141,7 @@ module.exports = [
     const Y = draw(w, harry, S, leila, null, { prev: X.hash, seq: 7 }, 'Y'); yes(w, leila, Y, 'leila yes');
     own(L, w, '(b) after X (low seq) and Y (prev X)', S);
   } },
-  { name: 'N10 partial fork then a new key', row: 8, source: SRC + ' N10; table row 8 (Sam 8 kg)', build(L) {
+  { name: 'partial fork then a new key', row: 8, source: SRC, build(L) {
     const { w, P, by, again, replace } = mariaWorld(L, '01 N10');
     const { amt, kindOf, yes } = L;
     const kg = (n) => amt(n, 'kg');

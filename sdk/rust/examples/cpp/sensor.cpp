@@ -28,7 +28,7 @@ int main() {
 
     // A reading: 3.9 degrees Celsius, as a decimal string (signed content holds no floats). write() composes it,
     // runs the write check, signs it, and puts it at seq 1 in the sensor's own chain.
-    const std::string options = R"({"author":")" + id + R"(","key":)" + keys + R"(,"held":[)" + me +
+    const std::string options = R"({"author":")" + id + R"(","key":)" + keys + R"(,"blocks":[)" + me +
                                 R"(],"at":"2026-10-15T09:01:00.000Z","audience":"public"})";
     const std::string reading = foodblock::write("observe", R"({"kind":"reading","amount":{"value":"3.9","unit":"Cel"}})",
                                                  R"({"subject":")" + id + R"("})", options);

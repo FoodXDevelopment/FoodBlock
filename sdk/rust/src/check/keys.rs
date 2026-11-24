@@ -27,6 +27,24 @@ impl Checker<'_> {
     pub(super) fn key_in_suite(&self, key: Option<&Value>, suite: &Option<String>, what: &str, encrypt: bool, w: &mut W) {
         let (Some(key), Some(suite)) = (key, suite) else { return };
         let Some(info) = self.spec.suite(suite) else { return };
+        // An encryption key may name its own algorithm (core.md, section 2; protocol.json `encrypt_keys`): an `xwing:` key must match its
+        // grammar (`grammar`); a named key whose name this reader does not know is skipped, never refused: the rest of the block stands.
+        if encrypt {
+            if let Value::String(k) = key {
+                let ek = self.spec.protocol.get("encrypt_keys");
+                let text = |p: &str| ek.and_then(|e| crate::js::get(e, p)).and_then(Value::as_str);
+                let re = |g: Option<&str>| g.and_then(|g| crate::regex::Regex::new(g).ok());
+                if let Some(prefix) = text("xwing.prefix").filter(|p| k.starts_with(p)) {
+                    if !re(text("xwing.grammar")).is_some_and(|r| r.test(k)) {
+                        w.push(f("grammar", format!("state.{what} is an {prefix} key: {prefix} and 2,432 lowercase hex characters (protocol.json encrypt_keys)")));
+                    }
+                    return;
+                }
+                if info.encrypt_key_re.as_ref().is_some_and(|r| r.test(k)) || re(text("named")).is_some_and(|r| r.test(k)) {
+                    return;
+                }
+            }
+        }
         let (rule, re) = if encrypt { (&info.encrypt_key_rule, &info.encrypt_key_re) } else { (&info.sign_key_rule, &info.sign_key_re) };
         let ok = matches!(key, Value::String(k) if re.as_ref().is_some_and(|r| r.test(k)) && (encrypt || crate::sign::key_is_sound(k)));
         if !ok {
@@ -56,7 +74,7 @@ impl Checker<'_> {
 
     // The genesis (core.md section 4): the one block with no author, prev, after or seq, naming kind, at, audience and its
     // signing key. A suite, an encryption key, a reach and a clock are optional, the clock required with a reach. Its audience is any block's: public, or
-    // a list of commitments with a nonce (decision H10); a reader verifies it once it holds it.
+    // a list of commitments with a nonce; a reader verifies it once it holds it.
     // What is missing or extra is `bad_genesis`; what is there but malformed is its grammar's code.
     pub(super) fn genesis_errors(&self, state: &Value, refs: &Value) -> W {
         let required = &self.spec.genesis_required;
@@ -88,7 +106,7 @@ impl Checker<'_> {
             w.push(f("bad_genesis", "state.kind says what they are"));
         }
         w.extend(self.key_checks(state));
-        // 1.9 3d-17: a genesis that states her list: its own key is the `key` voice of that list that names it; else it is no genesis
+        // a genesis that states her list: its own key is the `key` voice of that list that names it; else it is no genesis
         if let Some(vs) = state.get("voices").and_then(Value::as_array) {
             let own = state.get("public_key_sign").and_then(Value::as_str);
             if !vs.iter().any(|v| v.get("key").and_then(Value::as_str).is_some_and(|k| Some(k) == own)) {

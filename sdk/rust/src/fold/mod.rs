@@ -10,7 +10,7 @@ mod bench;
 mod gives;
 pub(crate) mod grants;
 mod market;
-mod owed;
+mod to_come;
 pub(crate) mod circle;
 pub(crate) mod clock;
 mod deal;
@@ -31,6 +31,7 @@ pub use rekeys::circle_key;
 pub(crate) use circle::{as_drafted, hand_could_count, is_hand_at};
 pub use circle::{circle_state, circle_versions, members_then, row_holds, ways_in};
 pub(crate) use promise::{promise_stage_in, stopped_onward_by};
+pub use crate::js::{lines_of, quantity_of, whats_of};
 pub use promise::{promise_stage, terms_total, StageOptions};
 pub(crate) use promise::binds;
 pub use invasion::{invasion_shown, not_free_shown};
@@ -39,7 +40,7 @@ pub use backed::{backed, backed_all, to_come_back};
 pub(crate) use backed::backed_in;
 pub use gives::gives;
 pub use grants::{keeps_to_door, lowest_offer, meter, worst_case};
-pub use market::{check_reads, clearing_applied, fee_back, listing_check, ruling_audience, ruling_releases};
+pub use market::{check_reads, clearing_applied, fee_back, listing_check, ruling_honoured, ruling_releases};
 pub(crate) use market::ruled;
 pub use lock::machine_lock;
 pub use pot::pot;
@@ -48,18 +49,27 @@ pub use uses::{shares_on, use_shown};
 pub(crate) use things::{owner_seen_by, owner_whole};
 pub use things::{made_from, owner_of, ownership, ownership_at, receiver_of, where_now};
 
-/// The blocks held, by hash, with the forks marked once (a pair of one key naming one prev counts for nothing).
+/// The blocks given, by hash, with the forks marked once (a pair of one key naming one prev counts for nothing).
+/// A message that names a judge (promises.md, A new term both sides signed): an observe of kind message `for` the deal or claim
+/// `subject`, stating `judge`, one id. Its judge, else None.
+pub(crate) fn judge_named<'a>(g: &'a Value, subject: &str) -> Option<&'a str> {
+    if type_of(g) != "observe" || crate::js::ss(g, "kind") != Some("message") || !crate::js::list(crate::js::rf(g, "for")).contains(&subject) {
+        return None;
+    }
+    crate::js::ss(g, "judge").filter(|j| crate::spec().is("id", j))
+}
+
 pub(crate) fn read_all<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     let mut index = Index::default();
     for b in blocks {
-        // a body is the block itself: a header held under the same id never takes its place
+        // a body is the block itself: a header given under the same id never takes its place
         if b.get("type").is_none() && index.get(hash_of(b)).is_some_and(|x| x.get("type").is_some()) {
             continue;
         }
         index.insert(hash_of(b).to_string(), b.clone());
     }
     let mut index = crate::js::closed(index);
-    crate::identity::mark_forks(&mut index);
+    crate::forks::mark_forks(&mut index);
     index
 }
 fn sub_index(blocks: &[&Value]) -> Index {
@@ -70,7 +80,7 @@ fn sub_index(blocks: &[&Value]) -> Index {
 /// Who a block speaks for, read among `blocks` (authority.md, Who a block speaks for; the door's `speaks_for`): the one party a fold counts
 /// it for, or None when it speaks for no one: signed `as` a circle by an author who does not hold `sign` there (or not with the hands the
 /// circle needs), or a block no node would take, which is no word (folds.md, A fold reads only what is whole and valid). The block need not be
-/// among `blocks` yet (a first message being checked): it is read with them as if it were. No clock is read: the block's own date tests `until`.
+/// among `blocks` yet (a first message being checked): it is read with them as if it were. No clock is read: the block's own date tests `expires`.
 pub fn who_speaks(block: &Value, blocks: &[Value]) -> Option<String> {
     let read = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(block)).chain([block]));
     speaker_of(read.get(hash_of(block))?, &read, None)
@@ -113,7 +123,7 @@ pub(crate) fn principal_of_chain(grant: &Value, index: &Index) -> Option<String>
 // it speaks for its principal and binds no one (promises.md). Any other block that fails acts under no grant: it speaks for its author.
 pub(crate) fn acting_grant<'a>(block: &Value, index: &'a Index, now: Option<&str>) -> Option<&'a Value> {
     let grant = rs(block, "under").and_then(|h| index.get(h)).filter(|g| type_of(g) == "grant")?;
-    // 1.9 stage 4, P5: a promise a tool signs under a grant that keeps to no promise the grant names speaks for its signer alone (the quote
+    // a promise a tool signs under a grant that keeps to no promise the grant names speaks for its signer alone (the quote
     // request that spoke for its principal is gone)
     names_act(block, index, now).then_some(grant)
 }
@@ -125,7 +135,7 @@ pub(crate) fn names_act(block: &Value, index: &Index, now: Option<&str>) -> bool
 // and for the grant it acts under (folds.md, Who a block speaks for).
 pub(crate) fn principal_of(block: &Value, index: &Index) -> Option<String> {
     match rs(block, "as").filter(|c| !c.is_empty()) {
-        // 1.9 stage 6 (C18): it speaks for the circle's owners where a row holds for it or every owner signs it, else for no one
+        // it speaks for the circle's owners where a row holds for it or every owner signs it, else for no one
         Some(circle) => circle::holds_in(block, circle, index).then(|| circle.to_string()),
         None => rs(block, "author").map(String::from),
     }

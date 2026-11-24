@@ -2,8 +2,7 @@
 // The FoodBlock CLI (spec/core.md): the protocol from a terminal. Blocks are JSON on stdout, so they compose with anything else. Every check is the SDK's.
 //
 // THIS COMMAND LINE HOLDS NO KEY. A person's key is made and kept on her own device (a passkey); nothing here makes, reads, stores or uses one. It
-// composes a block for her device to sign, takes back the signature, and checks it. (A key held in a file or a node was a way for whoever ran it to
-// sign as her: the owner's decision 6.)
+// composes a block for her device to sign, takes back the signature, and checks it.
 //
 //   fb adopt <file> --genesis <genesis.json | '<json>'>   keep her public identity: her genesis, checked (the file holds blocks only; kept 0600)
 //   fb draft <type> [kind] --state '{...}' --refs '{...}' --audience public|<id,id> [--identity <file>]
@@ -16,7 +15,6 @@
 //   fb verify '<signed block json>' [--identity <file> | '<genesis json>']
 //                                                    whether its author signed exactly this, with a key that speaks
 //
-// Gone: `fb init`, `fb key`, `fb create` (they made keys, or signed with one the file kept). Each now says so and exits non-zero.
 // Nothing is filled in for the person: a missing --audience is refused (non-zero exit, the reason on stderr). The CLI states `at` itself, from its own
 // clock at the call, as an ISO time; the SDK reads no clock.
 //
@@ -29,7 +27,7 @@ const flag = (name) => { const index = rest.indexOf(`--${name}`); return index >
 const words = rest.filter((arg, index) => !arg.startsWith('--') && !(index > 0 && rest[index - 1].startsWith('--')));
 const json = (value, name) => { try { return value === undefined ? {} : JSON.parse(value); } catch { fail(`${name} is not JSON`); } };
 const out = (value) => process.stdout.write(JSON.stringify(value, null, 2) + '\n');
-// written beside itself and renamed into place, private to its owner: a crash leaves the old file or the new one (F11), and the mode holds even if the file was there
+// written beside itself and renamed into place, private to its owner: a crash leaves the old file or the new one, and the mode holds even if the file was there
 const save = (file, value) => { const temp = `${file}.${process.pid}.tmp`; writeFileSync(temp, JSON.stringify(value, null, 2), { mode: 0o600 }); renameSync(temp, file); };
 function fail(message) { process.stderr.write(`fb: ${message}\n`); process.exit(1); }
 const now = () => new Date().toISOString();
@@ -61,10 +59,6 @@ if (command === 'adopt') {
   if (!fb.identity.isGenesis(genesis) || !fb.identity.genesisOpens(genesis)) fail('that is not a genesis her own key opens');
   save(file, { genesis, chain: [genesis] });
   out({ id: genesis.hash });
-} else if (command === 'init' || command === 'key') {
-  fail(`fb ${command} is gone: it made a key, and a command line holds no key of hers. Make her identity on her own device (a passkey), then keep its genesis here with fb adopt <file> --genesis <genesis.json>`);
-} else if (command === 'create') {
-  fail('fb create is gone: it signed with a key the identity file kept, and the file keeps none now. Use fb draft to compose the block, sign it on her own device, then fb attach --draft <json> --signature <hex>');
 } else if (command === 'draft') {
   const [type, kind] = words;
   if (!type) fail('draft needs a type');
@@ -97,7 +91,7 @@ if (command === 'adopt') {
   save(me.file, { genesis: me.genesis, chain: [...me.chain, kept] });
   out(signed);
 } else if (command === 'check') {
-  // the SDK has no check-alone call now: the block is shaped and judged as valid() judges it, and only the missing signature is let go
+  // the SDK has no check-alone call: the block is shaped and judged as valid() judges it, and only the missing signature is let go
   const type = words[0], state = json(flag('state'), '--state'), refs = json(flag('refs'), '--refs');
   let errors;
   try { errors = [...fb.valid({ hash: fb.hash(type, state, refs), type, state, refs, signature: '00' }, []).filter((r) => r.code !== 'bad_signature'), ...fb.writeRefusals({ type, state, refs }, [])].map((r) => r.detail || r.code); } catch (error) { errors = [error.message]; }
@@ -106,12 +100,12 @@ if (command === 'adopt') {
 else if (command === 'valid') {
   const block = json(words[0], 'the block');
   // the id is computed here, in the suite of the key that signed it (core.md, section 2): never taken from the block or a label
-  const held = identity().chain.filter((one) => one.hash !== block.hash);
-  out({ refusals: fb.valid({ ...block, hash: fb.idOf(block, held) }, held) });
+  const blocks = identity().chain.filter((one) => one.hash !== block.hash);
+  out({ refusals: fb.valid({ ...block, hash: fb.idOf(block, blocks) }, blocks) });
 } else if (command === 'verify') {
   const signed = json(words[0], 'the block');
-  const held = flag('identity') ? identity().chain : [words[1] ? json(words[1], 'the genesis') : signed];
-  out({ signedByItsAuthor: fb.identity.signedByAuthor({ ...signed, hash: fb.hash(signed.type, signed.state, signed.refs) }, held) });
+  const blocks = flag('identity') ? identity().chain : [words[1] ? json(words[1], 'the genesis') : signed];
+  out({ signedByItsAuthor: fb.identity.signedByAuthor({ ...signed, hash: fb.hash(signed.type, signed.state, signed.refs) }, blocks) });
 } else {
   process.stdout.write(`FoodBlock ${fb.VERSION}: fb adopt | draft | attach | check | valid | verify (see the top of bin/fb.js). This command line holds no key.\n`);
   if (command) process.exit(1);

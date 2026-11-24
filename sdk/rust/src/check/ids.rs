@@ -33,21 +33,6 @@ impl Checker<'_> {
             s("grammar", format!("{name} is a hash"))
         }
     }
-    #[allow(dead_code)]
-    pub(super) fn hash_list_shape(&self, value: Option<&Value>, name: &str) -> W {
-        let ok = match value {
-            None => true,
-            Some(Value::Array(a)) => !a.is_empty() && a.iter().all(|i| self.is("id", Some(i))),
-            _ => false,
-        };
-        if !ok {
-            s("grammar", format!("{name} is a set of hashes"))
-        } else if value.and_then(Value::as_array).is_some_and(|a| a.iter().any(|i| self.unknown_hash(Some(i)))) {
-            s("unknown_suite", format!("{name} names a hash this reader does not know"))
-        } else {
-            vec![]
-        }
-    }
 
     // The ids a block names (refs): each a hash or a set of hashes in the grammar of ids; a prefix names a hash.
     pub(super) fn refs_grammar(&self, refs: &Value) -> W {

@@ -37,19 +37,12 @@ const V = JSON.parse(fs.readFileSync(path.join(ROOT, 'spec', 'vectors.json'), 'u
 
 // Things kept although no vector carries them, and why. Each needs a reason a person can judge.
 const KEPT = {
-  // A set in refs.author, refs.prev or refs.key makes no valid block: `valid` refuses it at the chain (core.md, section 8), whatever
-  // refs_single lists, so no vector can fail for the list's word alone. The set cases are kept (`valid`, `chain`), and the list keeps
-  // these names because the read check and the writer's check read one list for every single-id ref (end pass 2026-11-20).
-  'single-id ref refs_single author': 'valid refuses a set here at the chain first; its set case is a valid vector',
-  'single-id ref refs_single prev': 'valid refuses a set here at the chain first; its set case is a valid vector',
-  'single-id ref refs_single key': 'valid refuses a set here at the chain first; its set case is a valid vector',
 }
 
 // ---------------------------------------------------------------- what to delete, one at a time
 const things = []
 const add = (kind, jsonPath, name, scan) => things.push({ kind, path: jsonPath, name, scan: scan || null, id: `${kind} ${jsonPath.join('.')}${Array.isArray(get(jsonPath)) ? '' : ''} ${name}` })
 function get(p, o = P) { return p.reduce((x, k) => (x == null ? x : x[k]), o) }
-const listAt = (p) => { const v = get(p); return Array.isArray(v) ? v : Object.keys(v) }
 
 for (const t of Object.keys(P.fields).filter((k) => k !== 'about')) for (const n of P.fields[t]) add(t === 'every' ? 'field (every closed type)' : `field (${t})`, ['fields', t], n, { state: n })
 for (const n of P.key_fields.fields) add('key field (actor, grant)', ['key_fields', 'fields'], n, { state: n })
@@ -117,7 +110,7 @@ function copyTo(dir) {
 }
 // Every run has a time limit: four times what the unmutated run took (at least two minutes), set by the base runs in `measure`. A run that
 // passes it is stopped, it and its children, and counts as a failed check: a part without which an engine never answers is needed, and the
-// table names it ("hung"). (end pass 2026-11-20: one mutated build spun for thirteen hours with no limit.)
+// table names it ("hung").
 // (the unmutated base runs, which set the limits, are bounded only by four hours: a slow machine is no failure of the spec)
 const LIMIT = { oracle: 14400000, audit: 14400000, core: 14400000 }
 const limitFrom = (ms) => Math.max(120000, 4 * ms)
@@ -294,7 +287,7 @@ function caseDigests(Vx) {
   const out = []
   const strip = (c) => { const { name, invariants, ...rest } = c; return rest }
   for (const [k, v] of Object.entries(Vx)) {
-    if (k === '$comment' || k === 'keys' || k === 'invariant_numbers') continue
+    if (k === '$comment' || k === 'keys') continue
     const each = Array.isArray(v) ? v : isPlain(v) ? Object.values(v).flatMap((x) => (Array.isArray(x) ? x : [x])) : []
     for (const c of each) if (isPlain(c)) out.push(k + ':' + require('crypto').createHash('sha256').update(JSON.stringify(strip(c))).digest('hex'))
   }

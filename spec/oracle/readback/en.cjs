@@ -1,7 +1,7 @@
 'use strict';
-// spec/renderers/en (changes-1.9/07-last.md, C2 and C4): one reading's answer (readings/readback) into English. Not normative; named by the SHA-256 of this file's bytes.
+// spec/renderers/en (renderers/en.md): one reading's answer (readings/readback) into English. Not normative; named by the SHA-256 of this file's bytes.
 // It reads that answer only, never a block, reads no free text and classifies nothing: names and units are copied as signed, never translated (no "£" for "GBP").
-// Each line copies one answer field (C4's table, the number in the comment). A line is said only where it changes what she would do.
+// Each line copies one answer field (the number in the comment is its line in renderers/en.md). A line is said only where it changes what she would do.
 // It names no rule set, prints no fraction, never prints `needed` or `names`, and never tells her that her own word keeps nothing aside.
 function en(a) {
   const me = a.viewer ? a.viewer.id : null;

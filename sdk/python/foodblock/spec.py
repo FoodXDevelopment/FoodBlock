@@ -1,5 +1,4 @@
-"""The protocol's lists and grammars: protocol.json, carried by the Rust core and read through it. There is no alias
-table: year zero."""
+"""The protocol's lists and grammars: protocol.json, carried by the Rust core and read through it."""
 
 from . import _door as door
 

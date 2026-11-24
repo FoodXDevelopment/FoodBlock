@@ -1,9 +1,7 @@
 'use strict';
-// Security 08 F1 (2026-11-12-foodblock-security/08-build-and-supply-chain.md; table row 51), after the mend of 2026-11-15: the ownership
-// fold reads what a thing was made from on a stack of its own, never the call stack, in both engines. A long history is no loop, so a chain
-// of a thousand makes (or keeps) answers its owner on both engines, the same answer a short chain gives. Before the mend the WebAssembly core
-// trapped and the oracle threw RangeError at a thousand (corpus/x01-bytes.cjs, deep-make, is the same chain asked once).
-const SRC = 'security 08 (08-scratch/deep-make.cjs, F1); mended 2026-11-15 (1.9 step 1b)';
+// A long history is no loop: the ownership fold reads what a thing was made from on a stack of its own, never the call stack, in both engines.
+// A chain of a thousand makes (or keeps) answers its owner on both engines, the same answer a short chain gives.
+const SRC = 'a long chain built by hand';
 const N = 1000;
 
 function chain(L, name, link) {
@@ -23,15 +21,15 @@ function chain(L, name, link) {
 module.exports = [
   { name: 'deep chains: a thousand makes, then a sale', row: 51, source: SRC, build(L) {
     const { w, amara, first, last, put } = chain(L, '08 deep makes', (t) => ({ derives_from: [t.hash] }));
-    L.ask(w, 'ownership of the last thing, 1000 makes deep', 'ownership', [last, 'held', null]);
-    L.ask(w, 'made_from the first thing, 1000 makes deep', 'made_from', [first, 'held']);
+    L.ask(w, 'ownership of the last thing, 1000 makes deep', 'ownership', [last, 'blocks', null]);
+    L.ask(w, 'made_from the first thing, 1000 makes deep', 'made_from', [first, 'blocks']);
     const sale = put('transfer', {}, { what: last.hash, to_owner: amara.id }, 'harry sells the last sack to amara');
     const n = L.next(w, amara.keys, amara);
     L.hand(w, amara, 'transfer', { status: 'accepted' }, { answers: sale.hash }, n, 'amara accepts');
-    L.ask(w, 'ownership of the last thing after amara accepts', 'ownership', [last, 'held', null]);
+    L.ask(w, 'ownership of the last thing after amara accepts', 'ownership', [last, 'blocks', null]);
   } },
   { name: 'deep chains: a thousand keeps (produce of produce)', row: 51, source: SRC, build(L) {
     const { w, last } = chain(L, '08 deep keeps', (t) => ({ subject: t.hash }));
-    L.ask(w, 'ownership of the last produce, 1000 keeps deep', 'ownership', [last, 'held', null]);
+    L.ask(w, 'ownership of the last produce, 1000 keeps deep', 'ownership', [last, 'blocks', null]);
   } },
 ];

@@ -1,6 +1,6 @@
 # foodblock-cli
 
-The FoodBlock 1.9 protocol from a terminal. Blocks are JSON on stdout, so they compose with anything else.
+The FoodBlock protocol from a terminal. Blocks are JSON on stdout, so they compose with anything else.
 
 ```
 npm install -g foodblock-cli
@@ -10,7 +10,7 @@ fb attach --draft '<what draft printed>' --signature <hex made on her device> --
 fb --help                # every command
 ```
 
-**This command line holds no key.** A person's key is made and kept on her own device (a passkey); `fb init`, `fb key` and `fb create` are gone because they made a key or signed with one a file kept. `fb draft` composes the block, her device signs it, `fb attach` checks the signature is her key's over exactly that block and adds it to her chain.
+**This command line holds no key.** A person's key is made and kept on her own device (a passkey). `fb draft` composes the block, her device signs it, `fb attach` checks the signature is her key's over exactly that block and adds it to her chain.
 
 `--audience` (`public`, or the ids that may read it, comma separated) is required: the CLI fills in none, and a call without it exits non-zero with the reason. It states `at` itself, from its own clock at the call.
 

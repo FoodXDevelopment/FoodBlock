@@ -37,8 +37,8 @@ Besides the fields of a deal, an act in the library carries: `sides` (`from` and
 
 ## Who
 Who does it, and who answers for it. The doer answers unless said otherwise: a child sells lemonade and a parent
-adds their own promise; FoodOS acts and you answer; an executor finishes a dead person's acts; whoever holds a machine's operator
-grant answers for what it does. Kinds: you, your people, together, someone you deal with, a business or
+adds their own promise; FoodOS acts and you answer; an executor finishes a dead person's acts; whoever owns a machine answers for
+what it does under her grant. Kinds: you, your people, together, someone you deal with, a business or
 professional, anyone, a machine, FoodOS for you, a member for the group. Automation changes this field and nothing
 else: a robot cooking is still Cooking a meal.
 

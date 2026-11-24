@@ -833,3 +833,587 @@ Each line names the rule, what changed, and the centre rule that decided it wher
 - **A fork's proof**: a sealed half goes only to an asker the node holds a copy for; nothing of it goes to any other asker (nodes.md).
 - **core.md**: the read-back of "Showing a deal" (no `show` term: a side signs a promise not to show), and the depth (`limits.read_depth` is the one bound; a reader that stops says so).
 - **The read-back quotes a deal's own words** (`state.what`, word for word) and an SMS read-back past 160 letters runs whole over several texts (owner's decision, 2026-11-20): renderers/en.md, en-sms.md, readings/readback.md.
+
+## Purity pass, 2026-11-22
+
+The goal: a new reader can read the text and the code without knowing how they were built. One word, one meaning; no dead code; files
+named by what they hold. Each text change below names its reason. The text was fixed first, then both engines, then the wrappers.
+
+**Text changes**
+
+1. **"To come" is the one word** for what a side of a deal is still due (core.md, section 10, already said so). No text change; the code's
+   `owed` (`fold/owed.rs`, `Owed`, `owed_owners`, "promises.md, Owed") now says `to_come` (`fold/to_come.rs`, `ToCome`, `ToComeAt`) and points
+   at promises.md, Handing on a receiving place, which exists.
+2. **No operator.** No text change: consent.md already states the rule ("binds only the recorder's own side: the recorder, and every
+   sender whose block speaks for the recorder"). The code's "operator" words are gone, and the core's and the oracle's last rule for a grant
+   of kind `operator` (it had to name `refs.to`) are deleted: such a grant is read as any grant, as core.md section 7 already says (only
+   `key`, `referee` and `stop` say more).
+3. **`undo` is gone.** patterns/tasks.md pointed to "authority.md (Blocks that can be undone)", a section that no longer exists: pointer
+   removed. profiles/pledges.md said "`pledge_close` says `undo: never`, so a tool of hers closes only on her yes": no rule reads `undo`, so
+   the clause is removed ("A close cannot be taken back."). The base schemas no longer declare `undo` (schemas.json; every base schema id
+   changed, published.json regenerated).
+4. **A deal is its lines** (Patrick's decision). The plain top-level form is deleted:
+   - core.md section 7: a promise needs `terms.lines` or `state.what`; what it moves or prices is in its lines.
+   - promises.md, What moves; Terms ("A deal is its lines": `lines` is `[{ id, what, quantity, price }]`, each of `what`, `quantity`, `price`
+     optional, at least one stated; a line with no `what` moves its quantity, an amount: a loan; a line with neither prices time or a job;
+     a promise that moves nothing and has no price has no lines); a line's price takes every price form, a per-unit line may state a range
+     that the answer chooses in; a price fixed later prices one line, and its figure names that line in `state.line`; a block that names
+     no line counts toward the one line it fits, and toward none where several fit; Answers (an answer names only `terms.lines` of
+     `{ id, quantity }`); Who may bind (an accept keeps to each line; an allocation draws on each line: the quantity it names, else the
+     whole line; a counter's lines drawn on the offer's line of the same id); What becomes whose; a promise not to do has no lines; Settling
+     (a job's lines); Finding (a lookup matches a line's `what`); Rulings (a judge's fee is the price of her offer's one line); An IOU (one
+     line priced at the sum); band per line.
+   - folds.md: a hold is the quantity of the line naming the instance; done is per line; a line's quantity chosen; elapsed (no line names a
+     what or a quantity); over_allocated per line; the open offer's lines and `takers[].lines`; `to_come.to` amount null (what moves is one
+     whole); `terms_total` reads `lines` and `step` and the lines chosen; a measure is each line's quantity.
+   - authority.md: Keeps to items 5, 6, 7 are read per line (a line's `what`, `price`, `quantity`); Her quantity is the measure: each line of
+     a promise in `on` is a measure, written `<promise>#<line>`; A draw: the quantities its lines bind, else the deal's total at the lines it
+     binds, a figure at its `max` (the text already said so; the core now does it too).
+   - readings/readback.md items 8 and 9: named things and money come from the lines (a low and a high total over each line's price and
+     quantity ends); the reading's and renderers' cases are rehashed.
+   - protocol.json: `required` (promise: `terms.lines or state.what`), `terms` (no `price`, `quantity`), `set_places` (no `terms.price`,
+     `terms.quantity`), the `lines` refusal text, the stage outputs, `terms_total`'s arguments. conventions.json: `gives` and `lookup`.
+   - Profiles and patterns that wrote the old form: vouches.md, pledges.md, keeping.md, patterns/tasks.md, protocol.md (Reading a deal),
+     schemas.json (`pledge`, `judging`).
+   - The bug the end pass found is fixed in both engines: a transfer of goods `for` a deal, read in money (a row's cap, a grant's draw),
+     is its line's share, the line's price at the amount it moves: 1 kg of a £3/kg line is £3, not the order's £10.
+5. **`refs_single`** lists seven links; `author`, `prev` and `key` leave it (a set there is refused at `chain`, core.md section 8, item 3,
+   which already said so). core.md section 1 says so; the necessity tool keeps nothing for them.
+6. **`binds` of an ask:** no rule change. A vector names it: a paying ask binds its signer, a pure ask binds no one.
+7. **Her plan** (Patrick's decision). promises.md, Sides: "To yourself ... is accepted when made" is replaced by **Her plan**: a first
+   promise whose `refs.from` and `refs.to` both name its signer names no other side; it is no deal but her plan. It stays a `promise`, binds
+   no one (no one holds a claim on it: a word binds its signer only toward someone who can hold her to it), and has no stage; the blocks made
+   `for` it are her own record. A promise that leaves a side open (an open offer, a want) is still a deal. promises.md, The deal: a deal is
+   a first promise that names another side or leaves one open, and the blocks made `for` it; `deal_not_named` reads "the deal or plan it
+   names" (also protocol.json). folds.md: her plan has no stage (`stage` and `accept` null); `accept` no longer "the promise itself when made
+   to oneself"; the range sentence about a promise to yourself goes. "Plan" now has one meaning: patterns/foodblock-profile-epcis.md's
+   "Traceability plan" (kind `traceability_plan`) is "Traceability document" (kind `traceability_document`); patterns/tasks.md and
+   profiles/pledges.md already used "plan" for the top of a set of tasks and the thing pledged to (the pledges' plan is a thing, named in a
+   line's `what`; no rule reads it as a promise).
+
+**Code, with no text change**
+
+- Folders and files are named by subject: spec/oracle/stories/<subject>/ (records, things, keys, payments, grants, deals, circles, privacy,
+  readback, rules) with one kit.cjs, one export.cjs, run-all.cjs and core-stories.cjs; fixtures sdk/rust/tests/fixtures/<subject>.json;
+  Rust tests records.rs, things.rs, key_stories.rs, payment_stories.rs, grants.rs, deals.rs, circles.rs, privacy.rs, readback.rs, rules.rs;
+  test/audit files by subject; the fuzz corpus scripts grants.cjs, deals.cjs, circles.cjs, rules.cjs. Story vectors are named
+  "<subject>: <story>: <op>, question <n>", and every vector name lost its build labels (H14:, batch 2 P6, round 2, ...).
+- Deleted as dead: spec/oracle/stage1-, stage2-, stage3-scratch (copies of old oracles, answers files), sdk/javascript/test/make-vectors-*
+  and their kit (tools/vectors.cjs is the one generator), tools/vectors/1.9.cjs and 1.9-run.json (one-time migration; tools/vectors/steps.cjs
+  holds the steps still in use), test/audit's amounts, deals, pots and lib-deals (diagnostics no run reads, with 1.8 expectations), the
+  audit world written the 1.7 way that never built (the audit now fails on a world that does not build), tools/fuzz/fold (wrote the old deal
+  form; nothing ran it), the oracle's `pureJunk.fence` and `capOf`, the core's `received_after`, an unused import, unused test helpers.
+- spec/oracle/fb.cjs is split by spec module: basics.cjs, bytes.cjs, check.cjs, identity.cjs, grants.cjs, circles.cjs, deals.cjs,
+  things.cjs, consent.cjs, wire.cjs; fb.cjs is the one entry point (the door and every export), its exports unchanged. sdk/rust/src/identity.rs
+  is split by module: finality.rs (blocks.md, Finality) and forks.rs (core.md, invariant 3; folds.md, A fork is a burden).
+- Build history left the code comments; a comment states the rule and the spec section. Readings the text does not state are marked
+  "(the text does not say; read so)".
+- The oracle's dealer read an opened sealed copy as `{ block }`; the door answers it as a message `{ hash, type, state, refs, signature }`.
+- The Go wrapper wrote `keepers` for her clock (1.9 says `clocks`) and listed `operators` in the identity fold; fixed.
+
+**Door ops whose answer changed (for FoodOS)**
+
+- `promise_stage`, `promise_view`, `promise_views`: no top-level `quantity` (each line's quantity chosen is `lines[i].needed`); every line has
+  its id (no `id: null` line); on an open offer `lines[i].needed` is what the allocations that take bind on that line, and `takers[i].lines`
+  (`[{ id, quantity }]`) replaces `takers[i].quantity`; `to_come.to[].amount` is null (what moves is one whole); `price_fixed` is true only when
+  every line priced by a figure is fixed; a plan answers `stage: null`, `accept: null`.
+- `terms_total(terms, chosen)`: the second argument is the lines an answer chooses, `[{ id, quantity }]`, or null.
+- `worst_case`: each `on` entry is one line of a promise, with `line`.
+- `meter`: a promise in `on` is measured per line, `of: "<promise>#<line>"` (with `@<occurrence>` where it repeats).
+- `gives`, `readback`, `render`: read the lines (money from the lines' price and quantity ends).
+- `write_refusals`, `read`: a promise with `refs.what` is `lines`; with `terms.price` or `terms.quantity`, `undeclared_field`; with neither
+  `terms.lines` nor `state.what`, `required`; an answer's terms are only `lines` of `{ id, quantity }`; a set in `refs.author`, `prev` or `key`
+  is `chain` only.
+- `why_not_live_undo`: gone. `binds`: unchanged (a plan binds no one, as before).
+- The base schemas' ids changed (no `undo`, the `pledge` and `judging` texts).
+
+**Counts.** Files 805 to 730; code files 492 to 428; code lines 109,947 to about 76,600. Cases: vectors.json 2,091 to 2,100 (door 1,998 to 2,007), conventions-vectors.json 872 to 877. The rebuild: first run kept 1,912, renewed 98, deleted 860 (story cases whose stories were written again), added 869; after her plan, kept 2,843, renewed 3, deleted 33, added 38; then a fixed point (2,884 kept, nothing else). Necessity: 126 things, 118 covered, 8 used, none untested or dead; 28 of 28 invariants stated and carried.
+
+## The 1.9 update, 2026-11-22
+
+The brief: ~/foodx/research/2026-11-22-foodblock-2.0-avenues/review/DECIDE.md (Part 1, items 1 to 17; the narrowed list; Part 2, option A on every
+call), with the six reviews beside it. Where a review narrowed a proposal, the review's form is the one made. Text first, then both engines.
+
+**1. A key keeps its own place as it was, bar the key in it** (call 1, A). identity.md, A voice changes only what is below it: a key grant
+restates every voice above its signer's place as it was, "and its own place as it was, bar the key in it"; "A place, bar its key, is changed
+only by a voice above it"; and (call 6, A) "A new key put in a place by a voice not above it starts with no `passes`". The people of a voice who
+reach above keep that place "as it was, bar its key". Reason: a stolen daily key at `PT0S` could sign a list that set its own `passes: true`
+and raised its own limit from £50 to £50,000, and both stood at once (stolen-key.md, 3b). The engines had a wider hole than the review saw:
+"as it was" compared only who, suite, `wait` and `reach`, so a key could also change `passes`, `each`, `limit`, `every`, `receives` or `above`
+on a voice above its own place. "As it was" is now the whole voice, everywhere it is read (above the signer, its own place, Narrowing). The
+oracle (`identity.cjs`: `voiceOf` carries the rest of the voice; `keptBarKey`) and the core (`identity.rs`: `Voice` equality is the whole
+voice; `Voice::kept_bar_key`, read by `restated` and `reaches_above`) agree. A key may no longer narrow its own place either (call 1 is A, not
+B): Harry lowers his phone's limit from his card. New story `spec/oracle/stories/keys/a-key-keeps-its-own-place.cjs`: the exact attack (F1:
+`passes: true` and £50 to £50,000: no key grant, his place as it was), P lowering its own limit (no key grant), P setting `passes` on the card
+above it (no key grant), the card changing P's place (stands), P putting a new key in its own place with `passes` kept (no key grant) and
+left out (stands).
+
+**2. The judge is a term both sides signed; the `referee` grant kind goes** (merges.md, 3a; call 1 of merges, A). A judge named late was a
+`grant` of kind `referee`, and the one ending rule lets the author stop any grant, so by the text a losing side could fire the judge; both
+engines ignored the stop. promises.md, Terms: "A new date both sides signed" is now **A new term both sides signed**: a side's `observe` of
+kind `message` `for` the deal stating `pay_by`, or `judge` (one id), which the other side answers `accepted`; "Neither side alone ends it".
+Disputes, A judge named after the quarrel, and folds.md, Defeated blocks, read the judge from that message; a claim of invasion names its
+judge by a message `for` the claim, her own word that needs no yes. Deleted: `kinds.grant.referee` (protocol.json), the `referee` kind in
+core.md section 1 and authority.md, Kinds the protocol reads. protocol.json declares the kind `message` (`kinds.observe`) and its typed
+fields `pay_by:time`, `judge:id`. Engines: oracle `namesJudge` (deals.cjs: `judgesFor`, `invasionShown`; grants.cjs: the stop's `ruled`
+end); core `fold::judge_named` (deal.rs `judges_held`, grants.rs, invasion.rs). Vectors: tools/vectors/steps.cjs moves every `referee` grant
+to its message and each grant accepting it to an observe accepting it (21 inputs); the stories the-stop and bench-and-judges and the audit
+worlds signers-word-and-invasion and congruence-audit write the message. **Prose: "judge" is the one word** for one who rules (call 16):
+"referee" is gone from the text; `referee_ties` is `judge_ties`, `[{ judge, side, how }]`.
+
+**3. A ruling is shown as every block is** (words.md, A4, delete form; call 2 of words, A). Deleted: `terms.rulings` ("left out means
+private") from promises.md, Rulings and from the base schema `judging` (schemas.json, its text too), and "Two things are public whatever
+the offer says". New text: a ruling's audience is the judge's own `state.audience`; whoever holds it may show it; a judge or side who will
+keep it close signs a promise not to show; "Nothing else makes a ruling private or public." The door op `ruling_audience` is gone; its one
+useful part is the reading `ruling_honoured(ruling, blocks) -> { lines: [{ to, due, honoured }], why }` (conventions.json, a reading):
+honoured when counted transfers `for` the ruling `to_owner` the one it awards add up to its sum in its kind, whoever paid, or when she
+released it; an award with no sum only by her release; whether it was honoured by its due date is the reader's own clock. The old op read a
+payment's `refs.to`, which a transfer never states, so no award was ever shown paid: fixed in both engines (`to_owner`). New story
+deals/ruling-honoured.cjs. SDK door tables regenerated (tools/gen-door.cjs). FoodOS `judge.js` writes `terms.rulings`: it must stop.
+
+**4. The lock has one meaning: H₀** (structure.md, A9; call 9, A). core.md section 1: "A build runs the one set its manifest names"
+replaces "The core runs no set". Section 11: **The first set is H₀**: a block that names no rule set is read by H₀ ("an absent
+`state.rule_set` is the one spelling of H₀'s id, as an absent suite is `std`"); a build reads by its own rules only the blocks that name
+its manifest's id, and, if made from H₀, those that name none. The manifest's `files` now also names `fuzz-vectors.json` and
+`audit-vectors.json`. "The core alone" is gone everywhere (protocol.json `read`, `named_readings_about`, patterns/releases.md, comments).
+Deleted: the `read` argument `runs` (protocol.json, sdk/door.table, both engines' door, `rules::running` and its thread-local, the oracle's
+`RUNS`; the JS, Python, Go, Swift and Kotlin `read` wrappers); each engine names its built-from set as null until spec/rule-set.json is
+published at the lock. The story rules/rule-sets-and-discovery asks H₀ instead of `runs`. **Frozen audit answers**: test/audit/freeze.cjs
+writes spec/audit-vectors.json, the audit's 18 worlds' blocks once each and every question the word ops ask of them, with the oracle's
+answer (the core must agree or nothing is written; keys from fixed seeds); spec/oracle/run.cjs and sdk/rust/tests/audit_vectors.rs run it.
+
+**5. Restitution's ground** (restitution.md, A1). core.md section 10, The three remedies: deleted "Rectification is the wrongdoer's own deed
+at work ... the referee only reads it (Kinsella). The three remedies rest on that one ground." New: "The attacker's consent is not asked. By
+his act he lost to her what it cost her, with no word of his (Kinsella). An attack is not a signed word, so the record cannot show it ...
+title moves in it only by the previous owner's signed word, given then or before ... Whoever acts on a ruling answers for the act if it was
+wrong." Invariant 24 and folds.md, Ownership: "one of two reasons" (the third, "the attacker's own signed payment after a ruling", is the
+second). No fold changes; `awarded` is not added (rejected: a reading, and a griefing tool in a protocol answer). tools/fuzz/owners.cjs and
+the audit check say invariant 24, two reasons.
+
+**6. Fraud in a deal goes to its bench** (restitution.md, A3; call 3, A). core.md section 10: "Fraud in a deal is a condition of that deal
+that failed (Rothbard, ch. 19; Kinsella), so it is that deal's dispute and goes to its bench"; "An attack is harm outside any deal of the one
+harmed: theft, poisoning, drift, fraud that harms one outside the deal, or a word signed under a threat". promises.md, Two doors: "an attack
+outside any deal goes to the victim's judge". Nothing is added for a deal with no bench: it shows `disputed` until both name a judge.
+
+**7. `passes`** (stolen-key.md, 3a; calls 4, 5, 6 A). identity.md, What a key hands on: "toward every block that has not seen that key's
+end"; added "No fold reads `passes`: the record shows the receiver of a key's draw as owner whoever held the key (folds.md, Ownership).
+Whose the thing is, where the key was not her hand, is a judge's word, read on her `not_me` ... and on this word." No flag, no promise.
+Call 6 is in item 1 (a new key starts with no `passes`). Calls 4 and 5 are FoodOS's: no warning before a complaint; `passes` only as her
+own yes.
+
+**8. `confirms`** (words.md, A5; call 8, A). core.md section 1: `answers` is "the reply to another's block: it accepts, declines or stops it.
+Taking up an offer or an ask is only by an answer"; `confirms`: "its signer signs that block's word too ... it binds her only on what of
+hers the block reaches: where she holds a part, a voice or a place in it, she joins it; where nothing in it is hers, it is her word that it
+is true, and binds nothing"; `defeats`: "her word that it is false. It binds nothing of hers." No byte changes.
+
+**9. A grant ends at `expires`** (words.md, A6; call of words 4, A). `scope.until` is `scope.expires` (authority.md: the scope list, What
+she did not write, `scope.expires` is optional, Scope subset, the heading "Whose date tests `expires`"; things.md, a grant of leave;
+blocks.md, The cut: "a time it states (`expires`; Time)"; circles.md, a row's `every`; nodes.md, an address; custody.md; tax-recall.md;
+tasks.md: "a `repeat`, or `expires` for when the offer ends"). promises.md, Terms: "`until` is when the deal's own term ends ... `expires`
+ends a word that waits on others: an offer, an ask, a grant, a transfer to a named receiver, an address." protocol.json `scope`,
+`narrower_than`, the `worst_case` result; answers `scope_reading`, `worst_case` and `use_shown`'s `leave` say `expires`. Kept: `terms.until`,
+a share's `state.until` (a lease, title to a use), `deliver_by`. Engines, stories, audit worlds, fuzz worlds and wrappers by Sonnet helpers
+(their own files each), checked by me; tools/vectors/steps.cjs moves every vector input.
+
+**10. Consent is a reading** (structure.md, A7). modules/consent.md moved to readings/consent.md: its section 1 (already nodes.md,
+Admission) and its `scope.ends_on` paragraph (already authority.md, A witness, which keeps it) are deleted; "Consent decides what binds, not
+what exists" is "A STOP refuses nothing" (an unanswered ask binds no one anyway; her own answer is what binds her). Deleted: the STOP clause
+of folds.md, stage 7 (both engines: `promiseStage`'s consent branch; `promise.rs`'s `consent` call), invariant 27; privacy.md's 28 is now 27
+(core.md and protocol.md say 1 to 27; vectors retagged). Invariant 5: "No one's word about what may reach her refuses another's block: a block
+sent despite her STOP is valid and kept". The third remedy: "anyone may refuse to deal again: she does not answer, or answers no." A consent
+word outside `yes` and `stop`, and a `yes` with no subject, are no longer refused by `read` (protocol.json `kind_fields.observe.consent`
+and both engines' `required` check deleted): the reading counts them for nothing (oracle `consentFold` reads conventions.json
+`folds.consent.word_values`, as the core already did). The story rules/deleted-things asks so. Every reference names readings/consent.md.
+
+**11. Four folds filed twice** (structure.md, A8; call 12, A). Every reading's fold entry left protocol.json for conventions.json's new
+`folds` (ways_in, where_now, made_from, machine_lock, use_shown, not_free_shown, invasion_shown, next_link, consent, release_shown), so
+rewording a reading no longer changes the locked hash. `shares_on` is a word: it joins `door.protocol.word` and leaves the readings (its cases
+move to vectors.json). `folds_about` cites core.md section 12. tools/fuzz/folds.cjs asks protocol folds, conventions folds and views. The
+machine lock leaves the grant kinds (`kinds.grant` is `key` only): authority.md, Kinds the protocol reads, and core.md section 1 say so; the
+lock stays the pattern's grant of kind `stop`, read by the `machine_lock` reading. folds.md's table files the readings apart.
+
+**12. The calendar is a reading** (structure.md, A11b). promises.md, Terms keeps what `read` checks (the RRULE grammar, the zone's shape, a
+calendar repeat carries `state.when` and `terms.zone`); The calendar forms, the counting rules (1) to (6) and the clock-change rule moved to
+readings/calendar.md. The time zone pin "release 2026e" is deleted (core forbids tables, and it was out of date): which release is the
+reader's own. conventions.json `repeat_occurrences` and protocol.json `repeat.rule` point to the reading. readings/README.md and protocol.md
+list consent.md and calendar.md, whose cases are their ops' cases in conventions-vectors.json (flagged).
+
+**13. The EPCIS cross-reference** points to encoding.md, Large content.
+
+**14. The TLA+ model is deleted** (call 11, A): tools/tla/ and both CI jobs (`protocol-model`, `protocol-model-tlc`), and its .gitignore
+line. It modelled 1.7, read no spec file and cost CI up to four hours a part. A 2.0 model is to be tied to the engines.
+
+**15. Giving up is written once** (merges.md, 4, text only). folds.md, A draw: one ground, "title passes only by its owner's giving it up,
+aimed at a receiver or at whoever first takes it, and only on the conditions she wrote (Kinsella, 2003, p. 28). A will is no draw while she
+can sign." promises.md, What a promise is: the three-words list is "Title waits on a condition only in a draw". things.md, Letting go with no
+receiver: the rule text points to folds.md, Ownership; the Ada example stays. identity.md, A will points to folds.md, A will. The will
+stays its own rule; the types stay apart.
+
+**16. The scope `limit` row and the dead orders** (merges.md, 2). authority.md, Scope subset: "A child is read only inside its parent ...
+Its `limit` is a draw on its parent's line ... A child for more than is left takes nothing, and is never cut down"; the `limit` row is
+deleted (the `every` row stays). protocol.json `narrower_than.limit` deleted; `narrower_than_about` names only the orders the table uses.
+Deleted: Rust `keeps_condition`, the `superset` and `at-least-duration` arms of `wider_by`, its unused `from`; the oracle's `subset`,
+`superset` and `at-least-duration` orders and `childProblem`'s limit check. **Call 7 (A): a circle row that states no limit lets nothing be
+drawn.** circles.md, A grant from a row: "A row that states no `limit` and no `each` lets nothing be drawn, as a grant's silence does: a
+grant from it states neither, and no transfer under it moves an amount above zero." Both engines (`widerThanRow`/`wider_than_row`,
+`rowCovers`/the row cover check). Three circle stories now state the bound their rows meant (`each` 1 part, `each` £5).
+
+**17. Post-quantum sealing: X-Wing** (sealing.md; calls 13 and 14, A). core.md section 2: **An encryption key** is the suite's own, bare,
+or a name, a colon and a key, as a hash is; `xwing:` and 2,432 hex is an X-Wing key (draft-connolly-cfrg-xwing-kem-11: the ML-KEM-768 key,
+then the X25519 key); the sealer uses the key as stated; **a named key whose name a reader does not know is skipped, and the rest of the
+block that states it stands** (call 14; identity.md, Encryption keys, says so too). privacy.md, Envelope: one salt rule for both kinds, "the
+encapsulation's bytes then the recipient's key bytes" (for X25519 the encapsulation is the fresh key's public bytes), and the bullet **A KEM
+key** (`kem_ciphertext` per recipient, no `ephemeral_key`, `alg` `xwing-hkdf-sha256-aes-256-gcm`, one `alg` per envelope). protocol.json:
+`encrypt_keys` (the xwing grammar and sizes, and `named`); `suites.future.pq.encrypt` deleted. THREAT-MODEL.md, Forward secrecy: an
+`xwing:` key is not opened by a quantum break of X25519 alone; no forward secrecy. Core: crates `ml-kem =0.3.4` (hazmat: deterministic
+keygen and encapsulation), `sha3 =0.12.0`, `shake =0.1.0`, under the `envelope` feature; `envelope.rs` seals and opens; the door's `seal`
+takes per-recipient 64-byte `encaps` under `vectorsOnly`, refuses mixing kinds, and `encryption_keypair("xwing")`/`encryption_key_of(seed,
+"xwing")` give the key. Oracle: opens with Node's own crypto (SHAKE256, SHA3-256, X25519, ML-KEM-768 decapsulation from the seed); it does
+not seal (Node takes no fixed randomness), so the core seals the vector and the oracle opens it. Both match the draft's own test vector
+(appendix C). Vectors: key `xwing_ann` (test key), one envelope case, the section `xwing_draft11`, three `read` cases (an X-Wing key; an
+unknown named key `mlkem1024:` that is not refused; an `xwing:` key of the wrong length, `grammar`). Every SDK runner (JS, Python, Go,
+Swift, Kotlin) runs them.
+
+**The narrowed list.**
+- **One panel shape, for the five places that count signers** (merges.md, 1; call 15, A). A panel is `{ names, needed }` (protocol.json
+  `shapes.panel`; folds.md, Counts, which no longer carries `wait?`: `wait` has three meanings beside `needed` and stays outside). A signal's
+  `by` and a price fixed later's `by` are panels (`signers` is gone); a schema's bench is `grounds.bench` (`confirmers` and `grounds.needed`
+  are gone; `grounds.wait` and `grounds.clocks` stay); clocks and a voice of people already were. Not panels: a row's `{ to, needed }`, an
+  event repeat's `by`, an account word's `by`. A bench's names keep their order (the backups' order). Text: promises.md (a signal, a price
+  fixed later, Disputes), folds.md (Counts, Defeated blocks, a pot's payout), things.md (`grounds`), pools.md, rulebooks.md, refusals.md;
+  schemas.json. Engines (`Check.panelOf`; `tasks::panel_of`, `shapes::panel_shape`): a panel that repeats a name is no panel (it was
+  accepted before), and `needed` above the count of names holds nothing. Vectors moved by steps.cjs (about 250 sites).
+- **The two-meaning words** (words.md, sweep; call 16, A). `confirmer`: a bench member is a judge (`grounds.bench`), a witness is a named
+  signer (payment-proof's provider is now named in the payee's account word's `by`, never on a bench: flagged); "referee" is gone (item 2);
+  `referee_ties` is `judge_ties`. `line` is only a deal line; one key's blocks in order are a **chain** everywhere in the text (headings: "A
+  chain", "A limit is counted along one chain", "A circle's chain", "A chain goes on", "Her start, and her one chain", "Read once, along the
+  chain", "A fork on a tool's chain", "The chain."), and the refusal code `not_on_line` is `not_on_chain` (both engines, vectors); answer
+  rows that are no deal line are "entries". `held`: the blocks a reader has are "has" in prose ("A header a reader has"); `held` is the
+  draw state alone (the door argument is still named `held`: flagged). A `standing promise` that repeats is a **repeating promise**; "stands
+  in the causal past" is "is in". "Counts toward" a sum is "adds to"; "counted along" a line is "metered along" a chain. Done by a Sonnet
+  helper on the spec prose, read through by me; the code comments that cite a renamed heading follow. Left as written (the helper's list):
+  about 15 uses of "line" that are neither (a line of text, "a revolving line"), "counted on one chain", five "counts toward the stage".
+
+**Tests added.** The own-place story (item 1); ruling-honoured (item 3); **unknown at every seat** (rules/unknown-at-every-seat.cjs: a
+rule set no build here is made from, an undeclared field and an unknown hash name on the block itself; a rule set on the key grant it rests
+on, on a block it names (an accept of an unread offer is `names_unread`), on a circle version, on one block of a pair, in the middle of a
+chain, and on the message that names a judge: each answers less, never another owner, never a throw). Not covered: a sealed body's seat and
+an unknown condition shape at each seat (an unknown kind is open data and changes no answer). The audit's worlds frozen (item 4).
+
+**Flagged for Patrick** (calls the brief does not settle, each made so that silence means nothing):
+1. Call 7 was made for a row's `limit` and `each` only. A row's other silences (`types`, `parties`, `on`, `what`) still "bound nothing",
+   while a grant's same silence names nothing (authority.md, What she did not write) and circles.md, A row, says a row's scope is read as a
+   grant's. Making a row read wholly as a grant would change many circle answers.
+2. Under call 7 a priced promise signed `as` a circle under a row with no limit is still covered (only transfers and grants are bounded at
+   zero); whether an offer or accept "draws" there is not settled by the text.
+3. payment-proof.md named the provider in `grounds.confirmers`, which would have put a witness on the bench ("who says a thing happened
+   never rules"); it is now named in the payee's account word's `by`. A pool's vet stays on the bench (`grounds.bench`), since the pool's
+   payout reads that bench as its signal.
+4. The readings consent.md and calendar.md are texts whose cases live in conventions-vectors.json; readings/README.md now says "each is a
+   text with its cases", and only a reading a block may name (readback) is named by hash.
+5. A STOP's shape is no longer refused by `read` (a consent word outside `yes`/`stop`, a `yes` with no subject): consent is a reading, so
+   those blocks are data that count for nothing in it.
+6. The door argument for the reader's blocks is still named `held`, the same word as the draw state `held`.
+7. Old fuzz corpus files (tools/fuzz/corpus/legacy-1.7, found/) are signed JSON still written with `until` and `referee_ties` in their
+   texts; they are 1.7 reproducers and both engines answer them alike (the short fuzz saw no new split), so they were left.
+8. Spec words went up, not down (below): X-Wing, the two readings' headers and the new stated rules outweigh the deletions.
+9. `git rm --cached spec/modules/consent.md` was run by mistake while moving the file: the deletion is staged in the index (nothing was
+   committed). The working tree is as intended.
+
+**Door ops whose answer changed (for FoodOS)**
+- `promise_stage`: `referee_ties` is `judge_ties`, `[{ judge, side, how }]`; a judge named late is read from a `message` `for` the deal
+  stating `judge`, accepted by an `observe` (no `referee` grant is read); a bench is read from `grounds.bench`; an ask sent despite a STOP
+  is `asked`, never `declined`; `price_fixed` reads `by.needed`.
+- `ruling_audience`: gone. New reading `ruling_honoured(ruling, blocks) -> { lines: [{ to, due, honoured }], why }`. FoodOS `judge.js`
+  must stop writing `terms.rulings` (a base-schema term no longer declared: `undeclared_field`) and pass no `rulings` parameter.
+- `read`: no `runs` argument; a block that names no rule set is read by H₀, any stated id is `unknown_rules`; a key grant's own-place
+  change, a `passes` kept on a new key, or a key narrowing its own place is no key grant (its `stands` is false); a consent block is never
+  refused for its word; an unknown named encryption key is not refused; an `xwing:` key of the wrong length is `grammar`.
+- `stands`, `identity_state`: a key grant that changes its signer's own place (bar the key) or anything of a voice above is no key grant.
+- Grants: `state.scope.until` is `state.scope.expires` everywhere FoodOS writes or reads a grant or a circle row (`scope_reading`,
+  `worst_case` answer key `expires`; `use_shown` `leave.expires`); a child grant's `limit` is never `wider_than_parent` now (it is a draw:
+  `not_live` when it does not fit).
+- Circles: a grant `as` a circle under a row with no `limit`/`each` that states a limit or each is wider than the row; a transfer of an
+  amount under such a row is not covered (`row_holds`, `circle_state`).
+- Conditions and prices: a signal's `by` and a figure's `by` are `{ names, needed }` (`condition_holds`, `promise_stage`, `pot`); a
+  schema's `grounds.bench` replaces `confirmers`/`needed`.
+- `ownership`, `why_not_under`: the reason `not_on_line` is `not_on_chain`.
+- `shares_on` is now a word op (in vectors.json); the reading folds moved to conventions.json (`machine_lock`, `use_shown`, `consent`, ...);
+  their answers are unchanged.
+- `seal`, `open`, `encryption_keypair`, `encryption_key_of`: accept X-Wing keys (`xwing:`).
+- A judge named on a claim of invasion: a `message` `for` the claim stating `judge` (`invasion_shown`).
+
+**Counts, before and after.** Door cases: vectors.json 2,007 to 2,045, conventions-vectors.json 877 to 868 (2,884 to 2,913); fuzz vectors
+14 (now in the manifest); audit-vectors.json new, 17 worlds, 2,224 cases; protocol ops 37 to 38 (word ops 30 to 31); invariants 28 to 27;
+spec words (every .md under spec/) 112,131 to 112,686; code lines 76,300 to 76,404; files 731 to 742. The rebuild: first run kept 2,668,
+renewed 153, deleted 75, added 89; then a fixed point (2,913 kept, nothing else).
+
+**The checks.** Vectors rebuilt to a fixed point (0 faults: every answer the oracle's, the core the same). cargo test: every suite passes,
+audit_vectors included. `npm test` (sdk/javascript): run-vectors 3,105 passed, the oracle 5,277 passed (door 2,912, audit 2,224), the
+audit 33 passed, 0 differing; node tests pass (test/envelope.test.cjs opens the X-Wing envelope by its `xwing_private`). Python 40 tests OK;
+Go ok; Swift 26 tests, 0 failures; MCP 35 pass; CLI 11 pass; host 59 pass. Kotlin and tools/sim cannot run here (no JVM; the simulator
+was not run). Short fuzz (`tools/fuzz/diff.cjs --seeds 1-25`): 11,487 questions, 5,898 property checks; 11 findings, all known, 0 new.
+gen-door, sync-spec and version-sync current; the CBOR key table regenerated (152 names).
+
+**Necessity** (one full measure, 6 h 32 min): 126 things: 117 covered, 9 used, 0 structural, 0 untested, 0 dead; invariants: 27/27 stated
+and carried. `node tools/necessity.cjs --check` exits 0.
+
+## Final round, 2026-11-23
+
+The brief: settle the flags of the 1.9 update, delete every piece of legacy and dead code, and the coordinator's additions (the reports in
+~/foodx/research/2026-11-23-foodblock-2.0-research: core-and-words.md item 6, food-and-stores.md items 17 and 18, genesis.md items 7 and 8,
+merges.md item 4, limits/card-pin.md, and the acts library). Text first, then both engines, then the vectors. Where the brief did not settle a
+call, the reading where silence means nothing was taken and it is flagged for Patrick below.
+
+**1. A silent circle row means nothing, on every field.** circles.md, new bullet **What a row leaves out, it does not allow**: a block `as` the
+circle is held by a row only where (1) its type is in `scope.types`; (2) each side it gives to is admitted (an id `parties` lists, a side a
+promise in `scope.on` names, a side of a deal the circle bound; with no `parties`, anyone on a side an `on` promise leaves open: authority.md's
+own rule, A side admitted); (3) a promise (offer, counter, accept) keeps to a promise in `scope.on` (Keeps to), and a transfer, or an accept of
+one, is `for` a promise in `scope.on` or a deal the circle bound; (4) each thing it names is in `scope.what`, bar a block under (3), whose deal
+names its things, and the circle's own parts only where `what` names the circle; (5) a row with no `limit` and no `each` lets nothing be drawn:
+no block under it binds **or** moves an amount above zero (a priced promise too, which was the hole), bar a block counted once. A grant from a
+row states no field the row does not (types, `parties`, `on` within the row's, `refs.what` within its `what`, as a child grant within its
+parent). **The explicit "any":** the spec had a spelling for "anyone" (an `on` promise that leaves a side open) but none for "any deal" or
+"any thing", so the smallest explicit form was added: a row's `parties`, `on` and `what` may each be the text `"any"` (a row's alone, never a
+grant's; `"any"` at `what` reaches the circle's own parts too, since it says so). protocol.json `circle.about` says it. Engines: oracle
+`circles.cjs` `rowCovers`, `widerThanRow`, `bindersOf` (new, shared by `countedWhenBound`); core `fold/circle.rs` `scope_misfit`,
+`wider_than_row`, `binders_of`; the row shape check takes `"any"` (`check/actor.rs`, `scopeShapeOk`). Every story, audit world and fuzz world
+whose rows meant "any" now says `parties: 'any', on: 'any'` (and the audit café's row a bound, `each` £300, since its priced
+offer is now a draw) (circles/lib.cjs `r1`, rows-head-counts-and-bounds, every-owner-together,
+unissued-parts, six audit worlds, tools/fuzz/seeded.cjs, the corpus); the loan in rows-head-counts-and-bounds lost a `state.what` (item 3).
+
+**2. The door argument `held` is `blocks`** everywhere: protocol.json and conventions.json (every argument list and the prose that meant "the
+blocks a reader has", now "has", "lacks", "given"), sdk/door.table and every generated wrapper, the spec text (`speaks_for(block, blocks)` and
+the rest), the JS, Python, Go, Swift and Kotlin wrappers and their tests, mcp, cli, host, both engines (Rust: `WriteOptions.blocks`,
+`CheckOptions.blocks`, `blocks_index`/`blocks_of`, the write wire key `blocks`; the oracle: `blockMap`, `blockList`, every parameter), the
+tools and the audit (the `'blocks'` placeholder in `ask`, `$blocks` in the frozen audit). Three answer keys that meant "the reader has" were
+renamed too, so `held` keeps the draw state alone: the push answer's `held` is **`had`** (nodes.md, conventions.json, sync.rs, host); the
+`check_reads` entry `held` is **`has`**; the fork answer `{ pair: true, held, at_most }` is **`{ pair: true, blocks, at_most }`**; the
+profile capability `folds_for_held_records` is `folds_for_its_records`. Left: `held` the draw state (ownership, pot, gives), "the condition
+held" (a verb), refusal detail strings, and the case files of the readback reading (spec/readings/readback.cases.json is hashed with its
+reading; flagged).
+
+**3. A line that is both a loan and a job is refused when written, `lines`.** promises.md, A deal is its lines: "In a promise that states
+`state.what`, a line's `quantity` is the measure of the work (two hours, three days); a line there with no `what` whose `quantity` is of its
+price's own kind would move that amount back for more of it, a loan, and a line is a loan or a job, never both (`lines`)." The test reads two
+signed fields only: the line's quantity and its price are of one kind (£20 lent for £22). protocol.json's `lines` text names it. Oracle
+`check.cjs`, core `check/promise.rs`. `lines` fits: it is the code for every other malformed line. Story deals/what-a-promise-may-carry, now
+asked through the door (`write_refusals`), so it is in the vectors: the loan with a job refused; the same loan with no `state.what` valid; a
+job priced with no quantity valid; teaching for 2 hours at £20 an hour valid; 2 hours with no price valid. (A first cut of this refused every
+line with a quantity under `state.what`, which made a job of two hours unwritable; the coordinator caught it and it is narrowed as above. The
+two audit worlds teach for 2 hours again, folds.md's job rule counts work to each line's quantity chosen again, and the measure was stopped
+40 minutes in and run again from the start, since `--only` refuses once the engines change.)
+
+**4. The story that expects `underway`.** deals/what-an-offer-gives.cjs (3): Ruth defeats Maria's accept of the delivery; Maria's payment is
+still counted. The story holds a signed block showing work began (the counted payment), and the text already gives `underway` for it (folds.md,
+stage 4: a binding answer and a counted block `for` it; Defeated blocks: the ruling makes only the delivery count for nothing). So the text was
+not missing the case; the story's own comments were wrong ("Expect stage `accepted`", "the text says `accepted`", "(the text does not say;
+read so)"). The comments are fixed; no text or answer changed.
+
+**5. A malformed STOP stays unrefused by `read`.** Decided, no change: consent is a reading (readings/consent.md), so a consent word outside
+`yes`/`stop`, or a `yes` with no subject, is data that counts for nothing in it. The stale clause in protocol.json `required` ("a consent yes
+with no refs.subject") is deleted.
+
+**6. tools/sim is deleted** with everything that named it: the CI job `simulator`, dependabot's `/tools/sim`, the `sim` npm script and cargo
+alias, the .gitignore line, and the comments that said "found by the simulator" (order.rs, sign.rs, fuzz_vectors.rs, diff.cjs, folds.cjs,
+make-vectors.cjs and spec/fuzz-vectors.json's `$comment`).
+
+**7. Kotlin.** Homebrew's openjdk 27 was there but Gradle 8.14 cannot run on it; `brew install openjdk@21` and `openjdk@17` (free; the build's
+toolchain asks for 17). `./gradlew :foodblock:test` with JAVA_HOME at 17: **24 tests, 0 failures** (ApiTest, LoaderTest, VectorsTest; the
+natives built from today's core). Nothing failed, so nothing was fixed.
+
+**8. Unknowns, every place.** rules/unknown-at-every-seat.cjs is now the whole matrix: five unknowns (a rule set no build here is made from, an
+undeclared field, an unknown kind, an unknown hash name, a condition shape no reader knows) at eight seats (the block itself, the key grant it
+rests on, a block it names, a circle's version, one block of a pair, the middle of a chain, the message that names a judge, **a sealed block's
+body**). Each of the 40 asks: never a throw, never more than with no unknown, and less wherever the unknown is not open data. The open-data
+cells are named in the story (an unknown kind on a block whose kind no rule reads; a field of an `observe` of an open kind, which carries any
+field; a pair, which has nothing to lose). Both engines agree on all 40. It found one split, fixed: an `actor` of a kind other than `circle`
+that states `pack` or `rules` was read by the oracle and refused by the core; the core is right (a circle's actor alone carries `clocks`,
+`pack` and `rules`: core.md section 7 now says so; the oracle refuses it, `undeclared_field`).
+
+**9. The old fuzz corpus, rewritten.** found/*.json (22, the `end-pass-*` files and new-D/E/F): moved to today's forms (lines, panels,
+`amount` splits) by tools/vectors/steps.cjs and re-signed by their own test keys, each renamed by what it tests (e.g.
+found/ownership-twin-of-the-start.json); 12 of the 22 were unread under today's rules, so no longer reached their cause, and now do (e16 and
+new-D needed a reshaped block to keep their path; new-F now splits on `lacks`, kept as known). legacy-1.7/ (63, authors' keys not
+recoverable): rewritten as `build(L)` cases: z-scopes.cjs (all 46 `scope_reading` reproducers, `until` to `expires`, old money to
+`{ value, unit }`), z-grants-and-circles.cjs (backed, made_from, pot, stands, speaks_for/members_then), z-lines-and-lone-blocks.cjs
+(ownership, identity_state, valid). None needed deleting. legacy-1.7/ is deleted, and corpus.cjs's `legacy()` reader and its tables with it.
+known.json names the cases as they are now.
+
+**10. Word-cutting over spec/**, no rule changes (Sonnet helpers by file group, two rounds: the first cut only about 1,500 words, so a second
+round went paragraph by paragraph). Cut: restated rules (kept at their home, a pointer where a reader needs one), long sentences, examples that
+only repeated a plain rule (in promises.md about 37 such worked examples, each read back first: none carried a rule or a condition; the ones
+with numbers or a form the rule alone does not show stay), explanations of why something is not a rule. The second round then had a review of its
+own: four Sonnet reviewers read every changed passage against the copy taken before it and put back, word for word, every rule or
+condition stated nowhere else (about 100 places: e.g. identity.md "A place, bar its key, is changed only by a voice above it", folds.md
+"Withdrawing an offer a counter has replaced withdraws nothing else", core.md "The header carries nothing else", the profiles' "the
+protocol fills in none"); I checked every heading, bold run-in heading, defined term, backticked name, table and numbered list against the
+copy. The three files the engines hash
+(readings/readback.md, renderers/en.md, en-sms.md) and the generated NECESSITY.md were not touched. promises.md 19,730 to 17,787; folds.md
+15,431 to 15,131; core.md 7,072 to 7,020; authority.md 5,906 to 5,712; every other file a little. No vector reads the prose, so every vector
+answers the same. A deeper cut would mean restructuring rules into one home each (2.0; flagged).
+
+**11. The dead-code sweep** (Sonnet helpers by area, each deletion proved by grep or by the compiler; every one checked by me against the
+suites). Deleted paths, by kind:
+- *A tool nothing runs any more*: tools/sim/ (Cargo.toml, Cargo.lock, oracle-check.cjs, src/main.rs, world.rs, episodes.rs, invariants.rs).
+- *One-time migration scripts*: changes-1.8/00-clear-the-ground.answers.cjs, changes-1.8/00-clear-the-ground.resign.cjs.
+- *Old fuzz copies*: tools/fuzz/corpus/legacy-1.7/ (63 files), the 22 old found/*.json (rewritten under new names).
+- *Scratch*: sdk/kotlin/gradle/verification-metadata.dryrun.xml (1,650 lines, untracked), sdk/door.table-E (a sed backup).
+- *Renamed by what they hold*: tools/fuzz/lib18.cjs -> block-builders.cjs, world18.cjs -> random-worlds.cjs, world.cjs -> seeded.cjs;
+  spec/oracle/stories/deals/deleted-shapes.cjs -> what-a-promise-may-carry.cjs, rules/deleted-things.cjs -> consent-words-and-recipients.cjs.
+- *Unused code*: Rust: `Dec::is_decimal`, `strings_pub`, `Spec::has_type`, `Spec::knows_hash`, `sync::local_service`, `sign_bytes`,
+  `verify_bytes`, `grant::is_live_in`, `check::is_code`, `check::findings_with`, a duplicate `act_value`, `hash_list_shape`, `readback::obj`,
+  `Bench.bound` and the parameters only it fed (`wait_run`'s `reads`, `fence_wider`'s `from`, `recur`'s `tz`, `free_key_grant`'s `g`), about
+  330 lines of unused test helpers; every `allow(dead_code)`/`allow(unused…)` removed and the items they hid deleted or gated by the feature
+  that uses them. The oracle: `datedFrom`, `legacyMoneyProblem`, `refusalOf`, `amtF`, `tookAt`, `readsOf`, `isCutoffOk`, `namesIt`, `builtOn`, `reachOfWord`, `conditionStands`, the kit's `ownS` and `headerMessage`, dead locals and parameters (`disputesOf`, a no-op `conditionBinds`, a branch `&& false`), about 250 export names nothing imported; the 38 `s4*` names (build history) renamed by what they do (`blockKind`, `drawsOnLine`, `notDueBecause`, …). JS SDK: order.cjs `causesOf`, `headsAmong`, `indexOf`; spec.cjs's ten unused constants; protocol.cjs's
+  unused re-exports; fold.cjs's duplicates of grant.cjs (`keepsTo`, `meter`, `worstCase`, `lowestOffer`). mcp: the throwing stub `newPerson`,
+  `addDecimals`, unused imports and exports. Go: `hashesOfBlocks`, `isStr`, `isInt`, `uniq`, `sortedKeys`, three test helpers. Swift: five
+  unused helpers and `CircleState.memberIds`. tools: `makeWorld` and `withRecovery` (seeded.cjs, about 105 lines with the old money form),
+  `casesOf` and four exports of diff.cjs, `lesser`, `members`, `listAt`, `plus`, `strip`, dead ternaries in run-vectors.cjs; acts:
+  `measures_of`.
+- *Legacy readers and flags*: the oracle's `normHeld({ held })` and `heldList(h.held)` object forms; the CLI's "`init`, `key`, `create` are
+  gone" branches and their test; host's store fallback for old copy lines with no `author`/`at`, two `ALTER TABLE … IF NOT EXISTS` lines;
+  replay-check's `"version": "1.7"` message form; version-sync's `legacy|aliases-` and `tla` patterns; Go's `Version` that read a field that
+  does not exist (now the core's label, as the other SDKs).
+- *Checks of removed names* (they tested history, not a rule): the stories' "ops the protocol does not have are gone", "the old names are gone",
+  "owed_back is gone", "promise_stage has no `show` output", the protocol.json-content and absent-output checks of deleted-shapes; Kotlin's
+  `thereIsNoOlderShape` loop, Swift's `read_as` assertion.
+- *Dependencies*: `hmac` (Rust; imported nowhere).
+- *CI*: the `simulator` job; dependabot's `/server` (is `/host`) and `/tools/sim`.
+- *Build history in comments and texts*: every "1.7"/"1.8"/"1.9 3a-3", "decision H9", "G1", "C10", "SILENT 27", "release 46", "part 08",
+  "(F1…)", "(rN)", "(review …)", "was X", "year zero", "no earlier version" in the code, the READMEs, protocol.json and conventions.json
+  (which also lost the stale `scope_reading` `until` and "the defaults of authority.md"), and the stale docs (README, ARCHITECTURE,
+  DISTRIBUTION, SECURITY, TODOS: 1.9 now; host/mcp/cli READMEs and manifests; the JS README's names that do not exist).
+- *Kept, with reason*: CHANGELOG.md, CHANGES-1.8.md, changes-1.8/ and changes-1.9/ (history logs); acts/ (FoodOS reads acts.json,
+  compiled.json and runs acts/tools/check.py); sdk/javascript/test/make-schemas.cjs and tools/fuzz/make-vectors.cjs (live generators);
+  exports that mirror door ops in every SDK (public API); `.claude/worktrees/` (an agent worktree, Claude's own configuration: not mine to
+  remove; flagged).
+
+**Added by the coordinator, from the research reports**
+
+**a. Oracle against the text (core-and-words.md, item 6), each checked against the files as they stand:**
+- *An order in hand counted past what she ordered* (deals.cjs, `orderInHand`; core `in_hand_order`): promises.md, Terms, `in_hand` now reads
+  "for no more than the order states for that line, in all"; both engines cap what her order alone counts at her order's line. Story
+  payments/paid-only-by-the-payees-word, world C: she orders 6 kg, the transfer says 10: moved 6 kg.
+- *A stop counted as acting on a late accept* (things.cjs `actedOnLate`, deals.cjs `actedOn`; core things.rs `acted`, deal.rs `acted_on`):
+  blocks.md, Time: an accept not in time binds its giver only by her later block that says yes to it (her `accepted` answer, or a block that
+  performs the deal: a transfer `for` it, or her accepted answer to one); her stop, her decline, or a block that only has it in its past binds
+  her to nothing. Both engines. (blocks.md's "under a grant with `until`" is `expires`.)
+- *An offer freed "at once" by its giver's stop* (things.cjs; core draws.rs): deleted in both. folds.md, Freed and stage 6 already say an end by
+  its giver frees where the one it is for has seen it (or by a clock), since an accept that has not seen a withdrawal still binds. The giver's
+  decline of an accept still frees at once (the accept then binds nothing); the core now reads that decline as such (it had leaned on the
+  deleted rule). Three stories now show held, then freed once the receiver has seen the end (answers-and-binding, people-of-a-voice-reach-above,
+  time-is-what-is-in-the-past). A freed draw lists no `waiting` in either engine.
+- *A backup judge's turn started by any `defeats`* (deals.cjs; core bench.rs): only a side's `defeats` of a block that speaks for the other side
+  is a dispute (folds.md, Defeated blocks), in both.
+- *A comment against its code* (bytes.cjs, cutoffs with no `at`): the comment now says what the code and blocks.md do.
+- *A header of a key grant whose key is shown only in its body* was `bad_signature` (final): core.md section 8, The key that opens it: it is
+  `unmet`, naming its own id, until its body is had. Both engines.
+- **Flagged, not done**: things.cjs's make under a grant is checked only for `scope.on`, not authority.md's inputs test; "coming back" in
+  ownership is not built (things.cjs 755). Each changes ownership answers under grants in both engines and needs its own vectors.
+- *The text against itself*: (1) who starts a repeat and when it is due: folds.md said "a side or a signer `by` names" and "its observe's
+  `at` plus `wait`"; promises.md (and both engines) say only `by`'s names, and the named clock's receipt plus `wait`. folds.md now says so
+  (silence means nothing: no `by`, no start; a signer's own `at` fills nothing). (2) a bare `reading` condition: folds.md frees what it held
+  from its signing, promises.md kept it held; both engines free; promises.md now says it frees (her own goods are hers again; holding them
+  forever for no one fills a silence). (3) a missing `!` field: `shape` in `kind_fields.about`, `required` in things.md: now `required`
+  for both, in both engines. (4) folds.md's ruling that ends the rest named its judge by "a grant of kind `judge`": it is the message both
+  sides signed (the engines already read that). All four flagged.
+
+**b. Stores (food-and-stores.md, items 17 and 18).** Two engine splits, run on today's core: (1) *a circle's shrink* (one make with no output,
+`as` the circle): the core took nothing (`not_on_chain`). Cause: a make that took from two of the circle's lots was counted as two makes, so
+the output had no start on any chain. Fixed in both engines (one make is one make; the oracle had the same flaw, hidden by the meter path).
+(2) *makes by different authors*: the oracle's reading taken: an output's makes are those its own author wrote (things.md, A make, now says it:
+a make by another, named by a thing she did not write, makes her no owner of it); the core now filters by author. Stories
+circles/a-store-owned-in-common (parts for grain received; one shrink block: 600 kg gone, every owner's by her parts) and
+things/a-make-is-its-authors. Text: things.md, Transfers, **Mixed goods**: her lot and his duty (`to_holder`, his `keeping` promise), her
+share of the mass (a circle), or the store's promise (a loan); with none said, how it is stored is not said. promises.md's stored-goods note no
+longer calls a promise of a kind storage, and no longer points at Shares. circles.md: **A store owned in common** is a circle, its shrink
+one block under its row on the chain `refs.meter` names. things.md's "a loan moves the owner when its promise's `refs.what` is a kind" now
+reads the line's `what`.
+
+**c. Genesis (genesis.md, items 7 and 8).** (1) *A key named by hash in her genesis could never speak*: core.md section 5, `refs.key`: "a key
+grant that shows a key named by hash in her genesis list names that genesis"; section 8 says the same. Both engines (oracle check.cjs and
+`resolveKeys`; core valid.rs `signature_findings`, identity.rs `shown_key`). Story keys/a-hidden-key-in-her-genesis: it speaks; a key not in
+the list is `bad_signature`; its next block counts in the top place. protocol.json `suites.future.pq` is `slh-dsa-sha2-128s` over `sha256`
+(a future row only; nothing signs with it). (2) *Freezing a stolen phone*: identity.md, The people of a voice reach above it: "A key grant of
+theirs that reaches above their place is never narrowing." That sentence is the report's, and it is Rust's reading, not the oracle's: a freeze
+that only leaves a lower voice out narrows and stands once `needed` of them sign; a grant that puts a key above them waits their `wait`. The
+oracle now agrees (`reachesAbove`). Story keys/people-freeze-a-stolen-phone (with `above` and without, and a reach above that waits). Freezing is fast
+and a takeover slow (the coordinator confirmed this reading).
+
+**d. Merges (merges.md, item 4).** (1) *A grant labelled `kind: "stop"` skipped her wait*: both engines' `givesPower` branched on it; deleted.
+protocol.json `kinds` now declares every kind a word fold reads (`observe`: `done`, `link`, `work`; `thing`: `kind`, `share`; `actor`:
+`circle`), and **test/kinds.cjs** (run first by `npm test` in sdk/javascript) fails if either engine compares a block's `state.kind` with a
+kind that protocol.json does not declare and no reading in conventions.json names (conventions.json's clearing now names its `rate`). Story
+keys/a-kind-is-a-label: the thief's grant labelled "stop" waits the phone's day. The machine lock (a reading of a grant of kind `stop`) is
+left for Patrick; it now waits as any grant does. (2) *13 door vectors typed the late judge's message `grant`*: re-typed `observe` of kind
+`message` and re-signed (tools/vectors.cjs now writes a block's type back, and steps.cjs moves such a block); cases 540 and 541 now differ:
+the judge one side named alone rules on nothing (`underway`); once the other side accepts the message, her ruling counts (`accepted`).
+(3) core.md section 1: a grant is "the signer's consent to who may speak as him (key grants) or act for him or on what is his (every other
+grant)"; a machine signs readings, its own key grants, or a narrower part of a grant it holds.
+
+**e. A voice's bounds with no reach** (limits/card-pin.md). Both engines already agreed: the bounds bind. identity.md now says so: "The bounds
+bind whatever the voice's `reach`, with one or with none." Story keys/bounds-bind-with-no-reach.
+
+**f. The acts library.** "Asking for a ruling on a dispute" and "Claiming a crossing" no longer name `rulings: public` or a judge's offer
+term: a ruling's audience is the judge's own block's; whoever holds it may show it. "operator grant" is gone from form.json and FIELDS.md
+(a machine moves under its owner's grant). compiled.json, LIBRARY.md and view/index.html rebuilt by acts/tools (compile, check: all pass,
+build_library, build_page). The acts' own fact `undo` (whether an act can be undone, one of FoodOS's judged facts) is the library's word,
+not the protocol's, and stays. No `referee`, `terms.rulings`, `scope.until`, `owed`, `runs`, `not_on_line` or door `held` was found as a term.
+
+**Flagged for Patrick**
+0. Item 3 reads "a loan" from two signed fields: a line's quantity and its price in one kind. A loan of flour repaid in money (quantity in
+   kg, price in £) inside a promise that names a job reads as a job of 10 kg; it is not refused.
+1. Circle rows: `"any"` is a new explicit form (a row's `parties`, `on`, `what`); with it, `what: "any"` reaches the circle's own parts. A row
+   with no `on` now holds no promise and no payment except of a deal the circle already bound: a café's members can only fill the circle's
+   standing promises, or say `on: "any"`.
+2. A transfer of a deal the circle bound is checked against the deal's terms only through the stage, not against what that deal names its side
+   to hand over (a grant's `not_due`); rows do not read `not_due`.
+3. An offer stopped by its giver stays held until the one it is for has seen the stop, or a clock shows it: an unanswered offer whose receiver
+   never writes again stays held (folds.md, Freed, as written).
+4. The freeze (c.2): her people freezing a voice below them stands at once; replacing a voice above them waits their `wait` (the
+   coordinator confirmed this reading). Both engines and keys/people-freeze-a-stolen-phone say exactly that.
+5. The four text contradictions (a, last bullet) were each resolved toward silence meaning nothing.
+6. things.cjs 751 and 755 (a make under a grant's inputs test; coming back in ownership): not built this round.
+7. spec/readings/readback.cases.json still names the world's blocks `held` (it is hashed with its reading).
+8. `.claude/worktrees/agent-a338c82935c3fe1c2` is an old agent worktree under Claude's configuration folder; left.
+9. The word cut is about 4% of spec/; a deeper cut needs each rule moved to one home (a 2.0 restructure).
+
+**Door ops whose answer changed (for FoodOS)**
+- `row_holds`, `speaks_for`, `circle_state`, `backed`, `binds`, `ways_in` and every fold over blocks `as` a circle: a row's silence allows
+  nothing (item 1). FoodOS must write `parties: "any"`, `on: "any"`, `what: "any"` where it means them, and a limit or each where a row draws.
+- Every op: the argument `held` is `blocks` (positional, so only named callers change); `write` options `{ key, blocks }`.
+- `push_answer` (and the host's push answer): `held` is `had`. `check_reads`: `read[].held` is `read[].has`. `under_ok`, `backed`: the fork
+  answer is `{ pair: true, blocks, at_most }`.
+- `read`, `write_refusals`: a promise with `state.what` and a line whose quantity is of its price's kind (a loan) is `lines`; a job line
+  with a quantity in hours is valid; a non-circle actor with `pack` or `rules`
+  is `undeclared_field`; a missing `!` field of a protocol kind is `required` (was `shape`); a header whose pieces name a hidden key and that
+  no named key opens is `unmet` (was `bad_signature`); a key grant showing a key hidden in her genesis list, naming the genesis in
+  `refs.key`, is valid.
+- `stands`: a grant labelled `kind: "stop"` waits as any grant does; her people's freeze that only leaves a voice below them out stands once
+  signed (the oracle had made it wait).
+- `ownership`: an offer stopped by its giver stays held until the receiver has seen the stop; the giver's decline of an accept frees it; a freed
+  draw lists no `waiting`; a late accept binds its giver only by her yes or a block that performs the deal; one make from several of her lots
+  starts her output; an output's makes are its author's.
+- `promise_stage`, `promise_view`: an order in hand counts no more than it states; a late accept is acted on only by a yes or a performing
+  block; the backup judge's turn starts only from a side's dispute of the other side's block.
+- `scope_reading`: unchanged (its description said `until`; it is `expires`).
+
+**Counts, before and after.** Files (tracked and untracked, not ignored) 736 to 673; code files 427 to 430; code lines 76,508 to 73,882. Door cases:
+vectors.json 2,045 to 2,123, conventions-vectors.json 868 to 884 (2,913 to 3,007); audit-vectors.json 17 worlds, 2,224 cases (frozen again);
+fuzz-vectors.json 14. Words in spec/ without the generated NECESSITY.md: 103,514 to 99,981 (cut about 4,500, added about 950: the row rule, mixed goods, the
+store, the unknowns, the genesis key, the freeze, the in-hand cap); with the regenerated NECESSITY.md, 109,197. The
+rebuild: the first full run kept 2,655, deleted 258 (story questions whose stories were written again) and added 336; then the retyped
+judge messages (6 renewed); then the narrowed loan-or-job refusal (45 added, 33 renumbered); then a fixed point: 3,007 kept, nothing else.
+
+**The checks.** Vectors rebuilt to a fixed point (0 faults; the core gives every answer the oracle gives). cargo test: 21 test binaries,
+242 tests, every one passing (audit_vectors included; the hand-written circle, deal, key and rules tests now state their rows' `"any"` and
+show the stopped offer held until seen). sdk/javascript: test/kinds.cjs passes; run-vectors 3,199 passed; the oracle 5,371 passed (door and
+audit frozen answers); node tests 57 passed; the audit 33 checks (one store expectation now lists the new `lines` code: the loan-and-job line it
+writes), parity 0 differing. Python 40 tests OK; Go ok; Swift 26 tests, 0 failures (XCFramework rebuilt); Kotlin 24 tests, 0 failures (JDK 17,
+natives built from today's core); MCP 35, CLI 10, host 59 passing. Short fuzz (`diff.cjs --seeds 1-25`): 11,579 questions, 5,914 property
+checks; 12 findings, all known, 0 new (the corpus alone: 1 finding, known). sync-spec, gen-door, version-sync and the CBOR key table (152
+names) current; acts/tools/check.py passes.
+
+**Necessity.** One full measure (474m36.555s): 126 things: 117 covered, 9 used, 0 structural, 0 untested, 0 dead; invariants: 27/27 stated and carried. `node tools/necessity.cjs --check` exits 0. It ran in full after the last engine change (started 12:49), so it covers every part this round touched; a
+`--only` run on top of it would measure nothing new.

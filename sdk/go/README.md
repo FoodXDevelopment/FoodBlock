@@ -51,7 +51,7 @@ A small device (a fridge sensor, a scale) can use only the micro part: `Write` (
 | Strangers and small profiles | `IsStranger`, `ReceiptCode`, `ReadingIsPersonsClaim`, `ReadingConditionHolds`, `EarnestShapeOk`, `EarnestPaid` |
 | Chains and causal order | `NextLink`, `CheckChain` (also `Skips`; equivocations are pairs), `CausesOf`, `PastOf`, `HeadsAmong`, `Sees`, `CausalOrder` |
 | Who someone is | `Genesis`, `IsGenesis`, `GenesisOpens`, `KeyHash`, `KeyGrant`, `Confirm`, `KeyTimeline`, `LiveKeys`, `SignedByAuthor`, `Stands`, `IdentityStateOf`, `NextLinkFor`, `Forked`, `ForkPairs` |
-| Authority | `AddDuration`, `CompareDurations`, `ScopeWithin`, `ScopeRefusals`, `ScopeReading`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `WhyNotLiveUndo`, `OperatorsOf`, `LimitFence`, `WithinLimit` |
+| Authority | `AddDuration`, `CompareDurations`, `ScopeWithin`, `ScopeRefusals`, `ScopeReading`, `WhyNotLive`, `IsLive`, `Ancestors`, `WhyNotUnder`, `LimitFence`, `WithinLimit` |
 | Folds | `PromiseStage` (no clock), `PromiseView` (the reader's now), `CircleStateOf`, `HoldersOf`, `MayActAs`, `SpeaksFor`, `MembersThen`, `OwnershipOf`, `OwnerOf`, `ReceiverOf`, `WhereNow`, `Consent`, `Due`, `CircleKeyOf`, `CountedIn` |
 | Between nodes | `PullRequest`, `SignPull`, `SignPush` (a `counter` or a `challenge`, no time), `NewChallenge`, `PullRefusals`, `PushRefusals`, `AdmissionRefusals`, `ResidencyRefusals`, `Matches`, `HeadsOf`, `AnswerPull`, `AnswerSignedBy`, `PushRequest`, `Accept`, `WaitedTooLong`, `PushAnswer`, `WellKnown`, `Announcement`, `WellKnownErrors` |
 

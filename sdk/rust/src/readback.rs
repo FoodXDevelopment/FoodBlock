@@ -1,10 +1,11 @@
-//! The read-back that can be redone (1.9 stage 7, Job C): `spec/readings/readback.md`'s answer, rendered by `spec/renderers/en.md` or
+//! The read-back that can be redone : `spec/readings/readback.md`'s answer, rendered by `spec/renderers/en.md` or
 //! `en-sms.md`, each named as a rule set is (the hash of the manifest over its text and its cases), so a second reader who holds the same
 //! blocks makes the same text, or names the block she lacks. Three door ops of class `reading`: `readback`, `render`, `readback_redo`.
 //!
 //! This file is this engine's implementation of those published texts; it runs them because it passes their cases (`tests/stage7.rs`).
 //! A reading and a renderer change none of the four answers: nothing here is protocol. The reading reads typed fields and the engine's own
 //! door ops only (`crate::door::ask`), never free text, and classifies nothing.
+use crate::fold::lines_of;
 use crate::prelude::*;
 use alloc::collections::{BTreeMap, BTreeSet};
 
@@ -40,9 +41,6 @@ fn ask(op: &str, args: Vec<Value>) -> Option<Value> {
 }
 fn s(v: &Value) -> Option<&str> {
     v.as_str()
-}
-fn obj(v: &Value) -> bool {
-    v.is_object()
 }
 fn is_amt(v: &Value) -> bool {
     v.is_object() && v.get("value").is_some_and(Value::is_string) && v.get("unit").is_some_and(Value::is_string)
@@ -110,7 +108,7 @@ impl Reading {
     fn code(&self, id: &str) -> Value {
         ask("short_code", vec![json!(id)]).unwrap_or(Value::Null)
     }
-    // each piece held is read; each not held is lacked (refs.author and refs.key, and theirs, to a genesis)
+    // each piece given is read; each not given is lacked (refs.author and refs.key, and theirs, to a genesis)
     fn pieces(&mut self, b: &Value, lack: bool) {
         let mut seen = BTreeSet::new();
         let mut stack = vec![b["refs"].get("author").cloned(), b["refs"].get("key").cloned()];
@@ -179,12 +177,12 @@ fn signer_of(b: &Value) -> Value {
     }
 }
 
-/// `readings/readback`: the answer for `block` over `held`, read to `to`.
-pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
+/// `readings/readback`: the answer for `block` over `blocks`, read to `to`.
+pub fn reading(block: &Value, blocks: &[Value], to: Option<&str>) -> Value {
     let mut order: Vec<String> = vec![];
     let mut by_id: BTreeMap<String, Value> = BTreeMap::new();
     let key = |b: &Value| b["hash"].as_str().map(String::from).unwrap_or_else(|| "\u{0}undefined".into());
-    for b in held.iter().filter(|b| b.is_object()) {
+    for b in blocks.iter().filter(|b| b.is_object()) {
         let k = key(b);
         if !by_id.contains_key(&k) {
             order.push(k.clone());
@@ -209,8 +207,8 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
         "viewer": viewer_p,
         "for": { "id": fid, "code": r.code(&text_of(&fid)), "type": block["type"], "signer": signer_p },
     });
-    // every block read is read with its pieces held (a block is someone's word only with them)
-    // and with its line before it held (`prev`, to the line's start: where a draw sits on its line is read from them)
+    // every block read is read with its pieces given (a block is someone's word only with them)
+    // and with its line before it given (`prev`, to the line's start: where a draw sits on its line is read from them)
     let finish = |r: &mut Reading, mut answer: Value| {
         let mut done: BTreeSet<String> = BTreeSet::new();
         loop {
@@ -338,20 +336,17 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
         answer["what"] = json!({ "text": t, "by": by });
     }
 
-    // each line that names a thing: the draw the ownership fold gives this block on it
-    let named: Vec<Value> = if dtype == "promise" {
-        match terms.get("lines") {
-            Some(Value::Array(l)) if !l.is_empty() => l.iter().map(|x| if x.is_object() { x.get("what").cloned().unwrap_or(Value::Null) } else { Value::Null }).collect(),
-            _ => list(deal["refs"].get("what")),
-        }
+    // each line that names a thing, with the amount it states: the draw the ownership fold gives this block on it
+    let named: Vec<(Value, Option<Value>)> = if dtype == "promise" {
+        lines_of(&terms).into_iter().filter_map(|l| l.get("what").map(|w| (w.clone(), l.get("quantity").cloned()))).collect()
     } else if dtype == "transfer" && absent(&deal["state"], "status") {
-        list(deal["refs"].get("what"))
+        list(deal["refs"].get("what")).into_iter().map(|w| (w, deal["state"].get("amount").cloned())).collect()
     } else {
         vec![]
     };
     let mut things = vec![];
     let fork_pairs = ask("fork_pairs", vec![all_v.clone()]).and_then(|v| v.as_array().cloned()).unwrap_or_default();
-    for w in named.iter().filter_map(Value::as_str) {
+    for (w, stated) in named.iter().filter_map(|(w, q)| w.as_str().map(|w| (w, q))) {
         let by = r.person(giver.as_ref());
         let tp = r.person(receiver.as_ref());
         let mut line = json!({ "what": { "id": w, "code": r.code(w), "name": null }, "by": by, "to": tp });
@@ -365,9 +360,8 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
         line["what"]["name"] = if s(&t["type"]) == Some("thing") && t["state"]["name"].is_string() { t["state"]["name"].clone() } else { Value::Null };
         if absent(&t["refs"], "of") {
             // a kind: a line that names no instance holds nothing
-            let q = if dtype == "promise" { terms.get("quantity").cloned() } else { deal["state"].get("amount").cloned() };
             line["draw"] = Value::Null;
-            if let Some(q) = q.filter(is_amt) {
+            if let Some(q) = stated.clone().filter(is_amt) {
                 line["amount"] = q;
             }
             things.push(line);
@@ -384,13 +378,13 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
             things.push(line);
             continue;
         }
-        // what the fold read, shown or not, and every block held that answers one of those (a yes, a no, a stop)
+        // what the fold read, shown or not, and every block given that answers one of those (a yes, a no, a stop)
         let r0: BTreeSet<String> = own["read"].as_array().into_iter().flatten().map(text_of).collect();
         r.read.extend(r0.iter().cloned());
         let answering: Vec<String> = r.all.iter().filter(|x| x["refs"]["answers"].as_str().is_some_and(|a| r0.contains(a)) && x["hash"].is_string()).map(|x| text_of(&x["hash"])).collect();
         r.read.extend(answering);
         let not_shown = own.get("not_shown").is_some_and(|x| x.as_bool() == Some(true) || (!x.is_null() && x != &Value::Bool(false)));
-        // a fold that is not shown names no `read`: every block held is read, so a second reader holding them finds the same lacks
+        // a fold that is not shown names no `read`: every block given is read, so a second reader holding them finds the same lacks
         if not_shown && !own["read"].is_array() {
             let every: Vec<String> = r.all.iter().filter_map(|x| x["hash"].as_str().map(String::from)).collect();
             r.read.extend(every);
@@ -503,27 +497,40 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
     };
     let mut money = vec![];
     if dtype == "promise" {
-        let qs: Vec<Value> = ends(terms.get("quantity")).into_iter().filter(is_amt).collect();
-        let ps = ends(terms.get("price"));
-        if !named.is_empty() || terms.get("quantity").is_some() {
+        let lines = lines_of(&terms);
+        let qs: Vec<Value> = lines.iter().flat_map(|l| ends(l.get("quantity"))).filter(is_amt).collect();
+        if !named.is_empty() || lines.iter().any(|l| l.get("quantity").is_some()) {
             moves(deal["refs"].get("from"), deal["refs"].get("to"), &qs);
         }
-        let mut totals = vec![];
-        for p in &ps {
-            let qq: Vec<Option<&Value>> = if qs.is_empty() { vec![None] } else { qs.iter().map(Some).collect() };
-            for q in qq {
-                let mut t = json!({ "price": p });
-                if let Some(st) = terms.get("step") {
-                    t["step"] = st.clone();
-                }
-                if let Some(q) = q {
-                    t["quantity"] = q.clone();
-                }
-                if let Some(x) = ask("terms_total", vec![t, q.cloned().unwrap_or(Value::Null)]).filter(is_amt) {
-                    totals.push(x);
-                }
+        // what the deal comes to at the low and the high end of each line's price and quantity: the sum of its lines, at its `step`
+        let at_end = |high: bool| -> Option<Value> {
+            let pick = |v: Option<&Value>| -> Option<Value> {
+                let mut e = ends(v);
+                e.sort_by(|a, b| dcmp(a.get("value").or_else(|| a.get("amount").and_then(|x| x.get("value"))).unwrap_or(&Value::Null), b.get("value").or_else(|| b.get("amount").and_then(|x| x.get("value"))).unwrap_or(&Value::Null)));
+                if high { e.pop() } else { e.into_iter().next() }
+            };
+            let priced: Vec<Value> = lines
+                .iter()
+                .filter(|l| l.get("price").is_some())
+                .map(|l| {
+                    let mut x = json!({ "id": l.get("id"), "price": pick(l.get("price")) });
+                    if let Some(q) = pick(l.get("quantity")) {
+                        x["quantity"] = q;
+                    }
+                    x
+                })
+                .collect();
+            if priced.is_empty() {
+                return None;
             }
-        }
+            let mut t = json!({ "lines": priced });
+            if let Some(st) = terms.get("step") {
+                t["step"] = st.clone();
+            }
+            ask("terms_total", vec![t, Value::Null]).filter(is_amt)
+        };
+        let mut totals: Vec<Value> = [at_end(false), at_end(true)].into_iter().flatten().collect();
+        totals.dedup();
         moves(deal["refs"].get("to"), deal["refs"].get("from"), &totals);
         if !totals.is_empty() {
             totals.sort_by(|a, b| dcmp(&b["value"], &a["value"]));
@@ -548,7 +555,7 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
     let wo = terms.get("waits_on").and_then(Value::as_str).filter(|x| *x == "price" || *x == "goods");
     answer["terms"] = json!({ "waits_on": wo });
 
-    // a grant: what it can bind her to (worst_case, stage 4), who must hear each deal, the floor of what it may sell for
+    // a grant: what it can bind her to (worst_case), who must hear each deal, the floor of what it may sell for
     if s(&block["type"]) == Some("grant") && s(&block["state"]["kind"]) != Some("key") {
         let wc = ask("worst_case", vec![block.clone(), all_v.clone()]).unwrap_or(Value::Null);
         if wc.get("not_shown").is_some_and(|x| x.as_bool() == Some(true)) {
@@ -643,7 +650,6 @@ pub fn reading(block: &Value, held: &[Value], to: Option<&str>) -> Value {
             });
         }
     }
-    let _ = obj;
     finish(&mut r, answer)
 }
 
@@ -935,10 +941,10 @@ fn text_with(rendered: String, digits: Option<&str>) -> String {
     }
 }
 
-/// `readback(block, held, to?, renderer?, digits?)`: `{ answer, text, state }`, `state` exactly the state of the `observe` an honest host signs;
+/// `readback(block, blocks, to?, renderer?, digits?)`: `{ answer, text, state }`, `state` exactly the state of the `observe` an honest host signs;
 /// for en-sms also `texts`, the text whole over texts of at most 160 characters, in order (the digest is still of the one text).
-pub fn readback(block: &Value, held: &[Value], to: Option<&str>, renderer: &str, digits: Option<&str>) -> Option<Value> {
-    let answer = reading(block, held, to);
+pub fn readback(block: &Value, blocks: &[Value], to: Option<&str>, renderer: &str, digits: Option<&str>) -> Option<Value> {
+    let answer = reading(block, blocks, to);
     let text = text_with(render(&answer, renderer)?, digits);
     let n = names();
     let mut state = json!({ "kind": "readback", "readback": crate::block::hash_hex(&text), "reading": n["reading"], "renderer": n[renderer], "read": answer["read"] });
@@ -983,12 +989,12 @@ fn sms_texts(text: &str) -> Vec<String> {
     out
 }
 
-/// `readback_redo(rb, held)`: `{ same, readback, lacks, not_run }`, run on the ids of `rb.state.read` (and `refs.for`) alone.
-pub fn redo(rb: &Value, held: &[Value]) -> Value {
+/// `readback_redo(rb, blocks)`: `{ same, readback, lacks, not_run }`, run on the ids of `rb.state.read` (and `refs.for`) alone.
+pub fn redo(rb: &Value, blocks: &[Value]) -> Value {
     let st = &rb["state"];
     let n = names();
     let mut by_id: BTreeMap<String, Value> = BTreeMap::new();
-    for b in held.iter().filter(|b| b.is_object() && b["hash"].is_string() && b["type"].is_string()) {
+    for b in blocks.iter().filter(|b| b.is_object() && b["hash"].is_string() && b["type"].is_string()) {
         by_id.insert(text_of(&b["hash"]), b.clone());
     }
     let renderer = ["en", "en-sms"].into_iter().find(|k| !n[*k].as_str().unwrap_or("").is_empty() && n[*k] == st["renderer"]);

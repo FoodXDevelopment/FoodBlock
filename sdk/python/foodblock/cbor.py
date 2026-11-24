@@ -12,10 +12,10 @@ def encode(block, short=False) -> bytes:
     return bytes.fromhex(door.cbor_encode(block, bool(short)))
 
 
-def decode(data, held=None) -> dict:
+def decode(data, blocks=None) -> dict:
     """The block a CBOR message carries, its hash taken from its canonical JSON. Refuses floats, tags, null, indefinite
-    lengths and duplicate keys. With `held` (the author's blocks) the id is taken in the suite of the key that signed it."""
-    return door.cbor_decode(bytes(data).hex(), held)
+    lengths and duplicate keys. With `blocks` (the author's blocks) the id is taken in the suite of the key that signed it."""
+    return door.cbor_decode(bytes(data).hex(), blocks)
 
 
 def encode_push(blocks, short=False) -> bytes:

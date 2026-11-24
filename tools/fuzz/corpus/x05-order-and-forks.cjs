@@ -1,11 +1,10 @@
 'use strict';
-// Security seat 05 (double spend, hidden blocks) and the stress seats that built on its helpers: foodx/research/2026-11-12-foodblock-security/
-// 05-scratch/{a1-order,a2b-hash,a3b-counted-to,a3c-two-continuations,a4-misc}.cjs, stress 03-scratch/f4-letgo.cjs, 50-scratch/act.cjs,
-// 04-scratch/{s3-schedule,s4-allocations}.cjs. Worlds built as the seats built them; seats that looped over fresh keys run a few fixed seeds.
-const X05 = 'security 05 (05-scratch/';
-const own = (L, w, label, S, held = 'held') => L.ask(w, label, 'ownership', [S, held, null]);
+// Order and forks: a low seq after a prev, a draw below its start, two sales off the line, a key replacement after a fork, two continuations of
+// one line, dates and versions and units, a letgo after a twin, one sack read from six views, and allocations on two keys. Each world is built by hand.
+const SRC = 'a world built by hand';
+const own = (L, w, label, S, held = 'blocks') => L.ask(w, label, 'ownership', [S, held, null]);
 
-// a Maria with a list of voices and keepers, and a key replacement by her relatives (security 05 a3b, copied by the seat from k1-keys.cjs)
+// a Maria with a list of voices and keepers, and a key replacement by her relatives
 function listWorld(L, w, names) {
   const { fb, keyHash, sorted } = L;
   const P = {}; for (const n of names) P[n] = w.person(n);
@@ -28,7 +27,7 @@ function listWorld(L, w, names) {
 const PEOPLE = ['maria', 'mum', 'brother', 'shop', 'host', 'aunt', 'amara', 'leila', 'sam'];
 
 module.exports = [
-  { name: 'a1 low seq after prev, and its relatives', row: 12, source: X05 + 'a1-order.cjs, cases 1 to 6); table rows 12 and 50', build(L) {
+  { name: 'low seq after prev, and its relatives', row: 12, source: SRC, build(L) {
     const { World, sackOf, draw, yes, put, hand, amt } = L;
     { const w = new World('05 a1.1 low seq after prev');
       const harry = w.person('harry'), amara = w.person('amara'), leila = w.person('leila');
@@ -37,7 +36,7 @@ module.exports = [
       yes(w, amara, A, 'a'); yes(w, leila, B, 'l');
       own(L, w, 'two draws ordered by prev and by seq', S);
       L.ask(w, 'check_chain', 'check_chain', [w.blocks.filter((b) => b.refs && b.refs.author === harry.id).concat([harry.g]), harry.id]);
-      L.ask(w, 'fork_pairs', 'fork_pairs', ['held']); }
+      L.ask(w, 'fork_pairs', 'fork_pairs', ['blocks']); }
     { const w = new World('05 a1.2 steal-back');
       const harry = w.person('harry'), amara = w.person('amara'), leila = w.person('leila'), sam = w.person('sam'), maria = w.person('maria');
       const S = sackOf(w, harry, { prev: harry.id, seq: 10 });
@@ -54,7 +53,7 @@ module.exports = [
       const D1 = draw(w, harry, S, amara, null, { prev: S.hash, seq: 2 }, 'D1'), D2 = draw(w, harry, S, leila, null, { prev: maria.id, seq: 3 }, 'D2');
       yes(w, amara, D1, 'a'); yes(w, leila, D2, 'l');
       own(L, w, '(a) all held', S);
-      L.ask(w, 'read_whole D2 back to S', 'read_whole', [D2.hash, S.hash, 'held']);
+      L.ask(w, 'read_whole D2 back to S', 'read_whole', [D2.hash, S.hash, 'blocks']);
       own(L, w, '(b) Leila\'s view', S, w.blocks.filter((b) => b.hash !== D1.hash && !(b.refs && b.refs.answers === D1.hash))); }
     { const w = new World('05 a1.4 fork then foreign prev low seq');
       const harry = w.person('harry'), amara = w.person('amara'), leila = w.person('leila'), sam = w.person('sam'), maria = w.person('maria');
@@ -72,7 +71,7 @@ module.exports = [
       own(L, w, 'B prev A at the same seq', S); }
     void hand; void amt;
   } },
-  { name: 'a1.5 a draw below its start, prev not held', row: 50, source: X05 + 'a1-order.cjs, case 5); table row 50 (security 05 M5)', build(L) {
+  { name: 'a draw below its start, prev not held', row: 50, source: SRC, build(L) {
     const { World, sackOf, draw, yes, hand } = L;
     const w = new World('05 a1.5 draw below its start');
     const harry = w.person('harry'), amara = w.person('amara');
@@ -82,7 +81,7 @@ module.exports = [
     yes(w, amara, D, 'a');
     own(L, w, 'draw with seq below its start, prev not held', S);
   } },
-  { name: 'a2b two sales off the line', row: 47, source: X05 + 'a2b-hash.cjs); table row 47 (security 05 C2)', build(L) {
+  { name: 'two sales off the line', row: 47, source: SRC, build(L) {
     const { World, sackOf, draw, yes, put } = L;
     for (let k = 0; k < 4; k++) {
       const w = new World('05 a2b ' + k);
@@ -94,7 +93,7 @@ module.exports = [
       own(L, w, 'two sales with foreign prevs', S);
     }
   } },
-  { name: 'a3b a key replacement after a fork', row: 48, source: X05 + 'a3b-counted-to.cjs); table row 48 (security 05 C3/H4)', build(L) {
+  { name: 'a key replacement after a fork', row: 48, source: SRC, build(L) {
     const { World, amt, kindOf, yes, fb } = L;
     for (const variant of ['counted_to before the sale', 'counted_to after the sale', 'no earlier sale', 'a fork, then the replacement']) {
       const w = new World('05 a3b ' + variant);
@@ -111,13 +110,13 @@ module.exports = [
       const phone2 = fb.generateKeypair();
       const cut = (variant === 'counted_to before the sale' || variant.startsWith('a fork')) ? S : last;
       const G = grantFor(phone2, cut, 'phone2', [last]);
-      L.ask(w, 'the key grant stands', 'stands', [G.g, 'held']);
+      L.ask(w, 'the key grant stands', 'stands', [G.g, 'blocks']);
       const D2 = L.by(w, P.maria, phone2, 'transfer', {}, { what: S.hash, to_owner: P.sam.id }, 'D2 phone2', [G.m2, G.b2]);
       yes(w, P.sam, D2, 'sam yes');
       own(L, w, '(b) after the key grant stands and phone2 sells to Sam', S);
     }
   } },
-  { name: 'a3c two continuations of one line', row: 48, source: X05 + 'a3c-two-continuations.cjs); table row 48', build(L) {
+  { name: 'two continuations of one line', row: 48, source: SRC, build(L) {
     const { World, amt, kindOf, yes, fb } = L;
     const w = new World('05 a3c');
     const { P, again, grantFor } = listWorld(L, w, PEOPLE);
@@ -126,13 +125,13 @@ module.exports = [
     const p2 = fb.generateKeypair(), p3 = fb.generateKeypair();
     const G2 = grantFor(p2, last, 'p2', [last]);
     const G3 = grantFor(p3, last, 'p3', [G2.b2]);
-    L.ask(w, 'G2 stands', 'stands', [G2.g, 'held']); L.ask(w, 'G3 stands', 'stands', [G3.g, 'held']);
-    L.ask(w, 'live keys', 'live_keys', [P.maria.id, 'held']);
+    L.ask(w, 'G2 stands', 'stands', [G2.g, 'blocks']); L.ask(w, 'G3 stands', 'stands', [G3.g, 'blocks']);
+    L.ask(w, 'live keys', 'live_keys', [P.maria.id, 'blocks']);
     const A = L.by(w, P.maria, p2, 'transfer', {}, { what: S.hash, to_owner: P.amara.id }, 'A p2', [G2.m2, G2.b2]); yes(w, P.amara, A, 'a');
     const B = L.by(w, P.maria, p3, 'transfer', {}, { what: S.hash, to_owner: P.leila.id }, 'B p3', [G3.m2, G3.b2]); yes(w, P.leila, B, 'l');
     own(L, w, 'two continuations, sequential', S);
   } },
-  { name: 'a4 dates, versions, units, two accepts, one payment twice', row: 49, source: X05 + 'a4-misc.cjs, M1 to M7); table row 49 (M6)', build(L) {
+  { name: 'dates, versions, units, two accepts, one payment twice', row: 49, source: SRC, build(L) {
     const { World, amt, kindOf, hand, sackOf, draw, yes, put, fb } = L;
     const kg = (n) => amt(n, 'kg');
     { const w = new World('05 a4 M1 backdated accept');
@@ -157,7 +156,7 @@ module.exports = [
       const S = sackOf(w, harry, { prev: harry.id, seq: 1 });
       for (const seq of [0, -5, -9007199254740991]) {
         const b = fb.create('observe', { at: '2026-11-12T10:00:00.000Z', audience: 'public', seq, kind: 'note' }, { author: harry.id, prev: S.hash });
-        L.ask(w, 'valid at seq ' + seq, 'valid', [{ ...b, signature: fb.sign(b, harry.keys.private_key) }, 'held']);
+        L.ask(w, 'valid at seq ' + seq, 'valid', [{ ...b, signature: fb.sign(b, harry.keys.private_key) }, 'blocks']);
       } }
     { const w = new World('05 a4 M4 units');
       const harry = w.person('harry'), amara = w.person('amara');
@@ -166,7 +165,7 @@ module.exports = [
       own(L, w, 'a lookalike unit', S);
       for (const v of ['0.50', '00.5', '.5', '5e-1', '+0.5']) {
         const b = fb.create('transfer', { at: '2026-11-12T10:00:00.000Z', audience: 'public', seq: 3, amount: amt(v, 'kg') }, { author: harry.id, prev: D1.hash, what: S.hash, to_owner: amara.id });
-        L.ask(w, 'valid of amount ' + v, 'valid', [{ ...b, signature: fb.sign(b, harry.keys.private_key) }, 'held']);
+        L.ask(w, 'valid of amount ' + v, 'valid', [{ ...b, signature: fb.sign(b, harry.keys.private_key) }, 'blocks']);
       } }
     { const w = new World('05 a4 M5 conjured outputs');
       const harry = w.person('harry');
@@ -184,13 +183,13 @@ module.exports = [
       own(L, w, '1 kg landed, then her own second word says 0.4', S); }
     { const w = new World('05 a4 M7 one payment, two words');
       const harry = w.person('harry'), maria = w.person('maria');
-      const offer = put(w, harry, 'promise', { terms: { quantity: kg(1), price: amt('20', 'GBP') } }, { from: harry.id, to: maria.id, what: kindOf('maize') }, 'offer');
+      const offer = put(w, harry, 'promise', { terms: { lines: [{ id: 'maize', what: kindOf('maize'), quantity: kg(1), price: amt('20', 'GBP') }] } }, { from: harry.id, to: maria.id }, 'offer');
       put(w, maria, 'promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash }, 'acc');
       const pay = put(w, maria, 'transfer', { amount: amt('10', 'GBP') }, { to_owner: harry.id, for: offer.hash }, 'pay'); yes(w, harry, pay, 'yes pay');
       put(w, harry, 'observe', { kind: 'received', amount: amt('10', 'GBP') }, { for: offer.hash }, 'received');
-      L.ask(w, 'promise_stage', 'promise_stage', [offer, 'held', {}]); }
+      L.ask(w, 'promise_stage', 'promise_stage', [offer, 'blocks', {}]); }
   } },
-  { name: 'f4 the puppet accepts the twin, then lets go', row: 9, source: 'stress 03 (03-scratch/f4-letgo.cjs, B8); table row 9', build(L) {
+  { name: 'the puppet accepts the twin, then lets go', row: 9, source: SRC, build(L) {
     const { World, sackOf, draw, yes, put } = L;
     for (const status of ['declined', 'stopped']) {
       const w = new World('03 letgo ' + status);
@@ -203,7 +202,7 @@ module.exports = [
       own(L, w, `puppet accepted D2, then ${status}`, S);
     }
   } },
-  { name: '50 act: one sack read from six views', row: 9, source: 'stress 50 (50-scratch/act.cjs, V4 to V6); table row 9', build(L) {
+  { name: 'one sack read from six views', row: 9, source: SRC, build(L) {
     const { World, amt, thing, put, yes, no } = L;
     const sk = (v) => amt(v, 'sack');
     const w = new World('50 act');
@@ -225,7 +224,7 @@ module.exports = [
     own(L, w, 'V6 the puppet declines after its yes', l7);
     void note1;
   } },
-  { name: 's3 two sales off the line, one naming a stranger\'s chain', row: 11, source: 'stress 04 (04-scratch/s3-schedule.cjs); table row 11', build(L) {
+  { name: 'two sales off the line, one naming a stranger\'s chain', row: 11, source: SRC, build(L) {
     const { World, sackOf, hand, yes, put } = L;
     for (let k = 0; k < 4; k++) {
       const w = new World('04 s3 ' + k);
@@ -239,7 +238,7 @@ module.exports = [
       own(L, w, 'without the stranger\'s chain', S, w.blocks.filter((b) => !chain.some((c) => c.hash === b.hash)));
     }
   } },
-  { name: 's4 phone and till each allocate 6 of 10', row: 10, source: 'stress 04 (04-scratch/s4-allocations.cjs); table row 10', build(L) {
+  { name: 'phone and till each allocate 6 of 10', row: 10, source: SRC, build(L) {
     const { World, kindOf, put, secondKey } = L;
     const q = (n) => ({ value: String(n), unit: 'loaf' });
     for (let k = 0; k < 4; k++) {
@@ -247,12 +246,12 @@ module.exports = [
       const maria = w.person('maria'), amara = w.person('amara'), leila = w.person('leila');
       const till = secondKey(w, maria, 'till');
       for (let i = 0; i < (k % 2 ? 6 : 0); i++) put(w, maria, 'observe', { kind: 'note', text: 't' + i + k }, {}, 'till note ' + i, { key: till });
-      const O = put(w, maria, 'promise', { terms: { quantity: q(10) } }, { from: maria.id, what: kindOf('bread') }, 'open offer 10');
-      const rA = put(w, amara, 'promise', { status: 'accepted', terms: { quantity: q(6) } }, { answers: O.hash, for: O.hash }, 'amara asks 6');
-      const rL = put(w, leila, 'promise', { status: 'accepted', terms: { quantity: q(6) } }, { answers: O.hash, for: O.hash }, 'leila asks 6');
-      put(w, maria, 'promise', { status: 'accepted', terms: { quantity: q(6) } }, { answers: rA.hash, for: O.hash }, 'phone allocates amara');
-      put(w, maria, 'promise', { status: 'accepted', terms: { quantity: q(6) } }, { answers: rL.hash, for: O.hash }, 'till allocates leila', { key: till });
-      L.ask(w, 'the offer\'s stage', 'promise_stage', [O, 'held', null]);
+      const O = put(w, maria, 'promise', { terms: { lines: [{ id: 'bread', what: kindOf('bread'), quantity: q(10) }] } }, { from: maria.id }, 'open offer 10');
+      const rA = put(w, amara, 'promise', { status: 'accepted', terms: { lines: [{ id: 'bread', quantity: q(6) }] } }, { answers: O.hash, for: O.hash }, 'amara asks 6');
+      const rL = put(w, leila, 'promise', { status: 'accepted', terms: { lines: [{ id: 'bread', quantity: q(6) }] } }, { answers: O.hash, for: O.hash }, 'leila asks 6');
+      put(w, maria, 'promise', { status: 'accepted', terms: { lines: [{ id: 'bread', quantity: q(6) }] } }, { answers: rA.hash, for: O.hash }, 'phone allocates amara');
+      put(w, maria, 'promise', { status: 'accepted', terms: { lines: [{ id: 'bread', quantity: q(6) }] } }, { answers: rL.hash, for: O.hash }, 'till allocates leila', { key: till });
+      L.ask(w, 'the offer\'s stage', 'promise_stage', [O, 'blocks', null]);
     }
   } },
 ];

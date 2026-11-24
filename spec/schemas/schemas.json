@@ -29,7 +29,6 @@
     "terms": "{ name: hint }: the terms a promise naming it may carry beyond the protocol's own",
     "roles": "the ref keys it declares beyond the shared ones",
     "grounds": "{ event, confirms, defeats, confirmers, needed, wait }",
-    "undo": "never or ok",
     "labels": "{ lang: { name: label } }"
    }
   },
@@ -135,8 +134,7 @@
     "confirms": [
      "transfer"
     ]
-   },
-   "undo": "ok"
+   }
   },
   {
    "name": "sensor_confirmed",
@@ -147,8 +145,7 @@
     "confirms": [
      "observe"
     ]
-   },
-   "undo": "ok"
+   }
   },
   {
    "name": "teach",
@@ -159,8 +156,7 @@
     "confirms": [
      "observe"
     ]
-   },
-   "undo": "ok"
+   }
   },
   {
    "name": "loan",
@@ -174,8 +170,7 @@
      "observe",
      "transfer"
     ]
-   },
-   "undo": "never"
+   }
   },
   {
    "name": "payout",
@@ -196,9 +191,8 @@
    "target": "promise",
    "fields": {},
    "grounds": {
-    "event": "the organiser named in refs.from signed a pledge_close that names this pledge in derives_from and is dated no later than terms.expires, and the pledges it binds that name this plan in refs.what total at least terms.condition.pledged, in its currency (profiles/pledges.md); then terms.price of the pledger's is to come to the organiser. The price may be an amount (a village's haul call, 200 kg by Friday), and the threshold then an amount of the same unit: only one unit adds. A held stake names its release, or the reader shows release not named. Each pledger counts for herself, never per group"
-   },
-   "undo": "ok"
+    "event": "the organiser named in refs.from signed a pledge_close that names this pledge in derives_from and is dated no later than terms.expires, and the pledges it binds whose line names this plan total at least terms.condition.pledged, in its currency (profiles/pledges.md); then the price of the pledger's line is to come to the organiser. The price may be an amount (a village's haul call, 200 kg by Friday), and the threshold then an amount of the same unit: only one unit adds. A held stake names its release, or the reader shows release not named. Each pledger counts for herself, never per group"
+   }
   },
   {
    "name": "pledge_close",
@@ -206,8 +200,7 @@
    "fields": {},
    "grounds": {
     "event": "the organiser counted the pledges it names in derives_from; it binds those that are live, name her in refs.from and expire no earlier than its at, less any whose threshold the rest do not meet (profiles/pledges.md)"
-   },
-   "undo": "never"
+   }
   },
   {
    "name": "not_free",
@@ -218,8 +211,7 @@
    },
    "grounds": {
     "event": "the signer of the block named in refs.subject says it was not her free word; only her own block counts as hers, it may be sealed to any audience she picks, it has no time limit, and she cannot take it back. It is a claim, never a verdict: only the deal's referee rules, by a defeats of the block on that ground"
-   },
-   "undo": "never"
+   }
   },
   {
    "name": "invasion",
@@ -336,8 +328,7 @@
    },
    "grounds": {
     "event": "the signer says refs.same_as is another key of hers. It weighs as one hand only when the other key has countersigned: an observe of kind link signed by that key, naming this block in confirms and the first key in same_as. One signature is only its author's word. It may be sealed to one reader (privacy.md, Audiences). A third party's same_as stays only its author's word"
-   },
-   "undo": "never"
+   }
   },
   {
    "name": "rulebook",
@@ -399,8 +390,7 @@
    },
    "grounds": {
     "event": "the signer lets go of her own claims, and only hers (it binds only its signer). With refs.subject (a deal or a thing) she lets go of her claims on that; without it, of her claims on every deal with refs.to whose first promise this block has in its causal past, except the deals in state.except, which stay open. A mutual release is one from each side. The fold `release_shown` shows what was let go and what stayed open"
-   },
-   "undo": "never"
+   }
   },
   {
    "name": "bid",
@@ -413,8 +403,7 @@
    },
    "grounds": {
     "event": "the signer, a side of the deal named in refs.subject, commits to the most she would pay (the paying side) or the least she would take (the paid side) for that quarrel. Each side signs one bid and states the same deadline, clock and currency. Both then open by a block carrying state.opening. The fold `bids_shown` shows only whether the numbers overlap, and then their middle"
-   },
-   "undo": "never"
+   }
   },
   {
    "name": "reliance",
@@ -652,13 +641,11 @@
     "what": "what the judge will rule on, in words"
    },
    "terms": {
-    "rules_within": "a duration: how fast she rules once named",
-    "rulings": "\"public\", or left out: whether her rulings are public. Left out means private, sealed to the two sides alone"
+    "rules_within": "a duration: how fast she rules once named"
    },
    "grounds": {
-    "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast, terms.rulings `public` if her rulings are public, else left out (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
-   },
-   "undo": "ok"
+    "event": "a judge publishes her offer: refs.from her, refs.to left open, her fee the price of its one line, `what` what she will judge, terms.rules_within how fast (promises.md, Rulings). A deal names her in a condition `ruled` or on its bench; nothing makes her anyone's judge but both sides' own signed choice"
+   }
   }
  ]
 }

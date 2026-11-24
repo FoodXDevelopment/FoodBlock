@@ -1,20 +1,20 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import fb from '@foodxdev/foodblock'
-import { createDoor, memoryNode, approvalHandler, newPerson } from '../door.js'
+import { createDoor, memoryNode, approvalHandler } from '../door.js'
 import { testPerson, publicSide, tap } from './fixtures.js'
 import http from 'node:http'
 
 // The door against a local in-memory node: an assistant finds an offer, drafts an ask, the person approves, the seller
 // accepts, the promise reads right; without a grant it never binds; a STOP'd recipient is never messaged.
-const say = (who, node, type, state, refs) => { const s = fb.write(type, state, refs, { author: who.id, key: who.keys, held: who.chain, at: new Date().toISOString(), audience: 'public' }); who.chain.push(s); const r = node.push(s); assert.equal(r.refused.length, 0, JSON.stringify(r.refused)); return s }
+const say = (who, node, type, state, refs) => { const s = fb.write(type, state, refs, { author: who.id, key: who.keys, blocks: who.chain, at: new Date().toISOString(), audience: 'public' }); who.chain.push(s); const r = node.push(s); assert.equal(r.refused.length, 0, JSON.stringify(r.refused)); return s }
 const world = () => {
   const node = memoryNode(), person = testPerson(), seller = testPerson()
   const door = createDoor({ node, person: publicSide(person) })   // the door is given her public side only; `person` here is her device
   node.push(seller.genesis)
   const place = say(seller, node, 'thing', { kind: 'place', name: 'Hartley Mill' }, {})
   const flour = say(seller, node, 'thing', { kind: 'flour', name: 'Strong white flour' }, { place: place.hash })
-  const offer = say(seller, node, 'promise', { terms: { price: { amount: fb.amount('1.50', 'GBP'), per: fb.amount('1', 'kg') }, quantity: fb.amount('100', 'kg'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, what: flour.hash, place: place.hash })
+  const offer = say(seller, node, 'promise', { terms: { lines: [{ id: 'flour', what: flour.hash, quantity: fb.amount('100', 'kg'), price: { amount: fb.amount('1.50', 'GBP'), per: fb.amount('1', 'kg') } }], expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, place: place.hash })
   return { node, person, seller, door, place, flour, offer }
 }
 
@@ -47,7 +47,7 @@ describe('the door', () => {
     assert.equal(tap(door, draft.draft, person).ok, false, 'a draft is sent once')
     say(seller, node, 'promise', { status: 'accepted' }, { answers: ask.hash, for: ask.hash })
     const read = door.read(ask.hash).promise
-    assert.equal(read.stage, 'accepted'); assert.deepEqual(read.quantity, fb.amount('5', 'kg'))
+    assert.equal(read.stage, 'accepted'); assert.deepEqual(read.lines[0].needed, fb.amount('5', 'kg'))
     assert.ok(assistant.id !== person.id)
   })
 
@@ -68,7 +68,7 @@ describe('the door', () => {
     assert.ok(person)
   })
 
-  // 1.9 (stage 4 G1, stage 5): a grant binds her only through a promise of hers it names in `scope.on`, counted on its line (`refs.meter`):
+  // A grant binds her only through a promise of hers it names in `scope.on`, counted on its line (`refs.meter`):
   // the person asks (a human sends the first message), connects the assistant on that ask, and the seller's counter that keeps to it is
   // what the assistant may accept for her.
   const onHerAsk = (w, { limit = fb.amount('20.00', 'GBP'), quantity = fb.amount('5', 'kg') } = {}) => {
@@ -77,7 +77,7 @@ describe('the door', () => {
     const assistant = door.agent('claude')
     const pairing = door.connect(assistant, { audience: 'public', parties: [seller.id], types: ['promise'], days: 7, limit, on: [ask.hash] })
     assert.equal(tap(door, pairing.draft, person).ok, true)
-    const counter = (terms) => say(seller, node, 'promise', { terms: { ...terms, expires: ask.state.terms.expires } }, { from: seller.id, to: person.id, what: ask.refs.what, derives_from: ask.refs.derives_from, answers: ask.hash, for: ask.hash })
+    const counter = ({ price, quantity }) => say(seller, node, 'promise', { terms: { lines: [{ ...ask.state.terms.lines[0], price, quantity }], expires: ask.state.terms.expires } }, { from: seller.id, to: person.id, derives_from: ask.refs.derives_from, answers: ask.hash, for: ask.hash })
     return { assistant, ask, counter, pairing }
   }
 
@@ -151,7 +151,7 @@ describe('the door', () => {
     assert.throws(() => door.ask({ audience: [], offer: offer.hash }), /audience/)
     assert.throws(() => door.connect(assistant, { types: ['promise'] }), /audience/)
     assert.throws(() => door.accept(assistant, { promise: offer.hash }), /audience/)
-    assert.throws(() => door.promise(assistant, { to: seller.id, what: offer.refs.what }), /audience/)
+    assert.throws(() => door.promise(assistant, { to: seller.id, what: offer.state.terms.lines[0].what }), /audience/)
     assert.equal(node.all().length, before)
     assert.equal([...door.drafts.values()].length, 0)
   })
@@ -183,7 +183,6 @@ describe('the door', () => {
     const me = testPerson()
     assert.throws(() => createDoor({ person: me }), /holds no key of hers/)
     assert.throws(() => createDoor({}), /holds no key of hers/)
-    assert.throws(() => newPerson(), /holds no key of hers/)
     const { door } = world()
     assert.equal(Object.keys(door.person).some((k) => /key|recovery|encryption/.test(k)), false)
     assert.equal(door.approve('0'.repeat(64), { signature: 'ff' }).ok, false)

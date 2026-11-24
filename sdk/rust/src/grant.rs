@@ -2,11 +2,11 @@
 //! child grant (`refs.parent`) is a subset of its parent on every field (invariant 10), and a grant is live only while
 //! every ancestor is (invariant 9). A grant carries no status: its author ends it by an `updates` with stopped; the
 //! receiver declines or leaves by an `answers`. This is the grant check a micro that acts in the world needs.
+#[cfg(not(feature = "folds"))]
 use crate::decimal::Dec;
 use crate::error::Refusal;
 use crate::js::{get, hash_of, int, list, rf, rs, ss, st, Index};
 use crate::prelude::*;
-use crate::time::compare_durations;
 
 pub use crate::time::{add_duration, parse_duration};
 
@@ -22,24 +22,6 @@ fn size_of(v: &Value) -> Option<&Value> {
 fn no_larger(child: &Value, parent: &Value) -> bool {
     same_measure(child, parent) && crate::decimal::compare(size_of(child), size_of(parent)).is_some_and(|o| o.is_le())
 }
-// A child keeps every condition of its parent and may add more (authority.md): each of the parent's keys with exactly the same
-// value (compared by canonical form, nested values and all), or, for a list or a single value, every item of the parent's.
-fn keeps_condition(child: Option<&Value>, parent: &Value) -> bool {
-    let Some(child) = child else { return false };
-    let same = |a: &Value, b: &Value| crate::canonical::canonical_json(a) == crate::canonical::canonical_json(b);
-    match (parent, child) {
-        (Value::Object(p), Value::Object(c)) => p.iter().all(|(k, v)| c.get(k).is_some_and(|x| same(x, v))),
-        _ => {
-            let items = |v: &Value| match v {
-                Value::Array(a) => a.clone(),
-                other => vec![other.clone()],
-            };
-            let ours = items(child);
-            items(parent).iter().all(|x| ours.iter().any(|y| same(x, y)))
-        }
-    }
-}
-
 // The orders of protocol.json `narrower_than`, field by field: [(field, order)].
 fn narrower_table() -> Vec<(&'static str, &'static str)> {
     crate::spec().protocol.get("narrower_than").and_then(Value::as_object).map_or(Vec::new(), |t| {
@@ -47,11 +29,10 @@ fn narrower_table() -> Vec<(&'static str, &'static str)> {
     })
 }
 // narrower_than(child, parent) for one field: None when the child is within the parent's, else how it must be (the end of the
-// refusal's sentence). `from` is the parent's `at`: durations are compared by adding both to it (protocol.md §7); a parent with no
-// `at` gives no instant, no anchor is filled in, and a child under its `per` or `notice` is refused.
-fn wider_by(order: &str, child: Option<&Value>, parent: &Value, from: Option<&str>) -> Option<&'static str> {
+// refusal's sentence).
+fn wider_by(order: &str, child: Option<&Value>, parent: &Value) -> Option<&'static str> {
     let (ok, rule) = match order {
-        "subset" | "subset-or-none" => (
+        "subset-or-none" => (
             // types are names and parties ids: text, matched exactly
             match (child, parent) {
                 (Some(Value::Array(cs)), Value::Array(ps)) => cs.iter().all(|c| c.as_str().is_some_and(|i| ps.iter().any(|x| x.as_str() == Some(i)))),
@@ -60,15 +41,7 @@ fn wider_by(order: &str, child: Option<&Value>, parent: &Value, from: Option<&st
             "is a subset of the parent's",
         ),
         "at-most" => (child.is_some_and(|c| no_larger(c, parent)), "is no larger than the parent's"),
-        "at-least-duration" => (
-            match (child.and_then(Value::as_str), parent.as_str()) {
-                (Some(a), Some(b)) => from.and_then(|t| compare_durations(a, b, t)).is_some_and(|s| s >= 0),
-                _ => false,
-            },
-            "is no shorter than the parent's",
-        ),
         "at-most-time" => (matches!((child.and_then(Value::as_str), parent.as_str()), (Some(c), Some(p)) if c <= p), "is no later than the parent's"),
-        "superset" => (keeps_condition(child, parent), "keeps every condition of the parent's"),
         _ => return None,
     };
     (!ok).then_some(rule)
@@ -83,13 +56,12 @@ pub fn scope_within(child: &Value, parent: &Value) -> Vec<String> {
 }
 
 /// What makes a child grant wider than its parent: `[{ code, detail }]` (`wider_than_parent`, `not_receiver`, `shape`); empty when it is
-/// within it (1.9 stage 4, G9, A child grant).
+/// within it (authority.md, Scope subset).
 pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
     // A scope that is not an object names nothing (every read of it below is by key).
     static EMPTY: Value = Value::Null;
     let c = st(child, "scope").unwrap_or(&EMPTY);
     let p = st(parent, "scope").unwrap_or(&EMPTY);
-    let from = ss(parent, "at").filter(|s| !s.is_empty());
     let mut wrong: Vec<Refusal> = Vec::new();
     let wider = |detail: String| Refusal::new("wider_than_parent", detail);
     let same = |a: Option<&Value>, b: Option<&Value>| a.map(crate::canonical::canonical_json) == b.map(crate::canonical::canonical_json);
@@ -116,7 +88,7 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
             }
             "at-most" => {
                 if let Some(pv) = p.get(key) {
-                    if let Some(rule) = wider_by(order, c.get(key), pv, from) {
+                    if let Some(rule) = wider_by(order, c.get(key), pv) {
                         wrong.push(wider(format!("scope.{key} {rule}")));
                     }
                 } else if c.get(key).is_some() {
@@ -126,7 +98,7 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
             _ => {
                 let stated = order == "subset-or-none";
                 if let Some(pv) = p.get(key).or(stated.then_some(&none)) {
-                    if let Some(rule) = wider_by(order, c.get(key).or(stated.then_some(&none)), pv, from) {
+                    if let Some(rule) = wider_by(order, c.get(key).or(stated.then_some(&none)), pv) {
                         wrong.push(wider(format!("scope.{key} {rule}")));
                     }
                 }
@@ -142,7 +114,7 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
         wrong.push(wider("refs.what is the parent's, or none".into()));
     }
     // A machine's fence is no wider than its parent's (patterns/machines.md, A machine's fence).
-    for detail in crate::grant_fence::fence_wider(child.get("state").unwrap_or(&EMPTY), parent.get("state").unwrap_or(&EMPTY), from) {
+    for detail in crate::grant_fence::fence_wider(child.get("state").unwrap_or(&EMPTY), parent.get("state").unwrap_or(&EMPTY)) {
         wrong.push(wider(detail));
     }
     // A grant that names a handle is passed on only to that handle.
@@ -156,7 +128,7 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
         wrong.push(wider("state.depth is smaller than the parent's by at least one (a grant with no depth is not passed on)".into()));
     }
     // Only the one who received it passes a grant on: a parent with no receiver (open, or a refs.to that names a set of ids) has no
-    // one who may (authority.md). A circle that received one passes it on by a block signed as the circle (decision D15).
+    // one who may (authority.md). A circle that received one passes it on by a block signed as the circle.
     if rs(parent, "to").is_none_or(|t| Some(t) != rs(child, "author") && Some(t) != rs(child, "as")) {
         wrong.push(Refusal::new(
             "not_receiver",
@@ -167,7 +139,7 @@ pub fn scope_refusals(child: &Value, parent: &Value) -> Vec<Refusal> {
 }
 
 // Whether a grant's meter is its holder's own line, read from the grant alone: its `refs.meter` is its holder's id (her genesis key's line).
-// 1.9 stage 4 (decided in building): read from bytes alone (a key grant of the holder as a meter is read as another line here); the fold reads the line.
+// read from bytes alone (a key grant of the holder as a meter is read as another line here); the fold reads the line.
 fn meter_is_holders(grant: &Value) -> bool {
     rs(grant, "meter").is_some_and(|m| Some(m) == rs(grant, "to"))
 }
@@ -175,26 +147,26 @@ fn meter_is_holders(grant: &Value) -> bool {
 /// The one official reading of a grant's `state.scope` (authority.md, `state.scope` and Scope subset), with every default the spec states and nothing filled in
 /// beyond them. `scope` is the scope object, or null (read as an empty scope). It never fails.
 ///
-/// `{ types, parties, limit, each, every, until, notice, sealed, condition, junk }`:
+/// `{ types, parties, limit, each, every, expires, notice, sealed, condition, junk }`:
 /// - `types`, `parties`: the lists as signed; left out, `[]`: a missing `types` covers no block, a missing `parties` names no one but the principal.
 /// - `limit`, `each`: the visible fence, money `{ minor, currency }` or an amount `{ value, unit }`; left out, `null`: no money or amount moves
 ///   under the grant (invariant 23). A sealed scope shows neither.
 /// - `every`, `notice`: a duration (core.md, section 3); left out, `null`: `every` null makes a limit cover all time, `notice` null names none.
-/// - `until`: a time; left out, `null`: not a wider grant, it lasts until its author stops it.
+/// - `expires`: a time; left out, `null`: not a wider grant, it lasts until its author stops it.
 /// - `sealed`: `limit_commitment` is there (the amount is the principal's node's alone).
 /// - `condition`: as signed, `null` when left out; the protocol fills nothing in and reads none here.
 /// - `junk`: the names (sorted) of the fields that are there but cannot be read: exactly those the write check refuses in a scope (a list
 ///   that is no list of types or of ids, money or an amount that is malformed or below zero, a duration or a time that is none, a visible
 ///   `limit` or `each` beside a commitment, a commitment that is no hash) and any name that is not a scope field; a scope that is no
 ///   object is `["scope"]`. An unreadable field reads as `null` or `[]` in the other keys, so **a caller that finds a non-empty `junk` must
-///   hold the grant to no word**: a malformed `until` read as no end would be a wider grant.
+///   hold the grant to no word**: a malformed `expires` read as no end would be a wider grant.
 pub fn scope_reading(scope: &Value) -> Value {
     let empty = json!({});
     let mut junk = crate::check::scope_junk(if scope.is_null() { &empty } else { scope });
-    // a grant's `every` is stated only with `limit` and `until`, and a fallback only with her deadline (04-grants A2; Her deadline): without
-    // them each is read as nothing (end pass 2026-11-20, as the oracle reads a grant's scope; a circle's row reads its scope its own way)
+    // a grant's `every` is stated only with `limit` and `expires`, and a fallback only with her deadline (authority.md, Her deadline): without
+    // them each is read as nothing
     if let Some(m) = scope.as_object() {
-        for (k, needs) in [("every", &["limit", "until"][..]), ("fallback", &["deadline"][..])] {
+        for (k, needs) in [("every", &["limit", "expires"][..]), ("fallback", &["deadline"][..])] {
             if m.contains_key(k) && needs.iter().any(|n| !m.contains_key(*n)) && !junk.iter().any(|j| j == k) {
                 junk.push(k.to_string());
             }
@@ -211,7 +183,7 @@ pub fn scope_reading(scope: &Value) -> Value {
         "limit": text("limit"),
         "each": text("each"),
         "every": text("every"),
-        "until": text("until"),
+        "expires": text("expires"),
         "clocks": text("clocks"),
         "deadline": text("deadline"),
         "fallback": text("fallback"),
@@ -219,32 +191,32 @@ pub fn scope_reading(scope: &Value) -> Value {
     })
 }
 
-/// A grant's `scope.until`, as an instant, when it has one that reads.
-pub(crate) fn until_of(grant: &Value) -> Option<i64> {
-    get(grant, "state.scope.until").and_then(Value::as_str).and_then(crate::time::parse)
+/// A grant's `scope.expires`, as an instant, when it has one that reads.
+pub(crate) fn expires_of(grant: &Value) -> Option<i64> {
+    get(grant, "state.scope.expires").and_then(Value::as_str).and_then(crate::time::parse)
 }
 
-/// Why a grant is not live among these blocks (its own end, the receiver's, its `until` on the reader's clock, an
+/// Why a grant is not live among these blocks (its own end, the receiver's, its `expires` on the reader's clock, an
 /// ancestor's, the death of the person who gave it): empty when live. `now` is the reader's own clock.
 pub fn why_not_live_in(grant: Option<&Value>, index: &Index, now: Option<&str>) -> Vec<String> {
     why_not_live_seen(grant, index, now, None, &mut Vec::new())
 }
 
-/// The same, for a block that relies on the grant: an end (her close included, 3d-15) ends the grant only for blocks that have it in
+/// The same, for a block that relies on the grant: an end (her close included) ends the grant only for blocks that have it in
 /// their causal past, so what was done under it before stands.
 pub(crate) fn why_not_live_for(grant: Option<&Value>, index: &Index, now: Option<&str>, relying: &Value) -> Vec<String> {
     let mut wrong = why_not_live_seen(grant, index, now, Some(&index.past_of(relying)), &mut Vec::new());
-    // A block dated (its own `at`) at or after the `scope.until` of its grant, or of any grant above it, acts under none (decision D14): its
+    // A block dated (its own `at`) at or after the `scope.expires` of its grant, or of any grant above it, acts under none: its
     // signer's own date says the grant had run out, and a backdated act is its signer's lie, answered for by whoever answers for it.
-    // 1.9 3d-2: a missing `at` reads the same in every part: a block that states none is not in time under a grant with `until`
+    // a missing `at` reads the same in every part: a block that states none is not in time under a grant with `expires`
     {
         let at = ss(relying, "at").and_then(crate::time::parse);
         let mut seen: Vec<&str> = Vec::new();
         let mut g = grant;
         while let Some(x) = g.filter(|x| !seen.contains(&hash_of(x))) {
             seen.push(hash_of(x));
-            if until_of(x).is_some_and(|u| at.is_none_or(|at| u <= at)) {
-                wrong.push("the block is dated at or after its grant's scope.until".into());
+            if expires_of(x).is_some_and(|u| at.is_none_or(|at| u <= at)) {
+                wrong.push("the block is dated at or after its grant's scope.expires".into());
                 break;
             }
             g = rs(x, "parent").and_then(|h| index.get(h));
@@ -258,7 +230,7 @@ pub(crate) fn why_not_live_for(grant: Option<&Value>, index: &Index, now: Option
 // `seen`: the stops read. A stop ends a grant only for the blocks that have it in their causal past, as a death does (authority.md,
 // Ending): what was done under the grant before stands.
 fn ended_by(grant: &Value, index: &Index, seen: &dyn Fn(&str) -> bool) -> Vec<String> {
-    ended_reading(grant, index, &|b: &Value| crate::identity::counts_in(b, index), seen)
+    ended_reading(grant, index, &|b: &Value| crate::forks::counts_in(b, index), seen)
 }
 pub(crate) fn ended_reading(grant: &Value, index: &Index, counts: &dyn Fn(&Value) -> bool, seen: &dyn Fn(&str) -> bool) -> Vec<String> {
     let gh = hash_of(grant);
@@ -270,7 +242,7 @@ pub(crate) fn ended_reading(grant: &Value, index: &Index, counts: &dyn Fn(&Value
     if index.values().any(|b| ends(b) && crate::js::type_of(b) == "grant" && ending(b, gh) == Some(End::Stop) && same_grantor(b, grant, index)) {
         wrong.push("its author stopped it".into());
     }
-    // the holder ends her own place alone (C7, D17): her decline or leaving, or her own stop of it
+    // the holder ends her own place alone: her decline or leaving, or her own stop of it
     if index.values().any(|b| ends(b) && ending(b, gh).is_some() && matches!(list(rf(grant, "to")).as_slice(), [to] if rs(b, "author") == Some(*to)) && rs(b, "author") != rs(grant, "author")) {
         wrong.push("its receiver ended it".into());
     }
@@ -304,7 +276,7 @@ pub(crate) fn ending(b: &Value, target: &str) -> Option<End> {
 }
 // Whether a stop speaks for the grantor of the grant it stops: its own author, or, for a grant signed as a circle, one who may
 // sign for that circle.
-// 1.9 stage 6 (authority.md, Ending): a word signed `as` a circle is ended by a stop of its author while she still holds what her hand
+// (authority.md, Ending) a word signed `as` a circle is ended by a stop of its author while she still holds what her hand
 // counted (her hand could still count there), or by a stop `as` the circle that a row holds for; any other stop `as` the circle ends nothing.
 fn same_grantor(stop: &Value, grant: &Value, index: &Index) -> bool {
     match rs(grant, "as").filter(|c| !c.is_empty()) {
@@ -316,7 +288,7 @@ fn same_grantor(stop: &Value, grant: &Value, index: &Index) -> bool {
 }
 
 // `past`: the causal past of the block that relies on the grant, if one does. The chain of parents is walked in a loop, never by
-// recursion, so a long chain of grants costs time in step with its length and no stack (security I: a 2,500-hop chain overflowed it).
+// recursion, so a long chain of grants costs time in step with its length and no stack.
 fn why_not_live_seen(
     grant: Option<&Value>,
     index: &Index,
@@ -324,7 +296,7 @@ fn why_not_live_seen(
     past: Option<&crate::js::Past>,
     seen: &mut Vec<String>,
 ) -> Vec<String> {
-    // the grant and its ancestors, nearest first: a grant, a parent not held, or the one that closes a cycle
+    // the grant and its ancestors, nearest first: a grant, a parent not given, or the one that closes a cycle
     enum Link<'a> {
         Grant(&'a Value),
         Missing,
@@ -379,17 +351,17 @@ fn why_not_live_seen(
 // A grant's own reasons for not being live, apart from its parent (why_not_live_seen walks the parents).
 fn own_reasons(grant: &Value, index: &Index, now: Option<&str>, past: Option<&crate::js::Past>) -> Vec<String> {
     // A grant of a forked key still binds its giver, who gave it (folds.md, A fork is a burden); only a key that does not speak gives none.
-    if !crate::identity::binds_signer(grant, index) {
+    if !crate::forks::binds_signer(grant, index) {
         return vec!["it does not count: its signer's key does not speak for them".into()];
     }
     // A block that carries a status is a stop or an answer, never a grant, whatever else it restates (authority.md).
     if st(grant, "status").is_some() {
         return vec!["it is a stop or an answer (it carries a status), not a grant".into()];
     }
-    // A stop or a decline ends the grant for the blocks that see it (authority.md, Ending); with no block relying on it, every one held.
+    // A stop or a decline ends the grant for the blocks that see it (authority.md, Ending); with no block relying on it, every one given.
     let seen_by = |h: &str| past.is_none_or(|p| p.contains(h));
     let mut wrong = ended_by(grant, index, &seen_by);
-    // 1.9 (O2): her own ending term: a counted witness by the host she named, saying exactly her text, `for` this grant (with her handle,
+    // her own ending term: a counted witness by the host she named, saying exactly her text, `for` this grant (with her handle,
     // where the grant states one), ends it for every block that has the witness in its causal past
     if let Some(e) = get(grant, "state.scope.ends_on") {
         let (Some(host), Some(said)) = (e.get("witness").and_then(Value::as_str), e.get("said").and_then(Value::as_str)) else { return vec!["its scope.ends_on is not read".into()] };
@@ -403,7 +375,7 @@ fn own_reasons(grant: &Value, index: &Index, now: Option<&str>, past: Option<&cr
                 && list(rf(w, "for")).contains(&gh)
                 && handle.is_none_or(|h| get(w, "state.handle") == Some(h))
                 && seen_by(hash_of(w))
-                && crate::identity::counts_in(w, index)
+                && crate::forks::counts_in(w, index)
         });
         if ended {
             wrong.push("the witness its scope.ends_on names said its words: her own ending term".into());
@@ -416,7 +388,7 @@ fn own_reasons(grant: &Value, index: &Index, now: Option<&str>, past: Option<&cr
             wrong.push("it was signed as a circle by someone who may not sign for it there (no_role)".into());
         }
     }
-    // 1.9 3d-15: a close is an end of every standing word of hers, a grant included, for the blocks that have it in their causal past; a
+    // a close is an end of every standing word of hers, a grant included, for the blocks that have it in their causal past; a
     // grant signed as a circle is the circle's.
     if rf(grant, "as").is_none() {
         if let Some(person) = rs(grant, "author") {
@@ -425,9 +397,9 @@ fn own_reasons(grant: &Value, index: &Index, now: Option<&str>, past: Option<&cr
             }
         }
     }
-    if let (Some(now), Some(until)) = (now.filter(|n| !n.is_empty()), get(grant, "state.scope.until").and_then(Value::as_str)) {
-        if until <= now {
-            wrong.push("its scope.until has passed".into());
+    if let (Some(now), Some(expires)) = (now.filter(|n| !n.is_empty()), get(grant, "state.scope.expires").and_then(Value::as_str)) {
+        if expires <= now {
+            wrong.push("its scope.expires has passed".into());
         }
     }
     wrong
@@ -435,11 +407,7 @@ fn own_reasons(grant: &Value, index: &Index, now: Option<&str>, past: Option<&cr
 
 /// Why a grant is not live among these blocks: empty when live.
 pub fn why_not_live(grant: &Value, blocks: &[Value], now: Option<&str>) -> Vec<String> {
-    why_not_live_in(Some(grant), &crate::js::held_index(blocks), now)
-}
-
-pub fn is_live_in(grant: &Value, index: &Index, now: Option<&str>) -> bool {
-    why_not_live_in(Some(grant), index, now).is_empty()
+    why_not_live_in(Some(grant), &crate::js::blocks_index(blocks), now)
 }
 
 /// Whether a grant is live among these blocks.
@@ -449,7 +417,7 @@ pub fn is_live(grant: &Value, blocks: &[Value], now: Option<&str>) -> bool {
 
 /// The grants above this one, nearest first.
 pub fn ancestors(grant: &Value, blocks: &[Value]) -> Vec<Value> {
-    let index = crate::js::held_index(blocks);
+    let index = crate::js::blocks_index(blocks);
     let (mut out, mut seen): (Vec<Value>, Vec<String>) = (Vec::new(), Vec::new());
     let mut at = rs(grant, "parent").and_then(|h| index.get(h));
     while let Some(g) = at {
@@ -464,8 +432,7 @@ pub fn ancestors(grant: &Value, blocks: &[Value]) -> Vec<Value> {
 }
 
 /// Whether the grant's scope covers the block: it lists the block's type or `type.kind`. No `types` covers no block (silence only
-/// narrows: release P2).
-#[allow(dead_code)]
+/// narrows: authority.md, Scope subset).
 pub(crate) fn covers(block: &Value, grant: &Value) -> bool {
     let Some(types) = get(grant, "state.scope.types") else { return false };
     let names = type_names(block);
@@ -482,7 +449,6 @@ fn type_names(block: &Value) -> Vec<String> {
 }
 
 /// Whether a block's author receives a grant: it is open (no `refs.to`), or made to them. A `to` that names a set of ids names no one.
-/// A grant to a role is gone with roles (1.9 stage 6): `state.to_role` is no field.
 pub(crate) fn receives(grant: &Value, block: &Value, _index: &Index) -> bool {
     receives_as(grant, rs(block, "author"))
 }
@@ -499,13 +465,13 @@ pub fn why_not_under_in(block: &Value, index: &Index, now: Option<&str>) -> Vec<
     why_not_under_coded(block, index, now).into_iter().map(|(code, detail)| format!("{code}: {detail}")).collect()
 }
 
-/// G1, a tool's word (1.9 stage 4, authority.md, Who a block speaks for): `[(code, detail)]`, empty where the block speaks for the grant's
+/// A tool's word (authority.md, Who a block speaks for): `[(code, detail)]`, empty where the block speaks for the grant's
 /// giver. A pair on the grant's line gives `("pair", <the fork answer as JSON text>)`.
 pub(crate) fn why_not_under_coded(block: &Value, index: &Index, now: Option<&str>) -> Vec<(String, String)> {
     why_not_under_full(block, index, now).into_iter().map(|v| (v["code"].as_str().unwrap_or("").to_string(), if v["code"] == "pair" { v["pair"].to_string() } else { v["detail"].as_str().unwrap_or("").to_string() })).collect()
 }
 
-/// G1's answer, each entry `{ code, detail }` with what the code carries: `why` (not_kept, the path), `pair` (the fork answer), `lacks`
+/// The answer of A tool's word, each entry `{ code, detail }` with what the code carries: `why` (not_kept, the path), `pair` (the fork answer), `lacks`
 /// (not_shown), `waiting` (waiting).
 pub(crate) fn why_not_under_full(block: &Value, index: &Index, now: Option<&str>) -> Vec<Value> {
     let entry = |c: &str, d: &str| json!({ "code": c, "detail": d });
@@ -532,14 +498,14 @@ pub(crate) fn why_not_under_full(block: &Value, index: &Index, now: Option<&str>
     return why_not_under_old(block, grant, index, now).into_iter().map(|d| entry("not_live", &d)).collect();
 }
 
-/// The fork answer of G1 for a block, where the grant's line holds a pair at or before it.
-#[cfg_attr(not(feature = "folds"), allow(dead_code))]
+/// The fork answer of A tool's word for a block, where the grant's line holds a pair at or before it.
+#[cfg(feature = "folds")]
 pub(crate) fn under_fork(block: &Value, index: &Index) -> Option<Value> {
     why_not_under_coded(block, index, None).into_iter().find(|(c, _)| c == "pair").and_then(|(_, v)| serde_json::from_str(&v).ok())
 }
 
-// The 1.7 reading, kept for a build without the folds.
-#[cfg_attr(feature = "folds", allow(dead_code))]
+// A tool's word in a build without the folds: the reading a micro holds.
+#[cfg(not(feature = "folds"))]
 fn why_not_under_old(block: &Value, grant: &Value, index: &Index, now: Option<&str>) -> Vec<String> {
     let mut wrong = Vec::new();
     if !receives(grant, block, index) {
@@ -564,7 +530,7 @@ fn why_not_under_old(block: &Value, grant: &Value, index: &Index, now: Option<&s
 /// `limit` or `each` of a grant the counterparty can read does not bind its principal. The grant is visible when it names no `audience`
 /// (a public grant); a sealed limit, or a grant with an audience, keeps the rule that the fence is the principal's alone. The block is not
 /// cut down to the limit: as signed it exceeds the grant, so it does not bind. A block with no money or amount in it has no value to test.
-#[cfg_attr(feature = "folds", allow(dead_code))]
+#[cfg(not(feature = "folds"))]
 fn past_visible_limit(block: &Value, grant: &Value, index: &Index) -> Vec<String> {
     let visible = |k: &str| get(grant, &format!("state.scope.{k}"));
     if grant.get("audience").is_some() || (visible("limit").is_none() && visible("each").is_none()) {
@@ -584,25 +550,7 @@ fn past_visible_limit(block: &Value, grant: &Value, index: &Index) -> Vec<String
     }
 }
 
-/// What a block is worth in the grant's measure: a transfer's amount; a promise's terms at the quantity chosen (an accept
-/// reads the offer it answers). None when it carries no value.
-#[cfg(feature = "folds")]
-#[cfg_attr(feature = "folds", allow(dead_code))]
-fn act_value(block: &Value, index: &Index) -> Option<Value> {
-    match crate::js::type_of(block) {
-        "transfer" => st(block, "amount").cloned(),
-        // a machine's reading "accepted under her rule" binds her as an accept does (promises.md, Answers), so it is worth what the offer it answers is
-        "promise" | "observe" if crate::js::type_of(block) == "promise" || is_machine_accept(block, index) => {
-            let own = get(block, "state.terms").filter(|t| t.is_object());
-            let answered = (ss(block, "status") == Some("accepted")).then(|| rs(block, "answers").and_then(|h| index.get(h))).flatten();
-            let terms = answered.and_then(|o| get(o, "state.terms")).or(own)?;
-            let quantity = get(block, "state.terms.quantity");
-            let total = crate::fold::terms_total(terms, quantity);
-            (!total.is_null()).then_some(total)
-        }
-        _ => None,
-    }
-}
+/// What a block is worth in the grant's measure: a transfer's amount. None when it carries no value.
 #[cfg(not(feature = "folds"))]
 fn act_value(block: &Value, _index: &Index) -> Option<Value> {
     match crate::js::type_of(block) {
@@ -625,9 +573,9 @@ pub(crate) fn dealt_with<'a>(block: &'a Value, index: &'a Index) -> Vec<&'a str>
     }
     out
 }
+#[cfg(not(feature = "folds"))]
 // The first id a block under a grant deals with that `scope.parties` does not name (its principal aside); None when the block keeps to
 // them. A grant that states no parties names none: it covers no one beyond its principal, never everyone.
-#[cfg_attr(feature = "folds", allow(dead_code))]
 fn outside_parties(block: &Value, grant: &Value, index: &Index) -> Option<String> {
     let parties = list(get(grant, "state.scope.parties"));
     let principal = who::principal_of(grant, index);
@@ -652,11 +600,7 @@ mod who {
     #[cfg(not(feature = "folds"))]
     use crate::js::rs;
     use crate::prelude::*;
-    #[cfg(feature = "folds")]
-    pub(super) fn principal_of(grant: &Value, index: &Index) -> Option<String> {
-        crate::fold::principal_of(grant, index)
-    }
-    /// Whether a block signed `as` a circle holds, as the relier whose causal past is `past` sees it (all held where None).
+    /// Whether a block signed `as` a circle holds, as the relier whose causal past is `past` sees it (all given where None).
     #[cfg(feature = "folds")]
     pub(super) fn holds_for(block: &Value, index: &Index, past: Option<&crate::js::Past>) -> bool {
         let Some(circle) = crate::js::rs(block, "as").filter(|c| !c.is_empty()) else { return true };
@@ -683,6 +627,7 @@ mod who {
     }
 }
 
+#[cfg(feature = "folds")]
 /// A machine's accept (promises.md, Answers): an `observe` that `answers` a promise and says `accepted`, acting under a grant (`refs.under`).
 /// It is the machine's reading, "I accepted this under her rule"; what binds her is her own grant. Under no grant it is no accept at all.
 pub(crate) fn is_machine_accept(block: &Value, index: &Index) -> bool {
@@ -692,17 +637,11 @@ pub(crate) fn is_machine_accept(block: &Value, index: &Index) -> bool {
         && rs(block, "answers").and_then(|h| index.get(h)).is_some_and(|o| crate::js::type_of(o) == "promise")
 }
 
-/// 1.8 deleted "Blocks that can be undone" (a schema's `undo`, an ask that backs one block): no block under a grant is refused for it.
-/// The door op stays for the wrappers that name it and answers nothing (end pass 2026-11-20).
-pub fn why_not_live_undo(_block: &Value, _index: &Index) -> Vec<String> {
-    Vec::new()
-}
-
-/// The door op `under_ok` (G1): true, false, or the fork answer `{ pair: true, held, at_most }`.
-// 1.9 stage 4 (decided in building): `under_ok` stays a boolean (the fork answer aside); the code G1 gives is read from `why_not_under`, each entry
+/// The door op `under_ok` (authority.md, A tool's word): true, false, or the fork answer `{ pair: true, blocks, at_most }`.
+// `under_ok` stays a boolean (the fork answer aside); the code A tool's word gives is read from `why_not_under`, each entry
 // "code: detail".
 pub fn under_ok(block: &Value, blocks: &[Value]) -> Value {
-    let index = crate::js::held_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(block)).chain([block]));
+    let index = crate::js::blocks_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(block)).chain([block]));
     if !index.contains_key(crate::js::hash_of(block)) {
         return json!(false);
     }
@@ -715,7 +654,7 @@ pub fn under_ok(block: &Value, blocks: &[Value]) -> Value {
 
 /// `why_not_under` with codes: `[{ code, detail }]`, empty where the block speaks for its grantor.
 pub fn why_not_under_codes(block: &Value, blocks: &[Value], now: Option<&str>) -> Value {
-    let index = crate::js::held_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(block)).chain([block]));
+    let index = crate::js::blocks_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(block)).chain([block]));
     if !index.contains_key(crate::js::hash_of(block)) {
         return json!([{ "code": "not_live", "detail": "the block is no word: it is not valid on what it rests on, or rests on a block not held" }]);
     }
@@ -725,7 +664,7 @@ pub fn why_not_under_codes(block: &Value, blocks: &[Value], now: Option<&str>) -
 /// Whether a block signed under a grant speaks for its grantor, among these blocks: empty, or why not.
 pub fn why_not_under(block: &Value, blocks: &[Value], now: Option<&str>) -> Vec<String> {
     // the block is read with the input: one no node would take is no word, under no grant (folds.md)
-    let index = crate::js::held_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(block)).chain([block]));
+    let index = crate::js::blocks_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(block)).chain([block]));
     if !index.contains_key(crate::js::hash_of(block)) {
         return vec!["the block is no word: it is not valid on what it rests on, or rests on a block not held".into()];
     }
@@ -736,7 +675,7 @@ pub fn why_not_under(block: &Value, blocks: &[Value], now: Option<&str>) -> Vec<
 /// limit itself; `spent` is what the principal's node has already counted in the period: minor units of the money, or
 /// the amount's value (a whole number or a decimal string), compared exactly. A cap on each block (`each`) holds whatever
 /// was spent. Money in another currency, an amount in another unit, or a `spent` that is not a number is never within.
-#[cfg_attr(feature = "folds", allow(dead_code))]
+#[cfg(not(feature = "folds"))]
 pub(crate) fn within_limit(limit: &Value, value: &Value, spent: &Value) -> bool {
     let fence = limit.get("state").unwrap_or(limit);
     let (cap, each) = match (fence.get("limit"), fence.get("each")) {
@@ -754,16 +693,16 @@ pub(crate) fn within_limit(limit: &Value, value: &Value, spent: &Value) -> bool 
     (cap.is_some() || each.is_some()) && cap.is_none_or(|c| at_most(c, &total)) && each.is_none_or(|e| at_most(e, &size))
 }
 
-// ---- 1.9 stage 4: a range and a list (authority.md) ----
+// ---- a range and a list (authority.md) ----
 /// A range `{ min, max }` (one end or both) or a list `{ one_of }` (authority.md, A range and a list).
-#[cfg_attr(not(feature = "folds"), allow(dead_code))]
+#[cfg(feature = "folds")]
 pub(crate) fn is_set(v: &Value) -> bool {
     let Some(m) = v.as_object() else { return false };
     (!m.is_empty() && m.keys().all(|k| k == "min" || k == "max")) || (m.len() == 1 && m.contains_key("one_of"))
 }
 
-// The anchor two durations are compared from: durations are compared, never added to a date that means anything (00-shared, Cutoff).
-// 1.9 stage 4 (decided in building): two durations at a set place are compared from one fixed instant (2000-01-01), so P1M against P30D reads the same for
+// The anchor two durations are compared from: durations are compared, never added to a date that means anything (blocks.md, The cut).
+// two durations at a set place are compared from one fixed instant (2000-01-01), so P1M against P30D reads the same for
 // every reader; a set place may hold a duration whether or not the promise carries `repeat`.
 const ANCHOR: &str = "2000-01-01T00:00:00.000Z";
 
@@ -790,7 +729,7 @@ pub(crate) fn cmp_value(a: &Value, b: &Value) -> Option<core::cmp::Ordering> {
 
 /// Whether one value is inside a range or a list: of the same kind, from `min` to `max` both counted, or equal to a listed value, compared as
 /// decimals. A value that is itself a range or a list is inside nothing (C is always fully stated).
-#[cfg_attr(not(feature = "folds"), allow(dead_code))]
+#[cfg(feature = "folds")]
 pub(crate) fn inside(v: &Value, set: &Value) -> bool {
     if is_set(v) {
         return false;

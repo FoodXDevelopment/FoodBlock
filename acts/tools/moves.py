@@ -269,16 +269,6 @@ def record_of(a, move, form=None, deal=None):
     if g == 'stopping': return 'an update, stopped'
     return 'an observation'                                          # Question, Note
 
-def measures_of(a, move, form=None):
-    """the measures a move carries, which her grant must bound before FoodOS moves alone: an amount where money moves (a Pay
-    always moves money, even in an act with no money leg of its own, as a move word may add one) or a money promise is staked,
-    a quantity where something changes hands."""
-    m = []
-    staked = (any_of(a, 'nouns', 'money', form) or any(prop('nouns', n, 'promise', form) == 'must' for n in a['nouns'])) and any_of(a, 'changes', 'binds', form)
-    if move == 'Pay' or (money_leg(a, form) and move in ('Promise', 'Accept', 'Change')) or (staked and move in ('Promise', 'Start', 'Accept', 'Change')): m.append('amount')
-    if any(prop('changes', c, 'title', form) or prop('changes', c, 'custody', form) for c in a['changes']) and move in ('Promise', 'Accept', 'Hand over', 'Receive', 'Change'): m.append('quantity')
-    return m
-
 def act_key(a):
     return a.get('id') or a['name']
 

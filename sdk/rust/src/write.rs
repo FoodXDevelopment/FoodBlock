@@ -33,9 +33,9 @@ pub struct ComposeOptions {
     pub after: Vec<String>,
     /// When it was said (UTC, `YYYY-MM-DDTHH:MM:SS.sssZ`): stated, never read from a clock here (None without `clockless` is refused).
     pub at: Option<String>,
-    /// A writer with no clock states so and gives no `at` (blocks.md, Time; 1.9 3d-2: any block may leave it out).
+    /// A writer with no clock states so and gives no `at` (blocks.md, Time).
     pub clockless: bool,
-    /// Its place in the signing key's chain. `write` finds it from the held blocks when None.
+    /// Its place in the signing key's chain. `write` finds it from the given blocks when None.
     pub link: Option<Link>,
     /// Salts by recipient (only to reproduce a vector, or on a build without randomness).
     pub salts: Value,
@@ -121,12 +121,12 @@ pub struct WriteOptions<'a> {
     /// The signing key: `{ public_key_sign, private_key }`.
     pub key: Option<&'a Keypair>,
     /// The author's genesis, key grants and blocks (to find the next place in the key's chain), and anything named.
-    pub held: &'a [Value],
+    pub blocks: &'a [Value],
     pub schemas: Option<&'a Index>,
 }
 
 /// The one way to write: compose, check (refusing, never repairing), sign with the author's key, at the next place in
-/// that key's chain among `held`. Returns the signed block `{ hash, type, state, refs, signature }` (and `salts` for a
+/// that key's chain among `blocks`. Returns the signed block `{ hash, type, state, refs, signature }` (and `salts` for a
 /// private one); an error with every refusal (`{ code, detail }`) when the check refuses.
 pub fn write(
     type_name: &str,
@@ -137,7 +137,7 @@ pub fn write(
     let key = options
         .key
         .ok_or_else(|| Error::new("write: a block is signed with its author's key"))?;
-    let held = index_of(options.held);
+    let blocks = index_of(options.blocks);
     let mut compose_options = options.compose.clone();
     if compose_options.suite.is_empty() {
         compose_options.suite = key.suite.clone();
@@ -146,7 +146,7 @@ pub fn write(
     // A key named by hash shows itself in the key grant it signs (identity.md, Her voices): that grant is the key's first block.
     let shows = type_name == "grant" && crate::js::ss(&json!({ "state": state }), "shown_key") == Some(key.public_key_sign.as_str());
     // The key grant that brought the signing key in (identity.md, refs.key): none for the genesis key.
-    let key_ref = crate::identity::key_ref_for(&author, &key.public_key_sign, &held);
+    let key_ref = crate::identity::key_ref_for(&author, &key.public_key_sign, &blocks);
     let mut refs = refs.clone();
     if let (Some(k), Some(m)) = (&key_ref, refs.as_object_mut()) {
         m.entry("key").or_insert_with(|| json!(k));
@@ -157,7 +157,7 @@ pub fn write(
         } else {
             // a key that has signed two blocks naming one prev may still sign a key grant (identity.md, Taking oneself out)
             let key_grant = type_name == "grant" && state.get("kind").and_then(Value::as_str) == Some("key");
-            crate::identity::next_link_for_in(&author, &key.public_key_sign, &held, key_grant)?
+            crate::identity::next_link_for_in(&author, &key.public_key_sign, &blocks, key_grant)?
         });
     }
     let mut block = compose(type_name, state, &refs, &compose_options)?;
@@ -168,7 +168,7 @@ pub fn write(
         block.get("refs").unwrap_or(&empty),
         CheckOptions {
             schemas: options.schemas,
-            held: Some(&held),
+            blocks: Some(&blocks),
         },
     );
     if !refused.is_empty() {
@@ -183,7 +183,7 @@ pub fn write(
     if let Value::Object(m) = &mut judged {
         m.shift_remove("salts");
     }
-    let found = crate::valid::valid(&judged, &held);
+    let found = crate::valid::valid(&judged, &blocks);
     if !found.is_empty() && !found.iter().all(|r| r.code == "unmet") {
         return Err(Error::refused(found));
     }
@@ -301,7 +301,7 @@ pub fn seal_copy(
     Ok(json!({ "header": top, "header_signature": signature, "envelope": envelope }))
 }
 
-/// The sizes a sealer that pads pads to (privacy.md, Sealed messages; 1.9 stage 7): the next of 512, 1024, 2048, 4096 bytes, then each 4096.
+/// The sizes a sealer that pads pads to (privacy.md, Sealed messages): the next of 512, 1024, 2048, 4096 bytes, then each 4096.
 pub fn padded_size(bytes: usize) -> usize {
     match [512, 1024, 2048, 4096].into_iter().find(|s| *s >= bytes) {
         Some(s) => s,
@@ -349,7 +349,7 @@ pub fn open_copy(message: &Value, x25519_private: &str) -> Result<Value> {
     if message.get("version").is_some() {
         return Err(Error::coded("shape", "write: a sealed copy carries no version: it is { header, header_signature, envelope }"));
     }
-    // 1.9 3a-11: the plaintext is { block, reveals }, and may carry `pad`, a string of spaces, which a reader ignores
+    // the plaintext is { block, reveals }, and may carry `pad`, a string of spaces, which a reader ignores
     let fields = crate::spec().convention("messages.plaintext");
     if !fields
         .iter()
@@ -359,7 +359,7 @@ pub fn open_copy(message: &Value, x25519_private: &str) -> Result<Value> {
             "write: a plaintext is { block, reveals }, and may carry pad",
         ));
     }
-    // 1.9 3a (decided, CORE-SET "What building changed"): a `pad` that is not a string of spaces opens nothing (`shape`)
+    // a `pad` that is not a string of spaces opens nothing (`shape`)
     if plaintext.get("pad").is_some_and(|p| !p.as_str().is_some_and(|t| t.bytes().all(|b| b == b' '))) {
         return Err(Error::coded("shape", "write: a plaintext's pad is a string of spaces"));
     }

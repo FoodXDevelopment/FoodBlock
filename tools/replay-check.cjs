@@ -6,10 +6,10 @@
 //
 // Input: a JSON-lines file (one block per line), a JSON file holding an array, or a directory of such files. A line is
 // any of the forms a node holds:
-//   a message        { "version": "1.7", "block": { type, state, refs }, "signature": "<hex>", "suite"?: "<name>" }
+//   a message        { "block": { type, state, refs }, "signature": "<hex>", "suite"?: "<name>" }
 //   a signed block   { type, state, refs, "signature": "<hex>", "hash"?: "<id>", "suite"?: "<name>" }
-//   a sealed header  { "version", "header", "header_signature" }   (counted, not judged: only its public header is stored)
-// Every block is judged by the core's `valid(block, held)`, with all the blocks read as the context `held`, the way a
+//   a sealed header  { "header", "header_signature" }   (counted, not judged: only its public header is stored)
+// Every block is judged by the core's `valid(block, blocks)`, with all the blocks read as the context `blocks`, the way a
 // node that holds them all would judge it (core.md, section 8).
 //
 // Output: counts and reason codes only. It prints no block, no field, no id, no key, no file name and no line of any
@@ -20,8 +20,7 @@
 //        psql "$DATABASE_URL" -At -c "select message::text from blocks order by n" > blocks.jsonl
 //      (the `blocks` table of host/src/postgres/schema.sql; one JSON message per line). For another store, export one JSON block per line.
 //   2. Copy blocks.jsonl to a checkout of the revised core and run:  node tools/replay-check.cjs blocks.jsonl
-//   3. Read the counts. A block that fails here would be refused by the revised core. Fix the cause (or convert the data
-//      once, through `fb convert`) before the revised core is deployed. Delete blocks.jsonl afterwards.
+//   3. Read the counts. A block that fails here would be refused by the revised core. Fix the cause before the revised core is deployed. Delete blocks.jsonl afterwards.
 // `--limit N` judges only the first N blocks (the context is still all of them). `--json` prints the result as JSON.
 const fs = require('fs')
 const path = require('path')

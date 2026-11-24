@@ -1547,7 +1547,7 @@
     "a named third party": "someone named in a deal between two others who is not a side: a holder of money or goods until both are happy, a judge, a guarantor, a witness, a relay courier. They answer by accepting the role, and their own act points at that deal (refs.for), never at one of its sides"
    }
   },
-  "money and machines": "Money carries who issued it: a tab, a voucher or credit is someone's promise, so paying with one points to its issuer's promise and partial redemption is allowed. Settle in money people already use; FoodX never holds the pot, sets prices or sets credit limits. A machine signs readings and moves only under an operator grant and never answers for anything; any yes it gives is answered for by whoever holds that grant (its owner, unless the owner granted operation to someone else, as with a leased machine).",
+  "money and machines": "Money carries who issued it: a tab, a voucher or credit is someone's promise, so paying with one points to its issuer's promise and partial redemption is allowed. Settle in money people already use; FoodX never holds the pot, sets prices or sets credit limits. A machine signs readings and moves only under its owner's grant and never answers for anything; any yes it gives is answered for by whoever holds that grant (its owner, unless the owner granted operation to someone else, as with a leased machine).",
   "move rules": {
    "about": "What every move needs to know, worked out in tools/moves.py from the act's facts and the move's group; nothing is listed per act.",
    "effect": [
@@ -2477,7 +2477,7 @@
   "the holder's receipt": "whoever holds goods they don't own signs for them at each hand: a pickup host, a relay courier, a store",
   "a code only the receiver holds": "the receiver shows a code to prove it reached them",
   "the reader's receipt": "the other side signs that they read it; telling is done only then",
-  "a device's reading": "a sensor, scale, probe or machine's own log, signed by the device under its owner's or operator's grant; it grounds a claim and settles nothing alone",
+  "a device's reading": "a sensor, scale, probe or machine's own log, signed by the device under its owner's grant; it grounds a claim and settles nothing alone",
   "a named third party's word": "someone both sides named signs what they saw (a coworker for a shift, a market master for a weighing)",
   "named witnesses": "people named in advance each sign that it happened (a cash handover, a death, a seizure)",
   "the seller's own count": "the seller signs what was sold under a posted price; the till or the day's count backs it"
@@ -2511,7 +2511,7 @@
   "falsehood": "FoodOS refuses one thing: a falsehood. A fake scarcity or countdown, a 'was' price that never was, a hidden fee or a shrunk pack, a short weight or a fake lot, a second pledge of the same thing, a label or claim her own record contradicts, unlabelled paid placement, or a word rewarded without saying so.",
   "figures": "Only signed or counted figures are shown. FoodOS never prints a profit, a payback, a value or odds for a one-off; those are hers. A verdict is a named line (her limit, a programme's line, a maker's date) applied to counted records, with the line shown; what stands out crosses a line she set or repeats in her own record.",
   "calling it off": "Before a yes either side withdraws freely; after it, either side ends on the agreed terms, and only what has not happened stops.",
-  "who answers": "Every block names who acted and who answers: the operator of a machine, she herself for FoodOS acting under her grant, the group for a member acting under its role.",
+  "who answers": "Every block names who acted and who answers: the owner of a machine, she herself for FoodOS acting under her grant, the group for a member acting under its role.",
   "the law": "A tax, duty, fee, permit or report the law adds to a chosen act is shown apart, with its source from the signed rules for her place, and is done in its own compelled act; FoodOS forbids nothing on that ground."
  },
  "glossary": {

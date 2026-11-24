@@ -1,6 +1,5 @@
 """FoodBlock for Python (spec/core.md): the same API as the JavaScript reference, in snake_case, as a thin layer
-over the one Rust core (sdk/rust). Every rule lives in that core; this package only calls it. There is no earlier
-version in the protocol."""
+over the one Rust core (sdk/rust). Every rule lives in that core; this package only calls it."""
 
 from .spec import VERSION, PROTOCOL, CONVENTIONS, TYPES, VERBS, REF_KEYS, SUITES, PEERS, STATUSES, FIELDS, CODES
 from ._core import FoodBlockError, Refused

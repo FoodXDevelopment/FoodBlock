@@ -15,9 +15,9 @@ const at = (i) => `2026-11-08T09:${String(i).padStart(2, '0')}:00.000Z`
 function hers() {
   const keys = fb.generateKeypair()
   const genesis = fb.identity.genesis(keys, { kind: 'person', audience: 'public', at: at(0) })
-  const held = [genesis]
-  for (let i = 1; i <= 3; i++) held.push(fb.write('thing', { kind: 'note', name: `note ${i}` }, {}, { author: genesis.hash, key: keys, held, at: at(i), audience: 'public' }))
-  return { keys, genesis, blocks: held, messages: held.map((block) => fb.wrap(block)) }
+  const blocks = [genesis]
+  for (let i = 1; i <= 3; i++) blocks.push(fb.write('thing', { kind: 'note', name: `note ${i}` }, {}, { author: genesis.hash, key: keys, blocks, at: at(i), audience: 'public' }))
+  return { keys, genesis, blocks, messages: blocks.map((block) => fb.wrap(block)) }
 }
 const serveHost = async (host) => { const s = await serve(host, { port: 0 }); return { s, url: `http://127.0.0.1:${s.address().port}` } }
 const post = async (url, route, body, headers = {}) => (await fetch(url + route, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: fb.canonicalJSON(body) })).json()
@@ -82,7 +82,7 @@ test('nothing is ever overwritten: a block held is left exactly as it was', () =
   assert.equal(again.taken.length, 0); assert.equal(host.store.count(), 4)
   assert.equal(host.store.append(host.store.get(her.blocks[1].hash)), null)
   // a rival block in the same place of her chain is a fork: it is not taken, and the first stays
-  const rival = fb.write('thing', { kind: 'note', name: 'rival note 1' }, {}, { author: her.genesis.hash, key: her.keys, held: [her.genesis], at: at(20), audience: 'public' })
+  const rival = fb.write('thing', { kind: 'note', name: 'rival note 1' }, {}, { author: her.genesis.hash, key: her.keys, blocks: [her.genesis], at: at(20), audience: 'public' })
   const r = host.ingest([fb.wrap(rival)])
   assert.equal(r.taken.length, 0)
   const after = fs.readFileSync(path.join(dir, 'blocks.jsonl'), 'utf8')

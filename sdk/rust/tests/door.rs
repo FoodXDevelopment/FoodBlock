@@ -45,9 +45,9 @@ fn a_genesis_is_a_list_of_one_voice_and_a_reach_needs_her_clock() {
     // A reach without her clock is refused before it is signed; a custodian or a recovery key is no genesis field.
     let e = call("genesis", &serde_json::json!([keys, { "kind": "person", "reach": "P1D", "at": at, "audience": "public" }]).to_string());
     assert_eq!(e["error"], "refused");
-    let mut held = g["state"].clone();
-    held["custodian"] = serde_json::json!("c".repeat(64));
-    assert_eq!(call("strict_text", &serde_json::json!([text(&held)]).to_string())["ok"][0]["code"], "bad_genesis");
+    let mut blocks = g["state"].clone();
+    blocks["custodian"] = serde_json::json!("c".repeat(64));
+    assert_eq!(call("strict_text", &serde_json::json!([text(&blocks)]).to_string())["ok"][0]["code"], "bad_genesis");
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn the_limit_fence_and_push_for_a_list() {
     assert_eq!(request["for"][&one].as_array().unwrap().len(), 2);
 }
 
-// Security J (ffi F7): a block given whole to the door is answered only if whole: it never fills in a missing state, refs or type.
+// A block given whole to the door is answered only if whole: it never fills in a missing state, refs or type.
 #[test]
 fn the_door_refuses_a_block_it_would_have_repaired() {
     let hash = |block: &str| call("hash", &format!("[{block}]"));
@@ -75,7 +75,7 @@ fn the_door_refuses_a_block_it_would_have_repaired() {
 
 #[test]
 fn a_nodes_own_choices_are_stated_never_filled() {
-    let held = serde_json::json!([]);
+    let blocks = serde_json::json!([]);
     let no = |args: serde_json::Value, op: &str| call(op, &args.to_string())["error"].clone();
     // answer_pull: choices { cap >= 1, serves_pairs }
     let log = serde_json::json!([]);
@@ -85,8 +85,8 @@ fn a_nodes_own_choices_are_stated_never_filled() {
     assert_eq!(pull(serde_json::json!({ "cap": 5 }))["error"], "argument", "no serves_pairs");
     assert_eq!(pull(serde_json::json!({ "cap": 5, "serves_pairs": "yes" }))["error"], "argument", "not a boolean");
     assert!(pull(serde_json::json!({ "cap": 5, "serves_pairs": false }))["ok"].is_object());
-    assert_eq!(no(serde_json::json!([[], held, null, null]), "accept"), "argument", "accept: no takes_pairs");
-    assert!(call("accept", &serde_json::json!([[], held, { "takes_pairs": true }, null]).to_string())["ok"].is_object());
+    assert_eq!(no(serde_json::json!([[], blocks, null, null]), "accept"), "argument", "accept: no takes_pairs");
+    assert!(call("accept", &serde_json::json!([[], blocks, { "takes_pairs": true }, null]).to_string())["ok"].is_object());
     // admission_refusals: the rule's state or an explicit null, and a whole number
     let block = serde_json::json!({ "type": "observe", "state": {}, "refs": { "author": "a".repeat(64) } });
     let adm = |rest: serde_json::Value| call("admission_refusals", &serde_json::json!([block, "b".repeat(64), [], rest[0], rest[1]]).to_string());
@@ -109,17 +109,17 @@ fn a_stranger_whom_a_block_speaks_for_and_a_scope_read_through_the_door() {
     let keys = call("keypair", &format!(r#"["{}"]"#, "33".repeat(32)))["ok"].clone();
     let g = call("genesis", &json!([keys, { "kind": "person", "at": "2026-10-15T09:00:00.000Z", "audience": "public" }]).to_string())["ok"].clone();
     let id = g["hash"].as_str().unwrap().to_string();
-    let write = |refs: serde_json::Value| call("write", &json!(["observe", { "kind": "note", "text": "hi" }, refs, { "key": keys, "author": id, "at": "2026-10-15T09:00:01.000Z", "audience": "public", "held": [g] }]).to_string());
+    let write = |refs: serde_json::Value| call("write", &json!(["observe", { "kind": "note", "text": "hi" }, refs, { "key": keys, "author": id, "at": "2026-10-15T09:00:01.000Z", "audience": "public", "blocks": [g] }]).to_string());
     let note = write(json!({}))["ok"].clone();
-    // a plain block speaks for its author; a block signed as a circle that is not held speaks for no one; a block that is no block is an argument error
+    // a plain block speaks for its author; a block signed as a circle that is not given speaks for no one; a block that is no block is an argument error
     assert_eq!(call("speaks_for", &json!([note, [g]]).to_string())["ok"], json!(id));
-    assert_eq!(call("speaks_for", &json!([note, [g, note]]).to_string())["ok"], json!(id), "held or not, the same");
+    assert_eq!(call("speaks_for", &json!([note, [g, note]]).to_string())["ok"], json!(id), "given or not, the same");
     let circle = "c".repeat(64);
     let as_circle = write(json!({ "as": circle }));
     assert!(as_circle["ok"].is_object(), "{as_circle}");
-    assert_eq!(call("speaks_for", &json!([as_circle["ok"], [g]]).to_string())["ok"], json!(null), "a circle that is not held: no one");
+    assert_eq!(call("speaks_for", &json!([as_circle["ok"], [g]]).to_string())["ok"], json!(null), "a circle that is not given: no one");
     assert_eq!(call("speaks_for", r#"["oops", []]"#)["error"], "argument");
-    assert_eq!(call("speaks_for", &json!([note, "g"]).to_string())["error"], "argument", "held is a list");
+    assert_eq!(call("speaks_for", &json!([note, "g"]).to_string())["error"], "argument", "the blocks are a list");
     // a stranger: nothing between two people; the sender's block is optional; receiver and sender are text
     let other = "d".repeat(64);
     assert_eq!(call("is_stranger", &json!([other, id, [g, note]]).to_string())["ok"], json!(true));
@@ -127,17 +127,17 @@ fn a_stranger_whom_a_block_speaks_for_and_a_scope_read_through_the_door() {
     assert_eq!(call("is_stranger", &json!([other, id, [g, note], null]).to_string())["ok"], json!(true));
     assert_eq!(call("is_stranger", &json!([7, id, []]).to_string())["error"], "argument");
     // a scope: a missing one is empty; each default is the spec's; what cannot be read is junk, and reads as null or [] beside it
-    let empty = json!({ "types": [], "parties": [], "limit": null, "each": null, "every": null, "until": null, "notice": null, "sealed": false, "condition": null, "junk": [] });
+    let empty = json!({ "types": [], "parties": [], "limit": null, "each": null, "every": null, "expires": null, "notice": null, "sealed": false, "condition": null, "junk": [] });
     assert_eq!(call("scope_reading", "[null]")["ok"], empty);
     assert_eq!(call("scope_reading", "[]")["ok"], empty);
     assert_eq!(call("scope_reading", "[{}]")["ok"], empty);
     let money = json!({ "minor": 500, "currency": "GBP" });
-    let read = call("scope_reading", &json!([{ "types": ["promise"], "limit": money, "every": "P1M", "until": "tomorrow", "colour": "red" }]).to_string())["ok"].clone();
+    let read = call("scope_reading", &json!([{ "types": ["promise"], "limit": money, "every": "P1M", "expires": "tomorrow", "colour": "red" }]).to_string())["ok"].clone();
     assert_eq!(read["types"], json!(["promise"]));
     assert_eq!(read["limit"], money);
     assert_eq!(read["every"], json!("P1M"));
-    assert_eq!(read["until"], json!(null), "an unreadable until reads as none, and says so in junk");
-    assert_eq!(read["junk"], json!(["colour", "until"]));
+    assert_eq!(read["expires"], json!(null), "an unreadable expires reads as none, and says so in junk");
+    assert_eq!(read["junk"], json!(["colour", "expires"]));
     let sealed = call("scope_reading", &json!([{ "limit_commitment": "e".repeat(64), "limit": money }]).to_string())["ok"].clone();
     assert_eq!(sealed["sealed"], json!(true));
     assert_eq!(sealed["limit"], json!(null));

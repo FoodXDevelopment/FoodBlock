@@ -3,7 +3,7 @@ use super::deal::{status, Binding, Deal};
 use super::settle::Settling;
 use super::read_all;
 use crate::decimal::Dec;
-use crate::js::{get, hash_of, index_of, list, rf, rs, same_str, ss, st, str_of, type_of};
+use crate::js::{get, hash_of, index_of, lines_of, list, quantity_of, rf, rs, same_str, ss, st, str_of, type_of};
 use crate::order::{earliest, named};
 use crate::prelude::*;
 use core::cmp::Ordering;
@@ -40,9 +40,9 @@ pub(super) fn measure(m: &Value) -> Option<(Dec, Value)> {
 
 // The total a price comes to for a quantity (promises.md, Terms): a flat amount; or an amount per unit, its value times the quantity over
 // `per`'s value, exact; None when nothing is priced, the quantity is not in `per`'s unit, `per` is zero, or the quotient is no decimal.
-/// 1.9 3e-7, `step`: under a price, the least payable amount its signers take, in the price's unit: the total is the least whole number of
+/// `step`: under a price, the least payable amount its signers take, in the price's unit: the total is the least whole number of
 /// steps at or above the exact figure. With no `step` (or one in another unit, which takes nothing), the total is exact.
-/// 1.9-GUESS [3e-7a]: a `step` whose unit is not the total's is read as no step.
+/// A `step` whose unit is not the total's is read as no step (the text does not say; read so).
 pub(super) fn stepped(total: Option<(Dec, Value)>, step: Option<&Value>) -> Option<(Dec, Value)> {
     let (t, kind) = total?;
     match step.and_then(measure) {
@@ -66,16 +66,12 @@ pub(super) fn total_of(price: Option<&Value>, quantity: Option<&Value>) -> Optio
     Some((each.mul(&q).div(&p)?, kind))
 }
 
-/// What a promise's terms come to (folds.md, stage 2): each priced line (or the whole) at its flat amount, or its amount per unit times
-/// its quantity over `per`, exact. `quantity` is the one chosen (else the terms'). An amount, or null when a price has no total, nothing is
-/// priced, or lines are priced in two kinds (they are never added).
-pub fn terms_total(terms: &Value, quantity: Option<&Value>) -> Value {
-    let lines: Vec<Value> = match terms.get("lines") {
-        Some(Value::Array(l)) if !l.is_empty() => l.clone(),
-        _ => vec![json!({ "quantity": quantity.filter(|q| q.is_object()).or(terms.get("quantity")), "price": terms.get("price") })],
-    };
+/// What a promise's terms come to (folds.md, A promise's stage): each priced line at its flat amount, or its amount per unit times its quantity chosen
+/// over `per`, exact. `chosen` is what an answer chooses (`[{ id, quantity }]`), else the lines' own quantities. An amount, or null when a
+/// price has no total, nothing is priced, or lines are priced in two kinds (they are never added).
+pub fn terms_total(terms: &Value, chosen: Option<&Value>) -> Value {
     let priced: Vec<Option<(Dec, Value)>> =
-        lines.iter().filter(|l| l.get("price").is_some_and(Value::is_object)).map(|l| total_of(l.get("price"), l.get("quantity"))).collect();
+        lines_of(terms).into_iter().filter(|l| l.get("price").is_some_and(Value::is_object)).map(|l| total_of(l.get("price"), quantity_of(l, chosen))).collect();
     if priced.is_empty() || priced.iter().any(Option::is_none) {
         return Value::Null;
     }
@@ -92,8 +88,8 @@ pub fn terms_total(terms: &Value, quantity: Option<&Value>) -> Value {
 }
 
 /// Options for a promise's stage. A stage is a function of the blocks alone: whose confirms count is the deal's schema's to say (its
-/// grounds), never the caller's, and the fold reads no clock (folds.md). A backup referee's turn is read from signed times alone
-/// (promises.md, Disputes: the first referee's own receipt of the dispute, and the backup's own date on its word).
+/// grounds), never the caller's, and the fold reads no clock (folds.md). A backup judge's turn is read from signed times alone
+/// (promises.md, Disputes: the first judge's own receipt of the dispute, and the backup's own date on its word).
 #[derive(Default, Clone)]
 pub struct StageOptions {}
 
@@ -115,7 +111,7 @@ pub(crate) fn promise_stage_read(first_block: &Value, blocks: &[Value], options:
     promise_stage_in(hash_of(first_block), &index, options)
 }
 
-/// The stage of the promise held under `first_hash`, in blocks already read for a fold (`read_all`): many deals of one store are read
+/// The stage of the promise given under `first_hash`, in blocks already read for a fold (`read_all`): many deals of one store are read
 /// against one reading of it (the MCP door's find: security I, agents/t4).
 pub(crate) fn promise_stage_in(first_hash: &str, index: &crate::js::Index, options: &StageOptions) -> Value {
     promise_stage_at(first_hash, index, options, &[])
@@ -134,63 +130,63 @@ pub(crate) fn binds(stage: &Value) -> bool {
 // An accept consents to the terms of the offer it answers (invariant 15): where the offer's quantity is a range, the accept
 // names a quantity in the range's unit, within it; otherwise it names none, or the same (promises.md, Who may bind).
 pub(super) fn fits(accept: &Value, offer: &Value) -> bool {
-    let a = get(accept, "state.terms.quantity");
-    let same = |x: &Value, y: &Value| value_in(x, y.get("unit")).zip(Dec::of(y.get("value"))).is_some_and(|(p, q)| p.cmp(&q) == Ordering::Equal);
-    match get(offer, "state.terms.quantity") {
-        // an offer with no quantity is accepted with none: an accept never adds a quantity the offer did not have
-        None => a.is_none(),
-        Some(q) if q.get("min").is_some() || q.get("max").is_some() => {
-            let unit = q.get("min").or(q.get("max")).and_then(|e| e.get("unit"));
-            let Some(v) = a.and_then(|a| value_in(a, unit)) else { return false };
-            let bound = |k: &str, wrong: Ordering| q.get(k).is_none_or(|e| value_in(e, unit).is_some_and(|x| x.cmp(&v) != wrong));
-            bound("min", Ordering::Greater) && bound("max", Ordering::Less)
-        }
-        Some(q) => a.is_none_or(|a| same(a, q)),
+    let offered = lines_of(get(offer, "state.terms").unwrap_or(&Value::Null));
+    let chosen: Vec<&Value> = get(accept, "state.terms.lines").and_then(Value::as_array).map(|a| a.iter().collect()).unwrap_or_default();
+    // an accept names no line the offer does not state
+    if chosen.iter().any(|c| !offered.iter().any(|l| l.get("id").is_some() && l.get("id") == c.get("id"))) {
+        return false;
     }
+    let same = |x: &Value, y: &Value| value_in(x, y.get("unit")).zip(Dec::of(y.get("value"))).is_some_and(|(p, q)| p.cmp(&q) == Ordering::Equal);
+    offered.into_iter().all(|line| {
+        let a = chosen.iter().find(|c| c.get("id") == line.get("id")).and_then(|c| c.get("quantity"));
+        match line.get("quantity") {
+            // a line with no quantity is accepted with none: an accept never adds a quantity the offer did not have
+            None => a.is_none(),
+            Some(q) if q.get("min").is_some() || q.get("max").is_some() => {
+                let unit = q.get("min").or(q.get("max")).and_then(|e| e.get("unit"));
+                let Some(v) = a.and_then(|a| value_in(a, unit)) else { return false };
+                let bound = |k: &str, wrong: Ordering| q.get(k).is_none_or(|e| value_in(e, unit).is_some_and(|x| x.cmp(&v) != wrong));
+                bound("min", Ordering::Greater) && bound("max", Ordering::Less)
+            }
+            Some(q) => a.is_none_or(|a| same(a, q)),
+        }
+    })
 }
 
-// An open offer's quantity is what its allocations bind together, and its total what the price comes to for that.
-fn open_totals(first: &Value, takers: &[Value], freed: &[String], index: &crate::js::Index) -> (Option<Value>, Option<Value>) {
-    // Its quantity is what its allocations bind together, and its total is what the price comes to for that.
-    let offered = get(first, "state.terms.quantity.max").or(get(first, "state.terms.quantity"));
-    let quantity_of = |t: &Value| t.get("quantity").filter(|q| !q.is_null()).cloned();
-    let unit = offered.and_then(|o| o.get("unit")).or_else(|| takers.iter().find_map(|t| t.get("quantity").and_then(|q| q.get("unit")))).cloned();
-    // only the allocations that take as draws on the offer's quantity count (folds.md, What each fold returns: `quantity`)
+// An open offer's lines are what its allocations that take bind together on each, and its total what the price comes to for that
+// (folds.md, What each fold returns): a line's `needed` is the sum, in the line's unit, of what those allocations draw on it.
+fn open_totals(first: &Value, takers: &[Value], freed: &[String], index: &crate::js::Index) -> (Vec<Value>, Option<Value>) {
     let takes = |t: &&Value| !freed.iter().any(|f| f.as_str() == str_of(t.get("allocation"))) && t.get("over_allocated").and_then(Value::as_bool) != Some(true);
-    let amounts: Vec<String> = takers
-        .iter()
-        .filter(takes)
-        .filter_map(quantity_of)
-        .filter(|q| Some(q.get("unit").cloned().unwrap_or(Value::Null)) == unit)
-        .filter_map(|q| q.get("value").and_then(Value::as_str).map(String::from))
-        .collect();
-    let sum = if amounts.is_empty() { None } else { crate::decimal::sum(&amounts.iter().map(String::as_str).collect::<Vec<_>>()) };
-    let bound = sum.map(|v| json!({ "value": v, "unit": unit }));
-    // Its total is what its price comes to for that. A counter its offerer accepted binds at the counter's own price (decision H18):
-    // then the total is the price of what the requests bind, plus each counter's own total, of one kind (several kinds, or a price with
-    // no total: null).
-    let live_takers: Vec<&Value> = takers.iter().filter(takes).collect();
+    let live: Vec<&Value> = takers.iter().filter(takes).collect();
     let counter_of = |t: &Value| t.get("request").and_then(Value::as_str).and_then(|h| index.get(h)).filter(|r| st(r, "status").is_none());
-    let total = if !live_takers.iter().any(|t| counter_of(t).is_some()) {
-        total_of(get(first, "state.terms.price"), bound.as_ref()).map(|(m, c)| kind_json(&m, &c))
-    } else {
-        let in_unit = |t: &&&Value| quantity_of(t).filter(|q| Some(q.get("unit").cloned().unwrap_or(Value::Null)) == unit);
-        let mine: Vec<String> = live_takers.iter().filter(|t| counter_of(t).is_none()).filter_map(|t| in_unit(&t)).filter_map(|q| q.get("value").and_then(Value::as_str).map(String::from)).collect();
-        let mut parts: Vec<Option<(Dec, Value)>> = Vec::new();
-        if !mine.is_empty() {
-            let q = crate::decimal::sum(&mine.iter().map(String::as_str).collect::<Vec<_>>()).map(|v| json!({ "value": v, "unit": unit }));
-            parts.push(total_of(get(first, "state.terms.price"), q.as_ref()));
-        }
-        for t in live_takers.iter().filter(|t| counter_of(t).is_some()) {
-            let q = in_unit(&t);
-            parts.push(counter_of(t).and_then(|c| total_of(get(c, "state.terms.price"), q.as_ref())));
-        }
-        let parts: Option<Vec<(Dec, Value)>> = parts.into_iter().collect();
-        parts.filter(|p| !p.is_empty() && p.iter().all(|x| x.1 == p[0].1)).map(|p| {
-            let c = p[0].1.clone();
-            kind_json(&p.iter().fold(Dec::zero(), |t, x| t.add(&x.0)), &c)
-        })
+    let drawn = |t: &Value, id: Option<&Value>| t.get("lines").and_then(Value::as_array).and_then(|l| l.iter().find(|x| x.get("id") == id)).and_then(|x| x.get("quantity")).filter(|q| q.get("value").is_some()).cloned();
+    let offer_lines = lines_of(get(first, "state.terms").unwrap_or(&Value::Null));
+    let sum_of = |ts: &[&Value], line: &Value| -> Option<Value> {
+        let unit = line.get("quantity").and_then(|q| q.get("unit").or_else(|| q.get("max").and_then(|m| m.get("unit"))).or_else(|| q.get("min").and_then(|m| m.get("unit"))));
+        let values: Vec<String> = ts.iter().filter_map(|t| drawn(t, line.get("id"))).filter(|q| q.get("unit") == unit).filter_map(|q| q.get("value").and_then(Value::as_str).map(String::from)).collect();
+        if values.is_empty() { None } else { crate::decimal::sum(&values.iter().map(String::as_str).collect::<Vec<_>>()).map(|v| json!({ "value": v, "unit": unit })) }
     };
+    let bound: Vec<Value> = offer_lines.iter().map(|line| json!({ "id": line.get("id"), "needed": sum_of(&live, line), "moved": null })).collect();
+    // Its total is what its price comes to for that. A counter its offerer accepted binds at the counter's own price: then the total is the
+    // price of what the requests bind, plus each counter's own total, of one kind (several kinds, or a price with no total: null).
+    let mut parts: Vec<Option<(Dec, Value)>> = Vec::new();
+    let mine: Vec<&Value> = live.iter().copied().filter(|t| counter_of(t).is_none()).collect();
+    if !mine.is_empty() {
+        for line in offer_lines.iter().filter(|l| l.get("price").is_some()) {
+            parts.push(total_of(line.get("price"), sum_of(&mine, line).as_ref()));
+        }
+    }
+    for t in live.iter().filter(|t| counter_of(t).is_some()) {
+        let c = counter_of(t).and_then(|c| get(c, "state.terms"));
+        for line in c.map(lines_of).unwrap_or_default().into_iter().filter(|l| l.get("price").is_some()) {
+            parts.push(total_of(line.get("price"), drawn(t, line.get("id")).as_ref()));
+        }
+    }
+    let parts: Option<Vec<(Dec, Value)>> = parts.into_iter().collect();
+    let total = parts.filter(|p| !p.is_empty() && p.iter().all(|x| x.1 == p[0].1)).map(|p| {
+        let c = p[0].1.clone();
+        kind_json(&p.iter().fold(Dec::zero(), |t, x| t.add(&x.0)), &c)
+    });
     (bound, total)
 }
 
@@ -199,7 +195,7 @@ fn open_totals(first: &Value, takers: &[Value], freed: &[String], index: &crate:
 // gives (promises.md, Disputes). A side's defeats of its own block is no dispute.
 pub(super) fn disputes_shown(index: &crate::js::Index, in_deal: &[Value], heads: &[&str], side_of: &dyn Fn(&Value) -> Option<&'static str>) -> Vec<Value> {
     let mut shown: Vec<(String, String, Value)> = Vec::new();
-    for o in index.values().filter(|o| crate::identity::counts_in(o, index)) {
+    for o in index.values().filter(|o| crate::forks::counts_in(o, index)) {
         let Some(by) = side_of(o) else { continue };
         for target in list(rf(o, "defeats")) {
             let Some(t) = index.get(target) else { continue };
@@ -213,7 +209,7 @@ pub(super) fn disputes_shown(index: &crate::js::Index, in_deal: &[Value], heads:
     shown.into_iter().map(|(_, _, v)| v).collect()
 }
 
-// The stage, read while the deals in `visiting` are being read (a deal conditioned on another, decision H17): a condition that leads
+// The stage, read while the deals in `visiting` are being read (a deal conditioned on another): a condition that leads
 // back to a deal being read holds for nothing, so no reading loops.
 pub(super) fn promise_stage_at(first_hash: &str, index: &crate::js::Index, options: &StageOptions, visiting: &[String]) -> Value {
     let key = format!("{first_hash}|{}", visiting.join(","));
@@ -221,7 +217,7 @@ pub(super) fn promise_stage_at(first_hash: &str, index: &crate::js::Index, optio
         let Some(deal) = Deal::read(first_hash, index, options) else { return Value::Null };
         let bound = deal.bind(options, visiting, None);
         let out = deal.stage(&bound);
-        // 1.8 P12: accepts that bind and do not see each other cross: each binds, the deal is read once under each (`per_accept`), and the
+        // accepts that bind and do not see each other cross: each binds, the deal is read once under each (`per_accept`), and the
         // stage is the furthest of them (ties by the accept's hash)
         if bound.crossed.len() < 2 || out.get("not_shown").is_some() {
             return out;
@@ -258,17 +254,23 @@ impl Deal<'_> {
     fn stage(&self, b: &Binding) -> Value {
         let offer = self.offer_of(b);
         let stops: Vec<&Value> = self.in_deal.iter().filter(|x| type_of(x) == "promise" && status(x, "stopped") && (!self.open || self.by_offerer(x))).collect();
+        // her plan has no stage: its later blocks are her own record
+        if b.plan {
+            let mut out = self.result(b, offer, "", json!({}));
+            out["stage"] = Value::Null;
+            return out;
+        }
         let Some(accept_block) = b.accept else { return self.unbound(b, offer) };
         if self.open {
             return self.open_stage(b, offer, &stops);
         }
         Settling::new(self, b, offer, accept_block).settle(&stops)
     }
-    // The offer the deal is read by: an allocation of a counter has the counter's own terms, whole (promises.md, Who may bind; decision H18).
+    // The offer the deal is read by: an allocation of a counter has the counter's own terms, whole (promises.md, Who may bind).
     fn offer_of<'s>(&'s self, b: &Binding<'s>) -> &'s Value {
         match b.accept {
             Some(_) if self.alloc.is_some() => self.alloc.as_ref().map(|(_, r, _)| r).filter(|r| st(r, "status").is_none()).unwrap_or(&self.root),
-            Some(a) if !self.open && !b.to_self => list(rf(a, "answers")).first().and_then(|h| self.index.get(*h)).unwrap_or(b.live[0]),
+            Some(a) if !self.open => list(rf(a, "answers")).first().and_then(|h| self.index.get(*h)).unwrap_or(b.live[0]),
             _ => b.live[0],
         }
     }
@@ -280,8 +282,8 @@ impl Deal<'_> {
         live_hashes.sort();
         let mut out = json!({
             "stage": stage, "stop": null, "from": null, "by": null, "offer": reported, "requests": b.requests, "live": live_hashes, "accept": b.accept.map(hash_of),
-            "sides": { "from": self.from_ref, "to": self.to_ref }, "quantity": null, "takers": b.takers, "forks": b.forks, "lines": [], "total": null,
-            "paid": null, "stopped": [], "disputed": [], "due": null, "paid_at": null, "occurrences": [], "referee_ties": [],
+            "sides": { "from": self.from_ref, "to": self.to_ref }, "takers": b.takers, "forks": b.forks, "lines": [], "total": null,
+            "paid": null, "stopped": [], "disputed": [], "due": null, "paid_at": null, "occurrences": [], "judge_ties": [],
             "uncovered": { "from": [], "to": null }, "unanswered": [], "over_allocated": false, "to_come": null, "to_come_on": [], "received_at": [], "moved": [], "price_fixed": null,
             "crossed": b.crossed, "per_accept": [], "waiting": self.waiting(), "bench": "none",
         });
@@ -298,7 +300,7 @@ impl Deal<'_> {
         // the bench the deal would have: its schema's, between the two sides its first promise names
         let sides: Vec<String> = [self.from_ref.clone(), self.to_ref.clone()].into_iter().flatten().collect();
         let judges = self.judges_for(&sides, &self.first_hash);
-        let bench = super::bench::bench(rs(&self.root, "schema").and_then(|h| self.index.get(h)), sides, judges, None).json();
+        let bench = super::bench::bench(rs(&self.root, "schema").and_then(|h| self.index.get(h)), sides, judges).json();
         let result = |stage: &str, mut more: Value| {
             more["bench"] = bench.clone();
             self.result(b, offer, stage, more)
@@ -317,19 +319,9 @@ impl Deal<'_> {
         {
             return result("declined", json!({}));
         }
-        // A block sent despite a live STOP is valid and kept; consent decides what binds (consent.md). The person told the sender she wants
-        // no contact, so the fold reads that ask as declined in advance. Her own accept would still bind: `answers` is the only consent to a deal.
-        if !self.open {
-            if let (Some(person), Some(sender)) = (self.other_ref().filter(|s| !s.is_empty()), rs(&self.root, "author")) {
-                let held: Vec<Value> = self.index.values().cloned().collect();
-                if crate::strangers::consent(person, Some(sender), &held, Some(&self.root)).get("word").and_then(Value::as_str) == Some("stop") {
-                    return result("declined", json!({}));
-                }
-            }
-        }
         result(if self.offerer_is_from { "offered" } else { "asked" }, json!({}))
     }
-    // 1.8 P12, `waiting`: each block of the deal that speaks for someone and does not yet stand, `{ block, on }` for each thing it waits
+    // `waiting`: each block of the deal that speaks for someone and does not yet stand, `{ block, on }` for each thing it waits
     // on (blocks.md, Finality), sorted by block then on.
     fn waiting(&self) -> Vec<Value> {
         let mut out: Vec<(String, &'static str)> = Vec::new();
@@ -337,7 +329,7 @@ impl Deal<'_> {
             if rs(b, "author").is_none() || super::speaker_of(b, self.index, None).is_none() {
                 continue;
             }
-            for on in crate::identity::stands(b, self.index).waiting {
+            for on in crate::finality::stands(b, self.index).waiting {
                 if !out.iter().any(|(h, o)| h == hash_of(b) && *o == on) {
                     out.push((hash_of(b).to_string(), on));
                 }
@@ -351,7 +343,7 @@ impl Deal<'_> {
     fn open_stage(&self, b: &Binding, offer: &Value, stops: &[&Value]) -> Value {
         let (bound, total) = open_totals(&self.first, &b.takers, &b.freed, self.index);
         let over = b.takers.iter().any(|t| t.get("over_allocated").and_then(Value::as_bool) == Some(true));
-        let more = json!({ "quantity": bound, "total": total, "over_allocated": over });
+        let more = json!({ "lines": bound, "total": total, "over_allocated": over });
         // Only a stop of the offer itself stops it: the offerer's stop of one allocation ends that allocation's deal alone.
         let onwards: Vec<&Value> = stops.iter().copied().filter(|x| ss(x, "stop") == Some("onward") && crate::grant::ending(x, &self.first_hash).is_some()).collect();
         if let Some(onward) = named(&earliest(&onwards, self.index)) {
@@ -365,13 +357,13 @@ impl Deal<'_> {
     }
 }
 
-/// 1.9 R-C2, `{ stopped: <first promise>, side }` (1.8's meaning, kept; stage 5 compare): an onward stop that speaks for that side is among
+/// `{ stopped: <first promise>, side }`: an onward stop that speaks for that side is among
 /// the first onward stops of that deal and none that speaks for the other side is, among `blocks` (the past of the block it is read for). Two
-/// that cross, one of each side, hold for neither (as `forfeit`, R-P9).
+/// that cross, one of each side, hold for neither (as `forfeit`).
 pub(crate) fn stopped_onward_by(first: &Value, blocks: &[Value], side: &str) -> bool {
     let index = read_all(core::iter::once(first).chain(index_of(blocks).values().collect::<Vec<_>>()));
     let Some(deal) = Deal::read(hash_of(first), &index, &StageOptions::default()) else { return false };
-    let stops: Vec<&Value> = deal.in_deal.iter().filter(|x| type_of(x) == "promise" && status(x, "stopped") && ss(x, "stop") == Some("onward") && deal.side_of(x).is_some() && crate::identity::counts_in(x, &index)).collect();
+    let stops: Vec<&Value> = deal.in_deal.iter().filter(|x| type_of(x) == "promise" && status(x, "stopped") && ss(x, "stop") == Some("onward") && deal.side_of(x).is_some() && crate::forks::counts_in(x, &index)).collect();
     let firsts = earliest(&stops, &index);
     firsts.iter().any(|x| deal.side_of(x) == Some(side)) && !firsts.iter().any(|x| deal.side_of(x).is_some_and(|s| s != side))
 }

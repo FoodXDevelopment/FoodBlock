@@ -1,4 +1,4 @@
-//! The held index, and the one memo every fold shares: each held block's causal past, computed once (security I: the causal
+//! The given index, and the one memo every fold shares: each given block's causal past, computed once (the causal
 //! past was walked afresh inside loops, which made ownership, circles, key grants and deals cubic). The memo lives beside the
 //! blocks: reading the index never changes an answer, and any change to the blocks starts a fresh memo, so a reader that
 //! asks twice gets the same past and a fold reads no arrival order.
@@ -6,18 +6,18 @@ use crate::prelude::*;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
-/// A held set of blocks by hash, in the order they were first given (a later copy replaces the value, not the place).
+/// A given set of blocks by hash, in the order they were first given (a later copy replaces the value, not the place).
 pub type Map = indexmap::IndexMap<String, Value, crate::js::BuildHasher>;
 
-/// The blocks held, by hash, with the memo of their causal pasts. It reads as the map (`Deref`); any write to the map
+/// The blocks given, by hash, with the memo of their causal pasts. It reads as the map (`Deref`); any write to the map
 /// (`DerefMut`) starts a fresh memo.
 #[derive(Default)]
 pub struct Index {
     map: Map,
     memo: RefCell<Rc<RefCell<Memo>>>,
-    // the key that signed each held block, read from what it rests on alone (identity::signer_in), by its hash and signature. Unlike the
-    // memo it outlives a write: what a held block rests on never changes once it is held (append-only), so a signer once found stays the
-    // signer. Only a found signer is kept (a block whose prev was not yet held may find one later). Shared with clones; bounded.
+    // the key that signed each given block, read from what it rests on alone (identity::signer_in), by its hash and signature. Unlike the
+    // memo it outlives a write: what a given block rests on never changes once it is given (append-only), so a signer once found stays the
+    // signer. Only a found signer is kept (a block whose prev was not yet given may find one later). Shared with clones; bounded.
     signers: Rc<RefCell<alloc::collections::BTreeMap<(String, String), crate::identity::Signer>>>,
 }
 
@@ -29,31 +29,31 @@ const MEMO_BYTES: usize = 64 << 20;
 
 #[derive(Default)]
 struct Memo {
-    // hashes named but not held, numbered after the held blocks (whose number is their place in the map)
+    // hashes named but not given, numbered after the given blocks (whose number is their place in the map)
     unheld: indexmap::IndexMap<String, (), crate::js::BuildHasher>,
-    // each held block's past, by its place: the bits of the numbers in it
+    // each given block's past, by its place: the bits of the numbers in it
     pasts: Vec<Option<Rc<Vec<u64>>>>,
     bytes: usize,
-    // who each held block speaks for, read with no clock (folds.md, Who a block speaks for): a pure answer of the blocks, asked again
+    // who each given block speaks for, read with no clock (folds.md, Who a block speaks for): a pure answer of the blocks, asked again
     // and again by every fold
     speakers: alloc::collections::BTreeMap<String, Option<String>>,
-    // the key grants about each id and the operator grants naming each id, found once (identity: lists, operators)
+    // the key grants about each id, found once (identity: lists)
     grants: Option<Rc<Grants>>,
     // the blocks whose signer was read and none was found, in this state of the blocks (identity::signer_in)
     no_signer: alloc::collections::BTreeSet<String>,
-    // the grants whose line is being read (fold/grants: the line counts only blocks that pass G1's other clauses, which may read the line)
+    // the grants whose line is being read (fold/grants: the line counts only blocks that pass the other clauses of A tool's word, which may read the line)
     lines_read: alloc::collections::BTreeSet<String>,
     // which blocks name each hash in `for`, and in `answers` or `updates`
     names: Option<Rc<Names>>,
-    // the fork and void marks of every held block, when the blocks carry none (identity::mark_of): (fork, void) by hash
+    // the fork and void marks of every given block, when the blocks carry none (identity::mark_of): (fork, void) by hash
     marks: Option<Rc<alloc::collections::BTreeMap<String, (bool, bool, bool, bool)>>>,
-    // a conditioned deal's stage, read while the deals in the key are being read (release 2: a chain of conditions was read twice per level)
+    // a conditioned deal's stage, read while the deals in the key are being read
     stages: alloc::collections::BTreeMap<String, Value>,
     // how many times a reading met one of its own askers still being read (a ring): an answer read across one is not remembered
     taint: u64,
 }
 
-/// Which held blocks name each hash: in `for` (`by_for`), and in `answers` or `updates` (`by_answer`), each list in the index's order.
+/// Which given blocks name each hash: in `for` (`by_for`), and in `answers` or `updates` (`by_answer`), each list in the index's order.
 #[derive(Default)]
 pub struct Names {
     pub by_for: alloc::collections::BTreeMap<String, Vec<String>>,
@@ -64,7 +64,7 @@ pub struct Names {
     pub by_derives: alloc::collections::BTreeMap<String, Vec<String>>,
     /// the blocks that name each hash in `subject` (a first taker after a let-go, a keep)
     pub by_subject: alloc::collections::BTreeMap<String, Vec<String>>,
-    /// seat 33 mend 5: the blocks that name each hash in `confirms` (a second signing), in the index's order
+    /// the blocks that name each hash in `confirms` (a second signing), in the index's order
     pub by_confirms: alloc::collections::BTreeMap<String, Vec<String>>,
     /// the blocks that name each hash in any ref but `prev` and `after`, or in `state.counted_to`: the blocks that use it (blocks.md, The cut)
     pub by_use: alloc::collections::BTreeMap<String, Vec<String>>,
@@ -130,7 +130,7 @@ impl<'a> IntoIterator for &'a Index {
     }
 }
 
-/// A block's causal past among the held blocks: every hash reachable from it through its refs (held or not; the block itself only
+/// A block's causal past among the given blocks: every hash reachable from it through its refs (blocks or not; the block itself only
 /// when a cycle names it).
 #[derive(Clone)]
 pub struct Past<'a> {
@@ -206,12 +206,12 @@ impl Index {
         v
     }
 
-    /// Who a held block speaks for, read once with no clock: `f` answers it the first time (folds.md, Who a block speaks for). A block
-    /// that is not the one held under its hash is answered afresh.
+    /// Who a given block speaks for, read once with no clock: `f` answers it the first time (folds.md, Who a block speaks for). A block
+    /// that is not the one given under its hash is answered afresh.
     pub fn speaker_memo(&self, block: &Value, f: impl FnOnce() -> Option<String>) -> Option<String> {
         let h = crate::js::hash_of(block);
-        let held = self.map.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block);
-        if !held {
+        let blocks = self.map.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block);
+        if !blocks {
             return f();
         }
         let memo = self.memo.borrow().clone();
@@ -226,7 +226,7 @@ impl Index {
         s
     }
 
-    /// The signer of a held block, when it has been read (`identity::signer_in`); None when it has not.
+    /// The signer of a given block, when it has been read (`identity::signer_in`); None when it has not.
     pub fn signer_memo_get(&self, block: &Value) -> Option<Option<crate::identity::Signer>> {
         let h = crate::js::hash_of(block);
         if !self.map.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block) {
@@ -240,7 +240,7 @@ impl Index {
         let none = memo.borrow().no_signer.contains(h);
         none.then_some(None)
     }
-    /// Remember the signer of a held block.
+    /// Remember the signer of a given block.
     pub fn signer_memo_set(&self, block: &Value, signer: Option<crate::identity::Signer>) {
         let h = crate::js::hash_of(block);
         if !self.map.get(h).is_some_and(|b| core::ptr::eq(b, block) || b == block) {
@@ -275,7 +275,7 @@ impl Index {
         m
     }
 
-    /// Which held blocks name each hash (`Names`), read once for the index.
+    /// Which given blocks name each hash (`Names`), read once for the index.
     /// Marks a grant's line as being read; false where it already is (a reading that asks for itself again).
     pub fn enter_line(&self, grant: &str) -> bool {
         let memo = self.memo.borrow().clone();
@@ -315,13 +315,21 @@ impl Index {
                 }
             }
             if let Some(refs) = b.get("refs").and_then(Value::as_object) {
-                for (k, v) in refs.iter().filter(|(k, _)| *k != "prev" && *k != "after") {
-                    let _ = k;
+                for (_, v) in refs.iter().filter(|(k, _)| *k != "prev" && *k != "after") {
                     for t in crate::js::list(Some(v)) {
                         let e = names.by_use.entry(t.to_string()).or_default();
                         if e.last() != Some(h) {
                             e.push(h.clone());
                         }
+                    }
+                }
+            }
+            // a promise names what its lines move (promises.md, What moves)
+            if crate::js::type_of(b) == "promise" {
+                for t in crate::js::whats_of(b) {
+                    let e = names.by_use.entry(t.to_string()).or_default();
+                    if e.last() != Some(h) {
+                        e.push(h.clone());
                     }
                 }
             }
@@ -342,7 +350,7 @@ impl Index {
         n
     }
 
-    /// The key grants and operator grants of every id, read once for the index.
+    /// The key grants of every id, read once for the index.
     pub fn grants_memo(&self) -> Rc<Grants> {
         let memo = self.memo.borrow().clone();
         if let Some(g) = memo.borrow().grants.clone() {
@@ -375,7 +383,7 @@ impl Index {
         let memo = self.memo.borrow().clone();
         memo.borrow_mut().stages.insert(key.to_string(), value);
     }
-    /// How many times a reading has met an asker of its own still being read (a ring, 1.9 stage 6): an answer read while this grew is
+    /// How many times a reading has met an asker of its own still being read (a ring): an answer read while this grew is
     /// not remembered, since it read a placeholder.
     pub fn taint(&self) -> u64 {
         let memo = self.memo.borrow().clone();
@@ -396,12 +404,12 @@ impl Index {
     /// A block's causal past among these blocks (`past_of`).
     pub fn past_of(&self, block: &Value) -> Past<'_> {
         let memo = self.memo.borrow().clone();
-        // A held block's past is the memo's, shared, not rebuilt: every `sees_in` is then a bit test (review F5). The memo holds exactly
-        // what the walk below would build (each cause, and each held cause's past); when it cannot answer (a cycle, a cause it let go
-        // past its bound) the walk below answers as before. A block that is not the one held under its hash is answered afresh.
+        // A given block's past is the memo's, shared, not rebuilt: every `sees_in` is then a bit test. The memo holds exactly
+        // what the walk below would build (each cause, and each given cause's past); when it cannot answer (a cycle, a cause it let go
+        // past its bound) the walk below answers as before. A block that is not the one given under its hash is answered afresh.
         if let Some(n) = self.map.get_index_of(crate::js::hash_of(block)) {
             if self.map.get_index(n).is_some_and(|(_, b)| core::ptr::eq(b, block) || b == block) {
-                if let Some(bits) = self.held_past(&memo, n) {
+                if let Some(bits) = self.given_past(&memo, n) {
                     return Past { index: self, memo, bits };
                 }
             }
@@ -412,7 +420,7 @@ impl Index {
             let Some(n) = self.number_or_name(&memo, c) else { continue };
             set(&mut bits, n);
             if n < self.map.len() {
-                match self.held_past(&memo, n) {
+                match self.given_past(&memo, n) {
                     Some(p) => or(&mut bits, &p),
                     // a cycle (only made-up data has one): the plain walk
                     None => return self.walked(block, memo),
@@ -431,9 +439,9 @@ impl Index {
         Some(i + self.map.len())
     }
 
-    // The past of the held block at place `n`, from the memo or computed once, causes first, without recursion. None when a cycle
+    // The past of the given block at place `n`, from the memo or computed once, causes first, without recursion. None when a cycle
     // is met.
-    fn held_past(&self, memo: &Rc<RefCell<Memo>>, n: usize) -> Option<Rc<Vec<u64>>> {
+    fn given_past(&self, memo: &Rc<RefCell<Memo>>, n: usize) -> Option<Rc<Vec<u64>>> {
         if let Some(Some(p)) = memo.borrow().pasts.get(n) {
             return Some(p.clone());
         }

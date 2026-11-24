@@ -26,7 +26,7 @@ pub struct Keypair {
     pub private_key: String,
 }
 
-// A key is never printed, logged or put in a panic message by accident: Debug shows the public half and hides the private one (release 38).
+// A key is never printed, logged or put in a panic message by accident: Debug shows the public half and hides the private one.
 impl core::fmt::Debug for Keypair {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Keypair").field("suite", &self.suite).field("public_key_sign", &self.public_key_sign).field("private_key", &"<hidden>").finish()
@@ -247,11 +247,6 @@ pub fn sign_bytes_in(suite: &str, bytes: &[u8], private_key: &str) -> Result<Str
     ))
 }
 
-/// Sign bytes with a key of the default suite.
-pub fn sign_bytes(bytes: &[u8], private_key: &str) -> Result<String> {
-    sign_bytes_in(crate::spec::default_suite(), bytes, private_key)
-}
-
 /// Whether a signed message (a node's answer, a receipt) is signed by one of these keys, each read in the suite it names. In the core, not
 /// in `sync`, so a fold that reads a receipt builds without the sync profile.
 pub fn message_signed_by(message: &Value, keys: &[String]) -> bool {
@@ -262,8 +257,8 @@ pub fn message_signed_by(message: &Value, keys: &[String]) -> bool {
 ///
 /// The folds ask the same question again and again (an identity fold reads every key grant of an author each time any
 /// block of hers is asked about), and a signature check is the dearest step, so a verdict is remembered for the thread
-/// (the answer is a pure function of the four arguments). Without it a fold over a few hundred blocks took seconds
-/// (found by the simulator, tools/sim). `no_std` builds do not remember and are as before.
+/// (the answer is a pure function of the four arguments). `no_std` builds do
+/// not remember.
 pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &str) -> bool {
     // the grammar first: nothing outside it is decoded or remembered (a megabyte "signature" costs a scan, never memory)
     if !in_grammar(suite, signature, public_key) {
@@ -289,7 +284,7 @@ pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &
             h.update(part);
         }
         let key: [u8; 32] = h.finalize().into();
-        let held = VERDICTS.with(|m| {
+        let blocks = VERDICTS.with(|m| {
             let mut m = m.borrow_mut();
             if let Some(v) = m.0.get(&key).copied() {
                 return Some(v);
@@ -298,7 +293,7 @@ pub fn verify_bytes_in(suite: &str, bytes: &[u8], signature: &str, public_key: &
             m.0.insert(key, v);
             Some(v)
         });
-        if let Some(v) = held {
+        if let Some(v) = blocks {
             return v;
         }
         let verdict = verify_bytes_uncached(suite, bytes, signature, public_key);
@@ -344,7 +339,7 @@ fn verify_bytes_uncached(suite: &str, bytes: &[u8], signature: &str, public_key:
         return match suite {
             "p256" => {
                 use p256::ecdsa::signature::Verifier as _;
-                // 1.9 3a-10: a p256 key's point is written uncompressed, first byte 04; any other spelling (06, 07 hybrid) is no key
+                // a p256 key's point is written uncompressed, first byte 04; any other spelling (06, 07 hybrid) is no key
                 if point.first() != Some(&0x04) {
                     return false;
                 }
@@ -433,7 +428,7 @@ pub fn passkey_signature(authenticator_data: &str, client_data_json: &str, signa
 }
 
 /// What a passkey signature (more than 64 bytes) really signed, and `r || s`: `authenticatorData || SHA-256(clientDataJSON)` (encoding.md,
-/// Passkeys, The check). None unless bits 0 (user present) and 2 (user verified, 1.9 3d-13: a touch alone signs nothing) of the flags byte
+/// Passkeys, The check). None unless bits 0 (user present) and 2 (user verified, a touch alone signs nothing) of the flags byte
 /// are set and `clientDataJSON` begins with exactly the 91 bytes
 /// `{"type":"webauthn.get","challenge":"`, the challenge of `bytes`, `","origin":"`. Nothing after them is read and no JSON is parsed.
 #[cfg(feature = "suites")]
@@ -454,14 +449,9 @@ fn passkey_message<'a>(bytes: &[u8], sig: &'a [u8]) -> Option<(Vec<u8>, &'a [u8]
     Some((message, &sig[..64]))
 }
 
-/// Whether a `std` signature is this key's over these bytes.
-pub fn verify_bytes(bytes: &[u8], signature: &str, public_key: &str) -> bool {
-    verify_bytes_in(crate::spec::default_suite(), bytes, signature, public_key)
-}
-
 /// The bytes a key signs for a block (core.md, section 2): its header as canonical JSON (privacy.md, The public header), the block named
-/// by its id in `suite`; a genesis (a block with no author) has no header and is signed over its own bytes. A block held by its header
-/// alone (no `type`) is signed over that header, its id as it is held.
+/// by its id in `suite`; a genesis (a block with no author) has no header and is signed over its own bytes. A block given by its header
+/// alone (no `type`) is signed over that header, its id as it is given.
 pub fn signed_bytes(suite: &str, block: &Value) -> String {
     let (t, s, r) = parts(block);
     if block.get("type").is_none() {
@@ -545,7 +535,7 @@ pub fn suite_of_key(public_key: &str) -> Option<String> {
     crate::spec()
         .suites
         .iter()
-        // 1.9 3a-10: a key is in a suite only when it is spelled as that suite spells a key (a p256 point uncompressed, first byte 04)
+        // a key is in a suite only when it is spelled as that suite spells a key (a p256 point uncompressed, first byte 04)
         .find(|s| !s.spki_prefix.is_empty() && lower.starts_with(&s.spki_prefix) && s.sign_key_re.as_ref().is_none_or(|r| r.test(&lower)))
         .map(|s| s.name.clone())
 }

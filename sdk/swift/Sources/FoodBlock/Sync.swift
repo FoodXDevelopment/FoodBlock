@@ -37,7 +37,7 @@ public enum Sync {
     public static func pushRefusals(_ message: JSON?, node: String, keys: [String] = [], highest: Int? = nil, issued: [String] = []) throws -> [FoodBlock.Finding] {
         FoodBlock.findings(try Door.pushRefusals(message ?? [:], fresh(node, keys, highest, issued)))
     }
-    public static func matches(_ block: JSON, _ filter: JSON?, _ held: [JSON] = []) throws -> Bool { try Door.matches(block, filter, held) }
+    public static func matches(_ block: JSON, _ filter: JSON?, _ blocks: [JSON] = []) throws -> Bool { try Door.matches(block, filter, blocks) }
     public static func headsOf(_ blocks: [JSON]) throws -> [JSON] { try Door.headsOf(blocks) }
 
     /// One block a node holds: its arrival number `n`, the block, and (for a sealed one) its signed header and the
@@ -52,15 +52,15 @@ public enum Sync {
     }
     /// The node's answer to a pull. The node states both choices: `cap` (at least 1; a pull's own `limit` is cut to it) and
     /// `servesPairs` (true: a fork's other half travels with its proof; false: only what matches). The core fills neither.
-    public static func answerPull(_ log: [Arrival], _ request: JSON = [:], node: String, privateKey: String? = nil, cap: Int, servesPairs: Bool, signer: String? = nil, held: [JSON]? = nil, suite: String? = nil, through: Int? = nil) throws -> JSON {
-        try Door.answerPull(log.map { $0.json }, request, node, privateKey, ["cap": cap, "serves_pairs": servesPairs], signer, held, suite, through)
+    public static func answerPull(_ log: [Arrival], _ request: JSON = [:], node: String, privateKey: String? = nil, cap: Int, servesPairs: Bool, signer: String? = nil, blocks: [JSON]? = nil, suite: String? = nil, through: Int? = nil) throws -> JSON {
+        try Door.answerPull(log.map { $0.json }, request, node, privateKey, ["cap": cap, "serves_pairs": servesPairs], signer, blocks, suite, through)
     }
     public static func answerSignedBy(_ answer: JSON, _ nodeKeys: [String]) throws -> Bool { try Door.answerSignedBy(answer, nodeKeys) }
     public static func pushRequest(_ messages: [JSON], for forWhom: JSON? = nil) throws -> JSON { try Door.pushRequest(messages, forWhom) }
 
     /// A block kept unjudged: it lacks pieces (`needs`) a verdict waits on.
     public struct Unjudged { public let hash: String, needs: [String] }
-    /// A taken block this reader cannot read: held as its header, with the codes it was not read for.
+    /// A taken block this reader cannot read: known only by its header, with the codes it was not read for.
     public struct Unread { public let hash: String, codes: [String] }
     /// One refusal: { hash, code, detail }, its code from protocol.json's refusals.codes.
     public struct Refusal: Equatable {
@@ -79,14 +79,14 @@ public enum Sync {
     /// What a node takes of a push: { taken, unjudged, refused, unread, equivocations, falseHeaders }.
     /// Validity reads no arrival (core.md, section 8). `taken` are found by the id the core computed, in the suite of the key that signed each (core.md, section 2).
     /// `takesPairs` is the node's choice: false keeps both blocks of a pair arriving together out of `taken` (both are listed in `equivocations` and kept); true takes them too.
-    public static func accept(_ incoming: [JSON], _ held: [JSON] = [], takesPairs: Bool, schemas: [String: JSON]? = nil) throws -> Accepted {
-        let r = try Door.accept(incoming, held, ["takes_pairs": takesPairs], schemas.map { Array($0.values) })
+    public static func accept(_ incoming: [JSON], _ blocks: [JSON] = [], takesPairs: Bool, schemas: [String: JSON]? = nil) throws -> Accepted {
+        let r = try Door.accept(incoming, blocks, ["takes_pairs": takesPairs], schemas.map { Array($0.values) })
         let byHash = Dictionary(incoming.compactMap { b in (b["hash"] as? String).map { ($0, b) } }, uniquingKeysWith: { _, last in last })
         var out = Accepted()
         for id in r["taken"] as? [String] ?? [] {
             if let b = byHash[id] { out.taken.append(b); continue }
             // a key's first block after a move to a suite of another hash has an id its bytes alone do not show
-            for b in incoming { if try Door.idOf(b, held + incoming) == id { var named = b; named["hash"] = id; out.taken.append(named); break } }
+            for b in incoming { if try Door.idOf(b, blocks + incoming) == id { var named = b; named["hash"] = id; out.taken.append(named); break } }
         }
         out.unjudged = (r["unjudged"] as? [JSON] ?? []).map { Unjudged(hash: $0["hash"] as? String ?? "", needs: $0["needs"] as? [String] ?? []) }
         out.unread = (r["unread"] as? [JSON] ?? []).map { Unread(hash: $0["hash"] as? String ?? "", codes: $0["codes"] as? [String] ?? []) }
@@ -118,7 +118,7 @@ public enum Sync {
         try Door.wellKnown(node, reads, admission, endpoints, log)
     }
     /// What a door log's signed words show (nodes.md, The arrival log): { left_out, stopped_short }.
-    public static func logShown(_ receipts: [JSON], _ request: JSON, _ answer: JSON, _ held: [JSON] = []) throws -> JSON { try Door.logShown(receipts, request, answer, held) }
+    public static func logShown(_ receipts: [JSON], _ request: JSON, _ answer: JSON, _ blocks: [JSON] = []) throws -> JSON { try Door.logShown(receipts, request, answer, blocks) }
     /// Whether her export is whole (nodes.md, A host): { whole, lacks }. `log` names the door log; `last` is the receipt she holds.
     public static func exportWhole(_ document: JSON, log: String, last: String) throws -> JSON { try Door.exportWhole(document, log, last) }
     /// A push read from its text: { refused, messages }.

@@ -32,13 +32,13 @@ peers() -> strings
 canonical(type:text, state:json, refs:json) -> text !
 canonical_json(value:json) -> text !
 cbor_encode(block:block, short:bool?) -> text !
-cbor_decode(hex:text, held:blocks?) -> block !
+cbor_decode(hex:text, blocks:blocks?) -> block !
 cbor_encode_push(blocks:blocks, short:bool?) -> text !
 cbor_decode_push(hex:text) -> blocks !
 cbor_encode_header(header:block, short:bool?) -> text !
 cbor_decode_header(hex:text) -> block !
 hash(type:text, state:json, refs:json, suite:suite?) -> text !
-id_of(block:block, held:blocks?) -> text
+id_of(block:block, blocks:blocks?) -> text
 hash_hex(text:text) -> text
 hash_in(text:text, suite:suite?) -> text
 create(type:text, state:json, refs:json, suite:suite?) -> block !
@@ -60,14 +60,14 @@ compose(type:text, state:json, refs:json, options:object) -> block !
 new_salt() -> text !
 amount(value:text, unit:text, of:text?) -> object
 terms(terms:json) -> object
-valid(block:block, held:blocks) -> refusals
-read(block:block, held:blocks, schemas:blocks?, runs:strings?) -> refusals
-schemas_from(held:blocks) -> blocks
+valid(block:block, blocks:blocks) -> refusals
+read(block:block, blocks:blocks, schemas:blocks?) -> refusals
+schemas_from(blocks:blocks) -> blocks
 strict_text(text:text) -> refusals
-# 1.9 3a-3: what a writer refuses to sign, asked of an unsigned draft { type, state, refs }, read against held; [] when it may be signed
-write_refusals(draft:object, held:blocks) -> refusals
+# what a writer refuses to sign, asked of an unsigned draft { type, state, refs }, read against the blocks given; [] when it may be signed
+write_refusals(draft:object, blocks:blocks) -> refusals
 strict_push(text:text) -> json !
-needs(block:block, held:blocks?) -> strings
+needs(block:block, blocks:blocks?) -> strings
 short_code(hash:text) -> text
 short_reply(answer:block) -> text?
 short_reply_open(text:text, signer:text, blocks:blocks) -> block?
@@ -79,7 +79,7 @@ due(promise:block, arrivals:arrivals?) -> json
 repeat_occurrences(promise:block, from:time, to:time) -> strings
 next_link(last:block?, brought_in:text?) -> object !
 check_chain(blocks:blocks, id:text) -> object
-read_whole(block:text, start:text, held:blocks) -> object
+read_whole(block:text, start:text, blocks:blocks) -> object
 causes_of(block:block) -> strings
 past_of(block:block, blocks:blocks) -> json
 heads_among(blocks:blocks) -> blocks
@@ -91,7 +91,7 @@ causal_order(blocks:blocks) -> blocks
 sees(a:block, b:block, blocks:blocks) -> bool
 write(type:text, state:json, refs:json, options:object) -> block !
 wrap(block:block) -> block
-unwrap(message:block, held:blocks?) -> block !
+unwrap(message:block, blocks:blocks?) -> block !
 header(block:block) -> object
 header_signed_by(message:block, public_key:text) -> bool
 genesis(keys:object, options:object) -> block !
@@ -100,7 +100,7 @@ key_timeline(id:text, blocks:blocks) -> json
 signed_by_author(block:block, blocks:blocks) -> bool
 stands(block:block, blocks:blocks) -> object
 spec() -> object
-# 1.9 stage 7 (B5, Job F): a rule set named by its hash; a door that keeps blocks between calls
+# a rule set named by its hash; a door that keeps blocks between calls
 rule_set(files:object) -> object !
 mount(blocks:blocks, into:text?) -> text !
 unmount(mount:text) -> bool !
@@ -123,10 +123,9 @@ fork_pairs(blocks:blocks) -> json
 next_link_for(id:text, public_key:text, blocks:blocks) -> object !
 is_live(grant:block, blocks:blocks, now:time?) -> bool
 ancestors(grant:block, blocks:blocks) -> json
-terms_total(terms:json?, quantity:json?) -> json
+terms_total(terms:json?, chosen:json?) -> json
 recipients_of(for_whom:json, hash:text) -> strings
 children_of(id:text, blocks:blocks) -> json
-why_not_live_undo(block:block, blocks:blocks) -> strings
 reading_is_persons_claim(block:block, person:text, blocks:blocks) -> bool
 residency_refusals(block:block, holds_in:strings) -> refusals
 scope_within(child:json, parent:json) -> strings
@@ -142,7 +141,7 @@ seal(value:json, keys:strings, suite:suite?, fixed:object?, pad:bool?) -> block 
 open(envelope:block, x25519_private:text) -> json !
 seal_copy(block:block, keys:strings, reveals:json, fixed:object?, suite:suite?) -> block !
 open_copy(message:block, x25519_private:text) -> block !
-# 1.9 stage 7 (A1): the size a padding sealer pads to; a copy wrapped to a mailbox key
+# the size a padding sealer pads to; a copy wrapped to a mailbox key
 padded_size(bytes:int) -> int
 wrap_copy(copy:block, mailbox:text, suite:suite?, fixed:object?) -> block !
 encryption_keypair(suite:suite?) -> object !
@@ -154,31 +153,31 @@ promise_stage(first:block, blocks:blocks, options:object) -> object
 promise_views(firsts:strings, blocks:blocks, options:object) -> object
 promise_view(first:block, blocks:blocks, options:object) -> object
 circle_state(circle:text, blocks:blocks, within:block?) -> object?
-machine_lock(machine:block, held:blocks, now:time?) -> object
+machine_lock(machine:block, blocks:blocks, now:time?) -> object
 circle_versions(circle:text, blocks:blocks) -> object?
-# 1.9 stage 6: whether a row of the circle a block is `as` holds for it; the fewest hands each row needs
+# whether a row of the circle a block is `as` holds for it; the fewest hands each row needs
 row_holds(block:block, blocks:blocks) -> object
 ways_in(circle:text, blocks:blocks) -> object
-# 1.9 stage 4: keeps to, the meter, the worst case, the lowest offer
+# keeps to, the meter, the worst case, the lowest offer
 keeps_to(c:block, a:block, blocks:blocks) -> object
 meter(grant:block, blocks:blocks, block:block?) -> object
 worst_case(grant:block, blocks:blocks) -> object
 lowest_offer(grant:block, blocks:blocks) -> object
 to_come_back(person:text, blocks:blocks) -> object
-# 1.9 stage 7 (Job C), readings: the read-back, a renderer, a second reader's redo
-readback(block:json, held:blocks, to:text?, renderer:text?, digits:json?) -> object !
+# readings: the read-back, a renderer, a second reader's redo
+readback(block:json, blocks:blocks, to:text?, renderer:text?, digits:json?) -> object !
 render(answer:object, renderer:text) -> text !
-readback_redo(rb:block, held:blocks) -> object !
+readback_redo(rb:block, blocks:blocks) -> object !
 speaks_for(block:block, blocks:blocks) -> text?
 backed(block:block, person:text, blocks:blocks) -> object
 backed_all(person:text, blocks:blocks) -> object
 gives(block:block, person:text, blocks:blocks) -> object
-binds(draft:object, held:blocks) -> bool
+binds(draft:object, blocks:blocks) -> bool
 listing_check(lookup:block, listing:block, blocks:blocks) -> object
 check_reads(check:block, blocks:blocks) -> object
 clearing_applied(clearing:block, blocks:blocks) -> object
 ruling_releases(stake:block, blocks:blocks, now:time?) -> object
-ruling_audience(ruling:block, blocks:blocks, now:time?) -> object
+ruling_honoured(ruling:block, blocks:blocks) -> object
 count_of(needed:json, members:int) -> int?
 fee_back(offer:block, deal:block, blocks:blocks) -> object
 members_then(block:block, recipient:text, blocks:blocks) -> json
@@ -209,15 +208,15 @@ sign_push(push:object, options:object) -> block !
 message_refusals(message:block, fields:text, fresh:object) -> refusals
 pull_refusals(message:block, fresh:object) -> refusals
 push_refusals(message:block, fresh:object) -> refusals
-answer_pull(log:json, request:object, node:text, private_key:text?, choices:object, asker:text?, held:blocks?, suite:suite?, through:int?) -> object !
+answer_pull(log:json, request:object, node:text, private_key:text?, choices:object, asker:text?, blocks:blocks?, suite:suite?, through:int?) -> object !
 push_answer(parts:object, node:text, private_key:text, suite:suite?) -> block !
 well_known(node:text, reads:strings, admission:text?, endpoints:object, log:text?) -> object
-log_shown(receipts:blocks, request:block, answer:block, held:blocks) -> object
+log_shown(receipts:blocks, request:block, answer:block, blocks:blocks) -> object
 export_whole(document:object, log:text, last:text) -> object
 waited_too_long(since:text, now:text, ttl:int) -> bool
-matches(block:block, filter:json?, held:blocks) -> bool
+matches(block:block, filter:json?, blocks:blocks) -> bool
 heads_of(blocks:blocks) -> blocks
-accept(incoming:blocks, held:blocks, choices:object, schemas:blocks?, push:object?) -> object
+accept(incoming:blocks, blocks:blocks, choices:object, schemas:blocks?, push:object?) -> object
 answer_signed_by(answer:block, node_keys:strings) -> bool
 well_known_errors(doc:json?) -> strings
 announcement(doc:json) -> object

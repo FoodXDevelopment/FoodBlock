@@ -8,7 +8,7 @@ import { openStore, isSealed } from './store.mjs'
 import { stated, admissionRule, copyBudget, COPIES_REFUSED, authorOf, DAY } from '../rules.js'
 
 const NOW = () => new Date().toISOString()
-// A file written whole is written beside itself and renamed into place, private to its owner: a crash leaves the old file or the new one, never half of one (F11).
+// A file written whole is written beside itself and renamed into place, private to its owner: a crash leaves the old file or the new one, never half of one.
 function writeWhole(file, text) {
   const temp = `${file}.${process.pid}.tmp`
   fs.writeFileSync(temp, text, { mode: 0o600 })
@@ -35,7 +35,7 @@ function signPromise(config) {
     lets_leave: 'a complete export on request, and import of any record as plain FoodBlocks',
     wake: '/wake', export: '/export', import: '/import'
   }
-  return fb.write('observe', state, {}, { author: config.genesis.hash, key: config.key, held: [config.genesis], at: NOW(), audience: 'public' })
+  return fb.write('observe', state, {}, { author: config.genesis.hash, key: config.key, blocks: [config.genesis], at: NOW(), audience: 'public' })
 }
 
 /** First run: make the host's own key and its promise. The promise is the owner's word, stated; nothing is filled in later. */
@@ -89,7 +89,7 @@ export function openHost(dir, { onWake = null } = {}) {
   const waiting = new Set(fs.existsSync(wakeFile) ? fs.readFileSync(wakeFile, 'utf8').split('\n').flatMap((l) => { try { return [JSON.parse(l).for] } catch { return [] } }) : [])
   function wake(id, onWake) {
     if (typeof id !== 'string' || !voiceOf(id).length) throw Object.assign(new Error('not_kept: this host keeps no blocks for that id'), { code: 404 })
-    // the owner's callback is called once per wait, not once per request: a stranger who knows her id cannot ring it again and again (F6)
+    // the owner's callback is called once per wait, not once per request: a stranger who knows her id cannot call it again and again
     if (!waiting.has(id)) { waiting.add(id); fs.appendFileSync(wakeFile, JSON.stringify({ for: id }) + '\n', { mode: 0o600 }); if (onWake) onWake(id) }
     return { woken: id }
   }
@@ -101,7 +101,7 @@ export function openHost(dir, { onWake = null } = {}) {
   }
   /** Her current address (nodes.md, A host): the heads of her chain of `address` blocks, from the pull the SDK answers. */
   function addressOf(id) {
-    return pull({ filter: { author: id, kind: 'address' }, heads: true }).blocks.map((one) => fb.unwrap(one.message, store.held()))
+    return pull({ filter: { author: id, kind: 'address' }, heads: true }).blocks.map((one) => fb.unwrap(one.message, store.given()))
   }
 
   /**
@@ -138,7 +138,7 @@ export function openHost(dir, { onWake = null } = {}) {
           if (envelope) envelopes.set(header.hash, message)
           sealeds.push({ header, header_signature })      // the host judges the header alone; the body is never read
         } else {
-          const block = fb.unwrap(message, store.held())
+          const block = fb.unwrap(message, store.given())
           if (store.has(block.hash)) continue
           if (promise.allow && !promise.allow.includes(authorOf(block))) { refused.push({ hash: block.hash, code: 'not_admitted', detail: 'this host keeps blocks only for the authors it names' }); continue }
           if (strangerRefused(authorOf(block), block.hash)) continue
@@ -147,7 +147,7 @@ export function openHost(dir, { onWake = null } = {}) {
       } catch (error) { refused.push({ hash: null, code: 'shape', detail: error.message }) }
     }
     // one judgement for public blocks and sealed headers together (nodes.md, A node judges each block on its pieces): what is taken never depends on order
-    const answerOf = fb.sync.accept([...publics, ...sealeds], store.held(), { takesPairs: promise.takesPairs })
+    const answerOf = fb.sync.accept([...publics, ...sealeds], store.given(), { takesPairs: promise.takesPairs })
     // the core lists what it took ascending by hash; this host's own arrival log keeps the order the sender sent them in
     const sentAt = new Map([...publics, ...sealeds].map((one, i) => [one.hash ?? one.header.hash, i]))
     const takenBlocks = answerOf.taken.slice().sort((a, b) => sentAt.get(a.hash ?? a.header.hash) - sentAt.get(b.hash ?? b.header.hash))
@@ -156,7 +156,7 @@ export function openHost(dir, { onWake = null } = {}) {
     if (all && (answer.unjudged.length || answer.refused.length)) return { ...answer, wrote: false }
     for (const block of takenBlocks) { const entry = store.append(block); if (entry) answer.taken.push(entry.hash) }
     // a copy is kept only from the block's own author (a signed push), for the people the author names
-    // Each copy is an arrival of its author's: it counts against a stranger's numbers like a block does (F5), and a recipient the host does not know is kept nothing for.
+    // Each copy is an arrival of its author's: it counts against a stranger's numbers like a block does, and a recipient the host does not know is kept nothing for.
     if (copiesBy) for (const [hash, message] of envelopes) {
       if (message.header.author !== copiesBy || !store.has(hash)) continue
       for (const recipient of fb.sync.recipientsOf(forWhom, hash)) {
@@ -169,15 +169,15 @@ export function openHost(dir, { onWake = null } = {}) {
   }
 
   /**
-   * The one reading of what an asker may be given of the blocks held: the SDK's answerPull, over the arrival log of `entries`. A public block
+   * The one reading of what an asker may be given of the blocks it keeps: the SDK's answerPull, over the arrival log of `entries`. A public block
    * goes whole; a non-public one goes as its signed header, or, to a signed asker, as the copy sealed to them. Every door that hands blocks
    * out (pull, export, sync) asks this; none reads `entry.message` for anyone. `signer` is a checked signer or null; `sign` has the host sign
    * the answer (a pull's answer is signed, a document made for a reader is not).
    */
-  function give(entries, request, { signer = null, cap = promise.cap, servesPairs = promise.servesPairs, sign = false, held = [], through = null } = {}) {
+  function give(entries, request, { signer = null, cap = promise.cap, servesPairs = promise.servesPairs, sign = false, blocks = [], through = null } = {}) {
     const mine = new Map(signer ? store.copiesFor(signer).map((c) => [c.hash, c.message]) : [])
     const log = entries.map(({ n, block, sealed, message }) => ({ n, block, ...(sealed ? { header: message.header, header_signature: message.header_signature } : { header_signature: message.signature }), ...(mine.has(block.hash) ? { copies: { [signer]: mine.get(block.hash) } } : {}) }))
-    return fb.sync.answerPull(log, request, { node, privateKey: sign ? key.private_key : null, signer, cap, servesPairs, held, suite: key.suite, through })
+    return fb.sync.answerPull(log, request, { node, privateKey: sign ? key.private_key : null, signer, cap, servesPairs, blocks, suite: key.suite, through })
   }
 
   /**
@@ -194,11 +194,11 @@ export function openHost(dir, { onWake = null } = {}) {
   function pull(request = {}) {
     const who = request.signature !== undefined ? checkSigned(request, 'pullRefusals') : null
     // With no filter and no heads the answer is the next `cap` arrivals after `since` and the other halves of any forked pair among them: the core is
-    // given that window, never the whole store (F7). A filter reads every entry, as it must.
+    // given that window, never the whole store. A filter reads every entry, as it must.
     if (request.filter || request.heads || !Number.isInteger(request.since ?? 0)) return give(store.entries(), request, { signer: who, sign: true })
     const window = store.window(request.since ?? 0, promise.cap)
     const authors = new Set(window.rows.map(({ block }) => authorOf(block)))
-    return give(window.rows, request, { signer: who, sign: true, held: window.rivals ? store.blocks().filter((block) => authors.has(authorOf(block))) : [], through: window.rows.length ? window.through : null })
+    return give(window.rows, request, { signer: who, sign: true, blocks: window.rivals ? store.blocks().filter((block) => authors.has(authorOf(block))) : [], through: window.rows.length ? window.through : null })
   }
 
   /**
@@ -239,7 +239,7 @@ export function openHost(dir, { onWake = null } = {}) {
     const curFile = path.join(dir, 'sync.json')
     const cursors = fs.existsSync(curFile) ? JSON.parse(fs.readFileSync(curFile, 'utf8')) : {}
     const mine = cursors[peer] || { pulled: 0, pushed: 0 }
-    // a peer is the owner's choice, but a slow or endless one must not hold this host: a time limit on each request and a size limit on each answer (F12)
+    // a peer is the owner's choice, but a slow or endless one must not hold this host: a time limit on each request and a size limit on each answer
     const post = async (route, body) => {
       const r = await fetch(peer.replace(/\/$/, '') + route, { method: 'POST', headers: { 'content-type': 'application/json' }, body: fb.canonicalJSON(body), signal: AbortSignal.timeout(30000) })
       if (!r.ok) throw new Error(`${peer}${route}: ${r.status}`)

@@ -77,7 +77,7 @@ impl Args {
         match self.v(i) {
             Value::Array(a) => a.clone(),
             Value::Null => Vec::new(),
-            // 1.9 stage 7 (Job F): a mount in the place of a collection is that mount's set of blocks; a text that names no mount of this
+            // a mount in the place of a collection is that mount's set of blocks; a text that names no mount of this
             // door is an argument error (unknown_mount)
             #[cfg(feature = "std")]
             Value::String(m) => crate::rules::mounted(m).unwrap_or_else(|| {
@@ -138,7 +138,7 @@ fn chain_json(c: &crate::Chain) -> Value {
 }
 
 // Fixed randomness reproduces a vector and nothing else: a key, a content key or a nonce chosen by a caller is a reused nonce waiting to happen.
-// The caller says so (`vectorsOnly: true`); without it the call is an argument error (release 41).
+// The caller says so (`vectorsOnly: true`); without it the call is an argument error.
 fn fixed_of(v: &Value) -> core::result::Result<Option<crate::envelope::Fixed>, Fail> {
     if !v.is_object() {
         return Ok(None);
@@ -152,6 +152,7 @@ fn fixed_of(v: &Value) -> core::result::Result<Option<crate::envelope::Fixed>, F
         content_key: f("contentKey"),
         nonce: f("nonce"),
         key_nonces: strings_of(v.get("keyNonces").unwrap_or(&Value::Null)),
+        encaps: strings_of(v.get("encaps").unwrap_or(&Value::Null)),
     }))
 }
 
@@ -212,10 +213,10 @@ fn dispatch(op: &str, a: &Args) -> Out {
         // The compact form (encoding.md): a signed public block as CBOR hex, and back. `short` uses the key table.
         // The id of a decoded block is the hash of its canonical JSON, never of the bytes.
         "cbor_encode" => json!(crate::block::hex(&crate::cbor::encode_message(a.v(0), flag_arg(a.v(1)))?)),
-        // cbor_decode(bytes, held?): with held, the id is computed in the suite of the key that signed it (core.md, section 2)
+        // cbor_decode(bytes, given?): with given, the id is computed in the suite of the key that signed it (core.md, section 2)
         "cbor_decode" => {
             let block = crate::cbor::decode_message(&cbor_bytes(a.s(0)?)?)?;
-            if a.v(1).is_array() { crate::identity::with_id_in(&block, &crate::js::held_index(a.list(1).iter())) } else { block }
+            if a.v(1).is_array() { crate::identity::with_id_in(&block, &crate::js::blocks_index(a.list(1).iter())) } else { block }
         }
         "cbor_encode_push" => json!(crate::block::hex(&crate::cbor::encode_push_with(crate::spec(), &a.list(0), flag_arg(a.v(1)))?)),
         "cbor_decode_push" => Value::Array(crate::cbor::decode_push_with(crate::spec(), &cbor_bytes(a.s(0)?)?)?),
@@ -226,10 +227,10 @@ fn dispatch(op: &str, a: &Args) -> Out {
             let (t, s, r, n) = a.block(true)?;
             json!(crate::hash_suite(a.suite(n)?, t, s, r))
         }
-        // id_of(block, held?): a block's id, in the suite of the key its pieces name, read among held (core.md, section 2); with none, a
+        // id_of(block, given?): a block's id, in the suite of the key its pieces name, read among given (core.md, section 2); with none, a
         // reader's guess: a genesis's own suite, else the hash name of refs.key, else of refs.author
         "id_of" => json!(match a.v(1) {
-            Value::Array(held) => crate::identity::id_in(a.v(0), &crate::js::held_index(held.iter())),
+            Value::Array(blocks) => crate::identity::id_in(a.v(0), &crate::js::blocks_index(blocks.iter())),
             _ => crate::block::rehash(a.v(0)),
         }),
         "hash_hex" => json!(crate::hash_hex(a.s(0)?)),
@@ -249,9 +250,9 @@ fn dispatch(op: &str, a: &Args) -> Out {
             None => crate::sign::generate_keypair_in(a.suite(1)?)?.to_json(),
         },
         "public_key_of" => json!(crate::sign::public_key_in(a.suite(1)?, a.s(0)?)?),
-        // 1.9 3a-3: a writer signs only what its own `read` reads. A block whose body the reader's value checks refuse is not signed.
-        // 1.9 3a (decided, CORE-SET "What building changed"): `sign` holds no store, so its `read` is the body's own: every value finding, not `names_missing` (the blocks a
-        // block names may be held elsewhere); a header (no `type`), and a body with no author (signed over its own bytes, as a genesis
+        // a writer signs only what its own `read` reads. A block whose body the reader's value checks refuse is not signed.
+        // `sign` holds no store, so its `read` is the body's own: every value finding, not `names_missing` (the blocks a
+        // block names may be given elsewhere); a header (no `type`), and a body with no author (signed over its own bytes, as a genesis
         // is: no header to place it), are signed as given.
         "sign" => {
             let block = a.v(0);
@@ -267,9 +268,9 @@ fn dispatch(op: &str, a: &Args) -> Out {
         }
         "verify" => json!(crate::verify_in(&crate::sign::suite_named_by(a.s(2)?), a.v(0), a.s(1)?, a.s(2)?)),
         "sign_message" => crate::sign::sign_message_in(a.suite(2)?, a.v(0), a.s(1)?)?,
-        // 1.9 3a-10: `verify_message` checks the key set before the signature: a header or a block (a genesis is signed over its own bytes)
+        // `verify_message` checks the key set before the signature: a header or a block (a genesis is signed over its own bytes)
         // is no message part, so it is false before any signature is read.
-        // 1.9 3a (decided, CORE-SET "What building changed"): "the key set" is read as the part's own keys: exactly a header's, or a block's { type, state, refs }.
+        // "the key set" is read as the part's own keys: exactly a header's, or a block's { type, state, refs }.
         "verify_message" => json!(!crate::sign::is_block_bytes(a.v(0)) && crate::sign::verify_message_in(&crate::sign::suite_named_by(a.s(1)?), a.v(0), a.s(1)?)),
         // A passkey (modules/encoding.md, Passkeys): the challenge to ask it to sign for a block (or a message part), and its
         // answer written as a FoodBlock signature, which `verify` and `valid` then open like any other.
@@ -299,41 +300,33 @@ fn dispatch(op: &str, a: &Args) -> Out {
         // an amount (encoding.md, Shapes): money is an amount like any other; `of` the id of its kind, when given
         "amount" => crate::amount(a.s(0)?, a.s(1)?, a.v(2).as_str()),
         "terms" => crate::terms(a.v(0)),
-        // valid(block, held) (core.md, section 8): who said these bytes. The block is a full block or a held header { header,
+        // valid(block, blocks) (core.md, section 8): who said these bytes. The block is a full block or a given header { header,
         // header_signature }; the codes of checks 1 to 6, empty when valid.
-        "valid" => Value::Array(crate::valid::valid(a.v(0), &held_of(&a.list(1))).iter().map(|r| r.to_json()).collect()),
-        // write_refusals(draft, held) (1.9 3a-3, stage 5 compare): what a writer refuses to sign, asked of a draft before anyone signs it
-        // ({ type, state, refs }, unsigned): every code `write` would refuse it with, read against `held` (a deal block against what it
+        "valid" => Value::Array(crate::valid::valid(a.v(0), &blocks_of(&a.list(1))).iter().map(|r| r.to_json()).collect()),
+        // write_refusals(draft, blocks) : what a writer refuses to sign, asked of a draft before anyone signs it
+        // ({ type, state, refs }, unsigned): every code `write` would refuse it with, read against `blocks` (a deal block against what it
         // answers, a child grant against its parent), in protocol.json's order; empty when it may be signed. Her own write runs the same.
         "write_refusals" => {
-            let held = held_of(&a.list(1));
+            let blocks = blocks_of(&a.list(1));
             let d = a.v(0);
             let t = d.get("type").and_then(Value::as_str).ok_or_else(|| Fail::Argument("argument 0 is a draft: { type, state, refs }".into()))?;
-            let opts = crate::check::CheckOptions { schemas: None, held: Some(&held) };
+            let opts = crate::check::CheckOptions { schemas: None, blocks: Some(&blocks) };
             Value::Array(crate::check::write_refusals(t, d.get("state").unwrap_or(&Value::Null), d.get("refs").unwrap_or(&Value::Null), opts).iter().map(|r| r.to_json()).collect())
         }
-        // read(block, held, schemas?) (core.md, section 8): whether this reader can read a valid block; every code found, empty when read.
+        // read(block, blocks, schemas?) (core.md, section 8): whether this reader can read a valid block; every code found, empty when read.
         // Asked of a block that is not valid, or of a header, it is an argument error: read is asked only of a valid body.
         "read" => {
-            let held = held_of(&a.list(1));
+            let blocks = blocks_of(&a.list(1));
             let schemas = index_of(a.list(2).iter());
             let block = a.v(0);
             if block.get("type").is_none() {
                 return Err(Fail::Argument("read is asked of a block's body: a block held by its header alone is not read".into()));
             }
-            // 1.9 stage 7 (B5): `runs`, the ids of the rule sets this reader runs (core.md, section 11)
-            // `runs` is null, left out, or a list of ids (stage 7 compare): anything else is an argument error, never read as none
-            let runs = a.strings(3);
-            if !(a.v(3).is_null() || a.v(3).as_array().is_some_and(|l| l.iter().all(|x| x.as_str().is_some_and(|h| crate::spec().is("id", h))))) {
-                return Err(Fail::Argument("argument 3 (runs) is a list of rule set ids".into()));
+            let judge = crate::valid::Judge::new(&blocks, if a.v(2).is_array() { Some(&schemas) } else { None });
+            if !judge.valid(block).is_empty() {
+                return Err(Fail::Argument("read is asked of a valid block: this one is not valid".into()));
             }
-            crate::rules::running(&runs, || {
-                let judge = crate::valid::Judge::new(&held, if a.v(2).is_array() { Some(&schemas) } else { None });
-                if !judge.valid(block).is_empty() {
-                    return Err(Fail::Argument("read is asked of a valid block: this one is not valid".into()));
-                }
-                Ok(Value::Array(judge.read(block).iter().map(|r| r.to_json()).collect()))
-            })?
+            Value::Array(judge.read(block).iter().map(|r| r.to_json()).collect())
         }
         // The schema store a reader makes of the blocks it holds (core.md, section 8): every `thing` of kind `schema`, once per id, ascending.
         "schemas_from" => {
@@ -343,16 +336,16 @@ fn dispatch(op: &str, a: &Args) -> Out {
         // A block read from the wire (canonical.md, On the wire): its bytes first (size_limit), then exactly the canonical bytes of a strict
         // value that is { type, state, refs } (not_canonical), then checks 2 to 4.
         "strict_text" => strict_text(a.s(0)?),
-        // 1.9 3a-8, 3a-9: a push read from the wire, as its bytes. One reader for every message: the push's size and count first
+        // a push read from the wire, as its bytes. One reader for every message: the push's size and count first
         // (`limits.push_bytes`, `limits.push_messages`), no carrier deeper than `limits.read_depth`, exactly `{ messages, for }`, and
         // nothing strict writing does not allow (no float, no null, no whole number past 2^53 - 1) anywhere in it. A push that fails is
         // refused whole: `{ refused: { hash, code, detail }, messages: [] }`, `hash` the SHA-256 of its bytes. Else `{ messages }`: for each
         // message in order what its block's bytes alone say (as `strict_text`; a sealed message has none).
-        // 1.9 3a-9: the door's argument is the push's text, read by the core as its bytes; `refused` is left out of a push that is read
-        // (the one form has no null). 1.9 3a-8: a push over its bytes or count, or deeper than read_depth, is `size_limit`; any other
+        // the door's argument is the push's text, read by the core as its bytes; `refused` is left out of a push that is read
+        // (the one form has no null). a push over its bytes or count, or deeper than read_depth, is `size_limit`; any other
         // refusal of the whole push is `not_canonical`. limits.push_bytes 8 MiB and limits.push_messages 1024.
         "strict_push" => strict_push(a.s(0)?),
-        // What a block names for its meaning (protocol.json `needs`): all of it, or with the blocks held, what is not held. Never its author
+        // What a block names for its meaning (protocol.json `needs`): all of it, or with the blocks given, what is not given. Never its author
         // or its prev.
         "needs" => {
             if a.v(1).is_array() {
@@ -362,7 +355,7 @@ fn dispatch(op: &str, a: &Args) -> Out {
             }
         }
         "short_code" => json!(crate::strangers::short_code(a.s(0)?)),
-        // the short reply (profiles/short-form.md, way 1): the text of an answer, and the answer rebuilt from it among the blocks held
+        // the short reply (profiles/short-form.md, way 1): the text of an answer, and the answer rebuilt from it among the blocks given
         "short_reply" => json!(crate::strangers::short_reply(a.v(0))),
         "short_reply_open" => crate::strangers::short_reply_open(a.s(0)?, a.s(1)?, &a.list(2)).unwrap_or(Value::Null),
         "code_matches" => json!(crate::strangers::code_matches(a.s(0)?, a.s(1)?)),
@@ -396,8 +389,8 @@ fn dispatch(op: &str, a: &Args) -> Out {
             crate::next_link(if last.is_null() { None } else { Some(last) }, a.opt(1))?.to_json()
         }
         "check_chain" => chain_json(&crate::check_chain(&a.list(0), a.s(1)?)),
-        // read_whole(block, start, held) (folds.md, A line): { whole, lacks }. A start not on the block's line is an argument error.
-        "read_whole" => crate::line::read_whole(a.s(0)?, a.s(1)?, &held_of(&a.list(2))).map_err(Fail::Argument)?.to_json(),
+        // read_whole(block, start, blocks) (folds.md, A chain): { whole, lacks }. A start not on the block's line is an argument error.
+        "read_whole" => crate::line::read_whole(a.s(0)?, a.s(1)?, &blocks_of(&a.list(2))).map_err(Fail::Argument)?.to_json(),
         "causes_of" => json!(crate::order::causes_of(a.v(0))),
         "past_of" => json!(crate::past_of(a.v(0), &a.list(1))),
         "heads_among" => Value::Array(crate::order::heads_among(&a.list(0))),
@@ -423,10 +416,10 @@ fn dispatch(op: &str, a: &Args) -> Out {
         // The one way to write, and the wire.
         "write" => write(a)?,
         "wrap" => crate::wrap(a.v(0)),
-        // unwrap(message, held?): with held, the id is computed in the suite of the key that signed it (core.md, section 2)
+        // unwrap(message, given?): with given, the id is computed in the suite of the key that signed it (core.md, section 2)
         "unwrap" => {
             let block = crate::unwrap(a.v(0))?;
-            if a.v(1).is_array() { crate::identity::with_id_in(&block, &crate::js::held_index(a.list(1).iter())) } else { block }
+            if a.v(1).is_array() { crate::identity::with_id_in(&block, &crate::js::blocks_index(a.list(1).iter())) } else { block }
         }
         "header" => crate::header(a.v(0)),
         "header_signed_by" => json!(crate::header_signed_by(a.v(0), a.s(1)?)),
@@ -435,11 +428,11 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "live_keys" => json!(crate::identity::live_keys(a.s(0)?, &a.list(1))),
         "key_timeline" => Value::Array(crate::identity::key_timeline(a.s(0)?, &a.list(1)).iter().map(|k| k.to_json()).collect()),
         "signed_by_author" => json!(crate::identity::signed_by_author(a.v(0), &a.list(1))),
-        // stands(block, held) (blocks.md, Finality): { stands, waiting: [{ block, on }] }, read with no clock and no arrival
+        // stands(block, blocks) (blocks.md, Finality): { stands, waiting: [{ block, on }] }, read with no clock and no arrival
         "stands" => {
-            let index = crate::js::held_index(a.list(1).iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(a.v(0))).chain([a.v(0)]));
+            let index = crate::js::blocks_index(a.list(1).iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(a.v(0))).chain([a.v(0)]));
             let block = index.get(crate::js::hash_of(a.v(0))).cloned().unwrap_or_else(|| a.v(0).clone());
-            crate::identity::stands(&block, &index).to_json(crate::js::hash_of(a.v(0)))
+            crate::finality::stands(&block, &index).to_json(crate::js::hash_of(a.v(0)))
         }
         "spec" => json!({ "protocol": crate::spec().protocol, "conventions": crate::spec().conventions, "rule_set": crate::rules::BUILT_FROM }),
         // rule_set(files) (core.md, section 11): { id, manifest }, library
@@ -493,20 +486,19 @@ fn dispatch(op: &str, a: &Args) -> Out {
         "is_genesis" => json!(crate::identity::is_genesis(a.v(0))),
         "genesis_opens" => json!(crate::identity::genesis_opens(if a.v(0).is_null() { None } else { Some(a.v(0)) })),
         "identity_state" => crate::identity::identity_state(a.s(0)?, &a.list(1)),
-        "counts" => json!(crate::identity::counts_in(a.v(0), &crate::js::held_index(a.list(1).iter()))),
-        "forked" => json!(crate::identity::forked(a.v(0), &a.list(1))),
-        // the pairs among blocks held as bodies or as headers (nodes.md, Equivocation)
-        "fork_pairs" => json!(crate::identity::fork_pairs_in(&crate::js::closed(held_of(&a.list(0))))),
+        "counts" => json!(crate::forks::counts_in(a.v(0), &crate::js::blocks_index(a.list(1).iter()))),
+        "forked" => json!(crate::forks::forked(a.v(0), &a.list(1))),
+        // the pairs among blocks given as bodies or as headers (nodes.md, Equivocation)
+        "fork_pairs" => json!(crate::forks::fork_pairs_in(&crate::js::closed(blocks_of(&a.list(0))))),
         "next_link_for" => crate::identity::next_link_for(a.s(0)?, a.s(1)?, &a.list(2))?.to_json(),
         "is_live" => json!(crate::grant::is_live(a.v(0), &a.list(1), a.time_opt(2)?)),
         "ancestors" => json!(crate::grant::ancestors(a.v(0), &a.list(1))),
         "terms_total" => {
-            let quantity = Some(a.v(1)).filter(|v| !v.is_null());
-            if pure_junk::terms(a.v(0), quantity) { Value::Null } else { crate::fold::terms_total(a.v(0), quantity) }
+            let chosen = Some(a.v(1)).filter(|v| !v.is_null());
+            if pure_junk::terms(a.v(0), chosen) { Value::Null } else { crate::fold::terms_total(a.v(0), chosen) }
         }
         "recipients_of" => json!(crate::sync::recipients_of(a.v(0), a.s(1)?)),
         "children_of" => json!(crate::tasks::children_of(a.s(0)?, &a.list(1))),
-        "why_not_live_undo" => json!(crate::grant::why_not_live_undo(a.v(0), &crate::js::held_index(a.list(1).iter()))),
         "reading_is_persons_claim" => json!(crate::strangers::reading_is_persons_claim(a.v(0), a.s(1)?, &a.list(2))),
         "residency_refusals" => Value::Array(
             crate::profiles::residency_refusals(a.v(0), &a.strings(1)).iter().map(|r| r.to_json()).collect(),
@@ -551,6 +543,10 @@ fn envelope(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
     Ok(Some(match op {
         // seal(plaintext, keys, suite?, fixed?, pad?): with `pad` true an object plaintext is padded to the next size (privacy.md, Sealed messages)
         "seal" => {
+            // one alg per envelope: keys of two kinds (xwing: and the suite's own) are two envelopes
+            if refs.iter().any(|k| k.starts_with("xwing:")) && !refs.iter().all(|k| k.starts_with("xwing:")) {
+                return Err(Fail::Argument("an envelope has one alg: seal to xwing: keys and to the suite's own in two envelopes".into()));
+            }
             let plain = if a.v(4) == &Value::Bool(true) { crate::write::pad_plaintext(a.v(0)) } else { a.v(0).clone() };
             crate::envelope::seal_with(&plain, &refs, a.suite(2)?, fixed_of(a.v(3))?.as_ref())?
         }
@@ -563,19 +559,22 @@ fn envelope(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
         "open_copy" => crate::open_copy(a.v(0), a.s(1)?)?,
         // wrap_copy(copy, mailbox_key, suite?, fixed?): a sealed copy wrapped to a mailbox (privacy.md, Keeping apart)
         "wrap_copy" => crate::sync::wrap_copy(a.v(0), a.s(1)?, a.suite(2)?, fixed_of(a.v(3))?.as_ref())?,
+        // an X-Wing key is `xwing` where a suite is named: encryption_keypair("xwing") and encryption_key_of(seed, "xwing") give `xwing:` and the 2,432 hex characters
+        "encryption_keypair" if a.v(0) == &json!("xwing") => crate::envelope::generate_xwing_keypair()?,
+        "encryption_key_of" if a.v(1) == &json!("xwing") => crate::envelope::xwing::keypair_of(a.s(0)?)?["public_key_encrypt"].clone(),
         "encryption_keypair" => crate::envelope::generate_encryption_keypair_in(a.suite(0)?)?,
         "encryption_key_of" => json!(crate::envelope::encryption_key_in(a.suite(1)?, a.s(0)?)?),
         _ => return Ok(None),
     }))
 }
 
-/// The block a condition is read for: a block, or the id of one held; None for null (every block held).
+/// The block a condition is read for: a block, or the id of one given; None for null (every block given).
 #[cfg(feature = "folds")]
-fn relying(v: &Value, held: &[Value]) -> core::result::Result<Option<Value>, Fail> {
+fn relying(v: &Value, blocks: &[Value]) -> core::result::Result<Option<Value>, Fail> {
     match v {
         Value::Null => Ok(None),
         Value::Object(_) => Ok(Some(v.clone())),
-        Value::String(h) => held.iter().find(|b| crate::js::hash_of(b) == h.as_str()).cloned().map(Some).ok_or_else(|| Fail::Argument("the block it is read for is not held".into())),
+        Value::String(h) => blocks.iter().find(|b| crate::js::hash_of(b) == h.as_str()).cloned().map(Some).ok_or_else(|| Fail::Argument("the block it is read for is not held".into())),
         _ => Err(Fail::Argument("the block it is read for is a block, an id held, or null".into())),
     }
 }
@@ -584,19 +583,19 @@ fn relying(v: &Value, held: &[Value]) -> core::result::Result<Option<Value>, Fai
 fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
     use crate::fold;
     Ok(Some(match op {
-        // 1.9 R-C1: read on the blocks in the causal past of the block it is read for (its id or the block; null: every block held), never on a
+        // read on the blocks in the causal past of the block it is read for (its id or the block; null: every block given), never on a
         // reader's clock. A sensor reading's window ends at that block's own `at`, its signer's word read against her.
         "reading_condition_holds" => {
-            let held = a.list(1);
-            let at = relying(a.v(2), &held)?.ok_or_else(|| Fail::Argument("argument 2 is the block it is read for".into()))?;
-            let past = crate::js::held_index(held.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(&at)).chain([&at])).past_of(&at).hashes();
-            let seen: Vec<Value> = held.iter().filter(|b| past.iter().any(|h| h == crate::js::hash_of(b))).cloned().collect();
+            let blocks = a.list(1);
+            let at = relying(a.v(2), &blocks)?.ok_or_else(|| Fail::Argument("argument 2 is the block it is read for".into()))?;
+            let past = crate::js::blocks_index(blocks.iter().filter(|b| crate::js::hash_of(b) != crate::js::hash_of(&at)).chain([&at])).past_of(&at).hashes();
+            let seen: Vec<Value> = blocks.iter().filter(|b| past.iter().any(|h| h == crate::js::hash_of(b))).cloned().collect();
             json!(crate::js::ss(&at, "at").is_some_and(|now| crate::tasks::reading_condition_holds(a.v(0), &seen, now)))
         }
         "condition_holds" => {
-            let held = a.list(1);
-            let at = relying(a.v(2), &held)?;
-            json!(crate::tasks::condition_holds(a.v(0), &held, at.as_ref()))
+            let blocks = a.list(1);
+            let at = relying(a.v(2), &blocks)?;
+            json!(crate::tasks::condition_holds(a.v(0), &blocks, at.as_ref()))
         }
         "promise_stage" => {
             fold::promise_stage(a.v(0), &a.list(1), &fold::StageOptions::default())
@@ -611,14 +610,14 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             fold::circle_state(a.s(0)?, &a.list(1), if within.is_null() { None } else { Some(within) })
         }
         "circle_versions" => fold::circle_versions(a.s(0)?, &a.list(1)),
-        // 1.9 stage 6: whether a row of the circle a block is `as` holds for it, or every owner signed it (circles.md, C10, C15)
+        // whether a row of the circle a block is `as` holds for it, or every owner signed it (circles.md)
         "row_holds" => {
             if !a.v(0).is_object() {
                 return Err(Fail::Argument("argument 0 is a block".into()));
             }
             fold::row_holds(a.v(0), &a.list(1))
         }
-        // 1.9 stage 6, a reading: the fewest hands each row needs, and the every-owner way
+        // a reading: the fewest hands each row needs, and the every-owner way
         "ways_in" => fold::ways_in(a.s(0)?, &a.list(1)),
         // the one party a fold counts a block for (authority.md, Who a block speaks for): its id, or null for no one; no clock
         "speaks_for" => {
@@ -636,7 +635,7 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
         }
         // the same, for a whole set at once: { hash: { backed, why } }, read together
         "backed_all" => fold::backed_all(a.s(0)?, &a.list(1)),
-        // 1.9 stage 4 (authority.md): Keeps to, the grant's line, the worst case, the lowest offer at her deadline
+        // (authority.md) Keeps to, the grant's line, the worst case, the lowest offer at her deadline
         "keeps_to" => fold::keeps_to_door(a.v(0), a.v(1), &a.list(2)),
         "meter" => fold::meter(a.v(0), &a.list(1), Some(a.v(2)).filter(|v| v.is_object())),
         "worst_case" => fold::worst_case(a.v(0), &a.list(1)),
@@ -671,12 +670,12 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             fold::ruling_releases(a.v(0), &a.list(1))
         }
-        // whether a judge's ruling is public: her offer's `terms.rulings`, or an unhonoured award (promises.md, Rulings): { audience, why }
-        "ruling_audience" => {
+        // a reading: whether each award of a judge's ruling was honoured (promises.md, Rulings): { lines: [{ to, due, honoured }], why }
+        "ruling_honoured" => {
             if !a.v(0).is_object() {
                 return Err(Fail::Argument("argument 0 is a block".into()));
             }
-            fold::ruling_audience(a.v(0), &a.list(1), a.time_opt(2)?)
+            fold::ruling_honoured(a.v(0), &a.list(1))
         }
         // what a judge's fee back comes to when the sides settle (promises.md, Rulings): { settled, releases, to_come, why }
         "fee_back" => {
@@ -692,7 +691,7 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             }
             fold::gives(a.v(0), a.s(1)?, &a.list(2))
         }
-        // 1.9 stage 6 (O1): whether a draft, signed, would bind anyone: an accept, or a draft that gives something of the one whose word it is
+        // whether a draft, signed, would bind anyone: an accept, or a draft that gives something of the one whose word it is
         // (`refs.as` where signed as a circle, else `refs.author`)
         "binds" => {
             let d = a.v(0);
@@ -700,9 +699,9 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                 return Err(Fail::Argument("argument 0 is a draft { type, state, refs }".into()));
             }
             let accepted = crate::js::ss(d, "status") == Some("accepted");
-            let held = a.list(1);
+            let blocks = a.list(1);
             // a circle's founding block that states its parts binds its founder: it puts every part in her hand, and is her start for them
-            // (06-circles C1; the owner's decision, 2026-11-20)
+            // (circles.md)
             if crate::js::type_of(d) == "actor"
                 && crate::js::ss(d, "kind") == Some("circle")
                 && crate::js::rs(d, "updates").is_none()
@@ -713,12 +712,12 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                 return Ok(Some(json!(true)));
             }
             match crate::js::rs(d, "as").filter(|c| !c.is_empty()) {
-                // the owner's decision (2026-11-19): a draft signed `as` a circle answers as if her hand counts: true where her row would
-                // hold. The draft is read as signed now, after every block held (its `after` the heads held, where it names no line).
+                // a draft signed `as` a circle answers as if her hand counts: true where her row would
+                // hold. The draft is read as signed now, after every block given (its `after` the heads given, where it names no line).
                 Some(c) => {
                     let mut x = d.clone();
                     if crate::js::rs(&x, "prev").is_none() && x["refs"].get("after").is_none() {
-                        let heads: Vec<Value> = crate::order::heads_among(&held).iter().filter_map(|b| b.get("hash").cloned()).collect();
+                        let heads: Vec<Value> = crate::order::heads_among(&blocks).iter().filter_map(|b| b.get("hash").cloned()).collect();
                         let mut heads: Vec<String> = heads.iter().filter_map(|h| h.as_str().map(String::from)).collect();
                         heads.sort();
                         if !heads.is_empty() {
@@ -728,25 +727,25 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                     let h = crate::block::rehash(&x);
                     x["hash"] = json!(h);
                     let c = c.to_string();
-                    // (stage 7 compare, with the oracle) where her row would hold for it, or every owner signs it, and, for any but an
+                    // where her row would hold for it, or every owner signs it, and, for any but an
                     // accept, something of the circle's moves; an accept `as` a circle binds only where the row would hold
-                    let index = crate::js::held_index(held.iter());
-                    json!(fold::as_drafted(&h, || fold::circle::holds_in(&x, &c, &index) && (accepted || fold::gives(&x, &c, &held)["gives"].as_array().is_some_and(|g| !g.is_empty()))))
+                    let index = crate::js::blocks_index(blocks.iter());
+                    json!(fold::as_drafted(&h, || fold::circle::holds_in(&x, &c, &index) && (accepted || fold::gives(&x, &c, &blocks)["gives"].as_array().is_some_and(|g| !g.is_empty()))))
                 }
                 None if accepted => json!(true),
                 None => {
                     let who = crate::js::rs(d, "author");
-                    json!(who.is_some_and(|w| fold::gives(d, w, &held)["gives"].as_array().is_some_and(|g| !g.is_empty())))
+                    json!(who.is_some_and(|w| fold::gives(d, w, &blocks)["gives"].as_array().is_some_and(|g| !g.is_empty())))
                 }
             }
         }
         "members_then" => json!(fold::members_then(a.v(0), a.s(1)?, &a.list(2))),
-        // 1.9 stage 7 (Job C), readings (door.classes.reading): the read-back's answer, its text and the state an honest host signs; a renderer's
+        // readings (door.classes.reading): the read-back's answer, its text and the state an honest host signs; a renderer's
         // words; a second reader's redo (spec/readings/readback.md, spec/renderers/)
         "readback" => {
-            let held = a.list(1);
+            let blocks = a.list(1);
             let block = match a.v(0) {
-                Value::String(h) => held.iter().find(|b| b.get("hash").and_then(Value::as_str) == Some(h.as_str())).cloned(),
+                Value::String(h) => blocks.iter().find(|b| b.get("hash").and_then(Value::as_str) == Some(h.as_str())).cloned(),
                 v if v.is_object() && v.get("hash").is_some_and(Value::is_string) => Some(v.clone()),
                 _ => None,
             }
@@ -767,7 +766,7 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                 v if v.is_u64() => Some(v.to_string()),
                 _ => return Err(Fail::Argument("digits is text of digits, or a whole number".into())),
             };
-            crate::readback::readback(&block, &held, to, renderer, digits.as_deref()).ok_or_else(|| Fail::Argument("renderer is en or en-sms".into()))?
+            crate::readback::readback(&block, &blocks, to, renderer, digits.as_deref()).ok_or_else(|| Fail::Argument("renderer is en or en-sms".into()))?
         }
         "readback_redo" => {
             let rb = a.v(0);
@@ -783,10 +782,10 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             json!(crate::readback::render(a.v(0), a.s(1)?).ok_or_else(|| Fail::Argument("renderer is en or en-sms".into()))?)
         }
         "where_now" => json!(fold::where_now(a.v(0), &a.list(1))),
-        // 1.9 3c-6: `ownership` takes no clock (a reader's clock is a view's: `ownership_view`)
-        // 1.9-GUESS [3c-6c]: a third argument is still taken and read as nothing, so callers that pass null keep working.
+        // `ownership` takes no clock (a reader's clock is a view's: `ownership_view`)
+        // a third argument is still taken and read as nothing, so callers that pass null keep working (the text does not say; read so).
         "ownership" => fold::ownership_at(a.v(0), &a.list(1), ""),
-        // 1.9 stage 5 (section 11): `ownership_view` takes no clock either (no condition reads one, 3c-6)
+        // `ownership_view` takes no clock either (no condition reads one)
         "ownership_view" => fold::ownership_at(a.v(0), &a.list(1), ""),
         "made_from" => fold::made_from(a.v(0), &a.list(1)),
         // is a machine locked now (authority.md, A machine lock): { locked, locks, lifted }
@@ -801,7 +800,7 @@ fn folds(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
         "invasion_shown" => fold::invasion_shown(a.v(0), &a.list(1)),
         "account_of" => fold::account_of(a.s(0)?, &a.list(1)),
         "release_shown" => fold::release_shown(a.v(0), &a.list(1)),
-        // 1.9 3c-6: `pot` takes no clock
+        // `pot` takes no clock
         "pot" => fold::pot(a.v(0), &a.list(1), ""),
         "use_shown" => fold::use_shown(a.v(0), &a.list(1), Some(a.v(2)).filter(|k| !k.is_null())),
         "receiver_of" => json!(fold::receiver_of(a.v(0), &a.list(1))),
@@ -873,16 +872,16 @@ fn sync(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
                         .unwrap_or_default(),
                 })
                 .collect();
-            let held = if a.v(6).is_array() { Some(crate::js::held_index(a.list(6).iter())) } else { None };
+            let blocks = if a.v(6).is_array() { Some(crate::js::blocks_index(a.list(6).iter())) } else { None };
             let choices = a.v(4);
             let cap = choices.get("cap").and_then(Value::as_u64).filter(|c| *c >= 1).ok_or_else(|| Fail::Argument("choices.cap is a whole number of at least 1: the node states the most blocks one answer carries".into()))?;
             let serves_pairs = choice_bool(choices, "serves_pairs", "whether the node sends the other half of a forked pair")?;
-            sync::answer_pull(&log, a.v(1), a.s(2)?, a.opt(3), sync::PullChoices { cap, serves_pairs }, a.opt(5), held.as_ref(), a.suite(7)?, a.v(8).as_u64())?
+            sync::answer_pull(&log, a.v(1), a.s(2)?, a.opt(3), sync::PullChoices { cap, serves_pairs }, a.opt(5), blocks.as_ref(), a.suite(7)?, a.v(8).as_u64())?
         }
         "push_answer" => sync::push_answer_of(a.v(0), a.s(1)?, a.s(2)?, a.suite(3)?)?,
         "well_known" => sync::well_known(a.s(0)?, &a.strings(1), a.opt(2), a.v(3), a.opt(4)),
-        // log_shown(receipts, request, answer, held) (nodes.md, The arrival log): { left_out, stopped_short }
-        "log_shown" => sync::log_shown(&a.list(0), a.v(1), a.v(2), &held_of(&a.list(3))),
+        // log_shown(receipts, request, answer, blocks) (nodes.md, The arrival log): { left_out, stopped_short }
+        "log_shown" => sync::log_shown(&a.list(0), a.v(1), a.v(2), &blocks_of(&a.list(3))),
         // export_whole(document, log, last): whether her export is whole (nodes.md, A host): { whole, lacks }
         "export_whole" => sync::export_whole(a.v(0), a.s(1)?, a.s(2)?)?,
         "waited_too_long" => {
@@ -890,15 +889,15 @@ fn sync(op: &str, a: &Args) -> core::result::Result<Option<Value>, Fail> {
             json!(sync::waited_too_long(a.s(0)?, a.s(1)?, ttl))
         }
         "matches" => {
-            let held = index_of(a.list(2).iter());
-            json!(sync::matches(a.v(0), a.v(1), &held))
+            let blocks = index_of(a.list(2).iter());
+            json!(sync::matches(a.v(0), a.v(1), &blocks))
         }
         "heads_of" => json!(sync::heads_of(&a.list(0))),
         "accept" => {
             let schemas = index_of(a.list(3).iter());
             let takes_pairs = choice_bool(a.v(2), "takes_pairs", "whether the node takes the blocks of a forked pair")?;
             let schemas = if a.v(3).is_array() { Some(&schemas) } else { None };
-            // 1.9 stage 7 (A2): the node's admission rule for sealed copies (`choices.copies`) and the push (`{ signer?, for? }`)
+            // the node's admission rule for sealed copies (`choices.copies`) and the push (`{ signer?, for? }`)
             match (a.v(2).get("copies"), a.v(4)) {
                 (None, Value::Null) => sync::accept(&a.list(0), &a.list(1), takes_pairs, schemas).to_json(),
                 (rule, push) => sync::accept_copies(&a.list(0), &a.list(1), takes_pairs, schemas, push, rule.unwrap_or(&Value::Null)),
@@ -963,12 +962,12 @@ fn write(a: &Args) -> Out {
         .ok_or_else(|| Fail::Argument("options.key is { public_key_sign, private_key }".into()))?;
     let pair = keypair_of(key);
     let list = |k: &str| o.get(k).and_then(Value::as_array).cloned().unwrap_or_default();
-    let held = list("held");
+    let blocks = list("blocks");
     let schemas = index_of(list("schemas").iter());
     let options = crate::WriteOptions {
         compose: compose_options(o)?,
         key: Some(&pair),
-        held: &held,
+        blocks: &blocks,
         schemas: o.get("schemas").map(|_| &schemas),
     };
     Ok(crate::write(a.s(0)?, a.v(1), a.v(2), &options)?)
@@ -1104,15 +1103,15 @@ fn strict_text(text: &str) -> Value {
     Value::Array(crate::valid::bytes_findings(&block).iter().map(|r| json!({ "hash": seen, "code": r.code, "detail": r.detail })).collect())
 }
 
-/// The blocks held as a reader holds them: a held header message `{ header, header_signature }` as its header entry, anything else as
+/// The blocks given as a reader holds them: a given header message `{ header, header_signature }` as its header entry, anything else as
 /// itself, by hash.
-fn held_of(list: &[Value]) -> crate::js::Index {
+fn blocks_of(list: &[Value]) -> crate::js::Index {
     index_of(list.iter().map(|h| if h.get("header").is_some() && h.get("type").is_none() { crate::valid::header_entry(h).unwrap_or(Value::Null) } else { h.clone() }).collect::<Vec<_>>().iter())
 }
 
-// The pure functions read only what the write check takes (folds.md, What each fold returns): `terms_total` judges the terms it reads
-// (price, quantity, lines) as an offer's and the quantity chosen as an accept's; `limit_within_parent` judges each fence as a grant's
-// scope. What the check refuses is junk, and reads as absent: no total, and not within.
+// The pure functions read only what the write check takes (folds.md, A pure function reads only what the write check takes): `terms_total`
+// judges the terms it reads (lines, step) as an offer's and the lines chosen as an accept's. What the check refuses is junk, and reads as
+// absent: no total.
 mod pure_junk {
     use crate::prelude::*;
     const AT: &str = "2026-01-01T00:00:00.000Z";
@@ -1121,22 +1120,15 @@ mod pure_junk {
     }
     fn refused(type_name: &str, state: Value, refs: Value) -> bool {
         let none = crate::js::Index::default();
-        !crate::check::write_refusals(type_name, &state, &refs, crate::CheckOptions { held: Some(&none), schemas: None }).is_empty()
+        !crate::check::write_refusals(type_name, &state, &refs, crate::CheckOptions { blocks: Some(&none), schemas: None }).is_empty()
     }
-    pub(super) fn terms(terms: &Value, quantity: Option<&Value>) -> bool {
+    pub(super) fn terms(terms: &Value, chosen: Option<&Value>) -> bool {
         let Some(t) = terms.as_object() else { return true };
-        let read: Map<String, Value> = t.iter().filter(|(k, _)| matches!(k.as_str(), "price" | "quantity" | "lines")).map(|(k, v)| (k.clone(), v.clone())).collect();
-        let whats: Vec<String> = match t.get("lines") {
-            Some(Value::Array(l)) if l.iter().all(|x| x.get("what").is_some_and(Value::is_string)) => {
-                crate::js::sorted_set(l.iter().filter_map(|x| x.get("what").and_then(Value::as_str)))
-            }
-            _ => vec![id('3')],
-        };
-        let what = if whats.len() == 1 { json!(whats[0]) } else { json!(whats) };
+        let read: Map<String, Value> = t.iter().filter(|(k, _)| matches!(k.as_str(), "lines" | "step")).map(|(k, v)| (k.clone(), v.clone())).collect();
         let offer = json!({ "seq": 1, "at": AT, "audience": "public", "terms": read });
-        let mut junk = refused("promise", offer, json!({ "author": id('1'), "prev": id('1'), "from": id('1'), "what": what }));
-        if let Some(q) = quantity {
-            let accept = json!({ "seq": 1, "at": AT, "audience": "public", "status": "accepted", "terms": { "quantity": q } });
+        let mut junk = refused("promise", offer, json!({ "author": id('1'), "prev": id('1'), "from": id('1') }));
+        if let Some(c) = chosen {
+            let accept = json!({ "seq": 1, "at": AT, "audience": "public", "status": "accepted", "terms": { "lines": c } });
             junk = junk || refused("promise", accept, json!({ "author": id('1'), "prev": id('1'), "answers": id('4'), "for": id('4') }));
         }
         junk

@@ -31,7 +31,7 @@ for (const n of V.negatives) {
 }
 
 // An event makes its blocks: state and refs, apart from the chain (author, prev, seq, audience).
-const bare = (b, hashOf) => {
+const bare = (b) => {
   const { seq, audience, ...state } = b.state
   const { author, prev, after, ...refs } = b.refs
   return { type: b.type, state, refs }

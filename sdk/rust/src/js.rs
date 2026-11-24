@@ -1,6 +1,6 @@
 //! Reading blocks. A fold reads only blocks that pass the write check (folds.md), so every field is read as the shape the check
 //! proved: an id or a name as text, a whole number as a number, a decimal exactly (decimal.rs). A value of any other shape is
-//! absent. Beside them: the held index, the needs, and JavaScript's string order (the order the protocol sorts text in).
+//! absent. Beside them: the given index, the needs, and JavaScript's string order (the order the protocol sorts text in).
 use crate::prelude::*;
 use core::cmp::Ordering;
 
@@ -33,15 +33,15 @@ pub fn index_of<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     let mut index = Index::default();
     for block in blocks {
         // A block with no author has no key whose signature vouches for its id, so its id must be the hash of its bytes: one that claims
-        // another's cannot take another's place in the index (release 1).
+        // another's cannot take another's place in the index.
         if block.get("type").is_some() && rs(block, "author").is_none() && !hash_of(block).is_empty() && hash_of(block) != crate::block::rehash(block) {
             continue;
         }
-        // a held header message `{ header, header_signature }` is held as its header entry (1.9 3b-7: a block held only as its header
-        // hides what its key's line held at its place, in every fold)
+        // a given header message `{ header, header_signature }` is given as its header entry (a block given only as its header
+        // hides what its key's line given at its place, in every fold)
         if block.get("header").is_some() && block.get("type").is_none() {
             if let Some(e) = crate::valid::header_entry(block) {
-                // a body held under the same id is the block itself: a header never takes its place
+                // a body given under the same id is the block itself: a header never takes its place
                 let id = str_of(e.get("hash")).to_string();
                 if !index.get(&id).is_some_and(|b| b.get("type").is_some()) {
                     index.insert(id, e);
@@ -87,7 +87,7 @@ pub fn needs_of(block: &Value) -> Vec<String> {
     out
 }
 
-/// The blocks a block names for its meaning that are not held (`read`'s `names_missing`), ascending.
+/// The blocks a block names for its meaning that are not given (`read`'s `names_missing`), ascending.
 pub fn needs_missing(block: &Value, index: &Index) -> Vec<String> {
     let mut out = needs_of(block);
     out.retain(|h| !index.contains_key(h));
@@ -104,7 +104,7 @@ pub fn closed(index: Index) -> Index {
 }
 
 /// An index of blocks by hash, as a fold reads it (`closed`).
-pub fn held_index<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
+pub fn blocks_index<'a>(blocks: impl IntoIterator<Item = &'a Value>) -> Index {
     closed(index_of(blocks))
 }
 
@@ -220,7 +220,7 @@ pub fn str_of(value: Option<&Value>) -> &str {
 pub fn cmp16(a: &str, b: &str) -> Ordering {
     a.encode_utf16().cmp(b.encode_utf16())
 }
-/// Sort and dedupe text as a set is written (1.9 3a-7): ascending UTF-8 bytes, no repeat.
+/// Sort and dedupe text as a set is written: ascending UTF-8 bytes, no repeat.
 pub fn sorted_set<S: AsRef<str>>(items: impl IntoIterator<Item = S>) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for item in items {
@@ -251,3 +251,23 @@ pub fn keys_within(value: &Value, allowed: &[String]) -> bool {
         .map(|m| m.keys().all(|k| allowed.iter().any(|a| a == k)))
         .unwrap_or(false)
 }
+
+/// A deal's lines (promises.md, Terms, A deal is its lines): `terms.lines`, each an object; none where the terms state no list.
+pub fn lines_of(terms: &Value) -> Vec<&Value> {
+    terms.get("lines").and_then(Value::as_array).map(|l| l.iter().filter(|x| x.is_object()).collect()).unwrap_or_default()
+}
+/// What a block moves or names to move (promises.md, What moves): a promise's lines' `what`, any other block's `refs.what`.
+pub fn whats_of(block: &Value) -> Vec<&str> {
+    if type_of(block) == "promise" {
+        lines_of(get(block, "state.terms").unwrap_or(&Value::Null)).into_iter().filter_map(|l| l.get("what").and_then(Value::as_str)).collect()
+    } else {
+        list(rf(block, "what"))
+    }
+}
+/// A line's quantity chosen (folds.md): the `quantity` an answer's `terms.lines` names for the line's id (`chosen`), else the line's
+/// own quantity where that is an amount (a range is what may be chosen, never a choice).
+pub fn quantity_of<'a>(line: &'a Value, chosen: Option<&'a Value>) -> Option<&'a Value> {
+    let named = line.get("id").and_then(|id| chosen?.as_array()?.iter().find(|c| c.get("id") == Some(id))?.get("quantity").filter(|q| q.get("value").is_some()));
+    named.or_else(|| line.get("quantity").filter(|q| q.get("value").is_some()))
+}
+

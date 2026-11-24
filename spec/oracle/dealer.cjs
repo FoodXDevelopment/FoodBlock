@@ -1,13 +1,13 @@
 'use strict';
-// The dealer (changes-1.9/07-last.md D4; changes-1.8/07-last.md, "A dealer"): takes ONE message, a deal's block with its pieces, and answers it.
-// It uses only the oracle's public ops (fb.door and the exports below); it speaks no FoodBlock beyond the eight ops of D1.
+// The dealer takes ONE message, a deal's block with its pieces, and answers it.
+// It uses only the oracle's public ops (fb.door and the exports below); it speaks no FoodBlock beyond the eight ops below.
 //
-// dealer(text, held, opts) -> { answer, ... }
+// dealer(text, blocks, opts) -> { answer, ... }
 //   text  the message as bytes: the canonical JSON of { "messages": [ ... ] } (the `.foodblock` attachment, transport.md), optionally with
 //         "ids": [ ... ] beside it (the id the sender names for each message, in order; canonical.md "an id sent with it"). Each message is
 //         { block, signature } or a sealed copy { header, header_signature, envelope }. Pieces come first, the deal's block LAST: the last
 //         message is the one asked about.
-//   held  the blocks it keeps (its own line and what it kept of the deal): full blocks.
+//   given  the blocks it keeps (its own line and what it kept of the deal): full blocks.
 //   opts  me           its own id (its genesis): which side of the deal it is
 //         sign         (type, state, refs) -> the full block its own key signs; called only for a draft its own `read` reads
 //         enc_private  its encryption private key (hex), to open a sealed copy
@@ -18,17 +18,17 @@
 const crypto = require('crypto');
 const fb = require('./fb.cjs');
 
-// D1: it conforms for these eight ops, and does not speak FoodBlock (it passes no other op's cases).
+// it conforms for these eight ops, and does not speak FoodBlock (it passes no other op's cases).
 const conformsFor = ['hash', 'id_of', 'header', 'strict_text', 'verify', 'valid', 'read', 'promise_stage'];
 // item 5: the terms it reads. `step` is read too: story 3 (Mama's mandazi) is accepted with total 7 only by reading it.
-const READ_TERMS = ['price', 'quantity', 'expires', 'pay_by', 'deliver_by', 'step'];
+const READ_TERMS = ['lines', 'expires', 'pay_by', 'deliver_by', 'step'];
 
 const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const sha = s => crypto.createHash('sha256').update(s, 'utf8').digest('hex');
 const door = (...a) => fb.door(...a);
 const refused = (code, bytes) => ({ answer: 'refused', code, hash: sha(bytes) });
 
-function dealer(text, held = [], opts = {}) {
+function dealer(text, blocks = [], opts = {}) {
   const { me, sign, enc_private: enc, received = [] } = opts;
   // item 1, bytes: a message whose bytes are not the bytes its own writer gives for the same value is refused
   let env;
@@ -37,7 +37,7 @@ function dealer(text, held = [], opts = {}) {
   if (Object.keys(env).some(k => k !== 'messages' && k !== 'ids') || !Array.isArray(env.messages) || !env.messages.length) return refused('not_canonical', text);
   const ids = env.ids;
   if (ids !== undefined && !(Array.isArray(ids) && ids.length === env.messages.length)) return refused('not_canonical', text);
-  const pool = [...held];
+  const pool = [...blocks];
   const mine = [];
   for (let i = 0; i < env.messages.length; i++) {
     const m = env.messages[i];
@@ -46,8 +46,9 @@ function dealer(text, held = [], opts = {}) {
       if (isObj(m) && 'envelope' in m) { // a sealed copy: opened with its own key only (nothing fills anyone's silence)
         if (!enc) return { answer: 'waits', codes: ['unmet'], why: 'a sealed copy and no key of its own to open it' };
         const o = door('open_copy', m, enc);
-        bodyText = fb.jcs(o.block);
-        full = { hash: o.hash, ...o.block, signature: o.signature };
+        // the door answers the opened block as a message: { hash, type, state, refs, signature }
+        bodyText = fb.jcs({ type: o.type, state: o.state, refs: o.refs });
+        full = { hash: o.hash, type: o.type, state: o.state, refs: o.refs, signature: o.signature };
       } else {
         if (!isObj(m) || !isObj(m.block) || Object.keys(m).sort().join() !== 'block,signature') return refused('shape', text);
         bodyText = fb.jcs(m.block);
@@ -114,8 +115,8 @@ function dealer(text, held = [], opts = {}) {
   const side = me !== undefined && (first.refs.from === me || first.refs.to === me);
   // item 6, answering: a first promise from the other side, naming it: its accept answers the offer and names it in `for`; it adds no term
   if (S.hash === first.hash && me !== undefined && S.refs.author !== me && side) {
-    const q = isObj(S.state.terms) ? S.state.terms.quantity : undefined;
-    if (isObj(q) && ('min' in q || 'max' in q)) return { answer: 'nothing', why: 'a range is the taker\'s to choose; its accept adds no term', stage: stageOf().stage };
+    const lines = isObj(S.state.terms) && Array.isArray(S.state.terms.lines) ? S.state.terms.lines : [];
+    if (lines.some(l => isObj(l) && isObj(l.quantity) && ('min' in l.quantity || 'max' in l.quantity))) return { answer: 'nothing', why: 'a range is the taker\'s to choose; its accept adds no term', stage: stageOf().stage };
     const draft = line('promise', { status: 'accepted', ...audience }, { answers: S.hash, for: S.hash });
     const r = signs(draft);
     if (r && r.answer) return r;
@@ -132,4 +133,4 @@ function dealer(text, held = [], opts = {}) {
   return say(stageOf());
 }
 
-module.exports = { dealer, conformsFor, READ_TERMS };
+module.exports = { dealer, conformsFor };

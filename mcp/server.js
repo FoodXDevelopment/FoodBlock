@@ -20,9 +20,9 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import fb from "@foodxdev/foodblock";
 import http from "node:http";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync, renameSync, chmodSync } from "node:fs";
-import { createDoor, approvalHandler, memoryNode, newAgent, newPerson } from "./door.js";
+import { createDoor, approvalHandler, memoryNode } from "./door.js";
 import { remoteNode, remoteIndex } from "./remote.js";
 import { doorProvider, authorizedApp } from "./auth.js";
 
@@ -54,7 +54,7 @@ export function createServer({ door, name = "assistant", assistant: given, brand
   const guard = (run, scope) => async (input, extra) => {
     const scopes = extra?.authInfo?.scopes;
     if (scopes && !scopes.includes(scope)) return failure(new Error(`this connection lacks the ${scope} scope`));
-    // one call at a time per door: two calls racing would each read the node before the other's block was sent (door/t8)
+    // one call at a time per door: two calls racing would each read the node before the other's block was sent
     const turn = (door.turn || Promise.resolve()).then(async () => { try { await door.sync(); const value = await run(input); await door.flush(); return text(value); } catch (error) { return failure(error); } });
     door.turn = turn.catch(() => {});
     return turn;
@@ -119,12 +119,12 @@ function build() {
 // (the demo's blocks are public by design)
 function seed({ node }) {
   // the mill's key exists for this function alone: it signs the demo blocks and is dropped with the function (no door keeps a person's key)
-  const millKeys = fb.generateKeypair(), millGenesis = fb.identity.genesis(millKeys, { kind: "person", at: new Date().toISOString(), audience: "public" }), mill = { keys: millKeys, genesis: millGenesis, chain: [millGenesis], id: millGenesis.hash }, say = (type, state, refs) => { const s = fb.write(type, state, refs, { author: mill.id, key: mill.keys, held: mill.chain, at: new Date().toISOString(), audience: "public" }); mill.chain.push(s); node.push(s); return s; };
+  const millKeys = fb.generateKeypair(), millGenesis = fb.identity.genesis(millKeys, { kind: "person", at: new Date().toISOString(), audience: "public" }), mill = { keys: millKeys, genesis: millGenesis, chain: [millGenesis], id: millGenesis.hash }, say = (type, state, refs) => { const s = fb.write(type, state, refs, { author: mill.id, key: mill.keys, blocks: mill.chain, at: new Date().toISOString(), audience: "public" }); mill.chain.push(s); node.push(s); return s; };
   node.push(mill.genesis);
   const place = say("thing", { kind: "place", name: "Hartley Mill (demo, not a real place)", text: "A made-up demo block, not a real mill or offer." }, {});
   const flour = say("thing", { kind: "flour", name: "Strong white flour (demo)", text: "A made-up demo block, not a real product." }, { place: place.hash });
-  say("promise", { what: "Demo offer: made up, not a real one.", terms: { price: { amount: fb.amount("1.50", "GBP"), per: fb.amount("1", "kg") }, quantity: fb.amount("100", "kg"),
-    expires: new Date(Date.now() + 30 * 864e5).toISOString() } }, { from: mill.id, what: flour.hash, place: place.hash });
+  say("promise", { what: "Demo offer: made up, not a real one.", terms: { lines: [{ id: "flour", what: flour.hash, quantity: fb.amount("100", "kg"), price: { amount: fb.amount("1.50", "GBP"), per: fb.amount("1", "kg") } }],
+    expires: new Date(Date.now() + 30 * 864e5).toISOString() } }, { from: mill.id, place: place.hash });
 }
 
 // ---- Transports ----
@@ -203,7 +203,7 @@ async function serveHttp(door, port, { oauth = false, publicUrl = process.env.FO
     return server;
   }
   // With no OAuth, only this machine's own pages may call: a request whose Host or Origin names another site is refused, so a web page
-  // cannot reach the door by DNS rebinding (door/t12, agents/t13).
+  // cannot reach the door by DNS rebinding.
   const local = () => new Set([`127.0.0.1:${server.address().port}`, `localhost:${server.address().port}`, `[::1]:${server.address().port}`, ...(publicUrl ? [new URL(publicUrl).host] : [])]);
   const server = http.createServer(async (req, res) => {
     try {
@@ -227,12 +227,12 @@ if (isDirectRun) {
   const flag = process.argv.indexOf("--http");
   if (flag > -1) {
     const server = await serveHttp(door, Number(process.argv[flag + 1]) || Number(process.env.PORT) || 7420, { oauth: process.env.FOODBLOCK_AUTH === "oauth" });
-    // the code is never printed: an assistant's client often shows this process's output to the assistant itself (agents/t6)
+    // the code is never printed: an assistant's client often shows this process's output to the assistant itself
     console.error(`FoodBlock MCP on ${door.base}/mcp\nDrafts are signed on your own device through their approval links; this door holds no key of yours.`);
   } else {
     // stdio carries the protocol, so the approval page gets its own local port.
     const handle = approvalHandler(door);
-    // the approval page answers only its own pages: another Host or Origin is refused, so a web page cannot reach it by DNS rebinding (F13)
+    // the approval page answers only its own pages: another Host or Origin is refused, so a web page cannot reach it by DNS rebinding
     const approval = http.createServer(async (req, res) => {
       const port = approval.address().port, hosts = new Set([`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`]);
       const origin = req.headers.origin ? (() => { try { return new URL(req.headers.origin).host; } catch { return "?"; } })() : null;
@@ -245,4 +245,4 @@ if (isDirectRun) {
     await createServer({ door }).connect(new StdioServerTransport());
   }
 }
-export { seed, createDoor, memoryNode, remoteNode, remoteIndex, newPerson, approvalHandler, serveHttp, build };
+export { seed, createDoor, remoteNode, remoteIndex, serveHttp };

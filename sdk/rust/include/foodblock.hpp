@@ -108,16 +108,16 @@ inline std::string sign(const std::string& block, const std::string& private_key
 inline bool verify(const std::string& block, const std::string& signature, const std::string& public_key) {
   return detail::door("verify", "[" + block + "," + detail::text(signature) + "," + detail::text(public_key) + "]") == "true";
 }
-// The write check: a JSON array of reasons, "[]" when well-formed. held, schemas: JSON arrays of blocks, or "".
-inline std::string check(const std::string& block, const std::string& held = "", const std::string& schemas = "") {
-  return detail::door("check", "[" + block + "," + (held.empty() ? "[]" : held) + "," + detail::opt(schemas) + "]");
+// The write check: a JSON array of reasons, "[]" when well-formed. blocks, schemas: JSON arrays of blocks, or "".
+inline std::string check(const std::string& block, const std::string& blocks = "", const std::string& schemas = "") {
+  return detail::door("check", "[" + block + "," + (blocks.empty() ? "[]" : blocks) + "," + detail::opt(schemas) + "]");
 }
-// Why every node refuses a block: [{ code, detail }], "[]" when well-formed. held, schemas as for check.
-inline std::string refusals(const std::string& block, const std::string& held = "", const std::string& schemas = "") {
-  return detail::door("refusals", "[" + block + "," + (held.empty() ? "[]" : held) + "," + detail::opt(schemas) + "]");
+// Why every node refuses a block: [{ code, detail }], "[]" when well-formed. blocks, schemas as for check.
+inline std::string refusals(const std::string& block, const std::string& blocks = "", const std::string& schemas = "") {
+  return detail::door("refusals", "[" + block + "," + (blocks.empty() ? "[]" : blocks) + "," + detail::opt(schemas) + "]");
 }
-inline bool well_formed(const std::string& block, const std::string& held = "", const std::string& schemas = "") {
-  return check(block, held, schemas) == "[]";
+inline bool well_formed(const std::string& block, const std::string& blocks = "", const std::string& schemas = "") {
+  return check(block, blocks, schemas) == "[]";
 }
 // { seq, prev } after `last` (a block, or "" for none, then `brought_in` names the block that brought the key in).
 inline std::string next_link(const std::string& last, const std::string& brought_in = "") {

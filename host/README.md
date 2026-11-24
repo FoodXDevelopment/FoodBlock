@@ -7,7 +7,7 @@ One host with two stores. Both keep signed blocks append-only, answer signed pul
 | plain files | `src/files/` | two append-only files (`blocks.jsonl`, `copies.jsonl`) | `npm run test:files` |
 | Postgres | `src/postgres/` (`schema.sql` is its one schema) | the `blocks` table | `npm run test:postgres` (in-memory Postgres, or a real one with `TEST_DATABASE_URL`) |
 
-`npm test` runs both. The act library is not here: it lives in [`../acts`](../acts).
+`npm test` runs both.
 
 ### Files store: the reference node
 
@@ -50,7 +50,7 @@ Moving house is: `export` from the old host, `import` into the new one. The bloc
 
 ## The host's promise
 
-Written at `init`, signed by the host's own key as an `observe` of kind `host_promise` (spec: `../spec/modules/nodes.md`, A host), published at `/.well-known/foodblock` under `promise.block`. It binds this host alone; a host made before this signs it once on first open.
+Written at `init`, signed by the host's own key as an `observe` of kind `host_promise` (spec: `../spec/modules/nodes.md`, A host), published at `/.well-known/foodblock` under `promise.block`. It binds this host alone; it is signed once, when the host is first opened.
 
 Her address is blocks she signs (an `observe` of kind `address` with `routes`, replaced by `updates`); the host keeps and serves them like any block, and `host.addressOf(id)` reads the head of her chain with a pull that filters on `author` and `kind` with `heads`.
 
@@ -72,10 +72,9 @@ A sealed block is encrypted to the people it is for. The host checks its public 
 - `POST /import` takes that document, all or nothing. Loading envelopes needs the new host's owner token. On the command line, `export` includes every envelope and `import` loads them.
 - `/sync` between hosts moves public blocks and sealed headers. Envelopes move by her export/import, or by her own signed push.
 
-## What it does not do (yet)
+## What it does not do
 
-
-- No challenges (signed requests use counters only), no admission quotas for strangers (the larger server in `../foodblock/server` has them, on Postgres).
+- No challenges: signed requests use counters only (the Postgres node also issues challenges).
 - Waiting blocks are not kept between pushes: send a block after the ones it needs (export order always is).
 - It does not run her node. A wake only tells whoever runs it that something waits; what the node does when woken is not the host's business.
 

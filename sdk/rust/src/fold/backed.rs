@@ -7,10 +7,10 @@ use crate::prelude::*;
 
 /// `{ backed, why, chain }`: `why` is one plain sentence when the block is not backed (null when it is), `chain` the hashes from the block down
 /// to the block the person signed (a grant, or the block itself); when not backed, the links read before the reading stopped. The block is read
-/// with `blocks` as if it were held.
+/// with `blocks` as if it were given.
 pub fn backed(block: &Value, person: &str, blocks: &[Value]) -> Value {
     let read = super::read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(block)).chain([block]));
-    // 1.9 stage 4, A fork on a tool's line: a reader who holds the pair answers `{ pair: true, held, at_most }` for the blocks after it
+    // A fork on a tool's chain (authority.md, A fork on a tool's chain): a reader who holds the pair answers `{ pair: true, blocks, at_most }` for the blocks after it
     // `backed` carries the fork answer in its `backed` field, `why` null, `chain` the block and its grant chain
     if let Some(fork) = read.get(hash_of(block)).filter(|b| rs(b, "author") != Some(person)).and_then(|b| crate::grant::under_fork(b, &read)) {
         let mut chain = vec![json!(hash_of(block))];
@@ -44,8 +44,8 @@ fn reading(block: &Value, person: &str, read: &crate::js::Index) -> Result<Chain
     };
     let mut chain = vec![hash_of(b).to_string()];
     let refuse = |why: String, chain: &Chain| Err((why, chain.clone()));
-    // a block of a pair under a grant is read by G1 (its line answers it: Rule B), never refused here for the pair alone
-    if !crate::identity::counts_in(b, read) && !(rs(b, "under").is_some() && crate::identity::binds_signer(b, read)) {
+    // a block of a pair under a grant is read by A tool's word (its line answers it), never refused here for the pair alone
+    if !crate::forks::counts_in(b, read) && !(rs(b, "under").is_some() && crate::forks::binds_signer(b, read)) {
         return refuse("its signer's key does not speak for its author here (no voice of her standing list, an end it has seen, or a fork: a fork counts for nothing)".into(), &chain);
     }
     let author = rs(b, "author").unwrap_or("");
@@ -115,14 +115,14 @@ pub(super) fn claimed_by(block: &Value, index: &crate::js::Index) -> Option<Stri
     }
 }
 
-/// `to_come_back`: what the person is owed for an amount moved in their name that they do not back (promises.md, What becomes whose). Every
+/// `to_come_back`: what is to come back to the person for an amount moved in their name that they do not back (promises.md, What becomes whose). Every
 /// `transfer` among `blocks` whose amount is the person's by `gives` (signed by them, as their circle, or under a chain of their grants) and that
-/// `backed` says they do not back: `{ owed: [{ block, amount, to, why }] }`. A transfer no node would hold (a forged signature, a missing chain) is
-/// not backed either. What the person's own word or a live chain of their grants stands behind is not owed: it is theirs.
+/// `backed` says they do not back: `{ to_come: [{ block, amount, to, why }] }`. A transfer no node would hold (a forged signature, a missing chain) is
+/// not backed either. What the person's own word or a live chain of their grants stands behind is not to come back: it is theirs.
 pub fn to_come_back(person: &str, blocks: &[Value]) -> Value {
     let read = super::read_all(blocks.iter());
     let mut seen: alloc::collections::BTreeSet<&str> = Default::default();
-    let mut owed = Vec::new();
+    let mut to_come = Vec::new();
     for block in blocks.iter().filter(|b| crate::js::type_of(b) == "transfer") {
         let hash = hash_of(block);
         if !seen.insert(hash) {
@@ -145,8 +145,8 @@ pub fn to_come_back(person: &str, blocks: &[Value]) -> Value {
             continue;
         }
         for line in super::gives::lines_in(block, person, index)["gives"].as_array().into_iter().flatten().filter(|l| l.get("what").is_none() && l.get("amount").is_some()) {
-            owed.push(json!({ "block": hash, "amount": line["amount"], "to": line["to"], "why": why }));
+            to_come.push(json!({ "block": hash, "amount": line["amount"], "to": line["to"], "why": why }));
         }
     }
-    json!({ "to_come": owed })
+    json!({ "to_come": to_come })
 }

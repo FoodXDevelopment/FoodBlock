@@ -9,7 +9,7 @@ This library is a thin Kotlin skin over the Rust core in `sdk/rust`. It does not
 every call goes through one native function into the same Rust code that robots, sensors and C++ programs use.
 So if the Rust core passes the vectors, this library passes them too, by construction.
 
-Public domain (CC0 1.0). The version is the protocol's (`spec/protocol.json` `version`), here `1.7` until protocol.json names 1.9.
+Public domain (CC0 1.0).
 
 ## How it is built
 
@@ -60,20 +60,20 @@ val reading = FoodBlock.write(
     "observe",
     buildJsonObject { put("kind", "reading"); put("amount", FoodBlock.amount("3.9", "Cel")) },
     buildJsonObject { put("subject", id) },
-    WriteOptions(author = id, key = keys, held = listOf(me), at = now, audience = listOf(PUBLIC)),
+    WriteOptions(author = id, key = keys, blocks = listOf(me), at = now, audience = listOf(PUBLIC)),
 )
 val message = FoodBlock.wrap(reading)                       // { block, signature }: send this
 ```
 
 `write` refuses a block that breaks a rule and throws `RefusedException` with every reason (`reasons`, and
-`refusals` with their codes); it never repairs. Ask a draft first with `writeRefusals`. Keep the last block you wrote: it is the `held` the next write needs,
+`refusals` with their codes); it never repairs. Ask a draft first with `writeRefusals`. Keep the last block you wrote: it is the `blocks` the next write needs,
 so your chain stays one line.
 
 Names follow the JavaScript reference SDK: `canonical`, `hash`, `sign` (signs), `verify`, `valid` (who said these bytes), `read` (whether this reader can read it), `writeRefusals` (what a writer refuses to sign), `binds`, `strictText`, `amount` (money is an amount: `amount("4.20", "GBP")`), `shortCode`, `suiteOfKey`, `commit`, `findsSelf`, `forkPairs`,
 `nextLink`, `checkChain`, `causalOrder`, `write`, `wrap`, `unwrap`, `header`, `seal` (encrypts), `open`, `sealCopy`,
 `openCopy`; `Identity.genesis / keyHash / liveKeys / keyTimeline / signedByAuthor / stands / identityState / chainsOf / nextLinkFor`; `Grant.whyNotUnder /
-whyNotLive / isLive / whyNotLiveUndo / scopeReading / fenceReading / keepsTo / meter / worstCase / lowestOffer`; `Fold.promiseStage / promiseView / promiseViews / consent / due / circleState / circleVersions / rowHolds / speaksFor / backed / toComeBack / gives / membersThen / whereNow / ownership / pot / readback /
-countedIn / circleKey` and the rest of JavaScript's `fold`; `Sync.accept(incoming, held, takesPairs) / answerPull(.., cap, servesPairs) / signPull / signPush / newChallenge / pullRefusals / pushRefusals / admissionRefusals / residencyRefusals / pushAnswer / pushRequest / answerSignedBy / wellKnown / wellKnownErrors / announcement`; `Strangers.*` (`isStranger`, the conditions and the short reply); `FoodBlock.call(op, ...)` is the door itself. Gone in 1.9: `check` and `refusals` (now `writeRefusals`, `valid`, `read`), `money`, `receiptCode`, `Identity.keysOf / recoveryKeyHash / recoveryReach`, `Grant.operatorsOf / limitFence / limitCommitment / limitOpens / withinLimit`, `Fold.mayActAs / successorView`, `Sync.acceptSealed` (`accept` judges sealed headers), `Strangers.earnestShapeOk / earnestPaid`.
+whyNotLive / isLive / scopeReading / fenceReading / keepsTo / meter / worstCase / lowestOffer`; `Fold.promiseStage / promiseView / promiseViews / consent / due / circleState / circleVersions / rowHolds / speaksFor / backed / toComeBack / gives / membersThen / whereNow / ownership / pot / readback /
+countedIn / circleKey` and the rest of JavaScript's `fold`; `Sync.accept(incoming, blocks, takesPairs) / answerPull(.., cap, servesPairs) / signPull / signPush / newChallenge / pullRefusals / pushRefusals / admissionRefusals / residencyRefusals / pushAnswer / pushRequest / answerSignedBy / wellKnown / wellKnownErrors / announcement`; `Strangers.*` (`isStranger`, the conditions and the short reply); `FoodBlock.call(op, ...)` is the door itself.
 
 A node states its own choices (`takesPairs`, `cap`, `servesPairs`, the admission rule and its count; `wellKnown` states `admission`, a hash or an explicit null). Validity and the identity folds read no arrival and no clock. `Fold.consent` takes the sender's block as its fourth argument. There is no alias table and no reading of an older shape: year zero. A key names its `suite` (std, p256, sm): `Keypair.suite`, and `suite` arguments on `hash`, `create`, `sign`, `seal`, `WriteOptions` and the key grants. A signed pull or push carries exactly one of `counter` or `challenge` and no time; a node judges it with `Freshness(node, keys, highest, issued)`.
 

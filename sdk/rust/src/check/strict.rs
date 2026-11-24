@@ -51,7 +51,7 @@ impl Checker<'_> {
                 let mut w: W = vec![];
                 if in_refs_top && items.iter().all(Value::is_string) {
                     let strs: Vec<&str> = items.iter().filter_map(Value::as_str).collect();
-                    // 1.9 3a-7: a set's strings in ascending order of their UTF-8 bytes, no repeat (an empty set is canonical: `read`'s `grammar`)
+                    // a set's strings in ascending order of their UTF-8 bytes, no repeat (an empty set is canonical: `read`'s `grammar`)
                     let sorted = strs.windows(2).all(|p| p[0].as_bytes() < p[1].as_bytes());
                     if !sorted {
                         w.push(f("not_canonical", format!("{path} is a set: ascending order of its UTF-8 bytes, no repeats")));

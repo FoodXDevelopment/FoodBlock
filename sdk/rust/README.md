@@ -48,10 +48,10 @@ let me = genesis(&keys, &GenesisOptions { kind: "sensor", at: "2026-10-15T09:00:
 let id = me["hash"].as_str().unwrap().to_string();
 
 // The one write path: compose, check, sign, chain. A reading is a decimal string, never a float.
-let held = [me.clone()];
+let blocks = [me.clone()];
 let reading = write("observe", &json!({ "kind": "reading", "amount": amount("3.9", "Cel") }),
     &json!({ "subject": id }),
-    &WriteOptions { compose: ComposeOptions { author: id.clone(), at: Some("2026-10-15T09:01:00.000Z".into()), audience: Some(Readers::Public), ..Default::default() }, key: Some(&keys), held: &held, schemas: None })?;
+    &WriteOptions { compose: ComposeOptions { author: id.clone(), at: Some("2026-10-15T09:01:00.000Z".into()), audience: Some(Readers::Public), ..Default::default() }, key: Some(&keys), blocks: &blocks, schemas: None })?;
 let message = foodblock::wrap(&reading);                // { block, signature }: send this
 ```
 
@@ -62,8 +62,7 @@ follow the JavaScript reference SDK: `canonical`, `hash`, `sign`, `verify`, `ref
 (`promise_stage`, `circle_state`, `members_then`, `who_speaks`, `where_now`, `ownership`, `circle_key`), `views::*`
 (`promise_view`, `due`), `strangers::*` (`consent`, `is_stranger`, `short_code`, `short_reply`,
 `admission_refusals`), and
-`sync::*` (signed pull and push, `accept`, signed answers, `.well-known` discovery, the local announcement and the
-mDNS service `_foodblock._tcp`). A node's own choices are stated, never filled in: `answer_pull` takes `{ cap, serves_pairs }`, `accept` and `accept_sealed` take `{ takes_pairs }`, and `admission_refusals` takes the rule's state or an explicit null, with today's count.
+`sync::*` (signed pull and push, `accept`, signed answers, `.well-known` discovery, the local announcement). A node's own choices are stated, never filled in: `answer_pull` takes `{ cap, serves_pairs }`, `accept` and `accept_sealed` take `{ takes_pairs }`, and `admission_refusals` takes the rule's state or an explicit null, with today's count.
 
 The smallest program is `examples/micro.rs`:
 
@@ -139,13 +138,13 @@ target_link_libraries(my_node foodblock pthread dl m)
 // In the node: sign each sensor message as a FoodBlock observe, check it, publish it as text.
 void on_temperature(const sensor_msgs::msg::Temperature& t) {
   auto state = R"({"kind":"reading","amount":{"value":")" + decimal(t.temperature) + R"(","unit":"Cel"}})";
-  auto block = foodblock::write("observe", state, refs_, options_with_held_blocks_);   // throws if refused
+  auto block = foodblock::write("observe", state, refs_, options_with_blocks_);   // throws if refused
   publisher_->publish(std_msgs::msg::String().set__data(block));                      // or push it to a node
 }
 ```
 
 Keep the private key on the robot, write a decimal string for each number (`std::to_chars` with a fixed precision,
-never a float in the JSON), and keep the last block you wrote: it is the `held` the next write needs, so the chain
+never a float in the JSON), and keep the last block you wrote: it is the `blocks` the next write needs, so the chain
 stays one line. Before an act that cannot be undone (cutting, dispensing, driving off), check that every grant you
 act under is still live (`grant::why_not_live` in Rust).
 
@@ -159,8 +158,7 @@ cargo test --features ffi                                     # with the C ABI c
 
 `tests/vectors.rs` runs every section of `spec/vectors.json` and `spec/canonical-vectors.json` through the JSON door
 the way `spec/run-vectors.cjs` runs the reference SDK: canonical strings and hashes, `valid`, chains, audience
-commitments, signatures, headers, envelopes and sealed copies, identities (her list of voices, waits and reaches, keys under a voice,
-operators), every fold and view, refusals (their codes, exactly), the messages between nodes, the compact form
+commitments, signatures, headers, envelopes and sealed copies, identities (her list of voices, waits and reaches, keys under a voice), every fold and view, refusals (their codes, exactly), the messages between nodes, the compact form
 and the `door` section (suites, strict writing, skips, forks, consent, roles, relative time, tasks). `tests/api.rs` checks the suites, the
 envelopes and the canonical example.
 

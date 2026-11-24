@@ -51,14 +51,14 @@ pub(super) struct Draw<'a> {
     pub ends: Vec<&'a Value>,
     /// Whether its condition has held: None when it carries none.
     pub condition: Option<bool>,
-    /// 1.9 3c-5: its condition can no longer hold: the blocks that show it (empty: it never could, from its signing).
+    /// Its condition can no longer hold: the blocks that show it (empty: it never could, from its signing).
     pub dead: Option<Vec<String>>,
     /// A reason its reader already found that it is no draw of this measure (a pot's `not_confirmed`, `not_holder`): it takes and holds
     /// nothing, and is listed with that reason.
     pub fixed: Option<&'static str>,
     /// What it takes stays in the measure, the receiver's from where it lands (a transfer, a hand-over); else it leaves it.
     pub stays: bool,
-    /// 1.9 3c-1, 3c-2: an offer that names an instance holds it; its accept binds, and the transfers `for` its deal perform it (they take
+    /// An offer that names an instance holds it; its accept binds, and the transfers `for` its deal perform it (they take
     /// over its hold: for each, the offer is freed). An offer itself never lands.
     pub offer: Option<Vec<String>>,
 }
@@ -81,7 +81,7 @@ pub(super) struct Row {
     pub unsaid: bool,
     /// The receiver's start for what landed (None: on no line).
     pub start: Option<String>,
-    /// 1.9 3c-2: an offer a transfer `for` its deal performs: the transfers; its hold is theirs (it is counted in no sum of its own), and it
+    /// An offer a transfer `for` its deal performs: the transfers; its hold is theirs (it is counted in no sum of its own), and it
     /// is landed where one of them lands.
     pub performed_by: Vec<String>,
 }
@@ -113,14 +113,14 @@ pub(super) struct Drawn {
     pub starts: Vec<Start>,
     /// The starts (by block) on a line where the thing was drawn twice: their owner owns none of it there (A fork is a burden).
     pub void: BTreeSet<String>,
-    /// 1.9 3b-9: the draws of each pair on this measure that did not fit: `[{ draw, to, yes }]`, sorted by draw.
+    /// The draws of each pair on this measure that did not fit: `[{ draw, to, yes }]`, sorted by draw.
     pub pair: Vec<Value>,
-    /// 1.9 3b-9: the blocks read besides the starts and the draws: each yes that landed a draw.
+    /// The blocks read besides the starts and the draws: each yes that landed a draw.
     pub read: BTreeSet<String>,
 }
 
 impl Drawn {
-    /// The answer of a fold whose line is not read whole: `{ not_shown: true, lacks }`, nothing else (folds.md, A line).
+    /// The answer of a fold whose line is not read whole: `{ not_shown: true, lacks }`, nothing else (folds.md, A chain).
     pub(super) fn not_shown(&self) -> Option<Value> {
         (!self.lacks.is_empty()).then(|| json!({ "not_shown": true, "lacks": self.lacks }))
     }
@@ -147,8 +147,8 @@ impl Drawn {
                 None => *unsaid.entry(s.owner.clone()).or_default() += 1,
             }
         }
-        // an offer performed by a transfer `for` its deal holds nothing itself: its hold is that transfer's (CORE-SET 3c), so it is not counted
-        // twice against its giver (end pass 2026-11-20: what she owns, what is held and what landed add up to the measure, as `sum` reads it)
+        // an offer performed by a transfer `for` its deal holds nothing itself: its hold is that transfer's (folds.md, Lands), so it is not counted
+        // twice against its giver (what she owns, what is held and what landed add up to the measure, as `sum` reads it)
         for r in self.rows.iter().filter(|r| r.takes && r.state != Some("freed") && r.performed_by.is_empty()) {
             let Some(by) = &r.by else { continue };
             if r.unsaid {
@@ -218,7 +218,7 @@ fn line_key(b: &Value) -> LineKey {
     (rs(b, "author").unwrap_or("").to_string(), rs(b, "key").unwrap_or("").to_string())
 }
 
-/// The line a circle's draw is counted on (C21, D12): its meter's one line (with the draw's place there, the first of the meter's receipts
+/// The line a circle's draw is counted on: its meter's one line (with the draw's place there, the first of the meter's receipts
 /// that names it), or the lines of the block it names in `state.counted_to` (in its causal past).
 enum CircleLine {
     Meter(String, Option<usize>),
@@ -240,7 +240,7 @@ fn circle_line(d: &Draw, index: &Index) -> Option<CircleLine> {
             None => {
                 let mut rs_: Vec<&Value> = index
                     .values()
-                    .filter(|r| crate::js::type_of(r) == "observe" && ss(r, "kind") == Some("receipt") && crate::line::on_line(r, &line, index) && crate::identity::counts_in(r, index))
+                    .filter(|r| crate::js::type_of(r) == "observe" && ss(r, "kind") == Some("receipt") && crate::line::on_line(r, &line, index) && crate::forks::counts_in(r, index))
                     .collect();
                 rs_.sort_by(|a, b| st(a, "seq").and_then(Value::as_u64).cmp(&st(b, "seq").and_then(Value::as_u64)).then_with(|| hash_of(a).cmp(hash_of(b))));
                 let v = json!(rs_.iter().map(|r| list(rf(r, "derives_from"))).collect::<Vec<_>>());
@@ -256,7 +256,7 @@ fn circle_line(d: &Draw, index: &Index) -> Option<CircleLine> {
 }
 
 /// The line a draw is counted on: a tool's block under her grant that passes a part of a thing (`refs.what`) is counted on the line of the
-/// grant, the giver's own, where the part was passed from (Toll work; 00-shared, A part passed); any other block, on its key's line.
+/// grant, the giver's own, where the part was passed from (authority.md, Toll work; folds.md, A part passed); any other block, on its key's line.
 fn draw_line(b: &Value, index: &Index) -> LineKey {
     match passed_grant(b, index) {
         Some(g) => line_key(g),
@@ -270,7 +270,7 @@ pub(super) fn passed_grant<'a>(b: &Value, index: &'a Index) -> Option<&'a Value>
     (crate::js::type_of(g) == "grant" && rf(g, "what").is_some() && rs(g, "to").is_some() && rs(g, "to") == rs(b, "author")).then_some(g)
 }
 
-/// The lines a block's line goes on from (folds.md, A line goes on): its own, then, where the key grant that brought its key in puts it in
+/// The lines a block's line goes on from (folds.md, A chain goes on): its own, then, where the key grant that brought its key in puts it in
 /// an old key's place (it states `counted_to`, or the old key signed it and its list leaves that key out), the old key's line, and so on.
 /// A key grant that only adds a key under a voice continues nothing: that key's line is its own.
 fn line_keys(b: &Value, index: &Index) -> Vec<LineKey> {
@@ -300,10 +300,10 @@ fn key_text(b: &Value, index: &Index) -> String {
     crate::identity::key_of(b, index).map(|s| s.key).unwrap_or_default()
 }
 
-/// What hides a measure from this reader (1.9 3b-7, Read whole): each block held and not read that could name it. Held as a body (its
-/// header carries `_names`), it could name each id in its refs; held only as its header, each measure its key's line held at its place:
+/// What hides a measure from this reader (folds.md, Read whole): each block given and not read that could name it. Held as a body (its
+/// header carries `_names`), it could name each id in its refs; given only as its header, each measure its key's line given at its place:
 /// a start of the measure on that line below it. The ids, sorted.
-/// 1.9 3b (decided, CORE-SET "What building changed"): "each word of that key it could end" is not read (no fold here asks about a word); "held at its place" is read as a
+/// "Each word of that key it could end" is not read (no fold here asks about a word); "given at its place" is read as a
 /// start on the same line with a lower `seq`.
 pub(super) fn hidden(measure: &str, starts: &[Start], index: &Index, seen: &dyn Fn(&str) -> bool) -> Vec<String> {
     let seq = |b: &Value| crate::js::int(st(b, "seq")).unwrap_or(0.0);
@@ -320,14 +320,14 @@ pub(super) fn hidden(measure: &str, starts: &[Start], index: &Index, seen: &dyn 
     crate::js::sorted_set(out)
 }
 
-/// Each held block's place in the record's causal order (causes first), found once per state of the blocks: the schedule draws are
+/// Each given block's place in the record's causal order (causes first), found once per state of the blocks: the schedule draws are
 /// visited in. It decides no answer.
 pub(super) fn causal_rank(index: &Index) -> BTreeMap<String, usize> {
     let v = index.stage_memo("draws:causal_order", || Value::Array(crate::order::causal_order_in(index).iter().map(|b| json!(hash_of(b))).collect()));
     v.as_array().into_iter().flatten().enumerate().filter_map(|(i, h)| h.as_str().map(|h| (h.to_string(), i))).collect()
 }
 
-/// A line read whole from a block back to a start (folds.md, A line), each block walked once for all the draws of a fold: a walk stops at a
+/// A line read whole from a block back to a start (folds.md, A chain), each block walked once for all the draws of a fold: a walk stops at a
 /// block already found whole back to that start.
 struct Whole<'a> {
     index: &'a Index,
@@ -339,7 +339,7 @@ impl<'a> Whole<'a> {
     fn new(index: &'a Index) -> Self {
         Whole { index, judge: crate::valid::Judge::new(index, None), known: BTreeSet::new() }
     }
-    // Whether a held block is held and valid (1.9 3b-7, Read whole: each block on the line held and valid; one held and not read hides
+    // Whether a given block is given and valid (folds.md, Read whole: each block on the line given and valid; one given and not read hides
     // what it could name, which `hidden` reads). The fold's index holds only valid blocks: bodies read, and headers.
     fn good(&self, h: &str) -> bool {
         let _ = &self.judge;
@@ -373,13 +373,13 @@ impl<'a> Whole<'a> {
     }
     // A line that is not whole (or does not reach the start along `prev`): the stage-2 walk lists what it lacks.
     fn slow(&self, block: &str, start: &str) -> Vec<Value> {
-        // only what is not held is lacking here: a block held and not read is read by `hidden`
+        // only what is not given is lacking here: a block given and not read is read by `hidden`
         let missing = |lacks: Vec<Value>| -> Vec<Value> { lacks.into_iter().filter(|l| l.as_str().is_none_or(|h| self.index.get(h).is_none())).collect() };
         match crate::line::walk(block, Some(start), self.index) {
             Ok((true, _, lacks)) => missing(lacks),
-            // the walk ended without meeting the start, a block held only as its header (or not read) on the way: the line is not read
-            // whole, and each such block is lacking (folds.md, A line: "with nothing lacking on the way" it would be no line of hers)
-            // (a body held and not read is lacking only where it could name the measure, which `hidden` reads; a true header always)
+            // the walk ended without meeting the start, a block given only as its header (or not read) on the way: the line is not read
+            // whole, and each such block is lacking (folds.md, A chain: "with nothing lacking on the way" it would be no chain of hers)
+            // (a body given and not read is lacking only where it could name the measure, which `hidden` reads; a true header always)
             Ok((false, true, lacks)) if !lacks.is_empty() => lacks.into_iter().filter(|l| l.as_str().is_none_or(|h| self.index.get(h).is_none_or(|b| b.get("_names").is_none() && b.get("_unjudged").is_none()))).collect(),
             Ok((false, _, lacks)) if !lacks.is_empty() => missing(lacks),
             // the start is not on this line along `prev`: the line it is on is read by its key (line_keys), so nothing is lacking
@@ -404,16 +404,16 @@ struct Running {
 pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, extra: &dyn Fn(&Value, &str) -> Dec, index: &Index) -> Drawn {
     let rank = causal_rank(index);
     let mut order: Vec<usize> = (0..draws.len()).collect();
-    // 1.9 3b-6: a block of a new key that goes on an old key's line is read after the old key's blocks, so what a pair there holds is known
+    // a block of a new key that goes on an old key's line is read after the old key's blocks, so what a pair there holds is known
     let continued = |d: &Draw| line_keys(d.block, index).len() > 1;
-    // 1.9 R-H7 (stage 5 compare): a will is read after every other draw of hers, whatever her close saw (what landed and stood stays: a close
+    // a will is read after every other draw of hers, whatever her close saw (what landed and stood stays: a close
     // that did not see a sale takes nothing back from it), its wills among themselves in the order of her line
     let at = |d: &Draw| -> (bool, usize) { (super::things::is_will(d.block), rank.get(hash_of(d.block)).copied().unwrap_or(usize::MAX)) };
     order.sort_by_key(|i| (continued(&draws[*i]), at(&draws[*i])));
-    // 1.9 stage 6 (C21, D12): a draw that speaks for a circle is counted on the circle's line. With a meter, one line, in the order of the
+    // A draw that speaks for a circle is counted on the circle's line. With a meter, one line, in the order of the
     // meter's receipts that name each draw (a draw none names comes after, in causal order): the circle's draws keep their places among the
     // others and are ordered among themselves. With none, the line of the key that signed it, or, where it names in `state.counted_to` a
-    // block in its causal past, that block's line (A line goes on).
+    // block in its causal past, that block's line (A chain goes on).
     let circle_lines: Vec<Option<CircleLine>> = draws.iter().map(|d| circle_line(d, index)).collect();
     {
         let mut by_circle: BTreeMap<String, Vec<usize>> = BTreeMap::new();
@@ -438,14 +438,13 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
     let mut rows: Vec<Option<Row>> = vec![None; draws.len()];
     let mut waiting: Vec<(String, &'static str)> = Vec::new();
     let mut lacks: Vec<Value> = Vec::new();
-    // seat 33 mend 2: the lacks already listed, by their text, so each new one is checked in log time
+    // The lacks already listed, by their text, so each new one is checked in log time
     let mut lacks_seen: alloc::collections::BTreeSet<String> = Default::default();
     let mut running: BTreeMap<(String, LineKey), Running> = BTreeMap::new();
-    // 1.9 3b-13 (a clock orders a pair where his voice states a reach): NOT BUILT in this half. It waits for the random-world test
-    // (CORE-SET 3b-13); until then a pair is read as A fork is a burden says, whatever its key's voice states.
-    // A thing drawn twice (folds.md, A fork is a burden; 1.9 3b-5, Rule B). The draws of a pair on this measure are decided together: the
+    // A clock does not order a pair where his voice states a reach: a pair is read as A fork is a burden says, whatever its key's voice states.
+    // A thing drawn twice (folds.md, A thing drawn twice). The draws of a pair on this measure are decided together: the
     // pair's own blocks (joined where pairs share a block), never a later block of the fork, which is read as any draw unless the pair
-    // did not fit (then it reads `pair`, 3b-2). Twins `for` one deal (the same deal in `refs.for`, the same receiver and the same amount)
+    // did not fit (then it reads `pair`). Twins `for` one deal (the same deal in `refs.for`, the same receiver and the same amount)
     // are one draw: the lowest hash names which one is read, never which counts, and the other is listed with its answer and counted
     // once. Of the rest, those whose receiver gave them up (her `declined` or `stopped`) are read as any draw. Of the live ones: where all
     // come to no more than what was there, each takes; else a draw without her yes changes nothing on the others and takes nothing
@@ -468,16 +467,16 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
         }
         x
     }
-    // the blocks of a pair whose other branch is held only as its header: what they draw is not shown (3b-7: "where either branch is not
-    // read or held only as a header, every draw of that key on a measure it could name ... is not_shown"), so no receiver starts a line
-    // from one of them (end pass 2026-11-20, as the oracle reads it)
-    let header_paired: BTreeSet<String> = crate::identity::pair_groups_in(index)
+    // the blocks of a pair whose other branch is given only as its header: what they draw is not shown (folds.md, Read whole: "where either branch is not
+    // read or given only as a header, every draw of that key on a measure it could name ... is not_shown"), so no receiver starts a line
+    // from one of them
+    let header_paired: BTreeSet<String> = crate::forks::pair_groups_in(index)
         .into_iter()
         .filter(|g| g.iter().any(|h| index.get(h).is_some_and(|b| b.get("type").is_none())))
         .flatten()
         .collect();
     let mut member: BTreeSet<usize> = BTreeSet::new();
-    for g in crate::identity::pair_groups_in(index) {
+    for g in crate::forks::pair_groups_in(index) {
         let idx: Vec<usize> = g.iter().filter_map(|h| pos.get(h.as_str()).copied()).collect();
         for w in idx.windows(2) {
             let (x, y) = (find(&mut root, w[0]), find(&mut root, w[1]));
@@ -512,7 +511,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
     // what each group decided, once its first draw is reached: the draws that take, and whether it stands unresolved
     let mut decided: BTreeMap<usize, (BTreeSet<usize>, BTreeSet<usize>)> = BTreeMap::new();
     // what was left where each group's first draw is read (its amount, and whether a whole was out): a draw of the pair its receiver gave
-    // up is read from there, as what it would do alone, then freed (1.9 3b-5: "a draw given up is freed and holds nothing against the others")
+    // up is read from there, as what it would do alone, then freed (folds.md, A thing drawn twice: "a draw given up is freed and holds nothing against the others")
     let mut pair_left: BTreeMap<usize, (Dec, bool)> = BTreeMap::new();
     let mut paired_lines: BTreeSet<LineKey> = BTreeSet::new();
     let mut pair_out: Vec<Value> = Vec::new();
@@ -520,17 +519,17 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
     let mut maybe_lacks: Vec<(String, Vec<Value>)> = Vec::new();
     // who may own some of this measure: a first owner, or one a draw with her yes names as its receiver
     let may_own: BTreeSet<String> = starts.iter().map(|s| s.owner.clone()).chain(draws.iter().filter(|d| !d.yes.is_empty()).filter_map(|d| match &d.to { To::Owner(o) => Some(o.clone()), _ => None })).collect();
-    // 1.9 3b-6: per line, what the draws of a pair that did not fit come to: it stays out of what a new key that goes on that line may
+    // per line, what the draws of a pair that did not fit come to: it stays out of what a new key that goes on that line may
     // draw on, until the pair ends
     let mut lingering: BTreeMap<LineKey, Dec> = BTreeMap::new();
-    // whether a block's `prev` walk reaches a start of its own key (folds.md, A line), each block read once per start
+    // whether a block's `prev` walk reaches a start of its own key (folds.md, A chain), each block read once per start
     let reach_memo: core::cell::RefCell<BTreeMap<(String, String), bool>> = Default::default();
     let reaches = |from: &str, start: &str| -> bool {
         let mut path: Vec<String> = Vec::new();
         let mut cur = from.to_string();
-        // (a block held only as its header, or not read, met on the way: a start the walk never meets is "not on the line" only with
-        // nothing lacking on the way (folds.md, A line); with something lacking, the line is not read whole and the walk that lists what
-        // it lacks answers. end pass 2026-11-20, as the oracle reads it)
+        // (a block given only as its header, or not read, met on the way: a start the walk never meets is "not on the line" only with
+        // nothing lacking on the way (folds.md, A chain); with something lacking, the line is not read whole and the walk that lists what
+        // it lacks answers)
         let mut last_header: Option<usize> = None;
         let base = loop {
             if cur == start {
@@ -544,11 +543,11 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             }
             path.push(cur.clone());
             let Some(b) = index.get(&cur) else { break true };
-            // (only a block held as its header alone: a body held and not read shows its own author and prev, and is walked as any)
+            // (only a block given as its header alone: a body given and not read shows its own author and prev, and is walked as any)
             if b.get("type").is_none() && b.get("_names").is_none() && b.get("_unjudged").is_none() {
                 last_header = Some(path.len() - 1);
             }
-            // a held header or a missing block is read by the walk that lists what it lacks: not answered here
+            // a given header or a missing block is read by the walk that lists what it lacks: not answered here
             let Some(p) = rs(b, "prev") else { break false };
             // at the key grant that brought its key in, the line goes on as `line::walk` reads it
             if rs(b, "key") == Some(p) {
@@ -591,15 +590,15 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
         }
         // a block that speaks for no one is no draw (A draw: a counted block that speaks for an owner): it is not listed
         let Some(by) = d.by.clone() else { continue };
-        // 1.9 3b-1: a block out of its place on its key's line takes nothing; a block on no line of its key takes nothing there
-        // (`not_on_line`). Its place is read before whose the measure is.
-        if crate::identity::out_of_place_in(d.block, index) {
+        // a block out of its place on its key's line takes nothing; a block on no line of its key takes nothing there
+        // (`not_on_chain`). Its place is read before whose the measure is.
+        if crate::forks::out_of_place_in(d.block, index) {
             refuse(&mut row, "out_of_place");
             rows[i] = Some(row);
             continue;
         }
-        if crate::identity::off_line_in(d.block, index) {
-            refuse(&mut row, "not_on_line");
+        if crate::forks::off_line_in(d.block, index) {
+            refuse(&mut row, "not_on_chain");
             rows[i] = Some(row);
             continue;
         }
@@ -611,7 +610,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
         };
         let mine: Vec<&Start> = starts.iter().filter(|s| s.owner == by && (s.seen == h || past.contains(&s.seen))).collect();
         if mine.is_empty() {
-            // 1.9 3b-9: an answer never says "nobody" where it holds a signed word naming someone. Where the draw's own line back from it
+            // an answer never says "nobody" where it holds a signed word naming someone. Where the draw's own line back from it
             // lacks a block, what she owned there could be in it: not shown, with lacks, never `not_owner`.
             // (only for one who owns some of it somewhere: one who owns none of it anywhere is `not_owner` whatever his own line lacks)
             // (only for one who owns some of it somewhere, read once every draw is read: one who owns none of it anywhere is `not_owner`
@@ -630,8 +629,8 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             .copied()
             .filter(|s| s.at.as_ref().is_some_and(|at| (at == &h || past.contains(at)) && (matches!(circle_lines[i], Some(CircleLine::Meter(..))) || index.get(at).is_some_and(|b| lines.contains(&line_key(b))))))
             .collect();
-        // the line is read whole from the draw back to her start by `prev` (folds.md, A line): a start of the draw's own key that its `prev`
-        // walk never reaches (a twin of the start at the start's own place) is on no line of it (end pass 2026-11-20, as the oracle reads it)
+        // the line is read whole from the draw back to her start by `prev` (folds.md, A chain): a start of the draw's own key that its `prev`
+        // walk never reaches (a twin of the start at the start's own place) is on no line of it
         let on_line: Vec<&Start> = on_line
             .into_iter()
             .filter(|s| {
@@ -640,7 +639,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             })
             .collect();
         if on_line.is_empty() {
-            refuse(&mut row, "not_on_line");
+            refuse(&mut row, "not_on_chain");
             rows[i] = Some(row);
             continue;
         }
@@ -664,8 +663,8 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             None => draw_line(d.block, index),
         };
         let unsaid = on_line.iter().any(|s| s.amount.is_none());
-        // a later block of a fork, on a line whose pair did not fit, that draws on this measure reads `pair` (3b-2)
-        if !group_of.contains_key(&i) && crate::identity::forked_in(d.block, index) && paired_lines.contains(&lk) {
+        // a later block of a fork, on a line whose pair did not fit, that draws on this measure reads `pair`
+        if !group_of.contains_key(&i) && crate::forks::forked_in(d.block, index) && paired_lines.contains(&lk) {
             refuse(&mut row, "pair");
             rows[i] = Some(row);
             continue;
@@ -714,7 +713,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
                 left = left.sub(x);
             }
         }
-        // 1.9 3b-5 (Rule B): the draws of a pair are decided together, from what was left where the first of them is read
+        // The draws of a pair are decided together, from what was left where the first of them is read
         let mut decided_take = false;
         if let Some(&g) = group_of.get(&i) {
             if !decided.contains_key(&g) {
@@ -723,7 +722,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
                 let live: Vec<usize> = reps
                     .iter()
                     .copied()
-                    .filter(|j| !let_go(&draws[*j]) && !crate::identity::out_of_place_in(draws[*j].block, index) && !crate::identity::off_line_in(draws[*j].block, index))
+                    .filter(|j| !let_go(&draws[*j]) && !crate::forks::out_of_place_in(draws[*j].block, index) && !crate::forks::off_line_in(draws[*j].block, index))
                     .collect();
                 let want = |j: usize| -> Option<Dec> { if unsaid { None } else { draws[j].amount.as_ref().map(|a| a.value.clone()).or_else(|| Some(left.clone())) } };
                 let fits = |set: &[usize]| -> bool {
@@ -734,7 +733,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
                 };
                 // the live draws that would take alone (a draw past what is left alone is read as any draw)
                 let alone: Vec<usize> = live.iter().copied().filter(|j| if unsaid { !whole_out } else { want(*j).is_some_and(|w| w.is_pos() && w.cmp(&left).is_le()) }).collect();
-                // 1.9 3d-10: a transform's inputs are draws in the pair test as everywhere: a make (no receiver) needs no one's yes
+                // a transform's inputs are draws in the pair test as everywhere: a make (no receiver) needs no one's yes
                 let has_yes = |j: usize| !draws[j].yes.is_empty() || draws[j].to == To::Nobody;
                 let with_yes: Vec<usize> = alone.iter().copied().filter(|j| has_yes(*j)).collect();
                 let takers: Vec<usize> = if live.len() <= 1 {
@@ -808,7 +807,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
         row.took = took.clone();
         row.unsaid = unsaid;
         // lands: the draw stands, her yes is given (in its past, or her accepted answer), and its condition has held
-        let mut stood = crate::identity::stands(d.block, index);
+        let mut stood = crate::finality::stands(d.block, index);
         // a word acts on what is its signer's own when signed (provisional, awaiting the owner): where the receiver's yes is already in the
         // draw's causal past, every end of the draw has that yes in its past and so frees nothing (Freed), so the cut has nothing to wait for
         if d.yes.iter().any(|y| past.contains(hash_of(y))) && stood.waiting.contains(&"end") {
@@ -820,19 +819,19 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             stood.waiting.retain(|w| *w != "condition");
             stood.stands = stood.waiting.is_empty();
         }
-        // freed (1.9 3c-3, Rule A): before a draw lands, the one it would go to frees it by her own counted `declined` or `stopped` answer, even
+        // freed (folds.md, Freed): before a draw lands, the one it would go to frees it by her own counted `declined` or `stopped` answer, even
         // with her yes in its past; an end by its giver frees it where she has seen the end before any yes (an accept with the end in its own
         // past is no yes)
         let yes_seen = |b: &Value| d.yes.iter().any(|y| hash_of(y) == hash_of(b) || index.past_of(b).contains(hash_of(y)));
         let yes_before = |b: &Value| d.yes.iter().any(|y| hash_of(y) != hash_of(b) && index.past_of(b).contains(hash_of(y)));
         let in_pair = group_of.contains_key(&i);
-        // 1.9-GUESS [3c-3a]: "before a draw lands" is read from what is held: her no after her yes frees the draw unless it landed at that
-        // yes, which it did only where it stands and carries no condition that had not held (a condition she let go of had not held).
-        // (an offer never lands at its yes: its landing waits on Due, so her no after her yes frees it, Rule A)
+        // "Before a draw lands" is read from what is given: her no after her yes frees the draw unless it landed at that
+        // yes, which it did only where it stands and carries no condition that had not held (a condition she let go of had not held). (The text does not say; read so.)
+        // (an offer never lands at its yes: its landing waits on Due, so her no after her yes frees it)
         let landed_at_yes = d.offer.is_none() && stood.stands && d.condition.is_none_or(|c| c);
         let mut frees: Vec<String> = d.no.iter().filter(|n| in_pair || !yes_seen(n) || !landed_at_yes).map(|n| hash_of(n).to_string()).collect();
         let mut end_unseen = false;
-        // 1.9 3c-3 (Rule A), the clock path (stage 5 compare): where the draw names a clock (an offer's `terms.clocks`, a transfer's
+        // The clock path: where the draw names a clock (an offer's `terms.clocks`, a transfer's
         // `state.clocks`), an end by its giver that has no yes of hers in its past frees it once the lines that read no (`names` less
         // `needed`, plus one) hold the end with no yes before it
         let draw_clocks = crate::js::get(d.block, "state.terms.clocks").or_else(|| st(d.block, "clocks")).and_then(crate::tasks::clocks_of);
@@ -860,25 +859,25 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
                 }
             }
         }
-        // 1.9 3c-1, 3c-2: an offer holds until its accept binds and a transfer `for` its deal performs it (that transfer takes its hold
+        // an offer holds until its accept binds and a transfer `for` its deal performs it (that transfer takes its hold
         // over), or until it is freed. Its giver's end frees it where no yes in time came before it (a late accept is no yes, and waits on
-        // his next word); 3c-4: where its landing waits on payment, his end frees it even after her yes, where no block of his side
+        // his next word); where its landing waits on payment, his end frees it even after her yes, where no block of his side
         // accepting a payment toward the price is in the end's causal past.
         let mut performed = false;
         if let Some(by_perf) = &d.offer {
             performed = !by_perf.is_empty();
             frees.extend(by_perf.iter().cloned());
             let waits_on_price = crate::js::get(d.block, "state.terms.waits_on").and_then(Value::as_str) == Some("price");
-            // 1.9 3d-2 (decided in building): an offer that no yes in time answers is freed by its giver's end at once; once a yes answers it,
-            // his end frees it only where she has seen the end before any yes (read above), or, where it waits on payment, as 3c-4 says
+            // his end frees it where she has seen the end before any yes (read above), or, where it waits on payment, where no payment
+            // his side accepted is in the end's causal past (folds.md, Freed)
             for e in &d.ends {
                 let paid_before_end = waits_on_price && payment_accepted_before(d.block, e, index);
-                if d.yes.is_empty() || (waits_on_price && !paid_before_end) {
+                if waits_on_price && !paid_before_end {
                     frees.push(hash_of(e).to_string());
                 }
             }
         }
-        // 1.9 3c-5: a condition that can no longer hold frees what it held, for its giver's later draws that have that in their past
+        // a condition that can no longer hold frees what it held, for its giver's later draws that have that in their past
         if let Some(by) = &d.dead {
             if by.is_empty() {
                 frees.push(h.clone());
@@ -902,14 +901,14 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             }
         } else if stood.stands && answered && cond {
             row.state = Some("landed");
-            // the yes that landed it: her first, the one no other of her yeses to it has in its past (3b-9: `read` lists each yes that landed
-            // a draw; a later yes lands nothing; end pass 2026-11-20, as the oracle reads it)
+            // the yes that landed it: her first, the one no other of her yeses to it has in its past (`read` lists each yes that landed
+            // a draw; a later yes lands nothing)
             // (among her answers to the draw itself; a yes in its own past, to the deal, is read beside them)
             let direct = |y: &Value| rs(y, "answers") == Some(h.as_str());
             let landing: Vec<&&Value> = yes.iter().filter(|y| !direct(y) || !yes.iter().any(|o| direct(o) && hash_of(o) != hash_of(y) && index.past_of(y).contains(hash_of(o)))).collect();
             yes_read.extend(landing.iter().map(|y| hash_of(y).to_string()));
             // her accepted answer may state less: that much lands, and the rest is freed. Only the yes that landed it says how much: a later
-            // yes lands nothing, and what landed stays landed (3b-9; blocks.md, Finality; end pass 2026-11-20)
+            // yes lands nothing, and what landed stays landed (blocks.md, Finality)
             let said = landing.iter().filter_map(|y| Amount::of(st(y, "amount"))).filter(|a| matches!(kind, In::Kind(k) if *k == a.kind)).map(|a| a.value).min_by(|a, b| a.cmp(b));
             row.landed = match (&took, said) {
                 (Some(t), Some(s)) if s.cmp(t).is_lt() => Some(s),
@@ -926,7 +925,7 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
                 waiting.push((h.clone(), "condition"));
             }
         }
-        // a draw of a pair its receiver gave up holds nothing against the others (1.9 3b-5): it is freed, and out of the running amount
+        // a draw of a pair its receiver gave up holds nothing against the others: it is freed, and out of the running amount
         if in_pair && let_go(d) {
             row.state = Some("freed");
             rows[i] = Some(row);
@@ -983,17 +982,17 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
             rows[*t] = Some(Row { block: hash_of(d.block).to_string(), by: d.by.clone(), to: d.to.clone(), amount: d.amount.clone(), took: None, landed: None, unsaid: false, start: None, performed_by: Vec::new(), ..rep });
         }
     }
-    // a pair that did not fit: which one moved it is not shown, so no owner is shown on that line (Rule B)
+    // a pair that did not fit: which one moved it is not shown, so no owner is shown on that line
     let void: BTreeSet<String> = starts
         .iter()
         .filter_map(|s| s.at.clone())
         .filter(|at| index.get(at).is_some_and(|b| paired_lines.contains(&line_key(b))))
         .collect();
     let mut rows: Vec<Row> = rows.into_iter().flatten().collect();
-    // 1.9 3c-2: an offer lands exactly where the accept that answers it binds, its landing waiting on Due: where a transfer that performs it
+    // an offer lands exactly where the accept that answers it binds, its landing waiting on Due: where a transfer that performs it
     // lands, the offer is landed with it
     let landed_now: BTreeSet<String> = rows.iter().filter(|r| r.state == Some("landed")).map(|r| r.block.clone()).collect();
-    // a transfer takes the offer's hold over only where it takes (end pass 2026-11-20: an amount on one whole takes nothing, `no_measure`,
+    // a transfer takes the offer's hold over only where it takes (an amount on one whole takes nothing, `no_measure`,
     // and is read as a transfer that names no instance, folds.md, One whole): an offer no taking transfer performs keeps its own hold
     let taking: BTreeSet<String> = rows.iter().filter(|r| r.takes).map(|r| r.block.clone()).collect();
     for r in rows.iter_mut().filter(|r| !r.performed_by.is_empty()) {
@@ -1018,13 +1017,13 @@ pub(super) fn draws_on(kind: In<'_>, starts: Vec<Start>, draws: Vec<Draw<'_>>, e
     Drawn { rows, waiting, lacks, starts, void, pair: pair_out, read }
 }
 
-/// 1.9 3c-4: whether a block of the offer's giver's side accepting a payment toward its price is in an end's causal past: his `accepted`
+/// Whether a block of the offer's giver's side accepting a payment toward its price is in an end's causal past: his `accepted`
 /// answer to a transfer `for` the deal, or his `received` `for` it.
 fn payment_accepted_before(offer: &Value, end: &Value, index: &Index) -> bool {
     let giver = super::speaker_of(offer, index, None);
     let past = index.past_of(end);
     let deal = hash_of(offer);
-    index.values().filter(|b| past.contains(hash_of(b)) && b.get("type").is_some() && super::speaker_of(b, index, None) == giver && crate::identity::counts_in(b, index)).any(|b| {
+    index.values().filter(|b| past.contains(hash_of(b)) && b.get("type").is_some() && super::speaker_of(b, index, None) == giver && crate::forks::counts_in(b, index)).any(|b| {
         let received = ss(b, "kind") == Some("received") && list(rf(b, "for")).contains(&deal);
         let accepted = ss(b, "status") == Some("accepted")
             && list(rf(b, "answers")).iter().any(|a| index.get(*a).is_some_and(|t| type_of(t) == "transfer" && list(rf(t, "for")).contains(&deal) && super::speaker_of(t, index, None) != giver));
@@ -1037,13 +1036,13 @@ fn payment_accepted_before(offer: &Value, end: &Value, index: &Index) -> bool {
 /// `after` names both; with none such, it is on no line (None). Beside it, the one yes from which she owns it, when one gave it (None:
 /// accepts apart gave it).
 ///
-/// 1.9 3b-8: an amount that comes to her starts on the line of the voice her list marks `receives: true`, else her first voice: of her
+/// An amount that comes to her starts on the line of the voice her list marks `receives: true`, else her first voice: of her
 /// yeses, only those signed by that voice's key start it (one, or the one the others have in their past; apart: none). Another key's
 /// accept is her yes and starts nothing. A part she passes from one key's line to another's (a transfer to its own giver) starts on the
-/// line of the key it is handed to, as does an amount that comes to an id with no list held (read as before).
+/// line of the key it is handed to, as does an amount that comes to an id with no list given (read as before).
 pub(super) fn one_start(yes: &[&Value], to: &str, passed: bool, index: &Index) -> (Option<String>, Option<String>) {
     let mut mine: Vec<&Value> = yes.iter().copied().filter(|y| super::speaker_of(y, index, None).as_deref() == Some(to)).collect();
-    // G13: a part passed between her own tools starts on the receiving tool's line at its accept (the yes the draw names is that tool's)
+    // A pass between her own tools (authority.md): a part passed between her own tools starts on the receiving tool's line at its accept (the yes the draw names is that tool's)
     if passed && mine.is_empty() {
         mine = yes.to_vec();
     }
@@ -1070,7 +1069,7 @@ pub(super) fn one_start(yes: &[&Value], to: &str, passed: bool, index: &Index) -
             let mut later: Vec<&Value> = index
                 .values()
                 .filter(|b| b.get("type").is_some() && list(rf(b, "after")).iter().any(|a| minima.iter().any(|m| hash_of(m) == *a)) && names(b))
-                .filter(|b| super::speaker_of(b, index, None).as_deref() == Some(to) && crate::identity::counts_in(b, index))
+                .filter(|b| super::speaker_of(b, index, None).as_deref() == Some(to) && crate::forks::counts_in(b, index))
                 .collect();
             later.sort_by(|a, b| crate::js::cmp16(hash_of(a), hash_of(b)));
             (later.iter().find(|y| later.iter().all(|o| hash_of(o) == hash_of(y) || index.past_of(o).contains(hash_of(y)))).map(|b| hash_of(b).to_string()), None)
@@ -1088,13 +1087,13 @@ pub(super) fn answers<'a>(t: &'a Value, to: &str, index: &'a Index) -> (Vec<&'a 
     let mut yes: Vec<&Value> = named
         .iter()
         .copied()
-        .filter(|b| ss(b, "status") == Some("accepted") && list(rf(b, "answers")).contains(&hash_of(t)) && crate::identity::counts_in(b, index) && speaks(b))
+        .filter(|b| ss(b, "status") == Some("accepted") && list(rf(b, "answers")).contains(&hash_of(t)) && crate::forks::counts_in(b, index) && speaks(b))
         .collect();
     // her binding accept of the deal it is `for`, in the transfer's own past
     let past = index.past_of(t);
     for f in list(rf(t, "for")) {
         for a in names.by_answer.get(f).into_iter().flatten().filter_map(|n| index.get(n)) {
-            if type_of(a) == "promise" && ss(a, "status") == Some("accepted") && list(rf(a, "answers")).contains(&f) && past.contains(hash_of(a)) && crate::identity::counts_in(a, index) && speaks(a) {
+            if type_of(a) == "promise" && ss(a, "status") == Some("accepted") && list(rf(a, "answers")).contains(&f) && past.contains(hash_of(a)) && crate::forks::counts_in(a, index) && speaks(a) {
                 yes.push(a);
             }
         }
@@ -1102,10 +1101,10 @@ pub(super) fn answers<'a>(t: &'a Value, to: &str, index: &'a Index) -> (Vec<&'a 
         if let Some(first) = index.get(f).filter(|p| type_of(p) == "promise" && past.contains(f) && speaks(p) && st(p, "status").is_none()) {
             let giver = super::speaker_of(t, index, None);
             let accepted_by_giver = names.by_answer.get(f).into_iter().flatten().filter_map(|n| index.get(n)).any(|a| {
-                type_of(a) == "promise" && ss(a, "status") == Some("accepted") && past.contains(hash_of(a)) && crate::identity::counts_in(a, index) && giver.is_some() && super::speaker_of(a, index, None) == giver
+                type_of(a) == "promise" && ss(a, "status") == Some("accepted") && past.contains(hash_of(a)) && crate::forks::counts_in(a, index) && giver.is_some() && super::speaker_of(a, index, None) == giver
             });
-            // 1.9 R-P5 (A spot exchange): her order naming the instance, and the giver's transfer `for` it, `to_owner` her, which is his yes
-            let her_order_names_it = list(rf(first, "what")).iter().any(|w| list(rf(t, "what")).contains(w));
+            // A spot exchange (things.md): her order naming the instance, and the giver's transfer `for` it, `to_owner` her, which is his yes
+            let her_order_names_it = crate::js::whats_of(first).iter().any(|w| list(rf(t, "what")).contains(w));
             if accepted_by_giver || her_order_names_it {
                 yes.push(first);
             }
@@ -1115,13 +1114,13 @@ pub(super) fn answers<'a>(t: &'a Value, to: &str, index: &'a Index) -> (Vec<&'a 
     let no: Vec<&Value> = named
         .iter()
         .copied()
-        .filter(|b| matches!(ss(b, "status"), Some("declined" | "stopped")) && list(rf(b, "answers")).contains(&hash_of(t)) && crate::identity::counts_in(b, index) && speaks(b))
+        .filter(|b| matches!(ss(b, "status"), Some("declined" | "stopped")) && list(rf(b, "answers")).contains(&hash_of(t)) && crate::forks::counts_in(b, index) && speaks(b))
         .collect();
-    // 1.9 3c-3: her own counted `declined` or `stopped` answer to the deal the draw is `for` frees it too
+    // her own counted `declined` or `stopped` answer to the deal the draw is `for` frees it too
     let mut no = no;
     for f in list(rf(t, "for")) {
         for a in names.by_answer.get(f).into_iter().flatten().filter_map(|n| index.get(n)) {
-            if hash_of(a) != hash_of(t) && matches!(ss(a, "status"), Some("declined" | "stopped")) && list(rf(a, "answers")).contains(&f) && crate::identity::counts_in(a, index) && speaks(a) && !no.iter().any(|n| hash_of(n) == hash_of(a)) {
+            if hash_of(a) != hash_of(t) && matches!(ss(a, "status"), Some("declined" | "stopped")) && list(rf(a, "answers")).contains(&f) && crate::forks::counts_in(a, index) && speaks(a) && !no.iter().any(|n| hash_of(n) == hash_of(a)) {
                 no.push(a);
             }
         }
@@ -1130,9 +1129,9 @@ pub(super) fn answers<'a>(t: &'a Value, to: &str, index: &'a Index) -> (Vec<&'a 
     let mut ends: Vec<&Value> = named
         .iter()
         .copied()
-        .filter(|b| crate::grant::ending(b, hash_of(t)) == Some(crate::grant::End::Stop) && crate::identity::counts_in(b, index) && giver.is_some() && super::speaker_of(b, index, None) == giver)
+        .filter(|b| crate::grant::ending(b, hash_of(t)) == Some(crate::grant::End::Stop) && crate::forks::counts_in(b, index) && giver.is_some() && super::speaker_of(b, index, None) == giver)
         .collect();
-    // 1.9 3d-15: her close is an end by its giver of every standing word of hers but a will, read as any end of hers (Freed)
+    // her close is an end by its giver of every standing word of hers but a will, read as any end of hers (Freed)
     if let (Some(g), false) = (&giver, super::things::is_will(t)) {
         ends.extend(closes_of_giver(g, index));
     }
@@ -1143,7 +1142,7 @@ pub(super) fn answers<'a>(t: &'a Value, to: &str, index: &'a Index) -> (Vec<&'a 
     if let Some(exp) = ss(t, "expires").filter(|_| type_of(t) == "transfer") {
         yes.retain(|y| type_of(y) == "promise" && !list(rf(y, "answers")).contains(&hash_of(t)) || ss(y, "at").is_some_and(|at| at < exp));
         for b in index.values().filter(|b| b.get("type").is_some() && hash_of(b) != hash_of(t) && ss(b, "at").is_some_and(|at| at >= exp)) {
-            if (index.past_of(b).contains(hash_of(t)) || list(rf(b, "answers")).contains(&hash_of(t))) && speaks(b) && crate::identity::counts_in(b, index) && !no.iter().any(|n| hash_of(n) == hash_of(b)) {
+            if (index.past_of(b).contains(hash_of(t)) || list(rf(b, "answers")).contains(&hash_of(t))) && speaks(b) && crate::forks::counts_in(b, index) && !no.iter().any(|n| hash_of(n) == hash_of(b)) {
                 no.push(b);
             }
         }
@@ -1153,7 +1152,7 @@ pub(super) fn answers<'a>(t: &'a Value, to: &str, index: &'a Index) -> (Vec<&'a 
     (yes, no, ends)
 }
 
-/// 1.9 3d-15: her closes, as blocks: each is an end by its giver of every standing word of hers but a will (Freed reads it as any end).
+/// Her closes, as blocks: each is an end by its giver of every standing word of hers but a will (Freed reads it as any end).
 pub(super) fn closes_of_giver<'a>(giver: &str, index: &'a Index) -> Vec<&'a Value> {
     crate::identity::closes_of(giver, index).iter().filter_map(|c| index.get(c.as_str())).collect()
 }

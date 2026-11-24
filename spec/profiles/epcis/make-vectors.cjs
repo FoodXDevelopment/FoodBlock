@@ -92,7 +92,6 @@ for (const who of ['fieldhouse', 'greenacres', 'metrofresh', 'cornermarket', 'ha
 }
 
 // ---- events ----
-const U = (who) => ({ ctx: { held, parties, me: ids[who], schema: schemas[who].hash } })
 const events = []
 const lgtin = (company, item, lot) => `urn:epc:class:lgtin:${company}.${item}.${lot}`
 const bol = (n) => [{ type: `${P}btt:bol`, bizTransaction: `urn:epc:id:gdti:0614141.00007.BOL-${n}` }]
@@ -122,14 +121,14 @@ const base = (type, time, tz, extra) => ({ type, eventTime: time, recordTime: ne
 // 1-3. Fieldhouse Farm: harvest, cool, initial pack
 const H = lgtin('0614141', '107346', 'FLD-A-1012')
 const L1c = lgtin('0614141', '107353', 'F-285-A')
-const harvest = step('harvesting: Field A', 'fieldhouse', base('ObjectEvent', '2026-10-12T05:30:00.000Z', '-07:00', {
+step('harvesting: Field A', 'fieldhouse', base('ObjectEvent', '2026-10-12T05:30:00.000Z', '-07:00', {
   eventID: 'ni:///sha-256;7c1f2a?ver=CBV2.0', action: 'ADD', bizStep: A.STEP.commissioning, 'fb:cte': 'harvest', disposition: `${P}disp:active`, ...loc('field_a'),
   quantityList: [{ epcClass: H, quantity: 1200, uom: 'KGM' }], ilmd: { 'fb:commodity': 'Romaine lettuce', 'fb:variety': 'Green Towers', 'fb:fieldName': 'Field A' }
 }))
 step('cooling: the packhouse cooler', 'fieldhouse', base('ObjectEvent', '2026-10-12T09:00:00.000Z', '-07:00', {
   action: 'OBSERVE', bizStep: A.STEP.other, 'fb:cte': 'cool', disposition: `${P}disp:active`, ...loc('ff_packhouse'), quantityList: [{ epcClass: H, quantity: 1200, uom: 'KGM' }]
 }))
-const pack = step('initial packing: romaine hearts', 'fieldhouse', base('TransformationEvent', '2026-10-12T14:00:00.000Z', '-07:00', {
+step('initial packing: romaine hearts', 'fieldhouse', base('TransformationEvent', '2026-10-12T14:00:00.000Z', '-07:00', {
   bizStep: A.STEP.packing, disposition: `${P}disp:in_progress`, ...loc('ff_packhouse'),
   inputQuantityList: [{ epcClass: H, quantity: 1200, uom: 'KGM' }], outputQuantityList: [{ epcClass: L1c, quantity: 1180, uom: 'KGM' }], ilmd: { 'cbvmda:itemExpirationDate': '2026-10-22' }
 }))
@@ -161,7 +160,7 @@ step('receiving: Metro Fresh takes the Fieldhouse lot', 'metrofresh', receiving(
 
 // 10. Transformation: a salad kit from both lots, a new lot code
 const L3c = lgtin('0614160', '100011', 'DC-SK-1001')
-const process_ = step('transformation: salad kits', 'metrofresh', base('TransformationEvent', '2026-10-13T11:00:00.000Z', '-07:00', {
+step('transformation: salad kits', 'metrofresh', base('TransformationEvent', '2026-10-13T11:00:00.000Z', '-07:00', {
   bizStep: A.STEP.commissioning, disposition: `${P}disp:in_progress`, ...loc('dc'),
   inputQuantityList: [{ epcClass: L1c, quantity: 1180, uom: 'KGM' }, { epcClass: L2c, quantity: 760, uom: 'KGM' }], outputQuantityList: [{ epcClass: L3c, quantity: 1700, uom: 'KGM' }], ilmd: { 'cbvmda:itemExpirationDate': '2026-10-20' }
 }))
@@ -206,7 +205,6 @@ step('escape hatch: storing, which no row maps', 'cornermarket', base('ObjectEve
 }), { roundtrip: false, note: 'The raw document is kept by its hash; the way back needs the document.' })
 
 // ---- the world after all of it: where things are, who owns them ----
-const find = (n) => blocks.find((b) => b.name === n)
 const lotThing = (c) => held.find((b) => b.type === 'thing' && A.jcs(b.state.marks || []).includes(c))
 const L1 = lotThing(L1c), L2 = lotThing(L2c), L3 = lotThing(L3c), L4 = lotThing(L4c), L5 = lotThing(L5c), H1 = lotThing(H)
 const folds = []

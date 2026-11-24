@@ -45,15 +45,15 @@ def message_refusals(message, fields, node=None, keys=(), highest=None, issued=(
     return door.message_refusals(message or {}, fields, _fresh(node, keys, highest, issued))
 
 
-def matches(block, filter=None, held=None) -> bool:  # noqa: A002
-    return door.matches(block, filter, held or [])
+def matches(block, filter=None, blocks=None) -> bool:  # noqa: A002
+    return door.matches(block, filter, blocks or [])
 
 
-def answer_pull(log, request, node, private_key, cap, serves_pairs, signer=None, held=None, suite=None, through=None) -> dict:
+def answer_pull(log, request, node, private_key, cap, serves_pairs, signer=None, blocks=None, suite=None, through=None) -> dict:
     """Answer a pull from a node's arrival log [{ n, block, copies? }]. Signed by the node when `private_key` is given.
     The node states its two choices: `cap` (a whole number, 1 or more) and `serves_pairs` (True: a fork's other half
     travels with its proof). Nothing is filled in."""
-    return door.answer_pull(list(log), request, node, private_key, {"cap": cap, "serves_pairs": serves_pairs}, signer, held, suite, through)
+    return door.answer_pull(list(log), request, node, private_key, {"cap": cap, "serves_pairs": serves_pairs}, signer, blocks, suite, through)
 
 
 def answer_signed_by(answer, node_keys) -> bool:
@@ -65,15 +65,15 @@ def recipients_of(for_whom, hash_) -> list:
     return door.recipients_of(for_whom or {}, hash_)
 
 
-def accept(incoming, held, takes_pairs, schemas=None) -> dict:
+def accept(incoming, blocks, takes_pairs, schemas=None) -> dict:
     """What a node takes of a push (nodes.md, Push): { taken, unjudged, refused, unread, equivocations, false_headers }. `incoming` are blocks
     and sealed header messages { header, header_signature, envelope? }. `takes_pairs` is the node's own stated choice, required (True:
     the blocks of a forked pair are taken as well as listed; False: neither). Validity reads no arrival (core.md, section 8).
     `taken` are the blocks, each found by the id the core computed in the suite of the key that signed it (a sealed message by its header's hash)."""
-    held, incoming = list(held or []), list(incoming)
-    out = door.accept(incoming, held, {"takes_pairs": takes_pairs}, None if schemas is None else list(schemas.values() if isinstance(schemas, dict) else schemas))
+    blocks, incoming = list(blocks or []), list(incoming)
+    out = door.accept(incoming, blocks, {"takes_pairs": takes_pairs}, None if schemas is None else list(schemas.values() if isinstance(schemas, dict) else schemas))
     by_hash = {b.get("hash", (b.get("header") or {}).get("hash")): b for b in incoming}
-    everything = held + incoming
+    everything = blocks + incoming
 
     def named(h):
         if h in by_hash:
@@ -96,9 +96,9 @@ def strict_push(text) -> dict:
     return door.strict_push(str(text))
 
 
-def log_shown(receipts, request, answer, held=()) -> dict:
+def log_shown(receipts, request, answer, blocks=()) -> dict:
     """What a door log's signed words show (nodes.md, The arrival log): { left_out, stopped_short }."""
-    return door.log_shown(list(receipts), request, answer, list(held or []))
+    return door.log_shown(list(receipts), request, answer, list(blocks or []))
 
 
 def export_whole(document, log, last) -> dict:

@@ -2,11 +2,11 @@
 
 from . import _door as door
 
-condition_holds = door.condition_holds  # whether a condition holds on the blocks held, read for the block `at` (only its causal past counts): True, False, or None for a shape the protocol does not read
+condition_holds = door.condition_holds  # whether a condition holds on the blocks given, read for the block `at` (only its causal past counts): True, False, or None for a shape the protocol does not read
 reading_is_persons_claim = door.reading_is_persons_claim  # a model's reading is the person's claim only once the person's own block confirms it
 reading_condition_holds = door.reading_condition_holds  # tasks profile: whether a reading_condition holds on the readings in the past of `at`
 short_reply = door.short_reply  # the short reply (profiles/short-form.md): `FB1 ` and what the receiver cannot rebuild of her signed answer
-short_reply_open = door.short_reply_open  # the answer rebuilt from a short reply among the blocks held (None: nothing was said)
+short_reply_open = door.short_reply_open  # the answer rebuilt from a short reply among the blocks given (None: nothing was said)
 
 
 def is_stranger(receiver, sender, blocks, block=None) -> bool:

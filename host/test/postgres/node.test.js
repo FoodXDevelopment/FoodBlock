@@ -20,7 +20,7 @@ function person(kind = 'person') {
   const me = fb.identity.genesis(keys, { kind, encryptionKey: encryption.public_key_encrypt, at: at(0), audience: 'public' })
   const chain = [me]
   const say = (type, state, refs = {}, options = {}) => {
-    const block = fb.write(type, state, refs, { author: me.hash, key: keys, held: chain, at: at(chain.length), audience: 'public', ...options })
+    const block = fb.write(type, state, refs, { author: me.hash, key: keys, blocks: chain, at: at(chain.length), audience: 'public', ...options })
     chain.push(block)
     return block
   }
@@ -50,7 +50,7 @@ const node = async ({ speaksFor = [], ...options } = {}) => {
   await app.node.push({ messages: wrap(...owner.proof) })
   return app
 }
-// a push is its canonical bytes (1.8): the helpers send them as the core writes them
+// a push is its canonical bytes: the helpers send them as the core writes them
 const sendPush = (body) => request(app).post('/push').set('Content-Type', 'application/json').send(fb.canonicalJSON(body))
 const push = (...blocks) => sendPush({ messages: wrap(...blocks) })
 // a signed push by its author (a waiting block is kept only from one); the counter must rise per signer
@@ -79,7 +79,7 @@ describe('push', () => {
     assert.equal(signedByNode(first), true, 'the push answer is signed by the node own own machine key')
     assert.deepEqual([first.node, [...first.taken].sort(), first.refused, first.unjudged], [owner.holder.id, [ann.id, eggs.hash].sort(), [], []])
     const again = (await push(eggs)).body
-    assert.deepEqual([again.taken, again.refused, again.held], [[], [], [eggs.hash]], 'a block whose body is held is nothing new: not judged again, reported as held')
+    assert.deepEqual([again.taken, again.refused, again.had], [[], [], [eggs.hash]], 'a block whose body is held is nothing new: not judged again, reported as had')
     assert.equal(signedByNode(again), true)
     assert.equal((await pull()).body.blocks.length, 3)
   })
@@ -93,19 +93,19 @@ describe('push', () => {
     const floaty = unchecked(ann, 'thing', { kind: 'flour', amount: { value: 1.5, unit: 'kg' } })
     const { body } = await push(forged, floaty)
     assert.deepEqual(body.taken, [])
-    // 1.9 3a-6, 3a-8: a push is read from its bytes whole; a number that is not canonical refuses the whole push as not_canonical, and nothing in it is taken
+    // a push is read from its bytes whole; a number that is not canonical refuses the whole push as not_canonical, and nothing in it is taken
     assert.deepEqual(body.refused.map((item) => item.code), ['not_canonical'])
   })
 
   it('never trusts a sent hash: the content decides', async () => {
     const ann = person()
-    // 1.8: a message is exactly { block, signature }; one that also carries a hash is refused as a shape, not quietly trimmed
+    // a message is exactly { block, signature }; one that also carries a hash is refused as a shape, not quietly trimmed
     const { body } = await sendPush({ messages: [{ ...fb.wrap(ann.me), hash: 'f'.repeat(64) }] })
     assert.deepEqual([body.taken, body.refused.map((item) => item.code)], [[], ['shape']])
     assert.deepEqual((await push(ann.me)).body.taken, [ann.id], 'the content decides: the block as signed is taken')
   })
 
-  it('judges a block on its pieces: a gap in the chain is not a wait (1.8); a block whose author is unknown is unjudged and kept nowhere', async () => {
+  it('judges a block on its pieces: a gap in the chain is not a wait; a block whose author is unknown is unjudged and kept nowhere', async () => {
     const ann = person(), stranger = person()
     const one = ann.say('observe', { kind: 'note', text: 'two trays' })
     const two = ann.say('observe', { kind: 'note', text: 'one tray left' })
@@ -195,7 +195,7 @@ describe('pull', () => {
   })
 })
 
-describe('the wire: a node trusts nothing it is sent (security K)', () => {
+describe('the wire: a node trusts nothing it is sent', () => {
   const sealedFor = (ann, bo, text) => {
     const secret = ann.say('observe', { kind: 'note', text }, {}, { audience: [bo.id] })
     return { secret, copy: fb.sealCopy(secret, { keys: [bo.encryption.public_key_encrypt], reveals: [fb.revealFor(secret.salts, bo.id)] }) }
@@ -210,7 +210,7 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     const twice = text.replace('"kind":"eggs"', '"kind":"JUNK","kind":"eggs"')
     assert.notEqual(twice, text)
     const dup = await request(app).post('/push').set('Content-Type', 'application/json').send(twice)
-    // 1.8 (canonical.md): a message is its canonical bytes; one that is not (here a repeated key) is refused as not_canonical, per message, not as a 400 for the whole push
+    // (canonical.md) a message is its canonical bytes; one that is not (here a repeated key) is refused as not_canonical, per message, not as a 400 for the whole push
     assert.equal(dup.status, 200)
     assert.deepEqual([dup.body.taken, dup.body.refused.map((r) => r.code)], [[], ['not_canonical']])
     const floaty = text.replace(`"seq":${note.state.seq}`, `"seq":${note.state.seq}.0`)
@@ -223,7 +223,7 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     assert.equal(bad.text.includes('node_modules'), false, 'no stack and no path in an error')
   })
 
-  it('a private block held in the clear answers no filter at all: not its content, and not its header (privacy/r6, door/t3)', async () => {
+  it('a private block held in the clear answers no filter at all: not its content, and not its header', async () => {
     const ann = person(), carol = person(), bo = person()
     await push(ann.me, carol.me, bo.me)
     const complaint = ann.say('observe', { kind: 'complaint', text: 'about Carol' }, { subject: carol.id }, { audience: [bo.id] })
@@ -232,7 +232,7 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     assert.deepEqual((await pull({ filter: { author: ann.id } })).body.blocks.map((entry) => entry.message.header?.hash).filter(Boolean), [], 'nor does its header answer a filter on its author')
   })
 
-  it('a block after a sealed one follows it in the chain: a sealed block never freezes the public chain (privacy/r7)', async () => {
+  it('a block after a sealed one follows it in the chain: a sealed block never freezes the public chain', async () => {
     const ann = person(), bo = person()
     await push(ann.me, bo.me)
     const { secret, copy } = sealedFor(ann, bo, 'for Bo')
@@ -243,7 +243,7 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     assert.deepEqual((await push(stop)).body.taken, [stop.hash])
   })
 
-  it('keeps a sealed copy only from its author: a stranger\'s junk envelope is not stored in the recipient\'s place (door/t6, privacy/r4)', async () => {
+  it('keeps a sealed copy only from its author: a stranger\'s junk envelope is not stored in the recipient\'s place', async () => {
     const ann = person(), bo = person(), eve = person()
     await node({ speaksFor: [bo.id] })
     await push(ann.me, bo.me, eve.me)
@@ -263,7 +263,7 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     await push(ann.me, bo.me, eve.me)
     const two = (ann.say('observe', { kind: 'note', text: 'one' }), ann.say('observe', { kind: 'note', text: 'two' }))
     assert.deepEqual((await signedPush(eve, two)).body.taken, [two.hash], 'a push signed by another author makes no difference: the block is judged by its own author\'s keys')
-    assert.deepEqual((await pool.query('SELECT hash FROM waiting')).rows, [], 'and nothing waits: 1.8 holds back only a block whose pieces are missing')
+    assert.deepEqual((await pool.query('SELECT hash FROM waiting')).rows, [], 'and nothing waits: only a block whose pieces are missing')
     // two recipients where the owner allows one: refused whole, nothing kept
     const secret = ann.say('observe', { kind: 'note', text: 'for Bo and Eve' }, {}, { audience: [bo.id, eve.id] })
     const copy = fb.sealCopy(secret, { keys: [bo.encryption.public_key_encrypt, eve.encryption.public_key_encrypt], reveals: [fb.revealFor(secret.salts, bo.id), fb.revealFor(secret.salts, eve.id)] })
@@ -298,7 +298,7 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     const squat = { ...copy, header, header_signature: fb.signMessage(header, mal.keys.private_key).signature }
     assert.deepEqual((await sendPush({ messages: [squat] })).body.taken, [v.hash])
     const both = (await push(v, v2)).body
-    assert.deepEqual(both.taken, [v.hash, v2.hash].sort(), '1.8: a push answer lists what it took ascending by hash')
+    assert.deepEqual(both.taken, [v.hash, v2.hash].sort(), 'a push answer lists what it took ascending by hash')
     const row = (await pool.query('SELECT author, sealed FROM blocks WHERE hash = $1', [v.hash])).rows
     assert.deepEqual(row, [{ author: vic.id, sealed: false }], 'the block holds its own hash')
     assert.deepEqual(hashes((await pull({ filter: { author: vic.id } })).body).sort(), [v.hash, v2.hash].sort())
@@ -308,16 +308,16 @@ describe('the wire: a node trusts nothing it is sent (security K)', () => {
     const alice = person(), bob = person()
     await push(alice.me, bob.me)
     const eggs = alice.say('thing', { kind: 'eggs' })
-    const offer = alice.say('promise', { terms: { price: fb.amount('4.50', 'GBP'), quantity: fb.amount('1', '{tray}') } }, { from: alice.id, to: bob.id, what: eggs.hash })
+    const offer = alice.say('promise', { terms: { lines: [{ id: 'eggs', what: eggs.hash, quantity: fb.amount('1', '{tray}'), price: fb.amount('4.50', 'GBP') }] } }, { from: alice.id, to: bob.id })
     const accept = bob.say('promise', { status: 'accepted' }, { answers: offer.hash, for: offer.hash, after: [offer.hash] })
     await push(eggs, offer)
     const { body } = await push(accept)
     assert.deepEqual([body.taken, body.unjudged], [[accept.hash], []])
-    const held = (await pull({})).body.blocks.map((entry) => fb.unwrap(entry.message))
-    assert.equal(fb.promiseStage(offer, held).stage, 'accepted')
+    const blocks = (await pull({})).body.blocks.map((entry) => fb.unwrap(entry.message))
+    assert.equal(fb.promiseStage(offer, blocks).stage, 'accepted')
   })
 
-  it('a counter or a challenge answers once, even when two copies of one request race (door/t2, t2b)', async () => {
+  it('a counter or a challenge answers once, even when two copies of one request race', async () => {
     const bo = person()
     await push(bo.me)
     const ask = signedPull(bo, {}, 7)
@@ -435,7 +435,7 @@ describe('discovery and admission', () => {
     assert.equal(body.refused[0].code, 'not_admitted')
   })
 
-  it('admits a listed party only for blocks that speak for it: an old key\'s blocks after its rotation are anyone else\'s (clean round 2, security20 n2)', async () => {
+  it('admits a listed party only for blocks that speak for it: an old key\'s blocks after its rotation are anyone else\'s', async () => {
     const boss = person(), friend = person(), phone = fb.generateKeypair()
     const rules = boss.say('thing', { kind: 'schema', target: 'observe.admission', fields: { parties: 'hashes', per_stranger: 'integer' } })
     const rule = boss.say('observe', { kind: 'admission', text: 'Known parties, and no block from anyone else.', parties: [friend.id], per_stranger: 0 }, { schema: rules.hash },
@@ -443,8 +443,8 @@ describe('discovery and admission', () => {
     await node({ owners: [boss.id], admission: rule.hash })
     assert.deepEqual((await push(boss.me, rules, rule)).body.refused, [])
     const note = friend.say('observe', { kind: 'note', text: 'mine' })
-    // 1.8: a new key joins only by a second signature, so the case here is the one that stands at once: she takes herself out (voices: [])
-    const rot = fb.identity.keyGrant(friend.id, { author: friend.id, keys: friend.keys, held: friend.chain, at: at(5) }, { voices: [], updates: friend.id })
+    // a new key joins only by a second signature, so the case here is the one that stands at once: she takes herself out (voices: [])
+    const rot = fb.identity.keyGrant(friend.id, { author: friend.id, keys: friend.keys, blocks: friend.chain, at: at(5) }, { voices: [], updates: friend.id })
     friend.chain.push(rot)
     assert.deepEqual((await push(friend.me, note, rot)).body.refused, [])
     // the old key goes on signing after its counted_to: valid, kept by no node that admits only her

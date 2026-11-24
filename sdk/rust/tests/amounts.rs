@@ -1,4 +1,4 @@
-//! Amounts (FoodBlock 1.8, stage 3): the one amount shape, the one printed form of a sum, and What is left: every measure drawn on along
+//! Amounts: the one amount shape, the one printed form of a sum, and What is left: every measure drawn on along
 //! its owner's line by one rule (folds.md, What is left; things.md; encoding.md, Shapes). Each test is a small world of signed blocks,
 //! asked through the door as any SDK asks.
 use foodblock::decimal::{Amount, Dec};
@@ -51,7 +51,7 @@ impl World {
         let o = WriteOptions {
             compose: ComposeOptions { author: p.id.clone(), at: Some(at), audience: Some(Readers::Public), ..Default::default() },
             key: Some(key),
-            held: &self.blocks,
+            blocks: &self.blocks,
             schemas: None,
         };
         let b = write(t, &state, &refs, &o).unwrap_or_else(|e| panic!("{t} {state}: {e:?}"));
@@ -102,7 +102,7 @@ fn a_sum_is_printed_in_one_form_and_nothing_is_rounded() {
     assert_eq!(Dec::zero().sub(&d("0")).text(), "0");
     assert_eq!(d("0.00000001").mul(&d("3")).text(), "0.00000003");
     assert_eq!(d("93").mul(&d("1")).div(&d("10")).unwrap().text(), "9.3");
-    // a quotient that never ends is no decimal: nothing is rounded, it prints as a fraction in lowest terms (1.9 3e-5)
+    // a quotient that never ends is no decimal: nothing is rounded, it prints as a fraction in lowest terms
     assert_eq!(d("1").div(&d("3")).unwrap().text(), "1/3");
     assert!(d("1").div(&d("0")).is_none());
     // past 2^53, exact
@@ -150,7 +150,7 @@ fn the_amount_shape_and_what_a_transfer_may_name() {
     // what moves is never below zero
     assert!(refusals("transfer", common(json!({ "amount": { "value": "-1", "unit": "GBP" } })), refs(json!({ "to_owner": maria.id }))).contains(&"shape".to_string()));
     // a promise of an amount of a good names it in terms.quantity: no loan type
-    assert!(refusals("promise", common(json!({ "terms": { "quantity": { "value": "100", "unit": "GBP" }, "price": { "value": "110", "unit": "GBP" } } })), refs(json!({ "from": harry.id, "to": maria.id }))).is_empty());
+    assert!(refusals("promise", common(json!({ "terms": { "lines": [{ "id": "loan", "quantity": { "value": "100", "unit": "GBP" }, "price": { "value": "110", "unit": "GBP" } }] } })), refs(json!({ "from": harry.id, "to": maria.id }))).is_empty());
     // a make's inputs: [{ from, amount }]
     assert!(refusals("transform", common(json!({ "inputs": [{ "from": h(&sack), "amount": kg("0.2") }] })), refs(json!({ "derives_from": [h(&sack)] }))).is_empty());
     // the door's amount builder takes an of
@@ -288,7 +288,7 @@ fn a_pair_on_her_line_takes_nothing() {
     b["signature"] = json!(foodblock::sign(&b, &harry.keys.private_key).unwrap());
     w.blocks.push(b.clone());
     let o = w.own(&sack);
-    // 1.9 3b-5 (Rule B): 4 and 4 of 10 fit, so neither is a pair's refusal (unanswered, neither stands yet, and neither changes the other)
+    // 4 and 4 of 10 fit, so neither is a pair's refusal (unanswered, neither stands yet, and neither changes the other)
     assert_ne!(draw(&o, &a)["why"], json!("pair"));
     assert_ne!(draw(&o, &b)["why"], json!("pair"));
     // one receiver lets go: the other is read as a draw alone
@@ -298,8 +298,8 @@ fn a_pair_on_her_line_takes_nothing() {
     assert_eq!(draw(&o, &b)["takes"], json!(true));
 }
 
-// 1.9 3b-8, One start: two accepts apart by two of her keys: the one by her receiving voice (her first voice: her genesis key here) starts
-// her line; the tablet's accept is her yes and starts nothing, and a draw by the tablet takes nothing (`not_on_line`).
+// One start: two accepts apart by two of her keys: the one by her receiving voice (her first voice: her genesis key here) starts
+// her line; the tablet's accept is her yes and starts nothing, and a draw by the tablet takes nothing (`not_on_chain`).
 #[test]
 fn two_accepts_apart_the_receiving_voice_starts_the_line() {
     let mut w = World::new();
@@ -320,7 +320,7 @@ fn two_accepts_apart_the_receiving_voice_starts_the_line() {
     let o = w.own(&sacks);
     assert_eq!(draw(&o, &t)["state"], json!("landed"));
     assert_eq!(draw(&o, &first_voice_sale)["takes"], json!(true), "{o}");
-    assert_eq!(draw(&o, &tablet_sale)["why"], json!("not_on_line"), "{o}");
+    assert_eq!(draw(&o, &tablet_sale)["why"], json!("not_on_chain"), "{o}");
     assert!(o["draws"].as_array().unwrap().iter().all(|d| d["why"] != json!("pair")));
 }
 
@@ -333,8 +333,8 @@ fn a_line_held_only_as_a_header_is_not_shown() {
     let note = w.sign(&harry, "observe", json!({ "kind": "note" }), json!({}));
     let sale = w.give(&harry, &sack, &maria, Some(kg("0.5")));
     let header = call("header", json!([note]));
-    let held: Vec<Value> = w.blocks.iter().map(|b| if b["hash"] == note["hash"] { json!({ "header": header, "header_signature": note["signature"] }) } else { b.clone() }).collect();
-    let o = call("ownership", json!([sack, held, null]));
+    let blocks: Vec<Value> = w.blocks.iter().map(|b| if b["hash"] == note["hash"] { json!({ "header": header, "header_signature": note["signature"] }) } else { b.clone() }).collect();
+    let o = call("ownership", json!([sack, blocks, null]));
     assert_eq!(o, json!({ "not_shown": true, "lacks": [h(&note)] }));
     let _ = sale;
 }
@@ -379,7 +379,7 @@ fn a_loan_of_pounds_reaches_done_and_sums_are_exact() {
     let sam = w.person(4);
     let maria = w.person(2);
     let gbp = |v: &str| json!({ "value": v, "unit": "GBP" });
-    let offer = w.sign(&sam, "promise", json!({ "terms": { "quantity": gbp("100"), "price": gbp("110") } }), json!({ "from": sam.id, "to": maria.id }));
+    let offer = w.sign(&sam, "promise", json!({ "terms": { "lines": [{ "id": "loan", "quantity": gbp("100"), "price": gbp("110") }] } }), json!({ "from": sam.id, "to": maria.id }));
     w.sign(&maria, "promise", json!({ "status": "accepted" }), json!({ "answers": h(&offer), "for": h(&offer) }));
     let stage = |w: &World| call("promise_stage", json!([offer, w.blocks, {}]));
     let s = stage(&w);
@@ -395,9 +395,9 @@ fn a_loan_of_pounds_reaches_done_and_sums_are_exact() {
     assert_eq!((s["stage"].clone(), s["paid"].clone(), s["total"].clone()), (json!("done"), gbp("110"), gbp("110")));
     // a toll in kind, and a price per unit in bitcoin: exact
     let flour = kind("flour");
-    let toll = json!({ "price": { "amount": { "value": "1", "unit": "kg", "of": flour }, "per": kg("10") }, "quantity": kg("93") });
+    let toll = json!({ "lines": [{ "id": "toll", "price": { "amount": { "value": "1", "unit": "kg", "of": flour }, "per": kg("10") }, "quantity": kg("93") }] });
     assert_eq!(call("terms_total", json!([toll, null])), json!({ "value": "9.3", "unit": "kg", "of": flour }));
-    let btc = json!({ "price": { "amount": { "value": "0.00000001", "unit": "BTC" }, "per": kg("1") }, "quantity": kg("3") });
+    let btc = json!({ "lines": [{ "id": "fee", "price": { "amount": { "value": "0.00000001", "unit": "BTC" }, "per": kg("1") }, "quantity": kg("3") }] });
     assert_eq!(call("terms_total", json!([btc, null])), json!({ "value": "0.00000003", "unit": "BTC" }));
     // lines of two kinds have no total
     let mixed = json!({ "lines": [{ "id": "a", "price": gbp("1") }, { "id": "b", "price": { "value": "2", "unit": "egg" } }] });
@@ -410,7 +410,7 @@ fn a_basic_phones_received_word_counts_toward_the_price() {
     let shop = w.person(9);
     let mama = w.person(10);
     let kes = |v: &str| json!({ "value": v, "unit": "KES" });
-    let offer = w.sign(&shop, "promise", json!({ "what": "work", "terms": { "price": kes("100") } }), json!({ "from": mama.id, "to": shop.id }));
+    let offer = w.sign(&shop, "promise", json!({ "what": "work", "terms": { "lines": [{ "id": "work", "price": kes("100") }] } }), json!({ "from": mama.id, "to": shop.id }));
     w.sign(&mama, "promise", json!({ "status": "accepted" }), json!({ "answers": h(&offer), "for": h(&offer) }));
     // her own word that this much came: it has no status and accepts nothing
     w.sign(&mama, "observe", json!({ "kind": "received", "amount": kes("100") }), json!({ "for": h(&offer) }));

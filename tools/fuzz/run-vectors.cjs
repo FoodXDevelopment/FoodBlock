@@ -1,14 +1,12 @@
 #!/usr/bin/env node
 'use strict';
-// node tools/fuzz/run-vectors.cjs : spec/fuzz-vectors.json through the Rust core (fbfuzz serve) and the oracle.
+// node tools/fuzz/run-vectors.cjs : spec/fuzz-vectors.json through the Rust core (its WebAssembly door) and the oracle.
 const fs = require('fs'), path = require('path');
-const { spawnSync } = require('child_process');
 const fb = require('../../spec/oracle/fb.cjs');
 const V = JSON.parse(fs.readFileSync(path.join(__dirname, '../../spec/fuzz-vectors.json'), 'utf8')).vectors;
-// the Rust core through its door (the WebAssembly build the JavaScript SDK carries: the same core); the oracle through its own door
+// the Rust core through the WebAssembly build the JavaScript SDK carries; the oracle through its own door
 const { call } = require('../../sdk/javascript/src/core.cjs');
 const rust = V.map(v => { try { return { ok: call(v.op, ...JSON.parse(JSON.stringify(v.args))) }; } catch (e) { return { error: e.kind, message: e.message }; } });
-void spawnSync;
 const codes = l => [...new Set(l.map(x => (typeof x === 'string' ? x : x.code)))];
 const subset = (got, want) => want && typeof want === 'object' && !Array.isArray(want) ? Object.entries(want).every(([k, w]) => subset(got && got[k], w)) : JSON.stringify(got) === JSON.stringify(want);
 const read = (v, got) => {
@@ -17,7 +15,7 @@ const read = (v, got) => {
   if (v.by === 'codes') return codes(got);
   return got;
 };
-const holds = (v, got) => (v.by === 'subset' ? subset(got, v.expect) : JSON.stringify(read(v, got)) === JSON.stringify(v.by === 'includes_code' ? v.expect : v.expect));
+const holds = (v, got) => (v.by === 'subset' ? subset(got, v.expect) : JSON.stringify(read(v, got)) === JSON.stringify(v.expect));
 let bad = 0;
 V.forEach((v, i) => {
   const r = rust[i], rg = r.ok;
@@ -27,7 +25,7 @@ V.forEach((v, i) => {
     try {
       const o = fb.door(v.op, ...JSON.parse(JSON.stringify(v.args)));
       oracleSaid = JSON.stringify(o).slice(0, 120);
-      oracleOk = holds(v, v.op === 'promise_stage' ? o : o);
+      oracleOk = holds(v, o);
     } catch (e) { oracleOk = false; oracleSaid = 'throws ' + e.message; }
   }
   if (!rustOk || !oracleOk) { bad++; console.log(`FAIL ${v.name}\n   rust ${JSON.stringify(r).slice(0, 200)} ok=${rustOk}\n   oracle ${oracleSaid} ok=${oracleOk}`); }

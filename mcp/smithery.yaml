@@ -5,12 +5,12 @@ startCommand:
     properties:
       identityFile:
         type: string
-        description: "Optional file holding this server's identity, so its key chain carries on across runs."
-    required: []
+        description: "A file holding the person's public side: her genesis and the blocks her device signed. It holds no key."
+    required: [identityFile]
   commandFunction:
     |-
     (config) => ({
       command: "npx",
       args: ["-y", "foodblock-mcp"],
-      env: config.identityFile ? { FOODBLOCK_IDENTITY: config.identityFile } : {}
+      env: { FOODBLOCK_IDENTITY: config.identityFile }
     })

@@ -12,7 +12,7 @@
 
 ## 1. Status
 
-A **pattern**, not a change to the protocol: it adds no rule, and a node that has never heard of it still accepts every block in it. Normative for implementers who claim `foodblock-profile-epcis`, informative for everyone else. Not legal advice: covered persons under FSMA 204 stay responsible for their records; FoodBlock carries the key data elements (KDEs). Not in scope: an EPCIS repository or Query Interface, GS1 Digital Link, EU labelling or product-passport packs.
+A **pattern**, not a change to the protocol: it adds no rule, and a node that has never heard of it still accepts every block in it. Normative for implementers who claim `foodblock-profile-epcis`. Not legal advice: covered persons under FSMA 204 stay responsible for their records; FoodBlock carries the key data elements (KDEs). Not in scope: an EPCIS repository or Query Interface, GS1 Digital Link, EU labelling or product-passport packs.
 
 1. **The kind is the CTE.** A step's `state.kind` names the Critical Tracking Event (`harvest`, `cool`, `pack`, `first_land_receive`, `first_receive`, `ship`, `receive`, `process`). There is no CTE field.
 2. **The lot is an instance; the TLC is a mark.** A lot is a `thing` instance of its product kind. Its Traceability Lot Code (TLC) is one of its marks, so a recall matches it exactly (modules/things.md).
@@ -26,15 +26,15 @@ Everything in core is unchanged. The pattern fixes the `state.kind` labels (§4)
 ## 3. Things, actors and marks
 
 - **Covered person.** A covered person that is a circle (a business) is spoken for by a block `as` it (`refs.as`) that a row of the circle holds for (circles.md); one that is a person signs for itself.
-- **Site.** Farm, field, cooler, packhouse, distribution centre, vehicle: each is a `thing` of kind place, with `state.where`, a `name`, and its FSMA location description (§5). Its GLN is a mark `{ scheme: "gln", value }`. A site inside another (a field on a farm, a vehicle at a dock) uses `refs.place`.
-- **Product kind.** A `thing` kind (spinach, flour) with its GTIN as a mark `{ scheme: "gtin", value }`.
+- **Site.** Farm, field, cooler, vehicle: each is a `thing` of kind place, with `state.where`, a `name`, and its FSMA location description (§5). Its GLN is a mark `{ scheme: "gln", value }`. A site inside another (a field on a farm) uses `refs.place`.
+- **Product kind.** A `thing` kind with its GTIN as a mark `{ scheme: "gtin", value }`.
 - **Lot.** A `thing` instance: `refs.of` the product kind, `state.lot` its batch name, `state.amount` or `state.pack` its size, `state.use_by`. Its marks:
   - `{ scheme: "tlc", value }`: the Traceability Lot Code;
   - `{ scheme: "tlc_source", value }`: the GLN, or FDA registration number, of the place that assigned it;
   - `{ scheme: "lgtin", value }`: the GS1 lot-level identifier (GTIN and batch) the events name the lot by; the adapter writes it on every lot (§4.3);
   - `{ scheme: "gtin", value }`, `{ scheme: "sscc", value }`, `{ scheme: "sgtin", value }`: any other identifiers the lot carries.
-- **Containment.** An EPCIS parent and children (case on pallet, pallet in truck) are `refs.place`: what is inside moves with its container (modules/things.md).
-- **Traceability plan.** An `observe` of kind `traceability_plan` by the covered person: `state.text` names the plan document by its hash.
+- **Containment.** An EPCIS parent and children are `refs.place`: what is inside moves with its container (modules/things.md).
+- **Traceability document.** An `observe` of kind `traceability_document` by the covered person: `state.text` names the document (FSMA 204's traceability plan) by its hash.
 
 ## 4. Events
 
@@ -51,22 +51,22 @@ Everything in core is unchanged. The pattern fixes the `state.kind` labels (§4)
 | Transformation | `transform` with `derives_from` inputs and new lot outputs | `process` | **new TLC** on each output | `commissioning` or `creating_class_instance` (flag 3) |
 
 Flags (CBV and GS1 US guidance, as of the *EPCIS Recommendations for FSMA 204*, Release 2.0, May 2025):
-1. CBV 2.0 has no `harvesting` business step. Use `commissioning`; do not invent `…:bizstep:harvesting`.
+1. CBV 2.0 has no `harvesting` business step. Use `commissioning`; invent no `…:bizstep:harvesting`.
 2. CBV 2.0 has no cooling step; the guidance uses `other`.
-3. The step depends on the process. An adapter preserves the source event's `biz_step` when importing.
+3. The step depends on the process. An adapter keeps the source event's `biz_step`.
 
-A receiving from an exempt source (restaurant and retail food establishment exceptions in the rule) that has no TLC is a `transform` of kind `first_receive` by the receiver that assigns one, with no inputs, like harvesting.
+A receiving from an exempt source (the rule's restaurant and retail food establishment exceptions) that has no TLC is a `transform` of kind `first_receive` by the receiver that assigns one, with no inputs, like harvesting.
 
 ### 4.2 EPCIS 2.0 constructs
 
 | EPCIS 2.0 | FoodBlock |
 |---|---|
-| ObjectEvent | The block its `biz_step` names (§4.1). Anything else: an `observe` about the lot, `refs.subject` the instance (escape hatch for now) |
+| ObjectEvent | The block its `biz_step` names (§4.1). Anything else: an `observe` about the lot, `refs.subject` the instance |
 | AggregationEvent ADD / DELETE | A `transfer` with `refs.to_place` the container (ADD), or out of it (DELETE) |
 | TransactionEvent | The `transfer` it records; its business transactions in `biz_transactions` |
 | TransformationEvent | `transform`, inputs in `derives_from` |
-| AssociationEvent | An `observe` that links two things by `refs.subject` and `refs.place` (escape hatch for now) |
-| SensorElement | An `observe` reading: `amount`, `accuracy`, `coverage`, the sensor named in `refs.from`, the shipment or lot in `refs.subject`. Dense streams are linked by their Merkle root (modules/things.md, Truth) (escape hatch for now) |
+| AssociationEvent | An `observe` that links two things by `refs.subject` and `refs.place` |
+| SensorElement | An `observe` reading: `amount`, `accuracy`, `coverage`, the sensor named in `refs.from`, the shipment or lot in `refs.subject`. Dense streams are linked by their Merkle root (modules/encoding.md, Large content) |
 | ErrorDeclaration | The author's `updates` of the wrong event; for another author's event, a `defeats` of it, then a corrected block (escape hatch for now) |
 | eventTime, eventTimeZoneOffset | `state.when`, `state.tz` |
 | recordTime | `state.at` (when it was said) |
@@ -82,15 +82,15 @@ A receiving from an exempt source (restaurant and retail food establishment exce
 
 ### 4.3 The adapter
 
-The mapping is mechanical: `profiles/epcis/adapter.cjs` is the reference, and `profiles/epcis/vectors.json` is what any other must reproduce (§9).
+`profiles/epcis/adapter.cjs` is the reference, and `profiles/epcis/vectors.json` is what any other must reproduce (§9).
 
-**What an adapter holds.** The blocks it reads and a directory of parties, PGLN URN to actor id (the adapter's own configuration, never a block). Everything else is found by marks:
+**What an adapter holds.** The blocks it reads and a directory of parties, PGLN URN to actor id (its own configuration, never a block). Everything else is found by marks:
 - a site is a `thing` of kind `place` with `{ scheme: "sgln", value: <SGLN URN> }` and `{ scheme: "gln", value: <GLN-13> }`;
-- a product kind is a `thing` of kind `product` with `{ scheme: "gtin", value: <GTIN-14> }`. The GTIN of an LGTIN class is its indicator digit, company prefix and the rest of the item reference, then the GS1 check digit;
+- a product kind is a `thing` of kind `product` with `{ scheme: "gtin", value: <GTIN-14> }`. The GTIN of an LGTIN class is its indicator digit, company prefix and rest of the item reference, then the GS1 check digit;
 - a lot is an instance with `{ scheme: "lgtin", value: <the LGTIN class URN> }`. Its `state.lot` and, where §6 assigns one, its TLC mark are the lot part of that URN (everything after the item reference); `tlc_source` is the GLN of the site where the event happened;
 - a container is a `thing` with an `sscc` mark.
 
-**Which CTE an event is.** By event type and business step (§4.1) where they name it. Where CBV has no step for a CTE, or two CTEs share one, the event carries the profile's own extension `"fb:cte"` (`harvest`, `cool`, `first_land_receive`, `first_receive`). An event no row names becomes the escape hatch.
+**Which CTE an event is.** By event type and business step (§4.1) where they name it. Where CBV has no step for a CTE, or two CTEs share one, the event carries the profile's extension `"fb:cte"` (`harvest`, `cool`, `first_land_receive`, `first_receive`). An event no row names becomes the escape hatch.
 
 | Event | Blocks |
 |---|---|
@@ -102,26 +102,26 @@ The mapping is mechanical: `profiles/epcis/adapter.cjs` is the reference, and `p
 | AggregationEvent | A `transfer` of kind `aggregate`: `refs.what` the children, `refs.subject` the container, `refs.to_place` the container (ADD) or the site (DELETE) |
 | TransactionEvent | A `transfer` of kind `transaction`: `refs.what` the lots, `refs.to_owner` the destination owning party, `biz_transactions`. The new owner's `accepted` answer is the receiver's own block |
 
-In every block, `when`, `tz`, `biz_step`, `disposition`, `action`, `epcis_id` and `biz_transactions` carry the event's own fields; `state.at` is `recordTime`; `refs.place` is the `readPoint`. The way back writes `bizLocation` equal to `readPoint`, except on shipping, and lists quantities in ascending `epcClass` order. A closed block (every `transfer`) names a schema in `refs.schema` that its own author published and signed: a `thing` of kind `schema`, `target` `transfer`, declaring `biz_step`, `disposition`, `persistent_disposition`, `tz`, `action`, `epcis_id`, `biz_transactions` and `reference_document`. Units: UN/CEFACT `KGM`, `LBR` and `C62` are UCUM `kg`, `[lb_av]` and `{each}`.
+In every block, `when`, `tz`, `biz_step`, `disposition`, `action`, `epcis_id` and `biz_transactions` carry the event's fields; `state.at` is `recordTime`; `refs.place` is the `readPoint`. The way back writes `bizLocation` equal to `readPoint`, except on shipping, and lists quantities in ascending `epcClass` order. A closed block (every `transfer`) names in `refs.schema` a schema its own author published and signed: a `thing` of kind `schema`, `target` `transfer`, declaring `biz_step`, `disposition`, `persistent_disposition`, `tz`, `action`, `epcis_id`, `biz_transactions` and `reference_document`. Units: UN/CEFACT `KGM`, `LBR` and `C62` are UCUM `kg`, `[lb_av]` and `{each}`.
 
-An `observe` of kind `epcis` holds any other event: `state.epcis_type`, `state.biz_step`, `state.when`, and `state.raw`, the hash of the raw document. Prefer a row above whenever one applies.
+An `observe` of kind `epcis` holds any other event: `state.epcis_type`, `state.biz_step`, `state.when`, and `state.raw`, the hash of the raw document.
 
 ## 5. Key data elements
 
-KDEs are `state` fields the profile's schemas declare. Time, numbers and quantities (`{ value, unit }`, UCUM) are the protocol's forms.
+KDEs are `state` fields the profile's schemas declare. Time, numbers and quantities (`{ value, unit }`, UCUM) take the protocol's forms.
 
 | Field | Meaning |
 |---|---|
 | `biz_step`, `disposition`, `persistent_disposition` | CBV URIs (full URNs; short names only in a vocabulary map, expanded on export) |
 | `tz` | EPCIS eventTimeZoneOffset (`+01:00`) |
 | `action` | `ADD`, `OBSERVE` or `DELETE`, for round trip |
-| `epcis_type`, `epcis_id` | For round trip, optional |
+| `epcis_type`, `epcis_id` | Round trip, optional |
 | `product_description` | FSMA product description |
 | `reference_document` | `{ type, number }`: bill of lading, work order, field tag |
 | `biz_transactions` | `[{ type, id }]` with CBV transaction-type URIs |
 | `commodity`, `variety`, `field_name` | Harvest KDEs |
 
-The date of a CTE is `state.when`, the location `refs.place`, the quantity and unit `state.amount`. The TLC and its source are the lot's marks, carried by naming the lot; an exporter copies them into the FDA's sortable spreadsheet.
+A CTE's date is `state.when`, its location `refs.place`, its quantity and unit `state.amount`. The TLC and its source are the lot's marks, carried by naming the lot.
 
 **FSMA location description** (21 CFR §1.1310) is data on the site thing: `name`, `phone`, `address` (`line1`, `city`, `region`, `postal`, `country`), `where`, and the GLN mark.
 
@@ -134,10 +134,10 @@ The date of a CTE is `state.when`, the location `refs.place`, the quantity and u
 
 ## 7. Tracing and recall
 
-- **Forward.** Start from the instances whose marks match the TLC exactly. Follow `derives_from` to what was made from them (each output carries its own new TLC), `refs.what` to where they were shipped, and `refs.to_place` to the container they were put in.
+- **Forward.** Start from the instances whose marks match the TLC exactly. Follow `derives_from` to what was made from them (each output with its own new TLC), `refs.what` to where they were shipped, and `refs.to_place` to the container they were put in.
 - **Backward.** From a received lot, follow the `answers` to the shipping transfer, then `derives_from` to its inputs.
 - **The record.** The CTE blocks that name any lot reached, one row each, in time order: CTE, TLC, TLC source, product, date, quantity and unit, location (GLN), ship-to, the party that signed, the business transactions, and the block. `trace` in the adapter is exact.
-- **Whose records.** Each covered person holds their own CTE blocks; sealed blocks show only their public headers, so a recall asks each holder. A holder may sign a recall grant (tax-recall.md: `scope.types` `['pull']`) to whoever it chooses; the 24-hour answer time is a field of a schema the holder names, its own word, binding the holder alone.
+- **Whose records.** Each covered person holds their own CTE blocks; sealed blocks show only public headers, so a recall asks each holder. A holder may sign a recall grant (tax-recall.md: `scope.types` `['pull']`) to whoever it chooses; the 24-hour answer time is a field of a schema the holder names, its own word, binding the holder alone.
 - **The spreadsheet.** The FDA's sortable record is an export from these folds, never a block.
 
 ## 8. Conformance
@@ -154,22 +154,20 @@ An implementation claims `foodblock-profile-epcis` when:
 
 `profiles/epcis/vectors.json` holds a small supply chain of leafy greens and cod: 64 signed blocks, each valid and passing the write check against those before it. `node spec/profiles/epcis/run.cjs` checks it; `make-vectors.cjs` makes it.
 
-- **Round trips (19 events):** each event to blocks and back to the same event: every CTE in §4.1, exempt-source receiving, aggregation (ADD and DELETE), a transaction on invoice, and the escape hatch (which keeps only the document's hash and cannot round trip).
+- **Round trips (19 events):** each event to blocks and back: every CTE in §4.1, exempt-source receiving, aggregation (ADD and DELETE), a transaction on invoice, and the escape hatch (which keeps only the document's hash and cannot round trip).
 - **Folds:** `ownership` and `where_now` over the whole world.
-- **The 24-hour traceback:** five queries by lot code, forward and backward, with the rows of the sortable record; and the holder's recall grant (naming the holder's own schema that declares `answer_within` and `marks`; `answer_within` `PT24H`, which is `P1D`) with the pull filter by mark that selects the lot and not another's.
+- **The 24-hour traceback:** five queries by lot code, forward and backward, with the rows of the sortable record; and the holder's recall grant (naming the holder's own schema that declares `answer_within` and `marks`; `answer_within` `PT24H`, which is `P1D`) with the pull filter by mark that selects the lot and no other.
 - **A refusal:** a shipment that names no schema is refused for its undeclared fields.
 
-The five EPCIS vectors in `test/vectors.json` (section `legacy-read`) are 0.x data, read through the converter (legacy/converter.md).
+The five EPCIS vectors in `test/vectors.json` (section `legacy-read`) are 0.x data, read through legacy/converter.md.
 
-Not yet vectored: AssociationEvent, SensorElement, ErrorDeclaration, `persistent_disposition`, and a covered person that is a circle.
+Not yet vectored: AssociationEvent, SensorElement, ErrorDeclaration, `persistent_disposition`, a covered person that is a circle.
 
 ## 10. Open items
 
-1. If CBV adds dedicated harvest or cooling business steps, adopt them as vocabulary; the kind does not change.
-2. `commissioning` against `creating_class_instance` is process-dependent.
-3. GS1 Digital Link is out of scope; a mark scheme could carry it later.
-4. The short-name to CBV-URI map is still to be written; each covered person's schema is a block in the vectors, not yet published.
-5. Ownership moves when the receiver accepts, but the place moves only by the owner's own transfer, so a receiver writes an `arrive`. If a later fold lets the accepting answer carry the place, `arrive` goes.
+1. If CBV adds harvest or cooling business steps, adopt them as vocabulary; the kind does not change.
+2. The short-name to CBV-URI map is still to be written; each covered person's schema is a block in the vectors, not yet published.
+3. Ownership moves when the receiver accepts, but the place moves only by the owner's own transfer, so a receiver writes an `arrive`. If a later fold lets the accepting answer carry the place, `arrive` goes.
 
 ## 11. Sources
 

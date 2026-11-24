@@ -1,4 +1,4 @@
-//! A circle (circles.md, 1.9 stage 6): people who own things together by parts, and the rows by which some of them act for the owners.
+//! A circle (circles.md): people who own things together by parts, and the rows by which some of them act for the owners.
 //! A circle never signs and holds no key: every block `as` it is a person's word, and speaks for the owners only where one row holds for it
 //! (counted in one place, every hand past its ends, no hand of one the move gives to) or where hands that own every part persons own sign it.
 //!
@@ -58,7 +58,7 @@ fn is_version_of(b: &Value, circle: &str) -> bool {
     is_circle_actor(b) && rs(b, "as") == Some(circle) && rs(b, "updates").is_some()
 }
 
-/// A circle's `pack` (C1): whole parts, `unit` `part`, at least 1, no `of`. None where it states none (C3: owners unsaid).
+/// A circle's `pack`: whole parts, `unit` `part`, at least 1, no `of`. None where it states none (owners unsaid).
 pub(crate) fn pack_of(founding: &Value) -> Option<Dec> {
     let a = Amount::of(st(founding, "pack"))?;
     (a.kind.unit == "part" && a.kind.of.is_none() && whole(&a.value) && a.value.cmp(&Dec::parse("1").unwrap()) != Ordering::Less).then_some(a.value)
@@ -76,7 +76,7 @@ fn dec_n(n: u64) -> Dec {
     Dec::of(Some(&json!(n))).unwrap()
 }
 
-/// How a row counts (C10): parts between its hands, or that many of the ids `to` names (or of the holders of a grant it names).
+/// How a row counts: parts between its hands, or that many of the ids `to` names (or of the holders of a grant it names).
 #[derive(Clone, Debug)]
 enum Count {
     Parts(u64),
@@ -111,12 +111,12 @@ fn names_actor(r: &Row) -> bool {
     scope_types(&r.scope).is_some_and(|t| t.iter().any(|t| t == "actor" || t.starts_with("actor.")))
 }
 
-// ---- Versions (C19) ----
+// ---- Versions ----
 
 /// The versions of a circle held: `actor`s of kind `circle` signed `as` it that update the founding block or an earlier version, counted.
 fn versions<'a>(circle: &str, index: &'a Index) -> Vec<&'a Value> {
     let hs = memo(index, &format!("c6vers:{circle}"), json!([]), || {
-        let cand: Vec<&Value> = index.values().filter(|b| is_version_of(b, circle) && crate::identity::counts_in(b, index)).collect();
+        let cand: Vec<&Value> = index.values().filter(|b| is_version_of(b, circle) && crate::forks::counts_in(b, index)).collect();
         let mut known: BTreeSet<String> = core::iter::once(circle.to_string()).collect();
         let mut out: Vec<String> = Vec::new();
         loop {
@@ -134,7 +134,7 @@ fn versions<'a>(circle: &str, index: &'a Index) -> Vec<&'a Value> {
     hs.as_array().into_iter().flatten().filter_map(Value::as_str).filter_map(|h| index.get(h)).collect()
 }
 
-/// The block whose rows, clocks and meter stand for a block (C19, D15): of the versions that hold in its causal past (all held where `at`
+/// The block whose rows, clocks and meter stand for a block: of the versions that hold in its causal past (all held where `at`
 /// is None), the one every other is in the past of; where two are rivals, the latest block (a version or the founding block) both have in
 /// their past; with none, the founding block.
 fn standing_version<'a>(circle: &str, at: Option<&Value>, index: &'a Index) -> Option<&'a Value> {
@@ -172,16 +172,16 @@ fn rows_for(circle: &str, block: &Value, index: &Index) -> Vec<Row> {
     let from_founding = hash_of(v) == hash_of(f);
     rows_in(v).into_iter().filter(|r| from_founding || !names_actor(r)).collect()
 }
-/// The clock that stands for a block (C20): the standing block's `clocks`.
+/// The clock that stands for a block: the standing block's `clocks`.
 fn clocks_at(circle: &str, at: Option<&Value>, index: &Index) -> Option<crate::tasks::Clocks> {
     let v = standing_version(circle, at, index)?;
     st(v, "clocks").and_then(crate::tasks::clocks_of)
 }
-/// The meter that stands (C21, D8): the standing block's `refs.meter`; a version that names none leaves the circle with none.
+/// The meter that stands: the standing block's `refs.meter`; a version that names none leaves the circle with none.
 fn meter_at<'a>(circle: &str, at: Option<&Value>, index: &'a Index) -> Option<&'a str> {
     standing_version(circle, at, index).and_then(|v| rs(v, "meter"))
 }
-/// The meter of a circle among all held (the circle's line, C21).
+/// The meter of a circle among all held (the circle's line).
 pub(crate) fn circle_meter<'a>(circle: &str, index: &'a Index) -> Option<&'a str> {
     founding(circle, index)?;
     meter_at(circle, None, index)
@@ -190,7 +190,7 @@ pub(crate) fn circle_meter<'a>(circle: &str, index: &'a Index) -> Option<&'a str
 // ---- Parts, read in a block's causal past ----
 
 /// Who owns parts of a circle in the causal past of `at` (all held where None): for each owner, the parts she may still draw on (`free`:
-/// what she owns less what her draws hold, each draw in `add_back` added back, D1) and her title (`title`: what she owns, held draws
+/// what she owns less what her draws hold, each draw in `add_back` added back) and her title (`title`: what she owns, held draws
 /// included). The circle's own entry is its unissued parts. `None` when the circle has no pack; `Err(lacks)` when not shown to this reader.
 type Owners = BTreeMap<String, (Dec, Dec)>;
 fn owners_at(circle: &str, at: Option<&Value>, add_back: &[String], index: &Index) -> Option<Result<Owners, Value>> {
@@ -229,7 +229,7 @@ fn owners_at(circle: &str, at: Option<&Value>, add_back: &[String], index: &Inde
             let (Some(by), Some(a)) = (d["by"].as_str(), d["amount"]["value"].as_str().and_then(Dec::parse)) else { continue };
             let e = out.entry(by.to_string()).or_insert((Dec::zero(), Dec::zero()));
             e.1 = e.1.add(&a);
-            // D1: a draw of hers that the move (or a move it confirms) answers is no end of her hand for that move: hers until the yes lands
+            // A draw of hers that the move (or a move it confirms) answers is no end of her hand for that move: hers until the yes lands
             if by != circle && d["block"].as_str().is_some_and(|h| add_back.iter().any(|x| x == h)) {
                 e.0 = e.0.add(&a);
             }
@@ -251,7 +251,7 @@ fn owners_at(circle: &str, at: Option<&Value>, add_back: &[String], index: &Inde
     Some(Ok(out))
 }
 
-// ---- Who a move gives to (C16, D6) ----
+// ---- Who a move gives to ----
 
 /// The ids a block gives anything to: a transfer's `to_owner` and `to_holder`; a grant's holders; an offer's or order's sides; an accept of
 /// a promise, that promise's sides and author. An accept of a transfer gives nothing (it receives). Never the circle itself.
@@ -273,7 +273,7 @@ fn gives_to(block: &Value, circle: &str, index: &Index) -> Vec<String> {
     sorted_set(out.into_iter().filter(|x| x != circle))
 }
 
-/// Whether `r` is `who` or hers for C16: herself, a key linked to hers (a two-key link), a tool of hers (the holder of a counted grant she
+/// Whether `r` is `who` or hers: herself, a key linked to hers (a two-key link), a tool of hers (the holder of a counted grant she
 /// signed in her own name, in the move's past), or a circle in which her hand could count.
 fn is_hers(r: &str, who: &str, block: &Value, index: &Index) -> bool {
     if r == who || super::grants::linked(r, who, index) {
@@ -281,11 +281,11 @@ fn is_hers(r: &str, who: &str, block: &Value, index: &Index) -> bool {
     }
     let past = index.past_of(block);
     let tool = index.values().any(|g| {
-        type_of(g) == "grant" && st(g, "status").is_none() && rs(g, "author") == Some(who) && rs(g, "as").is_none() && list(rf(g, "to")).contains(&r) && past.contains(hash_of(g)) && crate::identity::counts_in(g, index)
+        type_of(g) == "grant" && st(g, "status").is_none() && rs(g, "author") == Some(who) && rs(g, "as").is_none() && list(rf(g, "to")).contains(&r) && past.contains(hash_of(g)) && crate::forks::counts_in(g, index)
     });
     tool || (founding(r, index).is_some() && r != who && hand_could_count(who, r, Some(block), index))
 }
-/// Whether a move gives to `who` (C16).
+/// Whether a move gives to `who`.
 fn gives_to_who(block: &Value, receivers: &[String], who: &str, index: &Index) -> bool {
     receivers.iter().any(|r| is_hers(r, who, block, index))
 }
@@ -305,14 +305,14 @@ pub(crate) fn hand_could_count(who: &str, circle: &str, at: Option<&Value>, inde
     })
 }
 
-// ---- Seen, on the circle's clock (D11) ----
+// ---- Seen, on the circle's clock ----
 
 /// Whether block `x` has seen `e` (an end): `e` is in its causal past, or the circle's clock received `e` before `x` (its `needed` lines).
 fn seen_by(x: &Value, e: &str, clocks: Option<&crate::tasks::Clocks>, index: &Index) -> bool {
     e == hash_of(x) || index.past_of(x).contains(e) || clocks.is_some_and(|k| crate::line::end_first(hash_of(x), e, k, index, &|_| true))
 }
 
-// ---- A row's `to` (C11, D16) ----
+// ---- A row's `to` ----
 
 /// The ids a row's `to` names, read in the causal past of `at`: each id, or for an id that is a grant `as` the circle that holds, the
 /// holders that grant names as it stands.
@@ -330,9 +330,9 @@ fn named_ids(to: &[String], circle: &str, at: Option<&Value>, index: &Index) -> 
     });
     v.as_array().into_iter().flatten().filter_map(Value::as_str).map(String::from).collect()
 }
-/// The holders a head-count grant names as it stands in `at`'s past (D16): the newest of its newer words `as` the circle that hold; none
+/// The holders a head-count grant names as it stands in `at`'s past: the newest of its newer words `as` the circle that hold; none
 /// where a stop of it that counts is seen (a stop `as` the circle that holds, or its author's while her hand could count there); where two
-/// newer words do not see each other, only the ids both name; less each holder who ended her own place. Seen on the circle's clock (D11).
+/// newer words do not see each other, only the ids both name; less each holder who ended her own place. Seen on the circle's clock.
 fn grant_holders(g: &Value, circle: &str, at: Option<&Value>, index: &Index) -> Vec<String> {
     let clocks = clocks_at(circle, at, index);
     let seen = |h: &str| match at {
@@ -344,7 +344,7 @@ fn grant_holders(g: &Value, circle: &str, at: Option<&Value>, index: &Index) -> 
     }
     let gh = hash_of(g);
     let names = index.names_memo();
-    let named: Vec<&Value> = names.by_answer.get(gh).into_iter().flatten().filter_map(|n| index.get(n)).filter(|w| seen(hash_of(w)) && crate::identity::counts_in(w, index)).collect();
+    let named: Vec<&Value> = names.by_answer.get(gh).into_iter().flatten().filter_map(|n| index.get(n)).filter(|w| seen(hash_of(w)) && crate::forks::counts_in(w, index)).collect();
     if named.iter().any(|w| type_of(w) == "grant" && crate::grant::ending(w, gh) == Some(crate::grant::End::Stop) && stop_counts(w, g, circle, index)) {
         return vec![];
     }
@@ -361,7 +361,7 @@ fn grant_holders(g: &Value, circle: &str, at: Option<&Value>, index: &Index) -> 
     let own_end = |who: &str| named.iter().any(|b| rs(b, "author") == Some(who) && rs(b, "as").is_none() && crate::grant::ending(b, gh).is_some());
     ids.into_iter().filter(|x| !own_end(x) && !crate::identity::closes_of(x, index).iter().any(|c| seen(c))).collect()
 }
-/// Whether a stop of a grant signed `as` a circle counts (D17): a stop `as` the circle that holds (a row, or every owner), or its author's
+/// Whether a stop of a grant signed `as` a circle counts: a stop `as` the circle that holds (a row, or every owner), or its author's
 /// own stop while her hand could still count there.
 pub(crate) fn stop_counts(stop: &Value, grant: &Value, circle: &str, index: &Index) -> bool {
     if rs(stop, "as") == Some(circle) {
@@ -370,7 +370,7 @@ pub(crate) fn stop_counts(stop: &Value, grant: &Value, circle: &str, index: &Ind
     rs(stop, "as").is_none() && rs(stop, "author") == rs(grant, "author") && hand_could_count(rs(stop, "author").unwrap_or(""), circle, Some(stop), index)
 }
 
-// ---- A row's scope, read as a grant's is (C10, C12, C13, C4; D2, D9, D10) ----
+// ---- A row's scope, read as a grant's is ----
 
 fn type_names(block: &Value) -> Vec<String> {
     let t = type_of(block);
@@ -380,11 +380,11 @@ fn type_names(block: &Value) -> Vec<String> {
     }
     names
 }
-/// What a block binds the circle to hand over, as one amount in the bound's kind, where it names one (D10; the owner's decision of
-/// 2026-11-19, stage 4's rule for a grant's draw): the quantity where the bound is of the quantity's kind, else the deal's total at that
+/// What a block binds the circle to hand over, as one amount in the bound's kind, where it names one (the rule for a grant's draw): the quantity where the bound is of the quantity's kind, else the deal's total at that
 /// quantity. A transfer's amount; a transfer `for` a deal whose amount is of another kind than the bound (a till's loaf under "up to £300
-/// a deal") is read as the deal's total at that amount. An offer's or order's total, or its quantity; an accept's, of the promise it
-/// accepts. No other block has one.
+/// a deal") is read as its line's share: the line's price at that amount (1 kg of a £3/kg line is £3, whatever the rest of the order
+/// comes to). An offer's or order's total, or its lines' quantities in the bound's kind; an accept's, of the promise it accepts at the
+/// lines it chooses. No other block has one.
 fn block_amount(block: &Value, index: &Index, bound: Option<&crate::decimal::Kind>) -> Option<Amount> {
     let t = type_of(block);
     if t == "transfer" && st(block, "status").is_none() {
@@ -395,7 +395,17 @@ fn block_amount(block: &Value, index: &Index, bound: Option<&crate::decimal::Kin
         let Some(deal) = rs(block, "for").and_then(|h| index.get(h)) else { return Some(a) };
         let on = if ss(deal, "status") == Some("accepted") { rs(deal, "answers").and_then(|h| index.get(h)).unwrap_or(deal) } else { deal };
         let terms = get(on, "state.terms")?;
-        return Amount::of(Some(&super::terms_total(terms, st(block, "amount"))));
+        // the line it moves: the one it names in `state.line`, else the one line in the amount's kind
+        let lines = super::lines_of(terms);
+        let in_kind = |l: &&Value| Amount::of(l.get("quantity").and_then(|q| if q.get("value").is_some() { Some(q) } else { q.get("max") })).is_some_and(|q| q.kind == a.kind);
+        let line = match ss(block, "line") {
+            Some(id) => lines.into_iter().find(|l| l.get("id").and_then(Value::as_str) == Some(id)),
+            None => match lines.into_iter().filter(in_kind).collect::<Vec<_>>().as_slice() {
+                [one] => Some(*one),
+                _ => None,
+            },
+        }?;
+        return super::promise::total_of(line.get("price"), st(block, "amount")).and_then(|(d, k)| Amount::of(Some(&super::promise::kind_json(&d, &k))));
     }
     let on = if t == "promise" && st(block, "status").is_none() && rf(block, "answers").is_none() {
         Some(block)
@@ -405,25 +415,61 @@ fn block_amount(block: &Value, index: &Index, bound: Option<&crate::decimal::Kin
         None
     }?;
     let terms = get(on, "state.terms")?;
-    let quantity = get(block, "state.terms.quantity").or_else(|| terms.get("quantity"));
-    if let (Some(k), Some(q)) = (bound, Amount::of(quantity)) {
-        if q.kind == *k {
-            return Some(q);
+    let chosen = get(block, "state.terms.lines").filter(|_| ss(block, "status") == Some("accepted"));
+    if let Some(k) = bound {
+        let quantities: Vec<Amount> = super::lines_of(terms).into_iter().filter_map(|l| Amount::of(super::quantity_of(l, chosen))).filter(|q| q.kind == *k).collect();
+        if !quantities.is_empty() {
+            return Some(Amount { value: quantities.iter().fold(Dec::zero(), |t, q| t.add(&q.value)), kind: k.clone() });
         }
     }
-    Amount::of(Some(&super::terms_total(terms, quantity)))
+    Amount::of(Some(&super::terms_total(terms, chosen)))
 }
-/// Why a row's scope does not cover a block, or None where it does. A row's scope bounds only what it states (D2).
+/// Why a row's scope does not cover a block, or None where it does. A row's scope is read as a grant's: what it does not state, it does
+/// not allow (circles.md, What a row leaves out).
 fn scope_misfit(block: &Value, row: &Row, circle: &str, index: &Index) -> Option<&'static str> {
     let s = &row.scope;
-    if let Some(types) = scope_types(s) {
-        if !type_names(block).iter().any(|n| types.contains(n)) {
-            return Some("types");
+    // (1) its type
+    match scope_types(s) {
+        Some(types) if type_names(block).iter().any(|n| types.contains(n)) => {}
+        _ => return Some("types"),
+    }
+    // (3) a promise keeps to a promise in `on`; a transfer, or an accept of one, is `for` a promise in `on` or a deal the circle bound
+    // `any` at `parties`, `on` or `what` is her word for every side, every deal, every thing
+    let any = |k: &str| s.get(k).and_then(Value::as_str) == Some("any");
+    let ons: Vec<&Value> = if any("on") { vec![] } else { ids_of(s.get("on")) }.into_iter().filter_map(|h| index.get(h)).filter(|p| type_of(p) == "promise").collect();
+    let status = ss(block, "status");
+    let is_p = (type_of(block) == "promise" && st(block, "status").is_none()) || super::grants::is_accept(block, index);
+    let is_x = type_of(block) == "transfer" && (st(block, "status").is_none() || status == Some("accepted"));
+    let mut deals: Vec<&str> = list(rf(block, "for"));
+    if is_x && status == Some("accepted") {
+        if let Some(t) = rs(block, "answers").and_then(|h| index.get(h)) {
+            deals.extend(list(rf(t, "for")));
         }
     }
-    // C4: the circle's own parts move only by a row whose `scope.what` names the circle; a row that names `what` reaches only those
-    let named = list(rf(block, "what"));
+    let deals = {
+        let mut seen: Vec<&str> = Vec::new();
+        for d in deals {
+            if !seen.contains(&d) {
+                seen.push(d);
+            }
+        }
+        seen
+    };
+    let binders: Vec<&Value> = deals.iter().flat_map(|d| binders_of(block, d, circle, index)).collect();
+    if is_p && !any("on") {
+        let c = if super::grants::is_accept(block, index) { rs(block, "answers").and_then(|h| index.get(h)) } else { Some(block) };
+        if c.is_none_or(|c| super::grants::kept_by(c, &ons, index).is_err()) {
+            return Some("on");
+        }
+    }
+    if is_x && !any("on") && !deals.iter().any(|d| ons.iter().any(|p| hash_of(p) == *d) || !binders_of(block, d, circle, index).is_empty()) {
+        return Some("on");
+    }
+    // (4) each thing it names: in `scope.what`; a block of a deal under (3) names what its deal names; the circle's own parts only where
+    // `scope.what` names the circle
+    let named = crate::js::whats_of(block);
     match s.get("what") {
+        _ if any("what") => {}
         Some(w) => {
             let ok = ids_of(Some(w));
             if named.iter().any(|x| !ok.contains(x)) {
@@ -431,35 +477,43 @@ fn scope_misfit(block: &Value, row: &Row, circle: &str, index: &Index) -> Option
             }
         }
         None => {
-            if named.contains(&circle) {
+            if named.contains(&circle) || (!is_p && !is_x && !named.is_empty()) {
                 return Some("what");
             }
         }
     }
-    if let Some(parties) = s.get("parties").and_then(Value::as_array) {
-        let ok: Vec<&str> = parties.iter().filter_map(Value::as_str).collect();
-        if gives_to(block, circle, index).iter().any(|r| !ok.contains(&r.as_str())) {
-            return Some("parties");
+    // (2) each side it gives to is admitted: `parties`, a side an `on` promise names, a side of a deal the circle bound; with no `parties`,
+    // anyone on a side an `on` promise leaves open
+    let parties = ids_of(s.get("parties"));
+    let open_side = s.get("parties").is_none() && ons.iter().any(|p| rf(p, "from").is_none() || rf(p, "to").is_none());
+    let sides_of = |x: &Value| -> Vec<String> { ["from", "to", "author"].iter().flat_map(|k| list(rf(x, k))).map(String::from).collect() };
+    let mut bound_sides: Vec<String> = deals.iter().filter_map(|d| index.get(*d)).flat_map(sides_of).collect();
+    for x in &binders {
+        bound_sides.extend(sides_of(x));
+        if let Some(a) = rs(x, "answers").and_then(|h| index.get(h)) {
+            bound_sides.extend(sides_of(a));
         }
     }
-    // a row that names promises covers a payment only `for` one of them, and an answer only answering one (D4)
-    if let Some(on) = s.get("on") {
-        let ons = ids_of(Some(on));
-        let pays = type_of(block) == "transfer" && st(block, "status").is_none();
-        if pays && !list(rf(block, "for")).iter().any(|f| ons.contains(f)) {
-            return Some("on");
-        }
-        if rf(block, "answers").is_some() && !list(rf(block, "answers")).iter().any(|f| ons.contains(f)) {
-            return Some("on");
-        }
+    let admitted = |r: &str| {
+        any("parties") || open_side || parties.contains(&r) || ons.iter().any(|p| ["from", "to"].iter().any(|k| list(rf(p, k)).contains(&r))) || bound_sides.iter().any(|x| x == r)
+    };
+    if gives_to(block, circle, index).iter().any(|r| !admitted(r)) {
+        return Some("parties");
     }
-    // C13 (D2, D3): a grant from a row is no wider than the row; one that is wider is covered by no row and waits
+    // A grant from a row is no wider than the row; one that is wider is covered by no row and waits
     if type_of(block) == "grant" && st(block, "status").is_none() && wider_than_row(block, s) {
         return Some("wider_than_parent");
     }
-    // C12: bounds. A row that states a bound bounds every kind: an amount of another kind is above it, as under a grant.
+    // Bounds. A row that states a bound bounds every kind: an amount of another kind is above it, as under a grant.
     let each = s.get("each").and_then(|v| Amount::of(Some(v)));
     let limit = s.get("limit").and_then(|v| Amount::of(Some(v)));
+    // (5) a row that states no limit and no each lets nothing be drawn: no block under it binds or moves an amount above zero, as a
+    // grant's silence does (authority.md, What she did not write)
+    if each.is_none() && limit.is_none() && !counted_when_bound(block, circle, index) {
+        if block_amount(block, index, None).is_some_and(|a| a.value.cmp(&crate::decimal::Dec::zero()) == Ordering::Greater) {
+            return Some("limit");
+        }
+    }
     if each.is_some() || limit.is_some() {
         let bound = each.as_ref().or(limit.as_ref()).map(|x| x.kind.clone());
         if let Some(a) = block_amount(block, index, bound.as_ref()).filter(|_| !counted_when_bound(block, circle, index)) {
@@ -473,7 +527,7 @@ fn scope_misfit(block: &Value, row: &Row, circle: &str, index: &Index) -> Option
                 if a.kind != l.kind {
                     return Some("limit");
                 }
-                // D9: what this same row held for in the block's causal past, in the same period, each counted once, plus this one
+                // What this same row held for in the block's causal past, in the same period, each counted once, plus this one
                 let past = index.past_of(block);
                 let period = row_period(block, s, circle, index);
                 let mut used = a.value.clone();
@@ -494,14 +548,14 @@ fn scope_misfit(block: &Value, row: &Row, circle: &str, index: &Index) -> Option
             }
         }
     }
-    if let Some(until) = s.get("until").and_then(Value::as_str) {
-        if ss(block, "at").is_none_or(|at| at >= until) {
-            return Some("until");
+    if let Some(expires) = s.get("expires").and_then(Value::as_str) {
+        if ss(block, "at").is_none_or(|at| at >= expires) {
+            return Some("expires");
         }
     }
     None
 }
-/// Which period of a row's `every` a block is read in (D9): the cutoffs on the circle's meter line whose `refs.subject` is the circle and
+/// Which period of a row's `every` a block is read in: the cutoffs on the circle's meter line whose `refs.subject` is the circle and
 /// whose `when` is a span no shorter than `every`, before the block (in its causal past, or before the meter's receipt of it). With no
 /// meter, or no `every`, no period turns.
 fn row_period(block: &Value, scope: &Value, circle: &str, index: &Index) -> usize {
@@ -511,33 +565,36 @@ fn row_period(block: &Value, scope: &Value, circle: &str, index: &Index) -> usiz
     let long_enough = |w: &str| crate::time::parse_duration(w).is_some() && crate::grant::cmp_value(&json!(w), &json!(every)).is_some_and(|o| o != Ordering::Less);
     let cuts: Vec<&Value> = index
         .values()
-        .filter(|c| type_of(c) == "observe" && ss(c, "kind") == Some("cutoff") && rs(c, "subject") == Some(circle) && ss(c, "when").is_some_and(long_enough) && crate::line::on_line(c, &line, index) && crate::identity::counts_in(c, index))
+        .filter(|c| type_of(c) == "observe" && ss(c, "kind") == Some("cutoff") && rs(c, "subject") == Some(circle) && ss(c, "when").is_some_and(long_enough) && crate::line::on_line(c, &line, index) && crate::forks::counts_in(c, index))
         .collect();
     let past = index.past_of(block);
     let receipt = crate::line::receipts_of(hash_of(block), &line, index, &|_| true).into_iter().min_by_key(|r| index.past_of(r).len());
     cuts.iter().filter(|c| past.contains(hash_of(c)) || receipt.is_some_and(|r| index.past_of(r).contains(hash_of(c)))).count()
 }
-/// A block `for` a deal the circle bound, where the binding block `as` the circle holds in its causal past, is counted once, when the deal
-/// stood (stage 4's counted-once rule, 05 R7c; C12's kept word): a row's bounds do not count it again.
-fn counted_when_bound(block: &Value, circle: &str, index: &Index) -> bool {
+/// The blocks `as` the circle, in a block's causal past, that bound deal `d`: a promise that holds by a row, and is `d`, is `for` `d` or
+/// answers `d`.
+fn binders_of<'a>(block: &Value, d: &str, circle: &str, index: &'a Index) -> Vec<&'a Value> {
     let past = index.past_of(block);
-    list(rf(block, "for")).iter().any(|d| {
-        let names_deal = |b: &Value| hash_of(b) == *d || list(rf(b, "for")).contains(d) || list(rf(b, "answers")).contains(d);
-        index.values().any(|b| {
-            past.contains(hash_of(b)) && rs(b, "as") == Some(circle) && type_of(b) == "promise" && names_deal(b) && (st(b, "status").is_none() || ss(b, "status") == Some("accepted")) && holds_in(b, circle, index)
-        })
-    })
+    let names_deal = |b: &Value| hash_of(b) == d || list(rf(b, "for")).contains(&d) || list(rf(b, "answers")).contains(&d);
+    index
+        .values()
+        .filter(|b| past.contains(hash_of(b)) && rs(b, "as") == Some(circle) && type_of(b) == "promise" && names_deal(b) && (st(b, "status").is_none() || ss(b, "status") == Some("accepted")) && holds_in(b, circle, index))
+        .collect()
+}
+/// A block `for` a deal the circle bound, where the binding block `as` the circle holds in its causal past, is counted once, when the deal
+/// stood (authority.md, Counted once): a row's bounds do not count it again.
+fn counted_when_bound(block: &Value, circle: &str, index: &Index) -> bool {
+    list(rf(block, "for")).iter().any(|d| !binders_of(block, d, circle, index).is_empty())
 }
 
-/// Whether a grant signed `as` the circle is wider than a row's scope (C13, D2): types not a subset; a bound the row states and the grant does
-/// not keep within; `what` beyond the row's. A field the row leaves out bounds nothing.
+/// Whether a grant signed `as` the circle is wider than a row's scope, on every field, as a child grant is no wider than its parent: its
+/// types, parties and on within the row's; a bound the row states and the grant does not keep within, or any bound where the row states
+/// none; `refs.what` within the row's `what`, and with none, no `refs.what`.
 fn wider_than_row(grant: &Value, row: &Value) -> bool {
     let gs = st(grant, "scope").cloned().unwrap_or(json!({}));
-    if let Some(rt) = scope_types(row) {
-        // a grant that names no types acts for no type (a key grant, a rekey): it is no wider
-        if scope_types(&gs).unwrap_or_default().iter().any(|t| !rt.contains(t)) {
-            return true;
-        }
+    let subset = |k: &str| row.get(k).and_then(Value::as_str) == Some("any") || list(gs.get(k)).iter().all(|x| list(row.get(k)).contains(x));
+    if !subset("types") || !subset("parties") || !subset("on") {
+        return true;
     }
     let amt = |v: &Value, k: &str| v.get(k).and_then(|x| Amount::of(Some(x)));
     let within = |g: Option<Amount>, r: &Amount| g.is_some_and(|g| g.kind == r.kind && g.value.cmp(&r.value) != Ordering::Greater);
@@ -551,16 +608,13 @@ fn wider_than_row(grant: &Value, row: &Value) -> bool {
             return true;
         }
     }
-    if let Some(w) = row.get("what") {
-        let ok = ids_of(Some(w));
-        if list(rf(grant, "what")).iter().any(|x| !ok.contains(x)) {
-            return true;
-        }
+    if amt(row, "each").is_none() && amt(row, "limit").is_none() && (gs.get("limit").is_some() || gs.get("each").is_some()) {
+        return true;
     }
-    false
+    row.get("what").and_then(Value::as_str) != Some("any") && list(rf(grant, "what")).iter().any(|x| !list(row.get("what")).contains(x))
 }
 
-// ---- Hands, and whether a move holds (C6, C10, C15, C16, C18; invariant 27) ----
+// ---- Hands, and whether a move holds (invariant 27) ----
 
 struct Hand<'a> {
     block: &'a Value,
@@ -568,7 +622,7 @@ struct Hand<'a> {
     who: String,
     /// why it counts for nothing whatever the row: `pair`, `waiting`, `not_voice`
     fixed: Option<&'static str>,
-    /// her free parts of the circle in her hand's own causal past (D1's add-back applied); None with no pack
+    /// her free parts of the circle in her hand's own causal past (add-back applied); None with no pack
     parts: Option<Dec>,
 }
 
@@ -597,7 +651,7 @@ struct At {
 std::thread_local! {
     static DRAFTED: core::cell::RefCell<Option<String>> = const { core::cell::RefCell::new(None) };
 }
-/// Read `f` with the unsigned draft of id `draft` taken as a hand that counts (the owner's decision of 2026-11-19, for `binds`): a draft
+/// Read `f` with the unsigned draft of id `draft` taken as a hand that counts: a draft
 /// signed `as` a circle binds where her row would hold, as if her hand counts. Only the draft's own hand; every other rule is read as it is.
 pub(crate) fn as_drafted<T>(draft: &str, f: impl FnOnce() -> T) -> T {
     #[cfg(feature = "std")]
@@ -629,13 +683,13 @@ impl<'a> Move<'a> {
     fn read(block: &'a Value, circle: &str, index: &'a Index) -> Option<Move<'a>> {
         let f = founding(circle, index)?;
         let bh = hash_of(block);
-        // D1: the draws the move, or a move it confirms, answers
+        // The draws the move, or a move it confirms, answers
         let mut add_back: Vec<String> = list(rf(block, "answers")).into_iter().map(String::from).collect();
         for c in list(rf(block, "confirms")).into_iter().filter_map(|h| index.get(h)) {
             add_back.extend(list(rf(c, "answers")).into_iter().map(String::from));
         }
         let add_back = sorted_set(add_back);
-        let pairs: BTreeSet<String> = crate::identity::pair_groups_in(index).into_iter().flatten().collect();
+        let pairs: BTreeSet<String> = crate::forks::pair_groups_in(index).into_iter().flatten().collect();
         let names = index.names_memo();
         let mut hand_blocks: Vec<&Value> = vec![index.get(bh).filter(|x| *x == block).unwrap_or(block)];
         hand_blocks.extend(names.by_confirms.get(bh).into_iter().flatten().filter_map(|n| index.get(n)).filter(|c| hash_of(c) != bh && c.get("type").is_some() && rs(c, "author").is_some()));
@@ -646,9 +700,9 @@ impl<'a> Move<'a> {
                 let author = rs(b, "author").unwrap_or("").to_string();
                 let fork = pairs.contains(hash_of(b));
                 let (who, fixed_as): (String, Option<&'static str>) = match rs(b, "as").filter(|c| !c.is_empty() && hash_of(b) != bh) {
-                    // a confirm `as` the very circle: a hand on its unissued parts (C4)
+                    // a confirm `as` the very circle: a hand on its unissued parts
                     Some(c) if c == circle => (circle.to_string(), Some("not_voice")),
-                    // a confirm `as` another circle: that circle's hand, where a row of it holds for the confirm (C5)
+                    // a confirm `as` another circle: that circle's hand, where a row of it holds for the confirm
                     Some(c) => (c.to_string(), (!holds_in(b, c, index)).then_some("waiting")),
                     None => (author, None),
                 };
@@ -656,19 +710,20 @@ impl<'a> Move<'a> {
                     Some("pair")
                 } else if is_drafted(hash_of(b)) {
                     None
-                } else if !crate::identity::counts_in(b, index) {
+                } else if !crate::forks::counts_in(b, index) {
                     Some("not_voice")
                 } else if fixed_as.is_some() {
                     fixed_as
-                } else if !crate::identity::stands_own(b, index).stands {
+                } else if !crate::finality::stands_own(b, index).stands {
                     Some("waiting")
                 } else {
                     None
                 };
-                let parts = pack.as_ref().map(|_| match owners_at(circle, Some(b), &add_back, index) {
-                    // a hand `as` the very circle shows its unissued parts (C4): they count in no row
-                    Some(Ok(o)) => o.get(&who).map(|p| p.0.clone()).unwrap_or_else(Dec::zero),
-                    _ => Dec::zero(),
+                // her parts in the hand's causal past; none shown where the circle's parts are not shown there
+                let parts = pack.as_ref().and_then(|_| match owners_at(circle, Some(b), &add_back, index) {
+                    // a hand `as` the very circle shows its unissued parts: they count in no row
+                    Some(Ok(o)) => Some(o.get(&who).map(|p| p.0.clone()).unwrap_or_else(Dec::zero)),
+                    _ => None,
                 });
                 Hand { block: b, who, fixed, parts }
             })
@@ -689,7 +744,7 @@ impl<'a> Move<'a> {
         })
     }
 
-    /// "Every part persons own" for the move read at `x` (C6, D8): the pack where no part is unissued; else the pack less the unissued parts
+    /// "Every part persons own" for the move read at `x`: the pack where no part is unissued; else the pack less the unissued parts
     /// the meter's receipt of the move states (several held must agree). None where there is no such way.
     fn persons_own(&self, x: &Value, index: &Index) -> Option<Dec> {
         let f = founding(&self.circle, index)?;
@@ -705,7 +760,7 @@ impl<'a> Move<'a> {
         let line = crate::line::line_named(meter, index)?;
         let stated: Vec<Dec> = crate::line::receipts_of(hash_of(self.block), &line, index, &|_| true)
             .into_iter()
-            .filter(|r| crate::identity::counts_in(r, index))
+            .filter(|r| crate::forks::counts_in(r, index))
             .filter_map(|r| Amount::of(st(r, "unissued")).filter(|a| a.kind.unit == "part" && a.kind.of.is_none()).map(|a| a.value))
             .collect();
         match stated.as_slice() {
@@ -715,8 +770,8 @@ impl<'a> Move<'a> {
         }
     }
 
-    /// Whether a hand's ends (C15, D7) are seen by `x` (in its past, or by the circle's clock, D11): for a parts row (and every owner), any
-    /// draw of hers on the circle's parts signed after her hand, bar one the move answers (D1), or her close; for a `to` row, every end of
+    /// Whether a hand's ends are seen by `x` (in its past, or by the circle's clock): for a parts row (and every owner), any
+    /// draw of hers on the circle's parts signed after her hand, bar one the move answers, or her close; for a `to` row, every end of
     /// her place (read by `named_ids` at `x`) and her close.
     fn ended(&self, h: &Hand, x: &Value, parts_way: bool, index: &Index) -> bool {
         let hp = index.past_of(h.block);
@@ -738,11 +793,11 @@ impl<'a> Move<'a> {
                 }
                 && !self.add_back.iter().any(|a| a == hash_of(t))
                 && after(hash_of(t))
-                && crate::identity::counts_in(t, index)
+                && crate::forks::counts_in(t, index)
         })
     }
 
-    /// Whether a row's (or a grant's) `scope.on` names a promise the move is `for` that names her in `from` or `to` (C16's last clause).
+    /// Whether a row's (or a grant's) `scope.on` names a promise the move is `for` that names her in `from` or `to`.
     fn on_names(&self, r: &Row, who: &str, index: &Index) -> bool {
         let ons = ids_of(r.scope.get("on"));
         let fors = list(rf(self.block, "for"));
@@ -869,7 +924,7 @@ impl<'a> Move<'a> {
         });
         v == Value::Bool(true) && self.parent_holds(index)
     }
-    /// A version holds only where what it updates is the founding block or a version that holds (C19, D15).
+    /// A version holds only where what it updates is the founding block or a version that holds.
     fn parent_holds(&self, index: &Index) -> bool {
         if !self.is_version {
             return true;
@@ -914,7 +969,7 @@ pub(crate) fn judge(block: &Value, circle: &str, index: &Index) -> Value {
     judging(&key, false);
     // a judgement whose only placeholder was itself (the move asked about while it was being read, a ring of one) is what every later
     // reading of it reads too, since that reading meets itself the same way: remember it, so the move is not read again for each of its
-    // hands (end pass 2026-11-20: a move that waits for hands was read once per hand; no answer changes)
+    // hands (a move that waits for hands is read once, not once per hand)
     if index.stage_peek(&key).is_none() && busy_since(from).iter().all(|k| *k == key) {
         index.stage_put(&key, v.clone());
     }
@@ -1027,7 +1082,7 @@ fn listed(m: &Move, index: &Index) -> Vec<String> {
         index
             .values()
             .filter(|w| type_of(w) == "promise" && rs(w, "as") == Some(m.circle.as_str()) && hash_of(w) != bh && !past.contains(hash_of(w)))
-            .filter(|w| crate::identity::counts_in(w, index) && holds_in(w, &m.circle, index))
+            .filter(|w| crate::forks::counts_in(w, index) && holds_in(w, &m.circle, index))
             .filter(|w| {
                 let s = super::promise::promise_stage_in(hash_of(w), index, &super::StageOptions::default());
                 s.get("stage").and_then(Value::as_str).is_some_and(|st| !matches!(st, "done" | "stopped" | "declined"))
@@ -1036,7 +1091,7 @@ fn listed(m: &Move, index: &Index) -> Vec<String> {
     )
 }
 
-/// `row_holds(block, held)`: the circle's judgement of a block signed `as` it (folds.md, 1.9 stage 6). The circle is the block's `refs.as`.
+/// `row_holds(block, held)`: the circle's judgement of a block signed `as` it (folds.md, The circle fold). The circle is the block's `refs.as`.
 /// Null where it names no circle held. The block is read with `held` as if it were held.
 pub fn row_holds(block: &Value, blocks: &[Value]) -> Value {
     let Some(circle) = rs(block, "as").filter(|c| !c.is_empty()) else { return Value::Null };
@@ -1057,7 +1112,7 @@ pub(crate) fn is_hand_at(person: &str, circle: &str, block: &Value, read: &Index
     rs(block, "as") == Some(circle)
         && judge(block, circle, read)["hands"].as_array().into_iter().flatten().any(|h| h["counts"] == Value::Bool(true) && h["id"].as_str() == Some(person))
 }
-/// The signers of a move's hands, and the tools and grant holders of theirs (D13): no one of them is "another person" joined to it.
+/// The signers of a move's hands, and the tools and grant holders of theirs: no one of them is "another person" joined to it.
 pub(crate) fn gathered(block: &Value, index: &Index) -> Vec<String> {
     let bh = hash_of(block);
     let names = index.names_memo();
@@ -1080,7 +1135,7 @@ fn owners_json(circle: &str, o: &Owners, index: &Index) -> Vec<Value> {
         .map(|(w, (f, _))| json!({ "owner": w, "amount": { "value": f.text(), "unit": "part" }, "no_person": no_person(w, index, &mut vec![circle.to_string()]) }))
         .collect()
 }
-/// Whether the owners of an owner end in no person (C5): a circle whose owners are all circles whose owners end in no person (a ring).
+/// Whether the owners of an owner end in no person: a circle whose owners are all circles whose owners end in no person (a ring).
 fn no_person(who: &str, index: &Index, seen: &mut Vec<String>) -> bool {
     if founding(who, index).is_none() {
         return false;
@@ -1102,7 +1157,7 @@ fn no_person(who: &str, index: &Index, seen: &mut Vec<String>) -> bool {
 
 /// `circle_state(circle, held, within)`: `{ founder, pack, owners, unissued, rules, clocks, meter }` (folds.md, Circle fold); `owners`
 /// `[{ owner, amount, no_person }]` sorted, or `{ not_said: true }`; `{ not_shown, lacks }` where an owner's line is not read whole. Within a
-/// block: as of that block's causal past. Null where the circle is not held there. Rows, clocks and meter from the standing block (D15).
+/// block: as of that block's causal past. Null where the circle is not held there. Rows, clocks and meter from the standing block.
 pub fn circle_state(circle: &str, blocks: &[Value], within: Option<&Value>) -> Value {
     let index = read_all(blocks.iter().chain(within));
     circle_state_in(circle, &index, within.and_then(|w| index.get(hash_of(w))))
@@ -1133,7 +1188,7 @@ pub(crate) fn circle_state_in(circle: &str, index: &Index, within: Option<&Value
     })
 }
 
-/// The ids that own parts of a circle by title in the causal past of a block (C8): parts held for a sale count for the seller until the
+/// The ids that own parts of a circle by title in the causal past of a block: parts held for a sale count for the seller until the
 /// receiver's yes. Its own unissued parts name no one.
 pub(crate) fn owners_then(circle: &str, block: Option<&Value>, index: &Index) -> Vec<String> {
     match owners_at(circle, block, &[], index) {
@@ -1142,7 +1197,7 @@ pub(crate) fn owners_then(circle: &str, block: Option<&Value>, index: &Index) ->
     }
 }
 
-/// `circle_versions(circle, held)`: `{ circle, versions: [{ version, updates, author, holds, hands }], now }` (C19): each version held (not
+/// `circle_versions(circle, held)`: `{ circle, versions: [{ version, updates, author, holds, hands }], now }`: each version held (not
 /// the founding block), sorted by version; `hands` the ids whose hands counted; `now` the standing version's id, else the founding block's.
 pub fn circle_versions(circle: &str, blocks: &[Value]) -> Value {
     let index = read_all(blocks.iter());
@@ -1202,9 +1257,9 @@ pub fn ways_in(circle: &str, blocks: &[Value]) -> Value {
     json!({ "circle": circle, "rows": rows, "every_owner": every.map(|e| json!({ "least": e })) })
 }
 
-/// Who a circle in a block's audience means (C8): the owners of its parts by title in the circle fold of that block's causal past.
+/// Who a circle in a block's audience means: the owners of its parts by title in the circle fold of that block's causal past.
 pub fn members_then(block: &Value, recipient: &str, blocks: &[Value]) -> Vec<String> {
-    let index = crate::js::held_index(blocks);
+    let index = crate::js::blocks_index(blocks);
     if !index.contains_key(recipient) {
         return vec![];
     }

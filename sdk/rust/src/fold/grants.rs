@@ -1,12 +1,12 @@
-//! FoodBlock 1.9, stage 4: grants (changes-1.9/04-grants.md). What a person's tool may do for her.
+//! Grants (authority.md). What a person's tool may do for her.
 //!
-//! - **G1, a tool's word** (`under`): a block under her grant speaks for her only where it is for a promise in `scope.on` (or a deal a
+//! - **A tool's word** (`under`): a block under her grant speaks for her only where it is for a promise in `scope.on` (or a deal a
 //!   block under the same grant made), keeps to that promise (`keeps_to`), fits on the grant's line (`meter`) and stands.
 //! - **Keeps to** (`keeps_to`): C's `state` and `refs` are A's key for key, bar a closed list of eight; one value inside a range or a list A
 //!   states, at the six set places.
 //! - **The line** (`meter`): every block under a grant is counted on the one line `refs.meter` names: the holder's own key's line, or a
 //!   line of another key (a meter she names) that receipts each draw with its running total. A fork on the holder's own line answers
-//!   `{ pair: true, held, at_most }`; a false receipt binds its signer, never her past her measures (G7).
+//!   `{ pair: true, blocks, at_most }`; a false receipt binds its signer, never her past her measures.
 //! - **The worst case** (`worst_case`): from her grant and the promises it names alone, per kind, never added across kinds.
 //! - **Her deadline** (`lowest_offer`): the lowest offer received on the meter's line before its cutoff through the deadline.
 use super::{grant_chain, principal_of, terms_total};
@@ -21,7 +21,7 @@ use core::cmp::Ordering;
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 /// The set places (protocol.json `set_places`): the terms where a range or a list may sit.
-const TERM_PLACES: [&str; 4] = ["price", "quantity", "pay_by", "deliver_by"];
+const TERM_PLACES: [&str; 2] = ["pay_by", "deliver_by"];
 const LINE_PLACES: [&str; 2] = ["price", "quantity"];
 
 pub(crate) use crate::grant::{cmp_value, inside, is_set};
@@ -46,7 +46,7 @@ fn place_keeps(c: Option<&Value>, a: Option<&Value>) -> bool {
 pub(crate) fn keeps_to(c: &Value, a: &Value, index: &Index) -> (bool, Option<String>) {
     keeps_to_depth(c, a, index, 0)
 }
-// Whether an id names a kind: a held block of kind `kind`, or one a held thing names in `refs.of`.
+// Whether an id names a kind: a given block of kind `kind`, or one a given thing names in `refs.of`.
 fn is_kind_id(h: &str, index: &Index) -> bool {
     index.get(h).is_some_and(|t| ss(t, "kind") == Some("kind") || index.values().any(|x| rs(x, "of") == Some(h)))
 }
@@ -60,33 +60,16 @@ fn keeps_to_depth(c: &Value, a: &Value, index: &Index, depth: usize) -> (bool, O
     for k in keys {
         let (cv, av) = (cr.get(k), ar.get(k));
         let ok = match k.as_str() {
-            // 1. what every block has of its own (1.9 stage 6: `as`, the circle its signer speaks for, is hers like `author`, so a circle's
+            // 1. what every block has of its own (`as`, the circle its signer speaks for, is hers like `author`, so a circle's
             // want can be kept to by the other side)
             "author" | "prev" | "after" | "key" | "as" => true,
             // 3. C's links: `answers` and `under` freely; `refs.for` naming A or a promise that keeps to A
             "answers" | "under" => true,
             "for" => list(cv).iter().all(|h| *h == hash_of(a) || (depth < 8 && index.get(*h).is_some_and(|x| type_of(x) == "promise" && keeps_to_depth(x, a, index, depth + 1).0))),
-            // 4. a side A leaves open, which C names (C is always fully stated: both sides named; `parties` is the grant's, read by G1)
+            // 4. a side A leaves open, which C names (C is always fully stated: both sides named; `parties` is the grant's, read by A tool's word)
             "from" | "to" => match (cv, av) {
                 (Some(x), Some(y)) => same(x, y),
                 (Some(_), None) => true,
-                _ => false,
-            },
-            // 5. where A names kinds: each id in C an instance of one of them, each kind with an instance in C; else the same ids
-            "what" => match (cv, av) {
-                (Some(x), Some(y)) => {
-                    let kinds = list(Some(y));
-                    let ids = list(Some(x));
-                    if !kinds.is_empty() && kinds.iter().all(|k| is_kind_id(k, index)) {
-                        let kind_of = |id: &str| index.get(id).and_then(|i| rs(i, "of")).filter(|k| kinds.contains(k));
-                        !ids.is_empty() && ids.iter().all(|i| kind_of(i).is_some()) && kinds.iter().all(|k| ids.iter().any(|i| kind_of(i) == Some(*k)))
-                    } else {
-                        let (mut p, mut q) = (ids.clone(), kinds.clone());
-                        p.sort();
-                        q.sort();
-                        p == q
-                    }
-                }
                 _ => false,
             },
             _ => match (cv, av) {
@@ -111,13 +94,13 @@ fn keeps_to_depth(c: &Value, a: &Value, index: &Index, depth: usize) -> (bool, O
     for k in keys {
         let (cv, av) = (cs.get(k), as_.get(k));
         match k.as_str() {
-            // 1. what every block has of its own; 1.9 stage 4 (decided in building): `state.draws`, a block's own word about its line, is read as one of them
+            // 1. what every block has of its own, and `state.draws`, a block's own word about its line, is read as one of them
             "seq" | "at" | "nonce" | "skip" | "draws" => {}
             // 2. its audience (public, or sealed to the grantor and the holder: a sealed copy is read where it is opened)
             "audience" => {}
             // 8. C's own `occurrence` where A carries repeat
             "occurrence" if repeats && av.is_none() => {}
-            "terms" => wrong.extend(terms_differ(cv, av, c, a_author)),
+            "terms" => wrong.extend(terms_differ(cv, av, c, a_author, index)),
             _ => {
                 let ok = match (cv, av) {
                     (Some(x), Some(y)) => same(x, y),
@@ -135,7 +118,7 @@ fn keeps_to_depth(c: &Value, a: &Value, index: &Index, depth: usize) -> (bool, O
     (why.is_none(), why)
 }
 
-fn terms_differ(c: Option<&Value>, a: Option<&Value>, cblock: &Value, a_author: Option<&str>) -> Vec<String> {
+fn terms_differ(c: Option<&Value>, a: Option<&Value>, cblock: &Value, a_author: Option<&str>, index: &Index) -> Vec<String> {
     let empty = Map::new();
     let ct = c.and_then(Value::as_object).unwrap_or(&empty);
     let at = a.and_then(Value::as_object).unwrap_or(&empty);
@@ -149,15 +132,8 @@ fn terms_differ(c: Option<&Value>, a: Option<&Value>, cblock: &Value, a_author: 
         let ok = match k.as_str() {
             // 8. C's own expires
             "expires" => true,
-            // 7. a price, where A states none, she pays it, and the other side signs C
-            "price" if av.is_none() => {
-                cv.is_some() && a_author.is_some_and(|me| rs(cblock, "author").is_some_and(|by| by != me))
-                    // she pays: A names her as the side that receives the goods
-                    && rs(cblock, "to") == a_author
-                    && cv.is_some_and(|v| !is_set(v))
-            }
             "lines" => {
-                wrong.extend(lines_keep(cv, av));
+                wrong.extend(lines_keep(cv, av, cblock, a_author, index));
                 true
             }
             p if TERM_PLACES.contains(&p) => place_keeps(cv, av),
@@ -174,9 +150,10 @@ fn terms_differ(c: Option<&Value>, a: Option<&Value>, cblock: &Value, a_author: 
     wrong
 }
 
-// Lines matched by `id`: each id on either side has a line on the other, keeping to it at price and quantity, and equal elsewhere. The
-// paths that differ: `terms.lines.<id>` for a line one side lacks, `terms.lines.<id>.<field>` for a field.
-fn lines_keep(c: Option<&Value>, a: Option<&Value>) -> Vec<String> {
+// Lines matched by `id`: each id on either side has a line on the other, keeping to it at `price` and `quantity` (6), at `what` where A's
+// line names a kind (5: C's is an instance of it; else the same id), at a price A's line states none of (7: she pays it, and the other
+// side signs C), and equal elsewhere. The paths that differ: `terms.lines.<id>` for a line one side lacks, `terms.lines.<id>.<field>`.
+fn lines_keep(c: Option<&Value>, a: Option<&Value>, cblock: &Value, a_author: Option<&str>, index: &Index) -> Vec<String> {
     let empty = Vec::new();
     let (cl, al) = (c.and_then(Value::as_array).unwrap_or(&empty), a.and_then(Value::as_array).unwrap_or(&empty));
     let id_of = |l: &Value| l.get("id").map(|i| i.as_str().map(String::from).unwrap_or_else(|| i.to_string())).unwrap_or_else(|| "undefined".into());
@@ -189,7 +166,17 @@ fn lines_keep(c: Option<&Value>, a: Option<&Value>) -> Vec<String> {
         };
         let keys: BTreeSet<&String> = x.keys().chain(y.keys()).collect();
         for k in keys {
-            let ok = if LINE_PLACES.contains(&k.as_str()) { place_keeps(y.get(k), x.get(k)) } else { matches!((y.get(k), x.get(k)), (Some(p), Some(q)) if same(p, q)) };
+            let ok = match (k.as_str(), y.get(k), x.get(k)) {
+                // 7. a price where A's line states none: she pays it (A names her as the side that receives the goods), and the other side signs C
+                ("price", cv, None) => cv.is_some_and(|v| !is_set(v)) && a_author.is_some_and(|me| rs(cblock, "author").is_some_and(|by| by != me)) && rs(cblock, "to") == a_author,
+                // 5. where A's line names a kind, C's names an instance of it; else the same id
+                ("what", Some(cw), Some(aw)) => match (cw.as_str(), aw.as_str()) {
+                    (Some(ci), Some(ai)) if is_kind_id(ai, index) => index.get(ci).and_then(|i| rs(i, "of")) == Some(ai),
+                    _ => same(cw, aw),
+                },
+                (p, cv, av) if LINE_PLACES.contains(&p) => place_keeps(cv, av),
+                (_, cv, av) => matches!((cv, av), (Some(p), Some(q)) if same(p, q)),
+            };
             if !ok {
                 out.push(format!("terms.lines.{id}.{k}"));
             }
@@ -199,24 +186,24 @@ fn lines_keep(c: Option<&Value>, a: Option<&Value>) -> Vec<String> {
 }
 
 /// The door op `keeps_to`: `{ keeps, why }`.
-pub fn keeps_to_door(c: &Value, a: &Value, held: &[Value]) -> Value {
-    let index = crate::js::index_of(held.iter().chain([c, a]));
+pub fn keeps_to_door(c: &Value, a: &Value, blocks: &[Value]) -> Value {
+    let index = crate::js::index_of(blocks.iter().chain([c, a]));
     let (keeps, why) = keeps_to(c, a, &index);
     json!({ "keeps": keeps, "why": why })
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
-// G1, a tool's word
+// A tool's word (authority.md)
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-/// What G1 answers for a block under a grant.
+/// What A tool's word answers for a block under a grant.
 #[derive(Debug, Clone)]
 pub(crate) enum Under {
     /// It speaks for the grant's giver.
     Ok,
     /// It speaks only for its signer: a code, its detail, and what the code carries (`why` for not_kept, `lacks`, `waiting`), or null.
     No(&'static str, String, Value),
-    /// A pair on the grant's line at or before it: `{ pair: true, held, at_most }` (A fork on a tool's line).
+    /// A pair on the grant's line at or before it: `{ pair: true, blocks, at_most }` (A fork on a tool's chain).
     Fork(Value),
 }
 
@@ -236,7 +223,7 @@ fn scope_list<'a>(g: &'a Value, k: &str) -> Vec<&'a str> {
 }
 
 /// Whether a block is an accept: a promise (or a machine's observe) that answers a promise and says `accepted`.
-fn is_accept(b: &Value, index: &Index) -> bool {
+pub(crate) fn is_accept(b: &Value, index: &Index) -> bool {
     ss(b, "status") == Some("accepted") && rs(b, "answers").and_then(|h| index.get(h)).is_some_and(|o| type_of(o) == "promise") && matches!(type_of(b), "promise" | "observe")
 }
 
@@ -260,7 +247,7 @@ fn deals_made<'a>(grant: &Value, index: &'a Index) -> Vec<(&'a Value, Vec<&'a st
     let gh = hash_of(grant);
     index
         .values()
-        .filter(|b| rs(b, "under") == Some(gh) && is_accept(b, index) && crate::identity::binds_signer(b, index))
+        .filter(|b| rs(b, "under") == Some(gh) && is_accept(b, index) && crate::forks::binds_signer(b, index))
         .map(|b| {
             let mut d = list(rf(b, "for"));
             d.extend(rs(b, "answers"));
@@ -271,7 +258,7 @@ fn deals_made<'a>(grant: &Value, index: &'a Index) -> Vec<(&'a Value, Vec<&'a st
 
 /// Whether two keys (actors' ids) are one hand by a two-key link (identity.md, A two-key link): one signs an `observe` of kind `link` with
 /// `same_as` the other, and the other counter-signs with its own `link` naming the first in `refs.confirms`. Both counted.
-/// A link is read between the two ids alone: it is not transitive, and a link held anywhere among the blocks counts (no causal past is read).
+/// A link is read between the two ids alone: it is not transitive, and a link given anywhere among the blocks counts (no causal past is read).
 pub(crate) fn linked(x: &str, y: &str, index: &Index) -> bool {
     if x == y {
         return true;
@@ -282,32 +269,40 @@ pub(crate) fn linked(x: &str, y: &str, index: &Index) -> bool {
                 && ss(l, "kind") == Some("link")
                 && rs(l, "author") == Some(a)
                 && list(rf(l, "same_as")).contains(&b)
-                && crate::identity::counts_in(l, index)
+                && crate::forks::counts_in(l, index)
                 && index.values().any(|m| {
-                    type_of(m) == "observe" && ss(m, "kind") == Some("link") && rs(m, "author") == Some(b) && list(rf(m, "same_as")).contains(&a) && list(rf(m, "confirms")).contains(&hash_of(l)) && crate::identity::counts_in(m, index)
+                    type_of(m) == "observe" && ss(m, "kind") == Some("link") && rs(m, "author") == Some(b) && list(rf(m, "same_as")).contains(&a) && list(rf(m, "confirms")).contains(&hash_of(l)) && crate::forks::counts_in(m, index)
                 })
         })
     };
     link_by(x, y) || link_by(y, x)
 }
 
-/// The promises in `on`, held.
+/// The promises in `on`, given.
 fn on_promises<'a>(grant: &'a Value, index: &'a Index) -> Vec<&'a Value> {
     scope_list(grant, "on").into_iter().filter_map(|h| index.get(h)).collect()
 }
 
 /// The promise in `on` that a promise C keeps to: C keeps to it (Keeps to), or C is itself an answer that accepts it (an order of an open
 /// offer: it names only the quantity it chooses, inside A's).
-fn kept_by<'a>(c: &Value, ons: &[&'a Value], index: &Index) -> Result<&'a Value, Option<String>> {
+pub(crate) fn kept_by<'a>(c: &Value, ons: &[&'a Value], index: &Index) -> Result<&'a Value, Option<String>> {
     let mut first: Option<String> = None;
     for a in ons {
         if is_accept(c, index) && rs(c, "answers") == Some(hash_of(a)) {
-            let q = get(c, "state.terms.quantity");
-            if q.is_none_or(|q| place_keeps_at_most(q, get(a, "state.terms.quantity"))) {
-                return Ok(a);
+            // each line it chooses for is a line of A, its quantity inside A's range or no more than A's one value
+            let a_lines = crate::js::lines_of(get(a, "state.terms").unwrap_or(&Value::Null));
+            let wrong = get(c, "state.terms.lines").and_then(Value::as_array).into_iter().flatten().find_map(|x| {
+                let line = a_lines.iter().find(|l| l.get("id").is_some() && l.get("id") == x.get("id"));
+                let ok = line.is_some_and(|l| x.get("quantity").is_none_or(|q| place_keeps_at_most(q, l.get("quantity"))));
+                (!ok).then(|| format!("terms.lines.{}", x.get("id").and_then(Value::as_str).unwrap_or("undefined")))
+            });
+            match wrong {
+                None => return Ok(a),
+                Some(w) => {
+                    first.get_or_insert(w);
+                    continue;
+                }
             }
-            first.get_or_insert_with(|| "terms.quantity".into());
-            continue;
         }
         let (k, why) = keeps_to(c, a, index);
         if k {
@@ -337,7 +332,7 @@ fn sides_of(p: &Value) -> Vec<&str> {
     ["from", "to"].iter().flat_map(|k| list(rf(p, k))).collect()
 }
 
-/// The grant a block acts under, and G1's answer. `grant` is the block's `refs.under`, held and a grant.
+/// The grant a block acts under, and the answer of A tool's word. `grant` is the block's `refs.under`, given and a grant.
 pub(crate) fn under(block: &Value, grant: &Value, index: &Index) -> Under {
     if let Some(u) = under_core(block, grant, index) {
         return u;
@@ -373,7 +368,7 @@ fn coming_back(block: &Value, grant: &Value, index: &Index) -> bool {
     type_of(block) == "transfer" && st(block, "status").is_none() && to_owner.len() == 1 && to_owner[0] == principal && rf(grant, "what").is_some()
 }
 
-/// G1 but the line: None where the block passes every clause but (3), else the answer.
+/// A tool's word but the line: None where the block passes every clause but (3), else the answer.
 pub(crate) fn under_core(block: &Value, grant: &Value, index: &Index) -> Option<Under> {
     match under_clauses(block, grant, index) {
         Under::Ok => None,
@@ -406,14 +401,14 @@ fn under_clauses(block: &Value, grant: &Value, index: &Index) -> Under {
     if !junk.is_empty() {
         return no("not_live", format!("the grant's scope cannot be read: {}", junk.join(", ")));
     }
-    // live for it: its own end and its parents', its until by the block's own date, a parent that is wider
+    // live for it: its own end and its parents', its expires by the block's own date, a parent that is wider
     let dead = crate::grant::why_not_live_for(Some(grant), index, None, block);
     if let Some(d) = dead.first() {
         return no("not_live", d.clone());
     }
     // an end read on the grant's own clocks (blocks.md, The cut; From where a stop counts): a stop narrows, so `names` less `needed`, plus
     // one, of its clock's lines showing the stop before the block cut it.
-    // 1.9 stage 4 (decided in building): G1 reads only the narrowing here; the widening join (`needed` receipts of the block) is the relier's question.
+    // A tool's word reads only here the narrowing here; the widening join (`needed` receipts of the block) is the relier's question.
     if let Some(end) = clock_end(block, grant, index) {
         return no("not_live", format!("the grant's clocks show its end {end} before the block"));
     }
@@ -422,7 +417,7 @@ fn under_clauses(block: &Value, grant: &Value, index: &Index) -> Under {
     if let Some(l) = &line {
         if l.own {
             if let Some(group) = pair_at(block, l, index) {
-                return Under::Fork(json!({ "pair": true, "held": group, "at_most": worst(grant, index)["at_most"].clone() }));
+                return Under::Fork(json!({ "pair": true, "blocks": group, "at_most": worst(grant, index)["at_most"].clone() }));
             }
         }
     }
@@ -444,10 +439,10 @@ fn under_clauses(block: &Value, grant: &Value, index: &Index) -> Under {
     if let Some(out) = crate::grant::dealt_with(block, index).into_iter().find(|id| !admitted(id)) {
         return no("not_live", format!("the grant does not admit {out}, whom it deals with"));
     }
-    // No one is both sides of a word (A9): a block that gives to its own signer, a key linked to it, or a circle in which her hand could count
+    // No one is both sides of a word: a block that gives to its own signer, a key linked to it, or a circle in which her hand could count
     if let Some(to) = gives_to(block, index) {
         let named = ons.iter().any(|p| sides_of(p).contains(&to.as_str()));
-        // 1.9 stage 6 (C16): a circle in which her hand could count
+        // a circle in which her hand could count
         let circle_of_hers = to != principal && super::circle::founding(&to, index).is_some() && super::hand_could_count(signer, &to, Some(block), index);
         if !named && to != principal && (to == signer || linked(&to, signer, index) || circle_of_hers) {
             return no("both_sides", format!("it gives to {to}, the signer's own hand"));
@@ -470,16 +465,16 @@ fn under_clauses(block: &Value, grant: &Value, index: &Index) -> Under {
         };
         accepted = Some((c, a));
         // her quantity is the measure: a grant whose draw on A took nothing holds no part of it, so nothing under it keeps to A
-        if her_quantity(grant, a, index).is_some_and(|q| q.value.is_zero()) {
+        if took_none(grant, a, index) {
             return no("not_kept", "the grant's draw on the promise it names took nothing (Her quantity is the measure)");
         }
-        // G4: one fill for each occurrence
+        // One fill for each occurrence (authority.md)
         if get(a, "state.terms.repeat").is_some() && is_accept(block, index) {
             if filled_before(block, c, a, grant, index) {
-                return no("not_kept", "the occurrence it fills is already filled (G4)");
+                return no("not_kept", "the occurrence it fills is already filled)");
             }
         }
-        // G15: her deadline, and the lowest offer at it
+        // Her deadline (authority.md), and the lowest offer at it
         if is_accept(block, index) {
             if let Some(u) = deadline_reading(block, c, grant, index, line.as_ref()) {
                 return u;
@@ -515,14 +510,13 @@ fn under_clauses(block: &Value, grant: &Value, index: &Index) -> Under {
     }
     // A stop of one thing: her own stop naming one thing ends, for that thing only, every draw on or move of it under her grants until she
     // lifts it, read as any end of the grant (on its clocks); a hand-back never is
-    let things: BTreeSet<&str> = list(rf(block, "what")).into_iter().chain(accepted.map(|(c, _)| list(rf(c, "what"))).unwrap_or_default()).chain(list(rf(block, "derives_from"))).collect();
+    let things: BTreeSet<&str> = crate::js::whats_of(block).into_iter().chain(accepted.map(|(c, _)| crate::js::whats_of(c)).unwrap_or_default()).chain(list(rf(block, "derives_from"))).collect();
     let hand_back = t == "transfer" && list(rf(block, "to_owner")) == [principal.as_str()];
     if !things.is_empty() && !hand_back {
         if let Some(s) = thing_stopped(block, grant, &things, &principal, index) {
             return no("stopped_thing", format!("her stop of one thing {s} reaches this block"));
         }
     }
-    let _ = accepted;
     Under::Ok
 }
 
@@ -534,7 +528,7 @@ fn thing_stopped(block: &Value, grant: &Value, things: &BTreeSet<&str>, principa
     let past = index.past_of(block);
     let clocks = scope(grant, "clocks").and_then(crate::tasks::clocks_of);
     for s in index.values() {
-        if type_of(s) != "observe" || ss(s, "status") != Some("stopped") || ss(s, "stop") != Some("onward") || rf(s, "updates").is_some() || rf(s, "answers").is_some() || rs(s, "author") != Some(principal) || !crate::identity::counts_in(s, index) {
+        if type_of(s) != "observe" || ss(s, "status") != Some("stopped") || ss(s, "stop") != Some("onward") || rf(s, "updates").is_some() || rf(s, "answers").is_some() || rs(s, "author") != Some(principal) || !crate::forks::counts_in(s, index) {
             continue;
         }
         let Some(t0) = list(rf(s, "what")).first().copied() else { continue };
@@ -546,7 +540,7 @@ fn thing_stopped(block: &Value, grant: &Value, things: &BTreeSet<&str>, principa
             continue;
         }
         let lifted = index.values().any(|x| {
-            type_of(x) == "observe" && ss(x, "status") == Some("resumed") && rs(x, "updates") == Some(hash_of(s)) && rs(x, "author") == Some(principal) && crate::identity::counts_in(x, index) && past.contains(hash_of(x)) && crate::identity::stands(x, index).stands
+            type_of(x) == "observe" && ss(x, "status") == Some("resumed") && rs(x, "updates") == Some(hash_of(s)) && rs(x, "author") == Some(principal) && crate::forks::counts_in(x, index) && past.contains(hash_of(x)) && crate::finality::stands(x, index).stands
         });
         if lifted {
             continue;
@@ -580,7 +574,7 @@ fn code_of(why: &str) -> &'static str {
     match why {
         "past" => "past",
         "unit" => "unit",
-        "not_on_line" => "not_on_line",
+        "not_on_chain" => "not_on_chain",
         "waiting" => "waiting",
         "after_deadline" => "after_deadline",
         "not_shown" => "not_shown",
@@ -589,7 +583,7 @@ fn code_of(why: &str) -> &'static str {
 }
 
 /// Whom a block gives to, where it gives: a transfer's `to_owner`; an accept, the side of the accepted promise that receives from her
-/// (the author of the promise accepted, where it is not her side). 1.9 stage 4 (decided in building): an accept of an order "gives to" the order's author.
+/// (the author of the promise accepted, where it is not her side). An accept of an order "gives to" the order's author.
 fn gives_to(block: &Value, index: &Index) -> Option<String> {
     if type_of(block) == "transfer" && st(block, "status").is_none() {
         return rs(block, "to_owner").map(String::from);
@@ -601,19 +595,19 @@ fn gives_to(block: &Value, index: &Index) -> Option<String> {
     None
 }
 
-/// G13: a block of a tool of hers that gives a part its line holds to another tool of hers: the receiver holds a grant of hers (her own
+/// A pass between her own tools (authority.md): a block of a tool of hers that gives a part its line holds to another tool of hers: the receiver holds a grant of hers (her own
 /// grant, made to it) whose `types` names `transfer`... read as "another tool of hers": a holder of a live grant she gave.
 fn passes_to_tool(block: &Value, to: &str, principal: &str, index: &Index) -> bool {
     !rf(rs(block, "under").and_then(|h| index.get(h)).unwrap_or(&Value::Null), "what").is_none()
-        && index.values().any(|g| type_of(g) == "grant" && rs(g, "author") == Some(principal) && rs(g, "to") == Some(to) && st(g, "status").is_none() && crate::identity::counts_in(g, index))
+        && index.values().any(|g| type_of(g) == "grant" && rs(g, "author") == Some(principal) && rs(g, "to") == Some(to) && st(g, "status").is_none() && crate::forks::counts_in(g, index))
 }
 
-/// Due (00-shared, Deals): a payment or a delivery under a grant is of a deal whose binding accept, standing, is in its causal past; to its
+/// Due (promises.md, Due): a payment or a delivery under a grant is of a deal whose binding accept, standing, is in its causal past; to its
 /// other side; of no more than that deal names her side to hand over; and with what `waits_on` names standing. None where it is due.
 fn not_due(block: &Value, grant: &Value, principal: &str, index: &Index) -> Option<String> {
     let past = index.past_of(block);
     let deals = list(rf(block, "for"));
-    // the binding accept: an accept in its past, under this grant or by her own hand, of an offer in one of the deals it names; or (1.9 R-P6)
+    // the binding accept: an accept in its past, under this grant or by her own hand, of an offer in one of the deals it names; or
     // the other side's accept of her own offer
     let of_deal = |a: &Value| is_accept(a, index) && past.contains(hash_of(a)) && (list(rf(a, "for")).iter().any(|d| deals.contains(d)) || rs(a, "answers").is_some_and(|o| deals.contains(&o)));
     let accept = index
@@ -627,16 +621,29 @@ fn not_due(block: &Value, grant: &Value, principal: &str, index: &Index) -> Opti
     if rs(block, "to_owner") != other {
         return Some("it is not to the deal's other side".into());
     }
-    // what that deal names her side to hand over, no more: the price total, where she pays
-    // (a payment against the price total; a delivery, which names what it moves, against the quantity chosen)
+    // what that deal names her side to hand over, no more: a payment against the price total, where she pays; a delivery, which names what
+    // it moves, against the quantity chosen of its line (the line it names in `state.line`, else the line whose `what` it moves)
     let terms = get(offer, "state.terms").cloned().unwrap_or(json!({}));
-    let named = if rf(block, "what").is_none() { Some(terms_total(&terms, get(accept, "state.terms.quantity"))) } else { get(accept, "state.terms.quantity").or_else(|| terms.get("quantity")).cloned() };
+    let chosen = get(accept, "state.terms.lines");
+    let named = if rf(block, "what").is_none() {
+        Some(terms_total(&terms, chosen))
+    } else {
+        let moves = list(rf(block, "what"));
+        crate::js::lines_of(&terms)
+            .into_iter()
+            .find(|l| match ss(block, "line") {
+                Some(id) => l.get("id").and_then(Value::as_str) == Some(id),
+                None => l.get("what").and_then(Value::as_str).is_some_and(|w| moves.iter().any(|m| *m == w || index.get(*m).and_then(|t| rs(t, "of")) == Some(w))),
+            })
+            .and_then(|l| crate::js::quantity_of(l, chosen))
+            .cloned()
+    };
     if let (Some(moved), Some(due)) = (Amount::of(st(block, "amount")), named.as_ref().and_then(|n| Amount::of(Some(n)))) {
         if moved.kind != due.kind || moved.value.cmp(&due.value) == Ordering::Greater {
             return Some("it moves more than the deal names her side to hand over".into());
         }
     }
-    // 1.9 R-C2, R-P6: the deal's condition, held in its causal past (a promise conditioned `{ accepted: X }` binds on its own accept, and what
+    // the deal's condition, held in its causal past (a promise conditioned `{ accepted: X }` binds on its own accept, and what
     // it names is due only once X binds)
     if let Some(c) = get(offer, "state.terms.condition") {
         let seen: Vec<Value> = index.values().filter(|b| past.contains(hash_of(b))).cloned().collect();
@@ -659,7 +666,7 @@ fn not_due(block: &Value, grant: &Value, principal: &str, index: &Index) -> Opti
                 return Some("the deal waits on her word that the goods came, and it is not in its causal past".into());
             }
         }
-        // 1.9 R-P6: what moves is due only once the payee's signal stands: a counted `observe` of kind `paid` that speaks for the payee,
+        // what moves is due only once the payee's signal stands: a counted `observe` of kind `paid` that speaks for the payee,
         // `refs.subject` the deal, in the block's causal past. Read where her side hands over what moves (she is the offer's `from`)
         Some("price") if rs(offer, "from") == Some(principal) => {
             let signal = index.values().any(|o| {
@@ -668,7 +675,7 @@ fn not_due(block: &Value, grant: &Value, principal: &str, index: &Index) -> Opti
                     && ss(o, "kind") == Some("paid")
                     && st(o, "status").is_none()
                     && list(rf(o, "subject")).iter().any(|d| deals.contains(d))
-                    && crate::identity::counts_in(o, index)
+                    && crate::forks::counts_in(o, index)
                     && super::speaker_of(o, index, None).as_deref() == Some(principal)
             });
             if !signal {
@@ -680,7 +687,7 @@ fn not_due(block: &Value, grant: &Value, principal: &str, index: &Index) -> Opti
     None
 }
 
-/// G4: whether an occurrence of A is already filled before this accept: another accept, in its causal past, that speaks for her (under a
+/// One fill for each occurrence (authority.md): whether an occurrence of A is already filled before this accept: another accept, in its causal past, that speaks for her (under a
 /// grant naming A, or her own), of a promise that keeps to A for the same occurrence.
 fn filled_before(block: &Value, c: &Value, a: &Value, grant: &Value, index: &Index) -> bool {
     let occ = st(c, "occurrence");
@@ -690,7 +697,7 @@ fn filled_before(block: &Value, c: &Value, a: &Value, grant: &Value, index: &Ind
         hash_of(x) != hash_of(block)
             && past.contains(hash_of(x))
             && is_accept(x, index)
-            && crate::identity::binds_signer(x, index)
+            && crate::forks::binds_signer(x, index)
             && (rs(x, "author") == principal || rs(x, "under").and_then(|h| index.get(h)).is_some_and(|g| scope_list(g, "on").contains(&hash_of(a)) || hash_of(g) == hash_of(grant)))
             && rs(x, "answers").and_then(|h| index.get(h)).is_some_and(|o| st(o, "occurrence") == occ && keeps_to(o, a, index).0)
     })
@@ -701,7 +708,7 @@ fn stops_of<'a>(grant: &Value, index: &'a Index) -> Vec<&'a Value> {
     let gh = hash_of(grant);
     index
         .values()
-        .filter(|b| type_of(b) == "grant" && crate::grant::ending(b, gh) == Some(crate::grant::End::Stop) && rs(b, "author") == rs(grant, "author") && crate::identity::counts_in(b, index))
+        .filter(|b| type_of(b) == "grant" && crate::grant::ending(b, gh) == Some(crate::grant::End::Stop) && rs(b, "author") == rs(grant, "author") && crate::forks::counts_in(b, index))
         .collect()
 }
 
@@ -719,7 +726,7 @@ fn clock_end(block: &Value, grant: &Value, index: &Index) -> Option<String> {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
-// The line (G6, G7, G8, G9)
+// The line
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 /// The line a grant's blocks are counted on.
@@ -746,7 +753,7 @@ pub(crate) fn line_of(grant: &Value, index: &Index) -> Option<GrantLine> {
 fn pair_at(block: &Value, line: &GrantLine, index: &Index) -> Option<Vec<String>> {
     let past = index.past_of(block);
     let h = hash_of(block);
-    for g in crate::identity::pair_groups_in(index) {
+    for g in crate::forks::pair_groups_in(index) {
         let on = g.iter().all(|x| index.get(x).is_some_and(|b| crate::line::on_line(b, &line.line, index) || rs(b, "author") == Some(line.line.author.as_str())));
         if on && g.iter().any(|x| x == h || past.contains(x.as_str())) {
             let mut g = g.clone();
@@ -771,7 +778,7 @@ struct Drawn {
     block: String,
     /// per measure (`of`, and the occurrence where it repeats): the amount
     takes_of: Vec<(String, Amount)>,
-    /// a draw reason found before the sums: unit, not_on_line, waiting
+    /// a draw reason found before the sums: unit, not_on_chain, waiting
     fixed: Option<&'static str>,
     period: usize,
     /// where it stands on the line (its place for ordering)
@@ -782,7 +789,7 @@ struct Drawn {
 /// `Err(code)` for a reason found before the line is read.
 fn draws_of(grant: &Value, line: &GrantLine, index: &Index) -> (Vec<Drawn>, Vec<Value>) {
     let gh = hash_of(grant);
-    // the line counts only blocks that pass G1's other clauses; a clause that asks for this line again reads it without that filter
+    // the line counts only blocks that pass the other clauses of A tool's word; a clause that asks for this line again reads it without that filter
     let fresh = index.enter_line(gh);
     let out = draws_of_read(grant, line, index, fresh);
     if fresh {
@@ -802,7 +809,7 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
         .filter(|b| {
             let under_it = rs(b, "under") == Some(gh) && (st(b, "status").is_none() || is_accept(b, index));
             let passed_on = type_of(b) == "grant" && rs(b, "parent") == Some(gh) && st(b, "status").is_none();
-            b.get("type").is_some() && (under_it || passed_on) && crate::identity::binds_signer(b, index) && (passed_on || !filter || under_core(b, grant, index).is_none())
+            b.get("type").is_some() && (under_it || passed_on) && crate::forks::binds_signer(b, index) && (passed_on || !filter || under_core(b, grant, index).is_none())
         })
         .collect();
     blocks.sort_by_key(|b| hash_of(b).to_string());
@@ -814,11 +821,11 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
     for b in blocks {
         if line.own {
             if !crate::line::on_line(b, &line.line, index) && rs(b, "author") != Some(line.line.author.as_str()) {
-                placed.push((usize::MAX, b, Some("not_on_line")));
+                placed.push((usize::MAX, b, Some("not_on_chain")));
                 continue;
             }
             if rs(b, "author") != Some(line.line.author.as_str()) || (line.line.key.is_some() && !crate::line::on_line(b, &line.line, index)) {
-                placed.push((usize::MAX, b, Some("not_on_line")));
+                placed.push((usize::MAX, b, Some("not_on_chain")));
                 continue;
             }
             let seq = crate::js::int(st(b, "seq")).unwrap_or(0.0) as usize;
@@ -826,7 +833,7 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
         } else {
             match receipts.iter().position(|r| list(rf(r, "derives_from")).contains(&hash_of(b))) {
                 Some(i) => placed.push((i, b, None)),
-                // 1.9 stage 4 (decided in building): a draw on another key's line with no receipt of it is waiting, `on: meter`
+                // a draw on another key's line with no receipt of it is waiting, `on: meter`
                 None => {
                     waiting.push(json!({ "block": hash_of(b), "on": "meter" }));
                     placed.push((usize::MAX, b, Some("waiting")));
@@ -848,14 +855,17 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
         } else if is_accept(b, index) || (t == "promise" && st(b, "status").is_none()) {
             let c = if is_accept(b, index) { rs(b, "answers").and_then(|h| index.get(h)) } else { Some(b) };
             if let Some(c) = c {
-                let quantity = get(b, "state.terms.quantity").or_else(|| get(c, "state.terms.quantity"));
+                // the lines it binds: an accept's choice of the promise it answers, else the promise's own
+                let chosen = if is_accept(b, index) { get(b, "state.terms.lines") } else { None };
+                let c_lines = crate::js::lines_of(get(c, "state.terms").unwrap_or(&Value::Null));
                 let kept = kept_by(c, &ons, index).ok();
-                // her quantity: a draw on the part each promise in `on` it keeps to holds
+                // her quantity: a draw on the part each line of the promise in `on` it keeps to holds
                 if let Some(a) = kept {
-                    if let Some(q) = Amount::of(quantity) {
+                    for l in &c_lines {
+                        let Some(q) = Amount::of(crate::js::quantity_of(l, chosen)) else { continue };
                         let of = match st(c, "occurrence").and_then(Value::as_str) {
-                            Some(o) if get(a, "state.terms.repeat").is_some() => format!("{}@{o}", hash_of(a)),
-                            _ => hash_of(a).to_string(),
+                            Some(o) if get(a, "state.terms.repeat").is_some() => format!("{}@{o}", line_measure(a, l)),
+                            _ => line_measure(a, l),
                         };
                         takes_of.push((of, q));
                     }
@@ -868,12 +878,26 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
                 let kind = limit.as_ref().or(each.as_ref()).map(|l| l.kind.clone());
                 // what it binds her to, in the limit's kind: the quantity where the limit is of the quantity's kind (or she sells), else
                 // the deal's total at the quantity it binds, with the backing she gives
-                let q_amount = Amount::of(quantity);
+                let quantities: Vec<Amount> = c_lines.iter().filter_map(|l| Amount::of(crate::js::quantity_of(l, chosen))).collect();
+                let goods_kind = kind.clone().or_else(|| quantities.first().map(|q| q.kind.clone()));
+                let in_kind: Vec<&Amount> = quantities.iter().filter(|q| Some(&q.kind) == goods_kind.as_ref()).collect();
+                let q_amount = goods_kind.clone().filter(|_| !in_kind.is_empty()).map(|k| Amount { value: in_kind.iter().fold(Dec::zero(), |t, q| t.add(&q.value)), kind: k });
                 let binds: Option<Amount> = if sells || (kind.is_some() && q_amount.as_ref().map(|q| &q.kind) == kind.as_ref()) {
                     q_amount
                 } else {
-                    let terms = get(on_terms, "state.terms").cloned().unwrap_or(json!({}));
-                    let total = Amount::of(Some(&terms_total(&terms, quantity)));
+                    // a line priced by a figure is counted at its `max`, per its `per` (else per one of its quantity's unit)
+                    let mut terms = get(on_terms, "state.terms").cloned().unwrap_or(json!({}));
+                    if let Some(Value::Array(ls)) = terms.get_mut("lines") {
+                        for l in ls.iter_mut().filter(|l| get(l, "price.figure").is_some()) {
+                            let q = crate::js::quantity_of(l, chosen).cloned();
+                            let at_max = match (get(l, "price.max").filter(|m| Amount::of(Some(m)).is_some()), q.as_ref().filter(|q| Amount::of(Some(q)).is_some())) {
+                                (Some(m), Some(q)) => json!({ "amount": m, "per": get(l, "price.per").cloned().unwrap_or_else(|| json!({ "value": "1", "unit": q.get("unit") })) }),
+                                _ => json!({ "figure": true }),
+                            };
+                            l["price"] = at_max;
+                        }
+                    }
+                    let total = Amount::of(Some(&terms_total(&terms, chosen)));
                     let backing = Amount::of(get(on_terms, "state.terms.backing"));
                     match (total, backing) {
                         (Some(t), Some(bk)) if bk.kind == t.kind => Some(Amount { value: t.value.add(&bk.value), kind: t.kind }),
@@ -888,7 +912,7 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
                     }
                 } else if binds.as_ref().is_some_and(|b| b.value.is_pos()) || binds.is_none() {
                     // a missing limit and each lets no block under it draw above zero
-                    // 1.9 stage 4 (decided in building): a seller's accept draws on her quantity alone where the grant states no limit
+                    // a seller's accept draws on her quantity alone where the grant states no limit
                     if !sells {
                         fixed = fixed.or(Some("past"));
                     }
@@ -900,7 +924,7 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
             let back = to.len() == 1 && principal.as_deref() == Some(to[0]);
             if !back {
                 // a pass, or a payment: a draw on the instance part it names; a payment draws what it pays, unless a draw on this line
-                // already counted its deal (G8)
+                // already counted its deal
                 let amount = Amount::of(st(b, "amount"));
                 let on_part: Vec<&str> = list(rf(b, "what")).into_iter().filter(|w| what.contains(w)).collect();
                 if let (Some(w), Some(a)) = (on_part.first(), amount.clone()) {
@@ -921,7 +945,7 @@ fn draws_of_read(grant: &Value, line: &GrantLine, index: &Index, filter: bool) -
                 let (Some(from), Some(a)) = (i.get("from").and_then(Value::as_str), Amount::of(i.get("amount"))) else { continue };
                 if what.contains(&from) {
                     takes_of.push((from.to_string(), a.clone()));
-                    // 1.9 stage 4 (decided in building): a make's inputs are its draw on the grant's limit where they are of the limit's kind (no `state.draws` needed)
+                    // a make's inputs are its draw on the grant's limit where they are of the limit's kind (no `state.draws` needed)
                     if limit.as_ref().is_some_and(|l| l.kind == a.kind) {
                         takes_of.push((gh.to_string(), a));
                     }
@@ -952,7 +976,7 @@ fn meter_receipts<'a>(line: &GrantLine, index: &'a Index) -> Vec<&'a Value> {
     rs_
 }
 
-/// Which period a block is read in (00-shared, A period): the number of the line's cutoffs of the grant's `every` that are before it.
+/// Which period a block is read in: the number of the line's cutoffs of the grant's `every` that are before it.
 /// A period turns at each cutoff on the meter's line whose `refs.subject` is the grant and whose `when` is a span no shorter than its
 /// `every` (a span cutoff closes a span no longer than its own; durations compared, never added to a date); before a block means in its
 /// causal past (the holder's own line), or before its receipt (another key's line).
@@ -983,7 +1007,9 @@ fn measures_of(grant: &Value, index: &Index) -> Vec<Measure> {
         out.push(Measure { of: gh.to_string(), amount: Amount::of(Some(l)) });
     }
     for a in on_promises(grant, index) {
-        out.push(Measure { of: hash_of(a).to_string(), amount: her_quantity(grant, a, index) });
+        for l in crate::js::lines_of(get(a, "state.terms").unwrap_or(&Value::Null)) {
+            out.push(Measure { of: line_measure(a, l), amount: her_quantity(grant, a, l, index) });
+        }
     }
     for w in list(rf(grant, "what")) {
         let amount = scope(grant, "limit").and_then(|l| Amount::of(Some(l))).filter(|l| index.get(w).and_then(|t| Amount::of(st(t, "pack"))).is_some_and(|p| p.kind == l.kind));
@@ -993,12 +1019,21 @@ fn measures_of(grant: &Value, index: &Index) -> Vec<Measure> {
     out
 }
 
-/// Her quantity is the measure: a grant that names A in `on` draws on A's quantity from her line; a second grant naming A takes only what
-/// the first left. Each grant takes all that is left (it states no smaller part): a grant naming A takes nothing where another grant of
-/// hers naming A that took is in its causal past and not stopped there, or where the two do not see each other (neither came first).
-fn her_quantity(grant: &Value, a: &Value, index: &Index) -> Option<Amount> {
-    let q = Amount::of(top(get(a, "state.terms.quantity")))?;
+/// Her quantity is the measure: each line of a promise A in `on` is a measure she owns, and a grant that names A draws on each from her
+/// line; a second grant naming A takes only what the first left. Each grant takes all that is left (it states no smaller part): a grant
+/// naming A takes nothing where another grant of hers naming A that took is in its causal past and not stopped there, or where the two do
+/// not see each other (neither came first).
+fn her_quantity(grant: &Value, a: &Value, line: &Value, index: &Index) -> Option<Amount> {
+    let q = Amount::of(top(line.get("quantity")))?;
     Some(if quantity_takes(grant, a, index, 0) { q } else { Amount { value: Dec::zero(), kind: q.kind } })
+}
+/// Whether the grant's draw on a promise in `on` took nothing: a line of it with a quantity of which the grant holds no part.
+fn took_none(grant: &Value, a: &Value, index: &Index) -> bool {
+    crate::js::lines_of(get(a, "state.terms").unwrap_or(&Value::Null)).into_iter().any(|l| her_quantity(grant, a, l, index).is_some_and(|q| q.value.is_zero()))
+}
+/// The measure a line of a promise in `on` is: the promise's id and the line's, `<promise>#<line>`.
+fn line_measure(a: &Value, line: &Value) -> String {
+    format!("{}#{}", hash_of(a), line.get("id").and_then(Value::as_str).unwrap_or(""))
 }
 fn quantity_takes(grant: &Value, a: &Value, index: &Index, depth: usize) -> bool {
     if rf(grant, "parent").is_some() || depth > 16 {
@@ -1023,31 +1058,25 @@ pub(crate) fn meter_of(grant: &Value, index: &Index, block: Option<&Value>) -> R
     let gh = hash_of(grant).to_string();
     // the grant's own draw on each promise in `on`: a second grant naming A takes what the first left
     let measures = measures_of(grant, index);
-    let own_why: Option<&'static str> = on_promises(grant, index).iter().find_map(|a| her_quantity(grant, a, index).filter(|q| q.value.is_zero()).map(|_| "past"));
+    let own_why: Option<&'static str> = on_promises(grant, index).iter().find_map(|a| took_none(grant, a, index).then_some("past"));
     let Some(line) = line_of(grant, index) else {
         let bound = rf(grant, "what").is_some() || scope(grant, "on").is_some() || scope(grant, "limit").is_some();
         if block.is_none() {
             return Ok(json!({ "grant": gh, "fits": own_why.is_none(), "why": own_why, "line": null, "start": null, "period": 0, "draws": [], "left": [], "waiting": [], "ended": null, "comes_back": [] }));
         }
         // a grant that names no meter counts nothing: a block that draws takes nothing on no line
-        return if bound { Err("not_on_line") } else { Ok(json!({ "grant": gh, "fits": true, "why": null, "line": null, "start": null, "period": 0, "draws": [], "left": [], "waiting": [], "ended": null, "comes_back": [] })) };
+        return if bound { Err("not_on_chain") } else { Ok(json!({ "grant": gh, "fits": true, "why": null, "line": null, "start": null, "period": 0, "draws": [], "left": [], "waiting": [], "ended": null, "comes_back": [] })) };
     };
-    // a child counted on its parent's meter: read the parent's line, where the parent's meter is not its holder's own
-    let (counted_on, read_grant) = match rs(grant, "parent").and_then(|p| index.get(p)) {
-        Some(parent) if line_of(parent, index).is_some_and(|pl| !pl.own && pl.meter == line.meter) => (parent, grant),
-        _ => (grant, grant),
-    };
-    let _ = counted_on;
-    let (draws, waiting) = draws_of(read_grant, &line, index);
+    let (draws, waiting) = draws_of(grant, &line, index);
     // a fork on the holder's own line
     if let (true, Some(b)) = (line.own, block) {
         if let Some(group) = pair_at(b, &line, index) {
-            let fork = json!({ "pair": true, "held": group, "at_most": worst(grant, index)["at_most"].clone() });
+            let fork = json!({ "pair": true, "blocks": group, "at_most": worst(grant, index)["at_most"].clone() });
             return Ok(json!({ "grant": gh, "fits": false, "why": fork, "line": "own", "start": line.meter, "period": 0, "draws": [], "left": [], "waiting": waiting, "ended": null, "comes_back": [] }));
         }
     }
     // the end of the grant, receipted on the meter's line: what the line has not drawn comes back
-    // 1.9 stage 4 (decided in building): the meter's answer adds `ended` (that end's id); a draw placed after it on another key's line takes nothing
+    // the meter's answer adds `ended` (that end's id); a draw placed after it on another key's line takes nothing
     let ended: Option<String> = if line.own {
         stops_of(grant, index).first().map(|s| hash_of(s).to_string())
     } else {
@@ -1062,25 +1091,25 @@ pub(crate) fn meter_of(grant: &Value, index: &Index, block: Option<&Value>) -> R
         }
     });
     // another key's line: each draw's first receipt there, and whether this reader holds that line whole from the receipt back to the
-    // meter's start (one who does not reads the running total from that one receipt: 00-shared, A line's bounds)
+    // meter's start (one who does not reads the running total from that one receipt)
     let rx: Vec<&Value> = if line.own { Vec::new() } else { meter_receipts(&line, index) };
     let receipt_of = |blk: &str| rx.iter().copied().find(|r| list(rf(r, "derives_from")).contains(&blk));
     let stated_total = |r: &Value, of: &str| -> Option<Amount> {
         st(r, "drawn").and_then(Value::as_array).and_then(|l| l.iter().find(|i| i.get("of").and_then(Value::as_str) == Some(of))).and_then(|i| Amount::of(i.get("total")))
     };
     // a pair on the meter's own line (another key's): the draws it receipts at or after the pair bind only the meter's name past her
-    // measures; a reader who holds the pair answers the fork (A fork on a tool's line)
+    // measures; a reader who holds the pair answers the fork (A fork on a tool's chain)
     let meter_fork: Option<(usize, Value)> = if line.own {
         None
     } else {
-        crate::identity::pair_groups_in(index)
+        crate::forks::pair_groups_in(index)
             .into_iter()
             .filter(|g| g.iter().all(|x| index.get(x).is_some_and(|b| crate::line::on_line(b, &line.line, index))))
             .filter_map(|g| {
                 let place = g.iter().filter_map(|x| rx.iter().position(|r| hash_of(r) == x).or_else(|| index.get(x).map(|b| rx.iter().position(|r| index.past_of(r).contains(hash_of(b))).unwrap_or(usize::MAX)))).min()?;
                 let mut held = g.clone();
                 held.sort();
-                Some((place, json!({ "pair": true, "held": held, "at_most": worst(grant, index)["at_most"].clone() })))
+                Some((place, json!({ "pair": true, "blocks": held, "at_most": worst(grant, index)["at_most"].clone() })))
             })
             .min_by_key(|(p, _)| *p)
     };
@@ -1138,7 +1167,7 @@ pub(crate) fn meter_of(grant: &Value, index: &Index, block: Option<&Value>) -> R
                 let e = running.entry((of.clone(), period_for(of, d))).or_insert_with(Dec::zero);
                 *e = e.add(&a.value);
             }
-            // the rest of a deal it bound that can no longer fall due comes back (00-shared, Freed)
+            // the rest of a deal it bound that can no longer fall due comes back (folds.md, Freed)
             if let Some(b) = index.get(&d.block) {
                 for (of, amount, by) in rest_freed(b, grant, &d.takes_of, index) {
                     frees.push((of.clone(), period_for(&of, d), amount, by));
@@ -1187,7 +1216,7 @@ pub(crate) fn meter_of(grant: &Value, index: &Index, block: Option<&Value>) -> R
     }))
 }
 
-/// The rest of a deal a draw under the grant bound, where it can no longer fall due (00-shared, Freed; 05-deals, The rest of a deal): by
+/// The rest of a deal a draw under the grant bound, where it can no longer fall due (folds.md, Freed; promises.md, The rest of a deal): by
 /// the payee's signal that the price is paid; by her stop of the grant, where the offer said ahead that a stop ends what has not come
 /// (`terms.stoppable`); by a cutoff through the offer's `deliver_by` on `needed` lines of the clocks the offer names; or by a ruling of a
 /// judge both sides named that ends the rest (`state.ends_rest`). Each measure the draw took on gets back what of it the rest held:
@@ -1200,8 +1229,8 @@ fn rest_freed(b: &Value, grant: &Value, takes: &[(String, Amount)], index: &Inde
     let dh = hash_of(deal);
     let payee = rs(deal, "from").or(rs(deal, "author"));
     let terms = get(deal, "state.terms").cloned().unwrap_or(json!({}));
-    let quantity = get(b, "state.terms.quantity").or_else(|| get(deal, "state.terms.quantity")).and_then(|q| Amount::of(Some(q)));
-    let counted = |x: &Value| crate::identity::counts_in(x, index);
+    let chosen = get(b, "state.terms.lines");
+    let counted = |x: &Value| crate::forks::counts_in(x, index);
     let paid = || index.values().find(|x| type_of(x) == "observe" && ss(x, "kind") == Some("paid") && list(rf(x, "subject")).contains(&dh) && counted(x) && super::speaker_of(x, index, None).as_deref() == payee).map(|x| hash_of(x).to_string());
     let stopped = || (get(deal, "state.terms.stoppable") == Some(&json!(true))).then(|| stops_of(grant, index).first().map(|s| hash_of(s).to_string())).flatten();
     let delivered_by = || {
@@ -1215,12 +1244,12 @@ fn rest_freed(b: &Value, grant: &Value, takes: &[(String, Amount)], index: &Inde
         let side_of = |x: &Value| super::speaker_of(x, index, None).filter(|w| sides.contains(&w.as_str()));
         let judges: Vec<&str> = index
             .values()
-            .filter(|g| type_of(g) == "grant" && ss(g, "kind") == Some("referee") && st(g, "status").is_none() && rs(g, "subject") == Some(dh) && counted(g))
+            .filter(|g| super::judge_named(g, dh).is_some() && counted(g))
             .filter(|g| {
                 let by = side_of(g);
-                by.is_some() && index.values().any(|a| type_of(a) == "grant" && ss(a, "status") == Some("accepted") && rs(a, "answers") == Some(hash_of(g)) && counted(a) && side_of(a).is_some_and(|o| Some(&o) != by.as_ref()))
+                by.is_some() && index.values().any(|a| type_of(a) == "observe" && ss(a, "status") == Some("accepted") && list(rf(a, "answers")).contains(&hash_of(g)) && counted(a) && side_of(a).is_some_and(|o| Some(&o) != by.as_ref()))
             })
-            .filter_map(|g| rs(g, "to"))
+            .filter_map(|g| super::judge_named(g, dh))
             .collect();
         index
             .values()
@@ -1228,32 +1257,43 @@ fn rest_freed(b: &Value, grant: &Value, takes: &[(String, Amount)], index: &Inde
             .map(|x| hash_of(x).to_string())
     };
     let Some(by) = paid().or_else(stopped).or_else(delivered_by).or_else(ruled) else { return Vec::new() };
-    // what came: the goods handed over `for` the deal, in the quantity's kind
-    let Some(q) = quantity else { return Vec::new() };
-    let came = index
-        .values()
-        .filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")).contains(&dh) && counted(t))
-        .filter_map(|t| Amount::of(st(t, "amount")).filter(|a| a.kind == q.kind))
-        .fold(Dec::zero(), |s, a| s.add(&a.value));
-    let rest = q.value.sub(&came);
-    if !rest.is_pos() {
+    // what has not come of each line: its quantity chosen less the goods handed over `for` the deal toward it, in its kind
+    let lines = crate::js::lines_of(&terms);
+    let rest_of = |l: &Value| -> Option<Amount> {
+        let q = Amount::of(crate::js::quantity_of(l, chosen))?;
+        let came = index
+            .values()
+            .filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")).contains(&dh) && counted(t) && ss(t, "line").is_none_or(|i| l.get("id").and_then(Value::as_str) == Some(i)))
+            .filter_map(|t| Amount::of(st(t, "amount")).filter(|a| a.kind == q.kind))
+            .fold(Dec::zero(), |s, a| s.add(&a.value));
+        let rest = q.value.sub(&came);
+        Some(Amount { value: if rest.is_pos() { rest } else { Dec::zero() }, kind: q.kind })
+    };
+    let rests: Vec<(Option<&str>, Amount)> = lines.iter().filter_map(|l| rest_of(l).map(|r| (l.get("id").and_then(Value::as_str), r))).collect();
+    if !rests.iter().any(|(_, r)| r.value.is_pos()) {
         return Vec::new();
     }
-    let rest_q = q.kind.amount(&rest);
-    let rest_money = Amount::of(Some(&terms_total(&terms, Some(&rest_q))));
+    // in money: the deal's total at what has not come of each line
+    let rest_chosen = json!(rests.iter().map(|(id, r)| json!({ "id": id, "quantity": r.json() })).collect::<Vec<_>>());
+    let rest_money = Amount::of(Some(&terms_total(&terms, Some(&rest_chosen))));
     takes
         .iter()
         .filter_map(|(of, a)| {
-            let back = if a.kind == q.kind { Some(rest.clone()) } else { rest_money.as_ref().filter(|m| m.kind == a.kind).map(|m| m.value.clone()) }?;
+            let base = of.split('@').next().unwrap_or(of);
+            let back = match base.rsplit_once('#') {
+                Some((_, id)) => rests.iter().find(|(i, r)| *i == Some(id) && r.kind == a.kind).map(|(_, r)| r.value.clone()),
+                None if rests.iter().any(|(_, r)| r.kind == a.kind) => Some(rests.iter().filter(|(_, r)| r.kind == a.kind).fold(Dec::zero(), |t, (_, r)| t.add(&r.value))),
+                None => rest_money.as_ref().filter(|m| m.kind == a.kind).map(|m| m.value.clone()),
+            }?;
             let back = if back.cmp(&a.value) == Ordering::Greater { a.value.clone() } else { back };
-            Some((of.clone(), back, by.clone()))
+            back.is_pos().then(|| (of.clone(), back, by.clone()))
         })
         .collect()
 }
 
 /// The door op `meter`.
-pub fn meter(grant: &Value, held: &[Value], block: Option<&Value>) -> Value {
-    let index = super::read_all(held.iter().filter(|b| block.is_none_or(|x| hash_of(b) != hash_of(x))).chain(block).chain([grant]));
+pub fn meter(grant: &Value, blocks: &[Value], block: Option<&Value>) -> Value {
+    let index = super::read_all(blocks.iter().filter(|b| block.is_none_or(|x| hash_of(b) != hash_of(x))).chain(block).chain([grant]));
     let Some(g) = index.get(hash_of(grant)) else { return json!({ "not_shown": true, "lacks": [hash_of(grant)] }) };
     match meter_of(g, &index, block.and_then(|b| index.get(hash_of(b)))) {
         Ok(v) => v,
@@ -1262,10 +1302,10 @@ pub fn meter(grant: &Value, held: &[Value], block: Option<&Value>) -> Value {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
-// G15, her deadline
+// Her deadline (authority.md)
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
-/// Where a block stands against her deadline on the meter's line (00-shared, Cutoff; Time): `Some(true)` before it (a receipt of it, or
+/// Where a block stands against her deadline on the meter's line (blocks.md, cutoff; Time): `Some(true)` before it (a receipt of it, or
 /// the block itself on that line, with no cutoff through the deadline before it), `Some(false)` after it (a cutoff through the deadline,
 /// `refs.subject` the grant, with no such receipt before it), `None` where the line has not shown it yet. A date orders nothing here but
 /// the block's own: its own `at` at or after the deadline, or none, shows it late against its own signer, and only where lateness
@@ -1335,7 +1375,9 @@ pub(crate) fn lowest(grant: &Value, index: &Index) -> Value {
                 continue;
             }
             let terms = get(o, "state.terms").cloned().unwrap_or(json!({}));
-            let Some(total) = Amount::of(Some(&terms_total(&terms, get(a, "state.terms.quantity")))) else { continue };
+            // at her quantity: each line of A's at its quantity
+            let hers = json!(crate::js::lines_of(get(a, "state.terms").unwrap_or(&Value::Null)).iter().map(|l| json!({ "id": l.get("id"), "quantity": l.get("quantity") })).collect::<Vec<_>>());
+            let Some(total) = Amount::of(Some(&terms_total(&terms, Some(&hers)))) else { continue };
             if limit_kind.as_ref().is_some_and(|k| *k != total.kind) {
                 continue;
             }
@@ -1352,8 +1394,8 @@ pub(crate) fn lowest(grant: &Value, index: &Index) -> Value {
 }
 
 /// The door op `lowest_offer`.
-pub fn lowest_offer(grant: &Value, held: &[Value]) -> Value {
-    let index = super::read_all(held.iter().chain([grant]));
+pub fn lowest_offer(grant: &Value, blocks: &[Value]) -> Value {
+    let index = super::read_all(blocks.iter().chain([grant]));
     match index.get(hash_of(grant)) {
         Some(g) => lowest(g, &index),
         None => json!({ "not_shown": true, "lacks": [hash_of(grant)] }),
@@ -1361,7 +1403,7 @@ pub fn lowest_offer(grant: &Value, held: &[Value]) -> Value {
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
-// G18, the worst case
+// The worst case (authority.md)
 // ---------------------------------------------------------------------------------------------------------------------------------------
 
 fn add_kind(m: &mut BTreeMap<Kind, Option<Dec>>, a: Option<Amount>, kind: Option<Kind>) {
@@ -1401,7 +1443,7 @@ pub(crate) fn bottom(v: Option<&Value>) -> Option<&Value> {
     Some(v)
 }
 
-/// G18: `worst_case` from her grant and the promises it names alone.
+/// The worst case (authority.md): `worst_case` from her grant and the promises it names alone.
 pub(crate) fn worst(grant: &Value, index: &Index) -> Value {
     let principal = rs(grant, "author").unwrap_or("");
     let limit = scope(grant, "limit").and_then(|l| Amount::of(Some(l)));
@@ -1410,31 +1452,29 @@ pub(crate) fn worst(grant: &Value, index: &Index) -> Value {
     let mut hand: BTreeMap<Kind, Option<Dec>> = BTreeMap::new();
     let mut to_come: BTreeMap<Kind, Option<Dec>> = BTreeMap::new();
     let mut on_out: Vec<Value> = Vec::new();
-    // 1.9 stage 7 (compare): a sell from an instance the grant names counts once with that instance's part, at the largest of them
+    // a sell from an instance the grant names counts once with that instance's part, at the largest of them
     let whats = list(rf(grant, "what"));
     let mut from_what: BTreeMap<String, Vec<Amount>> = BTreeMap::new();
     for a in on_promises(grant, index) {
         let sells = rs(a, "from") == Some(principal);
-        let price = get(a, "state.terms.price");
-        let qty = get(a, "state.terms.quantity");
-        let total_at = |p: Option<&Value>, q: Option<&Value>| -> Option<Amount> {
-            let mut t = json!({});
-            t["price"] = p?.clone();
-            Amount::of(Some(&terms_total(&t, q)))
-        };
-        let money_kind = price.and_then(|p| top(Some(p)).or(bottom(Some(p)))).and_then(|p| Amount::of(Some(p)).or_else(|| Amount::of(p.get("amount")))).map(|a| a.kind);
-        let inst = if sells { whats.iter().find(|w| list(rf(a, "what")).contains(w)).map(|w| w.to_string()) } else { None };
-        let q_top = top(qty).and_then(|q| Amount::of(Some(q)));
-        if let (Some(inst), Some(q)) = (inst, q_top.clone().filter(|_| sells)) {
-            from_what.entry(inst).or_default().push(q);
-            add_kind(&mut to_come, total_at(top(price), top(qty)), money_kind.clone());
-        } else if sells {
-            add_kind(&mut hand, q_top, None);
-            add_kind(&mut to_come, total_at(top(price), top(qty)), money_kind.clone());
-        } else {
-            add_kind(&mut hand, total_at(top(price), top(qty)), money_kind.clone().or_else(|| limit.as_ref().map(|l| l.kind.clone())));
+        for line in crate::js::lines_of(get(a, "state.terms").unwrap_or(&Value::Null)) {
+            let price = line.get("price");
+            let qty = line.get("quantity");
+            let total_at = |p: Option<&Value>, q: Option<&Value>| -> Option<Amount> { super::promise::total_of(p, q).and_then(|(d, k)| Amount::of(Some(&super::promise::kind_json(&d, &k)))) };
+            let money_kind = price.and_then(|p| top(Some(p)).or(bottom(Some(p)))).and_then(|p| Amount::of(Some(p)).or_else(|| Amount::of(p.get("amount")))).map(|a| a.kind);
+            let inst = if sells { line.get("what").and_then(Value::as_str).filter(|w| whats.contains(w)).map(String::from) } else { None };
+            let q_top = top(qty).and_then(|q| Amount::of(Some(q)));
+            if let (Some(inst), Some(q)) = (inst, q_top.clone().filter(|_| sells)) {
+                from_what.entry(inst).or_default().push(q);
+                add_kind(&mut to_come, total_at(top(price), top(qty)), money_kind.clone());
+            } else if sells {
+                add_kind(&mut hand, q_top, None);
+                add_kind(&mut to_come, total_at(top(price), top(qty)), money_kind.clone());
+            } else {
+                add_kind(&mut hand, total_at(top(price), top(qty)), money_kind.clone().or_else(|| limit.as_ref().map(|l| l.kind.clone())));
+            }
+            on_out.push(json!({ "promise": hash_of(a), "line": line.get("id"), "side": if sells { "from" } else { "to" }, "price": price, "quantity": qty }));
         }
-        on_out.push(json!({ "promise": hash_of(a), "side": if sells { "from" } else { "to" }, "price": price, "quantity": qty }));
     }
     // the part the grant's line holds: the instance it names, at its limit or all of it
     let mut part: Vec<Value> = Vec::new();
@@ -1480,7 +1520,6 @@ pub(crate) fn worst(grant: &Value, index: &Index) -> Value {
         // a missing limit and each lets no block under it draw above zero (the price where she pays)
         for (k, v) in hand.iter_mut() {
             if !lose.contains_key(k) {
-                let _ = k;
                 *v = Some(Dec::zero());
             }
         }
@@ -1497,7 +1536,7 @@ pub(crate) fn worst(grant: &Value, index: &Index) -> Value {
     json!({
         "holder": rf(grant, "to").cloned().unwrap_or(Value::Null),
         "types": scope(grant, "types").cloned().unwrap_or(json!([])),
-        // 1.9 stage 4 (decided in building): `on` lists { promise, side, price, quantity } per promise, so her floor (line 13) is read from it
+        // `on` lists { promise, side, price, quantity } per promise, so her floor (line 13) is read from it
         "on": on_out,
         "what": rf(grant, "what").cloned().unwrap_or(Value::Null),
         "part": part,
@@ -1505,8 +1544,8 @@ pub(crate) fn worst(grant: &Value, index: &Index) -> Value {
         "each": scope(grant, "each").cloned().unwrap_or(Value::Null),
         "limit": scope(grant, "limit").cloned().unwrap_or(Value::Null),
         "every": scope(grant, "every").cloned().unwrap_or(Value::Null),
-        "until": scope(grant, "until").cloned().unwrap_or(Value::Null),
-        // 1.9 stage 4 (decided in building): no span is added to a date, so the number of periods is not counted: `periods` is the period itself (with
+        "expires": scope(grant, "expires").cloned().unwrap_or(Value::Null),
+        // no span is added to a date, so the number of periods is not counted: `periods` is the period itself (with
         // `every`, at_most is per period), null without one
         "periods": scope(grant, "every").cloned().unwrap_or(Value::Null),
         "at_most": per_kind(&hand),
@@ -1521,8 +1560,8 @@ pub(crate) fn worst(grant: &Value, index: &Index) -> Value {
 }
 
 /// The door op `worst_case`.
-pub fn worst_case(grant: &Value, held: &[Value]) -> Value {
-    let index = super::read_all(held.iter().chain([grant]));
+pub fn worst_case(grant: &Value, blocks: &[Value]) -> Value {
+    let index = super::read_all(blocks.iter().chain([grant]));
     match index.get(hash_of(grant)) {
         Some(g) => worst(g, &index),
         None => json!({ "not_shown": true, "lacks": [hash_of(grant)] }),

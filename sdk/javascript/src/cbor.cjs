@@ -10,8 +10,8 @@ const bytesOf = (text) => new Uint8Array(Buffer.from(text, 'hex'))
 /** A signed public block as the CBOR message [t, block, signature]. `short: true` uses the key table (protocol.json `cbor.keys`). */
 const encode = (block, { short = false } = {}) => bytesOf(door.cborEncode(block, short))
 /** The block a CBOR message carries, with its hash taken from its canonical JSON in the suite of the key that signed it (found among
- * `held`; without it, the suite the block shows). Refuses floats, tags, null, indefinite lengths, duplicate keys and anything after the signature. */
-const decode = (bytes, { held } = {}) => (held === undefined ? door.cborDecode(hex(bytes)) : door.cborDecode(hex(bytes), list(held)))
+ * `blocks`; without it, the suite the block shows). Refuses floats, tags, null, indefinite lengths, duplicate keys and anything after the signature. */
+const decode = (bytes, { blocks } = {}) => (blocks === undefined ? door.cborDecode(hex(bytes)) : door.cborDecode(hex(bytes), list(blocks)))
 /** A push of several blocks: an array of messages. */
 const encodePush = (blocks, { short = false } = {}) => bytesOf(door.cborEncodePush(blocks, short))
 const decodePush = (bytes) => door.cborDecodePush(hex(bytes))

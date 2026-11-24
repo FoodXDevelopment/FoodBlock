@@ -54,7 +54,7 @@ extension FoodBlock {
     static func findings(_ v: Any?) -> [Finding] {
         (v as? [JSON] ?? []).map { Finding(code: $0["code"] as? String ?? "", detail: $0["detail"] as? String ?? "") }
     }
-    static func blocksOf(_ held: [String: JSON]?) -> [JSON]? { held.map { Array($0.values) } }
+    static func blocksOf(_ blocks: [String: JSON]?) -> [JSON]? { blocks.map { Array($0.values) } }
 
     // ---- A block ----
     public static func canonical(_ type: String, _ state: JSON, _ refs: JSON) throws -> String { try Door.canonical(type, state, refs) }
@@ -63,10 +63,10 @@ extension FoodBlock {
     public static func create(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], suite: String = "std") throws -> JSON { try Door.create(type, state, refs, suite) }
     /// The id of a block: the hash of its canonical form, in the hash of the suite of the key that signed it.
     public static func hash(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], suite: String = "std") throws -> String { try Door.hash(type, state, refs, suite) }
-    /// The id of a block, in the suite of the key that signed it (core.md, section 2), that key found among `held`; with none, in the suite
+    /// The id of a block, in the suite of the key that signed it (core.md, section 2), that key found among `blocks`; with none, in the suite
     /// the block shows (a genesis's own, else as its prev is hashed). No label names it.
-    public static func hash(of block: JSON, held: [JSON]? = nil) throws -> String {
-        try Door.idOf(block, held)
+    public static func hash(of block: JSON, blocks: [JSON]? = nil) throws -> String {
+        try Door.idOf(block, blocks)
     }
 
     // ---- Signing ----
@@ -106,23 +106,23 @@ extension FoodBlock {
     public static func revealFor(_ salts: [String: String], _ recipient: String) throws -> JSON { (try Door.revealFor(salts, recipient) as? JSON) ?? [:] }
 
     // ---- The write check and the words it asks for ----
-    /// What a writer refuses to sign, asked of an unsigned draft `{ type, state, refs }` before anyone signs it, against the blocks held;
+    /// What a writer refuses to sign, asked of an unsigned draft `{ type, state, refs }` before anyone signs it, against the blocks given;
     /// [] when it may be signed.
-    public static func writeRefusals(_ draft: JSON, held: [JSON] = []) throws -> [Finding] { findings(try Door.writeRefusals(draft, held)) }
-    public static func writeRefusals(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], held: [JSON] = []) throws -> [Finding] {
-        try writeRefusals(["type": type, "state": state, "refs": refs], held: held)
+    public static func writeRefusals(_ draft: JSON, blocks: [JSON] = []) throws -> [Finding] { findings(try Door.writeRefusals(draft, blocks)) }
+    public static func writeRefusals(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], blocks: [JSON] = []) throws -> [Finding] {
+        try writeRefusals(["type": type, "state": state, "refs": refs], blocks: blocks)
     }
-    /// valid(block, held): who said these bytes (core.md, section 8): one of size_limit, not_canonical, chain, unmet, bad_piece, bad_hash,
-    /// bad_signature, unknown_suite; [] when valid. Takes a block or a held header.
-    public static func valid(_ block: JSON, held: [JSON] = []) throws -> [Finding] { findings(try Door.valid(block, held)) }
-    /// read(block, held, schemas): whether this reader can read a valid block: every code found ([] when read). `runs` are the ids of the rule sets this reader runs.
-    public static func read(_ block: JSON, held: [JSON] = [], schemas: [JSON]? = nil, runs: [String]? = nil) throws -> [Finding] {
-        findings(try Door.read(block, held, schemas, runs))
+    /// valid(block, blocks): who said these bytes (core.md, section 8): one of size_limit, not_canonical, chain, unmet, bad_piece, bad_hash,
+    /// bad_signature, unknown_suite; [] when valid. Takes a block or a given header.
+    public static func valid(_ block: JSON, blocks: [JSON] = []) throws -> [Finding] { findings(try Door.valid(block, blocks)) }
+    /// read(block, blocks, schemas): whether this reader can read a valid block: every code found ([] when read).
+    public static func read(_ block: JSON, blocks: [JSON] = [], schemas: [JSON]? = nil) throws -> [Finding] {
+        findings(try Door.read(block, blocks, schemas))
     }
-    /// The schema store of the blocks held: every thing of kind schema among them. Pass it as `schemas` to `read` or `accept`.
-    public static func schemasFrom(_ held: [JSON]) throws -> [JSON] { try Door.schemasFrom(held) }
+    /// The schema store of the blocks given: every thing of kind schema among them. Pass it as `schemas` to `read` or `accept`.
+    public static func schemasFrom(_ blocks: [JSON]) throws -> [JSON] { try Door.schemasFrom(blocks) }
     /// Whether an unsigned draft, once signed, binds anyone: true where it is an accept, or where something of the one whose word it is would move.
-    public static func binds(_ draft: JSON, held: [JSON] = []) throws -> Bool { try Door.binds(draft, held) }
+    public static func binds(_ draft: JSON, blocks: [JSON] = []) throws -> Bool { try Door.binds(draft, blocks) }
     /// Strict writing from JSON text: a repeated key, then every refusal of the block it holds.
     public static func strictText(_ text: String) throws -> [Finding] { findings(try Door.strictText(text)) }
     /// The short code of a block id (Crockford Base32).
@@ -179,21 +179,21 @@ extension FoodBlock {
         try Door.compose(type, state, refs, options(author: author, audience: audience, after: after, when: when, link: link, salts: given, suite: suite, skip: skip))
     }
     /// The one way to write: compose, check (refusing, never repairing), sign with the author's key, at the next place
-    /// in that key's chain among `held`. Throws `.refused` with every finding: { code, detail }, one per code.
-    public static func write(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], author: String, key: Keypair, held: [JSON] = [],
+    /// in that key's chain among `blocks`. Throws `.refused` with every finding: { code, detail }, one per code.
+    public static func write(_ type: String, _ state: JSON = [:], _ refs: JSON = [:], author: String, key: Keypair, blocks: [JSON] = [],
                              schemas: [String: JSON]? = nil, link: Link? = nil, audience: Audience, after: [String] = [],
                              when: When, suite: String? = nil, skip: Bool = false) throws -> JSON {
         var o = options(author: author, audience: audience, after: after, when: when, link: link, suite: suite ?? key.suite, skip: skip)
-        o["key"] = key.json; o["held"] = held
+        o["key"] = key.json; o["blocks"] = blocks
         if let s = schemas { o["schemas"] = Array(s.values) }
         return try Door.write(type, state, refs, o)
     }
     /// A signed public block as it travels: `{ block, signature }`: a message carries no version.
     public static func wrap(_ signed: JSON) throws -> JSON { try Door.wrap(signed) }
     /// A block off the wire: its hash recomputed from its content, its signature kept beside.
-    /// The id is in the suite of the key that signed it, found among `held` (the author's blocks; core.md, section 2); with none, in the suite the block shows.
-    public static func unwrap(_ message: JSON, held: [JSON]? = nil) throws -> JSON {
-        try Door.unwrap(message, held)
+    /// The id is in the suite of the key that signed it, found among `blocks` (the author's blocks; core.md, section 2); with none, in the suite the block shows.
+    public static func unwrap(_ message: JSON, blocks: [JSON]? = nil) throws -> JSON {
+        try Door.unwrap(message, blocks)
     }
     public static func header(_ block: JSON) throws -> JSON { try Door.header(block) }
     /// A signed block sealed to recipients' encryption keys in `suite`. A private block is signed once, over its header, so its own

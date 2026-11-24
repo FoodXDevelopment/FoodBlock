@@ -1,10 +1,10 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
-// FoodBlock 1.9 stage 4 (grants): the ops that answer from blocks alone (`meter`, `worst_case`, `lowest_offer`, `backed`, `keeps_to`,
-// `why_not_under`). The world is the oracle's base world W (changes-1.9/04-grants.md, section 5): Amara's want, her grant to her AI with
+// Grants: the ops that answer from blocks alone (`meter`, `worst_case`, `lowest_offer`, `backed`, `keeps_to`,
+// `why_not_under`). The world is the oracle's base world W (spec/oracle/stories/grants): Amara's want, her grant to her AI with
 // a limit of 210 GBP on that want, her AI's own line as the meter.
-const L = require('../../../spec/oracle/stage4/lib.cjs')
+const L = require('../../../spec/oracle/stories/grants/lib.cjs')
 const world = () => {
   const W = L.baseWorld({ meter: 'own' })
   const H1 = W.offer(W.harry, 20.5, {}, 'H1'), I1 = W.accept(H1, 205, 'I1')

@@ -21,9 +21,9 @@ object Cbor {
         bytes(Door.cborEncode(block, JsonPrimitive(short)).string())
 
     /** The block a CBOR message carries, its hash taken from its canonical JSON. Throws on floats, tags, null, indefinite lengths and duplicate keys.
-     *  With `held` (the author's blocks) the id is taken in the suite of the key that signed it (core.md, section 2). */
-    fun decode(data: ByteArray, held: List<JsonObject>? = null): JsonObject =
-        (if (held == null) Door.cborDecode(JsonPrimitive(hex(data))) else Door.cborDecode(JsonPrimitive(hex(data)), JsonArray(held))).obj()
+     *  With `blocks` (the author's blocks) the id is taken in the suite of the key that signed it (core.md, section 2). */
+    fun decode(data: ByteArray, blocks: List<JsonObject>? = null): JsonObject =
+        (if (blocks == null) Door.cborDecode(JsonPrimitive(hex(data))) else Door.cborDecode(JsonPrimitive(hex(data)), JsonArray(blocks))).obj()
 
     fun encodePush(blocks: List<JsonObject>, short: Boolean = false): ByteArray =
         bytes(Door.cborEncodePush(blocks(blocks), JsonPrimitive(short)).string())

@@ -42,11 +42,11 @@ func KeyHash(publicKeyHex string, suite ...string) string {
 }
 
 // GenesisOptions: Kind, At and Audience (all required: "public" or a non-empty list of recipients; nothing is filled in),
-// EncryptionKey (the public encryption key, if it will receive sealed blocks), and Reach (a duration) with Keepers (her
+// EncryptionKey (the public encryption key, if it will receive sealed blocks), and Reach (a duration) with Clocks (her
 // clock: { names, needed }), which come together. The keys' own Suite is the genesis's suite.
 type GenesisOptions struct {
 	Kind, At, EncryptionKey, Reach string
-	Keepers                        any
+	Clocks                         any
 	Audience                       []string // recipients; or Public
 	Salts                          map[string]string
 	Nonce                          string
@@ -61,8 +61,8 @@ func Genesis(keys Keypair, o GenesisOptions) (Block, error) {
 			given[k] = v
 		}
 	}
-	if o.Keepers != nil {
-		given["keepers"] = o.Keepers
+	if o.Clocks != nil {
+		given["clocks"] = o.Clocks
 	}
 	if a := audienceJSON(o.Audience); a != nil {
 		given["audience"] = a
@@ -82,24 +82,24 @@ func IsGenesis(b Block) bool { return doorIsGenesis(b) }
 // GenesisOpens is whether a genesis is opened by its own key.
 func GenesisOpens(b Block) bool { return doorGenesisOpens(b) }
 
-// KeySigner signs a key grant: one of her voices, her operator, or a voice of named people, signing in their own name.
-// Author defaults to the id the grant is about; Keys is the signer's keypair; Held the author's genesis, grants and blocks.
+// KeySigner signs a key grant: one of her voices, or a voice of named people, signing in their own name.
+// Author defaults to the id the grant is about; Keys is the signer's keypair; Blocks the author's genesis, grants and blocks.
 type KeySigner struct {
 	Author string
 	Keys   Keypair
-	Held   []Block
+	Blocks []Block
 	At     string
 	After  []string
 	Link   *Link
 }
 
-// KeyGrantOptions (identity.md): Voices (her whole list again, with Updates the list it replaces and Keepers her clock), or Key (one key
+// KeyGrantOptions (identity.md): Voices (her whole list again, with Updates the list it replaces and Clocks her clock), or Key (one key
 // under the signer's voice, in Suite), or Encrypt alone; ShownKey when a key named by hash shows itself (KeyRef the list that holds
-// its hash); CountedTo the last block of a key a voice above ends; Under an operator grant.
+// its hash); CountedTo the last block of a key a voice above ends.
 type KeyGrantOptions struct {
 	Voices                                   any
-	Updates, KeyRef, Under                   string
-	Keepers                                  any
+	Updates, KeyRef                          string
+	Clocks                                   any
 	Key, Suite, Encrypt, ShownKey, CountedTo string
 }
 
@@ -109,8 +109,8 @@ func KeyGrant(id string, signer KeySigner, o KeyGrantOptions) (Block, error) {
 	if o.Voices != nil {
 		state["voices"] = o.Voices
 	}
-	if o.Keepers != nil {
-		state["keepers"] = o.Keepers
+	if o.Clocks != nil {
+		state["clocks"] = o.Clocks
 	}
 	for k, v := range map[string]string{"public_key_sign": o.Key, "suite": o.Suite, "public_key_encrypt": o.Encrypt, "shown_key": o.ShownKey, "counted_to": o.CountedTo} {
 		if v != "" {
@@ -118,7 +118,7 @@ func KeyGrant(id string, signer KeySigner, o KeyGrantOptions) (Block, error) {
 		}
 	}
 	refs := map[string]any{"subject": id}
-	for k, v := range map[string]string{"updates": o.Updates, "key": o.KeyRef, "under": o.Under} {
+	for k, v := range map[string]string{"updates": o.Updates, "key": o.KeyRef} {
 		if v != "" {
 			refs[k] = v
 		}
@@ -127,12 +127,12 @@ func KeyGrant(id string, signer KeySigner, o KeyGrantOptions) (Block, error) {
 	if author == "" {
 		author = id
 	}
-	return Write("grant", state, refs, WriteOptions{ComposeOptions: ComposeOptions{Author: author, Audience: []string{Public}, At: signer.At, After: signer.After, Link: signer.Link}, Key: signer.Keys, Held: signer.Held})
+	return Write("grant", state, refs, WriteOptions{ComposeOptions: ComposeOptions{Author: author, Audience: []string{Public}, At: signer.At, After: signer.After, Link: signer.Link}, Key: signer.Keys, Blocks: signer.Blocks})
 }
 
 // Confirm is the second signature (blocks.md, Finality, Signed twice): a block of the same key, or of a voice above, naming the word in refs.confirms.
 func Confirm(word Block, signer KeySigner) (Block, error) {
-	return Write("observe", map[string]any{}, map[string]any{"confirms": []any{word.Hash}}, WriteOptions{ComposeOptions: ComposeOptions{Author: signer.Author, Audience: []string{Public}, At: signer.At, After: signer.After, Link: signer.Link}, Key: signer.Keys, Held: signer.Held})
+	return Write("observe", map[string]any{}, map[string]any{"confirms": []any{word.Hash}}, WriteOptions{ComposeOptions: ComposeOptions{Author: signer.Author, Audience: []string{Public}, At: signer.At, After: signer.After, Link: signer.Link}, Key: signer.Keys, Blocks: signer.Blocks})
 }
 
 // KeyEntry is one key an id has held: Key, by whom it came in (By), its Voice, what it is Under, its Suite, and whether it Ended.
@@ -172,14 +172,13 @@ func ChainsOf(id string, blocks []Block) []map[string]any {
 // Counts is whether a block counts among the blocks.
 func Counts(b Block, blocks []Block) bool { return doorCounts(b, blocks) }
 
-// IdentityState is the identity fold: signed_by_author (hash -> bool), voices, keepers, keys, waiting and operators.
+// IdentityState is the identity fold: signed_by_author (hash -> bool), voices, clocks, keys and waiting.
 type IdentityState struct {
 	SignedByAuthor map[string]bool `json:"signed_by_author"`
 	Voices         any             `json:"voices"`
-	Keepers        any             `json:"keepers"`
+	Clocks         any             `json:"clocks"`
 	Keys           []string        `json:"keys"`
 	Waiting        any             `json:"waiting"`
-	Operators      []string        `json:"operators"`
 }
 
 // IdentityStateOf is who an id is among these blocks.

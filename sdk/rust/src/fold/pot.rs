@@ -11,7 +11,7 @@ use crate::prelude::*;
 
 /// The ids a condition's signal names, looking through a `within` or `without` wrapper; None when the condition is no signal.
 fn signal_by(cond: &Value) -> Option<Vec<String>> {
-    if let Some(by) = cond.get("signal").and(cond.get("by")).and_then(Value::as_array) {
+    if let Some(by) = cond.get("signal").and(cond.get("by")).and_then(|b| b.get("names")).and_then(Value::as_array) {
         return Some(by.iter().filter_map(|x| x.as_str().map(String::from)).collect());
     }
     cond.get("within").or_else(|| cond.get("without")).and_then(signal_by)
@@ -27,12 +27,12 @@ pub fn pot(head: &Value, blocks: &[Value], now: &str) -> Value {
         return Value::Null;
     }
     let index = super::read_all(core::iter::once(head).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()));
-    // a fold reads only what is valid and read (folds.md): a head held as its header, or not held, is no pot
+    // a fold reads only what is valid and read (folds.md): a head given as its header, or not given, is no pot
     let Some(head) = index.get(hash_of(head)).filter(|b| b.get("type").is_some()) else { return Value::Null };
     let hh = hash_of(head).to_string();
     let Some(holder) = speaker_of(head, &index, None) else { return Value::Null };
     let backing = st(head, "terms").and_then(|t| t.get("backing")).and_then(|b| Amount::of(Some(b)));
-    // a cap written out as `all` (the schema's term `cap`): all the holder owns on the day a claim is read, the referee fixing the sum. The
+    // a cap written out as `all` (the schema's term `cap`): all the holder owns on the day a claim is read, the judge fixing the sum. The
     // fold shows "no limit" (`cap: "all"`, `backing` and `left` null) and a payout is never past the pot (profiles/vouches.md)
     let no_limit = backing.is_none() && st(head, "terms").and_then(|t| t.get("cap")).and_then(Value::as_str) == Some("all");
     let for_head = |t: &&Value| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")) == [hh.as_str()] && sees_in(t, &hh, &index);
@@ -41,7 +41,7 @@ pub fn pot(head: &Value, blocks: &[Value], now: &str) -> Value {
     // the pay-ins: transfers `for` the head `to_owner` the holder, counted once the holder accepted them (The other side)
     let pay_ins: Vec<(&Value, Amount)> = transfers
         .iter()
-        .filter(|t| crate::identity::counts_in(t, &index) && list(rf(t, "to_owner")) == [holder.as_str()] && rf(t, "what").is_none())
+        .filter(|t| crate::forks::counts_in(t, &index) && list(rf(t, "to_owner")) == [holder.as_str()] && rf(t, "what").is_none())
         .filter(|t| super::things::accepted_by_receiver(t, &index, &|_| true))
         .filter_map(|t| Amount::of(st(t, "amount")).map(|a| (*t, a)))
         .collect();
@@ -58,10 +58,10 @@ pub fn pot(head: &Value, blocks: &[Value], now: &str) -> Value {
         None if no_limit => one_kind(payout_kinds()),
         None => None,
     };
-    let confirmers: Vec<String> = rs(head, "schema")
+    let bench: Vec<String> = rs(head, "schema")
         .and_then(|s| index.get(s))
         .and_then(|s| st(s, "grounds"))
-        .map(|g| list(g.get("confirmers")).iter().map(|x| x.to_string()).collect())
+        .map(|g| list(g.get("bench").and_then(|b| b.get("names"))).iter().map(|x| x.to_string()).collect())
         .unwrap_or_default();
     // a vouch to whoever holds a lot (promises.md, Bearer): a payout counts only to the owner, where it stands, of that thing or of a thing
     // made from it that the payout has in its causal past (`made_from`)
@@ -71,13 +71,13 @@ pub fn pot(head: &Value, blocks: &[Value], now: &str) -> Value {
     let mut draws: Vec<Draw> = Vec::new();
     for t in transfers.iter().copied() {
         let to = list(rf(t, "to_owner"));
-        let binds = crate::identity::counts_in(t, &index) || crate::identity::fork_burden(t, &index);
+        let binds = crate::forks::counts_in(t, &index) || crate::forks::fork_burden(t, &index);
         // a payout is the holder's word (folds.md, A pot): a transfer `for` the head that does not speak for her is no payout of the pot
         if !binds || to.len() != 1 || to[0] == holder || rf(t, "what").is_some() || speaker_of(t, &index, None).as_deref() != Some(holder.as_str()) {
             continue;
         }
         let Some(amount) = Amount::of(st(t, "amount")).filter(|a| !a.value.is_zero()) else { continue };
-        let fixed = if !confirmers.is_empty() && !st(t, "condition").and_then(signal_by).is_some_and(|by| !by.is_empty() && by.iter().all(|b| confirmers.contains(b))) {
+        let fixed = if !bench.is_empty() && !st(t, "condition").and_then(signal_by).is_some_and(|by| !by.is_empty() && by.iter().all(|b| bench.contains(b))) {
             Some("not_confirmed")
         } else if lot.is_some() && !made.iter().any(|x| (Some(x.as_str()) == lot || index.past_of(t).contains(x)) && super::things::owner_seen_by(x, t, &index).as_deref() == Some(to[0])) {
             Some("not_holder")
@@ -109,7 +109,7 @@ pub fn pot(head: &Value, blocks: &[Value], now: &str) -> Value {
     if let Some(not) = drawn.not_shown() {
         return not;
     }
-    // 1.9 3b-7: a block held and not read that could name the pot hides it: the answer is not shown
+    // a block given and not read that could name the pot hides it: the answer is not shown
     let hides = super::draws::hidden(&hh, &drawn.starts, &index, &|_| true);
     if !hides.is_empty() {
         return json!({ "not_shown": true, "lacks": hides });

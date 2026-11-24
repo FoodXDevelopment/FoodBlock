@@ -23,11 +23,11 @@ class ApiTest {
     )
     private val id = me["hash"]!!.jsonPrimitive.content
 
-    private fun reading(held: List<JsonObject>, at: String, celsius: String) = FoodBlock.write(
+    private fun reading(blocks: List<JsonObject>, at: String, celsius: String) = FoodBlock.write(
         "observe",
         buildJsonObject { put("kind", "reading"); put("amount", FoodBlock.amount(celsius, "Cel")) },
         buildJsonObject { put("subject", id) },
-        WriteOptions(author = id, key = keys, held = held, at = at, audience = listOf(PUBLIC)),
+        WriteOptions(author = id, key = keys, blocks = blocks, at = at, audience = listOf(PUBLIC)),
     )
     private fun JsonObject.at(part: String, key: String) = this[part]!!.jsonObject[key]!!.jsonPrimitive.content
 
@@ -69,7 +69,7 @@ class ApiTest {
     @Test fun aBrokenBlockIsRefusedWithEveryReason() {
         val e = assertFailsWith<RefusedException> {
             FoodBlock.write("observe", buildJsonObject { put("amount", 3.9) }, buildJsonObject {},
-                WriteOptions(author = id, key = keys, held = listOf(me), at = "2026-10-15T09:01:00.000Z", audience = listOf(PUBLIC)))
+                WriteOptions(author = id, key = keys, blocks = listOf(me), at = "2026-10-15T09:01:00.000Z", audience = listOf(PUBLIC)))
         }
         assertTrue(e.reasons.isNotEmpty(), "the reasons come back")
         println("refused: ${e.refusals.ifEmpty { e.reasons }}")
@@ -79,8 +79,8 @@ class ApiTest {
         val note = buildJsonObject { put("kind", "note"); put("text", "hi") }
         val at = "2026-10-15T09:01:00.000Z"
         // no audience, no at: the core refuses; the SDK fills neither
-        assertFailsWith<FoodBlockException> { FoodBlock.write("observe", note, buildJsonObject {}, WriteOptions(author = id, key = keys, held = listOf(me), at = at)) }
-        assertFailsWith<FoodBlockException> { FoodBlock.write("observe", note, buildJsonObject {}, WriteOptions(author = id, key = keys, held = listOf(me), audience = listOf(PUBLIC))) }
+        assertFailsWith<FoodBlockException> { FoodBlock.write("observe", note, buildJsonObject {}, WriteOptions(author = id, key = keys, blocks = listOf(me), at = at)) }
+        assertFailsWith<FoodBlockException> { FoodBlock.write("observe", note, buildJsonObject {}, WriteOptions(author = id, key = keys, blocks = listOf(me), audience = listOf(PUBLIC))) }
         assertFailsWith<FoodBlockException> { Identity.genesis(keys, kind = "sensor", at = at, audience = emptyList()) }
         // the node's own pair choice is stated; none is an argument error
         assertFailsWith<FoodBlockException> { FoodBlock.call("accept", JsonArray(emptyList()), JsonArray(emptyList()), JsonNull) }
@@ -108,7 +108,7 @@ class ApiTest {
             val gid = genesis["hash"]!!.jsonPrimitive.content
             val block = FoodBlock.write(
                 "observe", buildJsonObject { put("kind", "note"); put("text", "hi") }, buildJsonObject {},
-                WriteOptions(author = gid, key = k, held = listOf(genesis), at = "2026-10-15T09:01:00.000Z", audience = listOf(PUBLIC)),
+                WriteOptions(author = gid, key = k, blocks = listOf(genesis), at = "2026-10-15T09:01:00.000Z", audience = listOf(PUBLIC)),
             )
             assertTrue(FoodBlock.valid(block, listOf(genesis)).isEmpty(), "$suite: valid")
             assertEquals(block["hash"]!!.jsonPrimitive.content, FoodBlock.hash(block))
@@ -116,10 +116,7 @@ class ApiTest {
         }
     }
 
-    @Test fun thereIsNoOlderShape() {
-        // the 1.7 and 1.8 ops are gone from the door: each is an error, never a quiet answer
-        for (op in listOf("read_as", "check", "refusals", "money", "receipt_code", "owed_back", "operators_of", "may_act_as", "with_in_limit", "successor_view", "accept_sealed", "keys_of"))
-            assertFailsWith<FoodBlockException>(op) { FoodBlock.call(op, buildJsonObject {}) }
+    @Test fun shortCodesMatchLoosely() {
         assertEquals(9, FoodBlock.shortCode("0".repeat(64)).length)
         assertEquals(true, FoodBlock.codeMatches("oooo oooo", "0".repeat(64)))
         assertEquals(false, FoodBlock.codeMatches("0000-000", "0".repeat(64)))
@@ -128,7 +125,7 @@ class ApiTest {
     @Test fun badInputIsAnErrorNotACrash() {
         val e = assertFailsWith<FoodBlockException> { FoodBlock.sign(buildJsonObject { put("type", "thing") }, "not hex") }
         assertTrue(e.kind == "crypto" || e.kind == "argument", e.kind)
-        assertTrue(FoodBlock.VERSION.startsWith("1."), FoodBlock.VERSION) // protocol.json names no 1.9 yet
+        assertTrue(FoodBlock.VERSION.startsWith("1."), FoodBlock.VERSION)
         assertEquals(64, FoodBlock.hash("thing", buildJsonObject { put("kind", JsonPrimitive("eggs")) }, buildJsonObject {}).length)
     }
 }

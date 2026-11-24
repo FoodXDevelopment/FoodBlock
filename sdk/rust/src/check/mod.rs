@@ -22,12 +22,12 @@ mod time;
 mod transfer;
 
 /// What the check may look up: `schemas` (hash → schema block) so a named schema's fields and roles count as
-/// declared (a schema not among them is refused); `held` (hash → block) so a child grant is checked against its parent,
+/// declared (a schema not among them is refused); `blocks` (hash → block) so a child grant is checked against its parent,
 /// a deal block against the block it answers, and a promise's ask against the grant it acts under.
 #[derive(Default, Clone, Copy)]
 pub struct CheckOptions<'a> {
     pub schemas: Option<&'a Index>,
-    pub held: Option<&'a Index>,
+    pub blocks: Option<&'a Index>,
 }
 
 type W = Vec<Refusal>;
@@ -154,7 +154,7 @@ impl<'a> Checker<'a> {
     }
 
 
-    fn rules(&self, type_name: &str, state: &Value, refs: &Value, held: Option<&Index>) -> W {
+    fn rules(&self, type_name: &str, state: &Value, refs: &Value, blocks: Option<&Index>) -> W {
         let g = |k: &str| state.get(k);
         let r = |k: &str| refs.get(k);
         let mut w: W = vec![];
@@ -167,8 +167,8 @@ impl<'a> Checker<'a> {
         }
         match type_name {
             "actor" => w.extend(self.actor(state, answering)),
-            "transfer" => w.extend(self.transfer(state, refs, held, answering)),
-            "promise" => w.extend(self.promise(state, refs, held, answering)),
+            "transfer" => w.extend(self.transfer(state, refs, blocks, answering)),
+            "promise" => w.extend(self.promise(state, refs, blocks, answering)),
             "grant" => w.extend(self.grant(state, refs, answering)),
             _ => {}
         }
@@ -195,11 +195,11 @@ impl<'a> Checker<'a> {
         // Only a schema declares: a thing of kind schema (core.md, section 8). Any other block named there widens nothing.
         let schema = schema.filter(|s| type_of(s) == "thing" && get(s, "state.kind").and_then(Value::as_str) == Some("schema"));
         let mut fields = self.spec.every.clone();
-        // 1.9 stage 6 (00-shared, A line goes on; C21): `state.counted_to` is causal state (protocol.json `causal_state`), which any block may
+        // (blocks.md, A chain goes on) `state.counted_to` is causal state (protocol.json `causal_state`), which any block may
         // carry: a take-up `as` a circle names in it the last block of the line it goes on from
         fields.extend(crate::spec().list("causal_state"));
         fields.extend(self.spec.fields(type_name));
-        // A profile adds no field: its fields are declared by its schema, named by the block, as anyone's are (1.8 B1).
+        // A profile adds no field: its fields are declared by its schema, named by the block, as anyone's are 
         fields.extend(schema.map(schema_field_specs).unwrap_or_default().into_iter().map(|(name, _)| name));
         let mut roles = self.spec.ref_keys.clone();
         if let Some(Value::Array(r)) = schema.and_then(|s| get(s, "state.roles")) {
@@ -223,11 +223,11 @@ impl<'a> Checker<'a> {
         w.extend(self.marks_shape(g("marks"), "state.marks"));
         // Fields that hold an id, wherever they are written (core.md section 3, grammar): the block counted to, and the parties of an admission.
         w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
-        // 1.9 3a-13: `state.rule_set`, a field of every type, read by every reader. This core runs no rule set but the core itself, so a
+        // `state.rule_set`, a field of every type, read by every reader. This core runs no rule set but the core itself, so a
         // block that states one is not read (`unknown_rules`) and hides what it could name.
-        // 1.9 3a (decided, CORE-SET "What building changed"): the core runs no set at all, so every stated id is `unknown_rules`; a value that is not an id is `grammar`.
+        // the core runs no set at all, so every stated id is `unknown_rules`; a value that is not an id is `grammar`.
         if let Some(r) = g("rule_set") {
-            // 1.9 stage 7 (B5): unless the reader runs that set (`read`'s `runs`); a set it runs is read by these rules.
+            // unless the reader runs that set (`read`'s `runs`); a set it runs is read by these rules.
             if self.is("id", Some(r)) {
                 if !r.as_str().is_some_and(crate::rules::runs) {
                     w.push(f("unknown_rules", "state.rule_set names rules this reader does not run"));
@@ -277,7 +277,7 @@ impl<'a> Checker<'a> {
         }
         w
     }
-    // A schema's typed fields (things.md, Schemas; 1.8 B1): each `name:shape`, the shape a word of `field_shape` and `grammar` (`text`, `hash`,
+    // A schema's typed fields (things.md, Schemas): each `name:shape`, the shape a word of `field_shape` and `grammar` (`text`, `hash`,
     // `id`, `time`, `date`, `duration`, `decimal`, `amount`, `count`) or `in:` and a comma list, a trailing `!` asking for the field. A field
     // there in another shape is `shape`; one asked for and left out `required`. Any other value is a hint for people and checks nothing.
     fn schema_fields(&self, state: &Value, schema: &Value) -> W {
@@ -302,7 +302,7 @@ impl<'a> Checker<'a> {
                 "duration" => v.is_string() && self.is("duration", Some(v)),
                 "decimal" => v.is_string() && self.is("decimal", Some(v)),
                 "amount" => self.amount_shape(Some(v), &name).is_empty(),
-                "count" => v.as_u64().is_some_and(|n| n >= 1) || v.as_f64().is_some_and(|n| n >= 1.0 && n.fract() == 0.0),
+                "count" => v.as_u64().is_some_and(|n| n >= 1) || v.as_f64().is_some_and(|n| n >= 1.0 && n % 1.0 == 0.0),
                 other => v.as_str().is_some_and(|t| other[3..].split(',').any(|x| x == t)),
             };
             if !ok {
@@ -325,7 +325,7 @@ impl<'a> Checker<'a> {
             let (shape, asked) = shape.strip_suffix('!').map_or((shape, false), |s| (s, true));
             let Some(v) = crate::js::get(state, field) else {
                 if asked {
-                    w.push(f("shape", format!("state.{field} is stated: a {kind} states it")));
+                    w.push(f("required", format!("state.{field} is stated: a {kind} states it")));
                 }
                 continue;
             };
@@ -338,7 +338,7 @@ impl<'a> Checker<'a> {
                 "hash" if !self.is("hash", Some(v)) => w.push(f("grammar", format!("{name} is a SHA-256 digest in hex"))),
                 "id" if !self.is("id", Some(v)) => w.push(f("grammar", format!("{name} is an id"))),
                 "time" => w.extend(self.time_shape(Some(v), &name)),
-                // 1.9 3d-4: a cutoff's `when` is the word's own text for that time: an instant, or for a span the span itself
+                // a cutoff's `when` is the word's own text for that time: an instant, or for a span the span itself
                 "time_or_duration" if v.as_str().is_some_and(|d| crate::time::parse_duration(d).is_some()) => {}
                 "time_or_duration" => w.extend(self.time_shape(Some(v), &name)),
                 other => {
@@ -357,9 +357,9 @@ impl<'a> Checker<'a> {
         // scope, and each line of its terms.
         let mut w: W = vec![];
         for (path, place) in time_places(state) {
-            // 1.9 3d-4: a clock's cutoff of a span states the span itself as its `when` (the word's own text for that time), running from the
+            // a clock's cutoff of a span states the span itself as its `when` (the word's own text for that time), running from the
             // receipt it names in `refs.derives_from`
-            // 1.9-GUESS [3d-4c]: read by the cutoff's `kind` alone; a duration is the only other text a cutoff's `when` may be.
+            // read by the cutoff's `kind` alone; a duration is the only other text a cutoff's `when` may be.
             if path == "state" && place.get("kind").and_then(Value::as_str) == Some("cutoff") && place.get("when").and_then(Value::as_str).is_some_and(|d| crate::time::parse_duration(d).is_some()) {
                 let mut rest = place.clone();
                 rest.as_object_mut().map(|m| m.remove("when"));
@@ -370,7 +370,7 @@ impl<'a> Checker<'a> {
             w.extend(self.times_in(Some(place), &path));
             w.extend(self.durations_in(Some(place), &path));
         }
-        // a genesis's audience is read as any block's (decision H10): public, or a sorted list of commitments with a nonce
+        // a genesis's audience is read as any block's: public, or a sorted list of commitments with a nonce
         let _ = genesis;
         if state.get("audience").is_some() {
             w.extend(self.audience_shape(state));
@@ -419,7 +419,7 @@ impl<'a> Checker<'a> {
         // A genesis names its own signing key. (Only a genesis does; core.md section 4.)
         // core.md section 4: a genesis is the one actor with no author. An actor with no author and no key is a malformed genesis.
         if type_name == "actor" && (g("public_key_sign").is_some() || refs.get("author").is_none()) {
-            // 1.9 3a-1 (3), the header: it has the common five, or is a genesis (its own key, no author, no seq). Neither is `chain`;
+            // the header: it has the common five, or is a genesis (its own key, no author, no seq). Neither is `chain`;
             // every other fault of a genesis is a value, `read`'s `bad_genesis`.
             // one rule with `is_genesis`: a key that is not text names no key, so the actor is no genesis
             let genesis = g("public_key_sign").is_some_and(Value::is_string) && refs.get("author").is_none() && g("seq").is_none();
@@ -431,7 +431,7 @@ impl<'a> Checker<'a> {
             return (w, vec![]);
         }
         // Any other block: the common five (core.md, section 5).
-        // 1.9 3a-1 (3): the header's links are one id each, in the id grammar: an author, prev or key that is not names no place (`chain`)
+        // the header's links are one id each, in the id grammar: an author, prev or key that is not names no place (`chain`)
         if !self.is("id", refs.get("author")) {
             w.push(f("chain", "refs.author names who said it"));
         }
@@ -447,11 +447,7 @@ impl<'a> Checker<'a> {
         if g("audience").is_none() {
             w.push(f("chain", "state.audience is public, or a sorted list of commitments"));
         }
-        // 1.9 3d-2: any block may leave its `at` out (a block that states none is not in time against any end; Time)
-        // A consent `yes` widens what reaches her, so it names whom it is about; a word without a subject may only narrow (consent.md)
-        if type_name == "observe" && g("kind").and_then(Value::as_str) == Some("consent") && g("word").and_then(Value::as_str) == Some("yes") && refs.get("subject").is_none() {
-            w.push(f("required", "a consent yes names whom it is about in refs.subject: only stop, keep and move may leave it out"));
-        }
+        // any block may leave its `at` out (a block that states none is not in time against any end; Time)
         // her stop of one thing (authority.md, A stop of one thing) is an observe with status stopped, stop onward and one refs.what, naming
         // no refs.updates and no refs.answers; any other stopped observe that answers and updates nothing is a status that answers nothing
         if type_name == "observe"
@@ -477,13 +473,13 @@ impl<'a> Checker<'a> {
         let mut c: W = vec![];
         // A stop or an answer restating refs.parent is not a grant: the child-and-parent rule reads grants only (authority.md).
         let grant_block = !(refs.get("answers").is_some() || (refs.get("updates").is_some() && g("status").is_some()));
-        if let (Some(held), "grant", true, true) = (options.held, type_name, refs.get("parent").is_some(), grant_block) {
+        if let (Some(given), "grant", true, true) = (options.blocks, type_name, refs.get("parent").is_some(), grant_block) {
             // refs.parent names one grant: a parent that is not one id names none (authority.md, as refs.to)
-            if let Some(parent) = refs.get("parent").and_then(Value::as_str).and_then(|h| held.get(h)) {
+            if let Some(parent) = refs.get("parent").and_then(Value::as_str).and_then(|h| given.get(h)) {
                 c.extend(crate::grant::scope_refusals(&json!({ "state": state, "refs": refs }), parent));
             }
         }
-        // 1.8 B1, kept by 1.9 stage 7 (things.md, Schemas: typed fields): a block of any type that names a schema the reader holds is read
+        // (things.md, Schemas) a block of any type that names a schema the reader holds is read
         // against the shapes that schema gives its fields. Only a reader with a schema store reads them (`read`), never `valid` or a writer.
         if let (Some(store), Some(h)) = (options.schemas, refs.get("schema").and_then(Value::as_str)) {
             if let Some(schema) = store.get(h).filter(|s| type_of(s) == "thing" && get(s, "state.kind").and_then(Value::as_str) == Some("schema")) {
@@ -519,7 +515,7 @@ impl<'a> Checker<'a> {
                 }
             }
         }
-        c.extend(self.rules(type_name, state, refs, options.held));
+        c.extend(self.rules(type_name, state, refs, options.blocks));
         (w, c)
     }
 }
@@ -561,14 +557,6 @@ pub fn ordered(found: Vec<Refusal>, group: &str) -> Vec<Refusal> {
     ordered_with(crate::spec(), found, group)
 }
 
-/// The codes of protocol.json's `refusals.codes` (every group), for checking that a refusal names a known one.
-pub fn is_code(code: &str) -> bool {
-    let p = &crate::spec().protocol;
-    get(p, "refusals.codes")
-        .and_then(Value::as_object)
-        .is_some_and(|groups| groups.values().any(|g| g.get(code).is_some()))
-}
-
 /// What a strict writer never writes (canonical.md): a null, an unsorted set, a float, a number out of range. `create` refuses a block with any.
 pub fn strict_findings(type_name: &str, state: &Value, refs: &Value) -> Vec<Refusal> {
     let _ = type_name;
@@ -576,13 +564,6 @@ pub fn strict_findings(type_name: &str, state: &Value, refs: &Value) -> Vec<Refu
         return vec![];
     }
     Checker { spec: crate::spec() }.strict_all(state, refs)
-}
-
-/// Every finding of the content checks, unordered (the caller orders the whole list once).
-pub fn findings_with(spec: &Spec, type_name: &str, state: &Value, refs: &Value, options: CheckOptions) -> Vec<Refusal> {
-    let (mut bytes, closed) = Checker { spec }.findings(type_name, state, refs, options);
-    bytes.extend(closed);
-    bytes
 }
 
 /// The findings of the bytes (checks 1 to 4 of core.md section 8) and, apart, a closed type's own (check 8).
@@ -603,14 +584,14 @@ pub fn write_refusals_with(
     let (w, closed) = Checker { spec }.findings(type_name, state, refs, options);
     let check_of = |code: &str| -> usize {
         // a float or an out-of-range whole number in a value handed to a writer is its bytes' finding (protocol.json refusals.codes.block:
-        // the writer's form of `not_canonical`), so it is read with the bytes, before the header (end pass 2026-11-20, as the oracle reads it)
+        // the writer's form of `not_canonical`), so it is read with the bytes, before the header
         if code == "float" || code == "integer_range" {
             return 2;
         }
         let checks = get(&spec.protocol, "refusals.checks").and_then(Value::as_array).cloned().unwrap_or_default();
         checks.iter().take(3).position(|c| c.as_array().is_some_and(|c| c.iter().any(|x| x.as_str() == Some(code)))).map_or(4, |i| i + 1)
     };
-    // 1.9 3a-1: the size, the bytes and the header read the bytes alone; 3a-3: a writer signs only what its own `read` reads, so every
+    // the size, the bytes and the header read the bytes alone; a writer signs only what its own `read` reads, so every
     // value finding after them refuses too
     for check in 1..=3 {
         let found: Vec<Refusal> = w.iter().filter(|r| check_of(&r.code) == check).cloned().collect();
@@ -619,7 +600,7 @@ pub fn write_refusals_with(
         }
     }
     let rest: Vec<Refusal> = w.into_iter().chain(closed).collect();
-    // what is left are read's findings, given in read's order (protocol.json refusals.read; end pass 2026-11-20, as the oracle gives them)
+    // what is left are read's findings, given in read's order (protocol.json refusals.read)
     ordered_with(spec, rest, "read")
 }
 
@@ -661,7 +642,7 @@ pub(crate) fn depth_of(v: &Value) -> usize {
     }
 }
 
-/// Whether a figure is a whole number of parts, zero or above (1.9 stage 6, C1: a fraction of a part is another kind).
+/// Whether a figure is a whole number of parts, zero or above (a fraction of a part is another kind).
 pub(crate) fn is_whole_parts(d: &crate::decimal::Dec) -> bool {
     let t = d.text();
     !t.contains('.') && !t.contains('/') && !t.starts_with('-')

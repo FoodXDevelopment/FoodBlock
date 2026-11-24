@@ -1,5 +1,5 @@
 {
- "kept": 2870,
+ "kept": 3007,
  "renewed": [],
  "deleted": [],
  "added": [],
@@ -8,12 +8,12 @@
  "rekeyed": 0,
  "ids": 0,
  "counts": {
-  "kept": 2870,
+  "kept": 3007,
   "renewed": 0,
   "deleted": 0,
   "added": 0,
   "faults": 0,
-  "protocol": 1998,
-  "conventions": 872
+  "protocol": 2123,
+  "conventions": 884
  }
 }

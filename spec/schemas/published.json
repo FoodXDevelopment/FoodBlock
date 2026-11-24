@@ -97,7 +97,7 @@
    "signature": "065d5c916cba31ce250adc00ba26aca6624569d0102f16ecca5563436d249de81a5ffe15315888a5b3a52189f75cdbcaff93ee70c534ecb29f45f7c5c5351b0e"
   },
   "schema": {
-   "hash": "42c00c1a11abaf81f856f023045a5e2222ef7315ea41cc1fbb5df72c143dc434",
+   "hash": "90a6046c7e8c1d110a1e7acacee244ed85eb2ce6667abfec75219e439322678a",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -109,7 +109,6 @@
      "terms": "{ name: hint }: the terms a promise naming it may carry beyond the protocol's own",
      "roles": "the ref keys it declares beyond the shared ones",
      "grounds": "{ event, confirms, defeats, confirmers, needed, wait }",
-     "undo": "never or ok",
      "labels": "{ lang: { name: label } }"
     },
     "at": "2026-10-19T00:00:02.000Z",
@@ -120,10 +119,10 @@
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
     "prev": "9c740d035b9f4ef4c3ac7e07e8e91e71f521b5a5b429cd3889c7612e0930f2a2"
    },
-   "signature": "bcd4b5e7cc60eb9ff363ffbde9b127ea683187ec24c7e9d8c38a207a954becde39273832440a9f903910425e6294b574e482ddb6483c3838f4fb7b893ba14503"
+   "signature": "e34d9a211e9224c6859f174a3b006701d5fe42b3045a9c827f17c0f4e014313bfe8a116fc91d4750d4077886ce1d85d02253b2e9917215a900d8074c97f67d00"
   },
   "make": {
-   "hash": "f64e06853a6252ed28eff8520db0ddce13d443b15630bd76dac47c92dd72da43",
+   "hash": "0a46778df700360dff02303497853ed6189302b0ff0ad4de35ab3da078b06bf6",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -138,12 +137,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "42c00c1a11abaf81f856f023045a5e2222ef7315ea41cc1fbb5df72c143dc434"
+    "prev": "90a6046c7e8c1d110a1e7acacee244ed85eb2ce6667abfec75219e439322678a"
    },
-   "signature": "23d741d1aac4c6a00d74ccc9b60f9d4af97ddf328173baaea71028049050866edde643b63c75bebe7f90a133f5e3824adc5fd8b218da261cf3671658d75fea0c"
+   "signature": "5845696466e59d55fc744da55d1a3165023051a261c21a95afed6a94c5da779886e76922d3117c467ee8b95ff4ba621924909aff468a4955fffa519464c09004"
   },
   "observation": {
-   "hash": "01a4b9c4b470f818368cad081447cae2b3bd0855e5e3a895d3657a0a5b516fa1",
+   "hash": "91c7589e3f44e97c911f9b59907a4b6850783e5138a267ef40cd115f9ff2c0b2",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -159,12 +158,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "f64e06853a6252ed28eff8520db0ddce13d443b15630bd76dac47c92dd72da43"
+    "prev": "0a46778df700360dff02303497853ed6189302b0ff0ad4de35ab3da078b06bf6"
    },
-   "signature": "69d8ddc910a4131994e8b357fb9f1f35e39441ee2e79e51f110da35d607a1f461e1d803c66d0549eda7ed7ec1079b407519d3ebb2c3ee6d621fa3086e2e31a07"
+   "signature": "267393e35d3dca01d40583337b69dabf8f2024e0de2161ef8a27749918e4b7f6da9cd35462cd0fe154ec2aa439b5f70687f0d488c211d751c9123ca9e8705f00"
   },
   "admission": {
-   "hash": "b5976422093d2af4d3f5b994935948b2eae3bff9b8ec49b6ae35649225dedae4",
+   "hash": "a9109128dc9da595d9bfaa0c237bf52610db4562a80d2d798734ff357b55e3d5",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -181,12 +180,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "01a4b9c4b470f818368cad081447cae2b3bd0855e5e3a895d3657a0a5b516fa1"
+    "prev": "91c7589e3f44e97c911f9b59907a4b6850783e5138a267ef40cd115f9ff2c0b2"
    },
-   "signature": "3ed1d07933fdb7bcd297e775346b7baa6c1b305a2f33afef4291298160e2d21deba1c94cf8ca6df6897becce206585af5b037db82e1f420255dd815187f17608"
+   "signature": "d95f728434f1c6f45d2c1ce7594d204192f4780af1db0bf1b72fff373e1c8770566cac988e38c60887b4cdff31c15d58db9eb47cf8627567614a54444e30b803"
   },
   "limit": {
-   "hash": "c452c7af1c6f4df857eb310c9d48307cd7096221f2035185d45063c4c90afd25",
+   "hash": "36c4093fdf4cd4731a606cdbda254f7864ed5f3b4be01f2ea3951c1d3cd2c806",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -205,12 +204,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "b5976422093d2af4d3f5b994935948b2eae3bff9b8ec49b6ae35649225dedae4"
+    "prev": "a9109128dc9da595d9bfaa0c237bf52610db4562a80d2d798734ff357b55e3d5"
    },
-   "signature": "8e73d262e48f69e3ca65b0b2247ff38ecc2241a5733aca980648211eeb3746b48a1ad26cc9d3f8488168f86f9ff6ec061f5e09e8f7c7ee080a4d07dcb81c350a"
+   "signature": "58ea542e48827e6a11c552fd561c8c0cbc89d040961dda6283658688d85ae00d8cee1072bde0672fc5717b102d10fadcbf450c634a902b014a8f6600a1e4a70c"
   },
   "consent": {
-   "hash": "51a9709ec0e0dd0e2b8a365fd6e4964c4fc332882e34974856ec7552ed74c00d",
+   "hash": "f485ddbd22756e0292cace57eacf353f8317196c4a0d61f91c3885e203a20c32",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -229,12 +228,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "c452c7af1c6f4df857eb310c9d48307cd7096221f2035185d45063c4c90afd25"
+    "prev": "36c4093fdf4cd4731a606cdbda254f7864ed5f3b4be01f2ea3951c1d3cd2c806"
    },
-   "signature": "206b82f5a57407e8bbf4b39818098b09c1482b1671e41dc367534e0d4cd0029e1b286dd70ebd52df94b9433e0356a489b6b0ae992692b25cf6ca6d820b924305"
+   "signature": "b178527db6a6e9fe49aad8407dbfc353406c5804f693c5a7deb0b06bf622a947719c9f5afe5886e97c9eb4eae4527ad1419038876c7cf396c9969f158f526d00"
   },
   "reading": {
-   "hash": "758231a15ef985dda4485f0096235da7361336ed41b0854c21e32a13bedd621b",
+   "hash": "63fa6076bd9b4e2dd8c01360e46d8bf51ede4a8a20b10fcf1d7a253d14b7e07f",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -259,12 +258,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "51a9709ec0e0dd0e2b8a365fd6e4964c4fc332882e34974856ec7552ed74c00d"
+    "prev": "f485ddbd22756e0292cace57eacf353f8317196c4a0d61f91c3885e203a20c32"
    },
-   "signature": "f09a07e2a473400dff3b65a6b18694cef199eec12f84b5449f3c9eafa34e3480eff7677daedb22d947b4e42d1ac4086bd0b08341d22b5bd3b08a4b4bb1b7ac0a"
+   "signature": "a2b55ed9951e9f314b5e345d7ccafd17b7465f767c309d04bc5f3a657aeaff9a5b4354a993525719ef67759f4edc47df0a4d1bb2346e6c860f1466b65992b70a"
   },
   "work": {
-   "hash": "0b3101aa2a799e1ad6a86df09598bcc86d1b2ac805d37a7cefafdd0f23aa646d",
+   "hash": "a4dabbbd433925ff34535a15e3ed59a55a6c171371621527e1be911ed7a04452",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -287,12 +286,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "758231a15ef985dda4485f0096235da7361336ed41b0854c21e32a13bedd621b"
+    "prev": "63fa6076bd9b4e2dd8c01360e46d8bf51ede4a8a20b10fcf1d7a253d14b7e07f"
    },
-   "signature": "37d757e664f2affd49a2ed7cf5450a1a5ae7f687415ba5819374f1be6b5f2fb9a122a426219b26e3058fc456b26295c591bbbd0bb99741a87ff245dd3f566208"
+   "signature": "eaa2fa2d6411c603fcd4db007f1123068ff0b1ab3631bdee5c3a2960d2f480f8cd3fedd63f15fca1e67d5984a6a9fccf10b35fcbe9713e7d138e030e86a7e408"
   },
   "attestation": {
-   "hash": "cd6f878ad84d290ced341d0c6f5cd11f27af9a60c789d473652b9e5286773094",
+   "hash": "d905119ecff7feec8562ed29de7e007beae27ecb80d4a0363e121007975f4a72",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -315,12 +314,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "0b3101aa2a799e1ad6a86df09598bcc86d1b2ac805d37a7cefafdd0f23aa646d"
+    "prev": "a4dabbbd433925ff34535a15e3ed59a55a6c171371621527e1be911ed7a04452"
    },
-   "signature": "467eb65c643a952a85f240ba39682a94aa2471710cc5739d971eca45a99fc01ca4df4a5b0715a56c493899a5275947ef61bf31b77f6f98965ee11f2586476c0b"
+   "signature": "044ab7f7fb768c36b8690b07b67a9bf40ad46f16cb2f49e07b93ad82b0e5c41a095851b1e495aec22c4119d39416dfd3d7cb5a0c4d674dadf4260c7100a6f403"
   },
   "person_confirmed": {
-   "hash": "118f27f6494fb553c9914c58b7a31a2a9a319ec9f457081cf0bd696f690f2fe2",
+   "hash": "751cf9618eba9aa08ec2aebcac6132caf6c8bf6278257f1e7b3c8c53280a8415",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -333,19 +332,18 @@
       "transfer"
      ]
     },
-    "undo": "ok",
     "at": "2026-10-19T00:00:11.000Z",
     "audience": "public",
     "seq": 11
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "cd6f878ad84d290ced341d0c6f5cd11f27af9a60c789d473652b9e5286773094"
+    "prev": "d905119ecff7feec8562ed29de7e007beae27ecb80d4a0363e121007975f4a72"
    },
-   "signature": "ed2c74cc884f240b61bffb9cc05b989afab934201ac76ef71201e7ca575ec72fb33a585276f4db918afb9bcef5aa16de19125d4e37f54961f7ecfb2b822f1903"
+   "signature": "9b09042ec35eafb32130ba24c5343f4711ebef62365c41e011a74c1e4058d94d936a1bdb4f8aa4e430abe837fa535579f29526ce3834ed1ff462e95c438fd10f"
   },
   "sensor_confirmed": {
-   "hash": "90bf3fe1ed424c2b1a52f9355b9f199985cf10c55da0f7059173cb415f51e09a",
+   "hash": "50eac382407b717926eac71b4f1275db21bdf013e3dfe9781613073f11d0b429",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -358,19 +356,18 @@
       "observe"
      ]
     },
-    "undo": "ok",
     "at": "2026-10-19T00:00:12.000Z",
     "audience": "public",
     "seq": 12
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "118f27f6494fb553c9914c58b7a31a2a9a319ec9f457081cf0bd696f690f2fe2"
+    "prev": "751cf9618eba9aa08ec2aebcac6132caf6c8bf6278257f1e7b3c8c53280a8415"
    },
-   "signature": "439175e130be6a01db0aa3b4e66e3b968e3cf49b673ae39932284f15119beabd14dbe02a9fe0af79bd018c96503a36a5c725b5c10df11edda33da3f4f1ebab0f"
+   "signature": "e5231795e2aa8674ecbc1b68be25b7a00674280bdaac57fc69bd68ac4a341d818d49f7c5589a333d33a386d14544842610841d4b5671829eb694d1880b8dd00f"
   },
   "teach": {
-   "hash": "ac21478fa3fd2da76bce24f12b18ccb6e95c5337e7885fd4e0dc36f4b67fe1f8",
+   "hash": "f28d3fb4e3655d20929780ce0bb802005c7e559ff1408b47f2ad87a16e894b63",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -383,19 +380,18 @@
       "observe"
      ]
     },
-    "undo": "ok",
     "at": "2026-10-19T00:00:13.000Z",
     "audience": "public",
     "seq": 13
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "90bf3fe1ed424c2b1a52f9355b9f199985cf10c55da0f7059173cb415f51e09a"
+    "prev": "50eac382407b717926eac71b4f1275db21bdf013e3dfe9781613073f11d0b429"
    },
-   "signature": "7838bd4e9496fcca00be0286e7766bf09d9a898ae09467a58edb982d8daec0c66f719537fc00f75123231da6cdf7a7f647a05fb463492dc33ada29ac0717ca05"
+   "signature": "a7de18945d616c2470f3abe61604d6bc72117f212bca1d90d0bf778f78bde11b59e31f5ff4d7bdf60ea0e7287a48fd01ddeb665896fcd5f165d22e567fe68b0e"
   },
   "loan": {
-   "hash": "7022721a01b9acdfd727099e2c974a5d81e99295392c94182cd40c3dc2bc2829",
+   "hash": "f947d1375ee0509ef952df13438aaca29d32c8e7876f742992244e3b61de5e48",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -411,19 +407,18 @@
       "transfer"
      ]
     },
-    "undo": "never",
     "at": "2026-10-19T00:00:14.000Z",
     "audience": "public",
     "seq": 14
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "ac21478fa3fd2da76bce24f12b18ccb6e95c5337e7885fd4e0dc36f4b67fe1f8"
+    "prev": "f28d3fb4e3655d20929780ce0bb802005c7e559ff1408b47f2ad87a16e894b63"
    },
-   "signature": "c65421222946564716ac1a2882e7f6be468bb6789b01c83301bd38ccfaa2224852aa1af66c8e418634a7af4d017e0bee66dc5107cc0690b1d02963f7d1efa402"
+   "signature": "c0d23bf170f965826d9717214afc4adf2b6f8210a9697d52a821349fe66e97aebb3ff708f6c26a1e4d0d71cc59d7641be742e50d5527c21d7d241f1fa967da00"
   },
   "payout": {
-   "hash": "eea88caa0a4d7f941c854ab864b85164e3fbd1a6fa76e8cb7fc2a361fd7db81c",
+   "hash": "ecebb854f455ac37af5ce1049b35e63d8a017df6ea2338f29e95ce1f306aad41",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -445,12 +440,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "7022721a01b9acdfd727099e2c974a5d81e99295392c94182cd40c3dc2bc2829"
+    "prev": "f947d1375ee0509ef952df13438aaca29d32c8e7876f742992244e3b61de5e48"
    },
-   "signature": "2c968b312f1440c46ec1a3ab06ac23cc2e888a228513c4f2d0a47f35718e79be45dbded3923ffd96d62acdbd7dbdc6707a260eb7f22000092d47e1474f6b260a"
+   "signature": "1c019e1f994885258d2e69f2c13601a08df4ba36ecf24ed27d9d7dce5b8dc6e42ca2f911292825cd5dbbb990ecc7221ea32805b4ff60f00e7877ca6b56d11505"
   },
   "pledge": {
-   "hash": "104863e92d3325ff655ca58c887b5f340d355c47c41a4195e49082430cc69e12",
+   "hash": "93649691ddf2a21a7b0b7a353a53249820da24a56183a891d7b0a5a454049dd2",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -458,21 +453,20 @@
     "target": "promise",
     "fields": {},
     "grounds": {
-     "event": "the organiser named in refs.from signed a pledge_close that names this pledge in derives_from and is dated no later than terms.expires, and the pledges it binds that name this plan in refs.what total at least terms.condition.pledged, in its currency (profiles/pledges.md); then terms.price of the pledger's is to come to the organiser. The price may be an amount (a village's haul call, 200 kg by Friday), and the threshold then an amount of the same unit: only one unit adds. A held stake names its release, or the reader shows release not named. Each pledger counts for herself, never per group"
+     "event": "the organiser named in refs.from signed a pledge_close that names this pledge in derives_from and is dated no later than terms.expires, and the pledges it binds whose line names this plan total at least terms.condition.pledged, in its currency (profiles/pledges.md); then the price of the pledger's line is to come to the organiser. The price may be an amount (a village's haul call, 200 kg by Friday), and the threshold then an amount of the same unit: only one unit adds. A held stake names its release, or the reader shows release not named. Each pledger counts for herself, never per group"
     },
-    "undo": "ok",
     "at": "2026-10-19T00:00:16.000Z",
     "audience": "public",
     "seq": 16
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "eea88caa0a4d7f941c854ab864b85164e3fbd1a6fa76e8cb7fc2a361fd7db81c"
+    "prev": "ecebb854f455ac37af5ce1049b35e63d8a017df6ea2338f29e95ce1f306aad41"
    },
-   "signature": "90e832b1440e8580dc6ccb6ceec6ab8d71c8e82830b2604daf5ec9097b45ad0f6cc2635f9dda8b6117f30af246814d71b21127884af5dfc592b10feb6769c106"
+   "signature": "bceb31a483a7519a2c6c84d54f5bbf6964fa95b0b49b37a0306419c19c2cc4e6bd32005a7ca1458405deb0c47ace2b2d737436ea586b46775ab0d8d6141eab0b"
   },
   "pledge_close": {
-   "hash": "7ad17dd300f33d2591120978986f438b83bc6ba577fe6d1f85f0def536cb95f7",
+   "hash": "8c77c4b4c709265a770dccc40b480a55d35da078fa2c11d89fe2f31402ed7a3c",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -482,19 +476,18 @@
     "grounds": {
      "event": "the organiser counted the pledges it names in derives_from; it binds those that are live, name her in refs.from and expire no earlier than its at, less any whose threshold the rest do not meet (profiles/pledges.md)"
     },
-    "undo": "never",
     "at": "2026-10-19T00:00:17.000Z",
     "audience": "public",
     "seq": 17
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "104863e92d3325ff655ca58c887b5f340d355c47c41a4195e49082430cc69e12"
+    "prev": "93649691ddf2a21a7b0b7a353a53249820da24a56183a891d7b0a5a454049dd2"
    },
-   "signature": "7f3299abcb30e1d70b33f23037dcb4a5549ee65e23c830064d1e114937335f48fff4130fcadbfe04994bf12748be11966dda9979b5b9d0528f703e69691ce408"
+   "signature": "076e8d2e92e1c7fb0c52e4680588b629f4a6d702802d29318d5943fde76edc7a443f42c213bc92e99a58a85144406511e43040680d8e3792b80181677a0ca100"
   },
   "not_free": {
-   "hash": "9fc45d79671a5a6aff9bb4a0881440580cb4ecb5b7e46f0c7a740fb77ac09547",
+   "hash": "682a8ab05f82e3f01e98b3663b1820d55f7e1f1ca5fc7cb1a3dc98cb4b13b9a4",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -507,19 +500,18 @@
     "grounds": {
      "event": "the signer of the block named in refs.subject says it was not her free word; only her own block counts as hers, it may be sealed to any audience she picks, it has no time limit, and she cannot take it back. It is a claim, never a verdict: only the deal's referee rules, by a defeats of the block on that ground"
     },
-    "undo": "never",
     "at": "2026-10-19T00:00:18.000Z",
     "audience": "public",
     "seq": 18
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "7ad17dd300f33d2591120978986f438b83bc6ba577fe6d1f85f0def536cb95f7"
+    "prev": "8c77c4b4c709265a770dccc40b480a55d35da078fa2c11d89fe2f31402ed7a3c"
    },
-   "signature": "c52598f11cfd9d29edfe4f261cb33ab0061807d518068d180ac0ef371039b552e21e16aaee9d62d43df20b3c2f5f705d8a1d2f1f899480d11cf6a551b926ae00"
+   "signature": "44320266f90c38f1b4096714bd840c9a9579bb37c27f6c74be57056ba6fd9834be2f8bed2e625cce17dbf201753b733b645cf56174c32f5e849d261f38ada808"
   },
   "invasion": {
-   "hash": "e9f3e301dfa6c42b6f719fb3499fa38e36ef85e339c7bcd672860e25cfd8c8bf",
+   "hash": "fbfb97dfc562dd9d21747e704e95120248033a5acfa75857b8f8f827b56e8b87",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -538,12 +530,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "9fc45d79671a5a6aff9bb4a0881440580cb4ecb5b7e46f0c7a740fb77ac09547"
+    "prev": "682a8ab05f82e3f01e98b3663b1820d55f7e1f1ca5fc7cb1a3dc98cb4b13b9a4"
    },
-   "signature": "f0662d2d6eb09a7bacff5b4bb8fa4c33fd3d8db509a43d3d1fbaf12face8a000d404fe6d8e919d81a06b7f17243f367b002646c07dd1f65944714f7948373505"
+   "signature": "6478c0c936e63d1e9b2358045c7bc83b53e1b5129d6a844cf8ca9596bc031ea11df4679c323701e2c85c5623d09630b744ff4937d84ea5e5697969873f13ff02"
   },
   "ruling": {
-   "hash": "01d905c96d139421257c6157a9ba8d43ee552315eb66d86d20720afa36d26402",
+   "hash": "bbea50622958b453461a711310fba7091723565f40b183d44190079302ff212f",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -567,12 +559,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "e9f3e301dfa6c42b6f719fb3499fa38e36ef85e339c7bcd672860e25cfd8c8bf"
+    "prev": "fbfb97dfc562dd9d21747e704e95120248033a5acfa75857b8f8f827b56e8b87"
    },
-   "signature": "673dfa4d18a4d6aebd62c9ba8dd611e0567d74693219a2a460c543a81b4addc4ee4b3b5e511e89bf50960c17afefd8238f42665c72ad6d8926297ece8ad0dd09"
+   "signature": "337bee318ff11e6c07f0bae088c1ffeca0a9441e96da090106fab97d7ab1bf91b8bc2abe0de38142236211d818c12b046c512a89c4258b2ce812fae826b3ac0a"
   },
   "loyalty": {
-   "hash": "14ae0c1a0c164b99f26e2f2b175c38c57a7200e18b109c0a662f211478b4691c",
+   "hash": "ae5f65a2b4503b47248220574fc5d897d3ef3a46ac2be275f2af347e4603e601",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -593,12 +585,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "01d905c96d139421257c6157a9ba8d43ee552315eb66d86d20720afa36d26402"
+    "prev": "bbea50622958b453461a711310fba7091723565f40b183d44190079302ff212f"
    },
-   "signature": "70b2d9ee349e7f8f0f3a4e4218fdd42fe1a4a8cc37922e896d62db3e8a33d2a6001c96ef982408075ff31f76576a34f4fcf13dded8ff5cdce1f25208f3016302"
+   "signature": "ca8001f2b57323cd56c0fd13f70b6bdaf417da1fd8e49896d20e4bf2dfdac3b1fee25e8447e9836d462a8b14a0d11cdf9f934cbab75626cdb21f458ab8d33b03"
   },
   "vouch": {
-   "hash": "2a895d63ad16251a169b00abf3174d551713514cfaaf46893545d3d3ff5bb35d",
+   "hash": "4f2a2e7ab1b9ef73bbdd234b8077f96a637f2914db0201dfad9d2ceeb9e6b1cc",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -627,12 +619,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "14ae0c1a0c164b99f26e2f2b175c38c57a7200e18b109c0a662f211478b4691c"
+    "prev": "ae5f65a2b4503b47248220574fc5d897d3ef3a46ac2be275f2af347e4603e601"
    },
-   "signature": "577011d68b2d6442ce144b87aab5951698d7a771917577a204b8e1ee4b8545bc58e679ef3058c11532976a59261b9f5ae22430b3c519d6011f51315319229107"
+   "signature": "b479ba2535b648136ebcefa3149c46e0462ae189db240230e2acbacc3fd2f490b265e62946851c27fdb4425f2f7c2d9754c637f14a3d5b1b59823c17a9bc540a"
   },
   "payback": {
-   "hash": "6b17f4e2799fa0211cd09c6a83533c13d5554bf803e3d8af9a5277466130bad6",
+   "hash": "2bac77d4a6f609c89ca140e7ed607607d1ffe9e6e9eb7eee7aa7c89899f88d1a",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -650,12 +642,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "2a895d63ad16251a169b00abf3174d551713514cfaaf46893545d3d3ff5bb35d"
+    "prev": "4f2a2e7ab1b9ef73bbdd234b8077f96a637f2914db0201dfad9d2ceeb9e6b1cc"
    },
-   "signature": "486ca0dfa8c60483b12dfd477c82104110ce96a8dfb4cf80ce5fa53c19d02d6df82ac159551265c99b9c0c4ec29cb7ced03cd9233692133a10dc1a33de325103"
+   "signature": "8cb6ab5f8967fb3ce3c1342c30c65e76b4d38e54b75f0d877c7065173b82a841e8fcf0f740ca04032a972d46bed0348b5bdb5480d0a387c6f0f7f08020678e05"
   },
   "refusal": {
-   "hash": "a96e46ce0ef0cdd7d925337db694fc853621ffd6ef64d8636b9311a9b11df5f8",
+   "hash": "b4f72c9397cb4f497254122db332f361eb6e51c85c6c904082bdf7b74124496a",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -680,12 +672,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "6b17f4e2799fa0211cd09c6a83533c13d5554bf803e3d8af9a5277466130bad6"
+    "prev": "2bac77d4a6f609c89ca140e7ed607607d1ffe9e6e9eb7eee7aa7c89899f88d1a"
    },
-   "signature": "f05075b36d9b6b7a76f762cba96aa913f6bb87e079f68012cc47fde0dbc1e54e6f27a31a60541e259f916d4c18836bf4e18e0dc35efa4058171962625916c002"
+   "signature": "767975c02ae3aefb610d96a5815b14d1a0bb7de6ae1d4926cf215e8f4cc94fe48a7a5667427e11d5f86be5c9e5521e9e31e4a2d0e4464254030c4b8f5dbef30a"
   },
   "pool": {
-   "hash": "c2b3400c24c1f72dceaf984a5ce3bcff9bc5f15ce763e22e1d44211cc4bfdb04",
+   "hash": "91bd26331bff36714bbcc62a75754a888484043c20fced8326e3eaf23b715ba9",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -712,12 +704,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "a96e46ce0ef0cdd7d925337db694fc853621ffd6ef64d8636b9311a9b11df5f8"
+    "prev": "b4f72c9397cb4f497254122db332f361eb6e51c85c6c904082bdf7b74124496a"
    },
-   "signature": "16e792c9f62a9bd307898777d96df227bdabb8cecfc6e524206f5ee81a616eb428b30b70d97f19a3cfee3aa450c760d91a5a20e2122d32926de914291901fd04"
+   "signature": "1a568211eb20600c509e1bbc391a87db6905776dd8e44876009f585ba239cbc1f51352814d57f4535cd062d1d91cb4977e439dc8d8763987afabb614ce92e90f"
   },
   "link": {
-   "hash": "82fc902fe2bf915fe2c5d39fb5eb183f6685be551491fb688635d5786b037503",
+   "hash": "ed2e99156bb07154e4deec671ea34fa22446430420b736f7239e62e6910c990b",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -729,19 +721,18 @@
     "grounds": {
      "event": "the signer says refs.same_as is another key of hers. It weighs as one hand only when the other key has countersigned: an observe of kind link signed by that key, naming this block in confirms and the first key in same_as. One signature is only its author's word. It may be sealed to one reader (privacy.md, Audiences). A third party's same_as stays only its author's word"
     },
-    "undo": "never",
     "at": "2026-10-19T00:00:26.000Z",
     "audience": "public",
     "seq": 26
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "c2b3400c24c1f72dceaf984a5ce3bcff9bc5f15ce763e22e1d44211cc4bfdb04"
+    "prev": "91bd26331bff36714bbcc62a75754a888484043c20fced8326e3eaf23b715ba9"
    },
-   "signature": "c4f90a6cdab3190d5dbef09c7a935c018a685d6e4f40c88023970d293936c35a9ca920c8a62580849ec849d0fa996dda3e02c49dc33776eeba065a7ea9a61901"
+   "signature": "0d1097ae40f9f0e81b26f88bf9dc9f311b3562b39510b0dfc6ead289a87629742a56577951d16f126d3f58e42d5b4eade025e27ac312354ba1b14cfe3016b206"
   },
   "rulebook": {
-   "hash": "4060c6cee4f4d15111c71675a47a95132d2d502864765f295c174265abbe6585",
+   "hash": "dbec527b39e9f1abc8899289645dfba324ed785edd8ca58b0221f47bfec6761f",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -772,12 +763,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "82fc902fe2bf915fe2c5d39fb5eb183f6685be551491fb688635d5786b037503"
+    "prev": "ed2e99156bb07154e4deec671ea34fa22446430420b736f7239e62e6910c990b"
    },
-   "signature": "43a85f16de96028f2097eb7d6b4594618e1c969715df2f731fbf4dbffde994acffca5c105e44ac644fa7c4b86b4db0fe00d9823499e2e7aa746806e78803d103"
+   "signature": "493e38f2f82cb37a954816118ef99ce440adca80db58d03e5a7d02a130602dc30e3ce7e898c6d6df4e4b4c35bd785d68a94d0342798231ba91f7370742d6b205"
   },
   "glossary": {
-   "hash": "4ac95e3255199a5a8a22e9b54696a138ad38b51c1f5d08627c259565c39e9491",
+   "hash": "e7ce3d607a9271524cbee64ae9076144b3f99af19443c673fd0379a63a665318",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -795,12 +786,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "4060c6cee4f4d15111c71675a47a95132d2d502864765f295c174265abbe6585"
+    "prev": "dbec527b39e9f1abc8899289645dfba324ed785edd8ca58b0221f47bfec6761f"
    },
-   "signature": "52ddc76dd28a8181c41219f2dd200bc3bd3c40a47dc40f8dc77f579aff633c4055ee527713e1092e9605cd541841a2a5911dcd8634c0ca8af1b7d3ee25a05b0d"
+   "signature": "1c071bea367a1ab1a53e0e1d4b027ef5ef61300b26ff2b5dece3a567037bfda3f3f7120af415e864769ce3655f34438bb1cbcb871f06c052e1eeaae83dc63300"
   },
   "grader": {
-   "hash": "a89d98f53a7bd23247802df87e3d71794c57989b497b2f4b637d2b889a7a2869",
+   "hash": "d53f775cdce81f5d72b458ca4d4cfe6324d16fbd84eef1c8f120802ba63328c9",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -826,12 +817,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "4ac95e3255199a5a8a22e9b54696a138ad38b51c1f5d08627c259565c39e9491"
+    "prev": "e7ce3d607a9271524cbee64ae9076144b3f99af19443c673fd0379a63a665318"
    },
-   "signature": "a5226918c1df5bd93fa118f8d377978bed019d335adfd033d741ed51048327e5ca22195d5eaf64c7553ea1220165bf08e1337adda1bb9fe9b41bee0861037506"
+   "signature": "548d4cfa6f1a571c9fd05b52b7c0b4a65f7701a687a0f62e8bea40d0b6e7796aed73ec3696f424bbb2d54a5e718c132ce35cad588e4b972cbea1d31612559206"
   },
   "release": {
-   "hash": "2ead7dcc061b137212cc1aeceef308ceadc592102a19faa561a1c2d17e8c681c",
+   "hash": "f4d3ede332c44fe513bec54a7408d050ebaf41aa578f9b5d9e33f49f235952ec",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -844,19 +835,18 @@
     "grounds": {
      "event": "the signer lets go of her own claims, and only hers (it binds only its signer). With refs.subject (a deal or a thing) she lets go of her claims on that; without it, of her claims on every deal with refs.to whose first promise this block has in its causal past, except the deals in state.except, which stay open. A mutual release is one from each side. The fold `release_shown` shows what was let go and what stayed open"
     },
-    "undo": "never",
     "at": "2026-10-19T00:00:30.000Z",
     "audience": "public",
     "seq": 30
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "a89d98f53a7bd23247802df87e3d71794c57989b497b2f4b637d2b889a7a2869"
+    "prev": "d53f775cdce81f5d72b458ca4d4cfe6324d16fbd84eef1c8f120802ba63328c9"
    },
-   "signature": "6cb8307c6f0dd143f9388a19dae843db9a50d26091dbec0e5817565bb25413018b7f6bf29da3fd2fadcfcd6c3668fc702961b88742f3c293cb4442ae545ee30a"
+   "signature": "c30b0e4f5f0f5f6572183823f60110de07e65703320d3851b08243e7b513acdba399352613cbc2cdfb4a998f86c1cd90282d600d55bcc56cd717ddeabe3d5409"
   },
   "bid": {
-   "hash": "3feeaeddda4b0003a12c4f050ae48082e9454d2378574227290012f88d8b5813",
+   "hash": "2179e0ab11441c63767b78b4457e6be317e890560420defb7248a722ebdaa4ed",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -871,19 +861,18 @@
     "grounds": {
      "event": "the signer, a side of the deal named in refs.subject, commits to the most she would pay (the paying side) or the least she would take (the paid side) for that quarrel. Each side signs one bid and states the same deadline, clock and currency. Both then open by a block carrying state.opening. The fold `bids_shown` shows only whether the numbers overlap, and then their middle"
     },
-    "undo": "never",
     "at": "2026-10-19T00:00:31.000Z",
     "audience": "public",
     "seq": 31
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "2ead7dcc061b137212cc1aeceef308ceadc592102a19faa561a1c2d17e8c681c"
+    "prev": "f4d3ede332c44fe513bec54a7408d050ebaf41aa578f9b5d9e33f49f235952ec"
    },
-   "signature": "ca86ab31ea4fff24c45da994f299b6337ec931cd83b63c804088589f6a8fbcb5b5782aeaa757280f1c0a3ace909ace9e25b3b494cbffdf1b0bb3a793239e2409"
+   "signature": "4e112127b2cf58808695b5cefaf82f50265df2893ba10689cda0c844103658137a76f90a6b2b4cf66d187d8988e6c73203a36c62151b858f844f22a90355ed05"
   },
   "reliance": {
-   "hash": "7569a2e7613652668c4baf04f0ac561b41a06d5d76cf08ea611c555cf5920598",
+   "hash": "f960a8884402d372fc69cc65407e939e5bd8bf5f0b28cb175dcca788678ef891",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -903,12 +892,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "3feeaeddda4b0003a12c4f050ae48082e9454d2378574227290012f88d8b5813"
+    "prev": "2179e0ab11441c63767b78b4457e6be317e890560420defb7248a722ebdaa4ed"
    },
-   "signature": "35e1c775022ad700d123d24003fcf74250144e56a91f3567db26b1a71b2f8e443b43fc3faaebdd705bbea90241f1e0f38caad5e7cb2407011966417095f3a607"
+   "signature": "37a824e40222203a56d7d9ee987091d55e20bd6f9d37a47206604ab5bc311c254fde26627560ade158870eb19182636f14b5ba22aea092b519a1ee571ac70f0c"
   },
   "price_reading": {
-   "hash": "2dbc1a20f27189fbfc7213dec4b285230139801249032ffa5d008cf689a60941",
+   "hash": "9b03337de72c283f43247904e0b7df19d9235460587ae5bed4d7d977ddf35c80",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -933,12 +922,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "7569a2e7613652668c4baf04f0ac561b41a06d5d76cf08ea611c555cf5920598"
+    "prev": "f960a8884402d372fc69cc65407e939e5bd8bf5f0b28cb175dcca788678ef891"
    },
-   "signature": "8a99da2d84792cd235e005fd31695edd8602dde4e47034fc515f037e77a5c816b6dceaaea0f3b3d548c24c2d6e98a5e4454fd40940085b9f9a2f745de3092b03"
+   "signature": "e21a39283e10b9f4d4c36644a722dacd605a47f84ef5ee88c95a618d823bf4c002e163c736144b56bee46e9e207ef2d5b8046f4c941cb74d9183f8228b76ce01"
   },
   "keeping": {
-   "hash": "349b086583ea37f48038d467d08f88d65cdf0a2ac9d7db17ebd86867fb8c4f25",
+   "hash": "a413232f4499aef7b790f17ec8533066d40f07bab3c51458b0159cf3b3578c81",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -960,12 +949,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "2dbc1a20f27189fbfc7213dec4b285230139801249032ffa5d008cf689a60941"
+    "prev": "9b03337de72c283f43247904e0b7df19d9235460587ae5bed4d7d977ddf35c80"
    },
-   "signature": "00942cf6c8b22f062e08157c943f6cb7ae9ae20a7c4a52893fbd96a246a0b5e91ad0bb7bf820316921f4835d16141f018c896a037260117bf7ad624bb186db0d"
+   "signature": "d9f18327d870af28ec8930b2f570f2acb468a8e2a8fa7b41337dd25e88e2aeb4b373579107b15ed8a58a6a594d5f7a690b2fe8cdf71548e264e2ab54276d0900"
   },
   "loss": {
-   "hash": "921b08ec6100a1eb96d8c97fcbf311576898c12afce59fec2bf131d1e8119509",
+   "hash": "b0d1c6750a8b2a9c4a74b0c5d3976077497a29ede338536b8dc662977ee47912",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -984,12 +973,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "349b086583ea37f48038d467d08f88d65cdf0a2ac9d7db17ebd86867fb8c4f25"
+    "prev": "a413232f4499aef7b790f17ec8533066d40f07bab3c51458b0159cf3b3578c81"
    },
-   "signature": "029a8968b286ea7bcbd6b417cdab3ebe0b99bca0759432d0dcdd350e06675414b1ccd6526732d8e419ca83d9ae3e24f072f04591fbbf492c19d00afaa3a19702"
+   "signature": "b49029d74887ad9c655ad54fcf284dad4908866f2b6a8cbcfee27c5b999f2a33736196f98325b01abd767736dd4cd0e4431d15bc97b35225f822c23c663eed0e"
   },
   "place_use": {
-   "hash": "3887bb7e1cc92122e590f42f79b31d521a2fc9aea7c718fe77c32fbd15a7b994",
+   "hash": "2e9afb27e6bc0d72f54f60fd2bd835fbbe676c4193c2c3433bd110caba023db8",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1011,12 +1000,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "921b08ec6100a1eb96d8c97fcbf311576898c12afce59fec2bf131d1e8119509"
+    "prev": "b0d1c6750a8b2a9c4a74b0c5d3976077497a29ede338536b8dc662977ee47912"
    },
-   "signature": "aeae5e44d964aae8d9b90428b0b16a4c2590421b5cdc7243ae0a3f9b88a287fe3aa7521b84e55805a78dd4b1c43c7c5c3d76084480a7d2faed761d30516c920f"
+   "signature": "6699e0b1260ec44273adc56034a6a7a9eb52dcf0d9a766cd4b02a296e8c8bd133d0e7a0b9ac99a23d3cb9f4f6178637f53249db13304932f3b50f8c4a9acaf0f"
   },
   "shareback": {
-   "hash": "9ec47cee267fb5df7d98f23f482464bc0e59cb3f876ec7b747ae3d41e14a9196",
+   "hash": "5322ef3c84b30d0762bba760e9f3e9ea215b6a2c9fab1259b0a207de418f07ee",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1037,12 +1026,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "3887bb7e1cc92122e590f42f79b31d521a2fc9aea7c718fe77c32fbd15a7b994"
+    "prev": "2e9afb27e6bc0d72f54f60fd2bd835fbbe676c4193c2c3433bd110caba023db8"
    },
-   "signature": "30172b1b21222c7ad3bf0d883f17a19df0f1f058dafcccde1484cc5aa45a39f16d5c653731252336a0176d87aa9ac85a7ed7edc654ce5c43ea0e929f583cb70d"
+   "signature": "12e5e8f1e3d8000d084f6f7ea43192b627376580b62b050232c0da15c15e3f2dfefa160d8561ac1c84400c255d5f2d92ccccd999a22f14e42b02daec93805105"
   },
   "rebate": {
-   "hash": "05c639a58fd044d7b28e33613d21730107ec264856fb6890e702fe5f1f39d9fa",
+   "hash": "b6c5e392de2280809c29d8e93d61286a80c51e1bb47810fe3d5f1895e68fa09f",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1063,12 +1052,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "9ec47cee267fb5df7d98f23f482464bc0e59cb3f876ec7b747ae3d41e14a9196"
+    "prev": "5322ef3c84b30d0762bba760e9f3e9ea215b6a2c9fab1259b0a207de418f07ee"
    },
-   "signature": "936bfba4cd7435d0fb42c9fc3f97c0a84737a0233559fb876c04736b33ea59246f07b4cf811819b2a73eae87c29152b6eaf110386a4a131df37fb543b13ab309"
+   "signature": "dff5178539e7c065cd28bd6ba57d13adb9bfdf1c5cdf1cb474f94f7f93dee2e35d7c8ccb20cad02626655d23dbc18df847dd0d1807f324567bef63829fa8e604"
   },
   "draw": {
-   "hash": "9b5ba60a5f31fad8c0cc7d2d968051c34f069384d19273fbfe00f74b70d8bac2",
+   "hash": "b1cbbe7b0b6db7f664c7a3aeb59be985f30952435494e1357a9b161e741bac8a",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1094,12 +1083,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "05c639a58fd044d7b28e33613d21730107ec264856fb6890e702fe5f1f39d9fa"
+    "prev": "b6c5e392de2280809c29d8e93d61286a80c51e1bb47810fe3d5f1895e68fa09f"
    },
-   "signature": "83cb0c06cbabcbe93417514ba8d972ffb52bab103a4c19965ed9e4b66bdd786dcaa0b778061d55090cdedc1a2f0b4f18bd2ea35d3d95bb2697285084020d4400"
+   "signature": "613f33da4d6deab7781df507e0c05f1e135b8eefc99074561673842aaf131f3d84a5a9d45997d4ebc3c26ddc20cc52b9704788f4c1b99b8480a54e873bb20705"
   },
   "bounded_change": {
-   "hash": "d1b9979efa91594562828e1b58f4483fc157faa5228588b4d61c64350118c5ec",
+   "hash": "c1bee0ce0c1c3f833499fe91a2bb13749fe5fc9d3268605adf7f019751db0ec9",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1122,12 +1111,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "9b5ba60a5f31fad8c0cc7d2d968051c34f069384d19273fbfe00f74b70d8bac2"
+    "prev": "b1cbbe7b0b6db7f664c7a3aeb59be985f30952435494e1357a9b161e741bac8a"
    },
-   "signature": "dc910701ccfa66b91b58dea08e23f1cc9205b9b392c9ab3d4939e55e5b0f45212520e7b03ba206db501134b8857a0b5ff48a937f0c98bb19711332a3815a0408"
+   "signature": "b1f66965cba78f4b164590790cc48e72a57c45f41d63d8ebdcd0bb0d361407ef726932d2077425cd9ad7d69e45c71e4883309dee25dea89618ba6e5134c2740a"
   },
   "done": {
-   "hash": "4b4cc994ff2e42854db5c5b98aa92c50577f327ff8563000bc5f48bd1343b1e8",
+   "hash": "942f77aaaf393183c801f29ed4ebcaa2655e9c9011d72f0fde4382b52f204fbe",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1146,12 +1135,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "d1b9979efa91594562828e1b58f4483fc157faa5228588b4d61c64350118c5ec"
+    "prev": "c1bee0ce0c1c3f833499fe91a2bb13749fe5fc9d3268605adf7f019751db0ec9"
    },
-   "signature": "526641b09789cd00caaa7eaeb68c56dad2c25bd3de024324e79328e85d2294827cf1bb03be1f060841ce0a5fa652a473cf5b2dbdd59371e68d967d6ca4244004"
+   "signature": "398806061bd499e39f88808d987fdce609b9dcf50a4b7bb40c54e8d97f9982a4636b50aa2fb6954203e33a56fb7abf1bd9bfc5dcbadbc701048a10ec49206d08"
   },
   "account": {
-   "hash": "502e944076a18badebc3a3cf38e2e96cf3d4110c8d0e0b6a360eb6b7a765dcad",
+   "hash": "8ff85e05e2747061498330c7ff17fa60aaddb21a2035d98dd8819459c5484335",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1169,12 +1158,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "4b4cc994ff2e42854db5c5b98aa92c50577f327ff8563000bc5f48bd1343b1e8"
+    "prev": "942f77aaaf393183c801f29ed4ebcaa2655e9c9011d72f0fde4382b52f204fbe"
    },
-   "signature": "90e95be289c52802e2eae1539aa191a7198da9eda79ac60b0ec1b79841f757b0e917b81d4f936cb60c8e4f7861e1798336f8e4b40dbf6dfbc317228cd990aa0a"
+   "signature": "3e0874153b05c55e4adf248503cc21f2a694e92aa2de7eac2ff277e3cffb6dafeac2340c339c89ebf83b1083a4927bedbcd7cc779a30a4e4366bbf41338b2e0a"
   },
   "witness": {
-   "hash": "fb8bb162d70c87fea806c1b59472b2dcf6d62fbc977ba6a2929103cbb2f81b1b",
+   "hash": "792e32d757246d893c929464dbf820cd0b087f9dcead69c3268a2feaa58d18bf",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1194,12 +1183,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "502e944076a18badebc3a3cf38e2e96cf3d4110c8d0e0b6a360eb6b7a765dcad"
+    "prev": "8ff85e05e2747061498330c7ff17fa60aaddb21a2035d98dd8819459c5484335"
    },
-   "signature": "cbe8f094ca07bc1ca266b6a732fe806fa52267dbd45971ff8b701396cff0c9d1de24c34acd9b902e24328f1160fc20e7f44eac49ab6abc9d461f119ca1f20305"
+   "signature": "728b8140cc862a45fa5a71222340e8421b3ad77e446d1de3f5e69a8abf06aa025e83f384b1524d8bd4fef65eec58705c55860f1a2cee2cd87ba1b6aade59b20b"
   },
   "answer": {
-   "hash": "57a639afe9a395797e21e1c83f152295e3368151220f69e88b56629f6a0b0bc7",
+   "hash": "716cf63b4aff85f433cbfda3c6a7d1455a81496fb2abb4be99ec2f35c5a12601",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1219,12 +1208,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "fb8bb162d70c87fea806c1b59472b2dcf6d62fbc977ba6a2929103cbb2f81b1b"
+    "prev": "792e32d757246d893c929464dbf820cd0b087f9dcead69c3268a2feaa58d18bf"
    },
-   "signature": "847091a96841b32f7d0fc73ba8d5282bcfd1a52f71e8ae913bc1c316f932bbe217b3e8ad0b6fa5ad6696148a455e61d7e0af072bc11ac5c390fdc09ce6fb0c07"
+   "signature": "7994a9112d7e418955c9d5c62b17f323ff252d4981e1b39368acf2434745f17d31bea0fbf995fb1deab5d5e8396f8bde338b0b35e9d65ded5ccd1b88b2f03e09"
   },
   "lookup": {
-   "hash": "c066bd8ec0865bdb7054e539b0f2d22a8946f1ae45dcc8a66e16355dd197f295",
+   "hash": "a88f10092a7e4f8956b9112d93be4bc52fa9ce5fa753e193882417e6f3afc5c9",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1244,12 +1233,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "57a639afe9a395797e21e1c83f152295e3368151220f69e88b56629f6a0b0bc7"
+    "prev": "716cf63b4aff85f433cbfda3c6a7d1455a81496fb2abb4be99ec2f35c5a12601"
    },
-   "signature": "3e81cfd8c9ff02ccf108acc9a62336993ac9e09c628002fadd50d5d0b27726c53d62407c431d5b8681e77811776c5e245b63263a9e962ae7abd82cfd018ebf0d"
+   "signature": "204e8fc17a7939fad49f83a02aaaf6b44cc4318c5eb4e1db4c520a22a22e3ed4543312dc7b45b00981bd1586663b213215900f7d428e1674df27bf85bd7c7c05"
   },
   "listing": {
-   "hash": "3922a86c134a1ccb9349c12208da8af2385377d24ec65f10327a6b92f6901414",
+   "hash": "85f856060111d8e6037cf588423498f8b47ae55451899c29888357311df48fc1",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1267,12 +1256,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "c066bd8ec0865bdb7054e539b0f2d22a8946f1ae45dcc8a66e16355dd197f295"
+    "prev": "a88f10092a7e4f8956b9112d93be4bc52fa9ce5fa753e193882417e6f3afc5c9"
    },
-   "signature": "7ae24eb0fe1e3ea22e2529813787b8911ee5a08e99162679a98b6b31d2e666d68eaf901ff600ea89c001a69e4a4b58d8e5221196e3f3e82d16f2705670db5403"
+   "signature": "954c017b083af64de5536b631cdeaac0d652b75e3feb39dd90704c6c5144bf0f66762826ebc7280d527968967f251235f7e912f3bd4567ae94ca5cfce22a2d0a"
   },
   "check": {
-   "hash": "09014748827fd786ceec063fa82f3ff986491aed135bdfca694df4b67c5b3721",
+   "hash": "336120062f1e8f3b19fdff6b1ba3a8008dc51538f89bb986d97b8bd9728739d1",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1293,12 +1282,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "3922a86c134a1ccb9349c12208da8af2385377d24ec65f10327a6b92f6901414"
+    "prev": "85f856060111d8e6037cf588423498f8b47ae55451899c29888357311df48fc1"
    },
-   "signature": "e4d6282e07c2d483345cb72ffffa80e01ebcdb323b60a28bb5a49e09bac7920f4729fc481ae6c018e4981499574ac8ffa624997380d37d8155bb2cb476af2603"
+   "signature": "50cc2678178fa709eb53a1b57b1e16d5e37a4188b67b61894b763600c2ab47c9a12b3aa436222905e06d3b621f1e1df1217832461ff61b317ea62102bb0a4708"
   },
   "clearing": {
-   "hash": "039d9bed4896fee8a04187f4c5028aa957b88ffe9e99a7af80cd399926333538",
+   "hash": "d4e3fb59763e3338a80644f02f7d88c13bbd634ab3dfb6369553437c26059293",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1317,12 +1306,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "09014748827fd786ceec063fa82f3ff986491aed135bdfca694df4b67c5b3721"
+    "prev": "336120062f1e8f3b19fdff6b1ba3a8008dc51538f89bb986d97b8bd9728739d1"
    },
-   "signature": "2b7e8a78c92a475f2d284dab275ef7d5a2c53a2bde0e0303a835878c00e689062678c3b695d70d3eda0e49c8e8dbd785e86d7c87f4dc884e3aa2654b9c20500d"
+   "signature": "eff72236401113c336b3fd355b11826cdd82821a459da37452a49203415ac62bceb9a2f69e1aa4a02158b19878edc0eeeddcba61da117eb350773a825615130b"
   },
   "rate": {
-   "hash": "8b0c30f4e8f50ff9c6a0916b1ea9c2734cab0c7d2ddf917d101d37809d9ebe9e",
+   "hash": "813aa47e43c530a9d3b5484c176dd3863e9fb1d0275466cb404bc147657de69d",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1341,12 +1330,12 @@
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "039d9bed4896fee8a04187f4c5028aa957b88ffe9e99a7af80cd399926333538"
+    "prev": "d4e3fb59763e3338a80644f02f7d88c13bbd634ab3dfb6369553437c26059293"
    },
-   "signature": "48c0457cc74d2dd91bc44b1cb6f7b53df5945065fe7441883befcc9b9dff1db47eeed3ccc723420df7bb15fa4a991cc997c6b9911a95ee999f03b133fb84080e"
+   "signature": "a99ebcb8b4b5aba5478881630bd18c5f758b3458ed6123f891e97c1d8dd673735553be827225fed5cef228a60094ff655183c7cf17c1ed41aefb9d4401d7970d"
   },
   "judging": {
-   "hash": "cb7089fe17f7c6ed446c78fa4b336f70ede010d231918ac17e10af752e3fd6ee",
+   "hash": "dff64463b44fefc6274903eb3aacc27a246304cc98b732f55c50ed9503c70343",
    "type": "thing",
    "state": {
     "kind": "schema",
@@ -1360,18 +1349,17 @@
      "rulings": "\"public\", or left out: whether her rulings are public. Left out means private, sealed to the two sides alone"
     },
     "grounds": {
-     "event": "a judge publishes her offer: refs.from her, refs.to left open, terms.price her fee, `what` what she will judge, terms.rules_within how fast, terms.rulings `public` if her rulings are public, else left out (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
+     "event": "a judge publishes her offer: refs.from her, refs.to left open, her fee the price of its one line, `what` what she will judge, terms.rules_within how fast, terms.rulings `public` if her rulings are public, else left out (promises.md, Rulings). A deal names her in a condition `ruled` or in its referee grounds; nothing makes her anyone's judge but both sides' own signed choice"
     },
-    "undo": "ok",
     "at": "2026-10-19T00:00:50.000Z",
     "audience": "public",
     "seq": 50
    },
    "refs": {
     "author": "4e6ff96aaa4d696bf919a0c63b98941e1258f0bd44f1c5ef05eed62da2b499c9",
-    "prev": "8b0c30f4e8f50ff9c6a0916b1ea9c2734cab0c7d2ddf917d101d37809d9ebe9e"
+    "prev": "813aa47e43c530a9d3b5484c176dd3863e9fb1d0275466cb404bc147657de69d"
    },
-   "signature": "34146ed19ebae69b2aae6065c89754aba574854857a2683a022fa5bf82396a34f6b6dd8f8ed7cb91a6892bcebbf1b5c8625abdeb80d4a73d906aa047aa8e6e04"
+   "signature": "cff798f35df5d6366663ed6b3aef7d976d2aa97ed6fac0907ee92da8e485d2d5faec0db021b195181826b608b2312281eaf0dceb0478b99c07a330cecccd5e0e"
   }
  }
 }

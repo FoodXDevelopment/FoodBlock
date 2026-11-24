@@ -15,6 +15,27 @@ pub(crate) struct Clocks {
     pub needed: usize,
 }
 
+/// A panel (folds.md, Counts): `{ names, needed }`, `names` a non-empty list of ids each once, in the order signed, `needed` how many of them must each
+/// sign: a panel of one needs none, a larger one states it. None when it is not well formed.
+#[cfg(feature = "folds")]
+pub(crate) fn panel_of(v: &Value) -> Option<(Vec<String>, usize)> {
+    let o = v.as_object()?;
+    if o.keys().any(|k| k != "names" && k != "needed") {
+        return None;
+    }
+    let spec = crate::spec();
+    let names: Vec<String> = o.get("names")?.as_array().filter(|a| !a.is_empty())?.iter().map(|x| x.as_str().filter(|s| spec.is("id", s)).map(String::from)).collect::<Option<_>>()?;
+    if names.iter().enumerate().any(|(i, n)| names[..i].contains(n)) {
+        return None;
+    }
+    let needed = match (o.get("needed"), names.len()) {
+        (None, 1) => 1,
+        (None, _) => return None,
+        (Some(n), len) => count_stated(Some(n), Some(len))? as usize,
+    };
+    Some((names, needed))
+}
+
 /// The clocks a value names, or None when it is not well formed (the check refuses it, `shape`; a fold reads nothing from it).
 pub(crate) fn clocks_of(v: &Value) -> Option<Clocks> {
     let o = v.as_object()?;
@@ -64,7 +85,7 @@ fn op_holds(op: &str, order: core::cmp::Ordering) -> bool {
     }
 }
 
-/// Whether a `reading_condition` holds on the readings held, at the reader's clock `now`:
+/// Whether a `reading_condition` holds on the readings given, at the reader's clock `now`:
 /// `{ reading: <sensor thing>, kind, op, value: { value, unit }, over: <duration> }`, op one of lt, le, gt, ge, eq.
 /// The readings are the `observe`s of that `kind` naming the sensor in `refs.from`, each with an `amount` in the
 /// condition's unit and an `at`. It holds when a reading at or before the start of the window (`now` less `over`)
@@ -84,12 +105,11 @@ pub fn reading_condition_holds(condition: &Value, blocks: &[Value], now: &str) -
     };
     let Some(start) = crate::time::add_duration(now, over, -1) else { return false };
     // A reading counts only if it speaks for the sensor: signed by the sensor itself, or speaking for the sensor's owner (the ownership fold
-    // of the sensor thing): her own, or a tool's under her live grant (authority.md, Who a block speaks for). 1.9: the operator grant is
-    // gone (04-grants; DECIDED 1 of 2026-11-11); a device she names signs under her grant as any tool does, and a rogue device that names
-    // the sensor in `refs.from` confirms nothing.
-    let index = crate::js::held_index(blocks);
+    // of the sensor thing), signed by a key of hers (authority.md, Who a block speaks for). A reading a tool signs under a grant speaks for
+    // the tool alone, and a device that names the sensor in `refs.from` without speaking for her confirms nothing.
+    let index = crate::js::blocks_index(blocks);
     let owner = index.get(sensor).and_then(|s| crate::fold::owner_of(s, blocks));
-    let operated_by = |who: Option<&str>, reading: &Value| who.is_some() && owner.is_some() && (who == owner.as_deref() || crate::fold::speaker_of(reading, &index, None).as_deref() == owner.as_deref());
+    let speaks_for_owner = |who: Option<&str>, reading: &Value| who.is_some() && owner.is_some() && (who == owner.as_deref() || crate::fold::speaker_of(reading, &index, None).as_deref() == owner.as_deref());
     let readings: Vec<(&str, &str)> = blocks
         .iter()
         .filter(|b| {
@@ -97,7 +117,7 @@ pub fn reading_condition_holds(condition: &Value, blocks: &[Value], now: &str) -
                 && ss(b, "kind") == Some(kind)
                 && list(rf(b, "from")).contains(&sensor)
                 && get(b, "state.amount.unit") == Some(unit)
-                && (rs(b, "author") == Some(sensor) || operated_by(rs(b, "author"), b))
+                && (rs(b, "author") == Some(sensor) || speaks_for_owner(rs(b, "author"), b))
         })
         .filter_map(|b| Some((ss(b, "at")?, get(b, "state.amount.value")?.as_str()?)))
         .filter(|(at, _)| *at <= now)
@@ -113,19 +133,19 @@ pub fn reading_condition_holds(condition: &Value, blocks: &[Value], now: &str) -
         .all(|(_, v)| compare(v, want).is_some_and(|o| op_holds(op, o)))
 }
 
-/// Whether a condition holds (promises.md, Conditions; 1.9 R-C1): on the blocks in the causal past of the block it is read for (`at`), or on
-/// every block held with none, never on a reader's clock. One of:
+/// Whether a condition holds (promises.md, Conditions): on the blocks in the causal past of the block it is read for (`at`), or on
+/// every block given with none, never on a reader's clock. One of:
 /// - `{ settled: <first promise> }`: that promise is done (its stage);
-/// - `{ accepted: <first promise> }`: that deal binds (decision H17): its stage is accepted or further along (underway, done,
+/// - `{ accepted: <first promise> }`: that deal binds: its stage is accepted or further along (underway, done,
 ///   reversed, or stopped onward), read from its promise fold;
-/// - `{ deed: <block> }`: that block is held and counts;
+/// - `{ deed: <block> }`: that block is given and counts;
 /// - `{ paid: <first promise> }`: that deal's price is paid in full;
 /// - `{ opened: <commitment> }`: a counted block carries its opening;
-/// - `{ ruled: <deal>, by: <judge>, awards: <person> }` (1.9 R-H9): the judge's head ruling on the deal awards something to that person;
-/// - `{ stopped: <first promise>, side: from | to }` (1.9 R-C2): a counted onward stop of that deal speaking for that side;
-/// - `{ closed: <id> }` (1.9 R-H7): a key grant that leaves no voice of that id's list stands;
+/// - `{ ruled: <deal>, by: <judge>, awards: <person> }`: the judge's head ruling on the deal awards something to that person;
+/// - `{ stopped: <first promise>, side: from | to }`: a counted onward stop of that deal speaking for that side;
+/// - `{ closed: <id> }`: a key grant that leaves no voice of that id's list stands;
 /// - a `reading` (a bare sensor reading can never be shown: it never holds);
-/// - `{ signal: <observe kind>, by: [ids], signers, subject, op, value }`: at least `signers` (default 1)
+/// - `{ signal: <observe kind>, by: { names, needed }, subject, op, value }`: at least `by.needed`
 ///   different signers that `by` names have signed a counted observe of that kind that they have not themselves defeated;
 /// - `{ within | without: <condition>, deadline, clocks }`: shown by the clocks' cutoffs, by their place.
 /// A condition reads three ways: it holds (`Some(true)`), it does not (`Some(false)`, also for a shape written wrong), or the protocol does
@@ -138,7 +158,7 @@ pub fn condition_holds(condition: &Value, blocks: &[Value], at: Option<&Value>) 
     }
     Some(match at {
         Some(b) => {
-            let idx = crate::js::held_index(blocks.iter().filter(|x| crate::js::hash_of(x) != crate::js::hash_of(b)).chain([b]));
+            let idx = crate::js::blocks_index(blocks.iter().filter(|x| crate::js::hash_of(x) != crate::js::hash_of(b)).chain([b]));
             let past = idx.past_of(b);
             let seen: Vec<Value> = blocks.iter().filter(|x| past.contains(crate::js::hash_of(x))).cloned().collect();
             condition_holds_read(condition, &seen)
@@ -154,7 +174,7 @@ fn reads(condition: &Value) -> bool {
     if let Some(inner) = c.get("without").or_else(|| c.get("within")) {
         return reads(inner);
     }
-    // 1.9 R-C3: a named reading (protocol.json `named_readings`) is not run by the core: its condition is not read
+    // a named reading (protocol.json `named_readings`) is not run by the core: its condition is not read
     let spec = crate::spec();
     spec.list("condition_shapes").iter().any(|k| c.contains_key(k.as_str())) && !spec.list("named_readings").iter().any(|k| c.contains_key(k.as_str()))
 }
@@ -190,27 +210,27 @@ pub(crate) fn condition_malformed(condition: &Value) -> Option<String> {
 }
 #[cfg(feature = "folds")]
 fn condition_holds_read(condition: &Value, blocks: &[Value]) -> bool {
-    let index = crate::js::held_index(blocks);
-    // that promise is done (1.9 R-C2: no refrain clause, no reader's clock)
+    let index = crate::js::blocks_index(blocks);
+    // that promise is done (no refrain clause, no reader's clock)
     if let Some(id) = condition.get("settled").and_then(Value::as_str) {
         return index.get(id).is_some_and(|p| crate::fold::promise_stage(p, blocks, &crate::fold::StageOptions::default()).get("stage").and_then(Value::as_str) == Some("done"));
     }
-    // 1.9 R-C2: `{ stopped: <first promise>, side }`: a counted onward stop of that deal that speaks for that side
+    // `{ stopped: <first promise>, side }`: a counted onward stop of that deal that speaks for that side
     if let Some(id) = condition.get("stopped").and_then(Value::as_str) {
         let Some(side) = condition.get("side").and_then(Value::as_str).filter(|s| matches!(*s, "from" | "to")) else { return false };
         return index.get(id).is_some_and(|p| crate::fold::stopped_onward_by(p, blocks, side));
     }
-    // 1.9 R-H7 (3d-16): `{ closed: <id> }`: a key grant that leaves no voice of that id's list stands
+    // `{ closed: <id> }`: a key grant that leaves no voice of that id's list stands
     if let Some(id) = condition.get("closed").and_then(Value::as_str) {
         return !crate::identity::closes_of(id, &crate::fold::read_all(blocks.iter())).is_empty();
     }
-    // A deal binds (decision H17): the stage of the first promise it names is accepted or further along. A stop before acceptance, a
+    // A deal binds: the stage of the first promise it names is accepted or further along. A stop before acceptance, a
     // decline, an offer or ask unanswered, or one the reader's clock has seen expire binds nothing. A deal stopped onward did bind.
     if let Some(id) = condition.get("accepted").and_then(Value::as_str) {
         return index.get(id).is_some_and(|p| crate::fold::binds(&crate::fold::promise_stage(p, blocks, &crate::fold::StageOptions::default())));
     }
     if let Some(id) = condition.get("deed").and_then(Value::as_str) {
-        return index.get(id).is_some_and(|b| crate::identity::counts_in(b, &index));
+        return index.get(id).is_some_and(|b| crate::forks::counts_in(b, &index));
     }
     // That deal's price is paid in full (the price side of the deal, read from its stage; it needs a binding accept, which gives it a total).
     if let Some(id) = condition.get("paid").and_then(Value::as_str) {
@@ -233,7 +253,7 @@ fn condition_holds_read(condition: &Value, blocks: &[Value]) -> bool {
                     crate::audience::opens(&suite, salt, &text, commitment)
                 }
                 _ => false,
-            }) && crate::identity::counts_in(b, &index)
+            }) && crate::forks::counts_in(b, &index)
         });
     }
     // A judge's ruling awards to a person (promises.md, Rulings)
@@ -243,27 +263,15 @@ fn condition_holds_read(condition: &Value, blocks: &[Value]) -> bool {
     if condition.get("without").is_some() || condition.get("within").is_some() {
         return by_deadline(condition, blocks, &index);
     }
-    // 1.9 3c-5, 3c-6: a bare `reading` can never be shown (it names no signer, and reads dates on no clock): it never holds
+    // a bare `reading` can never be shown (it names no signer, and reads dates on no clock): it never holds
     if condition.get("reading").is_some() {
         return false;
     }
     let Some(kind) = condition.get("signal").and_then(Value::as_str) else { return false };
-    let Some(by) = condition.get("by").and_then(Value::as_array).filter(|a| !a.is_empty()) else { return false };
-    let by: Vec<&str> = by.iter().filter_map(Value::as_str).collect();
-    let named_ok = |n: &&str| crate::spec().is("id", n);
-    if by.len() != condition["by"].as_array().map_or(0, Vec::len) || !by.iter().all(named_ok) {
-        return false;
-    }
-    // with no `signers`, one: the plain meaning only where `by` names one signer; a `by` that names more (two ids)
-    // states how many (decision F2, as E3), else the signal is written wrong and does not hold
-    let needed = match condition.get("signers") {
-        None if by.len() > 1 => return false,
-        None => Some(1.0),
-        Some(n) => match crate::js::count_stated(Some(n), None) {
-            Some(n) => Some(n),
-            None => return false,
-        },
-    };
+    // `by` is a panel: one name needs no `needed`, more than one states it, else the signal is written wrong and does not hold
+    let Some((by, needed)) = condition.get("by").and_then(panel_of) else { return false };
+    let by: Vec<&str> = by.iter().map(String::as_str).collect();
+    let needed = Some(needed as f64);
     let subject = match condition.get("subject") {
         None => None,
         Some(Value::String(s)) => Some(s.as_str()),
@@ -282,18 +290,18 @@ fn condition_holds_read(condition: &Value, blocks: &[Value]) -> bool {
         _ => return false,
     };
     // The voice is its signer: a signal under a grant speaks for its signer alone (authority.md, Blocks that bind: every block under a grant
-    // that is none of those speaks for its signer alone; 04-grants, 1.9).
+    // that is none of those speaks for its signer alone).
     let voice = |o: &Value| -> Option<String> { rs(o, "author").map(String::from) };
     // A signer takes their own signal back by defeating it: the defeat is hers when it speaks for the voice the signal speaks for.
     let withdrawn = |o: &Value| {
         let mine = voice(o);
-        index.values().any(|d| list(rf(d, "defeats")).contains(&hash_of(o)) && mine.is_some() && voice(d) == mine && crate::identity::counts_in(d, &index))
+        index.values().any(|d| list(rf(d, "defeats")).contains(&hash_of(o)) && mine.is_some() && voice(d) == mine && crate::forks::counts_in(d, &index))
     };
     // The cheap tests first, the costly ones last, and a signer already counted is skipped, so many readings by one signer cost one read of
-    // the folds (release 43).
+    // the folds.
     let mut counted: alloc::collections::BTreeSet<String> = Default::default();
     let signers = index.values().filter_map(|o| {
-        // 1.9 3c-6: a signal counts once it is counted, whatever its `at`
+        // a signal counts once it is counted, whatever its `at`
         if type_of(o) != "observe" || ss(o, "kind") != Some(kind) {
             return None;
         }
@@ -318,7 +326,7 @@ fn condition_holds_read(condition: &Value, blocks: &[Value]) -> bool {
                 return None;
             }
         }
-        if !crate::identity::counts_in(o, &index) || withdrawn(o) {
+        if !crate::forks::counts_in(o, &index) || withdrawn(o) {
             return None;
         }
         if by.iter().any(|who| *who == author) {
@@ -332,7 +340,7 @@ fn condition_holds_read(condition: &Value, blocks: &[Value]) -> bool {
 }
 
 /// `{ within: <condition>, deadline: T, clocks }` holds when the inner condition held by T; `{ without: ... }` holds when it did not (promises.md,
-/// Conditions). 1.9 3c-6, 3d-4, 3d-5: a time is shown only by the clocks' cutoffs, by their place; no reader's clock is read. Each line of
+/// Conditions). a time is shown only by the clocks' cutoffs, by their place; no reader's clock is read. Each line of
 /// the clock reads the inner condition on the blocks it shows before T (a block that decides the inner condition counts only where that
 /// line holds a receipt of it, or holds it, with no cutoff of T before it): it held by T on that line, or, once the line holds the cutoff
 /// of T, it did not. The reading that makes the word hold (it moves a thing out of its signer's hand) needs `needed` lines; the other,
@@ -359,7 +367,7 @@ impl ByDeadline {
     pub(crate) fn holds(&self) -> bool {
         (if self.without { self.no } else { self.yes }) >= self.needed
     }
-    /// The blocks that show it can no longer hold, once enough lines show the other reading (1.9 3c-5); None while it may.
+    /// The blocks that show it can no longer hold, once enough lines show the other reading ; None while it may.
     pub(crate) fn dead(&self) -> Option<Vec<String>> {
         let (n, by) = if self.without { (self.yes, &self.yes_by) } else { (self.no, &self.no_by) };
         (n >= (self.names + 1).saturating_sub(self.needed)).then(|| by.clone())
@@ -395,12 +403,12 @@ pub(crate) fn deadline_lines(condition: &Value, blocks: &[Value], index: &crate:
     Some(r)
 }
 
-/// 1.9 3c-5: whether a condition can no longer hold, by the signed words and clock it names, and the blocks that show it (a later draw of
+/// whether a condition can no longer hold, by the signed words and clock it names, and the blocks that show it (a later draw of
 /// the giver's that has one of them in its past is free of the hold). Read only from the clock's own readings: for `within`, its
 /// no-reading; for `without`, the yes-reading of its inner condition. A condition that can never be shown (a bare sensor `reading`, which
 /// needs a reader's clock) can no longer hold from its signing (`Some(vec![])`: nothing need be seen).
-/// 1.9-GUESS [3c-5a]: every other shape (a bare signal, a deed, a deal's stage) may still hold later, so it never dies; a `bench` of `none`
-/// is stage 5's shape and is not read here.
+/// Every other shape (a bare signal, a deed, a deal's stage) may still hold later, so it never dies; a `bench` of `none`
+/// is not read here.
 #[cfg(feature = "folds")]
 pub(crate) fn condition_dead(condition: &Value, blocks: &[Value]) -> Option<Vec<String>> {
     if condition.get("reading").is_some() {
@@ -409,7 +417,7 @@ pub(crate) fn condition_dead(condition: &Value, blocks: &[Value]) -> Option<Vec<
     if condition.get("without").is_none() && condition.get("within").is_none() || !reads(condition) {
         return None;
     }
-    let index = crate::js::held_index(blocks);
+    let index = crate::js::blocks_index(blocks);
     deadline_lines(condition, blocks, &index)?.dead()
 }
 
@@ -438,7 +446,7 @@ fn deciders_of(c: &Value, index: &crate::js::Index) -> Vec<String> {
     if c.get("ruled").is_some() {
         return observes("ruling");
     }
-    // 1.9 R-H7: her close is a key grant of hers
+    // her close is a key grant of hers
     if let Some(id) = c.get("closed").and_then(Value::as_str) {
         return index.values().filter(|b| type_of(b) == "grant" && rs(b, "author") == Some(id)).map(|b| hash_of(b).to_string()).collect();
     }
@@ -449,7 +457,7 @@ fn deciders_of(c: &Value, index: &crate::js::Index) -> Vec<String> {
 }
 
 /// A plan's near horizon: the sub-tasks (first promises whose `refs.for` names the parent) a planner may release now.
-/// Kept simple: the children of a parent, in the order held, so an edge service can pick the near ones.
+/// Kept simple: the children of a parent, in the order given, so an edge service can pick the near ones.
 pub fn children_of(parent: &str, blocks: &[Value]) -> Vec<String> {
     blocks
         .iter()

@@ -7,7 +7,7 @@ use crate::prelude::*;
 use core::cmp::Ordering;
 
 impl Checker<'_> {
-    pub(super) fn transfer(&self, state: &Value, refs: &Value, held: Option<&crate::js::Index>, answering: bool) -> W {
+    pub(super) fn transfer(&self, state: &Value, refs: &Value, blocks: Option<&crate::js::Index>, answering: bool) -> W {
         let g = |k: &str| state.get(k);
         let r = |k: &str| refs.get(k);
         let mut w: W = vec![];
@@ -35,25 +35,25 @@ impl Checker<'_> {
         w.extend(self.status_shape(state, refs));
         w.extend(self.whole_shape(g("count"), "state.count", 1.0));
         // What a payment covers is the word of the side it is paid to (promises.md, Settling): an amount, on that side's accepted answer; or
-        // (1.9 R-P5, A spot exchange) on the seller's own transfer `for` the buyer's order, his yes and his delivery in one block.
+        // (folds.md) on the seller's own transfer `for` the buyer's order, his yes and his delivery in one block.
         // The seller's transfer `for` the buyer's order (the order her own first promise, `from` him, `to` her, naming what it moves), `to_owner`
-        // her, where he has not already accepted the order: his yes and his delivery in one block; it states `covers` (`required`, R-P5: a
-        // missing covers is never read as credit). Read where the order is held; a writer that holds nothing reads the looser shape.
-        let spot_order = held.and_then(|held| {
+        // her, where he has not already accepted the order: his yes and his delivery in one block; it states `covers` (`required`: a
+        // missing covers is never read as credit). Read where the reader has the order; a writer that has nothing reads the looser shape.
+        let spot_order = blocks.and_then(|blocks| {
             let (author, to, deal) = (r("author")?.as_str()?, r("to_owner")?.as_str()?, r("for")?.as_str()?);
             if r("answers").is_some() || g("status").is_some() {
                 return None;
             }
-            let o = held.get(deal).filter(|o: &&Value| {
+            let o = blocks.get(deal).filter(|o: &&Value| {
                 o.get("type").and_then(Value::as_str) == Some("promise")
                     && crate::js::rf(o, "answers").is_none()
                     && crate::js::st(o, "status").is_none()
                     && crate::js::rs(o, "to") == Some(to)
                     && crate::js::rs(o, "author") == Some(to)
                     && crate::js::rs(o, "from") == Some(author)
-                    && list(crate::js::rf(o, "what")).iter().any(|h| list(r("what")).contains(h))
+                    && crate::js::whats_of(o).iter().any(|h| list(r("what")).contains(h))
             })?;
-            let accepted = held.values().any(|x: &Value| {
+            let accepted = blocks.values().any(|x: &Value| {
                 x.get("type").and_then(Value::as_str) == Some("promise") && crate::js::ss(x, "status") == Some("accepted") && crate::js::rs(x, "answers") == Some(crate::js::hash_of(o)) && crate::js::rs(x, "author") == Some(author)
             });
             (!accepted).then_some(())
@@ -61,14 +61,14 @@ impl Checker<'_> {
         if let Some(c) = g("covers") {
             w.extend(self.amount_shape(Some(c), "state.covers"));
             let answer = r("answers").is_some() && g("status").and_then(Value::as_str) == Some("accepted");
-            let spot = if held.is_some() { spot_order.is_some() } else { g("status").is_none() && r("for").is_some() && r("what").is_some() };
+            let spot = if blocks.is_some() { spot_order.is_some() } else { g("status").is_none() && r("for").is_some() && r("what").is_some() };
             if !answer && !spot {
                 w.push(f("shape", "state.covers goes only on an accepted answer to a payment, or on the seller's transfer for the buyer's order"));
             }
         } else if spot_order.is_some() {
             w.push(f("required", "a seller's transfer for a buyer's order states state.covers (0 if nothing came): a missing covers is never read as credit"));
         }
-        // A payment names the occurrence of a standing promise it pays (promises.md, Settling; decision E4): its start time, or the hash
+        // A payment names the occurrence of a standing promise it pays (promises.md, Settling): its start time, or the hash
         // of the block that started it, as a stop names occurrences.
         if let Some(o) = g("occurrence") {
             if !(crate::time::is_time(Some(o)) || self.is("hash", Some(o))) || g("amount").is_none() || r("what").is_some() {

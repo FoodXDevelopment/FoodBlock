@@ -1,16 +1,16 @@
 //! A promise's own rules (promises.md): its sides, its deal, and its terms.
 use super::{f, s, Checker, W};
-use crate::js::{hash_of, is_obj, keys_within, rf, sorted_set, str_of, Index};
+use crate::js::{hash_of, is_obj, keys_within, rf, Index};
 use crate::prelude::*;
 
 impl Checker<'_> {
-    pub(super) fn promise(&self, state: &Value, refs: &Value, held: Option<&Index>, answering: bool) -> W {
+    pub(super) fn promise(&self, state: &Value, refs: &Value, blocks: Option<&Index>, answering: bool) -> W {
         let g = |k: &str| state.get(k);
         let r = |k: &str| refs.get(k);
         let mut w: W = vec![];
         // Whether the signer is a side is the fold's to read (folds.md, Who a block speaks for): a side may name a thing, whose owner is not
         // a block this one rests on (promises.md, Bearer; core.md, invariant 25), so the check never refuses it. An ask may carry
-        // `terms.expires` or not (decision H11): with none it lasts until its author stops it.
+        // `terms.expires` or not: with none it lasts until its author stops it.
         w.extend(self.status_shape(state, refs));
         // a side is one id (promises.md, Sides): a set would leave whose word binds to a reader
         for k in ["from", "to"] {
@@ -22,15 +22,16 @@ impl Checker<'_> {
         if r("updates").is_some() && r("answers").is_none() && !matches!(g("status").and_then(Value::as_str), Some("stopped" | "resumed")) {
             w.push(f("required", "an updates of a promise is its author's stop (state.status stopped), or the end of a pause of their own (resumed): terms are fixed once written; change them with a counter-offer or a new offer"));
         }
-        // a promise of an amount of a good names it in terms.quantity: money now for money later is one; there is no loan type (core.md 7)
-        // (a range of amounts names it too: stage 5 compare, as the oracle reads it)
-        let is_amount = |q: &Value| q.get("value").is_some() && q.get("unit").is_some();
-        let of_amount = g("terms").and_then(|t| t.get("quantity")).is_some_and(|q| is_amount(q) || ["min", "max"].iter().any(|k| q.get(*k).is_some_and(is_amount)));
-        if !answering && r("what").is_none() && g("what").is_none() && !of_amount {
-            w.push(f("required", "a promise names what moves: refs.what, state.what for time or a job, or terms.quantity for an amount of a good"));
+        // a promise states what it moves or prices in its lines, or says in `state.what` what it is (core.md, section 7)
+        if !answering && g("terms").and_then(|t| t.get("lines")).is_none() && g("what").is_none() {
+            w.push(f("required", "a promise states terms.lines (what moves, an amount of a good, or a price for time or a job), or state.what"));
+        }
+        // what a promise moves is in its lines and nowhere else (promises.md, What moves)
+        if r("what").is_some() {
+            w.push(f("lines", "a promise names what moves in its lines, never in refs.what"));
         }
         // A deal block names the deal's first promise in refs.for, exactly; it is signed by a side of the deal.
-        let target = r("answers").or(r("updates")).and_then(Value::as_str).and_then(|h| held.and_then(|h2| h2.get(h)));
+        let target = r("answers").or(r("updates")).and_then(Value::as_str).and_then(|h| blocks.and_then(|h2| h2.get(h)));
         if r("answers").is_some() && r("for").is_none() {
             w.push(f("deal_not_named", "an answer or a counter names its deal in refs.for (the first promise)"));
         } else if let (Some(t), true) = (target, r("answers").is_some()) {
@@ -42,15 +43,35 @@ impl Checker<'_> {
         if !g("what").is_none_or(|x| x.is_string() || x.is_object()) {
             w.push(f("shape", "state.what describes time or a job (text, or data under a schema)"));
         }
-        w.extend(self.terms_shape(g("terms"), refs, state));
-        // An answer that carries a status names no term but the quantity it chooses (promises.md, Answers): a price or any other term on an
-        // accept would be read by no one, so it is refused.
+        // An answer that carries a status names no term but the quantities it chooses (promises.md, Answers): `terms.lines`, each
+        // `{ id, quantity }`, the quantity an amount. A price or any other term on an accept would be read by no one, so it is refused.
         if g("status").is_some() {
             if let Some(Value::Object(t)) = g("terms") {
-                for k in t.keys().filter(|k| k.as_str() != "quantity") {
-                    w.push(f("undeclared_field", format!("terms.{k} on an answer: an answer names only the quantity it chooses")));
+                for k in t.keys().filter(|k| k.as_str() != "lines") {
+                    w.push(f("undeclared_field", format!("terms.{k} on an answer: an answer names only the quantities it chooses")));
+                }
+                match t.get("lines").map(|l| l.as_array().filter(|a| !a.is_empty())) {
+                    None => {}
+                    Some(None) => w.push(f("lines", "terms.lines on an answer lists { id, quantity }")),
+                    Some(Some(lines)) => {
+                        for (i, line) in lines.iter().enumerate() {
+                            let Some(m) = line.as_object() else {
+                                w.push(f("lines", format!("terms.lines[{i}] is {{ id, quantity }}")));
+                                continue;
+                            };
+                            for k in m.keys().filter(|k| !matches!(k.as_str(), "id" | "quantity")) {
+                                w.push(f("undeclared_field", format!("terms.lines[{i}].{k} on an answer: it names only the line and the quantity it chooses")));
+                            }
+                            if m.get("id").and_then(Value::as_str).is_none_or(str::is_empty) {
+                                w.push(f("lines", format!("terms.lines[{i}].id names the line")));
+                            }
+                            w.extend(self.amount_shape(m.get("quantity"), &format!("terms.lines[{i}].quantity")));
+                        }
+                    }
                 }
             }
+        } else {
+            w.extend(self.terms_shape(g("terms"), state));
         }
         w
     }
@@ -65,17 +86,13 @@ impl Checker<'_> {
             && parts.iter().any(|p| p.strip_prefix("FREQ=").is_some_and(|f| freq.iter().any(|x| x == f)))
     }
 
-    pub(super) fn terms_shape(&self, terms: Option<&Value>, refs: &Value, state: &Value) -> W {
+    pub(super) fn terms_shape(&self, terms: Option<&Value>, state: &Value) -> W {
         let Some(t) = terms else { return vec![] };
         if !is_obj(terms) {
-            return s("shape", "state.terms is { price, quantity, lines, ... }");
+            return s("shape", "state.terms is { lines, ... }");
         }
         // Which terms a promise may carry is judged with what its schema declares (check/mod.rs, `declared`).
         let mut w: W = vec![];
-        if t.get("price").is_some() {
-            w.extend(self.price_shape(t.get("price"), "terms.price"));
-        }
-        w.extend(self.quantity_shape(t.get("quantity"), t.get("price"), "terms.quantity"));
         match t.get("repeat") {
             None => {}
             // A rule of dates (RFC 5545, another calendar by RFC 7529 RSCALE), counted from state.when.
@@ -118,9 +135,9 @@ impl Checker<'_> {
         // ("£800", "up to 2 heifers"): each an amount.
         w.extend(self.amount_shape(t.get("forfeit"), "terms.forfeit"));
         w.extend(self.amount_shape(t.get("backing"), "terms.backing"));
-        // 1.9 3e-7: the least payable amount its signers take, an amount in the price's unit
+        // the least payable amount its signers take, an amount in the price's unit
         w.extend(self.amount_shape(t.get("step"), "terms.step"));
-        // 1.9 3c-4 (00-shared, Deals): what the landing waits on, `goods` or `price`; 3e-3 (D4): her word that the goods are in her hand
+        // what the landing waits on, `goods` or `price`: her word that the goods are in her hand
         if t.get("waits_on").is_some_and(|x| !matches!(x.as_str(), Some("goods" | "price"))) {
             w.push(f("shape", "terms.waits_on is goods or price"));
         }
@@ -168,48 +185,34 @@ impl Checker<'_> {
         }
         if let Some(lines) = t.get("lines") {
             match lines.as_array().filter(|a| !a.is_empty()) {
-                None => w.push(f(
-                    "lines",
-                    "terms.lines lists { id, what, quantity, price }",
-                )),
+                None => w.push(f("lines", "terms.lines lists { id, what, quantity, price }")),
                 Some(lines) => {
                     let fields = self.list("line");
                     for (i, line) in lines.iter().enumerate() {
                         if !(is_obj(Some(line)) && keys_within(line, &fields)) {
-                            w.push(f(
-                                "lines",
-                                format!("terms.lines[{i}] is {{ {} }}", fields.join(", ")),
-                            ));
+                            w.push(f("lines", format!("terms.lines[{i}] is {{ {} }}", fields.join(", "))));
                         }
-                        if line
-                            .get("id")
-                            .and_then(Value::as_str)
-                            .is_none_or(|x| x.is_empty())
-                        {
+                        if line.get("id").and_then(Value::as_str).is_none_or(|x| x.is_empty()) {
                             w.push(f("lines", format!("terms.lines[{i}].id names the line")));
                         }
-                        if !self.is("id", line.get("what")) {
-                            w.push(f(
-                                "lines",
-                                format!("terms.lines[{i}].what is a thing's hash"),
-                            ));
+                        // what, quantity and price are each optional, and a line states at least one (promises.md, A deal is its lines)
+                        if ["what", "quantity", "price"].iter().all(|k| line.get(*k).is_none()) {
+                            w.push(f("lines", format!("terms.lines[{i}] states what, quantity or price")));
                         }
-                        w.extend(self.quantity_shape(
-                            line.get("quantity"),
-                            line.get("price"),
-                            &format!("terms.lines[{i}].quantity"),
-                        ));
-                        // a line's quantity is an amount: no answer can choose within a range on one line (an answer names only
-                        // the top-level quantity), so a range there could never be chosen (promises.md, Terms)
-
-                        if line.get("price").is_some_and(|p| p.get("figure").is_some()) {
-                            w.push(f("lines", format!("terms.lines[{i}].price is an amount or an amount per unit: a price fixed later is on the whole promise")));
+                        if line.get("what").is_some() && !self.is("id", line.get("what")) {
+                            w.push(f("lines", format!("terms.lines[{i}].what is one id")));
                         }
+                        // in a promise whose `state.what` names a job, a line's quantity measures the work; a line with no `what` whose
+                        // quantity is of its price's own kind moves that amount back for more of it (a loan): a line is a loan or a job,
+                        // never both (promises.md, A deal is its lines)
+                        let kind_of = |v: Option<&Value>| v.and_then(|q| crate::decimal::Amount::of(Some(q)).or_else(|| crate::decimal::Amount::of(q.get("min"))).or_else(|| crate::decimal::Amount::of(q.get("max")))).map(|a| a.kind);
+                        let price_kind = line.get("price").and_then(|p| crate::decimal::Amount::of(Some(p)).or_else(|| crate::decimal::Amount::of(p.get("amount")))).map(|a| a.kind);
+                        if line.get("what").is_none() && state.get("what").is_some() && kind_of(line.get("quantity")).is_some_and(|k| Some(k) == price_kind) {
+                            w.push(f("lines", format!("terms.lines[{i}] moves an amount and its promise names a job in state.what: a line is a loan or a job, never both")));
+                        }
+                        w.extend(self.quantity_shape(line.get("quantity"), line.get("price"), &format!("terms.lines[{i}].quantity")));
                         if line.get("price").is_some() {
-                            w.extend(self.price_shape(
-                                line.get("price"),
-                                &format!("terms.lines[{i}].price"),
-                            ));
+                            w.extend(self.price_shape(line.get("price"), &format!("terms.lines[{i}].price")));
                         }
                     }
                     let mut ids: Vec<Option<&Value>> = Vec::new();
@@ -233,26 +236,6 @@ impl Checker<'_> {
                     kinds.dedup();
                     if kinds.len() > 1 {
                         w.push(f("lines", "every line's price of one promise is of one kind"));
-                    }
-                    if t.get("price").is_some() || t.get("quantity").is_some() {
-                        w.push(f(
-                            "lines",
-                            "with lines, the price and quantity are on each line",
-                        ));
-                    }
-                    let whats: Vec<String> = lines.iter().map(|l| str_of(l.get("what")).to_string()).collect();
-                    let same = match refs.get("what") {
-                        None => false,
-                        Some(b) => {
-                            let bs: Vec<String> = match b {
-                                Value::Array(a) => a.iter().map(|x| str_of(Some(x)).to_string()).collect(),
-                                other => vec![str_of(Some(other)).to_string()],
-                            };
-                            sorted_set(whats) == sorted_set(bs)
-                        }
-                    };
-                    if !same {
-                        w.push(f("lines", "refs.what is the set of every line's what"));
                     }
                 }
             }

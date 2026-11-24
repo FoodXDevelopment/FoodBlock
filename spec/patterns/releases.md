@@ -2,11 +2,11 @@
 
 Not normative. A pattern adds no rule: it is a schema and a worked example, and no word reads it (core.md, section 10).
 
-A **release** is a person's signed word naming bytes by hash. It says "these are mine, and these are the bytes". It binds only its signer, to the truth of that (core.md, section 11; GOVERNANCE.md, How rule sets are named). It is not a shelf: no list says which releases count, no one's release outranks another's, and no fold reads one. A reader picks whose release words she trusts and checks the bytes she holds against the hashes.
+A **release** is a person's signed word naming bytes by hash. It says "these are mine, and these are the bytes". It binds only its signer, to the truth of that (core.md, section 11; GOVERNANCE.md, How rule sets are named). It is not a shelf: no list says which releases count, none outranks another, and no fold reads one. A reader picks whose words she trusts and checks the bytes she holds against the hashes.
 
 ## The base schema
 
-A release is an `observe` of kind `software_release`. These two field names are this pattern's own choice: no source fixes them, and any community may name its own in its own schema (things.md, Schemas).
+A release is an `observe` of kind `software_release`. These field names are this pattern's own choice; any community may name its own in its own schema (things.md, Schemas).
 
 | Field | Shape | Means |
 |---|---|---|
@@ -18,7 +18,7 @@ Where a release names files instead of built packages (a source tree, a paper), 
 
 A community that wants these fields checked writes them in its own schema (a `thing` of kind `schema`, named by its hash); a shape is checked by `read`, never by `valid`.
 
-A reader who trusts the signer takes the hashes as her word that those bytes are hers. A reader who does not ignores the block. A signer who later finds a mistake signs another release; the first stays what it was (append-only), and a reader decides which she trusts.
+A reader who trusts the signer takes the hashes as her word that those bytes are hers; one who does not ignores the block. A signer who finds a mistake signs another release; the first stays (append-only), and a reader decides which she trusts.
 
 ## Worked example
 
@@ -44,4 +44,4 @@ FoodX, signing as itself, publishes its own release for its own rule set and pac
   "refs": { "author": <FoodX's id>, ... } }
 ```
 
-(The hashes above are examples.) A reader holding both reads two signed words. Neither names the other, neither is the "official" one, and no fold reads either. Amara, who trusts Kofi, downloads `kofi-core-0.3.tgz`, hashes it, and sees it equals what Kofi signed. She runs it, and chooses `rule_set` `a39f6ff57ad7...` as one she runs. A block that names that rule set is read under it by her; a block that names none is read by the core alone.
+(The hashes above are examples.) A reader holding both reads two signed words. Neither names the other, neither is "official", and no fold reads either. Amara, who trusts Kofi, downloads `kofi-core-0.3.tgz`, hashes it, and sees it equals what Kofi signed. She runs it and chooses `rule_set` `a39f6ff57ad7...` as one she runs. A block that names that rule set is read under it by her; a block that names none is read by H₀ (core.md, section 11).

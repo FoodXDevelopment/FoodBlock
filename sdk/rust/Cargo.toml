@@ -25,9 +25,9 @@ node = ["edge", "envelope"]
 # The parts the profiles turn on.
 folds = []
 sync = []
-envelope = ["dep:x25519-dalek", "dep:aes-gcm", "dep:hkdf"]
+envelope = ["dep:x25519-dalek", "dep:aes-gcm", "dep:hkdf", "dep:ml-kem", "dep:sha3", "dep:shake"]
 # The suites past std (core.md, Suites): p256 (ECDSA and ECDH on P-256) and sm (SM2, SM3, SM4). `std` is always built.
-suites = ["dep:p256", "dep:sm2", "dep:sm3", "dep:sm4", "dep:elliptic-curve", "dep:ecdsa", "dep:hmac"]
+suites = ["dep:p256", "dep:sm2", "dep:sm3", "dep:sm4", "dep:elliptic-curve", "dep:ecdsa"]
 # The optional profiles (spec/profiles): code that only a peer that adopts them needs.
 ballots = ["folds"]
 rekeys = ["folds"]
@@ -52,11 +52,15 @@ sha2 = { version = "0.10", default-features = false }
 ed25519-dalek = { version = "2.1", default-features = false, features = ["zeroize"] }
 once_cell = { version = "1.19", default-features = false, features = ["race", "alloc"] }
 getrandom = { version = "0.2", optional = true }
-# buffers that held a key or a plaintext are overwritten before they are freed (release 46)
+# buffers that held a key or a plaintext are overwritten before they are freed
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
 x25519-dalek = { version = "2", default-features = false, features = ["static_secrets", "zeroize"], optional = true }
 aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"], optional = true }
 hkdf = { version = "0.12", default-features = false, optional = true }
+# X-Wing (privacy.md, A KEM key): ML-KEM-768 (FIPS 203) with its seeds given, and SHA3-256 (sha3), SHAKE256 (shake)
+ml-kem = { version = "=0.3.4", default-features = false, features = ["alloc", "hazmat", "zeroize"], optional = true }
+sha3 = { version = "=0.12.0", default-features = false, optional = true }
+shake = { version = "=0.1.0", default-features = false, optional = true }
 jni = { version = "0.21", optional = true }
 p256 = { version = "0.13", default-features = false, features = ["ecdsa", "ecdh", "arithmetic", "pkcs8"], optional = true }
 sm2 = { version = "0.13", default-features = false, features = ["dsa", "arithmetic"], optional = true }
@@ -64,7 +68,6 @@ sm3 = { version = "0.4", default-features = false, optional = true }
 sm4 = { version = "0.5", default-features = false, optional = true }
 elliptic-curve = { version = "0.13", default-features = false, features = ["ecdh", "sec1", "arithmetic"], optional = true }
 ecdsa = { version = "0.16", default-features = false, features = ["signing", "verifying", "arithmetic"], optional = true }
-hmac = { version = "0.12", default-features = false, optional = true }
 # The time zone database, bundled (no system files): the one release every core reads a repeat by (promises.md, Terms: zone).
 jiff-tzdb = { version = "=0.1.9", optional = true }
 jiff = { version = "=0.2.39", default-features = false, features = ["alloc", "tzdb-bundle-always"], optional = true }
@@ -118,5 +121,5 @@ name = "store"
 required-features = ["door", "suites"]
 
 [[test]]
-name = "core_set_a"
+name = "records"
 required-features = ["door", "suites"]

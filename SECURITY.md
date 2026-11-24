@@ -15,7 +15,7 @@ Tell us what you found, how to reproduce it, and which part it affects (the spec
 
 ## Supported versions
 
-Only FoodBlock 1.7, the current version (every 1.6 block is a 1.7 block). There is no earlier version in the protocol.
+Only the current version, FoodBlock 1.9.
 
 ## Known limits
 

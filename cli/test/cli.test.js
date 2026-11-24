@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import fb from '@foodxdev/foodblock'
@@ -34,18 +34,10 @@ test('adopt: her public identity is kept (blocks only, private to her); a genesi
   assert.notEqual(run('adopt', join(dir, 'leak.json'), '--genesis', JSON.stringify({ ...genesis, private_key: device.private_key })).status, 0, 'a genesis that carries a private key is refused')
 })
 
-test('init, key and create are gone: each says so, exits non-zero, and makes no key or file', () => {
-  for (const [args, words] of [[['init', join(dir, 'x.json'), '--kind', 'person', '--audience', 'public'], /holds no key of hers/], [['key', join(dir, 'nk.json'), '--identity', me], /holds no key of hers/], [['create', 'thing', '--audience', 'public', '--identity', me], /signed with a key/]]) {
-    const result = run(...args)
-    assert.notEqual(result.status, 0); assert.match(result.stderr, words)
-  }
-  assert.deepEqual(readdirSync(dir).filter((f) => /recovery|node-key|x\.json|nk\.json/.test(f)), [])
-})
-
 test('draft then attach: valid blocks, each the next in her chain, signed by her device', () => {
   const eggs = create('thing', 'eggs', '--state', '{"name":"Eggs"}', '--audience', 'public')
-  const offer = create('promise', '--state', JSON.stringify({ terms: { price: fb.amount('4.50', 'GBP'), quantity: fb.amount('2', '{tray}'), expires: '2026-10-20T00:00:00.000Z' } }),
-    '--refs', JSON.stringify({ from: eggs.refs.author, what: eggs.hash }), '--audience', 'public')
+  const offer = create('promise', '--state', JSON.stringify({ terms: { lines: [{ id: 'eggs', what: eggs.hash, quantity: fb.amount('2', '{tray}'), price: fb.amount('4.50', 'GBP') }], expires: '2026-10-20T00:00:00.000Z' } }),
+    '--refs', JSON.stringify({ from: eggs.refs.author }), '--audience', 'public')
   const { chain } = JSON.parse(readFileSync(me, 'utf8'))
   assert.deepEqual([eggs.state.seq, offer.state.seq, offer.refs.prev], [1, 2, eggs.hash])
   assert.equal(ok('verify', JSON.stringify(offer), '--identity', me).signedByItsAuthor, true)
@@ -93,7 +85,6 @@ test('an identity file that holds a private key is not read', () => {
   writeFileSync(bad, JSON.stringify({ keys: device, genesis, chain: [genesis] }))
   const result = run('draft', 'observe', 'note', '--state', '{"text":"hi"}', '--audience', 'public', '--identity', bad)
   assert.notEqual(result.status, 0); assert.match(result.stderr, /holds a private key/)
-  assert.ok(!existsSync(`${bad}.recovery.json`))
 })
 
 test('a list audience: the block is for those ids alone', () => {

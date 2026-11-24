@@ -63,15 +63,6 @@ func blocksOf(v any) []Block {
 	return out
 }
 
-func find(blocks []Block, hash string) Block {
-	for _, b := range blocks {
-		if b.Hash == hash {
-			return b
-		}
-	}
-	return Block{Hash: hash}
-}
-
 func pub(t *testing.T, signer any) string {
 	return str(obj(obj(vectors(t)["keys"])[str(signer)])["public_key_sign"])
 }
@@ -162,7 +153,7 @@ func codesOf(found []Finding) []string {
 	return out
 }
 
-// bytesRefusals is what a block's own bytes say (checks 1 to 4): the 1.7 op `refusals` is gone; its halves are Valid and Read.
+// bytesRefusals is what a block's own bytes say (checks 1 to 4): its halves are Valid and Read.
 // The block's own parts are passed as they are written: a state that is not an object cannot be a Block.
 func bytesRefusals(typ, state, refs any) []Finding {
 	text, err := ask[string]("canonical", typ, state, refs)
@@ -178,21 +169,6 @@ func bytesRefusals(typ, state, refs any) []Finding {
 		return []Finding{{Code: "not_canonical", Detail: err.Error()}}
 	}
 	return StrictText(text)
-}
-
-func byHashMap(blocks []Block) map[string]Block {
-	out := map[string]Block{}
-	for _, b := range blocks {
-		out[b.Hash] = b
-	}
-	return out
-}
-
-func arrivalsOf(m map[string]any) ArrivedAt {
-	if m == nil {
-		return nil
-	}
-	return func(h string) string { return str(m[h]) }
 }
 
 func TestVectors(t *testing.T) {
@@ -317,7 +293,7 @@ func TestVectors(t *testing.T) {
 		}
 		r.report(len(wrong) == 0, fmt.Sprintf("%s: %s: blocks hash, verify and pass the check", s.group, s.name), wrong...)
 	}
-	ran["sealed"], ran["invariant_numbers"] = true, true
+	ran["sealed"] = true
 
 	opensVector := func(c map[string]any) bool {
 		b, ok := byHash[str(c["hash"])]
@@ -335,7 +311,12 @@ func TestVectors(t *testing.T) {
 	ran["envelopes"], ran["headers"] = true, true
 	for _, c := range items(v["envelopes"]) {
 		r.attempt("envelope: "+str(c["name"]), func() bool {
-			opened, err := Open(obj(c["envelope"]), str(key(t, c["recipient"])["x25519_private"]))
+			opened, err := Open(obj(c["envelope"]), func() string {
+				if x := str(key(t, c["recipient"])["xwing_private"]); x != "" {
+					return x
+				}
+				return str(key(t, c["recipient"])["x25519_private"])
+			}())
 			if err != nil {
 				return false
 			}
@@ -523,6 +504,13 @@ func TestVectors(t *testing.T) {
 		})
 	}
 
+	ran["xwing_draft11"] = true
+	r.attempt("xwing_draft11: the key of the draft's private seed", func() bool {
+		d := obj(v["xwing_draft11"])
+		pk, err := EncryptionKeyOf(str(d["sk"]), "xwing")
+		return err == nil && pk == "xwing:"+str(d["pk"])
+	})
+
 	// Every section is run; a new one fails here until this SDK runs it.
 	for _, s := range sections {
 		r.report(ran[s], "section run: "+s)
@@ -533,6 +521,12 @@ func TestVectors(t *testing.T) {
 func TestKeysRebuildFromSeeds(t *testing.T) {
 	for name, k := range obj(vectors(t)["keys"]) {
 		k := obj(k)
+		if priv := str(k["xwing_private"]); priv != "" && str(k["seed"]) == "" {
+			if pk, _ := EncryptionKeyOf(priv, "xwing"); pk != str(k["public_key_encrypt"]) {
+				t.Errorf("%s: the X-Wing key", name)
+			}
+			continue
+		}
 		suite := str(k["suite"])
 		if suite == "" {
 			suite = "std"

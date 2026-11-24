@@ -14,7 +14,6 @@ const same = (a, b) => { try { assert.deepEqual(a, b); return true } catch { ret
 const attempt = (name, fn) => { try { const out = fn(); report(out !== false, name) } catch (error) { report(false, name, error.message.split('\n')[0]) } }
 // The codes a refusal list carries, once each, in order.
 const codesOf = (list) => [...new Set(list.map((one) => one.code))]
-// What a block's own bytes say (checks 1 to 4, core.md, section 8): the 1.7 op `refusals` is gone; its halves are `valid` and `read`.
 // A canonical vector's `refused` is what a writer refuses of the value (write_refusals: a float is `float`, not the wire's `not_canonical`).
 const bytesRefusals = (type, state, refs) => { try { return call('write_refusals', { type, state, refs }, []) } catch (e) { return [{ code: e.code || 'not_canonical', detail: e.message }] } }
 const pub = (signer) => V.keys[signer].public_key_sign
@@ -30,7 +29,7 @@ for (const v of adversarial) {
     && !(v.canonical && c(v.block) !== v.canonical) && !(v.refused && !v.refused.every((code) => codesOf(bytesRefusals(v.block.type, v.block.state, v.block.refs)).includes(code)))
   report(ok, `canonical: ${v.name}`)
 }
-// The cross-language canonical vectors that predate 1.6 and still hash the same.
+// The cross-language canonical vectors in test/vectors.json.
 for (const v of require('../test/vectors.json')) report(fb.canonical(v.type, v.state, v.refs) === v.expected_canonical && fb.hash(v.type, v.state, v.refs) === v.expected_hash, `canonical (test/vectors.json): ${v.name}`)
 for (const v of V.canonical) report(fb.canonical(v.block.type, v.block.state, v.block.refs) === v.canonical && fb.hash(v.block.type, v.block.state, v.block.refs) === v.hash, `canonical: ${v.name}`)
 
@@ -69,9 +68,13 @@ const opens = (v) => byHash.has(v.hash) && fb.verify(full(byHash.get(v.hash)), v
 for (const v of V.signatures) report(opens(v), `signature: ${v.name}`)
 for (const v of V.bad_signatures) report(!opens(v), `bad signature refused: ${v.name}`)
 
+// X-Wing: a key with only a private seed rebuilds its public key; the draft's key comes from its seed.
+for (const [name, k] of Object.entries(V.keys)) if (k.xwing_private) attempt(`key: ${name}'s X-Wing key`, () => fb.encryptionKeyOf(k.xwing_private, 'xwing') === k.public_key_encrypt)
+attempt('xwing_draft11: the key of the draft\'s private seed', () => fb.encryptionKeyOf(V.xwing_draft11.sk, 'xwing') === 'xwing:' + V.xwing_draft11.pk)
+
 // Envelopes, and sealed copies with their signed public header.
 for (const v of V.envelopes) attempt(`envelope: ${v.name}`, () => {
-  const m = fb.unwrap(fb.open(v.envelope, V.keys[v.recipient].x25519_private))
+  const m = fb.unwrap(fb.open(v.envelope, V.keys[v.recipient].xwing_private || V.keys[v.recipient].x25519_private))
   return m.hash === v.opens_to.hash && m.signature === v.opens_to.signature
 })
 for (const v of V.sealed.cases) attempt(`sealed: ${v.name}`, () => {

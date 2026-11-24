@@ -1,23 +1,22 @@
 #!/usr/bin/env node
 'use strict';
-// The one vector generator: node tools/vectors.cjs [--recover <dir of old makers>] [--old <an older vectors file>] [--dry]
+// The one vector generator: node tools/vectors.cjs [--dry]
 //
 // Writes spec/vectors.json (the sound part's and the word ops' cases, core.md section 12) and spec/conventions-vectors.json (the
-// cases of every other op: readings, library tools and a node's own business; 07-last.md section 4) from both engines:
+// cases of every other op: readings, library tools and a node's own business) from both engines:
 //   - every case's answer is the oracle's (spec/oracle/fb.cjs, written from the text alone);
 //   - the core (sdk/rust, through its WebAssembly door) must give the same answer under the case's lens, or the case is a fault: the
 //     generator lists it and writes nothing (fix the text first, then the engine that disagrees, and run it again).
-// Its inputs are the two files themselves (a case's op and arguments are its question), the steps in tools/vectors/<version>.cjs that
-// move older inputs to the current shapes, and the oracle's stories of each stage (spec/oracle/*/export.cjs, written to
-// sdk/rust/tests/fixtures/*.json). Every block whose bytes change, or whose signature no longer opens, is re-signed by its own test key
-// (tools/vectors/keys.json: test keys only, never for anything real), to a fixed point; every id that changes is replaced wherever it is
-// written. Run on its own output it changes nothing. tools/vectors/last-run.json says what it kept, renewed (and why), deleted (and why)
-// and added; tools/vectors/1.9-run.json keeps the run that moved the 1.8 file to 1.9.
+// Its inputs are the two files themselves (a case's op and arguments are its question), the steps in tools/vectors/steps.cjs that move
+// inputs to the current shapes, and the oracle's stories (spec/oracle/stories/export.cjs, written to sdk/rust/tests/fixtures/<subject>.json).
+// Every block whose bytes change, or whose signature no longer opens, is re-signed by its own test key (tools/vectors/keys.json: test keys
+// only, never for anything real), to a fixed point; every id that changes is replaced wherever it is written. Run on its own output it
+// changes nothing. tools/vectors/last-run.json says what it kept, renewed (and why), deleted (and why) and added.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const ROOT = path.join(__dirname, '..');
 const O = require('../spec/oracle/fb.cjs');
 const { call } = require('../sdk/javascript/src/core.cjs');
-const M = require('./vectors/1.9.cjs');
+const M = require('./vectors/steps.cjs');
 
 const args = process.argv.slice(2);
 const opt = (k) => (args.includes(k) ? args[args.indexOf(k) + 1] : null);
@@ -43,30 +42,14 @@ const V = JSON.parse(fs.readFileSync(FILE, 'utf8'));
 if (fs.existsSync(CFILE)) V.door.push(...JSON.parse(fs.readFileSync(CFILE, 'utf8')).door);
 const report = { kept: [], renewed: [], deleted: [], added: [], faults: [], resigned: 0, rekeyed: 0, ids: 0 };
 
-// --from-stage <file>: start from the inputs a run with --save-stage <file> left after step 4 (for working on the answers; never for writing)
-const FROM = opt('--from-stage'), SAVE = opt('--save-stage');
-let bank, allPubs = new Set(), pubmap = new Map();
-if (FROM) { const s = JSON.parse(fs.readFileSync(FROM, 'utf8')); for (const k of Object.keys(V)) delete V[k]; Object.assign(V, s.V); bank = new Map(s.bank); allPubs = new Set(s.allPubs); pubmap = new Map(s.pubmap); Object.assign(report, s.report); }
-else {
 // ============================================================ 1. the inputs in the current shapes
-// the story sections become door cases; renamed ops take their new names
-V.door.push(...M.restructure(V));
-M.ledger(V);
+let bank, allPubs = new Set(), pubmap = new Map();
+M.prepare(V);
 V.door = V.door.map((c) => {
   const n = M.convertOp(c);
   if (n !== c) { n._from = { op: c.op, name: c.name }; }
   return n;
 });
-// discovery and its announcement: `reads` where `version` was; no `sound`, no `speaks_for` (07 B2, A2; section 4, step 1)
-const RULES_PLACEHOLDER = sha('a rule set: the files of spec/ as rule-set.json names them');
-const discovery = (d) => {
-  if (!isObj(d) || d.protocol !== 'foodblock') return d;
-  const out = { ...d };
-  for (const k of ['version', 'sound', 'speaks_for', 'holds']) delete out[k];
-  if (!Array.isArray(out.reads)) out.reads = [RULES_PLACEHOLDER];
-  return Object.fromEntries(CONV.messages.discovery.filter((k) => k in out).map((k) => [k, out[k]]));
-};
-if (V.messages) { V.messages.discovery = discovery(V.messages.discovery); V.messages.announcement = O.announcement(V.messages.discovery); }
 
 // ============================================================ 2. keys
 // A bank of test keys: public key -> { private_key, suite }. Kept in tools/vectors/keys.json so a later run can re-sign without guessing.
@@ -77,25 +60,10 @@ const encBank = new Map(); // public_key_encrypt -> x25519 private (or the suite
 for (const k of Object.values(V.keys)) if (k.public_key_encrypt && k.x25519_private) encBank.set(k.public_key_encrypt, { priv: k.x25519_private, suite: k.suite || 'std' });
 
 for (const m of JSON.stringify(V).matchAll(/"(30[0-9a-f]{40,200})"/g)) if (O.suiteOfKey(m[1])) allPubs.add(m[1]);
-if (opt('--recover') || opt('--old')) {
-  // a one-time recovery of the keys older makers drew by name (as changes-1.8/00-clear-the-ground.resign.cjs did), and of the keys 1.8's
-  // stage 0 put in place of keys nobody could name
-  const missing = new Set([...allPubs].filter((p) => !bank.has(p)));
-  const tryKp = (seed, suite) => { try { const kp = call('keypair', seed, suite); if (missing.has(kp.public_key_sign)) { bankAdd(kp, suite); missing.delete(kp.public_key_sign); } } catch { /* not a key of that suite */ } };
-  if (opt('--old')) for (const m of fs.readFileSync(opt('--old'), 'utf8').matchAll(/"(30[0-9a-f]{40,200})"/g)) { const s = O.suiteOfKey(m[1]); if (s) tryKp(sha('foodblock 1.8 stage 0 re-keyed: ' + m[1]), s); }
-  if (opt('--recover')) {
-    const names = new Set();
-    for (const f of fs.readdirSync(opt('--recover'))) for (const m of fs.readFileSync(path.join(opt('--recover'), f), 'utf8').matchAll(/['"`]([^'"`\n]{1,80})['"`]/g)) names.add(m[1]);
-    const PRE = ['foodblock 1.7 vectors: ', 'foodblock 1.6 vectors: ', 'foodblock 1.6 causal vectors: ', 'foodblock 1.6 phase 2 vectors: ', 'foodblock 1.6 phase 4 vectors: ', 'foodblock 1.6 refine vectors: ', 'foodblock 1.6 epcis vectors: ', 'foodblock 1.6 passkey vectors: ', ''];
-    for (const n of names) for (const pre of PRE) { const seed = sha(pre + n); for (const s of ['std', 'p256', 'sm']) tryKp(seed, s); }
-  }
-  log(`keys: ${allPubs.size} public keys in the file, ${allPubs.size - missing.size} with a private key`);
-}
-
 // ============================================================ 3. every block, to a fixed point
 // holders: flat { hash?, type, state, refs, signature?, suite? } or a story entry { hash, block: { type, state, refs }, signature }
 const holders = [];
-// a case from a 1.9 story is already in 1.9's shapes: its blocks are the story's own, and no step moves them (they may hold what 1.9 deleted,
+// a case from a story is already in the current shapes: its blocks are the story's own, and no step moves them (they may hold what is deleted,
 // to ask that it is refused)
 const isStoryCase = (x) => isObj(x) && typeof x.story === 'string' && Array.isArray(x.args);
 const walk = (x) => {
@@ -267,7 +235,7 @@ const writeBack = (x) => {
       // a copy signed by another key over the same bytes (a forgery a case shows) is signed again by that same key over the new bytes
       const who = !sameSig && sameBytes ? signerOf(origBody.get(old), x.signature) : null;
       const nb = sameBytes ? newBody.get(old) : next(body);
-      body.state = clone(nb.state); body.refs = clone(nb.refs);
+      body.type = nb.type; body.state = clone(nb.state); body.refs = clone(nb.refs);
       if ('signature' in x) {
         if (sameSig) x.signature = newSig.get(old);
         else if (who) x.signature = signWith(nb, keyFor(who.pub));
@@ -276,7 +244,7 @@ const writeBack = (x) => {
       else if (written && written === old && idmap.has(old)) x.hash = idmap.get(old);
       return Object.entries(x).forEach(([k, v]) => { if (k !== 'state' && k !== 'refs' && k !== 'block') writeBack(v); });
     }
-    if (!('hash' in x) && !('signature' in x)) { const n = next(body); body.state = n.state; body.refs = n.refs; }
+    if (!('hash' in x) && !('signature' in x)) { const n = next(body); body.type = n.type; body.state = n.state; body.refs = n.refs; }
   }
   for (const v of Object.values(x)) writeBack(v);
 };
@@ -399,8 +367,6 @@ if (V.cbor && V.cbor.loose && typeof V.cbor.loose.cbor === 'string') {
   for (const [old, sig] of newSig) { const was = origSig.get(old); if (typeof was === 'string' && typeof sig === 'string' && was.length === sig.length && was !== sig) hex = hex.split(was).join(sig); }
   V.cbor.loose.cbor = hex;
 }
-if (SAVE) fs.writeFileSync(SAVE, JSON.stringify({ V, bank: [...bank], allPubs: [...allPubs], pubmap: [...pubmap], report }));
-}
 // ============================================================ 5. the cases
 const DOORP = new Set([...P.door.protocol.sound, ...P.door.protocol.word]);
 const CLASS = {};
@@ -451,6 +417,15 @@ function judgeCase(c, o, k) {
   if (!(exact ? same(kw, ow) : subset(kw, p))) return { fault: { oracle: p, core: kw } };
   return { lens: exact ? { expect: p, exact: true } : { expect: p } };
 }
+const STAGES = [
+  ['records'], ['things'], ['keys'], ['payments'], ['grants'], ['deals'], ['circles'], ['privacy'], ['rules'],
+];
+// the questions the fixtures ask now: a story case they no longer ask (its story was written again) leaves, as the fixtures are its only source
+const askedNow = new Set();
+for (const [file] of STAGES) {
+  const f = path.join(ROOT, 'sdk/rust/tests/fixtures', file + '.json');
+  if (fs.existsSync(f)) for (const q of JSON.parse(fs.readFileSync(f, 'utf8')).questions) askedNow.add(q.op + '|' + J(q.args));
+}
 const keptCases = [];
 const seen = new Set();
 for (const c0 of V.door) {
@@ -458,10 +433,7 @@ for (const c0 of V.door) {
   const from = c._from; delete c._from;
   const why = c._why; delete c._why;
   const name = c.name;
-  // a case for a deleted field: its blocks still carry what 1.8 or 1.9 deleted
-  // (a case from a 1.9 story asks what 1.9 says of what it deleted: it is the story's, and stays)
-  const gone = c.story ? [] : [...new Map(blocksIn(c.args).flatMap(M.deletedFieldsOf).map((d) => [d.name, d])).values()];
-  if (gone.length) { report.deleted.push({ name, op: c.op, why: gone.map((g) => `${g.name}: ${g.why}`).join('; ') }); continue; }
+  if (c.story && !askedNow.has(c.op + '|' + J(c.args))) { report.deleted.push({ name, op: c.op, why: 'its story asks it no longer (the fixture was written again)' }); continue; }
   if (c.oracle === false) { // outside the spec text: kept as it was if the core still gives it
     const r = askCore(c);
     const ok = c.error ? errorMatches(r, c.error) : r.ok !== undefined && (c.codes ? same(codesOf(r.ok), c.codes) : c.exact ? same(r.ok, c.expect) : subset(r.ok, c.expect));
@@ -470,18 +442,11 @@ for (const c0 of V.door) {
   }
   const o = askOracle(c), k = askCore(c);
   if ((noOp(o) && noOp(k)) || M.GONE[c.op]) { report.deleted.push({ name, op: from ? from.op : c.op, why: M.GONE[c.op] || M.GONE[from && from.op] || 'neither engine has this op' }); continue; }
-  const obsolete = c.story ? null : M.obsolete(c);
-  if (obsolete) { report.deleted.push({ name, op: c.op, why: obsolete }); continue; }
   const r = judgeCase(c, o, k);
   if (r.fault) { report.faults.push({ name, op: c.op, oracle: r.fault.oracle, core: r.fault.core }); continue; }
   const was = clone(c0);
   Object.assign(c, r.lens);
   for (const x of ['expect', 'codes', 'exact', 'error']) if (!(x in r.lens)) delete c[x];
-  // the invariants' 1.9 numbers (07 E1)
-  if (Array.isArray(c.invariants) && V.invariant_numbers !== '1.9') {
-    const t = [...new Set(c.invariants.map((n) => M.INVARIANTS[n]).filter(Boolean))].sort((a, b) => a - b);
-    if (t.length) c.invariants = t; else delete c.invariants;
-  }
   const key = c.op + '|' + J(c.args);
   if (seen.has(key) && !c.name) continue;
   seen.add(key);
@@ -489,38 +454,20 @@ for (const c0 of V.door) {
   if (changed) report.renewed.push({ name, op: c.op, why: why || M.renewReason(c.op) }); else report.kept.push(name);
   keptCases.push(c);
 }
-V.invariant_numbers = '1.9';
 
-// ============================================================ 6. the stories of each 1.9 stage, asked of both engines
-// Each stage's oracle stories (spec/oracle/<stage>/export.cjs) write their door questions with the oracle's answers to
-// sdk/rust/tests/fixtures/<stage>.json. Each question becomes a case: the oracle is asked again here, and the core must agree. A
+// ============================================================ 6. the stories of each subject, asked of both engines
+// The oracle's stories (spec/oracle/stories/export.cjs) write each subject's door questions with the oracle's answers to
+// sdk/rust/tests/fixtures/<subject>.json. Each question becomes a case: the oracle is asked again here, and the core must agree. A
 // question about a mount (a fresh random id) or whose answer the oracle does not give twice alike (randomness) is not a vector.
-const STAGES = [
-  ['core-set-a', 'changes-1.9/CORE-SET.md, layers 3a and 3b'], ['core-set-b', 'changes-1.9/CORE-SET.md, layers 3c to 3e'],
-  ['stage4', 'changes-1.9/04-grants.md, section 5'], ['stage5', 'changes-1.9/05-deals.md'], ['stage6', 'changes-1.9/06-circles.md'], ['stage7', 'changes-1.9/07-last.md'],
-];
-// a story case the stage fixtures no longer ask (its story was written again) leaves: the fixtures are its only source
-{
-  const now = new Set();
-  for (const [file] of STAGES) {
-    const f = path.join(ROOT, 'sdk/rust/tests/fixtures', file + '.json');
-    if (fs.existsSync(f)) for (const q of JSON.parse(fs.readFileSync(f, 'utf8')).questions) now.add(q.op + '|' + J(q.args));
-  }
-  for (let i = keptCases.length - 1; i >= 0; i--) {
-    const c = keptCases[i];
-    if (!c.story || now.has(c.op + '|' + J(c.args))) continue;
-    keptCases.splice(i, 1);
-    report.kept = report.kept.filter((x) => x !== c.name); report.renewed = report.renewed.filter((x) => x.name !== c.name);
-    report.deleted.push({ name: c.name, op: c.op, why: 'its stage story asks it no longer (the fixture was written again)' });
-  }
-}
 const have = new Set(keptCases.map((c) => c.op + '|' + J(c.args)));
+// a story case is named by its subject, its story and its question, as the fixtures stand now
+const storyCase = new Map(keptCases.filter((c) => c.story).map((c) => [c.op + '|' + J(c.args), c]));
 const count = {};
-for (const [file, source] of STAGES) {
+for (const [file] of STAGES) {
   const f = path.join(ROOT, 'sdk/rust/tests/fixtures', file + '.json');
   if (!fs.existsSync(f)) continue;
   const qs = JSON.parse(fs.readFileSync(f, 'utf8')).questions;
-  // a mount is a fresh random id each time it is made: a question that names one reads what a mount held then, and is no vector
+  // a mount is a fresh random id each time it is made: a question that names one reads what a mount given then, and is no vector
   const mountIds = new Set(qs.filter((q) => q.op === 'mount' && typeof q.answer === 'string').map((q) => q.answer));
   const place = new Map();
   for (const q of qs) {
@@ -530,13 +477,13 @@ for (const [file, source] of STAGES) {
     if (['mount', 'unmount', 'keypair', 'new_salt', 'new_challenge', 'encryption_keypair'].includes(q.op)) continue;
     if (JSON.stringify(q.args).includes('"mount"') || (isObj(q.args[0]) && 'mount' in q.args[0])) continue;
     const key = q.op + '|' + J(q.args);
-    if (have.has(key)) continue;
+    if (have.has(key)) { const sc = storyCase.get(key); if (sc && !sc.named) { sc.name = `${file}: ${q.story}: ${q.op}, question ${n}`; sc.story = q.story; sc.named = true; } continue; }
     const c = { op: q.op, args: q.args };
     const o1 = askOracle(c), o2 = askOracle(c);
     if (!same(o1, o2)) continue;
     if (o1.err && noOp(o1)) continue;
     const k = askCore(c);
-    c.name = `${q.story} (${source}): ${q.op}, question ${n}`;
+    c.name = `${file}: ${q.story}: ${q.op}, question ${n}`;
     c.story = q.story;
     const r = judgeCase({ exact: true }, o1, k);
     if (r.fault) { report.faults.push({ name: c.name, op: c.op, oracle: r.fault.oracle, core: r.fault.core }); continue; }
@@ -575,7 +522,7 @@ for (const v of V.headers || []) {
 }
 for (const v of [...(V.envelopes || []), ...((V.sealed || {}).cases || [])]) {
   try {
-    const priv = V.keys[v.recipient].x25519_private;
+    const priv = V.keys[v.recipient].x25519_private || V.keys[v.recipient].xwing_private; // an X-Wing recipient's private seed
     const m = v.envelope ? O.unwrap(O.open(v.envelope, priv)) : O.openCopy(v.message, priv);
     v.opens_to = { hash: m.hash, signature: m.signature, ...(v.opens_to && 'reveals' in v.opens_to ? { reveals: m.reveals } : {}) };
   } catch (e) { sectionFault(`sealed: ${v.name}`, e.message); }
@@ -589,7 +536,7 @@ if (V.messages) {
     const signer = typeof signerOf_(x) === 'string' && V.keys[signerOf_(x)] ? signerOf_(x) : MS.node_signer;
     x.message = resignPart(x.message, signer);
   }
-  // the push answer in the current shape (unjudged, unread: 1.8 stage 2), rebuilt by the oracle's node and checked against the core's
+  // the push answer in the current shape (unjudged, unread), rebuilt by the oracle's node and checked against the core's
   if (isObj(MS.push_answer) && isObj(MS.push_answer.message)) {
     const m = MS.push_answer.message, priv = V.keys[MS.node_signer].private_key;
     const re = O.door('push_answer', { ...m, ...(m.waiting !== undefined && m.unjudged === undefined ? { unjudged: m.waiting } : {}) }, m.node, priv);
@@ -621,7 +568,7 @@ if (V.cbor) {
 // ============================================================ 7b. a refused check is protocol evidence: each writer's case is asked of `read`
 // A case of `write_refusals` (a draft's refusals, a library op) shows what the protocol's closed lists and grammar refuse. The same check is
 // `read`'s (core.md, section 8, check 7), a protocol op: each such case is moved there, its draft signed as a block of one fixed test
-// identity (the reader of refused checks), the next block of her line, its other blocks held beside her genesis. A case whose block would
+// identity (the reader of refused checks), the next block of her line, its other blocks given beside her genesis. A case whose block would
 // not be valid (a draft the valid check already turns away: too deep, a number out of range) stays the writer's case.
 {
   const P = JSON.parse(fs.readFileSync(path.join(ROOT, 'spec', 'protocol.json'), 'utf8'));
@@ -678,9 +625,9 @@ if (V.cbor) {
       : { type: 'observe', state: { kind: 'note', ...(k === 'answers' ? { status: 'declined' } : {}), at: '2026-10-15T12:02:00.000Z', audience: 'public', seq: 2 }, refs: { author: G.hash, prev: note.hash } };
     base.refs[k] = [k === 'prev' || k === 'answers' || k === 'updates' ? note.hash : G.hash];
     const block = prior(base);
-    const held = [G, note];
+    const blocks = [G, note];
     const name = `a set of ids in refs.${k} is refused: ${k} holds one id (core.md, section 1)`;
-    let rc = { name, op: 'read', args: [block, held], codes: [] };
+    let rc = { name, op: 'read', args: [block, blocks], codes: [] };
     let o = askOracle(rc), kk = askCore(rc);
     if (o.err && kk.err) { rc = { ...rc, op: 'valid' }; o = askOracle(rc); kk = askCore(rc); }
     const r = judgeCase(rc, o, kk);
@@ -694,6 +641,8 @@ if (V.cbor) {
 
 // ============================================================ 8. write
 M.tagInvariants(keptCases);
+for (const c of keptCases) delete c.named;
+delete V.invariant_numbers; // the invariants have one numbering, core.md section 9
 const protocolCases = keptCases.filter((c) => classOf(c.op) === 'protocol');
 const otherCases = keptCases.filter((c) => classOf(c.op) !== 'protocol').map((c) => ({ class: classOf(c.op), ...c }));
 report.counts = { kept: report.kept.length, renewed: report.renewed.length, deleted: report.deleted.length, added: report.added.length, faults: report.faults.length, protocol: protocolCases.length, conventions: otherCases.length };
@@ -708,7 +657,7 @@ if (report.faults.length) {
 if (DRY) process.exit(0);
 V.$comment = 'FoodBlock conformance vectors: the cases of the sound part and of the word ops (core.md, section 12; protocol.json door.protocol). Written by tools/vectors.cjs from both engines: each answer is the oracle\'s (spec/oracle, written from the text alone), and the Rust core gives the same; never edit by hand. Test keys come from fixed seeds (tools/vectors/keys.json holds every test key that signs here): never use them for anything real. Sections: keys; canonical; hashes (one block of every type) and ledger (its genesis blocks); audience; signatures; bad_signatures; envelopes; sealed; headers; messages; cbor (the key table is conventions.json cbor.keys); door (an op, its arguments, and its answer: `expect` is a subset match unless `exact`, `codes` the refusal codes, `error` a failure; `invariants` the invariants\' numbers, 07-last.md E1). The cases of readings, library tools and a node\'s own business are in conventions-vectors.json.';
 V.door = protocolCases;
-const order = ['$comment', 'invariant_numbers', 'keys', 'canonical', 'hashes', 'ledger', 'audience', 'signatures', 'bad_signatures', 'envelopes', 'sealed', 'headers', 'messages', 'cbor', 'door'];
+const order = ['$comment', 'keys', 'canonical', 'hashes', 'ledger', 'audience', 'signatures', 'bad_signatures', 'envelopes', 'sealed', 'headers', 'messages', 'cbor', 'door'];
 const outV = Object.fromEntries([...order.filter((k) => k in V), ...Object.keys(V).filter((k) => !order.includes(k))].map((k) => [k, V[k]]));
 fs.writeFileSync(FILE, JSON.stringify(outV, null, 1) + '\n');
 fs.writeFileSync(CFILE, JSON.stringify({ $comment: 'The cases of every door op outside the protocol (conventions.json door.classes: readings, library tools, a node\'s own business), written by tools/vectors.cjs beside spec/vectors.json, from both engines. Nobody must run them to speak FoodBlock (core.md, section 12). Same shape as vectors.json\'s door section, with each case\'s class.', door: otherCases }, null, 1) + '\n');

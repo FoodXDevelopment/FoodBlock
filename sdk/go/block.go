@@ -62,11 +62,3 @@ func blockList(m map[string]Block) []Block {
 	}
 	return out
 }
-
-func hashesOfBlocks(blocks []Block) []string {
-	out := []string{}
-	for _, b := range blocks {
-		out = append(out, b.id())
-	}
-	return out
-}

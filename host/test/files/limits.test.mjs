@@ -13,7 +13,7 @@ const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'limits-'))
 const numbers = { cap: 100, servesPairs: true, takesPairs: false, allow: null, perStranger: 5, strangersPerDay: 8, admission: null, copyRecipients: 3, copyBytes: 100000 }
 const at = (i) => `2026-11-08T09:${String(i % 60).padStart(2, '0')}:00.000Z`
 const person = () => { const keys = fb.generateKeypair(), enc = fb.generateEncryptionKeypair(), genesis = fb.identity.genesis(keys, { kind: 'person', audience: 'public', at: at(0) }); return { keys, enc, genesis, id: genesis.hash } }
-const notes = (who, n) => { const held = [who.genesis], out = []; for (let i = 1; i <= n; i++) { const b = fb.write('observe', { kind: 'note', text: `n${i}` }, i > 1 ? { prev: out.at(-1).hash } : {}, { author: who.id, key: who.keys, held, at: at(i), audience: 'public' }); held.push(b); out.push(b) } return out }
+const notes = (who, n) => { const blocks = [who.genesis], out = []; for (let i = 1; i <= n; i++) { const b = fb.write('observe', { kind: 'note', text: `n${i}` }, i > 1 ? { prev: out.at(-1).hash } : {}, { author: who.id, key: who.keys, blocks, at: at(i), audience: 'public' }); blocks.push(b); out.push(b) } return out }
 let counter = 0
 
 test('the host refuses to start with any number left unstated, naming it', () => {
@@ -30,7 +30,7 @@ test('the host refuses to start with any number left unstated, naming it', () =>
 
 test('one signed push naming 2,000 recipients for one sealed block writes no copies: the owner\'s copyRecipients and copyBytes bound it', () => {
   const host = initHost(tmp(), numbers), eve = person()
-  const b = fb.write('observe', { kind: 'note', text: 'y'.repeat(20000) }, {}, { author: eve.id, key: eve.keys, held: [eve.genesis], at: at(1), audience: [eve.id] })
+  const b = fb.write('observe', { kind: 'note', text: 'y'.repeat(20000) }, {}, { author: eve.id, key: eve.keys, blocks: [eve.genesis], at: at(1), audience: [eve.id] })
   const { salts, ...signed } = b
   const sealed = fb.sealCopy(signed, { keys: [eve.enc.public_key_encrypt], reveals: [fb.revealFor(salts, eve.id)] })
   const recipients = Array.from({ length: 2000 }, (_, i) => i.toString(16).padStart(64, '0'))
@@ -88,14 +88,14 @@ test('an unsigned HTTP import is a stranger\'s too; the owner\'s token makes it 
   s.close()
 })
 
-// ---- Report 06 (F5, F6, F7, F9, F10, F11): what a stranger can make the host spend ----
+// ---- what a stranger can make the host spend ----
 const sealedBy = (who, text) => {
-  const b = fb.write('observe', { kind: 'note', text }, {}, { author: who.id, key: who.keys, held: [who.genesis], at: at(1), audience: [who.id] })
+  const b = fb.write('observe', { kind: 'note', text }, {}, { author: who.id, key: who.keys, blocks: [who.genesis], at: at(1), audience: [who.id] })
   const { salts, ...signed } = b
   return { signed, message: fb.sealCopy(signed, { keys: [who.enc.public_key_encrypt], reveals: [fb.revealFor(salts, who.id)] }) }
 }
 
-test('F5: sealed copies count against a stranger like blocks, and are kept only for people the host knows', () => {
+test('sealed copies count against a stranger like blocks, and are kept only for people the host knows', () => {
   const host = initHost(tmp(), numbers), eve = person(), known = person()
   host.ingest([fb.wrap(known.genesis)], { owner: true })
   const { signed, message } = sealedBy(eve, 'y'.repeat(200))
@@ -114,7 +114,7 @@ test('F5: sealed copies count against a stranger like blocks, and are kept only 
   void counter
 })
 
-test('F6: a wake calls the owner\'s callback once per wait, however often it is sent', () => {
+test('a wake calls the owner\'s callback once per wait, however often it is sent', () => {
   const dir = tmp(), a = person(), woken = []
   initHost(dir, numbers)
   const host = openHost(dir, { onWake: (id) => woken.push(id) })
@@ -123,7 +123,7 @@ test('F6: a wake calls the owner\'s callback once per wait, however often it is 
   assert.equal(woken.length, 1)
 })
 
-test('F6, F7: unsigned pulls, wakes and exports are answered so many a minute from one address; the whole store is the owner\'s', async () => {
+test('unsigned pulls, wakes and exports are answered so many a minute from one address; the whole store is the owner\'s', async () => {
   const host = initHost(tmp(), { ...numbers, unsignedPerMinute: 5 }), a = person()
   host.ingest([fb.wrap(a.genesis)])
   const s = await serve(host, { port: 0 }), url = `http://127.0.0.1:${s.address().port}`
@@ -140,18 +140,18 @@ test('F6, F7: unsigned pulls, wakes and exports are answered so many a minute fr
   s.close()
 })
 
-test('F7: a pull is answered from a window of the log, not the whole store, and still carries a forked pair\'s proof', () => {
+test('a pull is answered from a window of the log, not the whole store, and still carries a forked pair\'s proof', () => {
   const host = initHost(tmp(), { ...numbers, cap: 10 }), a = person()
   host.ingest([fb.wrap(a.genesis), ...notes(a, 4).map((x) => fb.wrap(x))], { owner: true })
   const answer = host.pull({ since: 1 })
   assert.deepEqual(answer.blocks.map((one) => one.n), [2, 3, 4, 5])
-  const rival = fb.write('observe', { kind: 'note', text: 'rival' }, {}, { author: a.id, key: a.keys, held: [a.genesis], at: at(30), audience: 'public' })
+  const rival = fb.write('observe', { kind: 'note', text: 'rival' }, {}, { author: a.id, key: a.keys, blocks: [a.genesis], at: at(30), audience: 'public' })
   host.ingest([fb.wrap(rival)], { owner: true })
   const proof = host.pull({ since: 0, limit: 1 })
   assert.ok(proof.blocks.some((one) => fb.unwrap(one.message).hash === rival.hash) || proof.blocks.length >= 1)
 })
 
-test('F10, F11: a 500 names nothing of the host, and its files are private to its owner', async () => {
+test('a 500 names nothing of the host, and its files are private to its owner', async () => {
   const dir = tmp(), host = initHost(dir, numbers), a = person()
   host.ingest([fb.wrap(a.genesis)])
   host.wake(a.id)

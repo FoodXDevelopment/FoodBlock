@@ -1,10 +1,27 @@
-//! The store (FoodBlock 1.8, stage 2): `valid` says who said these bytes, `read` whether this reader can read them, and a fold answers only
-//! from a line it holds whole (core.md, sections 2, 6, 8, 9; canonical.md, On the wire; folds.md, A line; nodes.md, The arrival log). Each
+//! The store: `valid` says who said these bytes, `read` whether this reader can read them, and a fold answers only
+//! from a line it holds whole (core.md, sections 2, 6, 8, 9; canonical.md, On the wire; folds.md, A chain; nodes.md, The arrival log). Each
 //! test is a small world of signed blocks, asked through the door.
 use foodblock::door::answer;
 use foodblock::identity::{genesis, GenesisOptions};
 use foodblock::{keypair_from_seed, keypair_from_seed_in, write, ComposeOptions, Keypair, Readers, WriteOptions};
 use serde_json::{json, Value};
+
+/// A deal's terms in the one form: the price and quantity named here move into one line (with the thing, when there is one).
+fn deal_terms(mut t: Value, what: Option<impl AsRef<str>>) -> Value {
+    let mut line = json!({ "id": "item" });
+    for k in ["quantity", "price"] {
+        if let Some(v) = t.as_object_mut().unwrap().remove(k) {
+            line[k] = v;
+        }
+    }
+    if let Some(w) = what {
+        line["what"] = json!(w.as_ref());
+    }
+    if line.as_object().unwrap().len() > 1 {
+        t["lines"] = json!([line]);
+    }
+    t
+}
 
 fn call(op: &str, args: Value) -> Value {
     let out = answer(op.as_bytes(), args.to_string().as_bytes());
@@ -47,7 +64,7 @@ impl World {
         let o = WriteOptions {
             compose: ComposeOptions { author: author.into(), at: Some(at), audience: Some(Readers::Public), ..Default::default() },
             key: Some(key),
-            held: &self.blocks,
+            blocks: &self.blocks,
             schemas: None,
         };
         let b = write(t, &state, &refs, &o).unwrap_or_else(|e| panic!("{t} {state}: {e:?}"));
@@ -72,7 +89,7 @@ impl World {
             r["key"] = json!(k);
         }
         let mut b = call("create", json!([t, s, r]));
-        // 1.9 3a-3: `sign` refuses what its own `read` refuses; a block signed by hand is signed over its header as a message part
+        // `sign` refuses what its own `read` refuses; a block signed by hand is signed over its header as a message part
         let header = call("header", json!([b]));
         b["signature"] = call("sign_message", json!([header, key.private_key]))["signature"].clone();
         b
@@ -109,24 +126,24 @@ fn a_block_an_older_reader_cannot_read_is_valid_and_not_read() {
     let b41 = w.signed(&g, &k, "promise", json!({ "what": "loaves", "sparkle": "new" }), json!({}), &g, 1, None);
     w.blocks.push(b41.clone());
     let b42 = w.mine(&maria, "thing", json!({ "kind": "loaf" }), json!({}));
-    let held = json!(w.blocks);
-    assert!(codes(&call("valid", json!([b41, held]))).is_empty());
-    assert_eq!(codes(&call("read", json!([b41, held]))), ["undeclared_field"]);
-    assert!(codes(&call("valid", json!([b42, held]))).is_empty());
-    assert!(codes(&call("read", json!([b42, held]))).is_empty());
+    let blocks = json!(w.blocks);
+    assert!(codes(&call("valid", json!([b41, blocks]))).is_empty());
+    assert_eq!(codes(&call("read", json!([b41, blocks]))), ["undeclared_field"]);
+    assert!(codes(&call("valid", json!([b42, blocks]))).is_empty());
+    assert!(codes(&call("read", json!([b42, blocks]))).is_empty());
     let got = call("accept", json!([[b41, b42], [w.blocks[0]], { "takes_pairs": false }, null]));
     let mut both = vec![hash(&b41).to_string(), hash(&b42).to_string()];
     both.sort();
     assert_eq!(got["taken"], json!(both));
     assert_eq!(got["unread"], json!([{ "hash": hash(&b41), "codes": ["undeclared_field"] }]));
-    assert_eq!(call("read_whole", json!([hash(&b42), g, held])), json!({ "whole": false, "lacks": [hash(&b41)] }));
+    assert_eq!(call("read_whole", json!([hash(&b42), g, blocks])), json!({ "whole": false, "lacks": [hash(&b41)] }));
     // read is asked only of a valid body
     let other = w.person(2).keys;
     let forged = w.signed(&g, &other, "observe", json!({ "kind": "x" }), json!({}), &g, 9, None);
     assert_eq!(fails("read", json!([forged, w.blocks]))["error"], "argument");
 }
 
-// A block names its key grant in refs.key; until that piece is held it waits (`unmet`), and is unjudged in a push.
+// A block names its key grant in refs.key; until that piece is given it waits (`unmet`), and is unjudged in a push.
 #[test]
 fn a_block_before_its_key_grant_waits() {
     let mut w = World::new();
@@ -152,12 +169,12 @@ fn a_block_before_its_key_grant_waits() {
     let forged = w.signed(&id, &forger, "grant", json!({ "kind": "key", "public_key_sign": forger.public_key_sign }), json!({ "subject": id }), &id, 9, None);
     assert_eq!(codes(&call("valid", json!([forged, w.blocks]))), ["bad_signature"]);
     let on = w.signed(&id, &forger, "observe", json!({ "kind": "note" }), json!({}), hash(&forged), 1, Some(hash(&forged)));
-    let mut held = w.blocks.clone();
-    held.push(forged.clone());
-    let found = call("valid", json!([on, held]));
+    let mut blocks = w.blocks.clone();
+    blocks.push(forged.clone());
+    let found = call("valid", json!([on, blocks]));
     assert_eq!(codes(&found), ["bad_piece"]);
     assert!(found[0]["detail"].as_str().unwrap().contains(hash(&forged)));
-    assert_eq!(call("accept", json!([[on], held, { "takes_pairs": false }, null]))["refused"][0]["code"], "bad_piece");
+    assert_eq!(call("accept", json!([[on], blocks, { "takes_pairs": false }, null]))["refused"][0]["code"], "bad_piece");
 }
 
 // No block waits for its prev: a lost block leaves the later ones valid, and the line not whole.
@@ -166,14 +183,14 @@ fn a_lost_block_leaves_the_line_not_whole() {
     let mut w = World::new();
     let maria = w.person(1);
     let b: Vec<Value> = (1..=5).map(|n| w.mine(&maria, "observe", json!({ "kind": "note", "n": n }), json!({}))).collect();
-    let held = without(&w.blocks, &[&b[2]]);
-    assert!(codes(&call("valid", json!([b[3], held]))).is_empty());
-    assert_eq!(call("read_whole", json!([hash(&b[3]), hash(&b[0]), held])), json!({ "whole": false, "lacks": [hash(&b[2])] }));
+    let blocks = without(&w.blocks, &[&b[2]]);
+    assert!(codes(&call("valid", json!([b[3], blocks]))).is_empty());
+    assert_eq!(call("read_whole", json!([hash(&b[3]), hash(&b[0]), blocks])), json!({ "whole": false, "lacks": [hash(&b[2])] }));
     let held2 = without(&w.blocks, &[&b[2], &b[3]]);
     assert_eq!(call("read_whole", json!([hash(&b[4]), hash(&b[0]), held2])), json!({ "whole": false, "lacks": [hash(&b[3]), { "author": maria.id, "key": null, "seq": 3 }] }));
     assert_eq!(call("read_whole", json!([hash(&b[4]), hash(&b[0]), w.blocks])), json!({ "whole": true, "lacks": [] }));
     assert_eq!(fails("read_whole", json!([hash(&b[4]), "e".repeat(64), w.blocks]))["error"], "argument");
-    let chain = call("check_chain", json!([held, maria.id]));
+    let chain = call("check_chain", json!([blocks, maria.id]));
     assert_eq!(chain["gaps"], json!([3]));
 }
 
@@ -192,12 +209,12 @@ fn a_pair_is_one_prev_or_one_seq() {
         p.sort();
         json!([p])
     };
-    let mut held = w.blocks.clone();
-    held.extend([a.clone(), b.clone()]);
-    assert_eq!(call("fork_pairs", json!([held])), pair(&a, &b));
-    let mut held = w.blocks.clone();
-    held.extend([a.clone(), c.clone()]);
-    assert_eq!(call("fork_pairs", json!([held])), pair(&a, &c), "one seq, a made-up prev");
+    let mut blocks = w.blocks.clone();
+    blocks.extend([a.clone(), b.clone()]);
+    assert_eq!(call("fork_pairs", json!([blocks])), pair(&a, &b));
+    let mut blocks = w.blocks.clone();
+    blocks.extend([a.clone(), c.clone()]);
+    assert_eq!(call("fork_pairs", json!([blocks])), pair(&a, &c), "one seq, a made-up prev");
     let headers: Vec<Value> = [&a, &b].iter().map(|x| json!({ "header": call("header", json!([x])), "header_signature": x["signature"] })).collect();
     assert_eq!(call("fork_pairs", json!([[w.blocks[0], headers[0], headers[1]]])), pair(&a, &b), "two headers are the whole proof");
     let got = call("accept", json!([[a, c], [w.blocks[0]], { "takes_pairs": false }, null]));
@@ -206,7 +223,7 @@ fn a_pair_is_one_prev_or_one_seq() {
     assert_eq!(chain["equivocations"], pair(&a, &c));
 }
 
-// A held header is valid on its pieces and its signature; one that is not the signed header is not.
+// A header a reader has is valid on its pieces and its signature; one that is not the signed header is not.
 #[test]
 fn a_held_header_is_judged_by_its_signature() {
     let mut w = World::new();
@@ -219,7 +236,7 @@ fn a_held_header_is_judged_by_its_signature() {
     assert_eq!(codes(&call("valid", json!([moved, w.blocks]))), ["bad_signature"]);
     let mut extra = message.clone();
     extra["header"]["at"] = json!("2026-11-11T00:00:00.000Z");
-    // 1.9 3a-1: a held header's wrong keys are its header's fault (`chain`): `valid` gives one of eight codes
+    // a header given alone's wrong keys are its header's fault (`chain`): `valid` gives one of eight codes
     assert_eq!(codes(&call("valid", json!([extra, w.blocks]))), ["chain"]);
     assert_eq!(fails("read", json!([message, w.blocks]))["error"], "argument");
 }
@@ -238,16 +255,16 @@ fn the_wire_has_one_spelling_and_text_no_table() {
         assert_eq!(codes(&r), ["not_canonical"], "{bad}");
         assert_eq!(r[0]["hash"], call("hash_hex", json!([bad])));
     }
-    // 1.9 3a-8: a push is exactly { messages, for }
+    // a push is exactly { messages, for }
     let push = |block: &str| format!("{{\"for\":\"x\",\"messages\":[{{\"block\":{block},\"signature\":\"{}\"}}]}}", loaf["signature"].as_str().unwrap());
-    // 1.9 3a-9: one list per message, plus one field for a refusal of the whole push
+    // one list per message, plus one field for a refusal of the whole push
     assert_eq!(call("strict_push", json!([push(&text)])), json!({ "messages": [[]] }));
     let respelled = push(&text.replace("450", "450.0"));
     let whole = call("strict_push", json!([respelled]));
     assert_eq!(whole["refused"]["code"], "not_canonical");
     assert_eq!(whole["refused"]["hash"], call("hash_hex", json!([respelled])));
     let float = push(&text.replace("450", "1.5"));
-    assert_eq!(call("strict_push", json!([float]))["refused"]["code"], "not_canonical", "1.9 3a-8: a float inside one block refuses the whole push");
+    assert_eq!(call("strict_push", json!([float]))["refused"]["code"], "not_canonical", "a float inside one block refuses the whole push");
     // two Unicode spellings of one word are two texts
     let nfc = w.mine(&maria, "thing", json!({ "kind": "caf\u{e9}" }), json!({}));
     let nfd = w.mine(&maria, "thing", json!({ "kind": "cafe\u{301}" }), json!({}));
@@ -272,7 +289,7 @@ fn a_passkey_signature_is_framed_and_capped() {
     let challenge = call("passkey_challenge", json!([block])).as_str().unwrap().to_string();
     let signer = p256::ecdsa::SigningKey::from_slice(&[0x21; 32]).unwrap();
     let mut auth = vec![7u8; 32];
-    // user present and user verified (1.9 3d-13)
+    // user present and user verified (passkey flags)
     auth.extend([5, 0, 0, 0, 0]);
     let sign = |cdj: &[u8]| {
         let mut m = auth.clone();
@@ -315,7 +332,7 @@ fn a_stranger_brings_his_pieces_and_only_asks_are_counted() {
     assert_eq!(codes(&call("admission_refusals", json!([ask, maria.id, w.blocks, rule, 20]))), ["not_admitted"]);
 }
 
-// The push answer: unjudged and unread, every key but receipt and held always there.
+// The push answer: unjudged and unread, every key but receipt and had always there.
 #[test]
 fn a_push_answer_lists_unjudged_and_unread() {
     let mut w = World::new();
@@ -345,7 +362,7 @@ fn a_door_log_shows_what_was_left_out_and_an_export_is_whole() {
     let door = keypair_from_seed(&"99".repeat(32)).unwrap();
     let log = w.mine(&node, "grant", json!({ "kind": "key", "public_key_sign": door.public_key_sign }), json!({ "subject": node.id }));
     let again = w.mine(&node, "observe", json!({ "kind": "note" }), json!({ "confirms": [log["hash"]] }));
-    let offer = w.mine(&maria, "promise", json!({ "terms": { "quantity": { "value": "1", "unit": "loaf" } } }), json!({ "what": maria.id, "from": maria.id }));
+    let offer = w.mine(&maria, "promise", json!({ "terms": deal_terms(json!({ "quantity": { "value": "1", "unit": "loaf" } }), Some(&maria.id)) }), json!({ "from": maria.id }));
     let accept = w.mine(&harry, "promise", json!({ "status": "accepted" }), json!({ "answers": offer["hash"], "for": offer["hash"] }));
     let note = w.mine(&harry, "observe", json!({ "kind": "note" }), json!({ "to": maria.id }));
     let nid = node.id.clone();
@@ -354,7 +371,7 @@ fn a_door_log_shows_what_was_left_out_and_an_export_is_whole() {
         let o = WriteOptions {
             compose: ComposeOptions { author: nid.clone(), at: Some(at), audience: Some(Readers::To(vec![maria.id.clone(), harry.id.clone()])), after: vec![again["hash"].as_str().unwrap().into()], ..Default::default() },
             key: Some(&door),
-            held: &w.blocks,
+            blocks: &w.blocks,
             schemas: None,
         };
         let b = write("observe", &json!({ "kind": kind }), &json!({ "derives_from": [of["hash"]], "subject": maria.id }), &o).unwrap();

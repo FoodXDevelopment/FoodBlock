@@ -2,8 +2,6 @@
 
 Not normative. A pattern adds no rule. A secret vote in a circle.
 
-**Adds:** a counter, sealed votes, a signed result, and the reading `counted_in`.
-
 - A vote's rule (a schema, named in `refs.under` of the shared record, circles.md) names a **counter**: an actor.
 - Each vote is sealed to the counter alone and carries the choice as a commitment (privacy.md, A commitment).
 - The counter signs the result and lists the commitments it counted in `state.counted`, so each voter can check theirs.

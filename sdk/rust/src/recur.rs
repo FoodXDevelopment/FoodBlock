@@ -1,5 +1,5 @@
 //! The occurrences of a calendar repeat (promises.md, Terms: `repeat`, `zone`): an RFC 5545 RRULE counted from the start of
-//! `state.when` and read in `terms.zone` by the IANA time zone database, release `TZDB`, bundled so every core reads the same wall clock.
+//! `state.when` and read in `terms.zone` by the IANA time zone database, release `TZDB`, bundled: a reading (readings/calendar.md), whose release is the reader's own.
 //! An occurrence is named by its start time, in UTC, as `time::iso` writes it. A wall time that does not exist (the clock jumped over
 //! it) falls where the offset before the jump puts it; one that happens twice is its first. What this core cannot read it refuses
 //! (a part it does not know, another calendar): it never guesses.
@@ -69,7 +69,7 @@ fn ints(key: &str, v: &str, lo: i64, hi: i64, signed: bool) -> Result<Vec<i64>, 
         .collect()
 }
 
-fn until(v: &str, tz: &TimeZone) -> Result<Until, String> {
+fn until(v: &str) -> Result<Until, String> {
     let bad = || "UNTIL is a date (YYYYMMDD) or a date and time (YYYYMMDDTHHMMSS, with Z for UTC)".to_string();
     let num = |a: usize, b: usize| v.get(a..b).and_then(|x| x.parse::<i64>().ok()).ok_or_else(bad);
     if v.len() == 8 {
@@ -84,7 +84,6 @@ fn until(v: &str, tz: &TimeZone) -> Result<Until, String> {
             }
             return Ok(Until::Utc(UTC.to_ambiguous_timestamp(d).compatible().map_err(|e| e.to_string())?.as_millisecond()));
         }
-        let _ = tz;
         return Ok(Until::Local(d));
     }
     Err(bad())
@@ -92,7 +91,7 @@ fn until(v: &str, tz: &TimeZone) -> Result<Until, String> {
 
 const UTC: TimeZone = TimeZone::UTC;
 
-fn parse(repeat: &str, tz: &TimeZone) -> Result<Rule, String> {
+fn parse(repeat: &str) -> Result<Rule, String> {
     let mut r = Rule {
         freq: Freq::Daily,
         interval: 1,
@@ -142,7 +141,7 @@ fn parse(repeat: &str, tz: &TimeZone) -> Result<Rule, String> {
             }
             "INTERVAL" => r.interval = v.parse::<i64>().ok().filter(|n| *n >= 1 && *n <= 1_000_000).ok_or("INTERVAL is a whole number from 1")?,
             "COUNT" => r.count = Some(v.parse::<u64>().ok().filter(|n| *n >= 1).ok_or("COUNT is a whole number from 1")?),
-            "UNTIL" => r.until = Some(until(v, tz)?),
+            "UNTIL" => r.until = Some(until(v)?),
             "BYMONTH" => r.month = ints(k, v, 1, 12, true)?,
             "BYMONTHDAY" => r.monthday = ints(k, v, -31, 31, true)?,
             "BYYEARDAY" => r.yearday = ints(k, v, -366, 366, true)?,
@@ -236,7 +235,7 @@ fn passes(r: &Rule, d: Date, start: Date) -> bool {
 /// The occurrences `from <= start < to` (UTC milliseconds) of the repeat counted from `when`, read in `zone`, as UTC times.
 pub fn occurrences(when: &str, repeat: &str, zone: &str, from: i64, to: i64) -> Result<Vec<String>, String> {
     let tz = TimeZone::get(zone).map_err(|_| format!("the time zone {zone} is not in the IANA database (release {TZDB})"))?;
-    let rule = parse(repeat, &tz)?;
+    let rule = parse(repeat)?;
     let start_ms = time::parse(when).ok_or("the start of the promise (state.when) is a time")?;
     let start = local(&tz, start_ms)?;
     let start_date = start.date();

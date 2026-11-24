@@ -26,13 +26,12 @@ const same = (a, b) => JSON.stringify(sortKeys(a)) === JSON.stringify(sortKeys(b
 // subset: every key given in want must match; arrays must have the same length and match element by element
 const subset = (got, want) => Array.isArray(want) ? (Array.isArray(got) && got.length === want.length && want.every((v, i) => subset(got[i], v)))
   : want && typeof want === 'object' ? (got !== null && typeof got === 'object' && Object.entries(want).every(([k, v]) => subset(got[k], v))) : same(got, want);
-// 1.8 stage 2: `check` is gone (valid and read). The strict check a vector's `refused` and `by: check` cases ask is what a block's bytes and values say, then check 8 with nothing held.
+// The strict check a vector's `refused` and `by: check` cases ask is what a block's bytes and values say, then check 8 with nothing given.
 const refusals = (type, state, refs) => fb.writeFindings({ type, state, refs });
 const codesOf = list => [...new Set(list.map(x => x.code))];
 const full = b => ({ hash: b.hash, ...b.block, ...(b.suite ? { suite: b.suite } : {}), signature: b.signature });
 const blocksOf = list => list.map(full);
 const pub = signer => V.keys[signer].public_key_sign;
-const bare = b => ({ type: b.type, state: b.state, refs: b.refs });
 
 // ---------------------------------------------------------------- canonical-vectors.json
 const CHECKED = ['same_as', 'not_same_as', 'canonical_contains', 'canonical', 'refused'];
@@ -106,9 +105,15 @@ for (const v of V.bad_signatures) rec('bad_signatures', v.name, !opens(v));
 
 // ---------------------------------------------------------------- envelopes, sealed copies, public headers
 for (const v of V.envelopes) attempt('envelopes', v.name, () => {
-  const m = fb.open(v.envelope, V.keys[v.recipient].x25519_private);
+  const m = fb.open(v.envelope, V.keys[v.recipient].x25519_private || V.keys[v.recipient].xwing_private); // an X-Wing recipient opens with its 32-byte private seed
   return fb.hashOfBlock(m.block, 'std') === v.opens_to.hash && m.signature === v.opens_to.signature;
 });
+// X-Wing (privacy.md, A KEM key): the oracle's own derivation, from Node's crypto, against the draft's test vector
+{
+  const D = V.xwing_draft11, B = require('./bytes.cjs');
+  attempt('envelopes', 'X-Wing: the key of draft-connolly-cfrg-xwing-kem-11 appendix C comes from its private seed', () => B.xwingPublicOf(D.sk) === 'xwing:' + D.pk);
+  attempt('envelopes', 'X-Wing: its ciphertext decapsulates to its shared secret', () => B.xwingDecaps(B.xwingKeys(D.sk), Buffer.from(D.ct, 'hex')).toString('hex') === D.ss);
+}
 for (const v of V.sealed.cases) attempt('sealed', v.name, () => {
   const m = fb.openCopy(v.message, V.keys[v.recipient].x25519_private);
   return m.hash === v.opens_to.hash && m.signature === v.opens_to.signature && same(m.reveals, v.opens_to.reveals) && fb.headerSignedBy(v.message, pub(v.signer));
@@ -174,6 +179,19 @@ for (const d of [...V.door, ...CVEC.door]) {
     if (d.codes) return same(codesOf(got), d.codes);
     return d.exact ? same(got, d.expect) : subset(got, d.expect);
   });
+}
+
+// ---------------------------------------------------------------- the audit's worlds, frozen as their answers (audit-vectors.json)
+{
+  const AV = require(SPEC + 'audit-vectors.json');
+  for (const w of AV.worlds) {
+    w.cases.forEach((c, i) => attempt('audit', `${w.name}: ${c.op} ${i}`, () => {
+      const args = c.args.map(a => (a === '$blocks' ? w.blocks : a));
+      let got;
+      try { got = fb.door(c.op, ...JSON.parse(JSON.stringify(args))); } catch (e) { return c.error === true; }
+      return !c.error && subset(got, c.expect);
+    }));
+  }
 }
 
 // ---------------------------------------------------------------- report

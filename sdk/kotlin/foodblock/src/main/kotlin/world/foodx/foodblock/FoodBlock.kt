@@ -67,7 +67,7 @@ internal fun audienceJson(audience: List<String>): JsonElement? = when {
 }
 
 /**
- * What `write` needs beside the words. `held` is the author's genesis, key grants and blocks (so the chain stays one
+ * What `write` needs beside the words. `blocks` is the author's genesis, key grants and blocks (so the chain stays one
  * line) and anything the block names. `audience` is required: [PUBLIC], or the recipients (a private block is written as
  * commitments, not names); `at` is required, a time the caller states (or `clockless`). Left out, the core refuses; nothing is filled in.
  * `salts` and `nonce` only reproduce a vector.
@@ -75,7 +75,7 @@ internal fun audienceJson(audience: List<String>): JsonElement? = when {
 data class WriteOptions(
     val author: String,
     val key: Keypair,
-    val held: List<JsonObject> = emptyList(),
+    val blocks: List<JsonObject> = emptyList(),
     val at: String? = null,
     val audience: List<String> = emptyList(),
     val after: List<String> = emptyList(),
@@ -90,7 +90,7 @@ data class WriteOptions(
     internal fun toJson(): JsonObject = buildJsonObject {
         put("author", author)
         put("key", key.toJson())
-        put("held", JsonArray(held))
+        put("blocks", JsonArray(blocks))
         at?.let { put("at", it) }
         audienceJson(audience)?.let { put("audience", it) }
         put("after", texts(after))
@@ -111,11 +111,10 @@ private fun JsonObject.typeName(): String = (this["type"] as? JsonPrimitive)?.co
 /**
  * FoodBlock 1.9. A block is `{ type, state, refs }` signed by its author's key; its id is the SHA-256 of its
  * canonical form. Blocks are JSON objects (`{ hash, type, state, refs, signature }`), the same shape on every SDK
- * and on the wire. Names follow the JavaScript reference: `sign` signs, `seal` encrypts, `open` opens. There is no
- * alias table and no reading of an older shape (year zero).
+ * and on the wire. Names follow the JavaScript reference: `sign` signs, `seal` encrypts, `open` opens.
  */
 object FoodBlock {
-    /** The protocol version this library writes (protocol.json `version`). */
+    /** The core's version number (a label: protocol.json names no version). */
     val VERSION: String by lazy { Door.version().string() }
 
     /** The peers of protocol.json this build supports, smallest first: micro, edge, node. */
@@ -138,10 +137,10 @@ object FoodBlock {
     fun hash(type: String, state: JsonElement, refs: JsonElement, suite: String = "std"): String =
         Door.hash(JsonPrimitive(type), state, refs, JsonPrimitive(suite)).string()
 
-    /** The id of a block, in the suite of the key that signed it (core.md, section 2), that key found among `held`; with none, in the
+    /** The id of a block, in the suite of the key that signed it (core.md, section 2), that key found among `blocks`; with none, in the
      *  suite the block shows (a genesis's own, else as its prev is hashed). No label names it. */
-    fun hash(block: JsonObject, held: List<JsonObject>? = null): String =
-        if (held == null) Door.idOf(block).string() else Door.idOf(block, JsonArray(held)).string()
+    fun hash(block: JsonObject, blocks: List<JsonObject>? = null): String =
+        if (blocks == null) Door.idOf(block).string() else Door.idOf(block, JsonArray(blocks)).string()
 
     /** SHA-256 of UTF-8 text, hex. */
     fun hashHex(text: String): String = Door.hashHex(JsonPrimitive(text)).string()
@@ -204,18 +203,18 @@ object FoodBlock {
         e.jsonArray.map { Refusal(it.jsonObject["code"]!!.string(), it.jsonObject["detail"]!!.string()) }
 
     /**
-     * What a writer refuses to sign (1.9 3a-3), asked of an unsigned draft before anyone signs it: every code `write`
-     * would refuse it with, read against the blocks `held`. Empty when it may be signed.
+     * What a writer refuses to sign (core.md, section 8), asked of an unsigned draft before anyone signs it: every code `write`
+     * would refuse it with, read against the blocks given. Empty when it may be signed.
      */
-    fun writeRefusals(draft: JsonObject, held: List<JsonObject> = emptyList()): List<Refusal> =
-        refusalsOf(Door.writeRefusals(draft, JsonArray(held)))
+    fun writeRefusals(draft: JsonObject, blocks: List<JsonObject> = emptyList()): List<Refusal> =
+        refusalsOf(Door.writeRefusals(draft, JsonArray(blocks)))
 
-    fun writeRefusals(type: String, state: JsonElement, refs: JsonElement, held: List<JsonObject> = emptyList()): List<Refusal> =
-        writeRefusals(buildJsonObject { put("type", type); put("state", state); put("refs", refs) }, held)
+    fun writeRefusals(type: String, state: JsonElement, refs: JsonElement, blocks: List<JsonObject> = emptyList()): List<Refusal> =
+        writeRefusals(buildJsonObject { put("type", type); put("state", state); put("refs", refs) }, blocks)
 
     /** Whether an unsigned draft, once signed, binds anyone: an accept, or a word under which something of its author would move. */
-    fun binds(draft: JsonObject, held: List<JsonObject> = emptyList()): Boolean =
-        Door.binds(draft, JsonArray(held)).bool()
+    fun binds(draft: JsonObject, blocks: List<JsonObject> = emptyList()): Boolean =
+        Door.binds(draft, JsonArray(blocks)).bool()
 
     /** A block's amount: a decimal string and a unit, never a float. `amount("3.9", "Cel")`; money is an amount: `amount("4.20", "GBP")`. `of` names a kind. */
     fun amount(value: String, unit: String, of: String? = null): JsonObject =
@@ -224,21 +223,21 @@ object FoodBlock {
     fun terms(given: JsonObject): JsonObject = Door.terms(given).obj()
 
     /**
-     * valid(block, held): who said these bytes (core.md, section 8): every refusal of a signed block (or a held header)
-     * against the blocks `held`, empty when valid. It reads no arrival and no clock.
+     * valid(block, blocks): who said these bytes (core.md, section 8): every refusal of a signed block (or a given header)
+     * against the blocks given, empty when valid. It reads no arrival and no clock.
      */
-    fun valid(block: JsonObject, held: List<JsonObject> = emptyList()): List<Refusal> =
-        refusalsOf(Door.valid(block, JsonArray(held)))
+    fun valid(block: JsonObject, blocks: List<JsonObject> = emptyList()): List<Refusal> =
+        refusalsOf(Door.valid(block, JsonArray(blocks)))
 
     /**
-     * read(block, held, schemas, runs): whether this reader can read a valid block; every code found, empty when it is read.
-     * `schemas` is the schema store ([schemasFrom]); `runs` the ids of the rule sets this reader runs (core.md, section 11).
+     * read(block, blocks, schemas): whether this reader can read a valid block; every code found, empty when it is read.
+     * `schemas` is the schema store ([schemasFrom]).
      */
-    fun read(block: JsonObject, held: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null, runs: List<String>? = null): List<Refusal> =
-        refusalsOf(Door.read(block, JsonArray(held), schemas?.let(::JsonArray) ?: JsonNull, runs?.let(::texts) ?: JsonNull))
+    fun read(block: JsonObject, blocks: List<JsonObject> = emptyList(), schemas: List<JsonObject>? = null): List<Refusal> =
+        refusalsOf(Door.read(block, JsonArray(blocks), schemas?.let(::JsonArray) ?: JsonNull))
 
-    /** The schema store of the blocks held: every thing of kind schema among them, ids ascending. */
-    fun schemasFrom(held: List<JsonObject>): List<JsonObject> = Door.schemasFrom(JsonArray(held)).jsonArray.map { it.obj() }
+    /** The schema store of the blocks given: every thing of kind schema among them, ids ascending. */
+    fun schemasFrom(blocks: List<JsonObject>): List<JsonObject> = Door.schemasFrom(JsonArray(blocks)).jsonArray.map { it.obj() }
 
     /** A block's bytes as they came (JSON text): size_limit, not_canonical, else the strict checks. */
     fun strictText(text: String): List<Refusal> = refusalsOf(Door.strictText(JsonPrimitive(text)))
@@ -274,13 +273,13 @@ object FoodBlock {
     }
 
     /** Whether the line is read whole from a block back to a start (folds.md, A line): `{ whole, lacks }`. */
-    fun readWhole(block: String, start: String, held: List<JsonObject> = emptyList()): JsonObject =
-        Door.readWhole(JsonPrimitive(block), JsonPrimitive(start), JsonArray(held)).obj()
+    fun readWhole(block: String, start: String, blocks: List<JsonObject> = emptyList()): JsonObject =
+        Door.readWhole(JsonPrimitive(block), JsonPrimitive(start), JsonArray(blocks)).obj()
 
     /** The hashes a block names, through every ref. */
     fun causesOf(block: JsonObject): List<String> = Door.causesOf(block).strings()
 
-    /** Every held block in a block's causal past (hashes; the block itself is not in it). */
+    /** Every given block in a block's causal past (hashes; the block itself is not in it). */
     fun pastOf(block: JsonObject, blocks: List<JsonObject>): List<String> = Door.pastOf(block, JsonArray(blocks)).strings()
 
     /** The blocks no other block among them has in its causal past. */
@@ -308,10 +307,10 @@ object FoodBlock {
 
     /** `{ block, signature }`: what goes on the wire. */
     fun wrap(signed: JsonObject): JsonObject = Door.wrap(signed).obj()
-    /** A block off the wire: its hash recomputed from its content, in the suite of the key that signed it (found among `held`, the
+    /** A block off the wire: its hash recomputed from its content, in the suite of the key that signed it (found among `blocks`, the
      *  author's blocks; core.md, section 2); with none, in the suite the block shows. */
-    fun unwrap(message: JsonObject, held: List<JsonObject>? = null): JsonObject =
-        (if (held == null) Door.unwrap(message) else Door.unwrap(message, JsonArray(held))).obj()
+    fun unwrap(message: JsonObject, blocks: List<JsonObject>? = null): JsonObject =
+        (if (blocks == null) Door.unwrap(message) else Door.unwrap(message, JsonArray(blocks))).obj()
     fun header(block: JsonObject): JsonObject = Door.header(block).obj()
     fun headerSignedBy(message: JsonObject, publicKey: String): Boolean =
         Door.headerSignedBy(message, JsonPrimitive(publicKey)).bool()

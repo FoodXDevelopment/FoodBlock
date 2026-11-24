@@ -1,8 +1,8 @@
 'use strict';
-// spec/readings/readback (changes-1.9/07-last.md, C3; 09 R2), as the oracle reads it. Not normative: a reading, named by the SHA-256 of this file's bytes.
-// readback(forBlock, held, viewer) -> the answer. It reads typed fields and the engine's own ops only (fb.door), never free text, and classifies nothing.
+// spec/readings/readback (readings/readback.md), as the oracle reads it. Not normative: a reading, named by the SHA-256 of this file's bytes.
+// readback(forBlock, blocks, viewer) -> the answer. It reads typed fields and the engine's own ops only (fb.door), never free text, and classifies nothing.
 // The answer names every block it read (`read`, sorted ids) and what it lacks (`lacks`), so a second reader holding `read` makes the same answer.
-// `viewer` is the id of the person it is read back to (the readback's `refs.to`; 1.9-GUESS [7-C3a]): the renderer reads the answer only, so "you" must be in it.
+// `viewer` is the id of the person it is read back to (the readback's `refs.to`): the renderer reads the answer only, so "you" must be in it (the text does not say; read so).
 const fb = require('../fb.cjs');
 const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isStr = v => typeof v === 'string';
@@ -18,18 +18,18 @@ function dcmp(a, b) {
 }
 const ends = v => (isObj(v) && ('min' in v || 'max' in v) ? [v.min, v.max].filter(x => x !== undefined) : isObj(v) && Array.isArray(v.one_of) ? v.one_of : v === undefined ? [] : [v]);
 const byText = (a, b) => { const x = typeof a === 'string' ? a : JSON.stringify(a), y = typeof b === 'string' ? b : JSON.stringify(b); return x < y ? -1 : x > y ? 1 : 0; };
-// ids first (ascending), then the entries, each by its canonical text (00-shared, `not_shown`, `lacks`)
+// ids first (ascending), then the entries, each by its canonical text (`not_shown`, `lacks`)
 const sortLacks = l => { const ids = [...new Set(l.filter(isStr))].sort(); const seen = new Set(), ent = []; for (const e of l.filter(isObj)) { const k = fb.jcs(e); if (!seen.has(k)) { seen.add(k); ent.push(e); } } ent.sort((a, b) => byText(fb.jcs(a), fb.jcs(b))); return [...ids, ...ent]; };
 
-function readback(forBlock, heldIn, viewer) {
-  const held = list(heldIn).filter(isObj);
-  const byId = new Map(held.map(b => [b.hash, b]));
+function readback(forBlock, blocksIn, viewer) {
+  const blocks = list(blocksIn).filter(isObj);
+  const byId = new Map(blocks.map(b => [b.hash, b]));
   if (!byId.has(forBlock.hash)) byId.set(forBlock.hash, forBlock);
   const all = [...byId.values()];
   const read = new Set([forBlock.hash]), lacks = [];
   const code = id => fb.door('short_code', id);
   // a person by the name she signed herself, never a name another gave her: her own `actor` block that `updates` her genesis and states `name` (a genesis carries no name);
-  // of several, the one no other of them has in its past; two that do not see each other name none (1.9-GUESS [7-C3e])
+  // of several, the one no other of them has in its past; two that do not see each other name none (the text does not say; read so)
   const person = id => {
     if (!isStr(id)) return null;
     if (id === viewer) return { id, code: code(id), name: null }; // she is "you": her own name is never read
@@ -40,22 +40,22 @@ function readback(forBlock, heldIn, viewer) {
     return { id, code: code(id), name: null };
   };
   const signerOf = b => (b.refs && isStr(b.refs.author) ? b.refs.author : b.hash);
-  // the block's pieces: its author's genesis and the key grant chain (00-shared, A block's pieces)
-  // each piece held is read; each not held is lacked (the pieces `valid` reads: refs.author and refs.key, and theirs, to a genesis)
+  // the block's pieces: its author's genesis and the key grant chain (core.md, section 8, check 5)
+  // each piece given is read; each not given is lacked (the pieces `valid` reads: refs.author and refs.key, and theirs, to a genesis)
   const pieces = (b, lack) => { const seen = new Set(), stack = [b.refs.author, b.refs.key]; while (stack.length) { const id = stack.pop(); if (!isStr(id) || seen.has(id)) continue; seen.add(id); const p = byId.get(id); if (!p) { if (lack) lacks.push(id); continue; } read.add(id); if (isStr(p.refs && p.refs.author)) stack.push(p.refs.author, p.refs.key); } };
   pieces(forBlock, true);
   const answer = { viewer: person(viewer), for: { id: forBlock.hash, code: code(forBlock.hash), type: forBlock.type, signer: person(signerOf(forBlock)) } };
-  // every block read is read with its pieces held (a block is someone's word only with them)
-  // and with its line before it held (`prev`, to the line's start: where a draw sits on its line is read from them)
+  // every block read is read with its pieces given (a block is someone's word only with them)
+  // and with its line before it given (`prev`, to the line's start: where a draw sits on its line is read from them)
   const finish = () => {
     const done = new Set(); let more = true;
     while (more) { more = false; for (const id of [...read]) { if (done.has(id)) continue; done.add(id); more = true; const x = byId.get(id); if (!x || !isObj(x.refs)) continue; pieces(x, false); if (isStr(x.refs.prev) && byId.has(x.refs.prev)) read.add(x.refs.prev); } }
     return { ...answer, read: [...read].sort(), lacks: sortLacks(lacks) };
   };
-  // who said these bytes (question 1); a block not valid is said to be so and nothing else (1.9-GUESS [7-C3b])
+  // who said these bytes (question 1); a block not valid is said to be so and nothing else (the text does not say; read so)
   const v = fb.door('valid', forBlock, all);
   if (v.length) {
-    // pieces not held (`unmet`): she cannot yet tell who said it; it is not_shown, the pieces in `lacks`
+    // pieces not given (`unmet`): she cannot yet tell who said it; it is not_shown, the pieces in `lacks`
     if (v.every(x => x.code === 'unmet')) { answer.not_shown = true; return finish(); }
     answer.not_valid = v.map(x => x.code); return finish();
   }
@@ -69,9 +69,9 @@ function readback(forBlock, heldIn, viewer) {
     answer.not_read = { fields, rule_set: other.some(x => x.code === 'unknown_rules'), codes: [...new Set(other.map(x => x.code))].sort() };
     return finish();
   }
-  // the ids it names for its meaning and that are not held (`needs`): lacked
+  // the ids it names for its meaning and that are not given (`needs`): lacked
   if (missingNames.length) lacks.push(...fb.door('needs', forBlock, all));
-  // the ids it names for its meaning that are held are read, with their pieces (what `read` read)
+  // the ids it names for its meaning that are given are read, with their pieces (what `read` read)
   for (const id of fb.door('needs', forBlock)) if (byId.has(id)) { read.add(id); pieces(byId.get(id), false); }
 
   // the deal this block belongs to: a first promise is its own; an accept reads the block it answers
@@ -84,7 +84,7 @@ function readback(forBlock, heldIn, viewer) {
   answer.to = person(receiver);
   answer.audience = Array.isArray(forBlock.state.audience) ? { readers: forBlock.state.audience.length } : 'public';
 
-  // her own record: is there an earlier block joining her and the other side (1.9-GUESS [7-C4-17])
+  // her own record: is there an earlier block joining her and the other side (the text does not say; read so)
   // the other side, as she reads it: the signer, or where she signed it, the side of the deal that is not hers
   const counter = deal.type === 'promise' ? [deal.refs.from, deal.refs.to].find(x => isStr(x) && x !== signer) : receiver;
   const other2 = viewer === signer ? counter : signer;
@@ -97,27 +97,27 @@ function readback(forBlock, heldIn, viewer) {
   // the deal's own words for what moves (`state.what`, free text): quoted as signed, every character, as its signer's; never read (2026-11-20)
   if (isStr(deal.state.what)) answer.what = { text: deal.state.what, by: person(signerOf(deal)) };
 
-  // each line that names a thing: the draw the ownership fold gives this block on it
+  // each line that names a thing, with the amount it states: the draw the ownership fold gives this block on it
   const things = [];
-  const named = deal.type === 'promise' ? (Array.isArray(terms.lines) && terms.lines.length ? terms.lines.map(l => isObj(l) ? l.what : undefined) : list(deal.refs.what)) : deal.type === 'transfer' && deal.state.status === undefined ? list(deal.refs.what) : [];
+  const dealLines = deal.type === 'promise' && Array.isArray(terms.lines) ? terms.lines.filter(isObj) : [];
+  const named = deal.type === 'promise' ? dealLines.filter(l => l.what !== undefined).map(l => [l.what, l.quantity]) : deal.type === 'transfer' && deal.state.status === undefined ? list(deal.refs.what).map(w => [w, deal.state.amount]) : [];
   const moneyLines = [];
-  for (const w of named.filter(isStr)) {
+  for (const [w, stated] of named.filter(([w]) => isStr(w))) {
     const t = byId.get(w);
     const line = { what: { id: w, code: code(w), name: null }, by: person(giver), to: person(receiver) };
     if (!t) { lacks.push(w); line.draw = { not_shown: true, lacks: [w] }; things.push(line); continue; }
     read.add(w);
     line.what.name = t.type === 'thing' && isStr(t.state.name) ? t.state.name : null;
     if (t.refs.of === undefined) { // a kind: a line that names no instance holds nothing
-      const q = deal.type === 'promise' ? terms.quantity : deal.state.amount;
-      line.draw = null; if (isAmt(q)) line.amount = q; things.push(line); continue;
+      line.draw = null; if (isAmt(stated)) line.amount = stated; things.push(line); continue;
     }
     if (isAmt(t.state.pack)) { line.what.pack = t.state.pack; line.what.stated_by = person(t.refs.author); }
     const own = fb.door('ownership', t, all);
     if (own === null) { line.draw = { not_shown: true, lacks: [w] }; lacks.push(w); things.push(line); continue; }
     for (const h of own.read || []) read.add(h); // what the fold read, shown or not
-    // and every block held that answers one of those (a yes, a no, a stop: the fold reads them to say what a draw is)
+    // and every block given that answers one of those (a yes, a no, a stop: the fold reads them to say what a draw is)
     { const r0 = new Set(own.read || []); for (const x of all) if (isObj(x.refs) && isStr(x.refs.answers) && r0.has(x.refs.answers) && isStr(x.hash)) read.add(x.hash); }
-    // a fold that is not shown names no `read`: every block held is read, so a second reader holding them finds the same lacks
+    // a fold that is not shown names no `read`: every block given is read, so a second reader holding them finds the same lacks
     if (own.not_shown && !Array.isArray(own.read)) for (const x of all) if (isStr(x.hash)) read.add(x.hash);
     if (own.not_shown) { line.draw = { not_shown: true, lacks: sortLacks(own.lacks) }; lacks.push(...own.lacks); things.push(line); continue; }
     const d = (own.draws || []).find(x => x.block === forBlock.hash) || (deal !== forBlock ? (own.draws || []).find(x => x.block === deal.hash) : undefined);
@@ -153,10 +153,18 @@ function readback(forBlock, heldIn, viewer) {
   const put = (m, a, most) => { const k = kindKey(a), e = m.get(k); if (!e || (most ? dcmp(a.value, e.value) > 0 : dcmp(a.value, e.value) < 0)) m.set(k, a); };
   const move = (from, to, amts) => { if (!amts.length) return; const sorted = [...amts].sort((a, b) => dcmp(a.value, b.value)); if (isStr(from)) for (const a of sorted) put(side(from).out, a, true); if (isStr(to)) for (const a of sorted) put(side(to).in, a, false); };
   if (deal.type === 'promise') {
-    const qs = ends(terms.quantity).filter(isAmt), ps = ends(terms.price);
-    if (named.length || terms.quantity !== undefined) move(deal.refs.from, deal.refs.to, qs);
-    const totals = [];
-    for (const p of ps) for (const q of qs.length ? qs : [undefined]) { const t = fb.door('terms_total', { price: p, ...(terms.step !== undefined ? { step: terms.step } : {}), ...(q ? { quantity: q } : {}) }, q === undefined ? null : q); if (isAmt(t)) totals.push(t); }
+    const qs = dealLines.flatMap(l => ends(l.quantity)).filter(isAmt);
+    if (named.length || dealLines.some(l => l.quantity !== undefined)) move(deal.refs.from, deal.refs.to, qs);
+    // what the deal comes to at the low and the high end of each line's price and quantity: the sum of its lines, at its `step`
+    const valueOf = x => (isObj(x) && x.value !== undefined ? x.value : isObj(x) && isObj(x.amount) ? x.amount.value : undefined);
+    const pick = (v, high) => { const e = [...ends(v)].sort((a, b) => dcmp(valueOf(a), valueOf(b))); return high ? e[e.length - 1] : e[0]; };
+    const atEnd = high => {
+      const priced = dealLines.filter(l => l.price !== undefined).map(l => { const x = { id: l.id, price: pick(l.price, high) }; const q = pick(l.quantity, high); if (q !== undefined) x.quantity = q; return x; });
+      if (!priced.length) return null;
+      const t = fb.door('terms_total', { lines: priced, ...(terms.step !== undefined ? { step: terms.step } : {}) }, null);
+      return isAmt(t) ? t : null;
+    };
+    const totals = [atEnd(false), atEnd(true)].filter(Boolean).filter((t, i, a) => i === 0 || JSON.stringify(t) !== JSON.stringify(a[i - 1]));
     move(deal.refs.to, deal.refs.from, totals);
     if (totals.length) moneyLines.push({ amount: totals.sort((a, b) => dcmp(b.value, a.value))[0], by: person(deal.refs.to), to: person(deal.refs.from), draw: null });
   } else if (deal.type === 'transfer' && deal.state.status === undefined && isAmt(deal.state.amount) && named.length === 0) {
@@ -168,7 +176,7 @@ function readback(forBlock, heldIn, viewer) {
   answer.money = moneyLines;
   answer.terms = { waits_on: terms.waits_on === 'price' || terms.waits_on === 'goods' ? terms.waits_on : null };
 
-  // a grant: what it can bind her to (worst_case, stage 4), who must hear each deal, the floor of what it may sell for
+  // a grant: what it can bind her to (worst_case), who must hear each deal, the floor of what it may sell for
   if (forBlock.type === 'grant' && forBlock.state.kind !== 'key') {
     const wc = fb.door('worst_case', forBlock, all);
     if (wc.not_shown) { answer.grant = { not_shown: true, lacks: wc.lacks }; lacks.push(...wc.lacks); }
@@ -181,7 +189,7 @@ function readback(forBlock, heldIn, viewer) {
       const ck = isObj(sc.clocks) && Array.isArray(sc.clocks.names) ? sc.clocks : null;
       const names = ck ? ck.names.map(clockOf) : [];
       const needed = ck ? (Number.isInteger(ck.needed) ? ck.needed : ck.names.length) : 0;
-      // the people who back the one clock: a promise of the clock's owner `for` this grant that carries `terms.backing` (FoodX's own promise, line 15; 1.9-GUESS [7-C4-15])
+      // the people who back the one clock: a promise of the clock's owner `for` this grant that carries `terms.backing` (FoodX's own promise, line 15) (the text does not say; read so)
       const backs = names.length === 1 ? all.filter(b => b.type === 'promise' && b.refs.for === forBlock.hash && b.refs.author === names[0].of.id && isObj(b.state.terms) && b.state.terms.backing !== undefined) : [];
       for (const b of backs) read.add(b.hash);
       const soldKinds = new Set(wc.on.filter(o => o.side === 'from').flatMap(o => ends(o.quantity === null ? undefined : o.quantity)).filter(isAmt).map(kindKey));

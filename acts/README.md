@@ -5,7 +5,7 @@ a trader or a machine. FoodOS reads these acts, does them, and suggests them.
 
 It is an open library of names: anyone may copy it, change it and add to it, and another publisher's list is as good as
 this one. An act is a reading. The protocol has no act: no block names one, no grant covers one, and nothing checks a
-deal against one (FoodBlock 1.8, `promises.md`, A name is pencil). What a deal is, is what its blocks say; a name for it
+deal against one (`promises.md`, A name is pencil). What a deal is, is what its blocks say; a name for it
 is its reader's own. The two sides of one deal often name it differently, and both are right.
 
 An act is one person's or one group's whole lifecycle, named in their words ("Selling spare food"), with a permanent

@@ -8,13 +8,13 @@ updates:
     groups:
       actions: { patterns: ['*'] }
   - package-ecosystem: npm
-    directories: [/sdk/javascript, /server, /mcp, /cli]
+    directories: [/sdk/javascript, /host, /mcp, /cli]
     schedule: { interval: weekly }
     open-pull-requests-limit: 3
     groups:
       npm: { patterns: ['*'] }
   - package-ecosystem: cargo
-    directories: [/sdk/rust, /tools/fuzz, /tools/sim]
+    directories: [/sdk/rust, /tools/fuzz]
     schedule: { interval: weekly }
     open-pull-requests-limit: 3
     groups:
@@ -25,7 +25,7 @@ updates:
     groups:
       gomod: { patterns: ['*'] }
   - package-ecosystem: docker
-    directory: /server
+    directory: /host
     schedule: { interval: weekly }
     groups:
       docker: { patterns: ['*'] }

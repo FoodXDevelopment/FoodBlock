@@ -6,7 +6,6 @@ use crate::prelude::*;
 use alloc::collections::BTreeSet;
 
 /// An id (protocol.json grammar.id): 64 lowercase hex, or the same with the name of its hash and a colon before it (`sm3:`).
-/// Reading only the bare form cut every causal edge through the id of an `sm` identity or block (found by the simulator).
 fn is_hash(s: &str) -> bool {
     let bare = match s.split_once(':') {
         Some((name, rest)) if !name.is_empty() && name.bytes().all(|b| matches!(b, b'a'..=b'z' | b'0'..=b'9' | b'-')) => rest,
@@ -87,7 +86,7 @@ pub fn heads_among(blocks: &[Value]) -> Vec<Value> {
         .collect()
 }
 
-/// Causes first; each step places, of the blocks whose held causes are all placed, the one with the lowest hash.
+/// Causes first; each step places, of the blocks whose given causes are all placed, the one with the lowest hash.
 pub fn causal_order_in(index: &Index) -> Vec<Value> {
     let mut waits: indexmap::IndexMap<String, i64, crate::js::BuildHasher> = Default::default();
     let mut next: indexmap::IndexMap<String, Vec<String>, crate::js::BuildHasher> =
@@ -146,8 +145,7 @@ pub fn causal_order_in(index: &Index) -> Vec<Value> {
 
 /// Causes first, among a subset, by the causal order of the whole record. A block may follow another only through blocks that are
 /// not in the subset (an allocation after an allocation, through a request; a key grant after a key grant, through a note), so the
-/// subset's own refs cannot order it: that left the order to hash ties and made later blocks look as if they did not see earlier
-/// ones (found by the simulator). A block that sees another has a strictly larger causal past, so past size orders them; ties by hash.
+/// subset's own refs cannot order it. A block that sees another has a strictly larger causal past, so past size orders them; ties by hash.
 pub fn causal_order_among(subset: &Index, full: &Index) -> Vec<Value> {
     let mut v: Vec<(usize, &String, &Value)> = subset.iter().map(|(h, b)| (full.past_of(b).len(), h, b)).collect();
     v.sort_by(|a, b| a.0.cmp(&b.0).then_with(|| cmp16(a.1, b.1)));

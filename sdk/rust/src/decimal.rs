@@ -4,7 +4,7 @@
 use crate::prelude::*;
 use core::cmp::Ordering;
 
-/// An exact figure (1.9 3e-5): a signed fraction of two whole numbers in lowest terms, `num / den` (digits most significant first, no leading
+/// An exact figure (encoding.md, A sum): a signed fraction of two whole numbers in lowest terms, `num / den` (digits most significant first, no leading
 /// zeros, `num` empty for zero, `den` never empty). Every figure a block signs is a decimal; a fold's sum, product or quotient of them is
 /// exact, and prints as the shortest decimal where it has one, else as `n/d` (encoding.md, A sum).
 #[derive(Clone, Debug, Default)]
@@ -214,7 +214,7 @@ impl Dec {
         let factor = mag_div(&shift(&one(), places), &self.den());
         Some((mag_mul(&self.num, &factor), places))
     }
-    /// The one printed form of a figure (encoding.md, A sum; 1.9 3e-5): the shortest decimal text, of any length, where it has one (no
+    /// The one printed form of a figure (encoding.md, A sum): the shortest decimal text, of any length, where it has one (no
     /// exponent, no leading zero but a single `0` before the point, no trailing zero after it, `0` for nothing, never `-0`); else `n/d`, two
     /// whole numbers in lowest terms, which no block may sign.
     pub fn text(&self) -> String {
@@ -245,18 +245,14 @@ impl Dec {
     pub fn is_pos(&self) -> bool {
         !self.neg && !self.num.is_empty()
     }
-    /// Whether it is a decimal a block may sign (no `n/d`).
-    pub fn is_decimal(&self) -> bool {
-        self.decimal().is_some()
-    }
-    /// The exact quotient; None only when `other` is zero (1.9 3e-5: no cap; a quotient that never ends is a fraction). Nothing is rounded.
+    /// The exact quotient; None only when `other` is zero (no cap; a quotient that never ends is a fraction). Nothing is rounded.
     pub fn div(&self, other: &Dec) -> Option<Dec> {
         if other.num.is_empty() {
             return None;
         }
         Some(Dec::make(self.neg ^ other.neg, mag_mul(&self.num, &other.den()), mag_mul(&self.den(), &other.num)))
     }
-    /// The least whole number of steps at or above this figure, times the step (1.9 3e-7, `step`): None for a step not above zero.
+    /// The least whole number of steps at or above this figure, times the step (`step`): None for a step not above zero.
     pub fn up_to_step(&self, step: &Dec) -> Option<Dec> {
         if !step.is_pos() {
             return None;

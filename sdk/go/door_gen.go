@@ -29,9 +29,9 @@ func doorCborEncode(block any, short bool) (string, error) {
 	return ask[string]("cbor_encode", block, nilIfFalse(short))
 }
 
-// doorCborDecode is the door's cbor_decode(hex, held?) -> block !.
-func doorCborDecode[T any](hex string, held []Block) (T, error) {
-	return ask[T]("cbor_decode", hex, held)
+// doorCborDecode is the door's cbor_decode(hex, blocks?) -> block !.
+func doorCborDecode[T any](hex string, blocks []Block) (T, error) {
+	return ask[T]("cbor_decode", hex, blocks)
 }
 
 // doorCborEncodePush is the door's cbor_encode_push(blocks, short?) -> text !.
@@ -60,9 +60,9 @@ func doorHash(typ string, state any, refs any, suite string) (string, error) {
 	return ask[string]("hash", typ, state, refs, nilIfEmpty(suite))
 }
 
-// doorIdOf is the door's id_of(block, held?) -> text.
-func doorIdOf(block any, held []Block) string {
-	return must[string]("id_of", block, held)
+// doorIdOf is the door's id_of(block, blocks?) -> text.
+func doorIdOf(block any, blocks []Block) string {
+	return must[string]("id_of", block, blocks)
 }
 
 // doorHashHex is the door's hash_hex(text) -> text.
@@ -170,19 +170,19 @@ func doorTerms[T any](terms any) T {
 	return must[T]("terms", terms)
 }
 
-// doorValid is the door's valid(block, held) -> refusals.
-func doorValid(block any, held []Block) []Finding {
-	return plural(must[[]Finding]("valid", block, plural(held)))
+// doorValid is the door's valid(block, blocks) -> refusals.
+func doorValid(block any, blocks []Block) []Finding {
+	return plural(must[[]Finding]("valid", block, plural(blocks)))
 }
 
-// doorRead is the door's read(block, held, schemas?, runs?) -> refusals.
-func doorRead(block any, held []Block, schemas []Block, runs []string) []Finding {
-	return plural(must[[]Finding]("read", block, plural(held), schemas, runs))
+// doorRead is the door's read(block, blocks, schemas?) -> refusals.
+func doorRead(block any, blocks []Block, schemas []Block) []Finding {
+	return plural(must[[]Finding]("read", block, plural(blocks), schemas))
 }
 
-// doorSchemasFrom is the door's schemas_from(held) -> blocks.
-func doorSchemasFrom(held []Block) []Block {
-	return plural(must[[]Block]("schemas_from", plural(held)))
+// doorSchemasFrom is the door's schemas_from(blocks) -> blocks.
+func doorSchemasFrom(blocks []Block) []Block {
+	return plural(must[[]Block]("schemas_from", plural(blocks)))
 }
 
 // doorStrictText is the door's strict_text(text) -> refusals.
@@ -190,9 +190,9 @@ func doorStrictText(text string) []Finding {
 	return plural(must[[]Finding]("strict_text", text))
 }
 
-// doorWriteRefusals is the door's write_refusals(draft, held) -> refusals.
-func doorWriteRefusals(draft any, held []Block) []Finding {
-	return plural(must[[]Finding]("write_refusals", draft, plural(held)))
+// doorWriteRefusals is the door's write_refusals(draft, blocks) -> refusals.
+func doorWriteRefusals(draft any, blocks []Block) []Finding {
+	return plural(must[[]Finding]("write_refusals", draft, plural(blocks)))
 }
 
 // doorStrictPush is the door's strict_push(text) -> json !.
@@ -200,9 +200,9 @@ func doorStrictPush[T any](text string) (T, error) {
 	return ask[T]("strict_push", text)
 }
 
-// doorNeeds is the door's needs(block, held?) -> strings.
-func doorNeeds(block any, held []Block) []string {
-	return plural(must[[]string]("needs", block, held))
+// doorNeeds is the door's needs(block, blocks?) -> strings.
+func doorNeeds(block any, blocks []Block) []string {
+	return plural(must[[]string]("needs", block, blocks))
 }
 
 // doorShortCode is the door's short_code(hash) -> text.
@@ -260,9 +260,9 @@ func doorCheckChain[T any](blocks []Block, id string) T {
 	return must[T]("check_chain", plural(blocks), id)
 }
 
-// doorReadWhole is the door's read_whole(block, start, held) -> object.
-func doorReadWhole[T any](block string, start string, held []Block) T {
-	return must[T]("read_whole", block, start, plural(held))
+// doorReadWhole is the door's read_whole(block, start, blocks) -> object.
+func doorReadWhole[T any](block string, start string, blocks []Block) T {
+	return must[T]("read_whole", block, start, plural(blocks))
 }
 
 // doorCausesOf is the door's causes_of(block) -> strings.
@@ -320,9 +320,9 @@ func doorWrap[T any](block any) T {
 	return must[T]("wrap", block)
 }
 
-// doorUnwrap is the door's unwrap(message, held?) -> block !.
-func doorUnwrap[T any](message any, held []Block) (T, error) {
-	return ask[T]("unwrap", message, held)
+// doorUnwrap is the door's unwrap(message, blocks?) -> block !.
+func doorUnwrap[T any](message any, blocks []Block) (T, error) {
+	return ask[T]("unwrap", message, blocks)
 }
 
 // doorHeader is the door's header(block) -> object.
@@ -475,9 +475,9 @@ func doorAncestors[T any](grant any, blocks []Block) T {
 	return must[T]("ancestors", grant, plural(blocks))
 }
 
-// doorTermsTotal is the door's terms_total(terms?, quantity?) -> json.
-func doorTermsTotal[T any](terms any, quantity any) T {
-	return must[T]("terms_total", terms, quantity)
+// doorTermsTotal is the door's terms_total(terms?, chosen?) -> json.
+func doorTermsTotal[T any](terms any, chosen any) T {
+	return must[T]("terms_total", terms, chosen)
 }
 
 // doorRecipientsOf is the door's recipients_of(for_whom, hash) -> strings.
@@ -488,11 +488,6 @@ func doorRecipientsOf(forWhom any, hash string) []string {
 // doorChildrenOf is the door's children_of(id, blocks) -> json.
 func doorChildrenOf[T any](id string, blocks []Block) T {
 	return must[T]("children_of", id, plural(blocks))
-}
-
-// doorWhyNotLiveUndo is the door's why_not_live_undo(block, blocks) -> strings.
-func doorWhyNotLiveUndo(block any, blocks []Block) []string {
-	return plural(must[[]string]("why_not_live_undo", block, plural(blocks)))
 }
 
 // doorReadingIsPersonsClaim is the door's reading_is_persons_claim(block, person, blocks) -> bool.
@@ -610,9 +605,9 @@ func doorCircleState[T any](circle string, blocks []Block, within any) T {
 	return must[T]("circle_state", circle, plural(blocks), within)
 }
 
-// doorMachineLock is the door's machine_lock(machine, held, now?) -> object.
-func doorMachineLock[T any](machine any, held []Block, now string) T {
-	return must[T]("machine_lock", machine, plural(held), nilIfEmpty(now))
+// doorMachineLock is the door's machine_lock(machine, blocks, now?) -> object.
+func doorMachineLock[T any](machine any, blocks []Block, now string) T {
+	return must[T]("machine_lock", machine, plural(blocks), nilIfEmpty(now))
 }
 
 // doorCircleVersions is the door's circle_versions(circle, blocks) -> object?.
@@ -655,9 +650,9 @@ func doorToComeBack[T any](person string, blocks []Block) T {
 	return must[T]("to_come_back", person, plural(blocks))
 }
 
-// doorReadback is the door's readback(block, held, to?, renderer?, digits?) -> object !.
-func doorReadback[T any](block any, held []Block, to string, renderer string, digits any) (T, error) {
-	return ask[T]("readback", block, plural(held), nilIfEmpty(to), nilIfEmpty(renderer), digits)
+// doorReadback is the door's readback(block, blocks, to?, renderer?, digits?) -> object !.
+func doorReadback[T any](block any, blocks []Block, to string, renderer string, digits any) (T, error) {
+	return ask[T]("readback", block, plural(blocks), nilIfEmpty(to), nilIfEmpty(renderer), digits)
 }
 
 // doorRender is the door's render(answer, renderer) -> text !.
@@ -665,9 +660,9 @@ func doorRender(answer any, renderer string) (string, error) {
 	return ask[string]("render", answer, renderer)
 }
 
-// doorReadbackRedo is the door's readback_redo(rb, held) -> object !.
-func doorReadbackRedo[T any](rb any, held []Block) (T, error) {
-	return ask[T]("readback_redo", rb, plural(held))
+// doorReadbackRedo is the door's readback_redo(rb, blocks) -> object !.
+func doorReadbackRedo[T any](rb any, blocks []Block) (T, error) {
+	return ask[T]("readback_redo", rb, plural(blocks))
 }
 
 // doorSpeaksFor is the door's speaks_for(block, blocks) -> text?.
@@ -690,9 +685,9 @@ func doorGives[T any](block any, person string, blocks []Block) T {
 	return must[T]("gives", block, person, plural(blocks))
 }
 
-// doorBinds is the door's binds(draft, held) -> bool.
-func doorBinds(draft any, held []Block) bool {
-	return must[bool]("binds", draft, plural(held))
+// doorBinds is the door's binds(draft, blocks) -> bool.
+func doorBinds(draft any, blocks []Block) bool {
+	return must[bool]("binds", draft, plural(blocks))
 }
 
 // doorListingCheck is the door's listing_check(lookup, listing, blocks) -> object.
@@ -715,9 +710,9 @@ func doorRulingReleases[T any](stake any, blocks []Block, now string) T {
 	return must[T]("ruling_releases", stake, plural(blocks), nilIfEmpty(now))
 }
 
-// doorRulingAudience is the door's ruling_audience(ruling, blocks, now?) -> object.
-func doorRulingAudience[T any](ruling any, blocks []Block, now string) T {
-	return must[T]("ruling_audience", ruling, plural(blocks), nilIfEmpty(now))
+// doorRulingHonoured is the door's ruling_honoured(ruling, blocks) -> object.
+func doorRulingHonoured[T any](ruling any, blocks []Block) T {
+	return must[T]("ruling_honoured", ruling, plural(blocks))
 }
 
 // doorCountOf is the door's count_of(needed, members) -> int?.
@@ -850,9 +845,9 @@ func doorPushRefusals(message any, fresh any) []Finding {
 	return plural(must[[]Finding]("push_refusals", message, fresh))
 }
 
-// doorAnswerPull is the door's answer_pull(log, request, node, private_key?, choices, asker?, held?, suite?, through?) -> object !.
-func doorAnswerPull[T any](log any, request any, node string, privateKey string, choices any, asker string, held []Block, suite string, through *int64) (T, error) {
-	return ask[T]("answer_pull", log, request, node, nilIfEmpty(privateKey), choices, nilIfEmpty(asker), held, nilIfEmpty(suite), through)
+// doorAnswerPull is the door's answer_pull(log, request, node, private_key?, choices, asker?, blocks?, suite?, through?) -> object !.
+func doorAnswerPull[T any](log any, request any, node string, privateKey string, choices any, asker string, blocks []Block, suite string, through *int64) (T, error) {
+	return ask[T]("answer_pull", log, request, node, nilIfEmpty(privateKey), choices, nilIfEmpty(asker), blocks, nilIfEmpty(suite), through)
 }
 
 // doorPushAnswer is the door's push_answer(parts, node, private_key, suite?) -> block !.
@@ -865,9 +860,9 @@ func doorWellKnown[T any](node string, reads []string, admission string, endpoin
 	return must[T]("well_known", node, plural(reads), nilIfEmpty(admission), endpoints, nilIfEmpty(log))
 }
 
-// doorLogShown is the door's log_shown(receipts, request, answer, held) -> object.
-func doorLogShown[T any](receipts []Block, request any, answer any, held []Block) T {
-	return must[T]("log_shown", plural(receipts), request, answer, plural(held))
+// doorLogShown is the door's log_shown(receipts, request, answer, blocks) -> object.
+func doorLogShown[T any](receipts []Block, request any, answer any, blocks []Block) T {
+	return must[T]("log_shown", plural(receipts), request, answer, plural(blocks))
 }
 
 // doorExportWhole is the door's export_whole(document, log, last) -> object.
@@ -880,9 +875,9 @@ func doorWaitedTooLong(since string, now string, ttl int64) bool {
 	return must[bool]("waited_too_long", since, now, ttl)
 }
 
-// doorMatches is the door's matches(block, filter?, held) -> bool.
-func doorMatches(block any, filter any, held []Block) bool {
-	return must[bool]("matches", block, filter, plural(held))
+// doorMatches is the door's matches(block, filter?, blocks) -> bool.
+func doorMatches(block any, filter any, blocks []Block) bool {
+	return must[bool]("matches", block, filter, plural(blocks))
 }
 
 // doorHeadsOf is the door's heads_of(blocks) -> blocks.
@@ -890,9 +885,9 @@ func doorHeadsOf(blocks []Block) []Block {
 	return plural(must[[]Block]("heads_of", plural(blocks)))
 }
 
-// doorAccept is the door's accept(incoming, held, choices, schemas?, push?) -> object.
-func doorAccept[T any](incoming []Block, held []Block, choices any, schemas []Block, push any) T {
-	return must[T]("accept", plural(incoming), plural(held), choices, schemas, push)
+// doorAccept is the door's accept(incoming, blocks, choices, schemas?, push?) -> object.
+func doorAccept[T any](incoming []Block, blocks []Block, choices any, schemas []Block, push any) T {
+	return must[T]("accept", plural(incoming), plural(blocks), choices, schemas, push)
 }
 
 // doorAnswerSignedBy is the door's answer_signed_by(answer, node_keys) -> bool.

@@ -36,8 +36,6 @@ public enum Fold {
             members = (j["members"] as? [String: JSON] ?? [:]).mapValues(Member.init)
             removed = (j["removed"] as? JSON ?? [:]).mapValues { $0 as? String }
         }
-        /// The member ids, in the order they joined (the core keeps it in the order of `json["members"]`).
-        public var memberIds: [String] { Array(members.keys) }
     }
     public static func circleState(_ circle: String, _ blocks: [JSON], within: JSON? = nil) throws -> CircleState? {
         (try Door.circleState(circle, blocks, within)).map(CircleState.init)
@@ -62,10 +60,10 @@ public enum Fold {
     /// The consent fold: a person's live word about a sender (or none): { word, block }. `block` is the sender's block (or nil).
     public static func consent(_ person: String, _ sender: String?, _ blocks: [JSON], block: JSON?) throws -> JSON { try Door.consent(person, sender, blocks, block) }
     /// Views, each saying whose clock or arrivals it reads.
-    public static func due(_ promise: JSON, arrivedAt: Identity.Arrival? = nil, held: [JSON] = []) throws -> Any? { try Door.due(promise, Identity.log(arrivedAt, held + [promise])) }
+    public static func due(_ promise: JSON, arrivedAt: Identity.Arrival? = nil, blocks: [JSON] = []) throws -> Any? { try Door.due(promise, Identity.log(arrivedAt, blocks + [promise])) }
     public static func circleKey(_ circle: String, _ blocks: [JSON]) throws -> JSON { (try Door.circleKey(circle, blocks) as? JSON) ?? [:] }
     public static func countedIn(_ result: JSON?, _ commitment: String, _ counter: String) throws -> Bool { try Door.countedIn(result ?? [:], commitment, counter) }
-    // ---- 1.9 readings: thin calls, each returns what the core's door gives ----
+    // ---- readings: thin calls, each returns what the core's door gives ----
     /// An amount moved in `person`'s name that they do not back (promises.md, What is to come back): { to_come: [{ block, amount, to, why }] }.
     public static func toComeBack(_ person: String, _ blocks: [JSON]) throws -> JSON { try Door.toComeBack(person, blocks) }
     /// Is `block` backed by `person`? { backed, why, chain }.
@@ -96,9 +94,9 @@ public enum Fold {
     public static func rowHolds(_ block: JSON, _ blocks: [JSON]) throws -> JSON { try Door.rowHolds(block, blocks) }
     public static func waysIn(_ circle: String, _ blocks: [JSON]) throws -> JSON { try Door.waysIn(circle, blocks) }
     /// The read-back of a block to the person `to`: { answer, text, state }; a renderer's words for an answer; a second reader's redo.
-    public static func readback(_ block: Any?, _ held: [JSON], to: String? = nil, renderer: String? = nil, digits: Any? = nil) throws -> JSON { try Door.readback(block, held, to, renderer, digits) }
+    public static func readback(_ block: Any?, _ blocks: [JSON], to: String? = nil, renderer: String? = nil, digits: Any? = nil) throws -> JSON { try Door.readback(block, blocks, to, renderer, digits) }
     public static func render(_ answer: JSON, _ renderer: String) throws -> String { try Door.render(answer, renderer) }
-    public static func readbackRedo(_ rb: JSON, _ held: [JSON]) throws -> JSON { try Door.readbackRedo(rb, held) }
+    public static func readbackRedo(_ rb: JSON, _ blocks: [JSON]) throws -> JSON { try Door.readbackRedo(rb, blocks) }
 
 }
 
@@ -109,9 +107,9 @@ public enum Strangers {
     public static func isStranger(_ receiver: String, _ sender: String, _ blocks: [JSON], block: JSON? = nil) throws -> Bool { try Door.isStranger(receiver, sender, blocks, block) }
     /// A model's reading is the person's claim only once the person's own block confirms it.
     public static func readingIsPersonsClaim(_ reading: JSON, _ person: String, _ blocks: [JSON]) throws -> Bool { try Door.readingIsPersonsClaim(reading, person, blocks) }
-    /// Tasks profile: whether a `reading_condition` holds on the readings held, at the reader's clock.
+    /// Tasks profile: whether a `reading_condition` holds on the readings given, at the reader's clock.
     public static func readingConditionHolds(_ condition: JSON, _ blocks: [JSON], now: String) throws -> Bool { try Door.readingConditionHolds(condition, blocks, now) }
-    /// Whether a condition holds on the blocks held, at the reader's clock (promises.md, Conditions): settled, a deed, a reading or a signal.
+    /// Whether a condition holds on the blocks given, at the reader's clock (promises.md, Conditions): settled, a deed, a reading or a signal.
     /// It reads three ways: true, false, or nil for a condition of a shape the protocol does not read.
     public static func conditionHolds(_ condition: JSON, _ blocks: [JSON], now: String) throws -> Bool? { try Door.conditionHolds(condition, blocks, now) }
     /// What a node's admission and consent rules refuse of a block for a person: not_admitted, not_human. `admission` is the rule's

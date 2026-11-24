@@ -106,4 +106,4 @@ function arrivals(arrivedAt, ...sets) {
   return out
 }
 
-module.exports = { call, init, FoodBlockError, list, arrivals }
+module.exports = { call, init, list, arrivals }

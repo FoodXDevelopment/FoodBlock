@@ -74,9 +74,9 @@ func PushRefusals(message map[string]any, o PullCheck) []Finding {
 }
 
 // Matches is whether a block matches a pull filter: every key, ANDed; `record` resolved
-// among held.
-func Matches(b Block, filter map[string]any, held []Block) bool {
-	return doorMatches(b, filter, held)
+// among blocks.
+func Matches(b Block, filter map[string]any, blocks []Block) bool {
+	return doorMatches(b, filter, blocks)
 }
 
 // HeadsOf are the blocks no other block among them names.
@@ -94,13 +94,13 @@ type Arrival struct {
 
 // AnswerOptions: the node's id and private key (the answer is unsigned without one) and its Suite; Signer (default
 // the request's); Cap, the node's own limit (required, 1 or more: there is no default cap); ServesPairs (required choice:
-// true sends a fork's other half with its proof, false only what matches); Held (blocks that sealed copies are checked
+// true sends a fork's other half with its proof, false only what matches); Blocks (blocks that sealed copies are checked
 // against). A zero Cap is refused by the core.
 type AnswerOptions struct {
 	Node, PrivateKey, Signer, Suite string
 	Cap                             int64
 	ServesPairs                     bool
-	Held                            []Block
+	Blocks                          []Block
 }
 
 // AnswerPull answers a pull from a node's arrival log. A public block travels whole; a sealed one as its header, or,
@@ -119,7 +119,7 @@ func AnswerPull(log []Arrival, request map[string]any, o AnswerOptions) (map[str
 		entries = append(entries, entry)
 	}
 	choices := map[string]any{"cap": o.Cap, "serves_pairs": o.ServesPairs}
-	return doorAnswerPull[map[string]any](entries, orEmpty(request), o.Node, o.PrivateKey, choices, o.Signer, o.Held, o.Suite, nil)
+	return doorAnswerPull[map[string]any](entries, orEmpty(request), o.Node, o.PrivateKey, choices, o.Signer, o.Blocks, o.Suite, nil)
 }
 
 // AnswerSignedBy is whether a node's answer (pull or push) is signed by one of the node's keys.
@@ -163,13 +163,13 @@ type AcceptOptions struct {
 }
 
 // Accept is what a node takes of a push (incoming, blocks off the wire) given what it holds.
-func Accept(incoming, held []Block, o AcceptOptions) Accepted {
+func Accept(incoming, blocks []Block, o AcceptOptions) Accepted {
 	r := doorAccept[struct {
 		Taken         []string   `json:"taken"`
 		Waiting       []Waiting  `json:"waiting"`
 		Refused       []Refusal  `json:"refused"`
 		Equivocations [][]string `json:"equivocations"`
-	}](incoming, held, map[string]any{"takes_pairs": o.TakesPairs}, blockList(o.Schemas), nil)
+	}](incoming, blocks, map[string]any{"takes_pairs": o.TakesPairs}, blockList(o.Schemas), nil)
 	byHash := map[string]Block{}
 	for _, b := range incoming {
 		byHash[b.id()] = b
@@ -177,7 +177,7 @@ func Accept(incoming, held []Block, o AcceptOptions) Accepted {
 	out := Accepted{Taken: []Block{}, Waiting: plural(r.Waiting), Refused: plural(r.Refused), Equivocations: plural(r.Equivocations)}
 	// the core names what it took by the id it computed, in the suite of the key that signed it (core.md, section 2): a key's
 	// first block after a move to a suite of another hash has an id its bytes alone do not show, so a block is found by that id too
-	all := append(append([]Block{}, held...), incoming...)
+	all := append(append([]Block{}, blocks...), incoming...)
 	for _, h := range r.Taken {
 		b, found := byHash[h]
 		if !found {

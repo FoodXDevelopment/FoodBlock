@@ -168,7 +168,7 @@ impl Reader<'_> {
             5 => {
                 let n = self.count(ai)?;
                 let mut pairs: Vec<(C, C)> = Vec::new();
-                // the keys seen, by their canonical bytes: a map of n keys costs n lookups, never n squared comparisons (release 12)
+                // the keys seen, by their canonical bytes: a map of n keys costs n lookups, never n squared comparisons
                 let mut seen: alloc::collections::BTreeSet<Vec<u8>> = Default::default();
                 for _ in 0..n {
                     let k = self.item(depth + 1)?;
@@ -254,7 +254,6 @@ struct Codec<'a> {
 
 impl<'a> Codec<'a> {
     fn new(spec: &'a Spec, short: bool) -> Codec<'a> {
-        let cbor = spec.conventions.get("cbor");
         let mut bytes = Vec::new();
         for (name, kind) in [
             ("hash", Kind::Hash),
@@ -271,7 +270,6 @@ impl<'a> Codec<'a> {
             .map(|s| s.spki_prefix.as_str())
             .and_then(unhex)
             .unwrap_or_default();
-        let _ = cbor;
         Codec {
             spec,
             short,
@@ -321,8 +319,7 @@ impl<'a> Codec<'a> {
             Value::String(s) => self.string_to_c(s, path)?,
             Value::Array(items) => {
                 let mut out = Vec::new();
-                for (i, item) in items.iter().enumerate() {
-                    let _ = i;
+                for item in items.iter() {
                     path.push("[]".into());
                     let c = self.to_c(item, path);
                     path.pop();

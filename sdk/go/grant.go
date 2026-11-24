@@ -2,7 +2,7 @@ package foodblock
 
 // Authority (modules/authority.md): thin calls into the Rust core.
 
-// LiveOptions: Now is the reader's clock ("" ignores scope.until).
+// LiveOptions: Now is the reader's clock ("" ignores scope.expires).
 type LiveOptions struct{ Now string }
 
 func nowOf(options []LiveOptions) string {
@@ -17,7 +17,7 @@ func ScopeRefusals(child, parent Block) []Finding {
 	return doorScopeRefusals(child, parent)
 }
 
-// ScopeReading is the one reading of a grant's state.scope (authority.md): acts, parties, limit, each, every, until, notice, sealed, condition and
+// ScopeReading is the one reading of a grant's state.scope (authority.md): acts, parties, limit, each, every, expires, notice, sealed, condition and
 // junk, with every default the spec states and nothing else filled in. A missing scope (nil) reads as an empty one. A non-empty junk (the sorted
 // names of fields that are there but cannot be read) means the grant is held to no word.
 func ScopeReading(scope any) map[string]any {
@@ -27,18 +27,6 @@ func ScopeReading(scope any) map[string]any {
 // ScopeWithin is why a child grant's scope is not within its parent's; empty when it is.
 func ScopeWithin(child, parent Block) []string {
 	return doorScopeWithin(child, parent)
-}
-
-
-
-
-
-
-
-// WhyNotLiveUndo is why an act that cannot be undone (its schema says `undo: never`) is not live: empty when it has a
-// specific accepted ask or a grant that names it with a limit.
-func WhyNotLiveUndo(b Block, blocks []Block) []string {
-	return doorWhyNotLiveUndo(b, blocks)
 }
 
 // ParseDuration reads an ISO 8601 duration (nil when it is not one).
@@ -65,7 +53,6 @@ func Ancestors(grant Block, blocks []Block) []Block {
 func WhyNotUnder(b Block, blocks []Block, options ...LiveOptions) []string {
 	return doorWhyNotUnder(b, blocks, nowOf(options))
 }
-
 
 // AddDuration moves a time by an ISO 8601 duration (sign -1 goes back), months and years by the UTC calendar. "" when
 // either is not readable.

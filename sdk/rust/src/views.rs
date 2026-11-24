@@ -1,10 +1,9 @@
 //! The views (modules/folds.md): a fold plus one more thing, the reader's clock (or, for `due`, when a block arrived on the
 //! reader's node). A view is right for the reader that computes it and says whose clock it used; it may show but never decide what
 //! another reader must accept. Each takes the clock or the arrivals as an argument: none reads the system clock.
-#[allow(unused_imports)]
-use crate::js::{get, hash_of, index_of, rs, ss, st, type_of, Index};
-#[allow(unused_imports)]
-use crate::order::sees_in;
+use crate::js::get;
+#[cfg(feature = "folds")]
+use crate::js::{hash_of, Index};
 use crate::prelude::*;
 
 /// `due`: a promise with a relative `when` `{ after, wait }` falls due `wait` after the `after` block arrived on the
@@ -26,7 +25,7 @@ pub fn promise_view(first: &Value, blocks: &[Value], now: Option<&str>) -> Value
 }
 
 /// The views of many deals of one store, read against one reading of it: `{ hash: view }` (the MCP door's find reads every offer it
-/// shows; reading the store once for each made it quadratic: security I, agents/t4). Each first promise is one of the blocks.
+/// shows; reading the store once for each made it quadratic). Each first promise is one of the blocks.
 #[cfg(feature = "folds")]
 pub fn promise_views(firsts: &[String], blocks: &[Value], now: Option<&str>) -> Value {
     let index = crate::fold::read_all(blocks.iter());
@@ -37,12 +36,12 @@ pub fn promise_views(firsts: &[String], blocks: &[Value], now: Option<&str>) -> 
     Value::Object(out)
 }
 
-/// `promise_view` of the promise held under `first_hash`, in blocks already read for a fold.
+/// `promise_view` of the promise given under `first_hash`, in blocks already read for a fold.
 #[cfg(feature = "folds")]
 pub(crate) fn promise_view_in(first_hash: &str, index: &Index, now: Option<&str>) -> Value {
     let mut view = promise_view_read(first_hash, index, now).0;
     // The condition of the offer in force, as a fact beside the stage (promises.md, Conditions): `holds`, `not`, or `unread` (a shape the
-    // protocol does not read); null when the promise states none. A condition that did not hold reads as nothing owed, never as broken.
+    // protocol does not read); null when the promise states none. A condition that did not hold reads as nothing to come, never as broken.
     let offer = view.get("offer").and_then(Value::as_str).and_then(|h| index.get(h)).or_else(|| index.get(first_hash));
     if let (Some(cond), true) = (offer.and_then(|o| get(o, "state.terms.condition")), view.is_object()) {
         let blocks: Vec<Value> = index.values().cloned().collect();
@@ -126,12 +125,12 @@ pub(crate) fn promise_view_read(first_hash: &str, index: &Index, now: Option<&st
             stage["stage"] = json!("expired");
         }
     }
-    // 1.9 R-H10: once the reader's clock is past a promise's `terms.until` and the promise moves nothing (it names no `what`, no `lines` and no
-    // `quantity`: nothing goes from its signer), the view says elapsed. A fact of its term, never that it was kept; it binds no one. One that
+    // Once the reader's clock is past a promise's `terms.until` and the promise moves nothing (no line of it names a `what` or a quantity:
+    // nothing goes from its signer), the view says elapsed (folds.md, Views). A fact of its term, never that it was kept; it binds no one. One that
     // a stop ended stays stopped.
     if matches!(st_name.as_str(), "accepted" | "underway") {
         let offer = stage.get("offer").and_then(Value::as_str).and_then(|h| index.get(h)).unwrap_or(first);
-        let moves_nothing = crate::js::rf(offer, "what").is_none() && get(offer, "state.terms.lines").is_none() && get(offer, "state.terms.quantity").is_none();
+        let moves_nothing = crate::fold::lines_of(get(offer, "state.terms").unwrap_or(&Value::Null)).iter().all(|l| l.get("what").is_none() && l.get("quantity").is_none());
         let until = get(offer, "state.terms.until").and_then(Value::as_str).and_then(crate::time::parse);
         if moves_nothing && matches!((now.and_then(crate::time::parse), until), (Some(n), Some(u)) if n > u) {
             stage["stage"] = json!("elapsed");

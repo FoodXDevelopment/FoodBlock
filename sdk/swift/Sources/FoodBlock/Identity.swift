@@ -42,21 +42,21 @@ public enum Identity {
     public static func isGenesis(_ block: JSON?) throws -> Bool { try Door.isGenesis(block) }
     public static func genesisOpens(_ block: JSON?) throws -> Bool { try Door.genesisOpens(block) }
 
-    /// Who writes a key grant or a second signature: one of her voices, her operator, or a voice of named people, signing in their own name.
-    /// `author` is the id signing (the grant's own subject when nil), `held` the blocks the signer holds, `at` the time stated.
+    /// Who writes a key grant or a second signature: one of her voices, or a voice of named people, signing in their own name.
+    /// `author` is the id signing (the grant's own subject when nil), `blocks` the blocks the signer has, `at` the time stated.
     public struct Signer {
-        public var author: String?, key: Keypair, held: [JSON], at: String, after: [String]
-        public init(author: String? = nil, key: Keypair, held: [JSON] = [], at: String, after: [String] = []) {
-            self.author = author; self.key = key; self.held = held; self.at = at; self.after = after
+        public var author: String?, key: Keypair, blocks: [JSON], at: String, after: [String]
+        public init(author: String? = nil, key: Keypair, blocks: [JSON] = [], at: String, after: [String] = []) {
+            self.author = author; self.key = key; self.blocks = blocks; self.at = at; self.after = after
         }
     }
 
     /// A key grant about `id` (identity.md), signed by `signer`. Give `voices` (her whole list again, with `updates` the list it replaces
     /// and `clocks` her clock), or `key` (one key under the signer's voice, in `suite`), or `encrypt` alone; `shownKey` when a key named by
-    /// hash shows itself (`keyRef` the list that holds its hash); `countedTo` the last block of a key a voice above ends; `under` an operator grant.
+    /// hash shows itself (`keyRef` the list that holds its hash); `countedTo` the last block of a key a voice above ends.
     public static func keyGrant(_ id: String, _ signer: Signer, voices: Any? = nil, updates: String? = nil, clocks: JSON? = nil, key: String? = nil,
                                 suite: String? = nil, encrypt: String? = nil, shownKey: String? = nil, keyRef: String? = nil,
-                                countedTo: String? = nil, under: String? = nil) throws -> JSON {
+                                countedTo: String? = nil) throws -> JSON {
         var state: JSON = ["kind": "key"]
         if let v = voices { state["voices"] = v }
         if let c = clocks { state["clocks"] = c }
@@ -68,14 +68,13 @@ public enum Identity {
         var refs: JSON = ["subject": id]
         if let u = updates { refs["updates"] = u }
         if let k = keyRef { refs["key"] = k }
-        if let u = under { refs["under"] = u }
-        return try FoodBlock.write("grant", state, refs, author: signer.author ?? id, key: signer.key, held: signer.held,
+        return try FoodBlock.write("grant", state, refs, author: signer.author ?? id, key: signer.key, blocks: signer.blocks,
                                    audience: .public, after: signer.after, when: .at(signer.at))
     }
     /// The second signature (blocks.md, Finality, Signed twice): a block of the same key, or of a voice above, naming the word in refs.confirms.
     public static func confirm(_ word: Any, _ signer: Signer) throws -> JSON {
         let hash = (word as? JSON)?["hash"] as? String ?? (word as? String) ?? ""
-        return try FoodBlock.write("observe", [:], ["confirms": [hash]], author: signer.author ?? "", key: signer.key, held: signer.held,
+        return try FoodBlock.write("observe", [:], ["confirms": [hash]], author: signer.author ?? "", key: signer.key, blocks: signer.blocks,
                                    audience: .public, after: signer.after, when: .at(signer.at))
     }
 
@@ -84,7 +83,7 @@ public enum Identity {
     /// The pairs of blocks one key signed naming one prev.
     public static func forkPairs(_ blocks: [JSON]) throws -> [[String]] { try Door.forkPairs(blocks) as? [[String]] ?? [] }
     /// Whether a block counts: signed by a key that speaks, in the chain it was written under.
-    public static func counts(_ block: JSON, _ held: Index) throws -> Bool { try Door.counts(block, held.values) }
+    public static func counts(_ block: JSON, _ blocks: Index) throws -> Bool { try Door.counts(block, blocks.values) }
     /// Every key a list or a key grant of hers brought in.
     public static func keyTimeline(_ id: String, _ blocks: [JSON]) throws -> [KeyEntry] {
         (try Door.keyTimeline(id, blocks) as? [JSON] ?? []).map(KeyEntry.init)

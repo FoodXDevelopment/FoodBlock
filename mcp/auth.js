@@ -132,7 +132,7 @@ export function authorizedApp({ door, mcp, approve, provider }) {
   const app = express();
   let router = null;
   app.disable("x-powered-by");
-  // behind a load balancer every client shares one address unless the operator states how many proxies stand in front (F8); it is theirs to state, never guessed
+  // behind a load balancer every client shares one address unless the operator states how many proxies stand in front; it is theirs to state, never guessed
   if (process.env.FOODBLOCK_TRUST_PROXY) app.set("trust proxy", Number(process.env.FOODBLOCK_TRUST_PROXY));
   const verifier = { verifyAccessToken: (token) => provider.verifyAccessToken(token) };
   let bearer = null;

@@ -3,7 +3,7 @@ use super::read_all;
 use crate::js::{hash_of, int, list, rf, rs, sorted_set, ss, st, type_of};
 use crate::prelude::*;
 
-/// A circle's encryption key now: the key grants signed as the circle, where a row holds for it (1.9 stage 6), each with state.epoch one higher,
+/// A circle's encryption key now: the key grants signed as the circle, where a row holds for it, each with state.epoch one higher,
 /// naming epoch n-1 in after. Two rekeys in one epoch both open; the next settles. Returns `{ epoch, keys, grants }`.
 pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
     let read = read_all(blocks);
@@ -19,7 +19,7 @@ pub fn circle_key(circle: &str, blocks: &[Value]) -> Value {
                 && rs(b, "as") == Some(circle)
                 && int(st(b, "epoch")).is_some()
                 && ss(b, "public_key_encrypt").is_some()
-                && crate::identity::counts_in(b, &read)
+                && crate::forks::counts_in(b, &read)
         })
         .filter(|b| super::circle::holds_in(b, circle, &read))
         .collect();

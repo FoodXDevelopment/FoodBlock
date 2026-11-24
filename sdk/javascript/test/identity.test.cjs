@@ -3,11 +3,11 @@ const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 const { genesis, keyGrant, keyTimeline, liveKeys, signedByAuthor, stands, identityState, chainsOf, nextLinkFor } = fb.identity
 
-// FoodBlock 1.9 (identity.md): you are your key; her list of voices; a device key sits under a voice and keeps its own line; her clock
-// is `clocks` ({ names, needed }, the field once called `keepers`) and comes with `reach`.
+// identity.md: you are your key; her list of voices; a device key sits under a voice and keeps its own line; her clock
+// is `clocks` ({ names, needed }) and comes with `reach`.
 const at = (n) => new Date(Date.UTC(2026, 9, 15, 9, 0, n)).toISOString()
 const hand = (block, key) => ({ ...block, signature: fb.signMessage(fb.header(block), key.private_key).signature })
-const say = (id, keys, held, state, n) => fb.write('observe', { kind: 'note', ...state }, {}, { audience: 'public', author: id, key: keys, held, at: at(n) })
+const say = (id, keys, blocks, state, n) => fb.write('observe', { kind: 'note', ...state }, {}, { audience: 'public', author: id, key: keys, blocks, at: at(n) })
 function person() {
   const keys = fb.generateKeypair(), me = genesis(keys, { kind: 'person', audience: 'public', encryptionKey: fb.generateEncryptionKeypair().public_key_encrypt, at: at(0) })
   return { keys, me }
@@ -53,12 +53,12 @@ test('each block sits in its key chain: seq 1 follows the genesis, each next nam
 
 test('a device key is granted by the id, sits under her voice and keeps its own chain', () => {
   const { keys, me } = person(), phone = fb.generateKeypair()
-  const grant = keyGrant(me.hash, { author: me.hash, keys, held: [me], at: at(1) }, { key: phone.public_key_sign })
+  const grant = keyGrant(me.hash, { author: me.hash, keys, blocks: [me], at: at(1) }, { key: phone.public_key_sign })
   assert.deepEqual([fb.valid(grant, [me]), fb.read(grant, [me])], [[], []])
   assert.deepEqual(liveKeys(me.hash, [me, grant]).sort(), [keys.public_key_sign, phone.public_key_sign].sort())
   const timeline = keyTimeline(me.hash, [me, grant])
   assert.deepEqual(timeline.map((entry) => [entry.key, entry.under]), [[keys.public_key_sign, null], [phone.public_key_sign, keys.public_key_sign]])
-  const fromPhone = fb.write('observe', { kind: 'note', text: 'from my phone' }, {}, { audience: 'public', author: me.hash, key: phone, held: [me, grant], at: at(2) })
+  const fromPhone = fb.write('observe', { kind: 'note', text: 'from my phone' }, {}, { audience: 'public', author: me.hash, key: phone, blocks: [me, grant], at: at(2) })
   assert.deepEqual([fromPhone.state.seq, fromPhone.refs.prev, fromPhone.refs.key], [1, grant.hash, grant.hash])
   assert.equal(signedByAuthor(fromPhone, [me, grant]), true)
   assert.deepEqual(stands(fromPhone, [me, grant]), { stands: true, waiting: [] })
@@ -67,7 +67,7 @@ test('a device key is granted by the id, sits under her voice and keeps its own 
 test('her whole list again replaces the old one and names it in updates; a list with clocks carries them', () => {
   const { keys, me } = person(), friend = person().me, phone = fb.generateKeypair()
   const voices = [{ key: keys.public_key_sign }, { key_hash: fb.identity.keyHash(phone.public_key_sign), passes: true }]
-  const signer = { author: me.hash, keys, held: [me, friend], at: at(1) }
+  const signer = { author: me.hash, keys, blocks: [me, friend], at: at(1) }
   assert.throws(() => keyGrant(me.hash, signer, { voices }), /updates/, 'a list names the list it replaces')
   const list = keyGrant(me.hash, signer, { voices, updates: me.hash, clocks: { names: [friend.hash] } })
   assert.equal(list.state.clocks.names[0], friend.hash)

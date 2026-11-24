@@ -1,4 +1,4 @@
-//! Keys (FoodBlock 1.8, stage 1): her list of voices, waits and reaches on her clock, signing twice, keys under a voice, the cut, and
+//! Keys: her list of voices, waits and reaches on her clock, signing twice, keys under a voice, the cut, and
 //! `refs.key` (identity.md; blocks.md, Time, A named clock, The cut, Finality). Each test is a small world of signed blocks.
 use foodblock::door::answer;
 use foodblock::identity::{genesis, key_hash, GenesisOptions};
@@ -12,6 +12,23 @@ struct World {
 struct Person {
     id: String,
     keys: Keypair,
+}
+
+/// A deal's terms in the one form: the price and quantity named here move into one line (with the thing, when there is one).
+fn deal_terms(mut t: Value, what: Option<impl AsRef<str>>) -> Value {
+    let mut line = json!({ "id": "item" });
+    for k in ["quantity", "price"] {
+        if let Some(v) = t.as_object_mut().unwrap().remove(k) {
+            line[k] = v;
+        }
+    }
+    if let Some(w) = what {
+        line["what"] = json!(w.as_ref());
+    }
+    if line.as_object().unwrap().len() > 1 {
+        t["lines"] = json!([line]);
+    }
+    t
 }
 
 fn call(op: &str, args: Value) -> Value {
@@ -49,7 +66,7 @@ impl World {
         let o = WriteOptions {
             compose: ComposeOptions { author: author.into(), at: Some(at.into()), audience: Some(Readers::Public), ..Default::default() },
             key: Some(key),
-            held: &self.blocks,
+            blocks: &self.blocks,
             schemas: None,
         };
         let b = write(t, &state, &refs, &o).unwrap_or_else(|e| panic!("{t} {state}: {e:?}"));
@@ -73,11 +90,7 @@ impl World {
         let keys = clock.keys.clone();
         self.sign(&clock.id, &keys, "observe", json!({ "kind": "receipt" }), json!({ "derives_from": [of["hash"]] }))
     }
-    fn cutoff(&mut self, clock: &Person, word: &Value, when: &str) -> Value {
-        let keys = clock.keys.clone();
-        self.sign(&clock.id, &keys, "observe", json!({ "kind": "cutoff", "when": when }), json!({ "subject": word["hash"] }))
-    }
-    /// 1.9 3d-4: a span's cutoff states the span as its `when` and runs from the receipt it names in `refs.derives_from`
+    /// A span's cutoff states the span as its `when` and runs from the receipt it names in `refs.derives_from`
     fn span_cutoff(&mut self, clock: &Person, word: &Value, from: &Value, span: &str) -> Value {
         let keys = clock.keys.clone();
         self.sign(&clock.id, &keys, "observe", json!({ "kind": "cutoff", "when": span }), json!({ "subject": word["hash"], "derives_from": [from["hash"]] }))
@@ -106,7 +119,7 @@ fn a_genesis_is_a_list_of_one_voice() {
     let mut w = World::new();
     let maria = w.person(1);
     let s = w.state(&maria.id);
-    // 1.9 3b-11: per voice, whether it states that what it signs passes
+    // per voice, whether it states that what it signs passes
     assert_eq!(s["voices"], json!([{ "key": maria.keys.public_key_sign, "passes": false }]));
     assert_eq!(s["clocks"], Value::Null);
     assert_eq!(s["keys"], json!([maria.keys.public_key_sign]));
@@ -119,7 +132,7 @@ fn a_genesis_is_a_list_of_one_voice() {
 #[test]
 fn a_list_is_refused_when_its_shape_is_wrong() {
     let refused = |state: Value, refs: Value| -> Vec<String> {
-        // what a writer refuses: checks 1 to 4 (check 2 types a list: 00-shared row 32) and a closed type's own (check 8)
+        // what a writer refuses: checks 1 to 4 (check 2 types a list) and a closed type's own (check 8)
         foodblock::write_refusals("grant", &state, &refs, Default::default()).into_iter().map(|r| r.code).collect()
     };
     let (a, b) = ("a".repeat(64), "b".repeat(64));
@@ -155,7 +168,6 @@ struct Maria {
     brother: Person,
     shop: Person,
     host: Person,
-    aunt: Person,
     card: Keypair,
     list: Value,
     yes: Value,
@@ -184,12 +196,12 @@ fn maria() -> Maria {
     let list2 = list.clone();
     let mk = maria.keys.clone();
     let id = maria.id.clone();
-    // the first voice's wait is zero: it stands when signed (1.9 3d-18: signing twice is her own choice, a wait above zero; 3d-8: her own
+    // the first voice's wait is zero: it stands when signed (signing twice is her own choice, a wait above zero; her own
     // word stands alone, so it waits on no end); her second signature changes nothing
     assert_eq!(w.stands(&list)["stands"], json!(true));
     let yes = w.confirm(&id, &mk, &list2, &[]);
     assert_eq!(w.stands(&list)["stands"], json!(true));
-    Maria { w, maria, mum, brother, shop, host, aunt, card, list, yes }
+    Maria { w, maria, mum, brother, shop, host, card, list, yes }
 }
 
 #[test]
@@ -322,7 +334,7 @@ fn a_key_under_a_voice_speaks_while_its_voice_does_and_a_stop_ends_it() {
     assert_eq!(w.stands(&u)["stands"], json!(true));
     let id = maria.id.clone();
     let early = w.sign(&id, &tablet, "observe", json!({ "kind": "note" }), json!({}));
-    // 1.9 3d-18: the key grant, by her first voice at `PT0S`, stands when signed, so the tablet speaks before her second signature too
+    // the key grant, by her first voice at `PT0S`, stands when signed, so the tablet speaks before her second signature too
     assert!(w.signed(&early), "its key grant stands in its own causal past");
     let t1 = w.sign(&id, &tablet, "observe", json!({ "kind": "note" }), json!({ "after": [yes["hash"]] }));
     assert_eq!(t1["refs"]["key"], u["hash"]);
@@ -382,8 +394,8 @@ fn a_short_reply_carries_only_what_the_receiver_cannot_rebuild() {
     let sam = w.person(2);
     let host = w.person(3);
     let oven = w.mine(&sam, "thing", json!({ "kind": "oven" }), json!({}));
-    let offer = w.mine(&sam, "promise", json!({ "terms": { "price": { "value": "90", "unit": "KES" } } }), json!({ "from": sam.id, "to": maria.id, "what": oven["hash"] }));
-    let other = w.mine(&sam, "promise", json!({ "terms": { "price": { "value": "90", "unit": "KES" } } }), json!({ "from": sam.id, "to": maria.id, "what": oven["hash"] }));
+    let offer = w.mine(&sam, "promise", json!({ "terms": deal_terms(json!({ "price": { "value": "90", "unit": "KES" } }), Some(&oven["hash"].as_str().unwrap())) }), json!({ "from": sam.id, "to": maria.id }));
+    let other = w.mine(&sam, "promise", json!({ "terms": deal_terms(json!({ "price": { "value": "90", "unit": "KES" } }), Some(&oven["hash"].as_str().unwrap())) }), json!({ "from": sam.id, "to": maria.id }));
     let rb = w.mine(&host, "observe", json!({ "kind": "readback", "readback": "ab".repeat(32) }), json!({ "for": [offer["hash"]] }));
     let before = w.blocks.clone();
     let yes = w.mine(&maria, "promise", json!({ "status": "accepted" }), json!({ "answers": offer["hash"], "for": offer["hash"], "derives_from": [rb["hash"]] }));

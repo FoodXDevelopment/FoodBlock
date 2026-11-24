@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Run a FoodBlock node: Postgres for the blocks (schema.sql, a copy of sql/schema.sql), HTTP for pull, push and discovery.
+// Run a FoodBlock node: Postgres for the blocks (schema.sql), HTTP for pull, push and discovery.
 // The node refuses to start until its owner states these nine choices (nothing is filled in; a missing one is named):
 //   STRANGERS_PER_DAY  the most blocks one day may bring from all strangers together (the node's own total, published as its word): a whole number, 0 refuses strangers;
 //   PER_STRANGER  blocks a day from each stranger where the owner's admission rule names none: a whole number, 0 refuses strangers;
@@ -11,7 +11,7 @@
 //   WAITING_PER_AUTHOR  how many blocks may wait for one author: a whole number (0 keeps none)
 //   COPY_RECIPIENTS     the most recipients one sealed block may be copied to: a whole number (0 keeps no copies)
 //   COPY_BYTES          the most bytes of sealed copies one push may add: a whole number (0 keeps none)
-// And, as before:
+// And:
 //   NODE_IDENTITY the node's OWN machine identity: a file { holder, genesis, key } made here on first start (kept 0600). It signs this
 //                 node's answers and nothing else. The node holds no key of anyone it keeps blocks for: never give it a person's key.
 //   SPEAKS_FOR    the ids this node keeps blocks for, comma separated (required: the node's own id is never one of them by default)
@@ -34,7 +34,7 @@ try {
 } catch (error) { process.stderr.write(`foodblock-node: ${error.message}\n`); process.exit(1) }
 if (!process.env.NODE_IDENTITY) { process.stderr.write('NODE_IDENTITY names the node\'s own key file (made on first start). It is the node\'s machine key, never a person\'s.\n'); process.exit(1) }
 if (!process.env.SPEAKS_FOR || !process.env.SPEAKS_FOR.trim()) { process.stderr.write('SPEAKS_FOR is required: the ids this node keeps blocks for, comma separated\n'); process.exit(1) }
-// The node's own identity: a machine with its own key, made here and kept private. A person's key never reaches a node (the owner's decision 6).
+// The node's own identity: a machine with its own key, made here and kept private. A person's key never reaches a node.
 let own
 if (existsSync(process.env.NODE_IDENTITY)) own = JSON.parse(readFileSync(process.env.NODE_IDENTITY, 'utf8'))
 else {

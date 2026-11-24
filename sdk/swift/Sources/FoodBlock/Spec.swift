@@ -2,7 +2,6 @@ import Foundation
 
 /// FoodBlock (spec/protocol.md, normative) for Swift: a thin layer over the one Rust core (sdk/rust). Every rule,
 /// closed list and grammar lives in that core, which carries spec/protocol.json; this package calls it through `Core`.
-/// There is no alias table and no reading of an older shape: year zero.
 public enum FoodBlock {
     static let both = try! Door.spec()
     /// spec/protocol.json, as data.

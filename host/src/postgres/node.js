@@ -27,14 +27,14 @@ const namedBy = (block) => [block.refs?.prev, block.refs?.schema, ...list(block.
 
 // the most challenges a node keeps unanswered at once
 const CHALLENGES = 10000
-// a message is kept as JSON text (sql/schema.sql); a store that hands back an object is read as it is
+// a message is kept as JSON text (schema.sql); a store that hands back an object is read as it is
 const parse = (m) => (typeof m === 'string' ? JSON.parse(m) : m)
 
 /** The store: one append-only table of blocks, numbered on arrival; sealed copies; blocks waiting; the highest counter of each signer; challenges issued. */
 export function store(pool) {
   const rows = async (where, params, tail = '') => (await pool.query(`SELECT n, hash, message, arrived_at FROM blocks WHERE ${where} ORDER BY n ${tail}`, params)).rows
   // a block is read under the id the node computed when it took it (in the suite of the key that signed it, core.md section 2): a key's first
-  // block after a move to a suite of another hash has an id its bytes alone do not show (security E, n10)
+  // block after a move to a suite of another hash has an id its bytes alone do not show
   const read = (row) => { const message = parse(row.message); return { n: Number(row.n), message, block: { ...blockOf(message), hash: row.hash } } }
   return {
     // the rows after an arrival number, at most `limit` of them (the query stops there: a pull never reads the whole store for one answer)
@@ -102,7 +102,7 @@ export function store(pool) {
       await pool.query('INSERT INTO counters (signer, highest) VALUES ($1, $2) ON CONFLICT (signer) DO NOTHING', [signer, -1])
       return (await pool.query('UPDATE counters SET highest = $2 WHERE signer = $1 AND highest < $2 RETURNING highest', [signer, counter])).rows.length > 0
     },
-    // a challenge lives a day on this node's clock (housekeeping only): unanswered ones are dropped as new ones are issued (door/t2: they had piled up)
+    // a challenge lives a day on this node's clock (housekeeping only): unanswered ones are dropped as new ones are issued
     // and at most CHALLENGES wait at once: past that the oldest go first, so a stranger asking all day fills no table. Who may ask, and how often, is
     // this node's own front door's promise (nodes.md, A node's promise); the protocol and this reference node keep no list of who is identified
     async issue(challenge) {
@@ -139,15 +139,15 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
   const refuse = (message) => Object.assign(new Error(message), { status: 400 })
 
   async function wellKnown() {
-    const held = (await db.around(owners, admission ? [admission] : [])).map((entry) => entry.block)
-    return fb.sync.wellKnown({ node: holder, admission: admissionRule(held, admission, owners, perStranger, strangersPerDay).hash,
+    const blocks = (await db.around(owners, admission ? [admission] : [])).map((entry) => entry.block)
+    return fb.sync.wellKnown({ node: holder, admission: admissionRule(blocks, admission, owners, perStranger, strangersPerDay).hash,
       endpoints: url ? { pull: `${url}/pull`, push: `${url}/push`, challenge: `${url}/challenge` } : {} })
   }
 
   // The discovery document is closed (the SDK refuses a field it does not list), so what this node's software chose sits beside it, as plain data.
   async function admissionInEffect() {
-    const held = (await db.around(owners, admission ? [admission] : [])).map((entry) => entry.block)
-    const rule = admissionRule(held, admission, owners, perStranger, strangersPerDay)
+    const blocks = (await db.around(owners, admission ? [admission] : [])).map((entry) => entry.block)
+    const rule = admissionRule(blocks, admission, owners, perStranger, strangersPerDay)
     // What this node chooses where the owner's rule is silent (consent.md, No default; nodes.md), printed as plain data so owners and senders see it:
     // per_stranger is the owner's, else this node's stated choice;
     // no order_channel means a person writes first. `software_chose` names each choice that is this node's, not the owner's.
@@ -160,13 +160,12 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
   async function checkSigned(request, check, who) {
     // a request that is malformed, for another node, or replayed is refused before the signer's chain is read: a forged request costs one
     // cheap check, never a load of someone else's chain (only the signature, which needs their keys, waits for it)
-    const challenge0 = typeof request.challenge === 'string' ? request.challenge : null
-    const cheap = fb.sync[check](request, { node: holder, keys: [], highest: await db.highest(who), issued: challenge0 && await db.issued(challenge0) ? [challenge0] : [] })
+    const challenge = typeof request.challenge === 'string' ? request.challenge : null
+    const cheap = fb.sync[check](request, { node: holder, keys: [], highest: await db.highest(who), issued: challenge && await db.issued(challenge) ? [challenge] : [] })
       .filter((one) => !/not signed by its signer/.test(one.detail))
     if (cheap.length) throw refuse(cheap.map((one) => `${one.code}: ${one.detail}`).join('; '))
-    // a request is signed by a live key of its signer (nodes.md, Messages): a rotated-out, frozen or void key opens no door (r7)
+    // a request is signed by a live key of its signer (nodes.md, Messages): a rotated-out, frozen or void key opens no door
     const keys = fb.identity.liveKeys(who, (await db.byAuthor(who)).map((entry) => entry.block))
-    const challenge = typeof request.challenge === 'string' ? request.challenge : null
     const wrong = fb.sync[check](request, { node: holder, keys, highest: await db.highest(who), issued: challenge && await db.issued(challenge) ? [challenge] : [] })
     if (wrong.length) throw refuse(wrong.map((one) => `${one.code}: ${one.detail}`).join('; '))
     if (!(challenge ? await db.use(challenge) : await db.count(who, request.counter))) throw refuse('replay: this request was already answered')
@@ -182,7 +181,7 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
     const who = signed ? request.signer : null
     if (signed) await checkSigned(request, 'pullRefusals', who)
     // the rows the answer can hold: at most `cap` after `since` with no filter and no heads asked, and at most a window of `scan` rows with
-    // them (the query stops there either way: an unsigned pull never makes the node read the whole store; security n3). An answer that is
+    // them (the query stops there either way: an unsigned pull never makes the node read the whole store). An answer that is
     // not full goes on from the last row read (`through`). Beside them, the blocks that share a place in a chain with one of them, so a lie
     // travels with its proof.
     const filtered = Boolean(request.filter || request.heads)
@@ -196,20 +195,20 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
       ...(copies.has(block.hash) ? { copies: { [who]: copies.get(block.hash) } } : {}) }))
     // a record filter reads each row's chain of updates back to its first version: those blocks and no more
     // whether a block speaks for its author is read from the author's own chain, so a pair's proof needs those authors' blocks: read them only when a rival rides
-    let held = rows.length > after.length ? (await context([...new Set(rows.map(({ block }) => authorOf(block)))], [])).map((entry) => entry.block) : undefined
+    let blocks = rows.length > after.length ? (await context([...new Set(rows.map(({ block }) => authorOf(block)))], [])).map((entry) => entry.block) : undefined
     if (request.filter?.record) {
       const got = new Map(rows.map(({ block }) => [block.hash, block]))
       for (let ask = [...got.values()].map((b) => b.refs?.updates).filter((h) => typeof h === 'string' && !got.has(h)); ask.length;) {
         for (const entry of await db.around([], ask)) got.set(entry.block.hash, entry.block)
         ask = [...new Set(ask.map((h) => got.get(h)?.refs?.updates))].filter((h) => typeof h === 'string' && !got.has(h))
       }
-      held = [...got.values()]
+      blocks = [...got.values()]
     }
-    return fb.sync.answerPull(log, request, { node: holder, privateKey: key.private_key, signer: who, cap, servesPairs, held, suite: key.suite, through })
+    return fb.sync.answerPull(log, request, { node: holder, privateKey: key.private_key, signer: who, cap, servesPairs, blocks, suite: key.suite, through })
   }
 
   // What the core needs to judge blocks: every block they name, with each author's whole chain, and what those rest on in turn, to the end
-  // (the causal closure). One step deep is not enough: an accept pushed alone needs the offer, and the offer its author's keys (security K).
+  // (the causal closure). One step deep is not enough: an accept pushed alone needs the offer, and the offer its author's keys.
   async function context(authors, hashes) {
     const got = new Map(), seenAuthors = new Set(), seenHashes = new Set()
     let A = [...new Set(authors.filter(Boolean))], H = [...new Set(hashes.filter(Boolean))]
@@ -239,9 +238,9 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
     const signer = body.signature !== undefined ? body.signer : null
     if (!Array.isArray(messages) || messages.length > MOST_MESSAGES) throw refuse(`a push is { messages, for }: messages a list of block messages (at most ${MOST_MESSAGES})`)
     const refused = [], incoming = []
-    // 1.8 (canonical.md): a push is its canonical bytes, whole. One that is not (a repeated key, a number written 1.0, a key out of order) is refused with the core's reason; nothing in it is read
+    // A push (canonical.md) is its canonical bytes, whole. One that is not (a repeated key, a number written 1.0, a key out of order) is refused with the core's reason; nothing in it is read
     const whole = strict.refused ? [strict.refused] : []
-    if (whole.length) return fb.sync.pushAnswer({ taken: [], unjudged: [], unread: [], refused: whole, equivocations: [], at: new Date().toISOString() }, { node: holder, privateKey: key.private_key, suite: key.suite })
+    if (whole.length) return fb.sync.pushAnswer({ taken: [], unjudged: [], unread: [], refused: whole, equivocations: [] }, { node: holder, privateKey: key.private_key, suite: key.suite })
     // The copies this push may add: the owner's numbers (copyRecipients for one block, copyBytes for the push). A sealed block that would pass
     // either is refused whole, never half kept.
     const copies = copyBudget({ copyRecipients, copyBytes })
@@ -269,7 +268,7 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
       } catch (error) { refused.push({ hash: null, code: 'shape', detail: error.message }) }
     }
     // Waiting blocks expire after the node's own time; one is tried again only when a block it waits for arrives (and what waited on it, in
-    // turn), so a pile of waiting junk costs nothing on later pushes (nodes.md; security I).
+    // turn), so a pile of waiting junk costs nothing on later pushes (nodes.md).
     await db.expire(new Date(Date.now() - ttl))
     for (let ask = incoming.map((one) => one.block.hash).filter(Boolean); ask.length;) {
       const rows = (await db.waitingFor(ask)).filter((row) => !incoming.some((one) => one.block.hash === row.hash))
@@ -283,25 +282,23 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
     // a whole block the push brings again is judged again (the same bytes are taken again); a header held under an arriving block's hash stays
     const known = around.map((entry) => entry.block).filter((block) => block.type === undefined || !blocks.some((other) => other.hash === block.hash && other.type === undefined))
     // a block whose body the node already holds is nothing new (nodes.md, Rounds): it is not judged again, neither taken nor refused, and
-    // the answer says it was held (the node's own word, `held`). The id must be the one the core computes and the signature the one held.
-    const heldBodies = new Map(known.filter((block) => block.type !== undefined).map((block) => [block.hash, block]))
-    const heldNow = new Set()
+    // the answer says it was held (the node's own word, `had`). The id must be the one the core computes and the signature the one held.
+    const hadBodies = new Map(known.filter((block) => block.type !== undefined).map((block) => [block.hash, block]))
+    const hadNow = new Set()
     for (const one of incoming) {
-      const have = heldBodies.get(one.block.hash)
+      const have = hadBodies.get(one.block.hash)
       if (!have || one.waited || isSealed(one.message) || one.block.type === undefined || have.signature !== one.block.signature) continue
       let id = null
       try { id = fb.idOf(one.block, known) } catch {}
-      if (id === one.block.hash) heldNow.add(one.block.hash)
+      if (id === one.block.hash) hadNow.add(one.block.hash)
     }
     const schemas = new Map([...known, ...blocks].filter((block) => block.type === 'thing' && block.state?.kind === 'schema').map((block) => [block.hash, block]))
     // Public blocks and sealed headers are judged together, on their pieces (nodes.md): the core reads a sealed block by its signed public header
     // alone (a key of its author that speaks for it, the same key's next seq, no rival) and the node does none of it.
-    const answerOf = fb.sync.accept([...blocks.filter((block) => block.type !== undefined && !heldNow.has(block.hash)), ...incoming.filter((one) => isSealed(one.message)).map((one) => one.message)], known, { takesPairs, schemas })
+    const answerOf = fb.sync.accept([...blocks.filter((block) => block.type !== undefined && !hadNow.has(block.hash)), ...incoming.filter((one) => isSealed(one.message)).map((one) => one.message)], known, { takesPairs, schemas })
     // the core lists what it took ascending by hash; this node's arrival numbers follow the order the sender sent them in
     const sentAt = new Map(incoming.map((one, i) => [one.block.hash, i]))
     const result = { ...answerOf, taken: answerOf.taken.map((one) => (isSealed(one) ? headerBlock(one) : one)).sort((a, b) => (sentAt.get(a.hash) ?? 0) - (sentAt.get(b.hash) ?? 0)) }
-    const sealed = { taken: [], unjudged: [], refused: [], equivocations: [] }
-
     // a header the body under its hash proved false gives the body its row (the body is its own proof; nodes.md)
     for (const hash of result.false_headers || []) await db.dropFalseHeader(hash)
     const rule = admissionRule([...known, ...result.taken], admission, owners, perStranger, strangersPerDay)
@@ -319,7 +316,7 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
     // its bytes alone do not show), by its signature: it is then kept under the id the core computed
     const entryOf = (hash, block) => incoming.find((one) => one.block.hash === hash) ||
       (block && incoming.find((one) => one.block.type === block.type && one.block.signature === block.signature && (one.block = { ...one.block, hash: block.hash })))
-    for (const block of [...result.taken, ...sealed.taken]) {
+    for (const block of result.taken) {
       const one = entryOf(block.hash, block)
       if (!one) continue
       const { message, recipients } = one
@@ -338,7 +335,7 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
     // Two blocks of one key naming one prev: both are kept and served with the chain, so anyone can publish the proof.
     // Each arriving block of a pair is admitted by the same rule as any other (an equivocation is no way past it), and kept once.
     const kept = new Set()
-    for (const pair of [...result.equivocations, ...sealed.equivocations]) for (const hash of pair) {
+    for (const pair of result.equivocations) for (const hash of pair) {
       const one = entryOf(hash)
       if (!one || kept.has(hash) || taken.some((block) => block.hash === hash)) continue
       kept.add(hash)
@@ -362,7 +359,7 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
       waiting.push(wait.hash)
     }
     // a copy its author signed for a sealed block already held (by an earlier header) is kept beside it, once the header held is the author's own
-    const refusedNow = new Set([...result.refused, ...sealed.refused].map((one) => one.hash))
+    const refusedNow = new Set(result.refused.map((one) => one.hash))
     for (const one of incoming) {
       if (!isSealed(one.message) || !one.recipients.length || !one.message.envelope || takenNow.has(one.block.hash) || refusedNow.has(one.block.hash)) continue
       // a late copy is a block too: the author's admission counts it, and only people this node speaks for, or the owner's rule lists, hold copies
@@ -371,10 +368,9 @@ export function createNode({ pool, holder, key, owners = [], admission, url = ''
       for (const recipient of one.recipients.filter(copyable)) await db.copy(one.block.hash, recipient, one.message, author)
       admittedNow.set(author, (admittedNow.get(author) || 0) + 1)
     }
-    const allRefused = [...refused, ...result.refused, ...sealed.refused]
+    const allRefused = [...refused, ...result.refused]
     await db.unwait(incoming.filter((one) => one.waited && !waiting.includes(one.block.hash)).map((one) => one.block.hash))
-    // the node's own time it took the push, signed with the answer: a receipt its pusher may keep in a deal (nodes.md; promises.md, decision D12)
-    return fb.sync.pushAnswer({ taken, unjudged: waiting.map((hash) => ({ hash, needs: result.unjudged.find((u) => u.hash === hash)?.needs || [] })), unread: result.unread, refused: allRefused, equivocations: [...result.equivocations, ...sealed.equivocations], ...(heldNow.size ? { held: [...heldNow].sort() } : {}), at: new Date().toISOString() }, { node: holder, privateKey: key.private_key, suite: key.suite })
+    return fb.sync.pushAnswer({ taken, unjudged: waiting.map((hash) => ({ hash, needs: result.unjudged.find((u) => u.hash === hash)?.needs || [] })), unread: result.unread, refused: allRefused, equivocations: result.equivocations, ...(hadNow.size ? { had: [...hadNow].sort() } : {}) }, { node: holder, privateKey: key.private_key, suite: key.suite })
   }
 
   // a copy is kept only for a person this node speaks for or one the owner's admission rule lists

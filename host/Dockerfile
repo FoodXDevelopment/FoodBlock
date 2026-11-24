@@ -3,9 +3,8 @@
 FROM node:24-alpine
 ENV NODE_ENV=production
 WORKDIR /app
-# The node depends on the SDK package (file:../sdk/javascript), which loads spec/protocol.json.
+# The node depends on the SDK package (file:../sdk/javascript), which carries its own copy of the spec files and the core.
 COPY sdk/javascript/ ./sdk/javascript/
-COPY spec/protocol.json ./spec/
 COPY host/package*.json ./host/
 WORKDIR /app/host
 RUN npm ci --omit=dev --ignore-scripts

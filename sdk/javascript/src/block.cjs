@@ -7,8 +7,8 @@ const create = (type, state = {}, refs = {}, suite) => door.create(type, state, 
 /** The id of a block: the hash of its canonical form in the hash of the suite of the key that signed it (SHA-256 bare, `sm3:...`). */
 const hash = (type, state = {}, refs = {}, suite) => door.hash(type, state, refs, suite)
 
-/** A block's id: in the suite of the key that signed it, that key found among `held` (core.md, section 2); without `held`, in the suite the
+/** A block's id: in the suite of the key that signed it, that key found among `blocks` (core.md, section 2); without `blocks`, in the suite the
  * block shows (a genesis's own, else as its prev is hashed). */
-const idOf = (block, held) => (held === undefined ? door.idOf(block) : door.idOf(block, require('./core.cjs').list(held)))
+const idOf = (block, blocks) => (blocks === undefined ? door.idOf(block) : door.idOf(block, require('./core.cjs').list(blocks)))
 
 module.exports = { create, hash, idOf }

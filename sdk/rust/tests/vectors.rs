@@ -49,9 +49,6 @@ fn full(b: &Value) -> Value {
     o.insert("signature".into(), b["signature"].clone());
     Value::Object(o)
 }
-fn blocks_of(list: &Value) -> Value {
-    Value::Array(list.as_array().unwrap().iter().map(full).collect())
-}
 fn subset(got: &Value, want: &Value) -> bool {
     match (got, want) {
         (Value::Array(g), Value::Array(w)) if g.len() == w.len() => g.iter().zip(w).all(|(a, b)| subset(a, b)),
@@ -59,10 +56,6 @@ fn subset(got: &Value, want: &Value) -> bool {
         (Value::Number(a), Value::Number(b)) => a.as_f64() == b.as_f64(),
         (g, w) => g == w,
     }
-}
-fn sorted(mut v: Vec<String>) -> Vec<String> {
-    v.sort();
-    v
 }
 
 struct Tally {
@@ -175,9 +168,24 @@ fn every_vector_section() {
 
     // Envelopes, sealed copies, headers.
     for c in v["envelopes"].as_array().unwrap() {
-        let inside = ok("open", json!([c["envelope"], key(c["recipient"].as_str().unwrap(), "x25519_private")]));
+        // an X-Wing recipient opens with its 32-byte private seed
+        let who = c["recipient"].as_str().unwrap();
+        let private = if v["keys"][who]["xwing_private"].is_string() { key(who, "xwing_private") } else { key(who, "x25519_private") };
+        let inside = ok("open", json!([c["envelope"], private]));
         let m = ok("unwrap", json!([inside]));
         t.check(m["hash"] == c["opens_to"]["hash"] && m["signature"] == c["opens_to"]["signature"], format!("envelope: {}", c["name"]));
+    }
+    // X-Wing (draft-connolly-cfrg-xwing-kem-11, appendix C): key generation, encapsulation and decapsulation by the core's own primitives
+    {
+        let d = &v["xwing_draft11"];
+        let h = |k: &str| foodblock::block::unhex(d[k].as_str().unwrap()).unwrap();
+        let sk: [u8; 32] = h("sk").try_into().unwrap();
+        let eseed: [u8; 64] = h("eseed").try_into().unwrap();
+        let pk = foodblock::envelope::xwing::public_key(&sk);
+        t.check(pk == h("pk"), "xwing draft 11: the key of its private seed");
+        let (ss, ct) = foodblock::envelope::xwing::encaps(&pk, &eseed).unwrap();
+        t.check(ct == h("ct") && ss.to_vec() == h("ss"), "xwing draft 11: encapsulation with the draft's bytes");
+        t.check(foodblock::envelope::xwing::decaps(&sk, &ct).unwrap().to_vec() == h("ss"), "xwing draft 11: decapsulation");
     }
     for c in v["sealed"]["cases"].as_array().unwrap() {
         let m = ok("open_copy", json!([c["message"], key(c["recipient"].as_str().unwrap(), "x25519_private")]));

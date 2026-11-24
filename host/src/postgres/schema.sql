@@ -1,4 +1,4 @@
--- The FoodBlock node store (server/). Append-only: the node inserts and reads, never updates or deletes a block.
+-- The FoodBlock node store. Append-only: the node inserts and reads, never updates or deletes a block.
 -- Each block is kept exactly as it arrived: a public block as its message { block, signature }, a sealed one as its signed
 -- public header { header, header_signature }. A message carries no version. A hash is recomputed on arrival, never trusted.
 
@@ -25,8 +25,6 @@ CREATE TABLE IF NOT EXISTS copies (
   arrived_at TIMESTAMPTZ NOT NULL DEFAULT now(), -- this node's clock: used only to rate strangers
   PRIMARY KEY (hash, recipient)
 );
-ALTER TABLE copies ADD COLUMN IF NOT EXISTS author TEXT;
-ALTER TABLE copies ADD COLUMN IF NOT EXISTS arrived_at TIMESTAMPTZ NOT NULL DEFAULT now();
 CREATE INDEX IF NOT EXISTS copies_author ON copies (author);
 
 -- Pushed blocks whose key's previous block is not yet held (spec §10): they wait, are tried again with each push,

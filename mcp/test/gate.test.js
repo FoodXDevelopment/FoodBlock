@@ -6,33 +6,32 @@ import { createDoor, memoryNode, approvalHandler } from '../door.js'
 import { testPerson, publicSide, tap } from './fixtures.js'
 import { serveHttp } from '../server.js'
 
-// The human gate (security O): the person sees exactly what the tap signs, a standing promise is never sized as one occurrence, a
-// disconnect ends the grant, the door answers only its own pages, and a code cannot be guessed. Each case is built from the repro that
-// broke it (scratchpad/security20/door-server and agents).
-const say = (who, node, type, state, refs) => { const s = fb.write(type, state, refs, { author: who.id, key: who.keys, held: who.chain, at: new Date().toISOString(), audience: 'public' }); who.chain.push(s); const r = node.push(s); assert.equal(r.refused.length, 0, JSON.stringify(r.refused)); return s }
+// The human gate: the person sees exactly what the tap signs, a standing promise is never sized as one occurrence, a
+// disconnect ends the grant, the door answers only its own pages, and a code cannot be guessed.
+const say = (who, node, type, state, refs) => { const s = fb.write(type, state, refs, { author: who.id, key: who.keys, blocks: who.chain, at: new Date().toISOString(), audience: 'public' }); who.chain.push(s); const r = node.push(s); assert.equal(r.refused.length, 0, JSON.stringify(r.refused)); return s }
 const world = (terms) => {
   const node = memoryNode(), person = testPerson(), seller = testPerson()
   const door = createDoor({ node, person: publicSide(person) })
   node.push(seller.genesis)
   const flour = say(seller, node, 'thing', { kind: 'flour', name: 'Strong white flour' }, {})
-  const offer = say(seller, node, 'promise', { terms: { expires: '2099-01-01T00:00:00.000Z', ...terms } }, { from: seller.id, to: person.id, what: flour.hash })
+  const offer = say(seller, node, 'promise', { terms: { lines: [{ id: 'flour', what: flour.hash, ...terms }], expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id })
   return { node, person, seller, door, flour, offer }
 }
 
 describe('the human gate', () => {
-  it('the summary is of the draft being signed: its own quantity, the total, the full counterparty id (door/t9, agents/t1)', () => {
+  it('the summary is of the draft being signed: its own quantity, the total, the full counterparty id', () => {
     const { door, seller, offer } = world({ price: { amount: fb.amount('1.50', 'GBP'), per: fb.amount('1', 'kg') }, quantity: { min: fb.amount('1', 'kg'), max: fb.amount('100000', 'kg') } })
     const assistant = door.agent('claude')
     const draft = door.accept(assistant, { audience: 'public', promise: offer.hash, quantity: fb.amount('100000', 'kg') })
     assert.equal(draft.bound, false)
     assert.match(draft.summary, /^Accept: /)
-    assert.match(draft.summary, /terms\.quantity: 100000 kg/)
+    assert.match(draft.summary, /terms\.lines\.0\.quantity: 100000 kg/)
     assert.match(draft.summary, /what it comes to: 150000 GBP in all/)
     assert.ok(draft.summary.includes(seller.id), 'the whole id, never 8 characters')
     assert.ok(!/undefined/.test(draft.summary))
   })
 
-  it('an amount reads as the exact decimal text it was signed as, in its own unit (1.8: no minor units, no currency table)', () => {
+  it('an amount reads as the exact decimal text it was signed as, in its own unit (no minor units, no currency table)', () => {
     const { door, offer } = world({ price: fb.amount('100000', 'JPY') })
     const draft = door.accept(door.agent(), { audience: 'public', promise: offer.hash })
     assert.match(draft.summary, /what it comes to: 100000 JPY in all/)
@@ -40,22 +39,22 @@ describe('the human gate', () => {
     assert.match(d2.accept(d2.agent(), { audience: 'public', promise: o2.hash }).summary, /1\.5(00)? KWD/)
   })
 
-  it('a name cannot reorder the page: direction controls are dropped and a long name is cut (agents/t7)', () => {
+  it('a name cannot reorder the page: direction controls are dropped and a long name is cut', () => {
     const node = memoryNode(), person = testPerson(), seller = testPerson()
     const door = createDoor({ node, person: publicSide(person) })
     node.push(seller.genesis)
     const thing = say(seller, node, 'thing', { kind: 'flour', name: 'flour ‮09.1 at ‬' + 'x'.repeat(500) }, {})
-    const offer = say(seller, node, 'promise', { terms: { price: fb.amount('1.50', 'GBP'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: thing.hash })
+    const offer = say(seller, node, 'promise', { terms: { lines: [{ id: 'flour', what: thing.hash, price: fb.amount('1.50', 'GBP') }], expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id })
     const summary = door.accept(door.agent(), { audience: 'public', promise: offer.hash }).summary
     assert.ok(!/[‪-‮]/.test(summary))
     assert.ok(!summary.includes('x'.repeat(200)), 'a long name is cut')
   })
 
-  // 1.9 (stage 4 G1): what a block under a grant draws is counted on the grant's line by the SDK; a grant that names no promise of hers in
+  // What a block under a grant draws is counted on the grant's line by the SDK; a grant that names no promise of hers in
   // `scope.on` binds nothing, a standing promise included
-  it('a standing promise under a money limit is a draft (agents/t3)', () => {
+  it('a standing promise under a money limit is a draft', () => {
     const { door, person, seller, node, offer: once } = world({ price: fb.amount('19.00', 'GBP') })
-    const daily = say(seller, node, 'promise', { when: '2026-11-01T09:00:00.000Z', terms: { price: fb.amount('19.00', 'GBP'), repeat: 'FREQ=DAILY', zone: 'UTC', until: '2027-11-01T00:00:00.000Z', expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id, what: once.refs.what })
+    const daily = say(seller, node, 'promise', { when: '2026-11-01T09:00:00.000Z', terms: { lines: [{ id: 'flour', what: once.state.terms.lines[0].what, price: fb.amount('19.00', 'GBP') }], repeat: 'FREQ=DAILY', zone: 'UTC', until: '2027-11-01T00:00:00.000Z', expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: person.id })
     const assistant = door.agent('claude')
     const grant = door.connect(assistant, { audience: 'public', parties: [seller.id], types: ['promise'], limit: fb.amount('20.00', 'GBP') })
     assert.equal(tap(door, grant.draft, person).ok, true)
@@ -65,16 +64,15 @@ describe('the human gate', () => {
     assert.match(got.summary, /terms\.repeat: FREQ=DAILY/); assert.match(got.summary, /terms\.until: 2027-11-01/)
   })
 
-  it('a grant summary says when there is no limit; the tap signs one grant and no operator grant (1.8, decided 1)', () => {
+  it('a grant summary says when there is no limit; the tap signs one grant', () => {
     const { door, node, person } = world({ price: fb.amount('1.50', 'GBP') })
     const draft = door.connect(door.agent('claude'), { audience: 'public', types: ['promise'] })
     assert.match(draft.summary, /NO limit/)
-    assert.doesNotMatch(draft.summary, /operator/)
     assert.equal(tap(door, draft.draft, person).ok, true)
-    assert.equal(node.all().filter((b) => b.type === 'grant' && b.state.kind === 'operator').length, 0)
+    assert.equal(node.all().filter((b) => b.type === 'grant').length, 1, 'one grant, signed by the tap')
   })
 
-  it('what she signs is what she was shown: the page names every reader, and every field of the block (review F2)', async () => {
+  it('what she signs is what she was shown: the page names every reader, and every field of the block', async () => {
     const { door, person, seller, offer } = world({ price: fb.amount('1.50', 'GBP') })
     const assistant = door.agent('claude')
     const page = async (draft) => { let body = ''; await approvalHandler(door)({ url: '/approve/' + draft.draft, method: 'GET' }, { writeHead() {}, end(t) { body = t } }); return body }
@@ -87,20 +85,20 @@ describe('the human gate', () => {
     assert.ok(secret.indexOf(assistant.id) < secret.indexOf(offer.hash), 'who may read comes first')
   })
 
-  it('an ask with nothing to ask for is refused at draft time, never signed as the word "undefined" (review F2)', () => {
+  it('an ask with nothing to ask for is refused at draft time, never signed as the word "undefined"', () => {
     const { door, seller } = world({ price: fb.amount('1.50', 'GBP') })
     assert.throws(() => door.ask({ audience: 'public', from: seller.id }), /nothing to ask for/)
     assert.equal(door.pending().length, 0)
   })
 
-  it('a full id, never a prefix: a short or shared prefix finds nothing (door-server L1, agents/t20)', () => {
+  it('a full id, never a prefix: a short or shared prefix finds nothing', () => {
     const { door, node, offer } = world({ price: fb.amount('1.50', 'GBP') })
     assert.throws(() => door.accept(door.agent(), { audience: 'public', promise: offer.hash.slice(0, 8) }), /full id/)
     assert.throws(() => door.ask({ audience: 'public', offer: offer.hash.slice(0, 1) }), /full id/)
     assert.equal(node.get(offer.hash.slice(0, 1)), null)
   })
 
-  it('disconnect drafts the stop for her device to sign: the door never ends a grant in her name (F1; door-server M4, agents/t10)', () => {
+  it('disconnect drafts the stop for her device to sign: the door never ends a grant in her name', () => {
     const { door, node, person } = world({ price: fb.amount('1.50', 'GBP') })
     const assistant = door.agent('claude', { client: 'client-1' })
     const draft = door.connect(assistant, { audience: 'public', types: ['promise'], limit: fb.amount('20.00', 'GBP') })
@@ -117,7 +115,7 @@ describe('the human gate', () => {
     assert.equal(fb.grant.isLive(grant, node.all()), false)
   })
 
-  it('a wrong signature costs its sender a second, and five lock the draft: guesses cannot run side by side (F4; release 50, door-server M6)', async () => {
+  it('a wrong signature costs its sender a second, and five lock the draft: guesses cannot run side by side', async () => {
     const { door, offer, person } = world({ price: fb.amount('1.50', 'GBP') })
     const draft = door.ask({ audience: 'public', offer: offer.hash })
     const server = http.createServer(async (req, res) => { if (!(await approvalHandler(door)(req, res))) res.writeHead(404).end() })
@@ -133,7 +131,7 @@ describe('the human gate', () => {
     assert.equal((await post(fb.sign(door.signing(draft.draft)?.block ?? {}, person.keys.private_key))).status, 403, 'a locked draft takes no more')
   })
 
-  it('the approval page cannot be framed (agents/t7 e)', async () => {
+  it('the approval page cannot be framed', async () => {
     const { door, offer } = world({ price: fb.amount('1.50', 'GBP') })
     const server = http.createServer(async (req, res) => { if (!(await approvalHandler(door)(req, res))) res.writeHead(404).end() })
     await new Promise((done) => server.listen(0, '127.0.0.1', done)); after(() => server.close())
@@ -143,7 +141,7 @@ describe('the human gate', () => {
     assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/)
   })
 
-  it('with no OAuth the door answers only its own pages: another Host or Origin is refused (door-server M6, agents/t13)', async () => {
+  it('with no OAuth the door answers only its own pages: another Host or Origin is refused', async () => {
     const me = testPerson(), door = createDoor({ person: publicSide(me) })
     const server = await serveHttp(door, 0); after(() => server.close())
     const port = server.address().port
@@ -157,14 +155,14 @@ describe('the human gate', () => {
   })
 })
 
-describe('what she is shown (report 06 F3)', () => {
+describe('what she is shown', () => {
   it('a passkey signs: the page asks her browser for it, and the door takes the WebAuthn answer', async () => {
     const { passkeyAnswer } = await import('./fixtures.js')
     const keys = fb.generateKeypair('p256'), node = memoryNode()
     const genesis = fb.identity.genesis(keys, { kind: 'person', at: new Date().toISOString(), audience: 'public' })
     const seller = testPerson(); node.push(seller.genesis)
     const flour = say(seller, node, 'thing', { kind: 'flour', name: 'Strong white flour' }, {})
-    const offer = say(seller, node, 'promise', { terms: { price: fb.amount('1.50', 'GBP'), expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: genesis.hash, what: flour.hash })
+    const offer = say(seller, node, 'promise', { terms: { lines: [{ id: 'flour', what: flour.hash, price: fb.amount('1.50', 'GBP') }], expires: '2099-01-01T00:00:00.000Z' } }, { from: seller.id, to: genesis.hash })
     const door = createDoor({ node, person: { id: genesis.hash, genesis, chain: [genesis] } })
     const draft = door.ask({ audience: 'public', offer: offer.hash })
     let html = ''; await approvalHandler(door)({ url: '/approve/' + draft.draft, method: 'GET' }, { writeHead() {}, end(t) { html = t } })
@@ -180,7 +178,7 @@ describe('what she is shown (report 06 F3)', () => {
     const { door, seller, flour, offer } = world({ price: fb.amount('1.50', 'GBP') })
     const draft = door.ask({ audience: 'public', offer: offer.hash })
     const lines = door.drafts.get(draft.draft).shown.join('\n')
-    assert.match(lines, /refs\.what: "Strong white flour" \(their words\), kind flour, made by/)
+    assert.match(lines, /terms\.lines\.0\.what: "Strong white flour" \(their words\), kind flour, made by/)
     assert.ok(lines.includes(flour.hash) && lines.includes(seller.id))
   })
 
@@ -189,7 +187,7 @@ describe('what she is shown (report 06 F3)', () => {
     const other = testPerson(); node.push(other.genesis)
     say(other, node, 'thing', { kind: 'flour', name: 'Strong white flour' }, {})
     const lines = door.drafts.get(door.ask({ audience: 'public', offer: offer.hash }).draft).shown.join('\n')
-    assert.match(lines, /WARNING: 1 other held thing shares this name and kind/)
+    assert.match(lines, /WARNING: 1 other thing here shares this name and kind/)
     assert.ok(flour)
   })
 
@@ -204,7 +202,7 @@ describe('what she is shown (report 06 F3)', () => {
   it('the tool\'s summary is the page\'s own lines, so it cannot say "no price" over a block that carries one', () => {
     const { door, offer } = world({ price: fb.amount('1.50', 'GBP') })
     const draft = door.ask({ audience: 'public', offer: offer.hash, price: fb.amount('900', 'GBP') })
-    assert.match(draft.summary, /terms\.price: 900 GBP/)
+    assert.match(draft.summary, /terms\.lines\.0\.price: 900 GBP/)
     assert.doesNotMatch(draft.summary, /no price/)
     for (const line of door.drafts.get(draft.draft).shown.slice(1)) assert.ok(draft.summary.includes(line))
   })

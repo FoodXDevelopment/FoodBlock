@@ -1,5 +1,5 @@
 //! The named clock (blocks.md, A named clock): the parties name `clocks`, and a block is placed by where their receipts sit on their lines.
-//! A block's own `at` never dates it for anyone else, and no date orders two receipts (1.9 3b-4, 3c-6, 3d-1, 3d-4): a receipt is before
+//! A block's own `at` never dates it for anyone else, and no date orders two receipts (blocks.md, A named clock): a receipt is before
 //! another where the other has it in its causal past, and a time a word states is shown only by its clocks' cutoffs, by their place. Every
 //! rule that says "by T" on a clock (a condition `within` or `without`, an offer's `expires`, a bid's deadline) reads these primitives.
 use super::speaker_of;
@@ -16,7 +16,7 @@ pub(crate) fn clock_voice(o: &Value, k: &Clocks, index: &Index) -> Option<String
     .then(|| author.to_string())
 }
 
-/// 1.9 3b-4: of two blocks, `x` came first on a clock where `needed` of its lines each hold a receipt of `x` before any receipt of `y`.
+/// Of two blocks, `x` came first on a clock where `needed` of its lines each hold a receipt of `x` before any receipt of `y`.
 /// A receipt's place on its clock's line is its time; its `at` orders nothing. A line that holds a receipt of `x` and none of `y` shows
 /// `x` first.
 pub(crate) fn came_first(x: &str, y: &str, k: &Clocks, index: &Index) -> bool {
@@ -53,25 +53,10 @@ pub(crate) fn received_by(target: &str, k: &Clocks, index: &Index, t: &str) -> b
     by_time(target, t, None, k, index, &|_| true).0 >= k.needed
 }
 
-/// Whether a block is received after another on `needed` lines: each holds a receipt of `later` with a receipt of every block of `first`
-/// before it (a bid's opening after both bids, by place).
-pub(crate) fn received_after(later: &str, first: &[&str], k: &Clocks, index: &Index) -> bool {
-    let all = |_: &str| true;
-    let n = k
-        .names
-        .iter()
-        .filter_map(|name| line_named(name, index))
-        .filter(|line| {
-            receipts_of(later, line, index, &all).iter().any(|r| first.iter().all(|f| receipts_of(f, line, index, &all).iter().any(|e| crate::line::before(e, r, index))))
-        })
-        .count();
-    n >= k.needed
-}
-
-/// A reading, binding no one (1.9 3d-1, 3d-2): the date a clock's own receipt of a block states, for a view to print (a deal's `due`, a
+/// A reading, binding no one: the date a clock's own receipt of a block states, for a view to print (a deal's `due`, a
 /// message's `received_at`, a claim's `notified`, a use's date). The first receipt on each line by place; the `needed`-th of the lines'
 /// dates as their signers wrote them. No rule reads it.
-/// 1.9-GUESS [3d-1a]: the views that printed a clock's date keep printing what the receipts themselves say; only the rules stopped reading it.
+/// The views that print a clock's date print what the receipts themselves say (the text does not say; read so); no rule reads it.
 pub(crate) fn receipt_at(target: &str, k: &Clocks, index: &Index) -> Option<String> {
     let all = |_: &str| true;
     let mut dates: Vec<String> = k

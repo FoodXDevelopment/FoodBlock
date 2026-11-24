@@ -36,13 +36,13 @@ fn lookup_shape(lookup: &Value) -> Result<(), String> {
     Ok(())
 }
 
-/// Whether the held block `item` is a real signed offer (or want) that the lookup asks for. Err is one plain sentence.
+/// Whether the given block `item` is a real signed offer (or want) that the lookup asks for. Err is one plain sentence.
 fn item_fits(lookup: &Value, item: &str, index: &Index, blocks: &[Value]) -> Result<(), String> {
     let Some(b) = index.get(item) else { return Err("it is not a block the reader holds".into()) };
     if !first_promise(b) {
         return Err("it is not a first promise: an offer or a want is a promise that answers and updates nothing".into());
     }
-    if !crate::identity::counts_in(b, index) {
+    if !crate::forks::counts_in(b, index) {
         return Err("its signer's key does not speak for its author here".into());
     }
     let (from, to) = (rs(b, "from"), rs(b, "to"));
@@ -62,7 +62,7 @@ fn item_fits(lookup: &Value, item: &str, index: &Index, blocks: &[Value]) -> Res
         return Err(format!("it is no longer open: its stage is {}", stage.get("stage").and_then(Value::as_str).unwrap_or("unknown")));
     }
     let wanted = list(rf(lookup, "what"));
-    if !wanted.is_empty() && !list(rf(b, "what")).iter().any(|w| wanted.contains(w)) {
+    if !wanted.is_empty() && !crate::js::whats_of(b).iter().any(|w| wanted.contains(w)) {
         return Err("it names none of the things the lookup asks for".into());
     }
     if let Some(Value::Object(terms)) = st(lookup, "terms") {
@@ -99,7 +99,7 @@ pub fn listing_check(lookup: &Value, listing: &Value, blocks: &[Value]) -> Value
 
 // ---- A signed check of someone's record ----
 
-/// `{ ok, why, read: [{ hash, held, concerns, stage }] }`. A check is an observe of kind `check`, `refs.subject` the one whose record it read and
+/// `{ ok, why, read: [{ hash, has, concerns, stage }] }`. A check is an observe of kind `check`, `refs.subject` the one whose record it read and
 /// `refs.derives_from` the blocks it read. Verified against them: each is held and concerns the subject (they signed it, or are a side of it);
 /// and every typed claim it makes holds: `count` is how many it names, `of` the type of each, `stage` the stage of each (a first promise).
 /// Whether the signer read well is the signer's word; the signer answers for it.
@@ -122,11 +122,11 @@ pub fn check_reads(check: &Value, blocks: &[Value]) -> Value {
     let (of, claimed) = (ss(check, "of"), ss(check, "stage"));
     for h in &named {
         let b = index.get(h.as_str());
-        let held = b.is_some();
+        let has = b.is_some();
         let concerns = b.is_some_and(|b| backed_in(b, subject, &index) || [rs(b, "from"), rs(b, "to")].contains(&Some(subject)));
         let stage = b.filter(|b| first_promise(b)).map(|b| stage_of(b, blocks)).and_then(|s| s.get("stage").and_then(Value::as_str).map(String::from));
-        if !held {
-            wrong(format!("{h} is not a block the reader holds"));
+        if !has {
+            wrong(format!("{h} is not a block the reader has"));
         } else if !concerns {
             wrong(format!("{h} is not the subject's: they neither signed it nor are a side of it"));
         } else if of.is_some_and(|t| b.is_some_and(|b| type_of(b) != t)) {
@@ -134,7 +134,7 @@ pub fn check_reads(check: &Value, blocks: &[Value]) -> Value {
         } else if claimed.is_some() && stage.as_deref() != claimed {
             wrong(format!("{h} is not at the stage the check says: {}", claimed.unwrap_or("")));
         }
-        read.push(json!({ "hash": h, "held": held, "concerns": concerns, "stage": stage }));
+        read.push(json!({ "hash": h, "has": has, "concerns": concerns, "stage": stage }));
     }
     if let Some(n) = st(check, "count") {
         if crate::js::int(Some(n)) != Some(named.len() as f64) {
@@ -159,7 +159,7 @@ struct Sides {
     debtor: Option<String>,
     creditors: Vec<String>,
 }
-// Who pays the price (the `to` side) and who receives it (1.9 3c-7: the holder of the receiving place where it was handed on, else the `from` side).
+// Who pays the price (the `to` side) and who receives it (the holder of the receiving place where it was handed on, else the `from` side).
 fn sides_of(stage: &Value) -> Sides {
     let name = |side: &str| stage.get("sides").and_then(|s| s.get(side)).and_then(Value::as_str).map(String::from);
     let debtor = name("to");
@@ -209,8 +209,8 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
             continue;
         };
         let paid = stage.get("paid").filter(|p| !p.is_null()).and_then(measure).filter(|(_, k)| *k == kind).map_or_else(Dec::zero, |(d, _)| d);
-        let owed = total.sub(&paid);
-        shown["to_come"] = kind_json(&owed, &kind);
+        let to_come = total.sub(&paid);
+        shown["to_come"] = kind_json(&to_come, &kind);
         let Some((reduce, reduce_kind)) = line.get("reduce").and_then(measure).filter(|(d, _)| d.cmp(&zero) == Ordering::Greater) else {
             out.push(refuse("`reduce` is an amount above nothing".into(), shown));
             continue;
@@ -240,11 +240,11 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
             }
             applies
         };
-        if applied.cmp(&owed) == Ordering::Greater {
+        if applied.cmp(&to_come) == Ordering::Greater {
             out.push(refuse("it reduces the deal by more than is still to come".into(), shown));
             continue;
         }
-        shown["left"] = kind_json(&owed.sub(&applied), &kind);
+        shown["left"] = kind_json(&to_come.sub(&applied), &kind);
         shown["ok"] = json!(true);
         out.push(shown);
     }
@@ -259,7 +259,7 @@ pub fn clearing_applied(clearing: &Value, blocks: &[Value]) -> Value {
 // ---- A ruling by a named judge ----
 
 /// Whether the condition `{ ruled: <deal>, by: <judge>, awards: <person> }` holds: the judge's counted ruling on the deal (an observe of kind `ruling`,
-/// `refs.subject` the deal, backed by the judge), among the blocks given (1.9 R-H9: the past of the block it is read for; no reader's clock),
+/// `refs.subject` the deal, backed by the judge), among the blocks given (the past of the block it is read for; no reader's clock),
 /// awards something to the person. Of the judge's rulings on a deal the
 /// head is the one no other of hers has in its causal past (she changes her ruling by signing another that has seen it); two heads that do not
 /// see each other rule nothing. Ok is the ruling's hash and the award line; Err is why it does not hold, or None for a condition of another shape.
@@ -304,10 +304,10 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value]) -> Value {
     let binding = match type_of(stake) {
         "promise" => binds(&promise_stage_in(hash_of(stake), &index, &super::StageOptions::default())),
         _ => {
-            // a transfer rests on every deal it is `for`, and on the deal its condition `ruled` names when that is a promise held (a ruling may be
+            // a transfer rests on every deal it is `for`, and on the deal its condition `ruled` names when that is a promise given (a ruling may be
             // about a claim or a thing, which is no deal to bind); each must bind (promises.md, Rulings)
             let ruled_deal = condition.and_then(|c| c.get("ruled")).and_then(Value::as_str).filter(|h| index.get(*h).is_some_and(|d| type_of(d) == "promise" && list(rf(d, "answers")).is_empty()));
-            crate::identity::counts_in(stake, &index)
+            crate::forks::counts_in(stake, &index)
                 && list(rf(stake, "for")).into_iter().chain(ruled_deal).all(|d| index.get(d).is_some_and(|_| binds(&promise_stage_in(d, &index, &super::StageOptions::default()))))
         }
     };
@@ -339,64 +339,38 @@ pub fn ruling_releases(stake: &Value, blocks: &[Value]) -> Value {
     json!({ "releases": true, "to": to, "amount": amount, "ruling": ruling, "why": null })
 }
 
-// ---- Whether a judge's ruling is public ----
+// ---- Whether each award of a ruling was honoured ----
 
-/// The judge's offer is a first promise of hers under the base schema `judging`, `refs.to` left open. Its head (no other offer of hers has it in
-/// its causal past) is the offer she stands on now. Its term `terms.rulings` is `"public"` or absent; absent is private, and nothing else is read.
-fn rulings_public_by_offer(judge: &str, index: &Index) -> Option<bool> {
-    let offers: Vec<&Value> = index
-        .values()
-        .filter(|o| first_promise(o) && rs(o, "to").is_none() && backed_in(o, judge, index))
-        .filter(|o| rs(o, "schema").and_then(|s| index.get(s)).is_some_and(|s| ss(s, "kind") == Some("schema") && ss(s, "name") == Some("judging")))
-        .collect();
-    let heads: Vec<&&Value> = offers.iter().filter(|w| !offers.iter().any(|o| hash_of(o) != hash_of(w) && sees_in(o, hash_of(w), index))).collect();
-    match heads.as_slice() {
-        [head] => Some(get(head, "state.terms.rulings").and_then(Value::as_str) == Some("public")),
-        _ => None,
-    }
-}
-
-/// `{ audience, why }`: whether a judge's ruling is public (promises.md, Rulings). `audience` is `public` or `private`. It is public when the judge's
-/// signed offer says `terms.rulings: "public"`; absent means private. Whatever the offer says, it is public when the ruling went unhonoured: an award
-/// line with a `due` time at or before the reader's clock `now` and no counted transfers `for` the ruling to the one it awards that add up to its sum (an award with no sum is honoured only by a release) and no release of the ruling signed by her (or by one who speaks for her). A fact, never a verdict.
-pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> Value {
+/// `{ lines: [{ to, due, honoured }], why }`: a reading, whether each award of a judge's ruling was honoured (promises.md, Rulings). An award with
+/// a sum is honoured by counted transfers `for` the ruling `to_owner` the one it awards that add up to it in its own kind (whoever paid: the sum matters,
+/// not the payer), or by her own release of the ruling (promises.md, A release); one with no sum (goods, an act) only by her release. `due` is the
+/// award's own, or null: whether it was honoured by then is the reader's, against her own clock. A fact, never a verdict.
+pub fn ruling_honoured(ruling: &Value, blocks: &[Value]) -> Value {
     let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(ruling)).chain([ruling]));
-    let out = |audience: &str, why: &str| json!({ "audience": audience, "why": why });
+    let out = |lines: Vec<Value>, why: &str| json!({ "lines": lines, "why": why });
     if type_of(ruling) != "observe" || ss(ruling, "kind") != Some("ruling") {
-        return out("private", "the block is no ruling (an observe of kind ruling)");
+        return out(vec![], "the block is no ruling (an observe of kind ruling)");
     }
-    let Some(judge) = super::speaker_of(ruling, &index, now).filter(|j| crate::identity::counts_in(ruling, &index) && backed_in(ruling, j, &index)) else {
-        return out("private", "no judge's key speaks for this ruling");
-    };
+    if super::speaker_of(ruling, &index, None).filter(|j| crate::forks::counts_in(ruling, &index) && backed_in(ruling, j, &index)).is_none() {
+        return out(vec![], "no judge's key speaks for this ruling");
+    }
     let hash = hash_of(ruling);
-    let unhonoured = now.is_some_and(|n| {
-        st(ruling, "awards").and_then(Value::as_array).into_iter().flatten().filter_map(|l| l.as_object()).any(|l| {
-            let due = l.get("due").and_then(Value::as_str).is_some_and(|d| d <= n);
-            let to = l.get("to").and_then(Value::as_str);
-            // honoured by counted transfers `for` the ruling to her that add up to the award's sum in its own kind (whoever paid: the sum matters, not the
-            // payer), or by her own release of the ruling (promises.md, A release): her word that it is settled. An award with no sum (goods, an act) is
-            // honoured only by her release: nothing else says what was delivered.
-            let owed = l.get("amount").and_then(measure);
-            let paid = owed.is_some_and(|(sum, kind)| {
-                let got = index.values().filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")).contains(&hash) && rs(t, "to") == to && crate::identity::counts_in(t, &index))
-                    .filter_map(|t| st(t, "amount").and_then(measure)).filter(|(_, k)| *k == kind)
-                    .fold(Dec::zero(), |a, (d, _)| a.add(&d));
-                got.cmp(&sum) != Ordering::Less
-            });
-            let let_go = index.values().any(|r| {
-                type_of(r) == "observe" && ss(r, "kind") == Some("release") && st(r, "status").is_none() && rs(r, "subject") == Some(hash)
-                    && crate::identity::counts_in(r, &index) && to.is_some() && super::speaker_of(r, &index, now).as_deref() == to
-            });
-            due && !paid && !let_go
-        })
-    });
-    if unhonoured {
-        return out("public", "an award of the ruling is unpaid past its due date");
-    }
-    if rulings_public_by_offer(&judge, &index) == Some(true) {
-        return out("public", "the judge's offer says her rulings are public");
-    }
-    out("private", "the judge's offer does not say her rulings are public")
+    let lines = st(ruling, "awards").and_then(Value::as_array).into_iter().flatten().filter_map(|l| l.as_object()).map(|l| {
+        let to = l.get("to").and_then(Value::as_str);
+        let award = l.get("amount").and_then(measure);
+        let paid = award.is_some_and(|(sum, kind)| {
+            let got = index.values().filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && list(rf(t, "for")).contains(&hash) && to.is_some_and(|w| list(rf(t, "to_owner")).contains(&w)) && crate::forks::counts_in(t, &index))
+                .filter_map(|t| st(t, "amount").and_then(measure)).filter(|(_, k)| *k == kind)
+                .fold(Dec::zero(), |a, (d, _)| a.add(&d));
+            got.cmp(&sum) != Ordering::Less
+        });
+        let released = to.is_some() && index.values().any(|r| {
+            type_of(r) == "observe" && ss(r, "kind") == Some("release") && st(r, "status").is_none() && rs(r, "subject") == Some(hash)
+                && crate::forks::counts_in(r, &index) && super::speaker_of(r, &index, None).as_deref() == to
+        });
+        json!({ "to": to, "due": l.get("due").and_then(Value::as_str), "honoured": paid || released })
+    }).collect();
+    out(lines, "each award: paid in full in its kind, or released by the one it awards")
 }
 
 // ---- A judge's fee back when the sides settle ----
@@ -411,7 +385,7 @@ pub fn ruling_audience(ruling: &Value, blocks: &[Value], now: Option<&str>) -> V
 /// `refs.subject` the deal); `left` the rest, never below zero. Nothing is to come unless the sides settled. A fact the offer and the releases state, never a verdict.
 pub fn fee_back(offer: &Value, deal: &Value, blocks: &[Value]) -> Value {
     let index = read_all(blocks.iter().filter(|b| hash_of(b) != hash_of(offer) && hash_of(b) != hash_of(deal)).chain([offer, deal]));
-    let out = |settled: bool, releases: Vec<String>, owed: Vec<Value>, why: Option<&str>| json!({ "settled": settled, "releases": releases, "to_come": owed, "why": why });
+    let out = |settled: bool, releases: Vec<String>, to_come: Vec<Value>, why: Option<&str>| json!({ "settled": settled, "releases": releases, "to_come": to_come, "why": why });
     let (offer_h, deal_h) = (hash_of(offer), hash_of(deal));
     let Some(judge) = rs(offer, "from").filter(|j| first_promise(offer) && rs(offer, "to").is_none() && backed_in(offer, j, &index)) else {
         return out(false, vec![], vec![], Some("the offer is no judge's offer: a first promise of hers, backed by her, with the other side open"));
@@ -435,7 +409,7 @@ pub fn fee_back(offer: &Value, deal: &Value, blocks: &[Value]) -> Value {
         let mut found: Vec<&str> = index
             .values()
             .filter(|r| type_of(r) == "observe" && ss(r, "kind") == Some("release") && st(r, "status").is_none() && rs(r, "subject") == Some(deal_h))
-            .filter(|r| crate::identity::counts_in(r, &index) && super::speaker_of(r, &index, None).as_deref() == Some(side))
+            .filter(|r| crate::forks::counts_in(r, &index) && super::speaker_of(r, &index, None).as_deref() == Some(side))
             .filter(|r| !rulings.iter().any(|g| sees_in(r, g, &index)))
             .map(hash_of)
             .collect();
@@ -449,7 +423,7 @@ pub fn fee_back(offer: &Value, deal: &Value, blocks: &[Value]) -> Value {
     let moved = |giver_is_judge: bool| -> Vec<(String, Value, Dec)> {
         let mut sums: Vec<(String, Value, Dec)> = Vec::new();
         for t in index.values() {
-            if type_of(t) != "transfer" || st(t, "status").is_some() || !list(rf(t, "for")).contains(&offer_h) || rs(t, "subject") != Some(deal_h) || !crate::identity::counts_in(t, &index) {
+            if type_of(t) != "transfer" || st(t, "status").is_some() || !list(rf(t, "for")).contains(&offer_h) || rs(t, "subject") != Some(deal_h) || !crate::forks::counts_in(t, &index) {
                 continue;
             }
             let Some((d, kind)) = st(t, "amount").and_then(measure) else { continue };
@@ -469,10 +443,10 @@ pub fn fee_back(offer: &Value, deal: &Value, blocks: &[Value]) -> Value {
     let (paid, back) = (moved(false), moved(true));
     let mut lines: Vec<(String, String, Value)> = Vec::new();
     for (payer, kind, sum) in &paid {
-        let owed = sum.mul(&fraction);
+        let to_come = sum.mul(&fraction);
         let returned = back.iter().find(|(p, k, _)| p == payer && k == kind).map_or_else(Dec::zero, |s| s.2.clone());
-        let left = if owed.cmp(&returned) == Ordering::Greater { owed.sub(&returned) } else { Dec::zero() };
-        lines.push((payer.clone(), kind.to_string(), json!({ "to": payer, "amount": kind_json(&owed, kind), "returned": kind_json(&returned, kind), "left": kind_json(&left, kind) })));
+        let left = if to_come.cmp(&returned) == Ordering::Greater { to_come.sub(&returned) } else { Dec::zero() };
+        lines.push((payer.clone(), kind.to_string(), json!({ "to": payer, "amount": kind_json(&to_come, kind), "returned": kind_json(&returned, kind), "left": kind_json(&left, kind) })));
     }
     lines.sort_by(|x, y| crate::js::cmp16(&x.0, &y.0).then(crate::js::cmp16(&x.1, &y.1)));
     let mut releases = vec![a, b];

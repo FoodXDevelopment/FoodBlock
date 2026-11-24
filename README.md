@@ -13,12 +13,12 @@ A block is three fields, signed by its author on their own device:
 {
   "type": "promise",
   "state": {
-    "terms": { "price": { "minor": 450, "currency": "GBP" }, "quantity": { "value": "30", "unit": "{egg}" } },
+    "terms": { "lines": [{ "id": "eggs", "what": "e5f6…", "price": { "value": "4.50", "unit": "GBP" }, "quantity": { "value": "30", "unit": "{egg}" } }] },
     "at": "2026-10-15T09:00:00.000Z",
     "audience": "public",
     "seq": 4
   },
-  "refs": { "author": "a1b2…", "prev": "c3d4…", "from": "a1b2…", "what": "e5f6…" }
+  "refs": { "author": "a1b2…", "prev": "c3d4…", "from": "a1b2…" }
 }
 ```
 
@@ -28,11 +28,10 @@ other side can check that authority. Without the author's key no one can make a 
 changing its id, and a key that signs two versions of its history leaves the proof. What the protocol cannot do (keep a lost key safe,
 stop a custodian who holds your key, see inside a sealed block it was not sent) is in the [threat model](spec/THREAT-MODEL.md) (a draft).
 
-- **The spec:** [`spec/protocol.md`](spec/protocol.md), FoodBlock 1.7 (2026-10-27; it adds to 1.6, except the few deletions the CHANGELOG lists). It is normative: where anything else here
+- **The spec:** [`spec/protocol.md`](spec/protocol.md), FoodBlock 1.9. It is normative: where anything else here
   disagrees, it governs. Beside it: [`protocol.json`](spec/protocol.json) (every list, for code to load), the
   [canonical form](spec/canonical.md), [transport](spec/transport.md) (email is the envelope, FoodBlock the
-  letter) and the [conformance vectors](spec/vectors.json). There is no earlier version in the protocol: 1.6 is
-  year zero.
+  letter) and the [conformance vectors](spec/vectors.json).
   [`NECESSITY.md`](spec/NECESSITY.md) shows, for every field, term, verb, closed type, reference key and invariant,
   which vectors fail without it; [`EXPERIMENTS.md`](spec/EXPERIMENTS.md) records the compressions tried.
 - **The paper:** [the FoodBlock whitepaper v1.6 (PDF)](https://foodx.network/foodblock-whitepaper-v1.6.pdf) (DOI [10.5281/zenodo.23457910](https://doi.org/10.5281/zenodo.23457910)): why the
@@ -57,13 +56,13 @@ stop a custodian who holds your key, see inside a sealed block it was not sent) 
 
 **Strict.** Only four types carry authority and are closed (`actor`, `promise`, `transfer`, `grant`); any other word
 is an open type that a node stores and passes on. A node writes and reads only the current version's shapes: no nulls, no floats
-(money is `{ minor, currency }`, an amount `{ value, unit }` with a decimal string), exact UTC times, sets written
+(an amount, money too, is `{ value, unit }` with a decimal string), exact UTC times, sets written
 sorted, every block in its key's chain (`state.seq`, `refs.prev`). It never repairs a block: it refuses it, and the
 author signs a new one.
 
 ## Three sizes of peer
 
-Every peer speaks the protocol itself: a phone, a robot kitchen, a van, a sensor. Machines are peers like people. There are three sizes (`protocol.json` `peers`, and `spec/protocol.md`): **micro** (a device that measures and signs), **edge** (the local operator, works offline) and **node** (the lasting level, serves pull and push to anyone). Only people and machines hold nodes. A business, a household or a community is a **circle** of them, never a node of its own.
+Every peer speaks the protocol itself: a phone, a robot kitchen, a van, a sensor. Machines are peers like people. There are three sizes (`spec/protocol.md`): **micro** (a device that measures and signs), **edge** (the local operator, works offline) and **node** (the lasting level, serves pull and push to anyone). Only people and machines hold nodes. A business, a household or a community is a **circle** of them, never a node of its own.
 
 ## What is here
 
@@ -77,7 +76,8 @@ Every peer speaks the protocol itself: a phone, a robot kitchen, a van, a sensor
 | [`mcp/`](mcp/) | An MCP server, so any autonomous system can write and read signed blocks |
 | [`cli/`](cli/) | `fb`: make an identity and device keys, write blocks in its key chain, check, validate, verify |
 | [`acts/`](acts/) | The act library: an open list of names for what people do, which anyone may copy and add to. The protocol reads none of it |
-| [`test/`](test/) | Cross-language canonical vectors, and the script that copies the spec into each SDK |
+| [`test/`](test/) | Cross-language canonical vectors, the audit of every fold against the oracle, and the script that copies the spec into each SDK |
+| [`tools/`](tools/) | The door generator, the version check, the necessity measure, the replay check, and the random-world tester that compares the core with the oracle |
 
 Each SDK's README says which profile it covers.
 
@@ -97,7 +97,7 @@ FoodBlock is built for people, autonomous systems and machines to use together. 
 const fb = require('@foodxdev/foodblock') // in this repository: require('./sdk/javascript/src/index.cjs')
 const keys = fb.generateKeypair()                  // one key is the whole ceremony
 const me = fb.identity.genesis(keys, { kind: 'person', at: '2026-10-15T09:00:00.000Z', audience: 'public' })  // who you are: its hash is your id; kind, at and audience are yours to state
-const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, held: [me], at: '2026-10-15T09:01:00.000Z', audience: 'public' })
+const eggs = fb.write('thing', { kind: 'eggs', name: 'Free-range eggs' }, {}, { author: me.hash, key: keys, blocks: [me], at: '2026-10-15T09:01:00.000Z', audience: 'public' })
 fb.valid(eggs, [me])                               // [] : sound, signed by a key of its author, in its chain
 ```
 
@@ -132,7 +132,7 @@ Postgres at `DATABASE_URL` and a key file from `fb key` at `NODE_KEY`.
 | Every fold, core against oracle | `node test/audit/run.cjs` |
 | No listed thing is dead or untested | `node test/necessity.cjs` (the full measurement, ten minutes: `node tools/necessity.cjs`) |
 | Stored blocks against the current core | `node tools/replay-check.cjs <export>` (counts and reason codes only; see `DISTRIBUTION.md`) |
-| Node | `cd server && npm test` (in-memory Postgres; set `TEST_DATABASE_URL` for a real one) |
+| Node | `cd host && npm test` (in-memory Postgres; set `TEST_DATABASE_URL` for a real one) |
 | MCP server | `cd mcp && npm test` |
 | CLI | `cd cli && npm test` |
 

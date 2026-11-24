@@ -1,7 +1,7 @@
 # FoodBlock MCP server: the door
 
 Any AI assistant (Claude, ChatGPT, Gemini, any MCP client) can **find, read, ask and promise** on FoodBlock
-(protocol 1.7, [`spec/protocol.md`](../spec/protocol.md)). The assistant drafts. **The person decides**, with one tap.
+([`spec/protocol.md`](../spec/protocol.md)). The assistant drafts. **The person decides**, with one tap.
 
 ## Quick start (one paste)
 
@@ -91,7 +91,6 @@ OAuth follows the MCP authorization spec: protected-resource metadata, authoriza
 code with PKCE (S256), refresh with rotation. The person's yes on the consent page is a code made for that one request and shown on the terminal she started the door from (60 bits, five tries, a pause after twenty wrong ones in ten minutes), which the assistant never sees.
 A token only says "this assistant may reach the door" (`foodblock:read`: find and read; `foodblock:draft`: ask, connect, promise, accept).
 **Authority to bind is never an OAuth scope**: it is a grant the person signs after the assistant calls `foodblock_connect`.
-
 
 A host's own repository tests this end to end against its node.
 

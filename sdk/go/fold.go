@@ -84,7 +84,7 @@ func (s *CircleState) MemberIDs() []string {
 }
 
 // CircleStateOf is a circle's members and roles from its member grants, in causal order; nil when the circle is not
-// held. within: fold only that block's causal past.
+// among the blocks. within: fold only that block's causal past.
 func CircleStateOf(circle string, blocks []Block, within *Block) *CircleState {
 	return doorCircleState[*CircleState](circle, blocks, within)
 }
@@ -106,7 +106,6 @@ func HoldersOf(state *CircleState, role string) []string {
 	sort.Strings(out)
 	return out
 }
-
 
 // SpeaksFor is the one party a fold counts a block for (authority.md, Who a block speaks for): its id, or "" when it speaks for no one.
 // The block need not be among blocks yet; no clock is read.
@@ -130,7 +129,7 @@ func BackedAll(person string, blocks []Block) map[string]any {
 	return doorBackedAll[map[string]any](person, blocks)
 }
 
-// ToComeBack is what moved in a person's name that they do not back, and so is to come back to them (D12; was OwedBack).
+// ToComeBack is what moved in a person's name that they do not back, and so is to come back to them.
 func ToComeBack(person string, blocks []Block) map[string]any {
 	return doorToComeBack[map[string]any](person, blocks)
 }
@@ -153,7 +152,7 @@ func ListingCheck(lookup, listing Block, blocks []Block) map[string]any {
 }
 
 // CheckReads is a signed check of someone's record against the blocks it names (promises.md, A signed check):
-// { ok, why, read: [{ hash, held, concerns, stage }] }.
+// { ok, why, read: [{ hash, has, concerns, stage }] }.
 func CheckReads(check Block, blocks []Block) map[string]any {
 	return doorCheckReads[map[string]any](check, blocks)
 }

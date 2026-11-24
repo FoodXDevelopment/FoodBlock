@@ -1,7 +1,7 @@
 {
   "name": "foodblock-cli",
   "version": "1.9.0",
-  "description": "CLI for the FoodBlock 1.9 protocol: make an identity and device keys, write signed blocks in its key chain, check, read and verify",
+  "description": "CLI for the FoodBlock protocol: keep her public identity, draft blocks for her own device to sign, attach the signatures, check and verify",
   "type": "module",
   "bin": {
     "fb": "./bin/fb.js",

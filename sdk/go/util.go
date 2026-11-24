@@ -33,8 +33,6 @@ func truthy(v any) bool {
 
 func str(v any) string { s, _ := v.(string); return s }
 
-func isStr(v any) bool { _, ok := v.(string); return ok }
-
 // obj is v as an object, or nil.
 func obj(v any) map[string]any { m, _ := v.(map[string]any); return m }
 
@@ -122,8 +120,6 @@ func intOf(v any) (int64, bool) {
 	return int64(f), true
 }
 
-func isInt(v any) bool { _, ok := intOf(v); return ok }
-
 // jsNumber is JavaScript's Number(x) for the values blocks hold (decimal strings, numbers).
 func jsNumber(v any) float64 {
 	if n, ok := numOf(v); ok {
@@ -163,30 +159,10 @@ func contains(items []string, s string) bool {
 	return false
 }
 
-func uniq(items []string) []string {
-	seen, out := map[string]bool{}, []string{}
-	for _, item := range items {
-		if !seen[item] {
-			seen[item] = true
-			out = append(out, item)
-		}
-	}
-	return out
-}
-
 func sorted(items []string) []string {
 	out := append([]string{}, items...)
 	sort.Strings(out)
 	return out
-}
-
-func sortedKeys(m map[string]any) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 // clone is a deep copy of a JSON value (structuredClone).

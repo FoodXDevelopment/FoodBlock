@@ -218,20 +218,20 @@ fn run(seed: u64, secs: u64) {
     }
     walk(&v, &mut blocks);
     walk(&cv, &mut blocks);
-    let held: Vec<Value> = blocks.iter().filter(|b| b.get("hash").is_some() && b.get("signature").is_some()).cloned().collect();
+    let given: Vec<Value> = blocks.iter().filter(|b| b.get("hash").is_some() && b.get("signature").is_some()).cloned().collect();
     let cbor_hex: Vec<String> = cases.iter().filter(|c| c.0 == "cbor_decode").filter_map(|c| c.1[0].as_str().map(String::from)).collect();
     for op in ["valid", "refusals", "promise_stage", "circle_state", "ownership", "where_now", "accept", "may_act_as", "consent", "successor_state", "check_chain", "chains_of", "causal_order", "write", "cbor_encode", "canonical_json", "unwrap", "strict_text", "hash"] {
         for b in blocks.iter().take(40) {
             let a = match op {
-                "valid" => vec![b.clone(), Value::Array(held.clone())],
+                "valid" => vec![b.clone(), Value::Array(given.clone())],
                 "refusals" => vec![b["type"].clone(), b["state"].clone(), b["refs"].clone(), json!({})],
-                "promise_stage" | "ownership" | "where_now" | "successor_state" => vec![b.clone(), Value::Array(held.clone())],
-                "circle_state" => vec![b["hash"].clone(), Value::Array(held.clone())],
-                "accept" => vec![json!([b]), Value::Array(held.clone()), json!({ "takes_pairs": b["hash"].as_str().map_or(false, |h| h.as_bytes()[0] % 2 == 0) })],
-                "may_act_as" => vec![b.clone(), b["hash"].clone(), Value::Array(held.clone())],
-                "consent" => vec![b["hash"].clone(), b["hash"].clone(), Value::Array(held.clone()), Value::Null],
-                "check_chain" => vec![Value::Array(held.clone()), b["hash"].clone()],
-                "chains_of" | "causal_order" => vec![Value::Array(held.clone())],
+                "promise_stage" | "ownership" | "where_now" | "successor_state" => vec![b.clone(), Value::Array(given.clone())],
+                "circle_state" => vec![b["hash"].clone(), Value::Array(given.clone())],
+                "accept" => vec![json!([b]), Value::Array(given.clone()), json!({ "takes_pairs": b["hash"].as_str().map_or(false, |h| h.as_bytes()[0] % 2 == 0) })],
+                "may_act_as" => vec![b.clone(), b["hash"].clone(), Value::Array(given.clone())],
+                "consent" => vec![b["hash"].clone(), b["hash"].clone(), Value::Array(given.clone()), Value::Null],
+                "check_chain" => vec![Value::Array(given.clone()), b["hash"].clone()],
+                "chains_of" | "causal_order" => vec![Value::Array(given.clone())],
                 "strict_text" => vec![json!(foodblock::canonical_json(b))],
                 "unwrap" => vec![json!({"block": b, "signature": b["signature"]})],
                 "hash" => vec![b["type"].clone(), b["state"].clone(), b["refs"].clone()],

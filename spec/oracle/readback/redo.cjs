@@ -1,5 +1,5 @@
 'use strict';
-// The read-back that can be redone (changes-1.9/07-last.md, C3; profiles/short-form.md). Three door ops of class `reading` (protocol.json door.classes.reading); no protocol op.
+// The read-back that can be redone (readings/readback.md; profiles/short-form.md). Three door ops of class `reading` (protocol.json door.classes.reading); no protocol op.
 // A `readback` is an `observe` of kind `readback`, `refs.for` the block, `refs.to` the person it is read back to, and in `state`: `readback` the digest of its text;
 // `reading` and `renderer`, each named as a rule set is: the SHA-256 hex of the canonical manifest { files: { path under spec/: SHA-256 hex of the file's bytes } } over the
 // published text and its cases (spec/readings/, spec/renderers/); `read` the sorted ids the reading read (the answer's `read`); `digits` the digits its text ends in.
@@ -61,10 +61,10 @@ function render(answer, renderer) {
   if (!isObj(answer)) throw argError('answer is a readback reading\'s answer');
   return r(answer);
 }
-// readback(block, held, to?, renderer?, digits?) -> { answer, text, state }: what an honest host sends (text) and signs (state, its observe's);
+// readback(block, blocks, to?, renderer?, digits?) -> { answer, text, state }: what an honest host sends (text) and signs (state, its observe's);
 // for en-sms also `texts`: the text, whole, over texts of at most 160 characters, in order (the digest is still of the one text)
-function make(block, held, to, renderer, digits) {
-  const list = Array.isArray(held) ? held : [];
+function make(block, blocks, to, renderer, digits) {
+  const list = Array.isArray(blocks) ? blocks : [];
   const b = typeof block === 'string' ? list.find(x => isObj(x) && x.hash === block) : block;
   if (!isObj(b) || typeof b.hash !== 'string') throw argError('argument 0 is the block a read-back is for (a block, or its id among held)');
   const rname = renderer === undefined || renderer === null ? 'en' : renderer;
@@ -78,12 +78,12 @@ function make(block, held, to, renderer, digits) {
   if (d !== null) state.digits = d;
   return rname === 'en-sms' ? { answer, text, texts: smsTexts(text), state } : { answer, text, state };
 }
-// readback_redo(rb, held) -> { same, readback, lacks, not_run }: a second reader runs the reading and the renderer on the ids in rb.state.read (and refs.for) alone.
-// An input not held: same and readback null, lacks the ids. A reading or renderer this build does not run: same and readback null, not_run those names.
-function redo(rb, held) {
+// readback_redo(rb, blocks) -> { same, readback, lacks, not_run }: a second reader runs the reading and the renderer on the ids in rb.state.read (and refs.for) alone.
+// An input not given: same and readback null, lacks the ids. A reading or renderer this build does not run: same and readback null, not_run those names.
+function redo(rb, blocks) {
   if (!isObj(rb) || !isObj(rb.state) || !isObj(rb.refs)) throw argError('rb is an observe of kind readback');
   const st = rb.state, n = names();
-  const byId = new Map((Array.isArray(held) ? held : []).filter(b => isObj(b) && typeof b.hash === 'string' && typeof b.type === 'string').map(b => [b.hash, b]));
+  const byId = new Map((Array.isArray(blocks) ? blocks : []).filter(b => isObj(b) && typeof b.hash === 'string' && typeof b.type === 'string').map(b => [b.hash, b]));
   const rname = Object.keys(RENDER).find(k => n[k] !== null && n[k] === st.renderer);
   const not_run = [];
   if (n.reading === null || st.reading !== n.reading) not_run.push(st.reading === undefined ? null : st.reading);
@@ -97,4 +97,4 @@ function redo(rb, held) {
   const digest = digestOf(textOf(RENDER[rname](answer), st.digits === undefined ? null : st.digits));
   return { same: digest === st.readback, readback: digest, lacks: [], not_run: [] };
 }
-module.exports = { make, redo, render, names, digestOf, textOf, smsTexts, FILES };
+module.exports = { make, redo, render, names, digestOf, textOf };

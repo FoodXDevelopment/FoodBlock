@@ -1,6 +1,5 @@
-// The FoodBlock 1.9 reference SDK: its whole API. Every closed list comes from spec/protocol.json (PROTOCOL). There is no
-// earlier version in the protocol. The names match the other SDKs:
-// `sign` signs, `seal` encrypts.
+// The FoodBlock reference SDK: its whole API. Every closed list comes from spec/protocol.json (PROTOCOL). The names match
+// the other SDKs: `sign` signs, `seal` encrypts.
 const spec = require('./spec.cjs')
 const { create, hash, idOf } = require('./block.cjs')
 const { canonical, canonicalJSON } = require('./canonical.cjs')
@@ -48,17 +47,15 @@ module.exports = {
   // Strangers, short form and conditions (the small rules)
   strangers, shortCode: strangers.shortCode, codeMatches: strangers.codeMatches,
 
-  // The one-time converter for pre-1.6 data (not part of the protocol)
-
   // Chains and causal order
   nextLink: chain.nextLink, checkChain: chain.checkChain, readWhole: chain.readWhole, causalOrder: order.causalOrder, pastOf: order.pastOf, sees: order.sees,
 
   // Who someone is; authority; the folds; between nodes
   identity, grant, fold, sync, merkle,
   promiseStage: fold.promiseStage, repeatOccurrences: fold.repeatOccurrences, promiseView: fold.promiseView, consent: fold.consent, speaksFor: fold.speaksFor, backed: fold.backed, backedAll: fold.backedAll, toComeBack: fold.toComeBack, listingCheck: fold.listingCheck, checkReads: fold.checkReads, clearingApplied: fold.clearingApplied, rulingReleases: fold.rulingReleases, gives: fold.gives, circleState: fold.circleState, circleVersions: fold.circleVersions, machineLock: fold.machineLock, feeBack: fold.feeBack, countOf: fold.countOf, identityState: identity.identityState, membersThen: fold.membersThen, whereNow: fold.whereNow, ownerOf: fold.ownerOf,
-  rowHolds: fold.rowHolds, waysIn: fold.waysIn, keepsTo: fold.keepsTo, meter: fold.meter, worstCase: fold.worstCase, lowestOffer: fold.lowestOffer,
+  rowHolds: fold.rowHolds, waysIn: fold.waysIn, keepsTo: grant.keepsTo, meter: grant.meter, worstCase: grant.worstCase, lowestOffer: grant.lowestOffer,
   readback: fold.readback, render: fold.render, readbackRedo: fold.readbackRedo,
-  // 1.9 stage 7: a rule set named by its hash; a door that keeps blocks between calls (library)
+  // a rule set named by its hash; a door that keeps blocks between calls (library)
   ruleSet: require('./door.cjs').ruleSet, mount: require('./door.cjs').mount, unmount: require('./door.cjs').unmount,
 
   // Keys kept on a person's device, locked with a recovery code (product custody, not protocol)

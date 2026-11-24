@@ -50,9 +50,6 @@ func isInteger(_ value: Any?) -> Bool {
 }
 /// Present: neither missing nor null.
 func has(_ value: Any?) -> Bool { value != nil && !(value is NSNull) }
-func obj(_ value: Any?) -> JSON? { value as? JSON }
-func str(_ value: Any?) -> String? { value as? String }
-func isObject(_ value: Any?) -> Bool { value is JSON }
 /// JavaScript truthiness.
 func truthy(_ value: Any?) -> Bool {
     guard let value = value, !(value is NSNull) else { return false }
@@ -67,7 +64,7 @@ func list(_ ref: Any?) -> [String] {
     if let s = ref as? String, !s.isEmpty { return [s] }
     return []
 }
-/// A value at a dotted path (`state.terms.quantity`).
+/// A value at a dotted path (`state.terms.expires`).
 func dig(_ value: Any?, _ path: String) -> Any? {
     var at: Any? = value
     for key in path.split(separator: ".", omittingEmptySubsequences: false) {
@@ -86,10 +83,6 @@ func unique(_ values: [String]) -> [String] {
 }
 /// Two strings that are both present and equal (JavaScript's `a === b` with nothing ever equal to a missing value).
 func same(_ a: String?, _ b: String?) -> Bool { a != nil && a == b }
-/// A sort that keeps equal items in their order, as JavaScript's does.
-func stableSorted<T>(_ items: [T], by less: (T, T) -> Bool) -> [T] {
-    items.enumerated().sorted { a, b in less(a.element, b.element) || (!less(b.element, a.element) && a.offset < b.offset) }.map { $0.element }
-}
 
 /// A deterministic text of any JSON value, for deep equality: keys sorted, order of arrays kept, null kept.
 public func stableJSON(_ value: Any?) -> String {
@@ -105,14 +98,7 @@ public func stableJSON(_ value: Any?) -> String {
 /// Deep equality of JSON values (assert.deepEqual).
 public func sameJSON(_ a: Any?, _ b: Any?) -> Bool { stableJSON(a) == stableJSON(b) }
 
-/// The reader's own clock, as a time.
-public func nowISO() -> String {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    return f.string(from: Date())
-}
-
-// ---- Blocks held, by hash, in the order they came (JavaScript's Map) ----
+// ---- Blocks, by hash, in the order they came (JavaScript's Map) ----
 
 /// Blocks by hash, kept in the order first seen; a later block with the same hash replaces the earlier in place.
 public struct Index {

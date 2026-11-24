@@ -26,7 +26,7 @@ pub fn salted_hash_in(suite: &str, salt: &str, value: &str) -> String {
 }
 
 /// Whether a salt and a value open a commitment: the salt is in its grammar (`grammar.salt`: `salt + value` is one text, so a longer salt
-/// could open one commitment to two values) and the salted hash is the commitment. The one opening every reader uses (release 39).
+/// could open one commitment to two values) and the salted hash is the commitment. The one opening every reader uses.
 pub fn opens(suite: &str, salt: &str, value: &str, commitment: &str) -> bool {
     crate::spec().is("salt", salt) && salted_hash_in(suite, salt, value) == commitment
 }

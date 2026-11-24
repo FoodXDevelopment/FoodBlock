@@ -14,10 +14,10 @@ import { MOST_MESSAGES, readPush } from '../rules.js'
 import { UNSIGNED_PER_MINUTE } from './host.mjs'
 
 const MAX_BODY = 8 * 1024 * 1024
-// The owner's token, compared in constant time (F9): a guess learns nothing from how long the answer took.
+// The owner's token, compared in constant time: a guess learns nothing from how long the answer took.
 const sameToken = (given, token) => { const a = Buffer.from(String(given ?? '')), b = Buffer.from(`Bearer ${token}`); return a.length === b.length && timingSafeEqual(a, b) }
 // Unsigned requests (a pull, a wake, an export of someone's record) cost the host and prove nothing, so each address gets so many a minute, and all
-// addresses together get twenty times that (F6, F7). The number is the owner's if the host's promise states `unsignedPerMinute`; else this code's choice, published.
+// addresses together get twenty times that The number is the owner's if the host's promise states `unsignedPerMinute`; else this code's choice, published.
 function limiter(perMinute) {
   let minute = 0, total = 0; const per = new Map()
   return (who) => {
@@ -44,7 +44,7 @@ export function serve(host, { port = 8787, bind = '127.0.0.1' } = {}) {
     try {
       const url = new URL(req.url, 'http://host')
       if (req.method === 'GET' && url.pathname === '/.well-known/foodblock') return send(res, 200, host.wellKnown())
-      // the whole store, in one body, is the owner's; anyone else names the authors whose record they ask for (F7)
+      // the whole store, in one body, is the owner's; anyone else names the authors whose record they ask for
       if (req.method === 'GET' && url.pathname === '/export') {
         if (!owner(req) && !url.searchParams.getAll('author').length) return send(res, 401, { error: 'name the author whose record you ask for, or bring the host owner\'s token' })
         if (!owner(req) && !allowed(req.socket.remoteAddress)) return send(res, 429, { error: 'too many unsigned requests; wait a minute' })
@@ -92,7 +92,7 @@ export function serve(host, { port = 8787, bind = '127.0.0.1' } = {}) {
         return send(res, 200, await host.sync(body.peer))
       }
       return send(res, 404, { error: 'not found' })
-    } catch (error) { const known = error.code === 413 || error.code === 400 || error.code === 404; return send(res, known ? error.code : 500, { error: known ? error.message : 'the host could not answer' }) }   // a 500 names nothing of the host's insides (F10)
+    } catch (error) { const known = error.code === 413 || error.code === 400 || error.code === 404; return send(res, known ? error.code : 500, { error: known ? error.message : 'the host could not answer' }) }   // a 500 names nothing of the host's insides
   })
   return new Promise((resolve) => server.listen(port, bind, () => resolve(server)))
 }

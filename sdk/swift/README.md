@@ -4,7 +4,7 @@ FoodBlock for Swift (iOS 16+, macOS 13+). The protocol is [`spec/protocol.md`](.
 package is a thin layer over the one Rust core ([`../rust`](../rust)): every rule (canonical form, hashing, Ed25519,
 the write check, chains, identities, envelopes, folds, messages between nodes, and protocol.json itself) lives there
 once, and Swift calls it through the core's single JSON door (`fb_call`, in the C ABI
-`include/foodblock.h`). Signatures are byte-exact with every other SDK. There is no alias table and no reading of an older shape: year zero.
+`include/foodblock.h`). Signatures are byte-exact with every other SDK.
 
 A block is `{ type, state, refs }`, signed by its author. Its id is the SHA-256 of its canonical form. Here a block is
 a plain JSON dictionary (`JSON`, `[String: Any]`): `{ hash, type, state, refs, signature }`.
@@ -14,7 +14,7 @@ a plain JSON dictionary (`JSON`, `[String: Any]`): `{ hash, type, state, refs, s
 SwiftPM reads `Package.swift` at the **repository root** (not in this folder):
 
 ```swift
-.package(url: "https://github.com/FoodXDevelopment/foodblock", from: "1.7.0")
+.package(url: "https://github.com/FoodXDevelopment/foodblock", from: "1.9.0")
 ```
 
 The Rust core comes as a binary target, `CFoodBlock.xcframework` (iOS device, iOS simulator, macOS; static libraries,
@@ -55,7 +55,7 @@ A signed pull or push carries exactly one of `counter` or `challenge` and no tim
 | `wrap`, `unwrap`, `header`, `sealCopy`, `openCopy`, `headerSignedBy` | The wire |
 | `nextLink`, `checkChain`, `causalOrder`, `sees` | Chains and causal order |
 | `Identity.genesis`, `keyGrant`, `confirm`, `keyTimeline`, `liveKeys`, `signedByAuthor`, `stands`, `identityState`, `counts`, `nextLinkFor`, `chainsOf`, `keyHash`, `forked`, `forkPairs` | Who someone is |
-| `Grant.scopeWithin`, `scopeReading`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `scopeRefusals`, `whyNotLiveUndo`, `keepsTo`, `meter`, `worstCase`, `lowestOffer`, `fenceReading`, `machineLock` | Authority |
+| `Grant.scopeWithin`, `scopeReading`, `isLive`, `whyNotLive`, `ancestors`, `whyNotUnder`, `scopeRefusals`, `keepsTo`, `meter`, `worstCase`, `lowestOffer`, `fenceReading`, `machineLock` | Authority |
 | `Fold.promiseStage`, `promiseView`, `consent`, `due`, `promiseViews`, `circleState`, `rowHolds`, `waysIn`, `speaksFor`, `backed`, `toComeBack`, `gives`, `readback`, `membersThen`, `ownership`, `ownerOf`, `whereNow`, `circleKey`, `countedIn` | The folds |
 | `Sync.pullRequest`, `signPull`, `signPush`, `newChallenge`, `pullRefusals`, `pushRefusals`, `matches`, `headsOf`, `answerPull`, `answerSignedBy`, `pushRequest`, `accept`, `pushAnswer`, `waitedTooLong`, `Strangers.isStranger`, `Strangers.admissionRefusals`, `residencyRefusals`, `readingIsPersonsClaim`, `readingConditionHolds`, `wellKnown`, `announcement`, `wellKnownErrors` | Between nodes |
 
@@ -66,7 +66,7 @@ let keys = FoodBlock.generateKeypair()
 // Nothing is filled in for you: say the kind, the time and who may read.
 let me = try Identity.genesis(keys, kind: "person", at: "2026-10-15T09:00:00.000Z", audience: .public,
                               encryptionKey: FoodBlock.generateEncryptionKeypair().publicKeyEncrypt)
-let eggs = try FoodBlock.write("thing", ["kind": "eggs", "name": "Free-range eggs"], [:], author: me["hash"] as! String, key: keys, held: [me],
+let eggs = try FoodBlock.write("thing", ["kind": "eggs", "name": "Free-range eggs"], [:], author: me["hash"] as! String, key: keys, blocks: [me],
                                audience: .public, when: .at("2026-10-15T09:00:01.000Z"))
 let message = try FoodBlock.wrap(eggs)   // { block, signature }
 // A node states its own choices: Sync.answerPull(..., cap: 500, servesPairs: true), Sync.accept(..., takesPairs: false),

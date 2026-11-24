@@ -1,4 +1,4 @@
-//! A grant's own rules (authority.md): its kind and scope, and the key and operator grants.
+//! A grant's own rules (authority.md): its kind and scope, and the key grant (identity.md).
 use super::{f, is_label, s, Checker, W};
 use crate::prelude::*;
 
@@ -22,24 +22,18 @@ impl Checker<'_> {
         }
         w.extend(self.whole_shape(g("depth"), "state.depth", 0.0));
         // A stop or an answer is never a grant, whatever scope it restates (authority.md): no grant rule reads it.
-        // A grant may carry `scope.until` or not, whatever its kind (decision H11): with one it ends then, with none it lasts until its
+        // A grant may carry `scope.expires` or not, whatever its kind: with one it ends then, with none it lasts until its
         // author stops it. The protocol says what the word means, never whether someone may sign it.
         if let (Some(scope), false) = (g("scope"), answering) {
             w.extend(self.scope_shape(scope));
         }
         if !(answering || r("answers").is_some()) {
-            match g("kind").and_then(Value::as_str) {
-                Some("key") => w.extend(self.key_grant_shape(state, refs)),
-                Some("operator") => {
-                    if r("to").is_none() {
-                        w.push(f("required", "an operator grant names the agent or machine it answers for (refs.to)"));
-                    }
-                }
-                _ => {}
+            if g("kind").and_then(Value::as_str) == Some("key") {
+                w.extend(self.key_grant_shape(state, refs));
             }
         }
         w.extend(self.hash_shape(g("counted_to"), "state.counted_to"));
-        // 1.9 stage 4 (A4): a grant with `on` or `refs.what` names the line it is counted on
+        // a grant with `on` or `refs.what` names the line it is counted on
         if !answering && (g("scope").and_then(|sc| sc.get("on")).is_some() || r("what").is_some()) && r("meter").is_none() && g("kind").and_then(Value::as_str) != Some("key") {
             w.push(f("required", "a grant with scope.on or refs.what names refs.meter: the line every block under it is counted on"));
         }
@@ -70,7 +64,7 @@ impl Checker<'_> {
                     "parties" | "on" => !v.is_some_and(|p| self.parties_listed(p) && !p.as_array().is_some_and(|a| a.iter().any(|x| self.unknown_hash(Some(x))))),
                     "limit" | "each" => !self.limit_shape(v, k).is_empty(),
                     "every" => !self.duration_shape(v, k).is_empty(),
-                    "until" | "deadline" => !self.time_shape(v, k).is_empty(),
+                    "expires" | "deadline" => !self.time_shape(v, k).is_empty(),
                     "clocks" => v.is_none_or(|c| crate::tasks::clocks_of(c).is_none()),
                     "fallback" => !v.and_then(Value::as_str).is_some_and(|f| self.list("fallbacks").iter().any(|x| x == f)),
                     "ends_on" => v.is_none_or(|e| !self.ends_on_shape(e).is_empty()),
@@ -109,7 +103,7 @@ impl Checker<'_> {
             .unwrap()
             .keys()
             .filter(|k| !all.contains(k))
-            .map(|k| f("undeclared_field", format!("scope.{k} is not part of a 1.9 scope ({})", all.join(", "))))
+            .map(|k| f("undeclared_field", format!("scope.{k} is not a field of a grant's scope ({})", all.join(", "))))
             .collect();
         if !scope.get("types").is_none_or(|a| self.types_ok(a)) {
             w.push(f("shape", "scope.types lists types"));
@@ -124,24 +118,24 @@ impl Checker<'_> {
         w.extend(self.limit_shape(scope.get("limit"), "scope.limit"));
         w.extend(self.limit_shape(scope.get("each"), "scope.each"));
         w.extend(self.duration_shape(scope.get("every"), "scope.every"));
-        // 1.9 stage 4 (A2): `every` is stated only with `limit` and `until` (`shape`, `required`): with no limit it is no shape of a renewing
-        // limit (`shape`); with no until the end it needs is missing (`required`), as the oracle reads the pair (end pass 2026-11-20)
+        // `every` is stated only with `limit` and `expires` (`shape`, `required`): with no limit it is no shape of a renewing
+        // limit (`shape`); with no expires the end it needs is missing (`required`), as the oracle reads the pair
         if scope.get("every").is_some() && scope.get("limit").is_none() {
             w.push(f("shape", "scope.every goes with scope.limit"));
         }
-        if scope.get("every").is_some() && scope.get("until").is_none() {
-            w.push(f("required", "scope.every goes with scope.until"));
+        if scope.get("every").is_some() && scope.get("expires").is_none() {
+            w.push(f("required", "scope.every goes with scope.expires"));
         }
         if let Some(c) = scope.get("clocks") {
             if crate::tasks::clocks_of(c).is_none() {
                 w.push(f("shape", "scope.clocks is { names, needed }"));
             }
         }
-        // 1.9 (O2): her own ending term, `{ witness, said }`
+        // her own ending term, `{ witness, said }`
         if let Some(e) = scope.get("ends_on") {
             w.extend(self.ends_on_shape(e));
         }
-        // G15: `fallback` is a closed list of one, stated only with `deadline`
+        // `fallback` is a closed list of one, stated only with `deadline`
         if let Some(fb) = scope.get("fallback") {
             if !fb.as_str().is_some_and(|x| self.list("fallbacks").iter().any(|y| y == x)) {
                 w.push(f("shape", "scope.fallback is one of protocol.json fallbacks (lowest)"));

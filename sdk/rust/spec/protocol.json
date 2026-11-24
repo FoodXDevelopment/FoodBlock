@@ -55,7 +55,7 @@
   "transfer": [
    "refs.schema"
   ],
-  "about": "The blocks a block names for its meaning: `read` reads them (core.md, section 8), and a block that names one not held, not valid or not read is not read. A block's pieces (its author's genesis, the block its `refs.key` names, and that one's pieces) are `valid`'s and are not listed here. No block waits for its `prev`."
+  "about": "The blocks a block names for its meaning: `read` reads them (core.md, section 8), and a block that names one not among the blocks, not valid or not read is not read. A block's pieces (its author's genesis, the block its `refs.key` names, and that one's pieces) are `valid`'s and are not listed here. No block waits for its `prev`."
  },
  "refs": {
   "who_and_where": [
@@ -86,18 +86,15 @@
   "about": "Shared ref keys are these lists plus the verbs and the causal keys. refs.of names the kind an instance belongs to; state.kind is a label. refs.key names the key grant that brought in the key that signed the block (identity.md, refs.key)."
  },
  "refs_single": [
-  "author",
-  "prev",
   "answers",
   "updates",
   "as",
   "under",
   "parent",
-  "key",
   "meter",
   "to_owner"
  ],
- "refs_single_about": "These links hold exactly one id; an array there is `grammar` (core.md, section 1): an answer answers one block, a stop or a new version updates one, a block speaks as one circle, acts under one grant, a grant passes on one parent, and a transfer lands on one owner (1.9 stage 6, C22: a list in to_owner is grammar). A promise's sides (from, to) are one id each too (promises.md, Sides: `shape`).",
+ "refs_single_about": "These links hold exactly one id; an array there is `grammar` (core.md, section 1): an answer answers one block, a stop or a new version updates one, a block speaks as one circle, acts under one grant, a grant passes on one parent, and a transfer lands on one owner. `author`, `prev` and `key` are one id too: a set there is `chain` (core.md, section 8). A promise's sides (from, to) are one id each too (promises.md, Sides: `shape`).",
  "statuses": [
   "accepted",
   "declined",
@@ -111,7 +108,7 @@
   "occurrences": "{ occurrences: [start times, or the hashes of the blocks that started them] }: named occurrences of a standing promise"
  },
  "circle": {
-  "about": "A founding block states `pack` (whole parts, the founder's first), `rules` (rows), `clocks` and `refs.meter`, each optional. A row is `{ parts, scope }` or `{ to, needed, scope }`, `scope` a grant's scope; numbers whole, at least 1. A block as the circle holds where one row holds for it, or by every owner together (circles.md)."
+  "about": "A founding block states `pack` (whole parts, the founder's first), `rules` (rows), `clocks` and `refs.meter`, each optional. A row is `{ parts, scope }` or `{ to, needed, scope }`, `scope` a grant's scope, whose silence allows nothing; its `parties`, `on` and `what` may each be `\"any\"`; numbers whole, at least 1. A block as the circle holds where one row holds for it, or by every owner together (circles.md)."
  },
  "genesis": {
   "required": [
@@ -123,9 +120,9 @@
   "private": [
    "nonce"
   ],
-  "private_about": "A genesis may carry any audience (decision H10): public, or a sorted list of commitments with state.nonce, as any private block. A reader verifies it once it holds it; a node waits on a block whose author's genesis it lacks, as for any need. A genesis has no public header: a reader outside its audience is sent nothing of it.",
+  "private_about": "A genesis may carry any audience: public, or a sorted list of commitments with state.nonce, as any private block. A reader verifies it once it holds it; a node waits on a block whose author's genesis it lacks, as for any need. A genesis has no public header: a reader outside its audience is sent nothing of it.",
   "recognised": "A genesis is an actor that names its own signing key (state.public_key_sign) and has no refs.author and no state.seq; it is held to this list alone (bad_genesis), and its signature must open with its own public_key_sign (bad_genesis, never bad_signature). Any other actor that names a key or no author is no genesis: it has the common five or is chain, so a block that names no key and no author lacks them (chain).",
-  "optional_about": "Besides `required`, a genesis may carry suite, public_key_encrypt, reach, clocks and voices (key_fields, all but roles and shown_key; 1.9 3d-17: `voices` states her whole list, its own public_key_sign a `key` voice of it, else `shape`), clocks being required with reach, and, when its audience is a list, its nonce (private); never roles, name or marks (bad_genesis)."
+  "optional_about": "Besides `required`, a genesis may carry suite, public_key_encrypt, reach, clocks and voices (key_fields, all but roles and shown_key; `voices` states her whole list, its own public_key_sign a `key` voice of it, else `shape`), clocks being required with reach, and, when its audience is a list, its nonce (private); never roles, name or marks (bad_genesis)."
  },
  "common": [
   "author",
@@ -155,7 +152,7 @@
     "one of refs.to_owner, refs.to_holder, refs.to_place, state.count"
    ],
    "promise": [
-    "refs.what, state.what or terms.quantity"
+    "terms.lines or state.what"
    ],
    "grant": [
     "state.kind"
@@ -238,8 +235,6 @@
   "about": "Defined once. A genesis carries public_key_sign, public_key_encrypt, suite, reach, clocks and voices (3d-17); a key grant carries public_key_sign, public_key_encrypt, suite, voices, clocks and shown_key; a circle's actor carries clocks (circles.md, A circle's clock) (identity.md). A key grant that adds a key under a voice that states limit may carry limit and each: the part of the voice's line it passes that key, and its each, no higher than the voice's (identity.md, A voice's bounds)."
  },
  "terms": [
-  "price",
-  "quantity",
   "lines",
   "pay_by",
   "deliver_by",
@@ -273,7 +268,7 @@
   "limit",
   "every",
   "each",
-  "until",
+  "expires",
   "clocks",
   "deadline",
   "fallback",
@@ -284,8 +279,6 @@
  ],
  "fallbacks_about": "scope.fallback: read on the line refs.meter names (authority.md, Her deadline, and the lowest offer at it); stated only with scope.deadline.",
  "set_places": [
-  "terms.price",
-  "terms.quantity",
   "terms.pay_by",
   "terms.deliver_by",
   "lines.price",
@@ -308,7 +301,6 @@
   "price_figure": [
    "figure",
    "by",
-   "signers",
    "deadline",
    "clocks"
   ],
@@ -317,7 +309,7 @@
    "min",
    "max"
   ],
-  "price_figure_about": "A price fixed later (promises.md, Terms): `figure` the kind of `observe` whose `state.amount` is the figure, `by` the readers (ids), `signers` how many different ones must have signed the same figure, `deadline` and `clocks` the window on a named clock, and optionally `fraction` (a decimal from 0 to 1: the share of the figure the price is), `min` and `max` (amounts of the figure's kind: a figure outside them does not count). It is a bare price's shape, never a line's.",
+  "price_figure_about": "A price fixed later (promises.md, Terms): `figure` the kind of `observe` whose `state.amount` is the figure, `by` the readers, a panel (`names` their ids, `needed` how many different ones must have signed the same figure), `deadline` and `clocks` the window on a named clock, and optionally `fraction` (a decimal from 0 to 1: the share of the figure the price is), `min` and `max` (amounts of the figure's kind: a figure outside them does not count). It is a bare price's shape, never a line's.",
   "range": [
    "min",
    "max"
@@ -381,6 +373,11 @@
    "needed"
   ],
   "clocks_about": "A named clock (blocks.md, A named clock): `names` a non-empty sorted list of block ids, each naming a line (that block's key's blocks after it; a person's id names her genesis key's line); `needed` by Counts (folds.md): a set of one needs none, a larger set states it. It sits in the word whose time or order it reads: a condition `within` or `without`, a promise's terms, a transfer, a grant, a list of voices.",
+  "panel": [
+   "names",
+   "needed"
+  ],
+  "panel_about": "A panel (folds.md, Counts): `names` a non-empty list of ids, each once (a bench's in the order its backups take their turn; a clock's sorted), `needed` how many different ones must each sign; a panel of one id needs no `needed`, and one of more that states none holds nothing. It sits under the word that says what its names sign: `clocks` (this same shape), a signal's or a figure's `by`, a schema's `grounds.bench`, a voice of other people.",
   "voice": {
    "key": [
     "key",
@@ -442,7 +439,7 @@
     "needed",
     "scope"
    ],
-   "about": "a row of a circle's rules: exactly one of these key sets (circles.md, C10): parts and needed whole numbers of at least 1, never all and never a share; to one id or a non-empty list of ids (the ids it names, or the holders of a grant as the circle it names); scope a grant's scope. A parts row only on a circle that states a pack."
+   "about": "a row of a circle's rules: exactly one of these key sets (circles.md): parts and needed whole numbers of at least 1, never all and never a share; to one id or a non-empty list of ids (the ids it names, or the holders of a grant as the circle it names); scope a grant's scope. A parts row only on a circle that states a pack."
   },
   "ends_on": [
    "witness",
@@ -484,15 +481,11 @@
   "lines"
  ],
  "kind_fields": {
-  "about": "The typed fields of a kind (core.md, section 3), one rule for every kind. Under a type and a kind (`state.kind`), each line is `field:shape`: the field a path in the state (`terms.reveal_by` is state.terms.reveal_by) and the shape `text`, `hash` (a SHA-256 digest in hex), `id` (grammar.id), `time` (grammar.time), `count` (a whole number of at least 1) or `in:<list>` (one of a closed list named here by its path). A shape ending in `!` is asked for: the field must be there (`shape` otherwise). A field that is there must have its shape (`shape`, or `grammar` for a hash or an id, `time` for a time); a field left out is asked for by nothing here unless its shape ends in `!`, and a field not listed is not read. Every line restates what the module that owns the kind already says in words (authority.md, A witness; consent.md, section 2; profiles/pools.md, the schema draw). receipt: refs.derives_from the blocks it names, one or more, no state field asked for. dropped: refs.derives_from the blocks or receipts a node no longer holds, on the log that took them in (nodes.md, The arrival log). received: refs.for the deal, state.amount what came, state.line where the deal has lines: the receiver's own word against herself (folds.md, What is left, The other side).",
+  "about": "The typed fields of a kind (core.md, section 3), one rule for every kind. Under a type and a kind (`state.kind`), each line is `field:shape`: the field a path in the state (`terms.reveal_by` is state.terms.reveal_by) and the shape `text`, `hash` (a SHA-256 digest in hex), `id` (grammar.id), `time` (grammar.time), `count` (a whole number of at least 1) or `in:<list>` (one of a closed list named here by its path). A shape ending in `!` is asked for: the field must be there (`required` otherwise), as a schema's `!` asks (things.md, Schemas). A field that is there must have its shape (`shape`, or `grammar` for a hash or an id, `time` for a time); a field left out is asked for by nothing here unless its shape ends in `!`, and a field not listed is not read. Every line restates what the module that owns the kind already says in words (authority.md, A witness; profiles/pools.md, the schema draw). receipt: refs.derives_from the blocks it names, one or more, no state field asked for. dropped: refs.derives_from the blocks or receipts a node no longer holds, on the log that took them in (nodes.md, The arrival log). received: refs.for the deal, state.amount what came, state.line where the deal has lines: the receiver's own word against herself (folds.md, What is left, The other side).",
   "observe": {
    "witness": [
     "said:text",
     "readback:hash"
-   ],
-   "consent": [
-    "word:in:folds.consent.word_values",
-    "to:id"
    ],
    "receipt": [],
    "cutoff": [
@@ -504,7 +497,11 @@
     "renderer:hash",
     "digits:text"
    ],
-   "dropped": []
+   "dropped": [],
+   "message": [
+    "pay_by:time",
+    "judge:id"
+   ]
   },
   "promise": {
    "draw": [
@@ -667,12 +664,26 @@
   },
   "future": {
    "pq": {
-    "hash": "sha3-256",
-    "sign": "ml-dsa-44",
-    "encrypt": "ml-kem-768",
-    "status": "noted, not usable until sizes are fixed in vectors; a signature must still fit limits.signature_bytes"
+    "hash": "sha256",
+    "sign": "slh-dsa-sha2-128s",
+    "status": "noted, not usable until sizes are fixed in vectors; a signature must still fit limits.signature_bytes; SLH-DSA hashes with SHA-256, so every id stays a SHA-256 id"
    }
   }
+ },
+ "encrypt_keys": {
+  "about": "An encryption key that names its own algorithm: its name, a colon, then the key (core.md, section 2). A bare key is the suite's own. A named key whose name a reader does not know is skipped: it seals nothing, and the rest of the block that states it stands.",
+  "xwing": {
+   "prefix": "xwing:",
+   "grammar": "^xwing:[0-9a-f]{2432}$",
+   "bytes": 1216,
+   "kem": "X-Wing, draft-connolly-cfrg-xwing-kem-11: the 1,184-byte ML-KEM-768 key, then the 32-byte X25519 key",
+   "kem_ciphertext_bytes": 1120,
+   "shared_secret_bytes": 32,
+   "private_seed_bytes": 32,
+   "encaps_random_bytes": 64,
+   "envelope": "xwing-hkdf-sha256-aes-256-gcm"
+  },
+  "named": "^[a-z0-9-]+:[0-9a-f]+$"
  },
  "refusals": {
   "about": "Every refusal is { hash, code, detail }. block: why `valid` refuses a block's bytes, final for those bytes, bar `unmet` and `unknown_suite`, which wait. read: why `read` cannot read a valid block; never a refusal: the block is kept, not read. fold: why a fold counts a block for nothing, or gives no answer. message: why a node refuses a message. `valid` reads the five things in `checks` (core.md, section 8: the size, the bytes, the header, the pieces, the signature) in order and stops at the first that finds anything; it gives one of eight codes. `read` judges every value and gives every code it finds, in the order of `read`, which lists every code it can give.",
@@ -697,21 +708,21 @@
     "audience": "an audience that is neither public nor a sorted list of commitments",
     "bad_genesis": "read's code (core.md, sections 4 and 8): a genesis with author, prev, after or seq, missing a genesis field (its state.kind missing or not text included), with reach and no clocks, or with a field or ref section 4 does not give it. A genesis its own key does not open is bad_signature, valid's",
     "chain": "a block that is not a genesis lacks refs.author, refs.prev or state.seq",
-    "unmet": "a piece is not held, or held only as its header (its author's genesis, the block its refs.key names, and that block's pieces): not a refusal but a wait; fetching it cures it",
-    "bad_piece": "a piece it rests on is held and refused (its id is the hash of its bytes, so it can never become valid): final, naming the piece and its code",
+    "unmet": "a piece is not among the blocks, or only as its header (its author's genesis, the block its refs.key names, and that block's pieces): not a refusal but a wait; fetching it cures it",
+    "bad_piece": "a piece it rests on is among the blocks and refused (its id is the hash of its bytes, so it can never become valid): final, naming the piece and its code",
     "bad_hash": "an id sent with it is not the hash of its canonical bytes in the suite of the key that signed it (no label names the suite)",
     "bad_signature": "the key its pieces name does not open its signature over its header (a genesis: over its own bytes), or the block its refs.key names is not a key grant of its author about its author",
     "unknown_rules": "read's own code: the block states a rule set (state.rule_set) this reader does not run; it is not read, and it hides what it could name (folds.md, Read whole)",
     "unknown_suite": "a key that names a suite the reader does not know, or a key, signature or id outside its suite's grammar, or a piece that waits on such a suite; not a refusal but a wait: judged again when the reader knows the suite",
-    "names_missing": "read's own code: a block it names for its meaning (needs) is not held; listed with the id of each such block. The cure is to fetch it. The block is kept, not read",
-    "names_unread": "read's own code: a block it names for its meaning (needs) is held and not valid or not read; listed with the id of each such block. Fetching does not cure it. The block is kept, not read",
-    "required": "a closed block missing a required field (core.md, section 7): an actor that is no genesis with no state.kind, or not text; a grant with no state.kind; a transfer with neither refs.what nor state.amount, or none of refs.to_owner, to_holder, to_place and state.count, or that names no instance and no to_owner; a promise with none of refs.what, state.what and terms.quantity; a reply with no state.status that is no counter-offer; an updates of a promise that is neither its author's stop nor the end of her own pause (promises.md, Answers); a grant with scope.on or refs.what and no refs.meter (authority.md); a consent yes with no refs.subject (consent.md); a payment for several promises with no state.split, or a seller's transfer for a buyer's order with no state.covers (things.md); a field the schema it names marks `!` (things.md, Schemas); a key grant with no refs.subject, or a profile's own required field (a rekey without refs.as, rekeys.md)",
+    "names_missing": "read's own code: a block it names for its meaning (needs) is not among the blocks; listed with the id of each such block. The cure is to fetch it. The block is kept, not read",
+    "names_unread": "read's own code: a block it names for its meaning (needs) is among the blocks and not valid or not read; listed with the id of each such block. Fetching does not cure it. The block is kept, not read",
+    "required": "a closed block missing a required field (core.md, section 7): an actor that is no genesis with no state.kind, or not text; a grant with no state.kind; a transfer with neither refs.what nor state.amount, or none of refs.to_owner, to_holder, to_place and state.count, or that names no instance and no to_owner; a promise with neither terms.lines nor state.what; a reply with no state.status that is no counter-offer; an updates of a promise that is neither its author's stop nor the end of her own pause (promises.md, Answers); a grant with scope.on or refs.what and no refs.meter (authority.md); a payment for several promises with no state.split, or a seller's transfer for a buyer's order with no state.covers (things.md); a field the schema it names, or its kind's `kind_fields` line, marks `!` (things.md, Schemas); a key grant with no refs.subject, or a profile's own required field (a rekey without refs.as, rekeys.md)",
     "undeclared_ref": "on a closed type, a ref key neither shared nor declared by its schema",
     "undeclared_field": "on a closed type, a state field neither its type's base field nor declared by its schema",
     "status_not_answer": "a status on a block that neither answers nor updates its author's own",
     "bad_status": "a status not in statuses, stopped without a valid stop, or a stop beside any other status or none",
-    "deal_not_named": "an answer or counter in a deal that does not name the deal's first promise, exactly, in refs.for",
-    "lines": "a line without an id unique in the promise, a top-level price or quantity beside lines, or refs.what not the lines' what",
+    "deal_not_named": "an answer or counter that does not name the first promise of the deal or plan it names, exactly, in refs.for",
+    "lines": "terms.lines that is not a non-empty list of lines; a line without an id unique in the promise, with a field other than id, what, quantity and price, stating none of what, quantity and price, or with a what that is not one id; lines priced in two kinds; a line with no what whose quantity is of its price's kind, in a promise that states state.what (a loan and a job at once); a promise that names refs.what",
     "wider_than_parent": "a child grant's scope or depth wider than its parent's on any field; another meter, deadline or fallback",
     "not_receiver": "a grant passed on by someone other than its parent's receiver, or, for a parent made to a circle, by a block not signed as that circle"
    },
@@ -720,24 +731,24 @@
     "open_offer_counter": "a counter to an open offer, by the taker or the offerer in a chain of counters: it ends nothing (only the author ends an open offer) and binds nothing until the side that did not sign it answers it accepted; that accept of a counter of the chain is an allocation, a one-to-one deal on the counter's own terms whose quantity counts against the open offer's",
     "not_live": "acts under a grant that is not live, or outside its scope (its types by exact name, its parties); with scope.fallback, an accept the meter's line shows before the deadline",
     "no_role": "a block as a circle for which no row holds and which every owner did not sign: waiting, acting on nothing (circles.md)",
-    "not_voice": "a hand that counts for nothing in its row: no parts on a line read whole, not named by the row's `to`, an end of hers that the completing block has seen, unissued parts, or one the move gives to (circles.md, C15)",
+    "not_voice": "a hand that counts for nothing in its row: no parts on a line read whole, not named by the row's `to`, an end of hers that the completing block has seen, unissued parts, or one the move gives to (circles.md)",
     "not_counted": "a settling block the receiver has not accepted and no confirmer the grounds name has confirmed",
     "pair": "one of a pair that name one prev or state one seq, or a later block of that key (a draw of a fork takes nothing: folds.md, What is left): proof, counted for nothing of what is to come to its signer",
     "quote_only": "an accept of a tool's own promise (a promise a tool signs under a grant that keeps to no promise the grant names): it binds no one (promises.md, A tool's own promise)",
     "not_kept": "a block under a grant that is for no promise in its scope.on and no deal a block under it made, or that keeps to none (authority.md, Keeps to); a word about what is hers to receive, a payment or a delivery for a deal not in on and not made under the grant; a fill of an occurrence already filled",
-    "both_sides": "a block under a grant that gives to its own signer, to a key linked to the signer by a two-key link, or to a circle in which her hand could count, where the promise in scope.on does not name her as that side (authority.md, No one is both sides of a word); in a circle, the hand of one the move gives to is not_voice (circles.md, C15, C16)",
+    "both_sides": "a block under a grant that gives to its own signer, to a key linked to the signer by a two-key link, or to a circle in which her hand could count, where the promise in scope.on does not name her as that side (authority.md, No one is both sides of a word); in a circle, the hand of one the move gives to is not_voice (circles.md)",
     "not_due": "a payment or a delivery under a grant that is not of its deal, not to its other side, more than the deal names, or not due (00-shared, Due): it binds her to nothing",
     "after_deadline": "an accept under a grant with scope.deadline after the deadline, read on the meter's line; with scope.fallback, any accept after it but her tool's accept of the lowest offer",
     "waiting": "a word that does not yet stand (blocks.md, Finality); listed in `waiting` with what it waits on, never refused; under a grant, a block whose line has not shown it yet (on: meter)",
     "not_shown": "the line the question reads is not read whole from the block back to its start: no answer is given, and lacks lists what it would need",
     "past": "a draw that does not fit what its owner owns of the measure where it stands, with the draws before it on her line that take and are not freed: it takes nothing and is never cut down (folds.md, What is left)",
-    "not_on_line": "a draw signed by a key other than the one whose line holds the owner's amount, and not on a part passed to that key",
+    "not_on_chain": "a draw signed by a key other than the one whose chain holds the owner's amount, and not on a part passed to that key",
     "unit": "an amount of another kind than the measure; nothing is converted",
     "no_measure": "an amount drawn on a thing that states no pack, or where the drawer's amount of it is not said (an output of unlike inputs); a transfer that draws one is read as naming no instance",
     "not_owner": "a draw by one who owns none of the measure on that line",
-    "not_confirmed": "a payout whose condition is not a signal by the confirmers the head's schema names: no payout of the pot, and it takes and holds nothing of it (folds.md, A pot)",
+    "not_confirmed": "a payout whose condition is not a signal by the bench the head's schema names: no payout of the pot, and it takes and holds nothing of it (folds.md, A pot)",
     "not_holder": "a transfer, for a head whose receiver is a thing, to anyone but the owner of that thing (or of a thing made from it) where it stands: no payout of the pot, and it takes and holds nothing of it (folds.md, A pot)",
-    "out_of_place": "a block not in its place on its key's line (folds.md, A line): its prev names no block of that key with a seq below its own, or, for a key's first block, not the first block that brought that key in with seq 1; it takes nothing and binds its signer as a block of a fork does",
+    "out_of_place": "a block not in its place on its key's line (folds.md, A chain): its prev names no block of that key with a seq below its own, or, for a key's first block, not the first block that brought that key in with seq 1; it takes nothing and binds its signer as a block of a fork does",
     "stopped_thing": "a draw on, or move of, a thing her stop of one thing names, by a block under her grant that has seen the stop and no lift of it that stands (authority.md, A stop of one thing)"
    },
    "message": {
@@ -809,10 +820,10 @@
     "signed_by_author",
     "keys"
    ],
-   "input": "an id and the blocks held",
+   "input": "an id and the blocks given",
    "output": {
     "signed_by_author": "{ hash: true when a key of the block's author spoke for her there: a key of a voice of her list standing in the block's causal past, or a key under one, not ended for that block (identity.md) }",
-    "voices": "the list standing in the reader's held blocks: [{ key | key_hash | names, needed, suite, wait, reach } (a key_hash voice states no suite, 1.9 3d-12)], highest first",
+    "voices": "the list standing in the blocks the reader has: [{ key | key_hash | names, needed, suite, wait, reach } (a key_hash voice states no suite)], highest first",
     "clocks": "the list's clock, or null",
     "keys": "the keys of standing voices and keys under them that no end has reached, sorted",
     "waiting": "[{ block, on }]: every block of hers, and every key grant for her list, that does not stand yet and may, one entry for each thing it waits on (blocks.md, Finality), sorted by block then on"
@@ -833,21 +844,20 @@
     "crossed",
     "requests"
    ],
-   "input": "a first promise, or an allocation (promises.md), and the blocks held; no clock. A promise that rests on blocks not held, one that speaks for neither side, or an allocation the open offer does not bind has no stage (null)",
+   "input": "a first promise, or an allocation (promises.md), and the blocks given; no clock. A promise that rests on blocks it lacks, one that speaks for neither side, or an allocation the open offer does not bind has no stage (null)",
    "output": {
-    "stage": "offered, asked, declined, stopped, accepted, underway, done or reversed (the view adds expired, and elapsed for a promise that moves nothing past its until)",
+    "stage": "offered, asked, declined, stopped, accepted, underway, done or reversed (the view adds expired, and elapsed for a promise that moves nothing past its until); null for her plan, which has no stage",
     "stop": "before or onward, when stopped",
     "from": "the onward stop's hash",
     "by": "on a stage stopped onward, the side that ended it: from, to, or both (the other side confirms the stop, or the first stops, which do not see each other, are one by each side); else null",
     "offer": "the offer the binding accept answers; with none, the live offer when there is only one, else null",
-    "requests": "[{ block, open }]: answers that do not yet bind (1.8 P12, Who may bind), open a sorted list of when, which, whose; an answer that is ended (her own earlier decline in its past, the offerer's decline of it on an offer with expires, a stop before of the offer in its past) is no request; sorted by block",
+    "requests": "[{ block, open }]: answers that do not yet bind (promises.md, Who may bind), open a sorted list of when, which, whose; an answer that is ended (her own earlier decline in its past, the offerer's decline of it on an offer with expires, a stop before of the offer in its past) is no request; sorted by block",
     "live": "every live offer, sorted (two counters to one offer both stand)",
     "accept": "the binding accept's hash, or null",
     "sides": "{ from, to }",
-    "quantity": "the quantity chosen, an amount (the accept's, else the allocation's, else the terms'; a range is what may be chosen, never a choice), or null; on an open offer, the sum its allocations bind; sums in the offer's kind",
-    "takers": "[{ who, request, allocation, quantity, over_allocated }] on an open offer, in causal order; in an allocation's own deal, that one taker",
+    "takers": "[{ who, request, allocation, lines, over_allocated }] on an open offer (lines: [{ id, quantity }], what the allocation draws on each line of the offer, quantity null for a line with none), in causal order; in an allocation's own deal, that one taker",
     "forks": "blocks of a pair in the deal (one key, one prev or one seq): proof of a lie, sorted; a pair never frees its signer",
-    "lines": "[{ id, needed, moved }], id null without lines; needed and moved amounts in the line's kind, null where the line states no quantity",
+    "lines": "[{ id, needed, moved }], one per line of the deal; needed (the line's quantity chosen; on an open offer, the sum its allocations that take bind on that line) and moved amounts in the line's kind, null where the line states no quantity",
     "total": "an amount: what the price comes to, or null",
     "paid": "an amount in the price's kind, else the one kind every counted payment covers, or null (folds.md, What is left, The other side)",
     "stopped": "occurrence start times or hashes stopped, sorted: each a pause names, less the times its own signer resumed (an updates of it with status resumed, from its at)",
@@ -856,18 +866,18 @@
     "paid_at": "once the price is paid in full, the latest date among the payments, each dated by the first counting answer of the side it is paid to (or a named confirmer's confirms); else null (always null on a standing promise)",
     "uncovered": "{ from: [{ line, amount }], to: amount or null }, for each side at every stage (folds.md, What each fold returns)",
     "unanswered": "[block]: transfers naming no instance that the other side has not accepted, sorted; never counted in uncovered",
-    "over_allocated": "true when the allocation does not take as a draw on the offer's quantity (past or pair)",
+    "over_allocated": "true when the allocation does not take as a draw on the offer's lines (past or pair)",
     "to_come": "null, or { to, from, draws }: to and from [{ owner, amount }], draws the hand-overs as draws",
     "received_at": "[{ message, side, at }]: each counted observe of kind message a side wrote for the deal, with the time the named clock received it (the promise's clocks, and no one else's receipt); at null while there is no clock or no receipt. A fact: what was paid for a deal that failed is uncovered",
     "moved": "[{ pay_by, proposal, answer }]: each new date both sides signed (a side's observe of kind message for the deal with a pay_by, answered accepted by an observe of the other side), in the order the answers stand in causal order. The first promise's own pay_by stays in due; a date only one side signed is not listed",
     "to_come_on": "[{ from, to, amount, payment }]: a counted payment made, unseen by its payer, to an owner who had handed that part on: the old owner holds that amount for the new one; sorted by payment, then to",
-    "referee_ties": "[{ referee, side, how }]: each name on the deal's bench tied to a side (decision H9), read from the blocks held: side from or to; how member (the name owns parts of the side's circle); sorted by referee, side, how; empty until a binding accept exists. A fact: it changes no stage",
+    "judge_ties": "[{ judge, side, how }]: each name on the deal's bench tied to a side, read from the blocks given: side from or to; how member (the name owns parts of the side's circle); sorted by judge, side, how; empty until a binding accept exists. A fact: it changes no stage",
     "occurrences": "on a standing promise, [{ occurrence, due, paid, paid_at, done_at }] for each occurrence a counted payment names (state.occurrence), a done names, or an event started, sorted: done_at is the earliest `at` of the doer's own counted done of it (observe kind done, state.occurrence), else null; due is its start time, or an event's at plus the repeat's wait; paid what its payments put toward the price; paid_at, once that covers one occurrence's price, the latest date among them. Empty on any other promise",
-    "price_fixed": "null when the price is a plain number; for a price fixed later (promises.md, Terms), false until it is fixed (total is then null and the price is never paid), true once `signers` readers have each signed the same figure in time. A fact: it changes no stage",
+    "price_fixed": "null when the price is a plain number; for a price fixed later (promises.md, Terms), false until it is fixed (total is then null and the price is never paid), true once `by.needed` readers have each signed the same figure in time. A fact: it changes no stage",
     "crossed": "answers of one deal that bind and do not see each other, sorted: each binds; the deal is read once under each (per_accept) and the stage is the furthest of them",
     "per_accept": "[{ accept, stage, paid, uncovered, lines }]: one per crossed answer, sorted by accept; empty when none cross",
     "waiting": "[{ block, on }]: each block of the deal that speaks for a side and does not yet stand, with each thing it waits on (blocks.md, Finality); sorted by block, then on",
-    "bench": "{ names, needed, wait, clocks }: the names that may lower the deal's stage (the confirmers its schema's grounds name, a referee both sides named), or none; the same answer gives gives"
+    "bench": "{ names, needed, wait, clocks }: the names that may lower the deal's stage (the judges its schema's grounds.bench names, then a judge both sides named), or none; the same answer gives gives"
    }
   },
   "circle_state": {
@@ -876,7 +886,7 @@
    ],
    "over": "circle",
    "words": "all",
-   "input": "a circle and the blocks held",
+   "input": "a circle and the blocks given",
    "output": {
     "founder": "the founder's id",
     "pack": "the founding block's pack, or null (owners unsaid)",
@@ -893,11 +903,11 @@
    ],
    "over": "circle",
    "words": "all",
-   "input": "a circle and the blocks held",
+   "input": "a circle and the blocks given",
    "output": {
     "circle": "the circle's id (its founding block)",
-    "versions": "[{ version, updates, author, holds, hands }] sorted by version: each version held (an actor of kind circle, as the circle, that updates the founding block or a version); `holds` whether a row of the founding block that names actor, or every owner, holds for it, and what it updates is the founding block or a version that holds; `hands` the ids whose hands counted, sorted",
-    "now": "the id of the version whose rows stand for every block held, or the founding block's id where no version stands"
+    "versions": "[{ version, updates, author, holds, hands }] sorted by version: each version among the blocks (an actor of kind circle, as the circle, that updates the founding block or a version); `holds` whether a row of the founding block that names actor, or every owner, holds for it, and what it updates is the founding block or a version that holds; `hands` the ids whose hands counted, sorted",
+    "now": "the id of the version whose rows stand for every block given, or the founding block's id where no version stands"
    }
   },
   "row_holds": {
@@ -906,29 +916,16 @@
    ],
    "over": "as",
    "words": "all",
-   "input": "a block signed as a circle, and the blocks held",
+   "input": "a block signed as a circle, and the blocks given",
    "output": {
     "circle": "the circle it is as",
     "holds": "whether a row holds for it, or every owner signed it (invariant 20)",
     "row": "the place in rules of the row that holds, or null",
     "every_owner": "whether it holds by every owner together (and no row holds)",
     "at": "the block (the move or a confirm of it) where it holds, the one with the fewest blocks in its past, or null",
-    "hands": "[{ id, block, parts, counts, why }] sorted by block: where it holds, each hand in the causal past of `at` (`at` itself included); else each hand held (the move, and each block that names it in refs.confirms). `id` whose hand it is: its signer, or the circle a confirm is signed as; `parts` her parts of the circle (an amount of unit part) read on her line from her hand back to her start, a draw that the move, or a move it confirms, answers added back (null with no pack); `counts` whether it counts in the row read (the row that holds; else the first row whose scope covers the move; else the every-owner way); `why` null where it counts, else not_voice (no parts or place the row counts, an end of hers seen, unissued parts, one the move gives to), waiting (it does not stand, or the circle it is signed as has no row that holds for it) or pair",
+    "hands": "[{ id, block, parts, counts, why }] sorted by block: where it holds, each hand in the causal past of `at` (`at` itself included); else each hand among the blocks (the move, and each block that names it in refs.confirms). `id` whose hand it is: its signer, or the circle a confirm is signed as; `parts` her parts of the circle (an amount of unit part) read on her line from her hand back to her start, a draw that the move, or a move it confirms, answers added back (null with no pack); `counts` whether it counts in the row read (the row that holds; else the first row whose scope covers the move; else the every-owner way); `why` null where it counts, else not_voice (no parts or place the row counts, an end of hers seen, unissued parts, one the move gives to), waiting (it does not stand, or the circle it is signed as has no row that holds for it) or pair",
     "waiting": "[{ block, on: hands }] while it does not hold",
-    "listed": "C9b, a reading: where the move gives to an owner, a tool of hers or a circle in which her hand could count, the promises signed as the circle that hold, are not in the move's causal past and are not done, stopped or declined, sorted; else []"
-   }
-  },
-  "ways_in": {
-   "ops": [
-    "ways_in"
-   ],
-   "over": "circle",
-   "words": [],
-   "input": "a circle and the blocks held",
-   "output": {
-    "circle": "the circle's id",
-    "rows": "[{ row, least }]: a to row its needed, a parts row the fewest owners whose parts reach it (null where none can); never above the every-owner way's",
-    "every_owner": "{ least }: the number of ids that own parts; null where there is no every-owner way (no pack, or unissued parts and no meter)"
+    "listed": "a reading: where the move gives to an owner, a tool of hers or a circle in which her hand could count, the promises signed as the circle that hold, are not in the move's causal past and are not done, stopped or declined, sorted; else []"
    }
   },
   "members_then": {
@@ -938,16 +935,7 @@
    "over": "circle",
    "words": "all",
    "input": "a block and a circle",
-   "output": "the ids that own its parts in the circle fold of the block's causal past (circles.md, C8), sorted; a name with # names no one"
-  },
-  "where_now": {
-   "ops": [
-    "where_now"
-   ],
-   "over": "thing",
-   "words": [],
-   "input": "a thing",
-   "output": "the places (hashes), sorted; empty when none is known"
+   "output": "the ids that own its parts in the circle fold of the block's causal past (circles.md), sorted; a name with # names no one"
   },
   "ownership": {
    "ops": [
@@ -971,37 +959,10 @@
     "draws": "[{ block, by, to, amount, takes, why, state }] (folds.md, What is left)",
     "waiting": "[{ block, on }]",
     "pair": "[{ draw, to, yes }] for an instance on a pair, and then no owner; else [] (folds.md, An answer never says \"nobody\")",
-    "named_by": "[{ block, by, own, pair, ref }] sorted by block: each block held that names this thing, or a draw this answer lists, by any ref, other than the draws and yeses this answer lists; by whom it speaks for, own whether it is backed by whom the named draw spoke for (false where it speaks for no one), pair whether it is one of a pair, ref the first ref key in byte order that names it (never author, prev, key or after). Listed whether or not it counts",
+    "named_by": "[{ block, by, own, pair, ref }] sorted by block: each block among the blocks that names this thing, or a draw this answer lists, by any ref, other than the draws and yeses this answer lists; by whom it speaks for, own whether it is backed by whom the named draw spoke for (false where it speaks for no one), pair whether it is one of a pair, ref the first ref key in byte order that names it (never author, prev, key or after). Listed whether or not it counts",
     "read": "the ids of the blocks it read, sorted: the thing, the block that starts each owner's line for it, each draw listed and each yes that landed one",
     "not_shown": "true with lacks when a line it reads is not read whole; then nothing else is given"
    }
-  },
-  "made_from": {
-   "ops": [
-    "made_from"
-   ],
-   "over": "thing",
-   "words": [],
-   "input": "an instance and the blocks held",
-   "output": "[{ thing, from, make, took }] sorted by thing then make (folds.md, What each fold returns)"
-  },
-  "machine_lock": {
-   "ops": [
-    "machine_lock"
-   ],
-   "over": "thing",
-   "words": [
-    "locked",
-    "locks",
-    "claimed"
-   ],
-   "input": "a machine (a thing) and the blocks held",
-   "output": {
-    "locked": "true when a stop of the machine backed by its owner stands",
-    "locks": "[id], sorted: the standing stops of the machine (grants of kind stop, refs.subject the machine) backed by its owner as the ownership fold reads him in each stop's causal past",
-    "claimed": "[id], sorted: the other standing stops of the machine, each its signer's reading, locking nothing"
-   },
-   "about": "A reading (patterns/machines.md, A machine lock): whether a machine runs is its owner's kit. A lock ends as anything ends, by its author's stop; the lock names no safe state."
   },
   "shares_on": {
    "ops": [
@@ -1016,48 +977,6 @@
    "output": {
     "standing": "[{ share, owner }] the shares that stand on it: things of kind share that name it in refs.subject, made by whoever owned it where the share stands",
     "nothing": "[{ share, reason }] shares that count for nothing: not_a_thing (the subject is no thing), kind (its subject is a kind by its own block), not_owner (the maker did not own it there)"
-   }
-  },
-  "use_shown": {
-   "ops": [
-    "use_shown"
-   ],
-   "over": "thing",
-   "words": [
-    "users",
-    "clock"
-   ],
-   "input": "a place, the blocks held, and optionally a named clock (clocks)",
-   "output": {
-    "clock": "clocks when a clock was named, else author (each use is dated by its author's own at)",
-    "users": "[{ user, uses, count, unreceived, first, last, seasons, bounds, resting, overlaps, leave }] sorted by user; none means no use in what the reader holds. `leave` is null, or { of, since, until }: the owner's live grant of kind leave to this user for the place, shown as by leave of `of` since `since`, never as a use that stands against the owner"
-   }
-  },
-  "not_free_shown": {
-   "ops": [
-    "not_free_shown"
-   ],
-   "over": "block",
-   "words": [],
-   "input": "a block and the blocks held",
-   "output": {
-    "shown": "[{ block, by, reason, threat, at }] the signer's own words (observe of kind not_free) naming the block in refs.subject, written by the block's author; a claim shown beside the block, never a verdict",
-    "nothing": "[{ block, why }] words by anyone else (why: not_signer): their own observes"
-   }
-  },
-  "invasion_shown": {
-   "ops": [
-    "invasion_shown"
-   ],
-   "over": "invasion",
-   "words": [],
-   "input": "a claim of invasion (an observe of kind invasion) and the blocks held",
-   "output": {
-    "claimant": "whom the claim speaks for",
-    "holder": "who holds the claim now: the claimant, then each accepted hand-over",
-    "evidence": "the claim's derives_from, sorted; empty means evidence: none",
-    "judges": "[{ judge, named_by }] judges named by a grant of kind referee for the claim, by the holder side or an accused",
-    "rulings": "[{ block, judge, named_by, word, evidence }] a named judge's confirms or defeats of the claim"
    }
   },
   "chain": {
@@ -1076,50 +995,9 @@
    "equivocations": "pairs of hashes naming one prev or stating one seq, each pair sorted",
    "broken": "hashes whose prev does not name the block before",
    "ok": "true when there are no unexplained gaps, equivocations or broken links"
-  },
-  "next_link": {
-   "ops": [
-    "next_link"
-   ],
-   "over": "key",
-   "words": [],
-   "seq": "the next seq for the key",
-   "prev": "the hash of the key's previous block, or of the block that brought the key in"
-  },
-  "consent": {
-   "ops": [
-    "consent"
-   ],
-   "over": "person",
-   "words": [
-    "word"
-   ],
-   "input": "a person, a sender (or none), optionally the hash of the grant the sender's block acts under (refs.under), and the blocks held",
-   "output": {
-    "word": "yes or stop, or null",
-    "block": "the consent block that decides (the lowest hash of tied blocks that agree), or null"
-   },
-   "about": "The person's own blocks count for every word; anyone else's counts only as a stop that binds the recorder's own side, or as a yes that lifts a stop that same recorder recorded and has it in its causal past (consent.md). A stop wins any tie; a tie of other words gives null. There is no public list.",
-   "word_values": [
-    "yes",
-    "stop"
-   ]
-  },
-  "release_shown": {
-   "ops": [
-    "release_shown"
-   ],
-   "over": "promise",
-   "words": [],
-   "input": "a deal's first promise or a thing, and the blocks held",
-   "output": {
-    "subject": "the block asked about",
-    "released": "[{ block, by, side, to }] counted releases (an observe of kind release) that let go of the signer's own claims on it: one naming it in refs.subject, or, for a deal, a general release by a side to the other side that has it in its causal past and does not list it in state.except; side is from (the price is to come to it) or to (what moves is to come to it), null for a thing; sorted by block",
-    "kept_open": "[{ block, by, side }] general releases that list the deal in state.except: the debt stays open; sorted by block"
-   }
   }
  },
- "folds_about": "Every fold has: ops (the door ops that answer it), over (what it is asked of: a promise, a thing, a key, a circle, a circle_role, an `as` block, a person), and words (the outputs that are words, core.md section 11, or \"all\"; every other output is a reading). The audit, the fuzzer and the simulation check every fold listed here (and the views that name an over), and fail on one they cannot ask.",
+ "folds_about": "Every fold has: ops (the door ops that answer it), over (what it is asked of: a promise, a thing, a key, a circle, a circle_role, an `as` block, a person), and words (the outputs that are words, core.md section 12, or \"all\"; every other output is a reading). The audit, the fuzzer and the simulation check every fold listed here (and the views that name an over), and fail on one they cannot ask.",
  "door": {
   "about": "The door is the one call every implementation answers: an op name and positional arguments (JSON), and a result (JSON). spec/vectors.json `door` holds one or more cases per op below: `args`, then `expect` (a subset match: every key given must match, extra keys in a result do not matter; a list or text must match exactly when the case says `exact`, and lists are compared in order), or `codes` (the refusal codes, in order), or `error`. An implementation conforms when it answers every case. An op outside this table is outside the protocol: the other ops of an SDK door (sdk/door.table) are conveniences of that SDK, and no vector binds them.",
   "ops": {
@@ -1149,31 +1027,30 @@
    "id_of": {
     "args": [
      "full_block",
-     "held?: [full_block]"
+     "blocks?: [full_block]"
     ],
-    "result": "the block's id: the hash of its canonical bytes in the suite of the key its pieces name (core.md, section 2). It needs no held block: without `held`, a genesis's own suite, else the hash name of refs.key, else of refs.author (a reader's guess; `valid` never uses it)"
+    "result": "the block's id: the hash of its canonical bytes in the suite of the key its pieces name (core.md, section 2). It needs no block given: without `blocks`, a genesis's own suite, else the hash name of refs.key, else of refs.author (a reader's guess; `valid` never uses it)"
    },
    "valid": {
     "args": [
-     "block: full_block, or a held header { header, header_signature }",
-     "held: [full_block]"
+     "block: full_block, or a header given { header, header_signature }",
+     "blocks: [full_block]"
     ],
-    "result": "the codes of checks 1 to 6 (core.md, section 8): who said these bytes; empty when valid. `unmet` and `unknown_suite` are waits, not refusals. It reads only the block's pieces in `held`: no prev, no other link, no schema, no clock"
+    "result": "the codes of checks 1 to 6 (core.md, section 8): who said these bytes; empty when valid. `unmet` and `unknown_suite` are waits, not refusals. It reads only the block's pieces in `blocks`: no prev, no other link, no schema, no clock"
    },
    "read": {
     "args": [
      "full_block",
-     "held: [full_block]",
-     "schemas?: [full_block] or null",
-     "runs?: [id], the rule sets this reader runs (core.md, section 11); null or left out: none, the core alone"
+     "blocks: [full_block]",
+     "schemas?: [full_block] or null"
     ],
-    "result": "every code `read` finds (core.md, section 8, check 7), in the order of protocol.json refusals.read; empty when read. With no `schemas`, the store is schemas_from(held). A block whose state.rule_set is not in `runs` is `unknown_rules`; the core reads no rule set, so a block naming one in `runs` is read by the core's rules (a later rule counts only in a block that names it). Asked of a block that is not valid, or of a header: an argument error"
+    "result": "every code `read` finds (core.md, section 8, check 7), in the order of protocol.json refusals.read; empty when read. With no `schemas`, the store is schemas_from(blocks). A block that names no rule set is read by H0; one whose state.rule_set is not the id of the set this build is made from is `unknown_rules` (core.md, section 11). Asked of a block that is not valid, or of a header: an argument error"
    },
    "schemas_from": {
     "args": [
-     "held: [full_block]"
+     "blocks: [full_block]"
     ],
-    "result": "the schema store of `held` (core.md, section 8): every block of `held` that is a `thing` of kind `schema` and has an id, once per id (the last given), ids ascending, whole as given. Whose signature it carries is never read: a schema's id says what its bytes declare. It is the `schemas` that `read` and `accept` read, so a closed block naming a schema held may carry the fields, roles and terms that schema declares. Nothing held is changed or checked by it; a base schema (spec/schemas/published.json) is loaded by being held"
+    "result": "the schema store of `blocks` (core.md, section 8): every block of `blocks` that is a `thing` of kind `schema` and has an id, once per id (the last given), ids ascending, whole as given. Whose signature it carries is never read: a schema's id says what its bytes declare. It is the `schemas` that `read` and `accept` read, so a closed block naming a schema among the blocks may carry the fields, roles and terms that schema declares. Nothing among the blocks is changed or checked by it; a base schema (spec/schemas/published.json) is loaded by being among the blocks"
    },
    "strict_text": {
     "args": [
@@ -1184,9 +1061,9 @@
    "needs": {
     "args": [
      "full_block",
-     "held?: [full_block]"
+     "blocks?: [full_block]"
     ],
-    "result": "the ids the block names for its meaning (protocol.json needs), ascending; with `held`, only those not held. Never its author or its prev"
+    "result": "the ids the block names for its meaning (protocol.json needs), ascending; with `blocks`, only those not among the blocks. Never its author or its prev"
    },
    "key_hash": {
     "args": [
@@ -1212,7 +1089,7 @@
    "key_timeline": {
     "args": [
      "id",
-     "held: [full_block]"
+     "blocks: [full_block]"
     ],
     "result": "[{ key, by, voice, under, suite, ended }]: every key a list or a key grant of hers brought in, in the order of the blocks that brought them in (by the size of their causal past, then id) and, of one block, by place, a key under a voice last; `by` that block; `voice` its place (0 is first) or null for a key under a voice; `under` the key of its voice, or null; `ended` the key grant or stop that ended it, or null (identity.md)"
    },
@@ -1227,20 +1104,20 @@
     "args": [
      "block: id",
      "start: id",
-     "held: [full_block, or sealed message]"
+     "blocks: [full_block, or sealed message]"
     ],
-    "result": "{ whole, lacks } (folds.md, A line): whether `held` holds the block's line read whole back to `start`, both ends included, and each block it would need in the order the walk meets it (its id where a held block's prev names it or it is held only as its header or not read; past a block not held, { author, key, seq } for each seq down to the next block of that key held, or to the start). A start not on the block's line is an argument error"
+    "result": "{ whole, lacks } (folds.md, A chain): whether `blocks` holds the block's line read whole back to `start`, both ends included, and each block it would need in the order the walk meets it (its id where a given block's prev names it or it is among the blocks only as its header or not read; past a block not among the blocks, { author, key, seq } for each seq down to the next block of that key given, or to the start). A start not on the block's line is an argument error"
    },
    "fork_pairs": {
     "args": [
-     "held: [full_block, or sealed message]"
+     "blocks: [full_block, or sealed message]"
     ],
     "result": "the pairs: two blocks of one key on one prev or at one seq, from bodies or headers; each pair sorted, the list sorted (nodes.md, Equivocation)"
    },
    "past_of": {
     "args": [
      "full_block",
-     "held: [full_block]"
+     "blocks: [full_block]"
     ],
     "result": "the ids in its causal past (blocks.md), sorted"
    },
@@ -1248,14 +1125,14 @@
     "args": [
      "later: full_block",
      "earlier: full_block",
-     "held: [full_block]"
+     "blocks: [full_block]"
     ],
     "result": "true when `earlier` is in the causal past of `later`"
    },
    "promise_stage": {
     "args": [
      "first promise: full_block",
-     "held: [full_block]",
+     "blocks: [full_block]",
      "{ } (no options: a stage is a function of the blocks alone)"
     ],
     "result": "the promise_stage answer of protocol.json folds (folds.md), or { not_shown: true, lacks }; sums are amounts; uncovered { from, to }; unanswered; to_come { to, from, draws }; to_come_on with amount"
@@ -1263,58 +1140,58 @@
    "row_holds": {
     "args": [
      "full_block",
-     "held"
+     "blocks"
     ],
-    "result": "null where the block names no held circle in refs.as; else { circle, holds, row, every_owner, at, hands, waiting, listed } (circles.md, C10, C15, C9b; the fold row_holds); the block is read with held as if it were held"
+    "result": "null where the block names no circle among the blocks in refs.as; else { circle, holds, row, every_owner, at, hands, waiting, listed } (circles.md; the fold row_holds); the block is read with the blocks given as if it were among them"
    },
    "speaks_for": {
     "args": [
      "full_block",
-     "held"
+     "blocks"
     ],
-    "result": "the id of the one party a fold counts the block for (authority.md, Who a block speaks for), or null when it speaks for no one (signed as a circle by an author who does not hold the hands the circle needs, or a block no node would take); the block is read with held as if it were held; no clock is read, the block's own date tests until"
+    "result": "the id of the one party a fold counts the block for (authority.md, Who a block speaks for), or null when it speaks for no one (signed as a circle by an author who does not hold the hands the circle needs, or a block no node would take); the block is read with the blocks given as if it were among them; no clock is read, the block's own date tests until"
    },
    "under_ok": {
     "args": [
      "full_block",
-     "held"
+     "blocks"
     ],
-    "result": "authority.md, A tool's word (G1): true when the block speaks for the grant's giver; false when it speaks only for its signer (why_not_under says why, by code); { pair: true, held, at_most } where the grant's line holds a pair at or before it (A fork on a tool's line); no clock is read"
+    "result": "authority.md, A tool's word: true when the block speaks for the grant's giver; false when it speaks only for its signer (why_not_under says why, by code); { pair: true, blocks, at_most } where the grant's line holds a pair at or before it (A fork on a tool's chain); no clock is read"
    },
    "ownership": {
     "args": [
      "instance: full_block",
-     "held"
+     "blocks"
     ],
-    "result": "the fold `ownership` (folds.md, What each fold returns): { kind, stated, owners, owner, held, ended, let_go, draws, waiting, pair, named_by, read }, or { not_shown: true, lacks }; a transfer with state.condition lands only where its condition has held, read on the words in the past of the block that relies on it and never on a reader's clock (1.9 3c-6)"
+    "result": "the fold `ownership` (folds.md, What each fold returns): { kind, stated, owners, owner, held, ended, let_go, draws, waiting, pair, named_by, read }, or { not_shown: true, lacks }; a transfer with state.condition lands only where its condition has held, read on the words in the past of the block that relies on it and never on a reader's clock"
    },
    "circle_state": {
     "args": [
      "circle id",
-     "held",
+     "blocks",
      "within?: a block, to read the circle as of its causal past"
     ],
-    "result": "{ founder, pack, owners, unissued, rules, clocks, meter }, or { not_shown: true, lacks }, or null when the circle is not held, or within a block whose causal past does not hold it (folds.md)"
+    "result": "{ founder, pack, owners, unissued, rules, clocks, meter }, or { not_shown: true, lacks }, or null when the circle is not among the blocks, or within a block whose causal past does not hold it (folds.md)"
    },
    "circle_versions": {
     "args": [
      "circle id",
-     "held"
+     "blocks"
     ],
-    "result": "{ circle, versions, now } or null when the id is not a held founding block of a circle (folds.md)"
+    "result": "{ circle, versions, now } or null when the id is not a founding block among the blocks of a circle (folds.md)"
    },
    "backed": {
     "args": [
      "full_block",
      "person: a person's or circle's id",
-     "held"
+     "blocks"
     ],
-    "result": "authority.md, Backed by a person: { backed: true or false, why: one plain sentence when not backed, else null, chain: the hashes from the block to the block the person signed }. Backed when the person signed it, or signed a hand of the circle it is signed as (a hand of theirs among those its row counted), or a grantee signed it under a grant that passes why_not_under and whose chain (refs.parent) roots in the person's signature or in a top grant signed as a circle with a hand of theirs among those its row counted; every link live and no wider than the one above, judged at the block's own place in time (its causal past). The block is read with held as if it were held; no clock, no arrival. Where the grant's line holds a pair at or before it, backed is the fork answer { pair: true, held, at_most }; where a line it reads is not read whole, the answer is { not_shown: true, lacks }; where the block waits, waiting lists it"
+    "result": "authority.md, Backed by a person: { backed: true or false, why: one plain sentence when not backed, else null, chain: the hashes from the block to the block the person signed }. Backed when the person signed it, or signed a hand of the circle it is signed as (a hand of theirs among those its row counted), or a grantee signed it under a grant that passes why_not_under and whose chain (refs.parent) roots in the person's signature or in a top grant signed as a circle with a hand of theirs among those its row counted; every link live and no wider than the one above, judged at the block's own place in time (its causal past). The block is read with the blocks given as if it were among them; no clock, no arrival. Where the grant's line holds a pair at or before it, backed is the fork answer { pair: true, blocks, at_most }; where a line it reads is not read whole, the answer is { not_shown: true, lacks }; where the block waits, waiting lists it"
    },
    "terms_total": {
     "args": [
      "terms: a promise's terms",
-     "quantity: the quantity chosen, or null for the terms' own"
+     "chosen: the lines an answer chooses, [{ id, quantity }], or null for the terms' own"
     ],
     "result": "folds.md, stage 2: what the terms come to, an amount, exact, or null (lines of two kinds: null; a price with no total; nothing priced)"
    },
@@ -1322,29 +1199,29 @@
     "args": [
      "c: a promise",
      "a: the promise it should keep to",
-     "held?: [full_block], the instances C names (item 5 reads their refs.of)"
+     "blocks?: [full_block], the instances C names (item 5 reads their refs.of)"
     ],
     "result": "authority.md, Keeps to: { keeps, why }: keeps true when c's state and refs are a's key for key bar the closed list of eight; why null when it keeps, else the first sorted path that differs and is not one of the eight"
    },
    "meter": {
     "args": [
      "grant: full_block",
-     "held",
+     "blocks",
      "block?: a block under the grant (or a child grant of it), or null for the grant's own draws"
     ],
-    "result": "authority.md, A limit is counted along one line: { grant, fits, why, line, start, period, draws, left, waiting, ended, comes_back }, or { not_shown: true, lacks }. line: own (the holder's own key) or the id refs.meter names; start: that id; period: the number of the period the block is read in (0 with no every); draws: [{ block, of, amount, takes, why }] each draw on the line, in line order; left: [{ of, amount }] what is left of each measure where the block stands (or after every draw); waiting: [{ block, on }]; ended: the end of the grant (on the holder's own line, her stop; on another key's line, the stop the meter receipted), or null; comes_back: [{ of, amount }] what of each measure the line has not drawn, once ended, the rest of each deal that can no longer fall due given back (00-shared, Freed); why: one of the draw reasons, after_deadline, or a fork's { pair: true, held, at_most }"
+    "result": "authority.md, A limit is counted along one chain: { grant, fits, why, line, start, period, draws, left, waiting, ended, comes_back }, or { not_shown: true, lacks }. line: own (the holder's own key) or the id refs.meter names; start: that id; period: the number of the period the block is read in (0 with no every); draws: [{ block, of, amount, takes, why }] each draw on the line, in line order; left: [{ of, amount }] what is left of each measure where the block stands (or after every draw); waiting: [{ block, on }]; ended: the end of the grant (on the holder's own line, her stop; on another key's line, the stop the meter receipted), or null; comes_back: [{ of, amount }] what of each measure the line has not drawn, once ended, the rest of each deal that can no longer fall due given back (00-shared, Freed); why: one of the draw reasons, after_deadline, or a fork's { pair: true, blocks, at_most }"
    },
    "worst_case": {
     "args": [
      "grant: full_block",
-     "held"
+     "blocks"
     ],
-    "result": "authority.md, The worst case: { holder, types, on, what, part, sides, each, limit, every, until, periods, at_most, can_lose, clocks, deadline, fallback, stop, meter, pays }, from her grant and the promises it names alone; at_most and can_lose are lists of amounts, one per kind, never added across kinds; meter is own or the id; no text"
+    "result": "authority.md, The worst case: { holder, types, on, what, part, sides, each, limit, every, expires, periods, at_most, can_lose, clocks, deadline, fallback, stop, meter, pays }, from her grant and the promises it names alone; at_most and can_lose are lists of amounts, one per kind, never added across kinds; meter is own or the id; no text"
    },
    "lowest_offer": {
     "args": [
      "grant: full_block",
-     "held"
+     "blocks"
     ],
     "result": "authority.md, Her deadline, and the lowest offer at it: { offer, received, cutoff, why }, read on the meter's line: offer the lowest total at her quantity among the offers that keep to her promise and whose sides the grant admits, received on that line before its cutoff through the deadline and standing there (of two equal, the first received); received the receipt; cutoff the cutoff; why pending with no cutoff, none with no candidate, else null"
    },
@@ -1352,9 +1229,9 @@
     "args": [
      "condition",
      "blocks: [full_block]",
-     "at: the block it is read for (its id, or the block), or null for every block held"
+     "at: the block it is read for (its id, or the block), or null for every block given"
     ],
-    "result": "promises.md, Conditions: whether a condition holds on the blocks in the causal past of the block it is read for (every block held, with null), never on a reader's clock (condition_shapes: settled, accepted, deed, a reading, a signal, paid, opened, ruled, stopped, closed, or within and without)"
+    "result": "promises.md, Conditions: whether a condition holds on the blocks in the causal past of the block it is read for (every block given, with null), never on a reader's clock (condition_shapes: settled, accepted, deed, a reading, a signal, paid, opened, ruled, stopped, closed, or within and without)"
    },
    "count_of": {
     "args": [
@@ -1366,31 +1243,38 @@
    "signed_by_author": {
     "args": [
      "block: full_block",
-     "held"
+     "blocks"
     ],
     "result": "true when a key of the author spoke for her there (identity.md, invariant 8); a waiting block is true here and listed by `stands`"
    },
    "stands": {
     "args": [
      "block: full_block",
-     "held"
+     "blocks"
     ],
-    "result": "{ stands: true or false, waiting: [{ block, on }] }: blocks.md, Finality, read on `held` with no clock and no arrival; one entry for each thing it waits on, in this order: `wait` (that key's wait has not run on her clock), `reach`, `confirm` (the wait has run, or there is none, and no second signing has come), `end` (an end not yet passed), `named` (a block it names for its meaning that does not stand), `hands` (a block as a circle for which no row holds yet and which every owner has not signed), `condition`. A word that can never stand: `stands` false, `waiting` empty"
+    "result": "{ stands: true or false, waiting: [{ block, on }] }: blocks.md, Finality, read on `blocks` with no clock and no arrival; one entry for each thing it waits on, in this order: `wait` (that key's wait has not run on her clock), `reach`, `confirm` (the wait has run, or there is none, and no second signing has come), `end` (an end not yet passed), `named` (a block it names for its meaning that does not stand), `hands` (a block as a circle for which no row holds yet and which every owner has not signed), `condition`. A word that can never stand: `stands` false, `waiting` empty"
    },
    "members_then": {
     "args": [
      "block: full_block",
      "recipient: id",
-     "held"
+     "blocks"
     ],
-    "result": "who a circle in a block's audience meant: the ids that own its parts in the circle fold of that block's causal past, parts held for a sale still counted as the seller's until the receiver's yes (circles.md, C8); a name with # names no one"
+    "result": "who a circle in a block's audience meant: the ids that own its parts in the circle fold of that block's causal past, parts held for a sale still counted as the seller's until the receiver's yes (circles.md); a name with # names no one"
    },
    "identity_state": {
     "args": [
      "person id",
-     "held"
+     "blocks"
     ],
     "result": "the identity fold (folds.md, What each fold returns): { signed_by_author, voices, clocks, keys, waiting }"
+   },
+   "shares_on": {
+    "args": [
+     "instance: full_block",
+     "blocks"
+    ],
+    "result": "{ standing, nothing } as the fold `shares_on` (folds.md, Shares standing on a thing); the reason `kind` is read from the subject's own block"
    }
   },
   "protocol": {
@@ -1433,7 +1317,8 @@
     "ownership",
     "worst_case",
     "promise_stage",
-    "condition_holds"
+    "condition_holds",
+    "shares_on"
    ]
   },
   "protocol_about": "The protocol ops (core.md, section 12): the sound part (`valid` and what it reads) and the word ops (each answers one of the four questions of section 10). An implementation conforms for an op when it reproduces every case of that op in vectors.json; it speaks FoodBlock when it passes the sound part and the cases of every word op. Every other op in `ops` is a reading, library or a node's own business (`classes`), and nobody must run it."
@@ -1452,13 +1337,13 @@
   "stopped",
   "closed"
  ],
- "condition_shapes_about": "The condition shapes the protocol reads (promises.md, Conditions), each named by its key: settled (that promise is done), accepted (that deal binds: its stage is accepted or further along, read from the promise fold; decision H17), deed (that block is held and counts), reading (a sensor's readings, patterns/tasks.md), signal (named signers' observes), paid (that deal's price is paid in full: the price side of the deal, so a transfer of title may wait for the price without waiting for the goods), ruled ({ ruled: deal, by: judge, awards: person }: the judge's head ruling in the past of the block it is read for awards to that person; a later one of hers ends it for blocks that had not used it; promises.md, Rulings), stopped ({ stopped: <first promise>, side: from | to }: in the past of the block it is read for, an onward stop of that deal speaking for that side is among its first onward stops and none speaking for the other side is), closed ({ closed: <id> }: a key grant that leaves no voice of that id's list stands in the past of the block it is read for; a transfer on it by that id is a will), opened (a counted block carries the opening of a commitment, privacy.md: someone shows the code) and, wrapping any of these, without and within ({ without: <condition>, deadline, clocks }: the inner condition did not hold by the deadline, or, for within, did, each shown by the named clock's cutoffs, blocks.md, A named clock). A condition of any other shape is data for its schema's readers: the protocol says nothing of it.",
+ "condition_shapes_about": "The condition shapes the protocol reads (promises.md, Conditions), each named by its key: settled (that promise is done), accepted (that deal binds: its stage is accepted or further along, read from the promise fold), deed (that block is among the blocks and counts), reading (a sensor's readings, patterns/tasks.md), signal (named signers' observes), paid (that deal's price is paid in full: the price side of the deal, so a transfer of title may wait for the price without waiting for the goods), ruled ({ ruled: deal, by: judge, awards: person }: the judge's head ruling in the past of the block it is read for awards to that person; a later one of hers ends it for blocks that had not used it; promises.md, Rulings), stopped ({ stopped: <first promise>, side: from | to }: in the past of the block it is read for, an onward stop of that deal speaking for that side is among its first onward stops and none speaking for the other side is), closed ({ closed: <id> }: a key grant that leaves no voice of that id's list stands in the past of the block it is read for; a transfer on it by that id is a will), opened (a counted block carries the opening of a commitment, privacy.md: someone shows the code) and, wrapping any of these, without and within ({ without: <condition>, deadline, clocks }: the inner condition did not hold by the deadline, or, for within, did, each shown by the named clock's cutoffs, blocks.md, A named clock). A condition of any other shape is data for its schema's readers: the protocol says nothing of it.",
  "named_readings": [
   "settled",
   "paid",
   "reading"
  ],
- "named_readings_about": "1.9 R-C3 (D1): the condition shapes that are named readings. A block whose condition names one states, in state.rule_set, the rules that hold it; a reader that does not run them holds the block not read (unknown_rules). With no state.rule_set the block is read by the core alone, which runs no named reading: the condition is not read, so it never holds and what it holds stays held. `ruled` reads only signed fields (the judge's head ruling's awards) and is read by the core (SILENT 3). The payee's signal, written { signal: \"paid\", by: [payee], subject: deal }, needs no reading and is read on every node.",
+ "named_readings_about": "the condition shapes that are named readings. A block whose condition names one states, in state.rule_set, the rules that hold it; a reader that does not run them holds the block not read (unknown_rules). With no state.rule_set the block is read by H0, which runs no named reading: the condition is not read, so it never holds and what it holds stays held. `ruled` reads only signed fields (the judge's head ruling's awards) and is read by the core. The payee's signal, written { signal: \"paid\", by: [payee], subject: deal }, needs no reading and is read on every node.",
  "condition_ops": [
   "lt",
   "le",
@@ -1468,7 +1353,7 @@
  ],
  "condition_ops_about": "How a reading or a signal's amount keeps to a condition's value: less than, at most, greater than, at least, equal (promises.md, Conditions; patterns/tasks.md). Any other op holds for nothing.",
  "repeat": {
-  "rule": "an RFC 5545 RRULE value, which may name another calendar by RFC 7529 RSCALE (RSCALE=HEBREW;FREQ=YEARLY); counted from state.when, in terms.zone (a calendar repeat with no zone is refused: the protocol fills in none); a week starts on Monday unless WKST names another day; the everyday forms (every weekday, every Friday, every month on day N, the nth weekday) are in promises.md, The calendar forms",
+  "rule": "an RFC 5545 RRULE value, which may name another calendar by RFC 7529 RSCALE (RSCALE=HEBREW;FREQ=YEARLY); counted from state.when, in terms.zone (a calendar repeat with no zone is refused: the protocol fills in none); which dates it falls on is a reading (readings/calendar.md)",
   "freq": [
    "SECONDLY",
    "MINUTELY",
@@ -1485,20 +1370,19 @@
   ],
   "keys_about": "the keys of an event repeat { after, by, wait }: an occurrence each time an observe of kind `after` is written for this promise, by a signer `by` names (ids; with no `by` nothing starts one), due `wait` after the named clock's receipt of it, never after its own `at` (blocks.md, A named clock; a moon sighted, each batch); the occurrence is named by that observe's hash. The protocol checks the shape of a repeat; a reader works out its occurrences"
  },
- "terms_about": "expires: ends an unanswered offer or ask; an ask may carry it or not (decision H11). condition: data under a schema; the protocol reads the condition_shapes, and a promise whose condition is { accepted: <first promise> } binds on its own accept, and what it names is due only once that deal binds (R-C2). zone: shaped like an IANA time zone name (Europe/London) that a repeat's dates are read in; read only beside a calendar repeat. pay_by: a time, when the price falls due; the fold reports it as due, beside paid_at, and judges no lateness. clocks: a named clock (blocks.md, A named clock) for the offer: an accept `needed` clocks received by `expires` is timely, and an event `when` or event repeat runs its wait from their receipt of the event; with none named there is no clock (no receipt dates anything). conciliation: true on a judge's offer says she tries to settle the sides before she rules; fee_back: a decimal from 0 to 1, the part of her fee she gives back if the sides settle, read only with a conciliation (the door op fee_back; promises.md, Rulings). A schema the promise names may declare more terms (its state.terms): no fold reads them, so they bind no one. stoppable: true on an offer says ahead that the stop of the grant her tool accepted it under ends what of the deal has not come (00-shared, Freed; authority.md, The stop of a grant). waits_on: goods (the price is due only once the receiver's accepted answer to the delivery stands) or price (what moves is due only once the payee's signal stands); left out, nothing is filled in. step: under a price, the least payable amount its signers take, in the price's unit. in_hand: true on an order, her word that the goods are in her hand. forfeit: kept only on the payer's own stop.",
+ "terms_about": "expires: ends an unanswered offer or ask; an ask may carry it or not. condition: data under a schema; the protocol reads the condition_shapes, and a promise whose condition is { accepted: <first promise> } binds on its own accept, and what it names is due only once that deal binds. zone: shaped like an IANA time zone name (Europe/London) that a repeat's dates are read in; read only beside a calendar repeat. pay_by: a time, when the price falls due; the fold reports it as due, beside paid_at, and judges no lateness. clocks: a named clock (blocks.md, A named clock) for the offer: an accept `needed` clocks received by `expires` is timely, and an event `when` or event repeat runs its wait from their receipt of the event; with none named there is no clock (no receipt dates anything). conciliation: true on a judge's offer says she tries to settle the sides before she rules; fee_back: a decimal from 0 to 1, the part of her fee she gives back if the sides settle, read only with a conciliation (the door op fee_back; promises.md, Rulings). A schema the promise names may declare more terms (its state.terms): no fold reads them, so they bind no one. stoppable: true on an offer says ahead that the stop of the grant her tool accepted it under ends what of the deal has not come (00-shared, Freed; authority.md, The stop of a grant). waits_on: goods (the price is due only once the receiver's accepted answer to the delivery stands) or price (what moves is due only once the payee's signal stands); left out, nothing is filled in. step: under a price, the least payable amount its signers take, in the price's unit. in_hand: true on an order, her word that the goods are in her hand. forfeit: kept only on the payer's own stop.",
  "narrower_than": {
   "types": "subset-or-none",
   "parties": "subset-or-none",
   "on": "subset-or-none",
-  "limit": "at-most",
   "each": "at-most",
-  "until": "at-most-time",
+  "expires": "at-most-time",
   "clocks": "same",
   "deadline": "same",
   "fallback": "same",
   "meter": "parent-unless-own"
  },
- "narrower_than_about": "A child grant's scope is narrower than its parent's on every field the parent states (authority.md): subset (every item is the parent's), subset-or-none (the same, a field left out naming none: `types` and `parties`), at-most (an amount or money no larger, in the parent's unit or currency), at-least-duration (no shorter, counted from the parent's `at`), at-most-time (no later), same (the parent's, exactly, compared by canonical form; left out where the parent leaves it out), parent-unless-own (refs.meter: the parent's, where the parent's meter is not its holder's own line). `limit` is stated only where the parent states one, and `each` likewise; `every` is none where the parent states `limit`. One order, inside-range-or-list (a value of the same kind inside a range from min to max, both counted, or equal to a listed value, compared as decimals), is read by Keeps to and by child grants alike. scope_refusals reads this table. `ends_on` is not compared: a grant's own ending term only ends it sooner, and a child ends with its parent.",
+ "narrower_than_about": "A child grant's scope is narrower than its parent's on every field the parent states (authority.md, Scope subset): subset-or-none (every item is the parent's, a field left out naming none: `types`, `parties` and `on`), at-most (an amount or money no larger, in the parent's unit or currency), at-most-time (no later), same (the parent's, exactly, compared by canonical form; left out where the parent leaves it out), parent-unless-own (refs.meter: the parent's, where the parent's meter is not its holder's own line). `each` is stated only where the parent states one; `every` is none where the parent states `limit`. A child's `limit` is no field of this table: it is a draw on its parent's line (folds.md, What is left). One order, inside-range-or-list (a value of the same kind inside a range from min to max, both counted, or equal to a listed value, compared as decimals), is read by Keeps to. scope_refusals reads this table. `ends_on` is not compared: a grant's own ending term only ends it sooner, and a child ends with its parent.",
  "read_by_name": [
   "occurrences",
   "updates",
@@ -1534,23 +1418,30 @@
  },
  "condition_shapes_class_about": "Which condition shapes every reader computes alike (protocol) and which are named readings the core runs none of (reading: condition_holds answers null, the condition never holds, and what it holds stays held: 00-shared, Named readings). A bare `reading` is protocol: it can never be shown, so it never holds (CORE-SET 3c-5).",
  "kinds": {
+  "actor": [
+   "circle"
+  ],
   "grant": [
-   "key",
-   "referee",
-   "stop"
+   "key"
   ],
   "observe": [
    "account",
    "cutoff",
+   "done",
    "dropped",
+   "link",
+   "message",
    "paid",
-   "received",
    "receipt",
+   "received",
    "ruling",
-   "witness"
+   "witness",
+   "work"
   ],
   "thing": [
-   "schema"
+   "kind",
+   "schema",
+   "share"
   ]
  },
  "kinds_about": "The kinds a protocol fold reads (blocks.md). Any other kind is open: a reading, a pattern or a schema may read it, and no word does. No `successor` and no `close` (a will is her own transfer, D9)."

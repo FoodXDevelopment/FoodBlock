@@ -43,6 +43,8 @@ pub mod decimal;
 pub mod error;
 pub mod grant;
 pub mod grant_fence;
+pub mod finality;
+pub mod forks;
 pub mod identity;
 pub mod merkle;
 pub mod index;

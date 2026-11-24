@@ -31,19 +31,19 @@ def genesis(keys, kind=None, at=None, audience=None, encryption_key=None, reach=
 
 
 def key_grant(id_, signer, voices=None, updates=None, clocks=None, key=None, suite=None, encrypt=None, shown_key=None,
-              key_ref=None, counted_to=None, under=None) -> dict:
-    """A key grant about `id_` (identity.md), written by `signer` ({ author, keys, held, at, after? }: one of her voices, her
-    operator, or one of a voice of named people, signing in their own name). Give `voices` (her whole list again, with `updates`
+              key_ref=None, counted_to=None) -> dict:
+    """A key grant about `id_` (identity.md), written by `signer` ({ author, keys, blocks, at, after? }: one of her voices, or
+    one of a voice of named people, signing in their own name). Give `voices` (her whole list again, with `updates`
     the list it replaces and `clocks` her clock), or `key` (one key under the signer's voice, in `suite`), or `encrypt` alone;
     `shown_key` when a key named by hash shows itself (`key_ref` the list that holds its hash); `counted_to` the last block of
-    a key a voice above ends; `under` an operator grant."""
+    a key a voice above ends."""
     state = {"kind": "key"}
     for name, value in (("voices", voices), ("clocks", clocks), ("public_key_sign", key), ("suite", suite), ("public_key_encrypt", encrypt),
                         ("shown_key", shown_key), ("counted_to", counted_to)):
         if value:
             state[name] = value
     refs = {"subject": id_}
-    for name, value in (("updates", updates), ("key", key_ref), ("under", under)):
+    for name, value in (("updates", updates), ("key", key_ref)):
         if value:
             refs[name] = value
     options = {k: v for k, v in signer.items() if k not in ("keys", "key", "author")}

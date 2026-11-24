@@ -24,8 +24,8 @@ SEALED = V["sealed"]
 MS = V["messages"]
 
 # The sections this suite runs (every top-level key of vectors.json but `$comment`).
-RUN = {"invariant_numbers", "keys", "canonical", "hashes", "ledger", "audience", "signatures", "bad_signatures", "envelopes", "sealed", "headers",
-       "messages", "cbor", "door"}
+RUN = {"keys", "canonical", "hashes", "ledger", "audience", "signatures", "bad_signatures", "envelopes", "sealed", "headers",
+       "messages", "cbor", "door", "xwing_draft11"}
 
 
 def pub(signer):
@@ -40,12 +40,12 @@ def blocks_of(items):
     return [full(b) for b in items]
 
 
-def find(held, h):
-    return next(b for b in held if b["hash"] == h)
+def find(blocks, h):
+    return next(b for b in blocks if b["hash"] == h)
 
 
 def bytes_refusals(type_, state, refs):
-    """What a block's own bytes say (checks 1 to 4, core.md section 8): the 1.7 op `refusals` is gone; its halves are `valid` and `read`."""
+    """What a block's own bytes say (checks 1 to 4, core.md section 8): its halves are `valid` and `read`."""
     try:
         return fb.strict_text(fb.canonical(type_, state, refs))
     except FoodBlockError as error:
@@ -85,6 +85,11 @@ class Sections(unittest.TestCase):
         held = set(V) - {"$comment", "comment"}
         self.assertEqual(held - RUN, set(), "vectors.json has a section this suite does not run")
         self.assertEqual(RUN - held, set(), "sections expected but missing")
+
+
+class XWing(unittest.TestCase):
+    def test_draft11_key(self):
+        self.assertEqual(fb.encryption_key_of(V["xwing_draft11"]["sk"], "xwing"), "xwing:" + V["xwing_draft11"]["pk"])
 
 
 class Canonical(unittest.TestCase):
@@ -165,6 +170,9 @@ class Signatures(unittest.TestCase):
     def test_keys_rebuild(self):
         for name, k in V["keys"].items():
             with self.subTest(name):
+                if "xwing_private" in k and "seed" not in k:
+                    self.assertEqual(fb.encryption_key_of(k["xwing_private"], "xwing"), k["public_key_encrypt"])
+                    continue
                 suite = k.get("suite", "std")
                 pair = fb.keypair_from_seed(k["seed"], suite)
                 self.assertEqual(pair["public_key_sign"], k["public_key_sign"])
@@ -189,7 +197,7 @@ class Envelopes(unittest.TestCase):
     def test_envelopes(self):
         for v in V["envelopes"]:
             with self.subTest(v["name"]):
-                m = fb.unwrap(fb.open(v["envelope"], V["keys"][v["recipient"]]["x25519_private"]))
+                m = fb.unwrap(fb.open(v["envelope"], V["keys"][v["recipient"]].get("xwing_private") or V["keys"][v["recipient"]]["x25519_private"]))
                 self.assertEqual([m["hash"], m["signature"]], [v["opens_to"]["hash"], v["opens_to"]["signature"]])
 
     def test_sealed(self):

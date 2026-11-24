@@ -1,7 +1,7 @@
 # Architecture
 
 How the parts of this repository fit together. The protocol itself is [`spec/protocol.md`](spec/protocol.md)
-(FoodBlock 1.7); this page only says where each rule lives in code.
+(FoodBlock 1.9); this page only says where each rule lives in code.
 
 ## One rule, one place
 
@@ -19,9 +19,9 @@ spec/                    the rules: core.md and modules/ (protocol.md is the ind
 ```
 
 **Every list is data.** Types, verbs, ref keys, fields, terms, grammar, limits, suites and profiles are in
-`spec/protocol.json`. Every SDK loads it and copies nothing into code. There is no earlier version in the protocol.
+`spec/protocol.json`. Every SDK loads it and copies nothing into code.
 
-**The SDK decides; everything else asks it.** The server, the MCP server and the CLI never check a block
+**The SDK decides; everything else asks it.** The host, the MCP server and the CLI never check a block
 themselves. They write with the SDK's one write path (`write`: compose, check, sign, place in the key's chain), and
 take blocks in with its checks (`valid`, `sync.accept`, `identity.signedByAuthor`, `sync.pullRefusals`). So a rule
 changes in one place and every part follows.
@@ -33,15 +33,15 @@ of what they load:
 
 | Package | Where the copy lives | How it is loaded |
 |---|---|---|
-| Rust crate (and so C, Python, Go, Swift, Kotlin) | `sdk/rust/spec/protocol.json`, `aliases-0.x.json` | `include_bytes!` |
-| JavaScript | `sdk/javascript/spec/protocol.json` | `require` |
+| Rust crate (and so C, Python, Go, Swift, Kotlin) | `sdk/rust/spec/` (`protocol.json`, `conventions.json`, `readings/`, `renderers/`) | `include_bytes!` |
+| JavaScript | `sdk/javascript/spec/` (the same files) | `require` |
 
 `node test/sync-spec.cjs` makes the copies; `--check` fails if any differs from `spec/`. Each package's own tests check
 their copy byte for byte too, so a copy can never drift.
 
-The node, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev/foodblock":
+The host, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev/foodblock":
 "file:../sdk/javascript"`), so `npm install` in each folder links it. Every version they report is the SDK's
-`VERSION`, read from `protocol.json`; their package versions start with it (`1.7.0`), and their tests check that.
+`VERSION`; their package versions start with it (`1.9.0`), and `node tools/version-sync.cjs` checks that.
 
 ## A block's life
 
@@ -56,7 +56,7 @@ The node, the MCP server and the CLI depend on the SDK as a package (`"@foodxdev
    chain, and the owner's admission rule lets it in. A block whose previous block is missing waits, then expires.
    Two blocks of one key naming one `prev` are kept and served together, as proof of a fork.
 4. **Kept.** Exactly as it arrived, numbered on arrival (`host/src/postgres/schema.sql`). This node is append-only by its own choice: it never updates or deletes a block, so it cannot promise erasure (profiles/erasure.md). Another node may.
-5. **Read.** As it was signed. Nothing reads an older shape.
+5. **Read.** As it was signed.
 
 ## The host (host/)
 

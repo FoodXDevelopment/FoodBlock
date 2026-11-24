@@ -23,7 +23,7 @@ export function remoteNode({ base, token, fetch: request = globalThis.fetch } = 
   return {
     remote: true, all,
     get: (hash) => mirror.get(hash) || all().find((block) => block.hash.startsWith(hash)) || null,
-    /** Take a signed block into the mirror if the SDK accepts it against what is held; it is sent on the next flush. */
+    /** Take a signed block into the mirror if the SDK accepts it against the blocks it has; it is sent on the next flush. */
     push(signed) {
       const { salts, ...block } = signed;
       const result = fb.sync.accept([block], all(), { takesPairs: false });
@@ -32,14 +32,14 @@ export function remoteNode({ base, token, fetch: request = globalThis.fetch } = 
     },
     /** The mirror becomes the host's truth, plus what the door signed and has not sent yet. */
     async refresh() {
-      const held = await remote();
+      const blocks = await remote();
       mirror.clear();
-      held.forEach((block) => mirror.set(block.hash, block));
+      blocks.forEach((block) => mirror.set(block.hash, block));
       queue.forEach((block) => { if (!mirror.has(block.hash)) mirror.set(block.hash, block); });
     },
     async flush() {
-      const held = new Set((await remote()).map((block) => block.hash));
-      const todo = queue.splice(0).filter((block) => !held.has(block.hash));
+      const blocks = new Set((await remote()).map((block) => block.hash));
+      const todo = queue.splice(0).filter((block) => !blocks.has(block.hash));
       for (const [index, block] of todo.entries()) {
         try { await call("POST", "submit", { block }); }
         catch (error) { todo.slice(index).forEach((one) => mirror.delete(one.hash)); throw error; } // what the host refused is not kept
@@ -105,10 +105,10 @@ export function remoteIndex({ base, key, fetch: request = globalThis.fetch } = {
     return answer.results
       .filter((hit) => !wanted || hit.place === near || String(byHash.get(hit.place)?.state?.name || "").toLowerCase().includes(wanted))
       .map((hit) => {
-        const offer = byHash.get(hit.offer), thing = byHash.get(offer.refs.what);
+        const offer = byHash.get(hit.offer), thing = byHash.get((offer.state?.terms?.lines || []).find((l) => l.what)?.what);
         return { offer: hit.offer, from: { id: offer.refs.from, kind: byHash.get(offer.refs.from)?.state?.kind || null, no_contact: null }, distance_m: hit.distance_m ?? null, index: answer.index,
           what: thing ? { hash: thing.hash, kind: thing.state?.kind, name: thing.state?.name } : offer.state?.what || null,
-          price: offer.state?.terms?.price || null, quantity: offer.state?.terms?.quantity || null, deliver_by: offer.state?.terms?.deliver_by || null, expires: offer.state?.terms?.expires || null };
+          lines: offer.state?.terms?.lines || [], deliver_by: offer.state?.terms?.deliver_by || null, expires: offer.state?.terms?.expires || null };
       });
   }
   return { ask, offers, faults };

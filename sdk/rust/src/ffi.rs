@@ -42,7 +42,7 @@ fn run(out: *mut *mut c_char, f: impl FnOnce() -> Result<String, String>) -> c_i
 #[no_mangle]
 pub unsafe extern "C" fn fb_free(s: *mut c_char) {
     if !s.is_null() {
-        // an answer may have carried a key or a plaintext: overwritten before it is freed (release 46)
+        // an answer may have carried a key or a plaintext: overwritten before it is freed
         let mut bytes = CString::from_raw(s).into_bytes_with_nul();
         zeroize::Zeroize::zeroize(&mut bytes);
         drop(bytes);

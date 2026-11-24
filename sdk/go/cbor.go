@@ -22,9 +22,9 @@ func CborEncode(b Block, short bool) ([]byte, error) {
 }
 
 // CborDecode is the block a CBOR message carries, its hash taken from its canonical JSON. It refuses floats, tags, null,
-// indefinite lengths and duplicate keys. With held (the author's blocks) the id is taken in the suite of the key that signed it.
-func CborDecode(data []byte, held ...Block) (Block, error) {
-	return doorCborDecode[Block](hex.EncodeToString(data), held)
+// indefinite lengths and duplicate keys. With blocks (the author's blocks) the id is taken in the suite of the key that signed it.
+func CborDecode(data []byte, blocks ...Block) (Block, error) {
+	return doorCborDecode[Block](hex.EncodeToString(data), blocks)
 }
 
 // CborEncodePush is a push of several blocks: an array of messages.

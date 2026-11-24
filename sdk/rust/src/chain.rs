@@ -118,7 +118,7 @@ pub fn check_chain(blocks: &[Value], brought_in: &str) -> Chain {
     // a block of the key one seq lower (any lower, for a skip). Read from each block and its prev alone, never from the order given.
     let mut broken: Vec<String> = mine
         .values()
-        // 1.9 3b-1, In its place: `seq` above its prev's, or seq 1 on the block that brought the key in; a prev not held is not shown,
+        // In its place: `seq` above its prev's, or seq 1 on the block that brought the key in; a prev not given is not shown,
         // never out of place (a seq that jumps with no skip is a gap, never a block out of its place)
         .filter(|b| match rs(b, "prev") {
             Some(p) if p == brought_in => seq_of(b) != 1,

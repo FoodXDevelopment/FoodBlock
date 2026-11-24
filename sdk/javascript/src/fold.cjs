@@ -28,17 +28,17 @@ const backedAll = (person, blocks) => door.backedAll(idOf(person), blocks)
 const toComeBack = (person, blocks) => door.toComeBack(idOf(person), blocks)
 /** A list-keeper's answer against the lookup it answers (promises.md, Finding): `{ ok, why, bad: [{ hash, why }], left_out: [hash] }`. `ok` when every block the listing names is a real signed offer (or want) the lookup asks for: a keeper may leave one out, never make one up. */
 const listingCheck = (lookup, listing, blocks) => door.listingCheck(lookup, listing, blocks)
-/** A signed check of someone's record against the blocks it names (promises.md, A signed check): `{ ok, why, read: [{ hash, held, concerns, stage }] }`. The signer answers for its word; this says whether the blocks are there and are what it says. */
+/** A signed check of someone's record against the blocks it names (promises.md, A signed check): `{ ok, why, read: [{ hash, has, concerns, stage }] }`. The signer answers for its word; this says whether the blocks are there and are what it says. */
 const checkReads = (check, blocks) => door.checkReads(check, blocks)
 /** A circle of IOUs cancelled (promises.md, Clearing): `{ binds, why, who, missing, lines: [{ deal, ok, why, to_come, reduce, left }] }`. Binds only when everyone in it has signed; each line reduces a deal, in its own kind unless a rate both sides signed is named. */
 const clearingApplied = (clearing, blocks) => door.clearingApplied(clearing, blocks)
-/** Whether a judge's ruling releases a stake that names it (promises.md, Rulings): `{ releases, to, amount, ruling, why }`. No reader's clock (1.9 R-C1):
- * the judge's head ruling is read in the past of the stake's relying block (R-H9). */
+/** Whether a judge's ruling releases a stake that names it (promises.md, Rulings): `{ releases, to, amount, ruling, why }`. No reader's clock:
+ * the judge's head ruling is read in the past of the stake's relying block. */
 const rulingReleases = (stake, blocks) => door.rulingReleases(stake, blocks)
-/** What of `person`'s would become whose if `block` stands (promises.md, What becomes whose): `{ gives: [{ what | amount, to, back, held }], bench }` (`held`: a draw that holds that instance from its signer's word, 1.9 R-H1; `bench`: the deal's bench, as `promise_stage` gives it, or `none`), read only from the block's typed terms and refs, never from any schema's words. `back` is the time it comes back, or null (it cannot be counted on to). `person` is an id or a block. */
+/** What of `person`'s would become whose if `block` stands (promises.md, What becomes whose): `{ gives: [{ what | amount, to, back, held }], bench }` (`held`: a draw that holds that instance from its signer's word; `bench`: the deal's bench, as `promise_stage` gives it, or `none`), read only from the block's typed terms and refs, never from any schema's words. `back` is the time it comes back, or null (it cannot be counted on to). `person` is an id or a block. */
 const gives = (block, person, blocks) => door.gives(block, idOf(person), blocks)
 const membersThen = door.membersThen
-/** Who owns an instance (folds.md, Ownership): read from the blocks alone, no clock (1.9 3c-6; a reader's clock is the view's, `ownershipView`). */
+/** Who owns an instance (folds.md, Ownership): read from the blocks alone, no clock (a reader's clock is the view's, `ownershipView`). */
 const ownership = (instance, blocks) => door.ownership(blockOf(instance), blocks)
 /** The ownership view: the same fold read at the reader's clock `now`. */
 const ownershipView = (instance, blocks, { now } = {}) => door.ownershipView(blockOf(instance), blocks, now || null)
@@ -50,7 +50,7 @@ const whereNow = (thing, blocks) => door.whereNow(blockOf(thing), blocks)
 const sharesOn = (thing, blocks) => door.sharesOn(blockOf(thing), blocks)
 const notFreeShown = (block, blocks) => door.notFreeShown(blockOf(block), blocks)
 const invasionShown = (claim, blocks) => door.invasionShown(blockOf(claim), blocks)
-/** A pot read from its head block and the blocks held; no clock (1.9 3c-6). */
+/** A pot read from its head block and the blocks given; no clock. */
 const pot = (head, blocks) => door.pot(blockOf(head), blocks)
 /** Where `who` says money to them goes (promises.md, Where to pay me): `{ who, destinations: [{ destination, by }], hash, at }` from the head of their account words (the one no other of theirs has in its causal past), or null when there is none, two heads do not see each other, or the head lists no place. */
 const accountOf = (who, blocks) => door.accountOf(idOf(who), blocks)
@@ -64,23 +64,18 @@ const due = (promise, { arrivedAt } = {}) => door.due(promise, arrivals(arrivedA
 const circleVersions = (circle, blocks) => door.circleVersions(idOf(circle), blocks)
 /** Is a machine locked now (authority.md, A machine lock): `{ locked, locks, lifted }`. `now` is the time read at (none: only a lock that needs no clock stands). */
 const machineLock = (machine, blocks, { now } = {}) => door.machineLock(machine, blocks, now || null)
-/** What a judge's offer gives back of her fee (promises.md, Rulings): `{ settled, releases, to_come, why }` (1.9: `owed` is `to_come`). */
+/** What a judge's offer gives back of her fee (promises.md, Rulings): `{ settled, releases, to_come, why }`. */
 const feeBack = (offer, deal, blocks) => door.feeBack(offer, deal, blocks)
 /** A threshold read against a set of `members` voices (folds.md, Counts): `needed` is a whole number, `all`, or `{ of_members: "p/q" }`. The number of voices it asks for, or null when it names no count (none is ever filled in). */
 const countOf = (needed, members) => door.countOf(needed ?? null, members)
 const circleKey = (circle, blocks) => door.circleKey(idOf(circle), blocks)
 const countedIn = (result, commitment, counter) => door.countedIn(result ?? null, String(commitment), String(counter))
 
-/** 1.9 stage 6: whether a row of the circle a block is `as` holds for it (circles.md); the fewest hands each row needs (a reading). */
+/** Whether a row of the circle a block is `as` holds for it (circles.md); the fewest hands each row needs (a reading). */
 const rowHolds = (block, blocks) => door.rowHolds(block, blocks)
 const waysIn = (circle, blocks) => door.waysIn(idOf(circle), blocks)
-/** 1.9 stage 4: keeps to, the meter, the worst case and the lowest offer of a grant (authority.md). */
-const keepsTo = (c, a, blocks) => door.keepsTo(c, a, blocks)
-const meter = (grant, blocks, block) => door.meter(grant, blocks, block)
-const worstCase = (grant, blocks) => door.worstCase(grant, blocks)
-const lowestOffer = (grant, blocks) => door.lowestOffer(grant, blocks)
-/** 1.9 stage 7 (Job C), readings: the read-back of a block to the person `to` ({ answer, text, state }); a renderer's words for an answer; a second reader's redo ({ same, readback, lacks, not_run }). */
+/** Readings: the read-back of a block to the person `to` ({ answer, text, state }); a renderer's words for an answer; a second reader's redo ({ same, readback, lacks, not_run }). */
 const readback = (block, blocks, { to, renderer, digits } = {}) => door.readback(block, blocks, to, renderer, digits)
 const render = (answer, renderer) => door.render(answer, renderer)
 const readbackRedo = (rb, blocks) => door.readbackRedo(rb, blocks)
-module.exports = { rowHolds, waysIn, keepsTo, meter, worstCase, lowestOffer, readback, render, readbackRedo, repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, speaksFor, backed, backedAll, toComeBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, membersThen, ownership, ownershipView, madeFrom, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, useShown, consent, due, circleKey, countedIn, circleVersions, machineLock, feeBack, countOf }
+module.exports = { rowHolds, waysIn, readback, render, readbackRedo, repeatOccurrences, promiseStage, promiseView, promiseViews, circleState, speaksFor, backed, backedAll, toComeBack, listingCheck, checkReads, clearingApplied, rulingReleases, gives, membersThen, ownership, ownershipView, madeFrom, ownerOf, receiverOf, whereNow, sharesOn, notFreeShown, invasionShown, pot, accountOf, releaseShown, useShown, consent, due, circleKey, countedIn, circleVersions, machineLock, feeBack, countOf }

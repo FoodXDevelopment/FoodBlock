@@ -50,7 +50,7 @@ fn write_value(out: &mut String, value: &Value) {
         }
         Value::Object(map) => {
             let mut keys: Vec<&String> = map.keys().collect();
-            // 1.9 3a-6, the one form: members in ascending order of the UTF-8 bytes of their keys, byte by byte (a Rust string's own order)
+            // the one form: members in ascending order of the UTF-8 bytes of their keys, byte by byte (a Rust string's own order)
             keys.sort();
             out.push('{');
             for (i, key) in keys.into_iter().enumerate() {

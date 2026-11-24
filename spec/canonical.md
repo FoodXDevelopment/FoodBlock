@@ -2,7 +2,7 @@
 
 **Version:** FoodBlock 1.9
 **Status:** Normative
-**Purpose:** The one exact byte form of everything FoodBlock signs, hashes or sends as JSON, so every implementation in any language gets the same bytes and the same id.
+**Purpose:** The one exact byte form of everything FoodBlock signs, hashes or sends as JSON.
 
 ## The one form
 
@@ -10,7 +10,7 @@
 
 ## On the wire
 
-**A message is its canonical bytes.** Everything FoodBlock sends as JSON (a block message, a sealed block, a request, an answer, a push, an export, an envelope's plaintext) is canonical JSON, whole: the bytes of the one form for the value they parse to. A reader keeps the bytes as they came and takes them only if they are exactly those bytes. Any difference refuses the message (`not_canonical`): a space, a key out of order, a repeated key, an escape that is not the one form's, a number not written as the one form writes it, bytes that are not UTF-8, text that is not JSON.
+**A message is its canonical bytes.** Everything FoodBlock sends as JSON (a block message, a sealed block, a request, an answer, a push, an export, an envelope's plaintext) is the bytes of the one form for the value they parse to, whole. A reader keeps the bytes as they came and takes them only if they are exactly those bytes. Any difference refuses the message (`not_canonical`): a space, a key out of order, a repeated key, an escape that is not the one form's, a number not written as the one form writes it, bytes that are not UTF-8, text that is not JSON.
 
 **A block's id is the hash of its bytes as they came.** In a block message they are the bytes after `{"block":` and before `,"signature":`. Those bytes must also be the canonical bytes of a value that follows strict writing (below), or the block is refused (`not_canonical`; core.md, section 8). No reader hashes bytes it rebuilt from text.
 
@@ -18,11 +18,11 @@
 
 **A refusal names bytes.** Its `hash` is the SHA-256 of the bytes refused, as they came. Bytes that are refused have no canonical form and no id.
 
-Everything signed follows strict writing: a signed request, answer or header holds no float and no null. CBOR has no text: its reader rebuilds the value and writes the canonical bytes (encoding.md, The compact form).
+Everything signed follows strict writing: a signed request, answer or header holds no float and no null.
 
 ## Strict writing
 
-The one form fixes the bytes. These rules fix the content. A writer follows them. A reader **refuses** a block that breaks one (`not_canonical`, or the code in brackets) and never repairs it (On the wire).
+The one form fixes the bytes; these rules fix the content. A writer follows them. A reader **refuses** a block that breaks one (`not_canonical`, or the code in brackets) and never repairs it (On the wire).
 
 1. **Three fields.** The block is exactly `type`, `state` and `refs`.
 2. **No null.** A `null` anywhere is refused.
@@ -32,7 +32,7 @@ The one form fixes the bytes. These rules fix the content. A writer follows them
 
 ## Complete example
 
-**Input** (ids shortened for reading; a real block has 64-hex ids):
+**Input** (ids shortened; a real block has 64-hex ids):
 ```
 type: "thing"
 state: { "name": "Sourdough", "price": { "value": "4.5", "unit": "GBP" }, "weight": { "value": "0.8", "unit": "kg" } }

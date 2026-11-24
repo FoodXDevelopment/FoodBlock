@@ -28,7 +28,7 @@ open_copy = door.open_copy
 next_link = door.next_link
 reveal_for = door.reveal_for
 sign_message = door.sign_message
-id_of = door.id_of  # a block's id, in the suite of the key that signed it (found among `held`)
+id_of = door.id_of  # a block's id, in the suite of the key that signed it (found among `blocks`)
 verify = door.verify
 verify_message = door.verify_message
 passkey_challenge = door.passkey_challenge  # the challenge to ask a passkey to sign: base64url of the SHA-256 of the signed bytes (for a block, its id)
@@ -102,29 +102,29 @@ def finds_self(block, recipient, salt_hex) -> bool:
 
 
 # ---- A block's questions: who said these bytes, whether this reader can read it, whether a draft may be signed ----
-def valid(block, held=None) -> list:
-    """Who said these bytes (core.md, section 8): every refusal of a signed block, or a held header, against the blocks held ([] when valid)."""
-    return door.valid(block, held or [])
+def valid(block, blocks=None) -> list:
+    """Who said these bytes (core.md, section 8): every refusal of a signed block, or a given header, against the blocks given ([] when valid)."""
+    return door.valid(block, blocks or [])
 
 
-def read(block, held=None, schemas=None, runs=None) -> list:
-    """Whether this reader can read a valid block: every code found ([] when read), the value codes among them. `runs`: the ids of the rule sets this reader runs."""
-    return door.read(block, held or [], schemas, runs)
+def read(block, blocks=None, schemas=None) -> list:
+    """Whether this reader can read a valid block: every code found ([] when read), the value codes among them."""
+    return door.read(block, blocks or [], schemas)
 
 
-def write_refusals(draft, held=None) -> list:
+def write_refusals(draft, blocks=None) -> list:
     """What a writer refuses to sign, asked of an unsigned draft { type, state, refs } before anyone signs it; [] when it may be signed."""
-    return door.write_refusals(draft, held or [])
+    return door.write_refusals(draft, blocks or [])
 
 
-def binds(draft, held=None) -> bool:
+def binds(draft, blocks=None) -> bool:
     """Whether an unsigned draft, once signed, binds anyone: an accept, or a block that would move something of the one whose word it is."""
-    return door.binds(draft, held or [])
+    return door.binds(draft, blocks or [])
 
 
-def schemas_from(held=None) -> list:
-    """The schema store of the blocks held (core.md, section 8): every thing of kind schema among them, ids ascending. Pass it as `schemas` to valid, check or refusals."""
-    return door.schemas_from(held or [])
+def schemas_from(blocks=None) -> list:
+    """The schema store of the blocks given (core.md, section 8): every thing of kind schema among them, ids ascending. Pass it as `schemas` to valid, check or refusals."""
+    return door.schemas_from(blocks or [])
 
 
 def terms(given=None, **more) -> dict:
@@ -137,9 +137,9 @@ def check_chain(blocks, brought_in) -> dict:
     return door.check_chain(blocks, brought_in)
 
 
-def read_whole(block, start, held=None) -> dict:
+def read_whole(block, start, blocks=None) -> dict:
     """Whether the line is read whole from a block back to a start (folds.md, A line): { whole, lacks }."""
-    return door.read_whole(str(block), str(start), held or [])
+    return door.read_whole(str(block), str(start), blocks or [])
 
 
 def sees(later, earlier, blocks) -> bool:
@@ -173,12 +173,13 @@ def _options(audience=None, after=(), **rest):
     return options
 
 
-def write(type_, state=None, refs=None, author=None, key=None, held=(), schemas=None, link=None, **options) -> dict:
+def write(type_, state=None, refs=None, author=None, key=None, blocks=(), schemas=None, link=None, **options) -> dict:
     """The one way to write: compose, check (refusing, never repairing), sign, chain. Raises Refused with every finding.
     `audience` and `at` (or `clockless=True`) are options the caller must state."""
     if not key:
         raise FoodBlockError("argument", "write: a block is signed by a key { public_key_sign, private_key }")
-    given = _options(author=author, key=key, held=list(held or []), link=link, **options)
+    given = _options(author=author, key=key, link=link, **options)
+    given["blocks"] = list(blocks or [])
     if schemas is not None:
         given["schemas"] = list(schemas.values()) if isinstance(schemas, dict) else list(schemas)
     return door.write(type_, state or {}, refs or {}, given)
@@ -188,10 +189,10 @@ def wrap(signed) -> dict:
     return door.wrap(signed)
 
 
-def unwrap(message, held=None) -> dict:
-    """A block off the wire: its hash recomputed from its content, in the suite of the key that signed it (found among `held`,
-    the author's blocks; core.md, section 2). Without `held`, in the suite the block shows."""
-    return door.unwrap(message, held)
+def unwrap(message, blocks=None) -> dict:
+    """A block off the wire: its hash recomputed from its content, in the suite of the key that signed it (found among `blocks`,
+    the author's blocks; core.md, section 2). Without `blocks`, in the suite the block shows."""
+    return door.unwrap(message, blocks)
 
 
 def seal_copy(signed, keys, reveals=(), fixed=None, suite=None) -> dict:

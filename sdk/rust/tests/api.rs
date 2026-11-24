@@ -19,17 +19,17 @@ fn each_suite_signs_and_opens() {
         let g = identity::genesis(&k, &identity::GenesisOptions { kind: "person", at: "2026-10-15T09:00:00.000Z".into(), audience: Some(foodblock::Readers::Public), ..Default::default() }).unwrap();
         println!("{}", g);
         assert!(identity::genesis_opens(Some(&g)), "{suite}");
-        let held = js::index_of([&g]);
+        let blocks = js::index_of([&g]);
         let r = valid::valid(&g, &js::Index::default());
         assert!(r.is_empty(), "{suite}: {r:?}");
         let id = js::hash_of(&g).to_string();
         let b = write("observe", &json!({"text":"hi"}), &json!({}), &WriteOptions {
             compose: ComposeOptions { author: id.clone(), at: Some("2026-10-15T09:01:00.000Z".into()), audience: Some(foodblock::Readers::Public), ..Default::default() },
-            key: Some(&k), held: std::slice::from_ref(&g), schemas: None }).unwrap();
-        let r = valid::valid(&b, &held);
+            key: Some(&k), blocks: std::slice::from_ref(&g), schemas: None }).unwrap();
+        let r = valid::valid(&b, &blocks);
         assert!(r.is_empty(), "{suite}: {r:?}");
         let mut bad = b.clone(); bad["state"]["text"] = json!("ho");
-        assert!(!valid::valid(&bad, &held).is_empty());
+        assert!(!valid::valid(&bad, &blocks).is_empty());
     }
 }
 
@@ -46,7 +46,7 @@ fn each_suite_seals() {
 
 #[test]
 fn version_matches_protocol_json() {
-    // 1.9 stage 7 (B4): protocol.json carries no version (a rule set is named by its hash); the package's number is the package's own
+    // protocol.json carries no version (a rule set is named by its hash); the package's number is the package's own
     assert!(spec().protocol.get("version").is_none() && spec().version.is_empty() && !VERSION.is_empty());
     for peer in peers() {
         assert!(spec().conventions["peers"].get(*peer).is_some(), "{peer} is a peer of conventions.json");
@@ -116,7 +116,7 @@ fn a_passkey_signs_a_block() {
     let opens = |s: &str| verify_in("p256", &block, s, &k.public_key_sign);
     assert!(opens(&answer(0x05, "foodx.network", "webauthn.get", &challenge)));
     assert!(opens(&answer(0x05, "elsewhere.example", "webauthn.get", &challenge)), "rpId is not read");
-    // 1.9 3d-13: a passkey signature counts only when the user was verified
+    // a passkey signature counts only when the user was verified
     assert!(!opens(&answer(0x01, "foodx.network", "webauthn.get", &challenge)), "UV unset: a touch alone signs nothing");
     assert!(!opens(&answer(0x04, "foodx.network", "webauthn.get", &challenge)), "UP unset");
     assert!(!opens(&answer(0x05, "foodx.network", "webauthn.create", &challenge)), "wrong type");
@@ -171,15 +171,15 @@ fn a_message_has_no_version() {
     assert_eq!(unwrap(&old).unwrap_err().code.as_deref(), Some("shape"));
 }
 
-// Judging a block under a grant signed as a circle once marked a copy of every held block again for each block it asked about, so five
+// Judging a block under a grant signed as a circle once marked a copy of every given block again for each block it asked about, so five
 // such blocks took 12 to 39 s (fold-fuzz seed 72000097). The marks are read once per set of blocks now; the answers are unchanged.
 #[test]
 fn a_block_under_a_circle_grant_is_judged_fast() {
     let w: serde_json::Value = serde_json::from_str(include_str!("fixtures/deep-grants.json")).unwrap();
-    let held: Vec<serde_json::Value> = w["held"].as_array().unwrap().clone();
+    let blocks: Vec<serde_json::Value> = w["blocks"].as_array().unwrap().clone();
     let start = std::time::Instant::now();
-    let answers: Vec<bool> = w["asked"].as_array().unwrap().iter().map(|a| grant::why_not_under(&a["block"], &held, None).is_empty()).collect();
-    // 1.9 stage 4 (G1, Blocks that bind): a note under a grant speaks for its signer alone, so the last answer, true before, is false
+    let answers: Vec<bool> = w["asked"].as_array().unwrap().iter().map(|a| grant::why_not_under(&a["block"], &blocks, None).is_empty()).collect();
+    // a note under a grant speaks for its signer alone, so the last answer, true before, is false
     assert_eq!(answers, vec![false, false, false, false, false]);
     assert!(start.elapsed().as_secs() < 10, "took {:?}", start.elapsed());
 }

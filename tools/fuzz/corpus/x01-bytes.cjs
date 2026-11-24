@@ -1,13 +1,13 @@
 'use strict';
-// Security seats 01 (signatures and ids), 02 (parsing and denial) and 08 (build): the byte-level splits, rows 35 to 46 and 51. From
-// foodx/research/2026-11-12-foodblock-security/{01,02,08}-scratch/, built as the seats built them.
+// Bytes: P-256 keys and signatures in each spelling, one hash twice in a push, a squatted header, a header or a genesis passed as a signed
+// message, the short reply, DER spellings of a passkey signature, a block of an unknown type, the same text given to both readers, and a deep make chain.
+const SRC = 'a world built by hand';
 const crypto = require('crypto');
-const SX = 'security ';
 const AT = '2026-11-12T10:00:00.000Z';
 const sha = (b) => crypto.createHash('sha256').update(b).digest();
 const mk = (L) => { const keys = L.fb.generateKeypair(); const g = L.fb.identity.genesis(keys, { kind: 'person', at: AT, audience: 'public' }); return { keys, id: g.hash, g }; };
 
-// security 02's text cases (02-scratch/diff-bytes.cjs): the fixed ones, as that script builds them
+// the text cases: the fixed ones
 function byteCases() {
   const Hx = (c) => c.repeat(64), A = Hx('a'), B = Hx('b');
   const base = (state = {}, refs = {}, type = 'observe') => ({ type, state: { at: '2026-01-01T00:00:00.000Z', audience: 'public', seq: 1, ...state }, refs: { author: A, prev: B, ...refs } });
@@ -66,9 +66,9 @@ function byteCases() {
 }
 
 module.exports = [
-  { name: 't2 P-256 keys and signatures in each spelling', row: 35, source: SX + '01 (01-scratch/t2-p256.cjs, H2); table row 35', build(L) {
+  { name: 'P-256 keys and signatures in each spelling', row: 35, source: SRC, build(L) {
     const { oracle } = L;
-    const w = { name: '01 t2 p256', blocks: [] };
+    const w = { name: 'p256 keys and signatures', blocks: [] };
     const N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551n;
     const PFX = '3059301306072a8648ce3d020106082a8648ce3d030107034200';
     const kp = oracle.keypair(crypto.createHash('sha256').update('seat01-p256').digest('hex'), 'p256');
@@ -88,19 +88,19 @@ module.exports = [
     both('key off the curve', gen(PFX + '04' + X + hex32(big(Y) ^ 1n), honest));
     both('key = 04 0 0', gen(PFX + '04' + '00'.repeat(64), honest));
   } },
-  { name: 't9 one hash twice in one push', row: 36, source: SX + '01 (01-scratch/t9-same-hash-push.cjs, M1); table row 36', build(L) {
+  { name: 'one hash twice in one push', row: 36, source: SRC, build(L) {
     const w = new L.World('01 t9');
     const maria = mk(L), thief = mk(L), held0 = [maria.g, thief.g];
-    const v = L.fb.write('observe', { kind: 'note', text: 'x' }, {}, { author: maria.id, key: maria.keys, held: held0, at: AT, audience: 'public' });
+    const v = L.fb.write('observe', { kind: 'note', text: 'x' }, {}, { author: maria.id, key: maria.keys, blocks: held0, at: AT, audience: 'public' });
     const mh = L.header(v), variant = { header: { ...mh.header, seq: 7 }, header_signature: v.signature };
     L.ask(w, '[variant, genuine]', 'accept', [[variant, mh], held0, { takes_pairs: true }]);
     L.ask(w, '[genuine, variant]', 'accept', [[mh, variant], held0, { takes_pairs: true }]);
   } },
-  { name: 't4b a squatted header in a chain', row: 37, source: SX + '01 (01-scratch/t4b.cjs); table row 37', build(L) {
+  { name: 'a squatted header in a chain', row: 37, source: SRC, build(L) {
     const w = new L.World('01 t4b');
     const maria = mk(L), thief = mk(L), held0 = [maria.g, thief.g];
-    const v = L.fb.write('observe', { kind: 'note', text: 'x' }, {}, { author: maria.id, key: maria.keys, held: held0, at: AT, audience: 'public' });
-    const v2 = L.fb.write('observe', { kind: 'note', text: 'y' }, {}, { author: maria.id, key: maria.keys, held: [...held0, v], at: AT, audience: 'public' });
+    const v = L.fb.write('observe', { kind: 'note', text: 'x' }, {}, { author: maria.id, key: maria.keys, blocks: held0, at: AT, audience: 'public' });
+    const v2 = L.fb.write('observe', { kind: 'note', text: 'y' }, {}, { author: maria.id, key: maria.keys, blocks: [...held0, v], at: AT, audience: 'public' });
     const mh = L.header(v);
     const th = { author: thief.id, seq: 1, prev: thief.id, hash: v.hash };
     const thh = { header: th, header_signature: L.fb.signMessage(th, thief.keys.private_key).signature };
@@ -110,21 +110,21 @@ module.exports = [
     L.ask(w, 'read_whole with the squat', 'read_whole', [v2.hash, maria.id, [maria.g, thief.g, thh, v2]]);
     L.ask(w, 'read_whole with hers', 'read_whole', [v2.hash, maria.id, [maria.g, thief.g, mh, v2]]);
   } },
-  { name: 't11 t13 a header or a genesis passed as a signed message', row: 38, source: SX + '01 (01-scratch/t11-message-shape.cjs, t13-domain-sep.cjs, M2); table row 38', build(L) {
+  { name: 'a header or a genesis passed as a signed message', row: 38, source: SRC, build(L) {
     const w = new L.World('01 t11');
     const { keys, g } = mk(L);
-    const v = L.fb.write('transfer', { amount: { value: '500', unit: 'KES' } }, { to_owner: g.hash }, { author: g.hash, key: keys, held: [g], at: AT, audience: 'public' });
+    const v = L.fb.write('transfer', { amount: { value: '500', unit: 'KES' } }, { to_owner: g.hash }, { author: g.hash, key: keys, blocks: [g], at: AT, audience: 'public' });
     L.ask(w, 'header plus the block signature', 'verify_message', [{ ...L.fb.header(v), signature: v.signature }, keys.public_key_sign]);
     L.ask(w, 'the genesis as a message', 'verify_message', [{ type: g.type, state: g.state, refs: g.refs, signature: g.signature }, keys.public_key_sign]);
     L.ask(w, 'a signed pull request', 'verify_message', [L.fb.signMessage({ signer: g.hash, node: g.hash, counter: 1 }, keys.private_key), keys.public_key_sign]);
   } },
-  { name: 't5 the short reply in each spelling', row: '39-40', source: SX + '01 (01-scratch/t5-short-reply.cjs, M3); table rows 39 and 40', build(L) {
+  { name: 'the short reply in each spelling', row: '39-40', source: SRC, build(L) {
     const w = new L.World('01 t5');
     const maria = mk(L), achieng = mk(L), host = mk(L);
     let held = [maria.g, achieng.g, host.g];
-    const wr = (p, type, state, refs) => { const b = L.fb.write(type, state, refs, { author: p.id, key: p.keys, held, at: AT, audience: 'public' }); held = [...held, b]; return b; };
+    const wr = (p, type, state, refs) => { const b = L.fb.write(type, state, refs, { author: p.id, key: p.keys, blocks: held, at: AT, audience: 'public' }); held = [...held, b]; return b; };
     const maize = wr(maria, 'thing', { kind: 'maize' }, {});
-    const offer = wr(maria, 'promise', { terms: { price: { amount: { value: '1000', unit: 'KES' }, per: { value: '1', unit: 'sack' } }, quantity: { value: '1', unit: 'sack' } } }, { from: maria.id, to: achieng.id, what: maize.hash });
+    const offer = wr(maria, 'promise', { terms: { lines: [{ id: 'maize', what: maize.hash, quantity: { value: '1', unit: 'sack' }, price: { amount: { value: '1000', unit: 'KES' }, per: { value: '1', unit: 'sack' } } }] } }, { from: maria.id, to: achieng.id });
     const rb = wr(host, 'observe', { kind: 'readback', readback: 'a'.repeat(64) }, { for: offer.hash });
     const link = L.fb.identity.nextLinkFor(achieng.id, achieng.keys.public_key_sign, held);
     const created = L.fb.create('promise', { at: AT, audience: 'public', seq: link.seq, status: 'accepted' }, { answers: offer.hash, author: achieng.id, derives_from: [rb.hash], for: offer.hash, prev: link.prev });
@@ -142,15 +142,15 @@ module.exports = [
     open('a junk char (row 39)', tR.slice(0, 20) + '*' + tR.slice(20));
     open('lowercase prefix', 'fb1' + tR.slice(3));
   } },
-  { name: 't10 DER spellings in a passkey signature', row: 41, source: SX + '01 (01-scratch/t10-der.cjs, M4); table row 41', build(L) {
-    const w = { name: '01 t10', blocks: [] };
+  { name: 'DER spellings in a passkey signature', row: 41, source: SRC, build(L) {
+    const w = { name: 'DER spellings', blocks: [] };
     const r = '7'.repeat(64), s = '1'.repeat(64);
     const der = (rb, sb, extra = '') => { const R = '02' + (rb.length / 2).toString(16).padStart(2, '0') + rb, S = '02' + (sb.length / 2).toString(16).padStart(2, '0') + sb; const body = R + S + extra; return '30' + (body.length / 2).toString(16).padStart(2, '0') + body; };
     const auth = 'aa'.repeat(32) + '05' + '00000001', cdj = Buffer.from('{"type":"webauthn.get"}').toString('hex');
     const cases = { strict: der(r, s), 'r with a needless 00': der('00' + r, s), 'trailing junk inside': der(r, s, '0500'), 'trailing junk outside': der(r, s) + 'ffff', 'long-form length 81': '3081' + der(r, s).slice(2), 'r negative': der('8' + r.slice(1), s), 'r 33 bytes nonzero': der('01' + r, s) };
     for (const [n, d] of Object.entries(cases)) L.ask(w, n, 'passkey_signature', [auth, cdj, d]);
   } },
-  { name: 'proto-min: one signed block of type constructor', row: 42, source: SX + '02 (02-scratch/proto-min.cjs, F3); table row 42', build(L) {
+  { name: 'one signed block of an unknown type (constructor)', row: 42, source: SRC, build(L) {
     const w = new L.World('02 constructor');
     const maria = w.person('maria'), thief = w.person('thief');
     const bread = L.thing(w, maria, 'bread', L.amt(1, 'loaf'), 'bread');
@@ -159,15 +159,15 @@ module.exports = [
     const poison = w.add(L.signed(thief, thief.keys, 'constructor', {}, {}, { prev: n.prev, seq: n.seq }), 'poison');
     L.ask(w, 'valid(poison)', 'valid', [poison, clean]);
     L.ask(w, 'ownership(bread), clean store', 'ownership', [bread, clean, null]);
-    L.ask(w, 'ownership(bread), store and poison', 'ownership', [bread, 'held', null]);
+    L.ask(w, 'ownership(bread), store and poison', 'ownership', [bread, 'blocks', null]);
     L.ask(w, 'accept([bread], store and poison)', 'accept', [[bread], w.blocks.filter((b) => b !== bread), { takes_pairs: false }]);
     L.ask(w, 'accept([poison], clean store)', 'accept', [[poison], clean, { takes_pairs: false }]);
   } },
-  { name: 'diff-bytes: the same text to both readers', row: '43-46', source: SX + '02 (02-scratch/diff-bytes.cjs, F4 and F5, the fixed cases); table rows 43 to 46', build(L) {
-    const w = { name: '02 bytes', blocks: [] };
+  { name: 'the same text given to both readers', row: '43-46', source: SRC, build(L) {
+    const w = { name: 'the same text', blocks: [] };
     for (const c of byteCases()) { const m = /\(row (\d+)\)/.exec(c.name); L.ask(w, c.name, c.op, [c.text], m ? { row: Number(m[1]) } : {}); }
   } },
-  { name: 'deep-make: a chain of a thousand makes', row: 51, source: SX + '08 (08-scratch/deep-make.cjs, oracle-deep.cjs, F1); table row 51', build(L) {
+  { name: 'a chain of a thousand makes', row: 51, source: SRC, build(L) {
     const w = new L.World('08 deep make');
     const harry = w.person('harry');
     let prev = harry.id, seq = 1;
@@ -175,6 +175,6 @@ module.exports = [
     const put = (type, state, refs) => { const b = L.signed(harry, harry.keys, type, state, refs, { prev, seq }); blocks.push(b); prev = b.hash; seq += 1; return b; };
     let t = put('thing', { kind: 'maize', pack: { value: '50', unit: 'kg' } }, { of: L.kindOf('maize') });
     for (let i = 0; i < 1000; i++) { const m = put('transform', {}, { derives_from: [t.hash] }); t = put('thing', { kind: 'maize', pack: { value: '50', unit: 'kg' } }, { derives_from: [m.hash] }); }
-    L.ask({ name: w.name, blocks }, 'ownership of the last thing, 1000 makes deep', 'ownership', [t, 'held', null]);
+    L.ask({ name: w.name, blocks }, 'ownership of the last thing, 1000 makes deep', 'ownership', [t, 'blocks', null]);
   } },
 ];

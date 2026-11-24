@@ -57,7 +57,7 @@ fn world(target: usize) -> (Vec<Value>, Vec<(Value, Value)>) {
         let t = post(&mut blocks, &mut sp, n, "thing", json!({"kind":"egg","lot":format!("L{story}")}), json!({"of": kind}));
         let shelf = post(&mut blocks, &mut sp, n, "thing", json!({"kind":"shelf"}), json!({}));
         let tr = post(&mut blocks, &mut sp, n, "transfer", json!({}), json!({"what": t, "to_owner": bid}));
-        let offer = post(&mut blocks, &mut sp, n, "promise", json!({"terms":{"price":{"minor":450,"currency":"GBP"},"expires":"2027-10-20T00:00:00.000Z"}}), json!({"from": sid, "to": bid, "what": t}));
+        let offer = post(&mut blocks, &mut sp, n, "promise", json!({"terms":{"lines":[{"id":"item","what":t,"price":{"minor":450,"currency":"GBP"}}],"expires":"2027-10-20T00:00:00.000Z"}}), json!({"from": sid, "to": bid}));
         ps[s] = sp;
         {
             let bp = &mut ps[b];

@@ -90,7 +90,7 @@ pub fn suite_of_id(id: &str) -> String {
     }
 }
 
-/// The suite a block is hashed in, read from the block alone (the door's `id_of` with no held block): a genesis names its own
+/// The suite a block is hashed in, read from the block alone (the door's `id_of` with no given block): a genesis names its own
 /// (`state.suite`); any other block, the hash name of the id its `refs.key` names, else of its `refs.author`. It is a reader's guess:
 /// `valid` never uses it, and reads the suite of the key its pieces name (`identity::signed_suite_in`).
 pub fn suite_from_block(block: &Value) -> String {

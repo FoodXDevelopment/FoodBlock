@@ -55,7 +55,7 @@ fn ord(a: Option<&Value>, b: Option<&Value>) -> Option<Ordering> {
 
 /// What makes a child's fence wider than its parent's, in plain words (empty when it is no wider). `child` and `parent` are the
 /// grants' `state` objects; `from` is the parent's `at`, from which durations are compared (authority.md, Scope subset).
-pub(crate) fn fence_wider(child: &Value, parent: &Value, from: Option<&str>) -> Vec<String> {
+pub(crate) fn fence_wider(child: &Value, parent: &Value) -> Vec<String> {
     let none = Value::Null;
     let c = child.get("fence").unwrap_or(&none);
     let p = parent.get("fence").unwrap_or(&none);
@@ -97,9 +97,8 @@ pub(crate) fn fence_wider(child: &Value, parent: &Value, from: Option<&str>) -> 
             wrong.push("fence.safe_state is the parent's".into());
         }
     }
-    // work alone: no longer than the parent's; a parent that states none lets none (zero). 1.9: two spans are compared by what each adds
+    // work alone: no longer than the parent's; a parent that states none lets none (zero). Two spans are compared by what each adds
     // to one fixed instant, never added to a date (authority.md, A range and a list; blocks.md, Time)
-    let _ = from;
     if let Some(cw) = c.get("work_alone").and_then(Value::as_str) {
         const FIXED: &str = "2000-01-01T00:00:00.000Z";
         let pw = p.get("work_alone").and_then(Value::as_str).unwrap_or("PT0S");

@@ -2,7 +2,7 @@ const test = require('node:test')
 const assert = require('node:assert/strict')
 const fb = require('../src/index.cjs')
 
-// FoodBlock 1.9 (privacy.md, Envelope): the envelope names no recipient; a sealed copy carries its signed public header;
+// privacy.md, Envelope: the envelope names no recipient; a sealed copy carries its signed public header;
 // the suite names the key agreement and the cipher.
 const vectors = require('../../../spec/vectors.json')
 
@@ -16,12 +16,13 @@ test('an envelope derives its sealing key with HKDF, names no recipient, and ope
     assert.throws(() => fb.open(envelope, eve.x25519_private), /no entry opens/)
   }
   const std = fb.generateEncryptionKeypair(), envelope = fb.seal({ a: 1 }, [std.public_key_encrypt])
-  assert.throws(() => fb.open({ ...envelope, alg: 'x25519-aes-256-gcm' }, std.x25519_private), /unknown_suite|does not know/, 'the old raw-secret alg is gone')
+  assert.throws(() => fb.open({ ...envelope, alg: 'x25519-aes-256-gcm' }, std.x25519_private), /unknown_suite|does not know/, 'the raw-secret alg is not known')
 })
 
 test('the vectors\' envelopes open', () => {
   for (const v of vectors.envelopes) {
-    const opened = fb.unwrap(fb.open(v.envelope, vectors.keys[v.recipient].x25519_private))
+    const k = vectors.keys[v.recipient]
+    const opened = fb.unwrap(fb.open(v.envelope, k.xwing_private || k.x25519_private))
     assert.deepEqual([opened.hash, opened.signature], [v.opens_to.hash, v.opens_to.signature])
   }
 })

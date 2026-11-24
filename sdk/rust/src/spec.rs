@@ -73,9 +73,6 @@ pub struct Spec {
     grammar: Vec<(String, Regex)>,
 }
 
-pub fn strings_pub(value: Option<&Value>) -> Vec<String> {
-    strings(value)
-}
 fn strings(value: Option<&Value>) -> Vec<String> {
     match value {
         Some(Value::Array(items)) => items.iter().filter_map(Value::as_str).map(String::from).collect(),
@@ -172,7 +169,7 @@ impl Spec {
             statuses: list("statuses"),
             stops: list("stop"),
             genesis_required: list("genesis.required"),
-            // A genesis may carry any key field but `roles` (a circle's) and `shown_key` (a key grant's), beyond what it requires; 1.9 3d-17:
+            // A genesis may carry any key field but `roles` (a circle's) and `shown_key` (a key grant's), beyond what it requires;
             // `voices`, her whole list (protocol.json `genesis.optional_about`).
             genesis_optional: list("key_fields.fields")
                 .into_iter()
@@ -232,9 +229,6 @@ impl Spec {
         }
         out
     }
-    pub fn has_type(&self, name: &str) -> bool {
-        self.types.iter().any(|t| t == name)
-    }
     /// Whether a type is closed: its fields are fixed by the spec (core.md, Open types, closed authority).
     pub fn is_closed(&self, name: &str) -> bool {
         self.closed_types.iter().any(|t| t == name)
@@ -243,10 +237,6 @@ impl Spec {
     pub fn suite(&self, name: &str) -> Option<&SuiteInfo> {
         let name = if name.is_empty() { self.suite_default.as_str() } else { name };
         self.suites.iter().find(|s| s.name == name)
-    }
-    /// Whether a hash name is a hash the protocol knows (`hashes`).
-    pub fn knows_hash(&self, name: &str) -> bool {
-        self.protocol.get("hashes").and_then(|h| h.get(name)).is_some()
     }
     /// The prefix of a hash (`sm3:`), empty for the bare one (SHA-256).
     pub fn hash_prefix(&self, name: &str) -> String {

@@ -3,27 +3,24 @@ use crate::js::{count_stated, get, hash_of, list, quorum, rf, rs, ss, st, type_o
 use crate::order::sees_in;
 use crate::prelude::*;
 
-// Who rules a deal (promises.md, Disputes): the confirmers the deal's schema names in its grounds, in order, and a referee both sides named
+// Who rules a deal (promises.md, Disputes): the judges the deal's schema names in its `grounds.bench`, in order, and a judge both sides named
 // for the deal by a grant one signed and the other accepted; less any name that is a side.
-pub(super) struct Bench<'b> {
+pub(super) struct Bench {
     pub(super) names: Vec<String>,
-    // how many names must agree: the schema's `grounds.needed` (a deal naming several confirmers states it, decision E3); one name needs
-    // no number. The protocol keeps no default: more than one name and no number stated (a judge named later beside one confirmer) is
-    // None, and no ruling counts until both sides sign a number (decision H2)
+    // how many names must agree: the schema's `grounds.bench.needed` (a deal naming several judges states it); one name needs
+    // no number. The protocol keeps no default: more than one name and no number stated (a judge named later beside one judge) is
+    // None, and no ruling counts until both sides sign a number
     pub(super) needed: Option<f64>,
     // with `grounds.wait`, the names are a chain: each one after the first is the backup of the one before, from the signed receipt of
-    // the dispute by the name before it (decision E1)
+    // the dispute by the name before it
     pub(super) wait: Option<String>,
     pub(super) sides: Vec<String>,
-    // 1.9 3d-3: the clocks the grounds name (`grounds.clocks`, read as `terms.clocks` is), else None
+    // the clocks the grounds name (`grounds.clocks`, read as `terms.clocks` is), else None
     pub(super) clocks: Option<Value>,
-    // the binding accept: what the sides agreed to where the deal bound
-    #[allow(dead_code)]
-    pub(super) bound: Option<&'b Value>,
 }
 
-impl Bench<'_> {
-    /// The bench as a stage shows it (1.8 P12, `bench`): `{ names, needed, wait, clocks }`, or `"none"` when no name sits on it.
+impl Bench {
+    /// The bench as a stage shows it (`bench`): `{ names, needed, wait, clocks }`, or `"none"` when no name sits on it.
     pub(super) fn json(&self) -> Value {
         if self.names.is_empty() {
             return json!("none");
@@ -31,37 +28,36 @@ impl Bench<'_> {
         json!({ "names": self.names, "needed": self.needed.map(|n| n as u64), "wait": self.wait, "clocks": self.clocks })
     }
     // A side alone never rules, nor confirms (invariant 13): not its own block, whatever name it holds, nor a block that speaks for a side
-    // (signed `as` a side's circle, or under a side's grant). A referee both sides signed for counts even when tied to a side (a member of a
-    // side's circle, an autonomous system a side runs): the tie is a fact the stage shows (`referee_ties`), for each reader to weigh
-    // (decision H9).
+    // (signed `as` a side's circle, or under a side's grant). A judge both sides signed for counts even when tied to a side (a member of a
+    // side's circle): the tie is a fact the stage shows (`judge_ties`), for each reader to weigh (folds.md, Defeated blocks).
     pub(super) fn sided(&self, o: &Value, index: &crate::js::Index) -> bool {
         let Some(author) = rs(o, "author") else { return true };
         self.sides.iter().any(|s| s == author) || super::speaker_of(o, index, None).is_some_and(|w| self.sides.contains(&w))
     }
-    // Each name's ties to a side, read from the blocks held (decision H9): a name that owns parts of a side's circle (`member`; folds.md,
-    // referee_ties). Facts beside the stage.
+    // Each name's ties to a side, read from the blocks given: a name that owns parts of a side's circle (`member`; folds.md,
+    // judge_ties). Facts beside the stage.
     pub(super) fn ties(&self, sides: &[(&'static str, Option<String>)], index: &crate::js::Index) -> Vec<Value> {
         let mut out: Vec<(String, &'static str, &'static str)> = Vec::new();
         for n in &self.names {
             for (side, who) in sides {
                 let Some(who) = who.as_deref() else { continue };
-                // 1.9 stage 6: roles are gone; a name that owns parts of a side's circle is tied to it as `member`
+                // roles are gone; a name that owns parts of a side's circle is tied to it as `member`
                 if super::circle::owners_then(who, None, index).iter().any(|o| o == n) {
                     out.push((n.clone(), side, "member"));
                 }
             }
         }
-        // sorted by referee, side, how, in byte order (canonical.md: text sorts by its UTF-8 bytes)
+        // sorted by judge, side, how, in byte order (canonical.md: text sorts by its UTF-8 bytes)
         out.sort_by(|a, b| a.0.cmp(&b.0).then(a.1.cmp(b.1)).then(a.2.cmp(b.2)));
         out.dedup();
-        out.into_iter().map(|(r, side, how)| json!({ "referee": r, "side": side, "how": how })).collect()
+        out.into_iter().map(|(r, side, how)| json!({ "judge": r, "side": side, "how": how })).collect()
     }
     // Whether a counted block speaks for one name: its author is the id, by no grant a side
     // signed (in its own name, or `as` a side's circle) that the binding accept had not seen: a side never rules through someone it
-    // appointed after the deal bound (decision H9).
+    // appointed after the deal bound.
     pub(super) fn speaks_for(&self, o: &Value, name: &str, index: &crate::js::Index) -> bool {
         let Some(author) = rs(o, "author") else { return false };
-        crate::identity::counts_in(o, index) && author == name && !self.sided(o, index)
+        crate::forks::counts_in(o, index) && author == name && !self.sided(o, index)
     }
     pub(super) fn named(&self, o: &Value, index: &crate::js::Index) -> bool {
         self.names.iter().any(|n| self.speaks_for(o, n, index))
@@ -83,7 +79,7 @@ impl Bench<'_> {
             None
         }
     }
-    // 1.8 P15, kept (stage 5 compare, R-J1): a backup's turn. With `grounds.wait` the names are a chain, each the backup of the one before. A
+    // A backup's turn. With `grounds.wait` the names are a chain, each the backup of the one before. A
     // later name's turn begins where `needed` lines of the clocks the grounds name (no side's own line) each hold a cutoff, a span no shorter
     // than the wait, running from that line's receipt of a side's dispute, with no word of an earlier name received before it on that line;
     // or the same on the earlier name's own line. A place, never a date.
@@ -91,7 +87,12 @@ impl Bench<'_> {
         let Some(wait) = self.wait.as_deref() else { return Vec::new() };
         let disputes: Vec<&str> = index
             .values()
-            .filter(|o| !list(rf(o, "defeats")).is_empty() && crate::identity::counts_in(o, index) && super::speaker_of(o, index, None).is_some_and(|w| self.sides.contains(&w)))
+            .filter(|o| {
+                // a side's dispute: its counted `defeats` of a block that speaks for the other side (folds.md, Defeated blocks)
+                let by = super::speaker_of(o, index, None);
+                let other = list(rf(o, "defeats")).iter().any(|t| index.get(*t).and_then(|x| super::speaker_of(x, index, None)).is_some_and(|w| self.sides.contains(&w) && Some(&w) != by.as_ref()));
+                other && crate::forks::counts_in(o, index) && by.as_ref().is_some_and(|w| self.sides.contains(w))
+            })
             .map(hash_of)
             .collect();
         let all = |_: &str| true;
@@ -167,13 +168,13 @@ impl Bench<'_> {
     }
 }
 
-// receipt_of(X, node): a node's signed push answer listing X as taken (decision D12, E1): a counted `observe` of kind receipt that
+// receipt_of(X, node): a node's signed push answer listing X as taken: a counted `observe` of kind receipt that
 // `derives_from` one of `targets`, whose `state.answer` is from a node `node_ok` accepts (given the receipt), lists that target as taken,
 // and is signed by a key that speaks for the node. Each is returned with the answer's `at`, the time the node took it.
 pub(super) fn receipts_of<'a>(targets: &[String], index: &'a crate::js::Index, node_ok: impl Fn(&Value, &str) -> bool) -> Vec<(&'a Value, String)> {
     index
         .values()
-        .filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("receipt") && crate::identity::counts_in(o, index))
+        .filter(|o| type_of(o) == "observe" && ss(o, "kind") == Some("receipt") && crate::forks::counts_in(o, index))
         .filter_map(|o| {
             let a = st(o, "answer")?;
             let node = a.get("node").and_then(Value::as_str)?;
@@ -186,24 +187,24 @@ pub(super) fn receipts_of<'a>(targets: &[String], index: &'a crate::js::Index, n
         .collect()
 }
 
-// The bench of a deal whose bound offer names `schema`, between `sides`, bound at `bound`, with the referees both sides named (`judges`).
-pub(super) fn bench<'b>(schema: Option<&Value>, sides: Vec<String>, judges: Vec<String>, bound: Option<&'b Value>) -> Bench<'b> {
+// The bench of a deal whose bound offer names `schema`, between `sides`, with the judges both sides named (`judges`).
+pub(super) fn bench(schema: Option<&Value>, sides: Vec<String>, judges: Vec<String>) -> Bench {
     let grounds = schema.and_then(|s| get(s, "state.grounds"));
-    // A side is never its own deal's referee: a name that is a side adds nothing. A role inside a side's circle stays, its tie shown
-    // (decision H9).
+    // A side is never its own deal's judge: a name that is a side adds nothing. A role inside a side's circle stays, its tie shown
+    //.
     let not_a_side = |who: &String| !sides.iter().any(|s| s == who);
     let mut names: Vec<String> = Vec::new();
-    let listed = grounds.and_then(|g| g.get("confirmers")).and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).map(String::from);
+    let listed = grounds.and_then(|g| g.get("bench").and_then(|b| b.get("names"))).and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).map(String::from);
     for n in listed.chain(judges).filter(|n| not_a_side(n)) {
         if !names.contains(&n) {
             names.push(n);
         }
     }
-    // No default in the protocol (decisions E3, H2): the number the schema states; one name needs none (its plain meaning); more than one
+    // No default in the protocol: the number the schema states; one name needs none (its plain meaning); more than one
     // and no number stated is no number, and nothing they say rules (a judge named later beside one confirmer, until both sides sign one).
-    let needed = count_stated(grounds.and_then(|g| g.get("needed")), None).or((names.len() <= 1).then_some(1.0));
+    let needed = count_stated(grounds.and_then(|g| g.get("bench")).and_then(|b| b.get("needed")), None).or((names.len() <= 1).then_some(1.0));
     let wait = grounds.and_then(|g| g.get("wait")).and_then(Value::as_str).filter(|w| crate::time::parse_duration(w).is_some()).map(String::from);
     let clocks = grounds.and_then(|g| g.get("clocks")).and_then(crate::tasks::clocks_of).map(|k| json!({ "names": k.names, "needed": k.needed }));
-    Bench { names, needed, wait, sides, clocks, bound }
+    Bench { names, needed, wait, sides, clocks }
 }
 

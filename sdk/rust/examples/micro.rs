@@ -17,7 +17,7 @@ fn main() -> Result<(), foodblock::Error> {
         },
     )?;
     let id = me["hash"].as_str().unwrap().to_string();
-    let held = [me.clone()];
+    let blocks = [me.clone()];
     let options = WriteOptions {
         compose: ComposeOptions {
             author: id.clone(),
@@ -26,7 +26,7 @@ fn main() -> Result<(), foodblock::Error> {
             ..Default::default()
         },
         key: Some(&keys),
-        held: &held,
+        blocks: &blocks,
         schemas: None,
     };
     let reading = write(

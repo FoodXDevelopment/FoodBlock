@@ -40,10 +40,10 @@ me = fb.identity.genesis(keys, kind="person", at=AT, audience="public", encrypti
 
 # The one write path: compose, check, sign, chain. `at` and `audience` ("public" or a list of recipients) are always
 # yours to state; a missing one is refused, never filled. Money is an amount, { value, unit }; values are decimal strings.
-eggs = fb.write("thing", {"kind": "eggs", "name": "Free-range eggs"}, {}, author=me["hash"], key=keys, held=[me], at=AT, audience="public")
-offer = fb.write("promise", {"terms": {"price": fb.amount("4.50", "GBP"), "quantity": fb.amount("2", "{tray}"),
+eggs = fb.write("thing", {"kind": "eggs", "name": "Free-range eggs"}, {}, author=me["hash"], key=keys, blocks=[me], at=AT, audience="public")
+offer = fb.write("promise", {"terms": {"lines": [{"id": "eggs", "what": eggs["hash"], "quantity": fb.amount("2", "{tray}"), "price": fb.amount("4.50", "GBP")}],
                                        "expires": "2026-10-20T00:00:00.000Z"}},
-                 {"from": me["hash"], "what": eggs["hash"]}, author=me["hash"], key=keys, held=[me, eggs], at=AT, audience="public")
+                 {"from": me["hash"]}, author=me["hash"], key=keys, blocks=[me, eggs], at=AT, audience="public")
 
 fb.promise_stage(offer, [me, eggs, offer])["stage"]   # 'offered'
 fb.wrap(offer)                                        # { block, signature }, as it travels
@@ -51,14 +51,14 @@ fb.promise_view(offer, [me, eggs, offer], now="2026-10-21T00:00:00.000Z")["stage
 ```
 
 A node states its own choices too: `fb.sync.answer_pull(log, request, node, private_key, cap, serves_pairs)`,
-`fb.sync.accept(incoming, held, takes_pairs)` (blocks and sealed header messages alike),
+`fb.sync.accept(incoming, blocks, takes_pairs)` (blocks and sealed header messages alike),
 `fb.sync.admission_refusals(block, receiver, blocks, admission, asks_today)`. None has a default. No fold reads an arrival or a clock except a view, which takes the reader's `now`.
 
 A refused block raises `fb.Refused`, whose `wrong` lists every reason. Nothing is ever repaired.
 
 ## API
 
-- The protocol as data: `VERSION`, `PROTOCOL`, `TYPES`, `VERBS`, `REF_KEYS`, `FIELDS`, `SUITES`, `PEERS`, `STATUSES`, `POWERS`, `CODES`. There is no alias table: year zero.
+- The protocol as data: `VERSION`, `PROTOCOL`, `TYPES`, `VERBS`, `REF_KEYS`, `FIELDS`, `SUITES`, `PEERS`, `STATUSES`, `POWERS`, `CODES`.
 - Blocks: `create`, `hash`, `canonical`, `canonical_json`.
 - Keys and signatures, by suite (std, p256, sm; `suite` is an optional last argument): `generate_keypair`,
   `keypair_from_seed`, `sign(block, private_key, suite)` (hex), `verify(block, signature, public_key_sign)`,
@@ -72,7 +72,7 @@ A refused block raises `fb.Refused`, whose `wrong` lists every reason. Nothing i
 - Chains and order: `next_link`, `check_chain` (also `skips`; equivocations are pairs), `read_whole`, `causal_order`, `causes_of`, `past_of`, `heads_among`, `sees`.
 - Identity (`fb.identity`): `genesis`, `key_grant`, `confirm`, `key_hash`, `key_timeline`, `live_keys`, `signed_by_author`, `stands`,
   `chains_of`, `next_link_for`, `fork_pairs`, `identity_state`.
-- Authority (`fb.grant`): `scope_within`, `scope_refusals`, `is_live`, `why_not_live`, `ancestors`, `why_not_under`, `add_duration`, `why_not_live_undo`,
+- Authority (`fb.grant`): `scope_within`, `scope_refusals`, `is_live`, `why_not_live`, `ancestors`, `why_not_under`, `add_duration`,
   `scope_reading` (every default of authority.md; `junk` names what cannot be read), `fence_reading`, `terms_total`; with `keeps_to`, `meter`, `worst_case`, `lowest_offer` (also in `fb.fold`).
 - Folds (`fb.fold`): `promise_stage` (no clock), `promise_view` and `promise_views` (the reader's `now`), `circle_state`, `circle_versions`, `circle_key`, `row_holds`, `ways_in`, `machine_lock`, `count_of`,
   `members_then`, `speaks_for`, `backed(block, person, blocks)` (`{backed, why, chain}`), `backed_all(person, blocks)`, `to_come_back(person, blocks)` (money moved in the person's name that they do not back: `{to_come: [...]}`), `listing_check`, `check_reads`, `clearing_applied`, `ruling_releases`, `fee_back`, `gives(block, person, blocks)` (what of the person's becomes whose, from typed terms and refs), `ownership`, `ownership_view`, `owner_of`, `receiver_of`, `where_now`, `consent`,

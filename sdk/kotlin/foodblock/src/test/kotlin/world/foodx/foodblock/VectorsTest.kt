@@ -46,7 +46,7 @@ class VectorsTest {
     private fun full(b: JsonElement): JsonObject =
         JsonObject(mapOf("hash" to b.f("hash")) + b.f("block").o() + (if (b.f("suite") is JsonNull) emptyMap() else mapOf("suite" to b.f("suite"))) + mapOf("signature" to b.f("signature")))
     private fun blocksOf(list: JsonElement): List<JsonObject> = list.arr().map(::full)
-    private fun find(held: List<JsonObject>, hash: JsonElement) = held.firstOrNull { it.f("hash") == hash } ?: fail("no block $hash")
+    private fun find(blocks: List<JsonObject>, hash: JsonElement) = blocks.firstOrNull { it.f("hash") == hash } ?: fail("no block $hash")
     private fun withHash(block: JsonElement, hash: JsonElement) = JsonObject(block.o() + ("hash" to hash))
 
     /** Deep equality as the conformance runner uses it (assert.deepEqual): numbers compare by value. */
@@ -63,7 +63,7 @@ class VectorsTest {
         want is JsonObject -> got is JsonObject && want.all { (k, w) -> subset(got[k], w) }
         else -> got != null && deepEq(got, want)
     }
-    /** What a block's own bytes say (checks 1 to 4, core.md, section 8): the 1.7 `refusals` is gone; its halves are `valid` and `read`. */
+    /** What a block's own bytes say (checks 1 to 4, core.md, section 8): its halves are `valid` and `read`. */
     private fun bytesRefusals(type: String, state: JsonElement, refs: JsonElement): List<Refusal> =
         try { FoodBlock.strictText(FoodBlock.canonical(type, state, refs)) } catch (e: FoodBlockException) { listOf(Refusal(e.code ?: "not_canonical", e.message ?: "")) }
     private fun suiteOf(b: JsonElement) = b.f("suite").s().ifEmpty { "std" }
@@ -161,6 +161,10 @@ class VectorsTest {
     @Test fun keysFromSeeds() {
         val r = Report("keys")
         for ((name, k) in v.f("keys").o()) {
+            if (k.f("xwing_private") !is JsonNull && k.f("seed") is JsonNull) {
+                r.ok(FoodBlock.encryptionKeyOf(k.f("xwing_private").s(), "xwing") == k.f("public_key_encrypt").s(), "X-Wing key: $name")
+                continue
+            }
             val suite = k.f("suite").s().ifEmpty { "std" }
             val pair = FoodBlock.keypairFromSeed(k.f("seed").s(), suite)
             r.ok(pair.publicKeySign == k.f("public_key_sign").s() && pair.privateKey == k.f("private_key").s(), "key from seed: $name")
@@ -234,7 +238,7 @@ class VectorsTest {
         val r = Report("envelopes")
         for (c in v.f("envelopes").arr()) {
             val want = c.f("opens_to")
-            val got = runCatching { FoodBlock.unwrap(FoodBlock.open(c.f("envelope").o(), key(c.f("recipient").s(), "x25519_private")).o()) }
+            val got = runCatching { FoodBlock.unwrap(FoodBlock.open(c.f("envelope").o(), key(c.f("recipient").s(), if (v.f("keys").f(c.f("recipient").s()).f("xwing_private") !is JsonNull) "xwing_private" else "x25519_private")).o()) }
             r.ok(got.getOrNull()?.let { m -> m.f("hash") == want.f("hash") && m.f("signature") == want.f("signature") } ?: false,
                 "envelope: ${c.f("name").s()}") { got.exceptionOrNull()?.message ?: "" }
         }
@@ -368,10 +372,17 @@ class VectorsTest {
         r.done()
     }
 
+    @Test fun xwingDraft11() {
+        val r = Report("xwing_draft11")
+        val d = v.f("xwing_draft11")
+        r.ok(FoodBlock.encryptionKeyOf(d.f("sk").s(), "xwing") == "xwing:" + d.f("pk").s(), "the key of the draft's private seed")
+        r.done()
+    }
+
     // Every section of spec/vectors.json is one this runner reads: a new section cannot pass unseen.
     @Test fun everySectionIsRun() {
-        val read = setOf("\$comment", "comment", "invariant_numbers", "keys", "hashes", "ledger", "canonical", "audience", "signatures", "bad_signatures", "envelopes",
-            "sealed", "headers", "messages", "cbor", "door")
+        val read = setOf("\$comment", "comment", "keys", "hashes", "ledger", "canonical", "audience", "signatures", "bad_signatures", "envelopes",
+            "sealed", "headers", "messages", "cbor", "door", "xwing_draft11")
         assertEquals(emptySet(), v.keys - read, "sections in spec/vectors.json this runner does not run")
     }
 }

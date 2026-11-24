@@ -16,8 +16,8 @@ const person = (i) => { const keys = fb.generateKeypair(), enc = fb.generateEncr
 // Alice writes one public note then one sealed block, sealed to Bob and to herself. Eve is a third person the block is not sealed to.
 function world() {
   const alice = person(0), bob = person(1), eve = person(2)
-  const note = fb.write('thing', { kind: 'note', name: 'public note' }, {}, { author: alice.id, key: alice.keys, held: [alice.genesis], at: at(3), audience: 'public' })
-  const composed = fb.write('observe', { kind: 'note', text: SECRET }, {}, { author: alice.id, key: alice.keys, held: [alice.genesis, note], at: at(4), audience: [bob.id, alice.id] })
+  const note = fb.write('thing', { kind: 'note', name: 'public note' }, {}, { author: alice.id, key: alice.keys, blocks: [alice.genesis], at: at(3), audience: 'public' })
+  const composed = fb.write('observe', { kind: 'note', text: SECRET }, {}, { author: alice.id, key: alice.keys, blocks: [alice.genesis, note], at: at(4), audience: [bob.id, alice.id] })
   const { salts, ...signed } = composed
   const message = fb.sealCopy(signed, { keys: [bob.enc.public_key_encrypt, alice.enc.public_key_encrypt], reveals: [fb.revealFor(salts, bob.id), fb.revealFor(salts, alice.id)] })
   return { alice, bob, eve, note, signed, message, hash: signed.hash }
@@ -97,7 +97,7 @@ test('a reader it is not sealed to does not get it', async () => {
   assert.equal(host.exportRecord([], { forSigner: w.bob.id }).copies.length, 1)
   // over HTTP the same: the unsigned export holds no copies at all
   const { s, url } = await serveHost(host)
-  // F7: an unsigned export names the authors whose record it asks for; the whole store is the owner's
+  // an unsigned export names the authors whose record it asks for; the whole store is the owner's
   assert.equal((await fetch(url + '/export')).status, 401)
   const plain = await (await fetch(url + `/export?author=${w.alice.id}`)).json()
   const eveExport = await post(url, '/export', signedPull(w.eve, host))
@@ -171,7 +171,7 @@ test('a private body held in the clear leaves by no door: pull, export (plain an
   assert.ok(!out(host.exportRecord([w.alice.id], { forSigner: w.bob.id })), 'signed export, even for one in the audience')
   assert.ok(!out(host.exportRecord([], { copies: 'all' })), 'the owner\'s export')
   const { s, url } = await serveHost(host)
-  // F7: an unsigned export names the authors whose record it asks for; the whole store is the owner's
+  // an unsigned export names the authors whose record it asks for; the whole store is the owner's
   assert.equal((await fetch(url + '/export')).status, 401)
   const plain = await (await fetch(url + `/export?author=${w.alice.id}`)).json()
   s.close()

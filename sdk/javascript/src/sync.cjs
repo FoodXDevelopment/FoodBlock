@@ -17,15 +17,15 @@ const freshness = ({ node, keys = [], highest, issued = [] } = {}) => ({ node, k
 const messageRefusals = (message, options = {}) => door.messageRefusals(message || {}, options.fields || require('./spec.cjs').CONVENTIONS.messages.signed_pull, freshness(options))
 const pullRefusals = (message, options = {}) => door.pullRefusals(message || {}, freshness(options))
 const pushRefusals = (message, options = {}) => door.pushRefusals(message || {}, freshness(options))
-const matches = (block, filter = {}, held) => door.matches(block, filter || {}, held)
+const matches = (block, filter = {}, blocks) => door.matches(block, filter || {}, blocks)
 const headsOf = door.headsOf
 /**
  * Answer a pull from a node's arrival log [{ n, block, copies? }]. Signed by the node when `privateKey` is given. The node's own
  * choices are stated, never filled: `cap` (the most blocks one answer carries, at least 1) and `servesPairs` (true: the other half of a
  * forked pair goes with any answer that includes one; false: only what matches). A missing or mistyped one is an error.
  */
-const answerPull = (log, request = {}, { node, privateKey, signer, cap, servesPairs, held, suite, through } = {}) =>
-  door.answerPull(log, request, node, privateKey || null, { cap, serves_pairs: servesPairs }, signer || null, held, suite || null, Number.isInteger(through) ? through : null)
+const answerPull = (log, request = {}, { node, privateKey, signer, cap, servesPairs, blocks, suite, through } = {}) =>
+  door.answerPull(log, request, node, privateKey || null, { cap, serves_pairs: servesPairs }, signer || null, blocks, suite || null, Number.isInteger(through) ? through : null)
 const answerSignedBy = (answer, nodeKeys) => door.answerSignedBy(answer, [].concat(nodeKeys || []))
 const recipientsOf = (forWhom, hash) => door.recipientsOf(forWhom ?? null, hash == null ? '' : String(hash))
 const pushRequest = (messages, forWhom) => door.pushRequest(messages, forWhom ?? null)
@@ -36,13 +36,13 @@ const strictPush = (text) => door.strictPush(String(text))
  * and sealed header messages { header, header_signature, envelope? }. Options: `takesPairs` (the node's own stated choice, required: true
  * takes the blocks of a forked pair as well as listing them, false takes neither) and `schemas`. Validity reads no arrival (core.md, section 8).
  */
-function accept(incoming, held = [], { takesPairs, schemas } = {}) {
-  const blocks = list(incoming), answer = door.accept(blocks, held, { takes_pairs: takesPairs }, schemas ? list(schemas) : null)
+function accept(incoming, blocks = [], { takesPairs, schemas } = {}) {
+  const incomingBlocks = list(incoming), answer = door.accept(incomingBlocks, blocks, { takes_pairs: takesPairs }, schemas ? list(schemas) : null)
   // the door names what it takes by the id the node computed, in the suite of the key its pieces name (core.md, section 2); a sealed
   // message by its header's hash
-  const byHash = new Map(blocks.map((block) => [block.hash ?? block.header?.hash, block]))
-  const all = [...list(held), ...blocks]
-  const named = (hash) => byHash.get(hash) || (() => { for (const block of blocks) if (block.type && door.idOf(block, all) === hash) return { ...block, hash }; return null })()
+  const byHash = new Map(incomingBlocks.map((block) => [block.hash ?? block.header?.hash, block]))
+  const all = [...list(blocks), ...incomingBlocks]
+  const named = (hash) => byHash.get(hash) || (() => { for (const block of incomingBlocks) if (block.type && door.idOf(block, all) === hash) return { ...block, hash }; return null })()
   return { ...answer, taken: answer.taken.map(named) }
 }
 /**
@@ -56,7 +56,7 @@ function admissionRefusals(block, receiver, blocks, admission, asksToday) {
   return door.admissionRefusals(block, receiver, blocks, admission, asksToday)
 }
 /** What a door log's signed words show (nodes.md, The arrival log): { left_out, stopped_short }. */
-const logShown = (receipts, request, answer, held = []) => door.logShown(list(receipts), request, answer, list(held))
+const logShown = (receipts, request, answer, blocks = []) => door.logShown(list(receipts), request, answer, list(blocks))
 /** Whether her export is whole (nodes.md, A host): { whole, lacks }. `log` names the door log; `last` is the receipt she holds. */
 const exportWhole = (document, log, last) => door.exportWhole(document, String(log), String(last))
 const residencyRefusals = (block, holdsIn) => door.residencyRefusals(block, holdsIn || [])

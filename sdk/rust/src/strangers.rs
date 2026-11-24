@@ -77,7 +77,7 @@ pub fn short_reply(answer: &Value) -> Option<String> {
     Some(format!("{}{}", profile.get("prefix")?.as_str()?, b64url(&bytes)))
 }
 
-/// A short reply rebuilt (profiles/short-form.md, way 1): for each held block whose id starts with the 5 bytes, the answer template is
+/// A short reply rebuilt (profiles/short-form.md, way 1): for each given block whose id starts with the 5 bytes, the answer template is
 /// filled with the signer's id, the head of each key of hers the receiver holds, `refs.key` from her list (none for her genesis key) and
 /// the reply's values; the block whose signature opens is the block. An accept is a `promise` deriving from a `readback` for the block
 /// answered; a decline an `observe`. None when none opens: nothing was said.
@@ -88,7 +88,7 @@ pub fn short_reply_open(text: &str, signer: &str, blocks: &[Value]) -> Option<Va
     if bytes.len() < 64 + 5 + 1 + 6 + 1 {
         return None;
     }
-    // 1.9 3a-10: a short reply opens only from its exact spelling: strict base64url, no padding, `seq` in its fewest bytes (no leading
+    // a short reply opens only from its exact spelling: strict base64url, no padding, `seq` in its fewest bytes (no leading
     // zero). Any other text opens nothing.
     if b64url(&bytes) != body || bytes[76] == 0 || bytes.len() > 76 + 8 {
         return None;
@@ -97,7 +97,7 @@ pub fn short_reply_open(text: &str, signer: &str, blocks: &[Value]) -> Option<Va
     let status = profile.get("answers")?.get(crate::block::hex(&[answer]))?.as_str()?.to_string();
     let ms = at.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);
     let seq = seq.iter().fold(0u64, |acc, b| acc << 8 | *b as u64);
-    let index = crate::js::held_index(blocks);
+    let index = crate::js::blocks_index(blocks);
     let prefix = crate::block::hex(answered);
     let sig = crate::block::hex(sig);
     for x in index.values().filter(|b| hash_of(b).rsplit(':').next().is_some_and(|h| h.starts_with(&prefix))) {
@@ -151,13 +151,13 @@ pub fn code_matches(text: &str, id: &str) -> bool {
 }
 
 /// The party a sender's block speaks for (authority.md, Who a block speaks for): the one `speaks_for` definition, scope test and
-/// all, read in the blocks held. Without a block, or one whose author is not the sender, no one beyond the sender. A micro has no
+/// all, read in the blocks given. Without a block, or one whose author is not the sender, no one beyond the sender. A micro has no
 /// circle fold: it knows only the author.
 fn principal(sender: &str, block: Option<&Value>, index: &Index) -> Option<String> {
     let block = block.filter(|b| rs(b, "author") == Some(sender))?;
     #[cfg(feature = "folds")]
     {
-        // the block may not be held yet (a first message being checked): read it as if it were
+        // the block may not be given yet (a first message being checked): read it as if it were
         let added = !index.contains_key(hash_of(block));
         let mut read;
         let index = if added {
@@ -176,7 +176,7 @@ fn principal(sender: &str, block: Option<&Value>, index: &Index) -> Option<Strin
     }
 }
 
-/// namesOf(sender): everyone a sender is named by (consent.md): itself, its operators, and whom its block speaks for.
+/// Everyone a sender is named by (consent.md, Consent follows the principal): itself, and whom its block speaks for.
 /// Consent follows the principal, so a word about any of them is a word about the sender.
 fn names_of(sender: &str, block: Option<&Value>, index: &Index) -> Vec<String> {
     let mut names = vec![sender.to_string()];
@@ -203,22 +203,22 @@ fn is_hers(block: &Value, person: &str, index: &Index) -> bool {
 
 /// The `consent` fold: a person's live word about a sender (consent.md). The person is the block's
 /// `refs.from`, else its author. The person's own blocks (backed by them) count for every word and bind every sender. Anyone else may
-/// record a `stop`, and it binds only the recorder itself: the sender is the recorder, its operator, or an autonomous system under
-/// that operator. Only the person lifts a stop: by her own block, or by a `yes` a recorder outside the asker's side
+/// record a `stop`, and it binds only the recorder's own side: the recorder, and every sender whose block speaks for the recorder (a
+/// tool under the recorder's grant). Only the person lifts a stop: by her own block, or by a `yes` a recorder outside the asker's side
 /// received from her, with the stop in its causal past. The live word is the latest block that names the sender
-/// (or the sender's operator), else the latest that names no one, in causal order (a recorder's chain orders its own
+/// (or one it is named by), else the latest that names no one, in causal order (a recorder's chain orders its own
 /// blocks). A `stop` wins any tie; a tie between other words leaves no live word; a tie that agrees stands, naming the
 /// lowest hash. There is no public list: the fold reads only the blocks the caller holds. `{ word, block }`, both null
 /// when there is none.
 pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Option<&Value>) -> Value {
-    let mut index = crate::js::held_index(blocks.iter());
-    crate::identity::mark_forks(&mut index);
-    let words = crate::spec().list("folds.consent.word_values");
+    let mut index = crate::js::blocks_index(blocks.iter());
+    crate::forks::mark_forks(&mut index);
+    let words = crate::spec().convention("folds.consent.word_values");
     let asker_side: Vec<String> = sender.map_or(vec![], |s| names_of(s, block, &index));
     let all: Vec<&Value> = index
         .values()
         .filter(|b| {
-            if type_of(b) != "observe" || ss(b, "kind") != Some("consent") || !crate::identity::counts_in(b, &index) {
+            if type_of(b) != "observe" || ss(b, "kind") != Some("consent") || !crate::forks::counts_in(b, &index) {
                 return false;
             }
             if !ss(b, "word").is_some_and(|w| words.iter().any(|x| x == w)) {
@@ -237,9 +237,9 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Opti
             if rs(b, "from").or(Some(author)) != Some(person) {
                 return false;
             }
-            // A recorder's block counts only for the recorder's own side (its own sending, its operator's, and what acts under them): a stop
+            // A recorder's block counts only for the recorder's own side (the recorder, and every sender whose block speaks for it): a stop
             // it recorded binds that side alone, and a yes it recorded lifts only a stop the same recorder recorded, in its causal past. Her own
-            // stop is lifted by her own block alone: no one else's yes reaches it (consent.md, Only the person lifts a STOP; clean round 1, c1/c2).
+            // stop is lifted by her own block alone: no one else's yes reaches it (consent.md, Only the person lifts a STOP).
             let by_asker = asker_side.iter().any(|a| a == author);
             match ss(b, "word") {
                 Some("stop") => by_asker,
@@ -295,29 +295,29 @@ pub fn consent(person: &str, sender: Option<&str>, blocks: &[Value], block: Opti
     }
 }
 
-/// Whether a block is an autonomous system's: its author is an actor of kind `agent` or `machine`, or one an operator answers for
-/// (identity.md), or it names a grant in `refs.under` (consent.md).
+/// Whether a block is an autonomous system's: its author is an actor of kind `agent` or `machine` (core.md, section 1), or it names a
+/// grant in `refs.under` (consent.md).
 pub fn is_agents(block: &Value, index: &Index) -> bool {
     let author = rs(block, "author");
     let kind_agent = author.and_then(|a| index.get(a)).is_some_and(crate::identity::autonomous);
     kind_agent || rf(block, "under").is_some()
 }
 
-/// A stranger to a sender: someone who has accepted none of the sender's blocks, countered none, opened no deal with the sender (decision
-/// H13), and has no live YES for the sender.
+/// A stranger to a sender: someone who has accepted none of the sender's blocks, countered none, opened no deal with the sender,
+/// and has no live YES for the sender.
 pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], block: Option<&Value>) -> bool {
-    let mut index = crate::js::held_index(blocks.iter());
+    let mut index = crate::js::blocks_index(blocks.iter());
     // a forked answer binds no one (core.md, invariant 3): only an answer that counts makes the sender no stranger
-    crate::identity::mark_forks(&mut index);
-    // consent follows the principal (consent.md): the sender is named by itself, its operators, and the grantor of the live grant it
-    // acts under, so one who answered the principal is no stranger to the principal's hands
+    crate::forks::mark_forks(&mut index);
+    // consent follows the principal (consent.md): the sender is named by itself and whom its block speaks for (the grantor of the live
+    // grant it acts under), so one who answered the principal is no stranger to the principal's hands
     let names = names_of(sender, block, &index);
     let sender_blocks: Vec<&str> = index
         .values()
         .filter(|b| rs(b, "author").is_some_and(|a| names.iter().any(|n| n == a)))
         .map(|b| hash_of(b))
         .collect();
-    // Only her accept, her counter-offer or a deal she opened with him makes a sender no stranger (decision H13): a counted block of the
+    // Only her accept, her counter-offer or a deal she opened with him makes a sender no stranger: a counted block of the
     // receiver's that answers one of the sender's blocks `accepted`, or answers it as a counter (a promise with no status), or a promise of
     // hers, no answer and no stop, that names the sender as a side. A declined or stopped answer, or any other answer, keeps him a stranger.
     let dealt = index.values().any(|b| {
@@ -326,10 +326,10 @@ pub fn is_stranger(receiver: &str, sender: &str, blocks: &[Value], block: Option
         let names_him = ["from", "to"].iter().any(|k| rs(b, k).is_some_and(|v| names.iter().any(|n| n == v)));
         ((answers_his && (ss(b, "status") == Some("accepted") || (promise && st(b, "status").is_none())))
             || (promise && rf(b, "answers").is_none() && rf(b, "updates").is_none() && st(b, "status").is_none() && names_him))
-            && crate::identity::binds_signer(b, &index)
+            && crate::forks::binds_signer(b, &index)
             && (rs(b, "author") == Some(receiver) || is_hers(b, receiver, &index))
     });
-    // a `yes` ends strangerhood only as her own word: a recorder's yes counts only as the lift of a stop it recorded, never as her consent (release 8)
+    // a `yes` ends strangerhood only as her own word: a recorder's yes counts only as the lift of a stop it recorded, never as her consent
     let word = consent(receiver, Some(sender), blocks, block);
     let yes = word.get("word").and_then(Value::as_str) == Some("yes")
         && word.get("block").and_then(Value::as_str).and_then(|h| index.get(h)).is_some_and(|b| is_hers(b, receiver, &index));
@@ -352,7 +352,7 @@ pub fn admission_refusals(
     asks_today: u64,
 ) -> Vec<Refusal> {
     let mut w = Vec::new();
-    let index = crate::js::held_index(blocks.iter());
+    let index = crate::js::blocks_index(blocks.iter());
     let sender = rs(block, "author").unwrap_or("");
     let parties: Vec<&str> = list(admission.get("parties"));
     // A listed party is exempt from the count only for a block whose key still speaks for that party (nodes.md, Admission): a block
@@ -369,7 +369,7 @@ pub fn admission_refusals(
         }
     }
     // Only a rule that states an order channel refuses an autonomous system's first block: with none, what the node does is
-    // its own software's choice, never the protocol's (decision F1, as E8 for per_stranger).
+    // its own software's choice, never the protocol's.
     let channel = get(admission, "order_channel");
     if let Some(channel) = channel.filter(|_| is_agents(block, &index) && is_stranger(receiver, sender, blocks, Some(block))) {
         let t = type_of(block);
@@ -390,7 +390,7 @@ pub fn admission_refusals(
 /// in her own step: a block of hers with the reading in `derives_from` that names someone other than herself in
 /// `refs.to` or `refs.to_owner`. True when `person` has done so among these blocks.
 pub fn reading_is_persons_claim(reading: &Value, person: &str, blocks: &[Value]) -> bool {
-    let index = crate::js::held_index(blocks);
+    let index = crate::js::blocks_index(blocks);
     ss(reading, "kind") == Some("reading")
         && index.values().any(|b| {
             rs(b, "author") == Some(person)

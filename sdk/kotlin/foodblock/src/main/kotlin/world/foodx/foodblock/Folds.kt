@@ -90,9 +90,6 @@ object Identity {
 }
 
 object Grant {
-    /** Why an act that cannot be undone is not live: empty when it has a specific accepted ask or a grant that names it with a limit. */
-    fun whyNotLiveUndo(block: JsonObject, blocks: List<JsonObject>): List<String> =
-        Door.whyNotLiveUndo(block, JsonArray(blocks)).strings()
 
     /** The one reading of a grant's `state.scope` (authority.md), with every default the spec states and nothing else filled in. A null scope reads as an empty one. A non-empty `junk` means the grant is held to no word. */
     fun scopeReading(scope: JsonElement? = null): JsonObject = Door.scopeReading(scope ?: JsonNull).obj()
@@ -132,8 +129,8 @@ object Grant {
     /** Her deadline's lowest offer, read on the meter's line: `{ offer, received, cutoff, why }`. */
     fun lowestOffer(grant: JsonObject, blocks: List<JsonObject>): JsonObject = Door.lowestOffer(grant, JsonArray(blocks)).obj()
 
-    /** What a promise's terms come to at a chosen quantity (else the terms'), or null when it cannot be computed. */
-    fun termsTotal(terms: JsonElement? = null, quantity: JsonElement? = null): JsonElement = Door.termsTotal(terms ?: JsonNull, quantity ?: JsonNull)
+    /** What a promise's terms come to for an answer's chosen lines ([{ id, quantity }], else the terms'), or null when it cannot be computed. */
+    fun termsTotal(terms: JsonElement? = null, lines: JsonElement? = null): JsonElement = Door.termsTotal(terms ?: JsonNull, lines ?: JsonNull)
 
     /** A duration read (ISO 8601), or null; a time moved by a duration (sign -1 goes back); two durations compared by adding both to one instant (-1, 0, 1). */
     fun parseDuration(text: String? = null): JsonElement = Door.parseDuration(text(text))
@@ -203,8 +200,8 @@ object Fold {
         Door.circleKey(JsonPrimitive(circle), JsonArray(blocks)).obj()
 
     /** Is a machine locked now (authority.md): `{ locked, locks, lifted }`. With no `now`, only a lock that needs no clock stands. */
-    fun machineLock(machine: JsonObject, held: List<JsonObject>, now: String? = null): JsonObject =
-        Door.machineLock(machine, JsonArray(held), text(now)).obj()
+    fun machineLock(machine: JsonObject, blocks: List<JsonObject>, now: String? = null): JsonObject =
+        Door.machineLock(machine, JsonArray(blocks), text(now)).obj()
 
     /** The one party a fold counts a block for (authority.md, Who a block speaks for): its id, or null when it speaks for no one. The block need not be among `blocks` yet; no clock is read. */
     fun speaksFor(block: JsonObject, blocks: List<JsonObject>): String? =
@@ -234,7 +231,7 @@ object Fold {
     /** A circle of IOUs cancelled (promises.md, Clearing). */
     fun clearingApplied(clearing: JsonObject, blocks: List<JsonObject>): JsonObject = Door.clearingApplied(clearing, JsonArray(blocks)).obj()
 
-    /** Whether a judge's ruling releases a stake that names it (promises.md, Rulings): `{ releases, to, amount, ruling, why }`. No reader's clock (1.9 R-C1). */
+    /** Whether a judge's ruling releases a stake that names it (promises.md, Rulings): `{ releases, to, amount, ruling, why }`. No reader's clock (promises.md, Conditions). */
     fun rulingReleases(stake: JsonObject, blocks: List<JsonObject>): JsonObject = Door.rulingReleases(stake, JsonArray(blocks)).obj()
 
     /** What a judge's offer gives back of her fee: `{ settled, releases, to_come, why }`. */
@@ -250,7 +247,7 @@ object Fold {
     fun whereNow(thing: JsonObject, blocks: List<JsonObject>): List<String> =
         Door.whereNow(thing, JsonArray(blocks)).strings()
 
-    /** Who owns an instance, read from the blocks alone (no clock; 1.9 3c-6). */
+    /** Who owns an instance, read from the blocks alone (no clock; folds.md). */
     fun ownership(instance: JsonObject, blocks: List<JsonObject>): Ownership {
         val o = Door.ownership(instance, JsonArray(blocks)).jsonObject
         return Ownership(
@@ -276,7 +273,7 @@ object Fold {
     fun useShown(place: JsonObject, blocks: List<JsonObject>, keepers: JsonElement? = null): JsonElement = Door.useShown(place, JsonArray(blocks), keepers ?: JsonNull)
     fun releaseShown(subject: JsonObject, blocks: List<JsonObject>): JsonElement = Door.releaseShown(subject, JsonArray(blocks))
 
-    /** A pot read from its head block and the blocks held; no clock (1.9 3c-6). */
+    /** A pot read from its head block and the blocks given; no clock (folds.md). */
     fun pot(head: JsonObject, blocks: List<JsonObject>, now: String? = null): JsonElement = Door.pot(head, JsonArray(blocks), text(now))
 
     /** Where `who` says money to them goes (promises.md, Where to pay me), or null. */
@@ -288,14 +285,14 @@ object Fold {
     // ---- The read-back (readings): no protocol op; the door's class `reading` ----
 
     /** The read-back of a block to the person `to`: `{ answer, text, state }`. */
-    fun readback(block: JsonObject, held: List<JsonObject>, to: String? = null, renderer: String? = null, digits: Long? = null): JsonObject =
-        Door.readback(block, JsonArray(held), text(to), text(renderer), digits?.let { JsonPrimitive(it) } ?: JsonNull).obj()
+    fun readback(block: JsonObject, blocks: List<JsonObject>, to: String? = null, renderer: String? = null, digits: Long? = null): JsonObject =
+        Door.readback(block, JsonArray(blocks), text(to), text(renderer), digits?.let { JsonPrimitive(it) } ?: JsonNull).obj()
 
     /** A renderer's words for an answer. */
     fun render(answer: JsonElement, renderer: String): JsonElement = Door.render(answer, JsonPrimitive(renderer))
 
     /** A second reader's redo of a read-back: `{ same, readback, lacks, not_run }`. */
-    fun readbackRedo(rb: JsonObject, held: List<JsonObject>): JsonObject = Door.readbackRedo(rb, JsonArray(held)).obj()
+    fun readbackRedo(rb: JsonObject, blocks: List<JsonObject>): JsonObject = Door.readbackRedo(rb, JsonArray(blocks)).obj()
 }
 
 /**
@@ -326,9 +323,9 @@ object Sync {
      * Sealed headers are judged here too: there is no separate op. Validity reads no arrival (core.md, section 8).
      */
     fun accept(
-        incoming: List<JsonObject>, held: List<JsonObject>, takesPairs: Boolean,
+        incoming: List<JsonObject>, blocks: List<JsonObject>, takesPairs: Boolean,
         schemas: List<JsonObject>? = null, copies: JsonObject? = null, push: JsonObject? = null,
-    ): JsonObject = Door.accept(JsonArray(incoming), JsonArray(held), buildJsonObject {
+    ): JsonObject = Door.accept(JsonArray(incoming), JsonArray(blocks), buildJsonObject {
         put("takes_pairs", takesPairs)
         copies?.let { put("copies", it) }
     }, schemas?.let(::JsonArray) ?: JsonNull, push ?: JsonNull).obj()
@@ -339,9 +336,9 @@ object Sync {
      */
     fun answerPull(
         log: List<JsonObject>, request: JsonObject, node: String, privateKey: String, cap: Long, servesPairs: Boolean,
-        asker: String? = null, held: List<JsonObject>? = null, suite: String? = null, through: Long? = null,
+        asker: String? = null, blocks: List<JsonObject>? = null, suite: String? = null, through: Long? = null,
     ): JsonObject = Door.answerPull(JsonArray(log), request, JsonPrimitive(node), JsonPrimitive(privateKey),
-        buildJsonObject { put("cap", cap); put("serves_pairs", servesPairs) }, text(asker), held?.let(::JsonArray) ?: JsonNull, text(suite),
+        buildJsonObject { put("cap", cap); put("serves_pairs", servesPairs) }, text(asker), blocks?.let(::JsonArray) ?: JsonNull, text(suite),
         through?.let { JsonPrimitive(it) } ?: JsonNull,
     ).obj()
 
@@ -409,8 +406,8 @@ object Sync {
     fun pullRequest(request: JsonObject = JsonObject(emptyMap())): JsonObject = Door.pullRequest(request).obj()
 
     /** What a door log's signed words show (nodes.md, The arrival log): `{ left_out, stopped_short }`. */
-    fun logShown(receipts: List<JsonObject>, request: JsonObject, answer: JsonObject, held: List<JsonObject> = emptyList()): JsonObject =
-        Door.logShown(JsonArray(receipts), request, answer, JsonArray(held)).obj()
+    fun logShown(receipts: List<JsonObject>, request: JsonObject, answer: JsonObject, blocks: List<JsonObject> = emptyList()): JsonObject =
+        Door.logShown(JsonArray(receipts), request, answer, JsonArray(blocks)).obj()
 
     /** Whether her export is whole (nodes.md, A host): `{ whole, lacks }`. `log` names the door log; `last` is the receipt she holds. */
     fun exportWhole(document: JsonObject, log: String, last: String): JsonObject =
@@ -437,11 +434,11 @@ object Strangers {
     fun readingIsPersonsClaim(reading: JsonObject, person: String, blocks: List<JsonObject>): Boolean =
         Door.readingIsPersonsClaim(reading, JsonPrimitive(person), JsonArray(blocks)).bool()
 
-    /** Tasks profile: whether a `reading_condition` holds on the readings held, at the reader's clock. */
+    /** Tasks profile: whether a `reading_condition` holds on the readings given, at the reader's clock. */
     fun readingConditionHolds(condition: JsonObject, blocks: List<JsonObject>, now: String): Boolean =
         Door.readingConditionHolds(condition, JsonArray(blocks), JsonPrimitive(now)).bool()
 
-    /** Whether a condition holds on the blocks held, at the reader's clock (promises.md, Conditions): settled, a deed, a reading or a signal.
+    /** Whether a condition holds on the blocks given, at the reader's clock (promises.md, Conditions): settled, a deed, a reading or a signal.
      *  It reads three ways: true, false, or null for a condition of a shape the protocol does not read. */
     fun conditionHolds(condition: JsonObject, blocks: List<JsonObject>, now: String): Boolean? =
         Door.conditionHolds(condition, JsonArray(blocks), JsonPrimitive(now)).let { if (it is JsonNull) null else it.bool() }
@@ -449,7 +446,7 @@ object Strangers {
     /** The short reply (profiles/short-form.md, way 1): `FB1 ` and what the receiver cannot rebuild of her signed answer. */
     fun shortReply(answer: JsonObject): JsonElement = Door.shortReply(answer)
 
-    /** The answer rebuilt from a short reply among the blocks held (null: nothing was said). */
+    /** The answer rebuilt from a short reply among the blocks given (null: nothing was said). */
     fun shortReplyOpen(text: String, signer: String, blocks: List<JsonObject>): JsonElement =
         Door.shortReplyOpen(JsonPrimitive(text), JsonPrimitive(signer), JsonArray(blocks))
 }

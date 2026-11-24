@@ -8,11 +8,10 @@ why_not_under = door.why_not_under
 why_not_live = door.why_not_live
 is_live = door.is_live
 ancestors = door.ancestors
-why_not_live_undo = door.why_not_live_undo  # why an act that cannot be undone is not live: [] when it has a specific accepted ask or a grant that names it with a limit
 scope_within = door.scope_within
 scope_refusals = door.scope_refusals
 compare_durations = door.compare_durations
-terms_total = door.terms_total  # what a promise's terms come to at a chosen quantity (an amount), or None when it cannot be computed
+terms_total = door.terms_total  # what a promise's terms come to for the answer's chosen lines ([{id, quantity}] or None; an amount), or None when it cannot be computed
 
 
 def scope_reading(scope=None) -> dict:

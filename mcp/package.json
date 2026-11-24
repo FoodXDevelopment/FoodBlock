@@ -1,7 +1,7 @@
 {
   "name": "foodblock-mcp",
   "version": "1.9.0",
-  "description": "MCP server for the FoodBlock 1.9 protocol: any AI agent reads and writes signed FoodBlocks",
+  "description": "MCP server for the FoodBlock protocol: any AI agent reads and writes signed FoodBlocks",
   "type": "module",
   "main": "server.js",
   "bin": {

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
-// The random-world test (part 08, section 7.2 of the 1.9 plan): the Rust core against the spec-only oracle (spec/oracle/fb.cjs), on
-//   1. the fixed corpus (tools/fuzz/corpus/): every known engine split of part 08's table that stages 0 to 3 can express, each a world
-//      named by its table row and the report that found it, plus the old tester's 1.7-shaped reproducers (corpus/legacy-1.7/);
-//   2. seeded random worlds in the shapes stages 0 to 3 use (world18.cjs), every door op they answer, compared byte for byte (P1);
-//   3. the metamorphic properties on those worlds, held by each engine on its own: P2 order, P3 unrelated blocks, P4 less never otherwise,
+// The random-world test: the Rust core against the spec-only oracle (spec/oracle/fb.cjs), on
+//   1. the fixed corpus (tools/fuzz/corpus/): every known engine split that these worlds can express, each a world
+//      named by its table row, plus the reduced worlds the fuzzer found (corpus/found/);
+//   2. seeded random worlds (random-worlds.cjs), every door op they answer, compared byte for byte (P1);
+//   3. the metamorphic properties on those worlds, given by each engine on its own: P2 order, P3 unrelated blocks, P4 less never otherwise,
 //      P5 never "nobody" where a signed accepted word names someone (a finding, never a failure), P6 twice is once, P7 conservation,
 //      P8 no call traps or throws.
 // Each disagreement or property break is reduced to the smallest world that shows it and named by its cause. A name listed in
@@ -29,21 +29,20 @@ const acceptProj = a => ({
   refused: Object.entries((a.refused || []).reduce((m, r) => { (m[r.hash] = m[r.hash] || new Set()).add(r.code); return m; }, {})).map(([hash, c]) => ({ hash, codes: [...c].sort() })).sort(byHash),
   equivocations: (a.equivocations || []).map(p => [...p].sort()).sort(),
 });
-const members = s => s && Object.fromEntries(Object.entries(s.members || {}).map(([k, m]) => [k, { roles: [...(m.roles || [])].sort(), grant: m.grant, counted_to: m.counted_to }]));
 const sorted = l => (Array.isArray(l) ? [...l].sort() : l);
 const door = (op) => (...a) => fb.door(op, ...a);
 // Each op: how to call the oracle, and how to project both answers to what the spec decides. The one table every checker reads: this
-// tester, the audit (test/audit/run.cjs) and the simulation check (tools/sim/oracle-check.cjs). A fold of protocol.json with no entry here
+// tester and the audit (test/audit/run.cjs). A fold of protocol.json with no entry here
 // fails them all. An op with no entry is asked of the oracle's door by name and compared whole (`detail` beside a `code` left out).
 const ORDER = Object.keys(require('../../spec/protocol.json').refusals.codes.block);
 const OPS = {
-  valid: { oracle: (b, held, s) => fb.door('valid', b, held, s), proj: l => codes(l) }, // core.md section 8: the refusal is every code of the first check that finds anything, in list order
+  valid: { oracle: (b, blocks, s) => fb.door('valid', b, blocks, s), proj: l => codes(l) }, // core.md section 8: the refusal is every code of the first check that finds anything, in list order
   read: { oracle: door('read'), proj: l => codes(l) },
   strict_text: { oracle: t => fb.strictText(t), proj: l => codes(l) },
   check_chain: { oracle: (blocks, id) => fb.chainFold(blocks, id), proj: c => ({ ...pick(c, ['head', 'length', 'ok', 'gaps', 'skips', 'broken']), equivocations: (c.equivocations || []).map(p => [...p].sort()).sort() }) },
   next_link: { oracle: door('next_link'), proj: x => x },
   fork_pairs: { oracle: door('fork_pairs'), proj: l => l.map(p => [...p].sort()).sort() },
-  // the whole answer: the 1.7 projection (keys, frozen, operators) read a field the 1.8 oracle no longer gives, and threw (a harness bug, fixed)
+  // the whole answer, not a projection of fields that may be absent
   identity_state: { oracle: door('identity_state'), proj: s => s },
   stands: { oracle: door('stands'), proj: x => x },
   key_timeline: { oracle: door('key_timeline'), proj: x => x },
@@ -61,7 +60,7 @@ const OPS = {
   ruling_releases: { oracle: door('ruling_releases'), proj: ({ why, ...rest }) => rest },
   gives: { oracle: door('gives'), proj: x => x },
   scope_reading: { oracle: door('scope_reading'), proj: x => x },
-  circle_state: { oracle: door('circle_state'), proj: s => s }, // 1.9 stage 6: the whole answer
+  circle_state: { oracle: door('circle_state'), proj: s => s }, // the whole answer
   row_holds: { oracle: door('row_holds'), proj: x => x },
   ways_in: { oracle: door('ways_in'), proj: x => x },
   circle_versions: { oracle: door('circle_versions'), proj: x => x },
@@ -70,11 +69,11 @@ const OPS = {
   why_not_under: { oracle: door('why_not_under'), proj: l => (Array.isArray(l) ? l.map(({ detail, ...rest }) => rest) : l) }, // `detail` is a sentence, never compared
   made_from: { oracle: door('made_from'), proj: x => x },
   // the oracle's own whereNow, as the audit has always compared it; its door answers [] for a thing its pool does not hold (corpus/z-door-where-now.cjs asks that)
-  where_now: { oracle: (t, held) => fb.whereNow(t, held), proj: sorted },
+  where_now: { oracle: (t, blocks) => fb.whereNow(t, blocks), proj: sorted },
   shares_on: { oracle: door('shares_on'), proj: x => x },
   machine_lock: { oracle: door('machine_lock'), proj: x => x },
   pot: { oracle: door('pot'), proj: x => x },
-  recovery_shown: { oracle: (id, held, now, arr) => fb.door('recovery_shown', id, held, now, arr), proj: x => x },
+  recovery_shown: { oracle: (id, blocks, now, arr) => fb.door('recovery_shown', id, blocks, now, arr), proj: x => x },
   release_shown: { oracle: door('release_shown'), proj: x => x },
   bids_shown: { oracle: door('bids_shown'), proj: x => x },
   not_free_shown: { oracle: door('not_free_shown'), proj: x => x },
@@ -82,7 +81,7 @@ const OPS = {
   use_shown: { oracle: door('use_shown'), proj: x => x },
   accept: { oracle: door('accept'), proj: acceptProj }, // choices { takes_pairs }: the node's own, both values drawn
   answer_pull: { oracle: door('answer_pull'), proj: a => ({ n: a.blocks.map(x => x.n), next: a.next }) },
-  accept_sealed: { oracle: (inc, held, choices) => fb.door('accept_sealed', inc, held, choices), proj: acceptProj },
+  accept_sealed: { oracle: (inc, blocks, choices) => fb.door('accept_sealed', inc, blocks, choices), proj: acceptProj },
   admission_refusals: { oracle: (...a) => fb.admissionRefusals(...a), proj: codes },
   refusals: { oracle: (t, s, r) => fb.refusals(t, s, r), proj: codes },
   hash: { oracle: (t, s, r) => fb.hashOfBlock({ type: t, state: s, refs: r }, 'std'), proj: x => x },
@@ -92,7 +91,7 @@ const OPS = {
   pull_refusals: { oracle: (m, f) => fb.pullRefusals(m, f), proj: codes },
   push_refusals: { oracle: (m, f) => fb.pushRefusals(m, f), proj: codes },
   strict_push: { oracle: t => fb.strictPush(t), proj: x => (Array.isArray(x) ? x.map(l => (Array.isArray(l) ? codes(l) : l && l.code ? l.code : l)) : x) },
-  // 1.9 stage 7: `open_copy` answers the opened block in each engine's own shape (as core-set-a's compare): the same block, by its id; and
+  // `open_copy` answers the opened block in each engine's own shape (as the records stories' compare): the same block, by its id; and
   // the core's door ops that are library calls in the oracle
   open_copy: { oracle: door('open_copy'), proj: x => x && x.hash },
   padded_size: { oracle: n => fb.padSize(n), proj: x => x },
@@ -109,7 +108,7 @@ function coreAsk(op, args) {
   try { return { ok: coreCall().call(op, ...JSON.parse(JSON.stringify(args))) }; }
   catch (e) {
     if (e && e.kind) return { error: e.kind, ...(e.code ? { code: e.code } : {}), message: String(e.message).split('\n')[0] };
-    return { error: 'internal', message: `the host saw ${e && e.constructor && e.constructor.name}: ${String(e && e.message).split('\n')[0]}` }; // a WebAssembly trap or a stack overflow (C1, P8)
+    return { error: 'internal', message: `the host saw ${e && e.constructor && e.constructor.name}: ${String(e && e.message).split('\n')[0]}` }; // a WebAssembly trap or a stack overflow (P8)
   }
 }
 function runRust(reqs) {
@@ -242,12 +241,12 @@ function main() {
 
   // 2 and 3. random worlds and their properties
   if (!flag('corpus-only')) {
-    const { casesOf18, checkProp, checkAnswer } = require('./world18.cjs');
+    const { randomCases, checkProp, checkAnswer } = require('./random-worlds.cjs');
     const [a, b] = String(arg('seeds', '1-10')).split('-').map(Number), last = b || a;
     const seconds = Number(arg('seconds', 0)), size = Number(arg('size', 30));
     for (let seed = a; seconds ? true : seed <= last; seed++) {
       if (seconds && Date.now() - t0 > seconds * 1000) break;
-      const { cases, props } = casesOf18(seed, size);
+      const { cases, props } = randomCases(seed, size);
       worlds++;
       const ans = coreAnswers(cases);
       cases.forEach((c, i) => {
@@ -271,15 +270,15 @@ function main() {
           const name = `${pr.p} (${en}): ${pr.what}: ${causeOf(br.detail)}`;
           if (!note(name, { group: pr.p, kind: pr.p, op: pr.s.op, detail: br.detail, seed, size: pr.base.length, repro: { op: pr.s.op, args: pr.s.args(pr.base), variant: pr.what } })) continue;
           // reduce: drop blocks from the base while the same property breaks the same way (never the subject)
-          let held = pr.base.slice();
+          let blocks = pr.base.slice();
           const t1 = Date.now();
-          for (let pass = 0; pass < 2; pass++) for (let i = held.length - 1; i >= 0; i--) {
-            if (Date.now() - t1 > 4000 || keeps(held[i], pr.s.subject.hash, held)) continue;
-            const h2 = held.slice(0, i).concat(held.slice(i + 1));
+          for (let pass = 0; pass < 2; pass++) for (let i = blocks.length - 1; i >= 0; i--) {
+            if (Date.now() - t1 > 4000 || keeps(blocks[i], pr.s.subject.hash, blocks)) continue;
+            const h2 = blocks.slice(0, i).concat(blocks.slice(i + 1));
             const b2 = checkProp(pr, ask, h2);
-            if (b2 && `${pr.p} (${en}): ${pr.what}: ${causeOf(b2.detail)}` === name) held = h2;
+            if (b2 && `${pr.p} (${en}): ${pr.what}: ${causeOf(b2.detail)}` === name) blocks = h2;
           }
-          Object.assign(found.get(name), { size: held.length, repro: { op: pr.s.op, args: pr.s.args(held), variant: pr.what, variantArgs: pr.s.args(pr.variant(held)) } });
+          Object.assign(found.get(name), { size: blocks.length, repro: { op: pr.s.op, args: pr.s.args(blocks), variant: pr.what, variantArgs: pr.s.args(pr.variant(blocks)) } });
         }
       }
     }
@@ -325,12 +324,12 @@ function main() {
   process.exit(failing.length ? 1 : 0);
 }
 // The smallest world of a random finding, told by who signed each block and what it is: the seed's world is built again and each id named
-// by the note it was written with ("harry: draw 4"). A block held only as its header is marked [header]; for a property, what the variant
+// by the note it was written with ("harry: draw 4"). A block given only as its header is marked [header]; for a property, what the variant
 // changed is said last.
 const stories = new Map();
 function storyOf(seed, repro) {
   if (!stories.has(seed)) {
-    const g = require('./world18.cjs').makeWorld18(seed, Number(arg('size', 30)));
+    const g = require('./random-worlds.cjs').makeWorld(seed, Number(arg('size', 30)));
     const who = Object.fromEntries(Object.values(g.w.people).map(p => [p.id, p.label]));
     stories.set(seed, new Map([...g.w.byNote].map(([n, b]) => [b.hash, (b.refs && b.refs.author ? (who[b.refs.author] || '?') + ': ' : '') + n.replace(/ \[hand-signed: the writer refused\]/, ' (hand-signed)')])));
   }
@@ -338,7 +337,7 @@ function storyOf(seed, repro) {
   const one = x => (x && x.header ? '[header] ' + (names.get(x.header.hash) || x.header.hash.slice(0, 6)) : x && x.hash ? names.get(x.hash) || x.hash.slice(0, 6) : typeof x === 'string' && names.has(x) ? names.get(x) : null);
   const parts = [];
   repro.args.forEach((a, i) => {
-    if (Array.isArray(a)) { const l = a.map(one).filter(Boolean); if (l.length) parts.push(`held [${l.filter(s => !/^genesis /.test(s)).join('; ')}]`); }
+    if (Array.isArray(a)) { const l = a.map(one).filter(Boolean); if (l.length) parts.push(`blocks [${l.filter(s => !/^genesis /.test(s)).join('; ')}]`); }
     else { const s = one(a); if (s) parts.push(i === 0 ? `asks of ${s}` : s); }
   });
   if (repro.variantArgs) {
@@ -351,6 +350,5 @@ function storyOf(seed, repro) {
 }
 // A fold of protocol.json that nothing here can ask is a hole in every checker: fail, never skip it.
 const unaskable = () => ['folds', 'views'].flatMap(k => Object.entries(k === 'views' ? require('../../spec/conventions.json').views : require('../../spec/protocol.json')[k]).filter(([, f]) => f && f.over && f.ops.some(o => !OPS[o])).map(([n]) => n));
-const casesOf = (seed, size) => require('./world18.cjs').casesOf18(seed, size).cases;
 if (require.main === module) { const hole = unaskable(); if (hole.length) { console.log('no OPS entry for the fold(s) ' + hole.join(', ')); process.exit(1); } main(); }
-else module.exports = { oracleRun, OPS, casesOf, runRust, compare, unaskable, firstDiff, coreAsk, canon };
+else module.exports = { OPS, compare, unaskable, firstDiff };

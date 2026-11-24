@@ -7,7 +7,7 @@ use crate::js::{hash_of, list, rf, rs, ss, st, type_of, Index};
 use crate::order::sees_in;
 use crate::prelude::*;
 
-fn held_with(block: &Value, blocks: &[Value]) -> Index {
+fn blocks_with(block: &Value, blocks: &[Value]) -> Index {
     super::read_all(core::iter::once(block).chain(crate::js::index_of(blocks).values().collect::<Vec<_>>()))
 }
 
@@ -16,12 +16,12 @@ fn held_with(block: &Value, blocks: &[Value]) -> Index {
 /// status, no time limit and no way back: a stop or an `updates` of it is never read here. It is a claim, shown, never a verdict.
 /// Returns `{ shown: [{ block, by, reason, threat, at }], nothing: [{ block, why }] }`, each sorted by block.
 pub fn not_free_shown(block: &Value, blocks: &[Value]) -> Value {
-    let index = held_with(block, blocks);
+    let index = blocks_with(block, blocks);
     let subject = hash_of(block).to_string();
     let author = rs(block, "author").unwrap_or("");
     let mut words: Vec<&Value> = index
         .values()
-        .filter(|b| type_of(b) == "observe" && ss(b, "kind") == Some("not_free") && st(b, "status").is_none() && rs(b, "subject") == Some(subject.as_str()) && crate::identity::counts_in(b, &index))
+        .filter(|b| type_of(b) == "observe" && ss(b, "kind") == Some("not_free") && st(b, "status").is_none() && rs(b, "subject") == Some(subject.as_str()) && crate::forks::counts_in(b, &index))
         .collect();
     words.sort_by_key(|b| hash_of(b).to_string());
     let (mut shown, mut nothing) = (vec![], vec![]);
@@ -49,7 +49,7 @@ fn holder_of(claim: &Value, claimant: &str, index: &Index) -> String {
         .into_iter()
         .flatten()
         .filter_map(|h| index.get(h))
-        .filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && (crate::identity::counts_in(t, index) || crate::identity::fork_burden(t, index)) && sees_in(t, ch, index))
+        .filter(|t| type_of(t) == "transfer" && st(t, "status").is_none() && (crate::forks::counts_in(t, index) || crate::forks::fork_burden(t, index)) && sees_in(t, ch, index))
         .filter_map(|t| {
             let to = list(rf(t, "to_owner")).first()?.to_string();
             let (yes, no, ends) = answers(t, &to, index);
@@ -65,16 +65,15 @@ fn holder_of(claim: &Value, claimant: &str, index: &Index) -> String {
 }
 
 /// A claim of invasion shown (promises.md, A claim of invasion). The claim is an `observe` of kind `invasion`: the accused in `refs.to`, what was
-/// crossed in `refs.subject`, the evidence in `derives_from`. Judges are named by a grant of kind `referee` (`refs.to` the judge, `refs.subject`
-/// the claim) by the claimant (or whoever holds her claim) or by an accused. A ruling is a judge's `confirms` or `defeats` of the claim.
+/// crossed in `refs.subject`, the evidence in `derives_from`. Judges are named by a message `for` the claim stating `judge` (promises.md, A new
+/// term both sides signed), by the claimant (or whoever holds her claim) or by an accused; it is her own word and needs no yes. A ruling is a judge's `confirms` or `defeats` of the claim.
 /// Nothing moves. Returns null when the block is no claim of invasion, else
-/// `{ claimant, holder, evidence, judges: [{ judge, named_by }], rulings: [{ block, judge, named_by, word, evidence }] }` (1.9 §10: `standing`,
-/// `crossed`, `commanded`, `accused`, `nothing` and `up_to` are gone; a ruling or naming by a side, or by a judge no one named, is not listed).
+/// `{ claimant, holder, evidence, judges: [{ judge, named_by }], rulings: [{ block, judge, named_by, word, evidence }] }` (a ruling or naming by a side, or by a judge no one named, is not listed).
 pub fn invasion_shown(claim: &Value, blocks: &[Value]) -> Value {
     if type_of(claim) != "observe" || ss(claim, "kind") != Some("invasion") {
         return Value::Null;
     }
-    let index = held_with(claim, blocks);
+    let index = blocks_with(claim, blocks);
     let ch = hash_of(claim).to_string();
     let claimant = speaker_of(claim, &index, None);
     let accused: Vec<String> = crate::js::sorted_set(list(rf(claim, "to")));
@@ -84,8 +83,8 @@ pub fn invasion_shown(claim: &Value, blocks: &[Value]) -> Value {
     let is_accused = |who: &str| accused.iter().any(|a| a == who);
     // the judges named: (judge, signer of the naming, grant)
     let mut named: Vec<(String, String, String)> = Vec::new();
-    for g in index.values().filter(|g| type_of(g) == "grant" && ss(g, "kind") == Some("referee") && st(g, "status").is_none() && rs(g, "subject") == Some(ch.as_str()) && crate::identity::counts_in(g, &index)) {
-        let (Some(judge), Some(signer)) = (rs(g, "to"), speaker_of(g, &index, None)) else { continue };
+    for g in index.values().filter(|g| super::judge_named(g, &ch).is_some() && crate::forks::counts_in(g, &index)) {
+        let (Some(judge), Some(signer)) = (super::judge_named(g, &ch), speaker_of(g, &index, None)) else { continue };
         if !(side_of_claim(&signer) || is_accused(&signer)) {
             continue;
         }
@@ -98,7 +97,7 @@ pub fn invasion_shown(claim: &Value, blocks: &[Value]) -> Value {
     judges.sort();
     judges.dedup();
     let mut rulings: Vec<(String, &str, Value)> = Vec::new();
-    for r in index.values().filter(|r| crate::identity::counts_in(r, &index)) {
+    for r in index.values().filter(|r| crate::forks::counts_in(r, &index)) {
         for word in ["confirms", "defeats"] {
             if !list(rf(r, word)).contains(&ch.as_str()) {
                 continue;

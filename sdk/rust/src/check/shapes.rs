@@ -40,7 +40,7 @@ impl Checker<'_> {
             )
         }
     }
-    // A limit is an amount (stage 4 writes the limit whole; only its shape is the amount's here).
+    // A limit is an amount (its shape is the amount's here).
     // A limit below zero allows nothing and says nothing: refused (authority.md).
     pub(super) fn limit_shape(&self, value: Option<&Value>, name: &str) -> W {
         let w = self.amount_shape(value, name);
@@ -126,7 +126,7 @@ impl Checker<'_> {
             )
         }
     }
-    // A price fixed later (promises.md, Terms): { figure, by, signers, deadline, clocks }, and optionally fraction, min, max.
+    // A price fixed later (promises.md, Terms): { figure, by, deadline, clocks }, `by` a panel, and optionally fraction, min, max.
     pub(super) fn figure_shape(&self, v: &Value, name: &str) -> W {
         let (required, optional) = (self.list("shapes.price_figure"), self.list("shapes.price_figure_optional"));
         let mut w: W = vec![];
@@ -136,12 +136,9 @@ impl Checker<'_> {
         if !v.get("figure").and_then(Value::as_str).is_some_and(|k| !k.is_empty()) {
             w.push(f("shape", format!("{name}.figure is the kind of observe that signs the figure (text)")));
         }
-        if !v.get("by").and_then(Value::as_array).is_some_and(|a| !a.is_empty() && a.iter().all(|x| self.is("id", Some(x)))) {
-            w.push(f("shape", format!("{name}.by is a non-empty list of ids")));
-        }
-        w.extend(self.whole_shape(v.get("signers"), &format!("{name}.signers"), 1.0));
-        if v.get("signers").is_none() {
-            w.push(f("shape", format!("{name}.signers is a whole number of at least 1")));
+        match v.get("by") {
+            Some(b) => w.extend(self.panel_shape(b, &format!("{name}.by"))),
+            None => w.push(f("shape", format!("{name}.by is a panel {{ names, needed }}"))),
         }
         if v.get("deadline").is_none() {
             w.push(f("time", format!("{name}.deadline is a time")));
@@ -256,7 +253,7 @@ impl Checker<'_> {
                 }
                 continue;
             }
-            // 1.9 (O2): a grant's `scope.ends_on` has its own shape (protocol.json `shapes.ends_on`), read by the grant's scope check
+            // a grant's `scope.ends_on` has its own shape (protocol.json `shapes.ends_on`), read by the grant's scope check
             if k == "ends_on" {
                 continue;
             }
@@ -336,7 +333,7 @@ impl Checker<'_> {
         if m.contains_key("value") && m.contains_key("unit") && m.len() == 3 && m.contains_key("of") && self.list("shapes.amount_optional").iter().any(|k| k == "of") {
             return Some("amount");
         }
-        // 1.9 stage 4 (A range and a list): a range states one end or both; a list is `{ one_of }`
+        // a range states one end or both; a list is `{ one_of }`
         if !m.is_empty() && m.keys().all(|k| self.list("shapes.range").contains(k)) {
             return Some("range");
         }
@@ -375,6 +372,30 @@ impl Checker<'_> {
         }
         w
     }
+    // A panel (folds.md, Counts): `{ names, needed }`, `names` a non-empty list of ids each once, `needed` by Counts: a panel of one id needs
+    // none, a larger one states it.
+    pub(super) fn panel_shape(&self, v: &Value, path: &str) -> W {
+        let Some(o) = v.as_object().filter(|o| keys_within(v, &self.list("shapes.panel")) && o.contains_key("names")) else {
+            return s("shape", format!("{path} is a panel {{ names, needed }}"));
+        };
+        let mut w: W = vec![];
+        let names = o.get("names").and_then(Value::as_array).filter(|a| !a.is_empty());
+        match names {
+            None => w.push(f("shape", format!("{path}.names is a non-empty list of ids"))),
+            Some(a) if !a.iter().all(|i| self.is("id", Some(i))) => w.push(f("grammar", format!("{path}.names lists ids"))),
+            Some(a) if a.iter().enumerate().any(|(i, x)| a[..i].contains(x)) => w.push(f("shape", format!("{path}.names lists each id once"))),
+            _ => {}
+        }
+        let n = names.map_or(0, Vec::len);
+        let needed_ok = match o.get("needed") {
+            None => n == 1,
+            Some(x) => crate::js::count_stated(Some(x), Some(n)).is_some(),
+        };
+        if !needed_ok {
+            w.push(f("shape", format!("{path}.needed is how many of its names (1 to their number), stated when there is more than one")));
+        }
+        w
+    }
     // A non-empty sorted list of ids, each once.
     fn ids_sorted(&self, v: Option<&Value>, path: &str) -> W {
         let Some(a) = v.and_then(Value::as_array).filter(|a| !a.is_empty()) else {
@@ -394,7 +415,7 @@ impl Checker<'_> {
     pub(super) fn voices_shape(&self, v: &Value, path: &str) -> W {
         let Some(items) = v.as_array() else { return s("shape", format!("{path} is her list: an array of voices")) };
         let mut w: W = vec![];
-        // 1.9 3b-8: `receives: true` on one voice at most
+        // `receives: true` on one voice at most
         if items.iter().filter(|v| v.get("receives").is_some()).count() > 1 {
             w.push(f("shape", format!("{path}: receives is true on one voice at most")));
         }
@@ -429,8 +450,8 @@ impl Checker<'_> {
             }
             w.extend(self.duration_shape(item.get("wait"), &format!("{here}.wait")));
             w.extend(self.duration_shape(item.get("reach"), &format!("{here}.reach")));
-            // 1.9 3b-11 (`passes`, D11) and 3b-8 (`receives`, D7): each `true`, or left out
-            // 1.9 3d-14 (`above`, D8): `true` on a voice of other people, or left out
+            // `passes` and `receives`: each `true`, or left out
+            // `above`: `true` on a voice of other people, or left out
             for flag in ["passes", "receives", "above"] {
                 if item.get(flag).is_some_and(|x| x != &Value::Bool(true)) {
                     w.push(f("shape", format!("{here}.{flag} is true, or left out")));

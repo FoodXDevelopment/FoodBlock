@@ -6,6 +6,7 @@
 //! content key, with its own 12-byte nonce. SM4 takes a 128-bit key: the first 16 bytes of each 32-byte key.
 //! The envelope names no recipient: each recipient tries every entry. `seal` encrypts; `sign` signs. `alg` is the
 //! suite's envelope name (protocol.json `suites`).
+//! A KEM key (`xwing:` and 2,432 hex characters, core.md section 2) is sealed to by encapsulation instead: see `xwing`.
 use crate::block::{hex, unhex};
 use crate::error::{Error, Result};
 use crate::prelude::*;
@@ -24,6 +25,8 @@ pub struct Fixed {
     pub content_key: Option<String>,
     pub nonce: Option<String>,
     pub key_nonces: Vec<String>,
+    /// One 64-byte encapsulation seed per recipient of an `xwing:` envelope (hex).
+    pub encaps: Vec<String>,
 }
 
 fn raw<const N: usize>(hex_text: &str, what: &str) -> Result<[u8; N]> {
@@ -50,6 +53,157 @@ pub fn suite_of_alg(alg: &str) -> Option<String> {
 
 fn unknown(suite: &str) -> Error {
     Error::coded("unknown_suite", format!("envelope: this build does not know the suite {suite}"))
+}
+
+/// X-Wing (draft-connolly-cfrg-xwing-kem-11), by hand from its primitives: ML-KEM-768 (FIPS 203), X25519, SHAKE256 and
+/// SHA3-256. A key is the 1,184-byte ML-KEM-768 key then the 32-byte X25519 key; its private form is a 32-byte seed.
+pub mod xwing {
+    use super::*;
+    use ml_kem::{Decapsulate, DecapsulationKey, EncapsulationKey, KeyExport, MlKem768};
+    use sha3::Digest;
+
+    /// The envelope name of an X-Wing envelope (protocol.json `encrypt_keys.xwing.envelope`).
+    pub const ALG: &str = "xwing-hkdf-sha256-aes-256-gcm";
+    pub const PREFIX: &str = "xwing:";
+    pub const KEY_BYTES: usize = 1216;
+    pub const CT_BYTES: usize = 1120;
+    const ML_KEY: usize = 1184;
+    const ML_CT: usize = 1088;
+    // "\./" "/^\"
+    const LABEL: [u8; 6] = [0x5c, 0x2e, 0x2f, 0x2f, 0x5e, 0x5c];
+
+    // The keys of a 32-byte seed: the ML-KEM-768 decapsulation key, the X25519 secret, and the public key.
+    fn expand(sk: &[u8; 32]) -> (DecapsulationKey<MlKem768>, StaticSecret, Vec<u8>) {
+        use shake::{ExtendableOutput, Update, XofReader};
+        let mut h = shake::Shake256::default();
+        h.update(sk);
+        let mut expanded = [0u8; 96];
+        h.finalize_xof().read(&mut expanded);
+        let mut seed = ml_kem::Seed::default();
+        seed.copy_from_slice(&expanded[..64]);
+        let dk = DecapsulationKey::<MlKem768>::from_seed(seed);
+        let mut x = [0u8; 32];
+        x.copy_from_slice(&expanded[64..]);
+        let sx = StaticSecret::from(x);
+        let mut pk = dk.encapsulation_key().to_bytes().to_vec();
+        pk.extend_from_slice(PublicKey::from(&sx).as_bytes());
+        (dk, sx, pk)
+    }
+
+    fn combine(ss_m: &[u8], ss_x: &[u8], ct_x: &[u8], pk_x: &[u8]) -> [u8; 32] {
+        let mut h = sha3::Sha3_256::new();
+        h.update(ss_m);
+        h.update(ss_x);
+        h.update(ct_x);
+        h.update(pk_x);
+        h.update(LABEL);
+        h.finalize().into()
+    }
+
+    /// The public key (1,216 bytes) of a 32-byte private seed.
+    pub fn public_key(sk: &[u8; 32]) -> Vec<u8> {
+        expand(sk).2
+    }
+
+    /// Encapsulate to a public key with 64 random bytes: the 32-byte secret and the 1,120-byte ciphertext.
+    pub fn encaps(pk: &[u8], eseed: &[u8; 64]) -> Result<([u8; 32], Vec<u8>)> {
+        if pk.len() != KEY_BYTES {
+            return Err(Error::new("envelope: an X-Wing key is 1216 bytes"));
+        }
+        let (pk_m, pk_x) = pk.split_at(ML_KEY);
+        let ek_m = EncapsulationKey::<MlKem768>::new(&ml_kem::Key::<EncapsulationKey<MlKem768>>::try_from(pk_m).map_err(|_| Error::new("envelope: an X-Wing key is 1216 bytes"))?)
+            .map_err(|_| Error::new("envelope: the ML-KEM-768 part of that X-Wing key is not a key"))?;
+        let their = <[u8; 32]>::try_from(pk_x).unwrap();
+        let mut ek_x = [0u8; 32];
+        ek_x.copy_from_slice(&eseed[32..]);
+        let ek_x = StaticSecret::from(ek_x);
+        let ct_x = PublicKey::from(&ek_x);
+        let ss_x = ek_x.diffie_hellman(&PublicKey::from(their));
+        let mut m = ml_kem::B32::default();
+        m.copy_from_slice(&eseed[..32]);
+        let (ct_m, ss_m) = ek_m.encapsulate_deterministic(&m);
+        let mut ct = ct_m.to_vec();
+        ct.extend_from_slice(ct_x.as_bytes());
+        Ok((combine(&ss_m, ss_x.as_bytes(), ct_x.as_bytes(), pk_x), ct))
+    }
+
+    /// The 32-byte secret of a ciphertext, under a private seed.
+    pub fn decaps(sk: &[u8; 32], ct: &[u8]) -> Result<[u8; 32]> {
+        if ct.len() != CT_BYTES {
+            return Err(Error::new("envelope: an X-Wing ciphertext is 1120 bytes"));
+        }
+        let (dk, sx, pk) = expand(sk);
+        let (ct_m, ct_x) = ct.split_at(ML_CT);
+        let ct_m = ml_kem::Ciphertext::<MlKem768>::try_from(ct_m).map_err(|_| Error::new("envelope: an X-Wing ciphertext is 1120 bytes"))?;
+        let ss_m = dk.decapsulate(&ct_m);
+        let ct_x = <[u8; 32]>::try_from(ct_x).unwrap();
+        let ss_x = sx.diffie_hellman(&PublicKey::from(ct_x));
+        Ok(combine(&ss_m, ss_x.as_bytes(), &ct_x, &pk[ML_KEY..]))
+    }
+
+    /// Whether a key is an `xwing:` key by its name (grammar aside).
+    pub fn is_named(key: &str) -> bool {
+        key.starts_with(PREFIX)
+    }
+    /// The 1,216 key bytes of an `xwing:` key written in its grammar.
+    pub fn key_bytes(key: &str) -> Option<Vec<u8>> {
+        let h = key.strip_prefix(PREFIX)?;
+        if h.len() != KEY_BYTES * 2 || h.bytes().any(|c| !matches!(c, b'0'..=b'9' | b'a'..=b'f')) {
+            return None;
+        }
+        unhex(h)
+    }
+
+    pub fn keypair_of(seed_hex: &str) -> Result<Value> {
+        let sk = raw::<32>(seed_hex, "an X-Wing private seed")?;
+        Ok(json!({ "public_key_encrypt": format!("{PREFIX}{}", hex(&public_key(&sk))), "xwing_private": seed_hex }))
+    }
+
+    // HKDF-SHA256, salted with the encapsulation's bytes then the recipient's key bytes (privacy.md, Envelope).
+    pub(super) fn sealing_key(ss: &[u8; 32], ct: &[u8], pk: &[u8]) -> Result<[u8; 32]> {
+        super::sealing_key("std", ss, ct, pk)
+    }
+
+    pub(super) fn seal(value: &Value, keys: &[&str], fixed: &Fixed) -> Result<Value> {
+        let content_key = fixed_or_random::<32>(fixed.content_key.as_ref())?;
+        let nonce = fixed_or_random::<12>(fixed.nonce.as_ref())?;
+        let mut recipients = Vec::new();
+        for (i, key) in keys.iter().enumerate() {
+            let pk = key_bytes(key).ok_or_else(|| Error::coded("grammar", "envelope: an xwing: key is 2432 lowercase hex characters"))?;
+            let eseed = fixed_or_random::<64>(fixed.encaps.get(i))?;
+            let (ss, ct) = encaps(&pk, &eseed)?;
+            let key_nonce = fixed_or_random::<12>(fixed.key_nonces.get(i))?;
+            let mut sealed = gcm("std", &sealing_key(&ss, &ct, &pk)?, &key_nonce, &content_key)?;
+            sealed.extend_from_slice(&key_nonce);
+            recipients.push(json!({ "kem_ciphertext": base64_encode(&ct), "encrypted_key": base64_encode(&sealed) }));
+        }
+        let plaintext = crate::canonical::canonical_json(value);
+        Ok(json!({
+            "alg": ALG, "nonce": base64_encode(&nonce),
+            "ciphertext": base64_encode(&gcm("std", &content_key, &nonce, plaintext.as_bytes())?), "recipients": recipients,
+        }))
+    }
+
+    pub(super) fn open(envelope: &Value, seed_hex: &str) -> Result<Value> {
+        let sk = raw::<32>(seed_hex, "an X-Wing private seed")?;
+        let mine = public_key(&sk);
+        for entry in envelope.get("recipients").and_then(Value::as_array).into_iter().flatten() {
+            let Some(ct) = base64_decode(crate::js::str_of(entry.get("kem_ciphertext"))) else { continue };
+            let Some(sealed) = base64_decode(crate::js::str_of(entry.get("encrypted_key"))) else { continue };
+            if sealed.len() < 12 || ct.len() != CT_BYTES {
+                continue;
+            }
+            let ss = decaps(&sk, &ct)?;
+            let key = sealing_key(&ss, &ct, &mine)?;
+            let (body, nonce) = sealed.split_at(sealed.len() - 12);
+            let Some(content_key) = ungcm("std", &key, nonce, body).and_then(|k| <[u8; 32]>::try_from(k).ok()) else { continue };
+            let nonce = base64_decode(crate::js::str_of(envelope.get("nonce"))).ok_or_else(|| Error::new("envelope: the nonce is base64"))?;
+            let ciphertext = base64_decode(crate::js::str_of(envelope.get("ciphertext"))).ok_or_else(|| Error::new("envelope: the ciphertext is base64"))?;
+            let plain = ungcm("std", &content_key, &nonce, &ciphertext).ok_or_else(|| Error::new("envelope: the ciphertext does not open"))?;
+            return Ok(serde_json::from_slice(&plain)?);
+        }
+        Err(Error::new("envelope: no entry opens with this key"))
+    }
 }
 
 /// The public encryption key (hex) of a private key (hex), in a suite.
@@ -94,6 +248,11 @@ pub fn generate_encryption_keypair_in(suite: &str) -> Result<Value> {
         }
     }
     Err(Error::new("envelope: could not make a key"))
+}
+/// A new X-Wing key: `{ public_key_encrypt: "xwing:...", xwing_private }` (the private seed, 32 bytes, hex).
+#[cfg(feature = "std")]
+pub fn generate_xwing_keypair() -> Result<Value> {
+    xwing::keypair_of(&hex(&crate::random::bytes::<32>()?))
 }
 #[cfg(feature = "std")]
 pub fn generate_encryption_keypair() -> Result<Value> {
@@ -210,9 +369,17 @@ pub fn seal_with(
     if recipient_keys.is_empty() {
         return Err(Error::new("envelope: at least one recipient key"));
     }
-    let info = crate::spec().suite(suite).ok_or_else(|| unknown(suite))?.clone();
     let none = Fixed::default();
     let fixed = fixed.unwrap_or(&none);
+    // one alg per envelope: keys of two kinds are two envelopes
+    let kems = recipient_keys.iter().filter(|k| xwing::is_named(k)).count();
+    if kems == recipient_keys.len() {
+        return xwing::seal(value, recipient_keys, fixed);
+    }
+    if kems > 0 {
+        return Err(Error::new("envelope: keys of two kinds (xwing: and the suite's own) are sealed in two envelopes"));
+    }
+    let info = crate::spec().suite(suite).ok_or_else(|| unknown(suite))?.clone();
     let content_key = fixed_or_random::<32>(fixed.content_key.as_ref())?;
     let nonce = fixed_or_random::<12>(fixed.nonce.as_ref())?;
     let ephemeral_private = fixed_or_random::<32>(fixed.ephemeral.as_ref())?;
@@ -220,7 +387,7 @@ pub fn seal_with(
     let mut recipients = Vec::new();
     for (i, key) in recipient_keys.iter().enumerate() {
         let their = unhex(key).ok_or_else(|| Error::new("envelope: a public key is hex"))?;
-        // a key is sealed to only as it is written canonically (lowercase hex): one spelling, one key (release 40)
+        // a key is sealed to only as it is written canonically (lowercase hex): one spelling, one key
         if hex(&their) != *key {
             return Err(Error::new("envelope: a public key is written as lowercase hex, and only so"));
         }
@@ -246,6 +413,9 @@ pub fn seal_with(
 /// `alg` names. Every entry is tried; none names its recipient.
 pub fn open(envelope: &Value, private_hex: &str) -> Result<Value> {
     let alg = envelope.get("alg").and_then(Value::as_str).unwrap_or("");
+    if alg == xwing::ALG {
+        return xwing::open(envelope, private_hex);
+    }
     let suite = suite_of_alg(alg).ok_or_else(|| unknown(alg))?;
     let private = raw::<32>(private_hex, "a private key")?;
     let mine = unhex(&encryption_key_in(&suite, private_hex)?).unwrap();

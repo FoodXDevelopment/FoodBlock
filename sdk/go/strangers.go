@@ -24,15 +24,13 @@ func ReadingIsPersonsClaim(reading Block, person string, blocks []Block) bool {
 	return doorReadingIsPersonsClaim(reading, person, blocks)
 }
 
-// ReadingConditionHolds is whether a tasks-profile `reading_condition` holds on the readings held, at the reader's now.
+// ReadingConditionHolds is whether a tasks-profile `reading_condition` holds on the readings given, at the reader's now.
 func ReadingConditionHolds(condition any, blocks []Block, now string) bool {
 	return doorReadingConditionHolds(condition, blocks, now)
 }
 
-// ConditionHolds is whether a condition holds on the blocks held, at the reader's now (promises.md, Conditions): settled, a
+// ConditionHolds is whether a condition holds on the blocks given, at the reader's now (promises.md, Conditions): settled, a
 // deed, a reading or a signal. A condition reads three ways: true, false, or nil for a shape the protocol does not read.
 func ConditionHolds(condition any, blocks []Block, now string) *bool {
 	return doorConditionHolds(condition, blocks, now)
 }
-
-
